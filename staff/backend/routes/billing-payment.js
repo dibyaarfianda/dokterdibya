@@ -210,8 +210,8 @@ router.get('/:mrId/payment-status/:paymentId', verifyToken, async (req, res) => 
             });
         }
 
-        // Check if expired locally
-        if (new Date(payment.expires_at) < new Date()) {
+        // Check if expired locally (skip for insurance - no expiry)
+        if (payment.expires_at && new Date(payment.expires_at) < new Date()) {
             // Update status to expired
             await db.query(
                 'UPDATE tagihan_payments SET status = ? WHERE id = ?',
@@ -287,8 +287,8 @@ router.get('/:mrId/payment-details', verifyToken, async (req, res) => {
             return sendSuccess(res, null, 'Tidak ada pembayaran aktif');
         }
 
-        // Check expiration for pending
-        if (payment.status === 'pending' && new Date(payment.expires_at) < new Date()) {
+        // Check expiration for pending (skip for insurance - no expiry)
+        if (payment.status === 'pending' && payment.expires_at && new Date(payment.expires_at) < new Date()) {
             await db.query(
                 'UPDATE tagihan_payments SET status = ? WHERE id = ?',
                 ['expired', payment.id]
@@ -306,7 +306,11 @@ router.get('/:mrId/payment-details', verifyToken, async (req, res) => {
             paid_at: payment.paid_at
         };
 
-        if (payment.payment_method === 'qris') {
+        if (payment.payment_method === 'asuransi') {
+            responseData.insurance_info = payment.insurance_info ?
+                (typeof payment.insurance_info === 'string' ? JSON.parse(payment.insurance_info) : payment.insurance_info)
+                : null;
+        } else if (payment.payment_method === 'qris') {
             responseData.qris_url = payment.qris_url;
             responseData.qris_string = payment.qris_string;
         } else {
@@ -314,7 +318,7 @@ router.get('/:mrId/payment-details', verifyToken, async (req, res) => {
             responseData.va_bank_code = payment.va_bank_code;
         }
 
-        if (payment.status === 'pending') {
+        if (payment.status === 'pending' && payment.expires_at) {
             responseData.expires_in_seconds = Math.max(0,
                 Math.floor((new Date(payment.expires_at) - new Date()) / 1000)
             );
@@ -393,6 +397,142 @@ router.post('/:mrId/cancel-payment/:paymentId', verifyToken, async (req, res) =>
             error: error.message
         });
         return sendError(res, 'Gagal membatalkan pembayaran', 500);
+    }
+});
+
+/**
+ * POST /:mrId/create-insurance-payment
+ * Create insurance (asuransi) payment - status pending, no Xendit
+ */
+router.post('/:mrId/create-insurance-payment', verifyToken, async (req, res) => {
+    const mrId = normalizeMrId(req.params.mrId);
+    const { insurance_provider, insurance_number, notes } = req.body;
+
+    try {
+        if (!insurance_provider || !insurance_provider.trim()) {
+            return sendError(res, 'Nama asuransi wajib diisi', 400);
+        }
+
+        // Get billing info
+        const [[billing]] = await db.query(`
+            SELECT b.id, b.mr_id, b.patient_id, b.total, b.status,
+                   p.full_name as patient_name
+            FROM sunday_clinic_billings b
+            JOIN patients p ON p.id = b.patient_id
+            WHERE b.mr_id = ?
+        `, [mrId]);
+
+        if (!billing) {
+            return sendError(res, 'Billing tidak ditemukan', 404);
+        }
+
+        if (billing.status !== 'confirmed') {
+            return sendError(res, 'Billing harus dikonfirmasi terlebih dahulu', 400);
+        }
+
+        if (billing.status === 'paid') {
+            return sendError(res, 'Billing sudah dibayar', 400);
+        }
+
+        const amount = parseFloat(billing.total);
+        const insuranceInfo = {
+            provider: insurance_provider.trim(),
+            number: (insurance_number || '').trim(),
+            notes: (notes || '').trim()
+        };
+
+        // Insert payment record with status 'pending'
+        const [insertResult] = await db.query(`
+            INSERT INTO tagihan_payments (
+                billing_id, mr_id, patient_id,
+                payment_method, amount, status, insurance_info, created_by
+            ) VALUES (?, ?, ?, 'asuransi', ?, 'pending', ?, ?)
+        `, [
+            billing.id,
+            mrId,
+            billing.patient_id,
+            amount,
+            JSON.stringify(insuranceInfo),
+            req.user?.name || req.user?.id || 'System'
+        ]);
+
+        // Log the event
+        await db.query(`
+            INSERT INTO tagihan_payment_logs (
+                payment_id, billing_id, mr_id, event_type, event_source,
+                status_after, request_data, ip_address
+            ) VALUES (?, ?, ?, 'payment.insurance_created', 'api', 'pending', ?, ?)
+        `, [
+            insertResult.insertId,
+            billing.id,
+            mrId,
+            JSON.stringify(insuranceInfo),
+            req.ip
+        ]);
+
+        logger.info('[BillingPayment] Insurance payment created', {
+            mrId,
+            paymentId: insertResult.insertId,
+            provider: insuranceInfo.provider,
+            amount
+        });
+
+        return sendSuccess(res, {
+            payment_id: insertResult.insertId,
+            payment_method: 'asuransi',
+            amount,
+            status: 'pending',
+            insurance_info: insuranceInfo
+        }, 'Pembayaran asuransi berhasil dibuat (menunggu klaim)');
+
+    } catch (error) {
+        logger.error('[BillingPayment] Create insurance payment failed', {
+            mrId,
+            error: error.message
+        });
+        return sendError(res, error.message || 'Gagal membuat pembayaran asuransi', 500);
+    }
+});
+
+/**
+ * POST /:mrId/confirm-insurance/:paymentId
+ * Confirm insurance payment (mark as paid)
+ */
+router.post('/:mrId/confirm-insurance/:paymentId', verifyToken, async (req, res) => {
+    const mrId = normalizeMrId(req.params.mrId);
+    const paymentId = parseInt(req.params.paymentId);
+
+    try {
+        const [[payment]] = await db.query(`
+            SELECT * FROM tagihan_payments
+            WHERE id = ? AND mr_id = ? AND payment_method = 'asuransi' AND status = 'pending'
+        `, [paymentId, mrId]);
+
+        if (!payment) {
+            return sendError(res, 'Pembayaran asuransi tidak ditemukan atau sudah diproses', 404);
+        }
+
+        // Use handlePaymentSuccess to update billing, deduct stock, finalize MR
+        await handlePaymentSuccess(payment, {
+            paid_at: new Date(),
+            confirmed_by: req.user?.name || req.user?.id || 'System',
+            confirmation_type: 'insurance_claim_approved'
+        });
+
+        logger.info('[BillingPayment] Insurance payment confirmed', { mrId, paymentId });
+
+        return sendSuccess(res, {
+            payment_id: paymentId,
+            status: 'paid'
+        }, 'Pembayaran asuransi dikonfirmasi');
+
+    } catch (error) {
+        logger.error('[BillingPayment] Confirm insurance failed', {
+            mrId,
+            paymentId,
+            error: error.message
+        });
+        return sendError(res, 'Gagal mengkonfirmasi pembayaran asuransi', 500);
     }
 });
 
@@ -600,6 +740,12 @@ async function handlePaymentSuccess(payment, webhookData) {
     const mrId = payment.mr_id;
 
     try {
+        // Convert paid_at to Date object (MySQL2 handles Date objects correctly)
+        let paidAt = webhookData.paid_at || new Date();
+        if (typeof paidAt === 'string') {
+            paidAt = new Date(paidAt);
+        }
+
         // Update payment status
         await db.query(`
             UPDATE tagihan_payments
@@ -608,7 +754,7 @@ async function handlePaymentSuccess(payment, webhookData) {
                 webhook_data = ?
             WHERE id = ?
         `, [
-            webhookData.paid_at || new Date(),
+            paidAt,
             JSON.stringify(webhookData),
             payment.id
         ]);
@@ -687,7 +833,8 @@ async function handlePaymentSuccess(payment, webhookData) {
         logger.error('[BillingPayment] Handle payment success failed', {
             mrId,
             paymentId: payment.id,
-            error: error.message
+            error: error.message,
+            stack: error.stack
         });
         throw error;
     }

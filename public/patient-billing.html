@@ -708,6 +708,17 @@
                         </div>
                         <div class="method-check"></div>
                     </div>
+
+                    <div class="method-card" data-method="asuransi" onclick="selectMethod('asuransi')">
+                        <div class="method-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;">
+                            <i class="fa fa-shield"></i>
+                        </div>
+                        <div class="method-info">
+                            <h4>Asuransi</h4>
+                            <p>Klaim asuransi kesehatan</p>
+                        </div>
+                        <div class="method-check"></div>
+                    </div>
                 </div>
 
                 <div id="method-amount" style="text-align:center; margin: 15px 0;">
@@ -938,9 +949,15 @@
                         if (payData.success && payData.data && payData.data.status === 'pending') {
                             // Resume existing payment
                             currentPayment = payData.data;
-                            html += '<button class="btn-primary" onclick="showPaymentDisplay()">' +
-                                '<i class="fa fa-clock-o"></i> Lihat Pembayaran Aktif' +
-                            '</button>';
+                            if (payData.data.payment_method === 'asuransi') {
+                                html += '<button class="btn-primary" onclick="showInsurancePending()" style="background:linear-gradient(135deg,#06b6d4,#0891b2);">' +
+                                    '<i class="fa fa-shield"></i> Lihat Klaim Asuransi (Pending)' +
+                                '</button>';
+                            } else {
+                                html += '<button class="btn-primary" onclick="showPaymentDisplay()">' +
+                                    '<i class="fa fa-clock-o"></i> Lihat Pembayaran Aktif' +
+                                '</button>';
+                            }
                         } else {
                             html += '<button class="btn-primary" onclick="showPaymentMethods()">' +
                                 '<i class="fa fa-credit-card"></i> Bayar Sekarang' +
@@ -989,6 +1006,12 @@
         async function createPayment() {
             if (!selectedMethod || !currentBilling) return;
 
+            // Insurance has its own form flow
+            if (selectedMethod === 'asuransi') {
+                showInsuranceForm();
+                return;
+            }
+
             var btn = document.getElementById('btn-proceed');
             btn.disabled = true;
             btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
@@ -1018,6 +1041,123 @@
                 btn.disabled = false;
                 btn.innerHTML = 'Lanjutkan';
             }
+        }
+
+        // ==================== INSURANCE FORM ====================
+        function showInsuranceForm() {
+            showSection('payment');
+            var html = '<div class="payment-display">' +
+                '<div class="method-label">Asuransi Kesehatan</div>' +
+                '<div class="amount-label">' + formatRupiah(currentBilling.total) + '</div>' +
+                '<div style="background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.3); border-radius:12px; padding:12px 16px; margin:16px 0; font-size:13px; color:rgba(255,255,255,0.8);">' +
+                    '<i class="fa fa-info-circle" style="color:#06b6d4; margin-right:6px;"></i>' +
+                    'Pembayaran akan berstatus <strong>pending</strong> sampai klaim asuransi disetujui.' +
+                '</div>' +
+                '<div style="margin-top:16px;">' +
+                    '<label style="font-size:13px; color:rgba(255,255,255,0.7); display:block; margin-bottom:6px;">Nama Asuransi <span style="color:#ef4444;">*</span></label>' +
+                    '<input type="text" id="ins-provider" placeholder="Contoh: BPJS, Prudential, AXA" ' +
+                        'style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#fff; font-size:14px; font-family:Poppins,sans-serif;">' +
+                '</div>' +
+                '<div style="margin-top:12px;">' +
+                    '<label style="font-size:13px; color:rgba(255,255,255,0.7); display:block; margin-bottom:6px;">Nomor Polis / Kartu</label>' +
+                    '<input type="text" id="ins-number" placeholder="Nomor polis atau kartu asuransi" ' +
+                        'style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#fff; font-size:14px; font-family:Poppins,sans-serif;">' +
+                '</div>' +
+                '<div style="margin-top:12px;">' +
+                    '<label style="font-size:13px; color:rgba(255,255,255,0.7); display:block; margin-bottom:6px;">Catatan</label>' +
+                    '<textarea id="ins-notes" rows="2" placeholder="Catatan tambahan (opsional)" ' +
+                        'style="width:100%; padding:12px 14px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:10px; color:#fff; font-size:14px; font-family:Poppins,sans-serif; resize:none;"></textarea>' +
+                '</div>' +
+            '</div>';
+
+            html += '<button class="btn-primary" onclick="submitInsurance()" id="btn-submit-ins">' +
+                '<i class="fa fa-shield"></i> Buat Klaim Asuransi' +
+            '</button>';
+            html += '<button class="btn-secondary" onclick="showPaymentMethods()">' +
+                '<i class="fa fa-arrow-left"></i> Kembali' +
+            '</button>';
+
+            document.getElementById('payment-content').innerHTML = html;
+        }
+
+        async function submitInsurance() {
+            var provider = (document.getElementById('ins-provider')?.value || '').trim();
+            var number = (document.getElementById('ins-number')?.value || '').trim();
+            var notes = (document.getElementById('ins-notes')?.value || '').trim();
+
+            if (!provider) {
+                alert('Nama asuransi wajib diisi');
+                return;
+            }
+
+            var btn = document.getElementById('btn-submit-ins');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                var resp = await fetch(API_BASE + '/' + currentBilling.id + '/create-insurance-payment', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        insurance_provider: provider,
+                        insurance_number: number,
+                        notes: notes
+                    })
+                });
+
+                var data = await resp.json();
+
+                if (!data.success) {
+                    alert(data.message || 'Gagal membuat klaim asuransi');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-shield"></i> Buat Klaim Asuransi';
+                    return;
+                }
+
+                currentPayment = data.data;
+                showInsurancePending();
+
+            } catch (err) {
+                console.error('Insurance submit error:', err);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-shield"></i> Buat Klaim Asuransi';
+            }
+        }
+
+        function showInsurancePending() {
+            if (!currentPayment) return;
+            var info = currentPayment.insurance_info || {};
+
+            var html = '<div style="text-align:center; padding:20px 0;">' +
+                '<div style="font-size:48px; color:#06b6d4; margin-bottom:16px;"><i class="fa fa-shield"></i></div>' +
+                '<h3 style="font-size:18px; color:#06b6d4; margin-bottom:16px;">Klaim Asuransi Dibuat</h3>' +
+                '<div style="background:rgba(255,255,255,0.08); border-radius:12px; padding:16px; text-align:left; margin-bottom:16px;">' +
+                    '<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.1);">' +
+                        '<span style="color:rgba(255,255,255,0.5); font-size:13px;">Asuransi</span>' +
+                        '<span style="font-weight:600; font-size:13px;">' + (info.provider || '-') + '</span>' +
+                    '</div>' +
+                    (info.number ? '<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.1);">' +
+                        '<span style="color:rgba(255,255,255,0.5); font-size:13px;">No. Polis</span>' +
+                        '<span style="font-size:13px;">' + info.number + '</span>' +
+                    '</div>' : '') +
+                    '<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.1);">' +
+                        '<span style="color:rgba(255,255,255,0.5); font-size:13px;">Jumlah</span>' +
+                        '<span style="font-weight:700; color:#28a7e9; font-size:13px;">' + formatRupiah(currentPayment.amount) + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex; justify-content:space-between; padding:8px 0;">' +
+                        '<span style="color:rgba(255,255,255,0.5); font-size:13px;">Status</span>' +
+                        '<span style="background:rgba(234,179,8,0.2); color:#eab308; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:600;">Pending</span>' +
+                    '</div>' +
+                '</div>' +
+                '<p style="font-size:12px; color:rgba(255,255,255,0.4);">Status akan berubah setelah klaim asuransi disetujui oleh klinik.</p>' +
+            '</div>';
+
+            html += '<button class="btn-primary" onclick="showSection(\'list\'); loadBillings();">' +
+                '<i class="fa fa-arrow-left"></i> Kembali ke Daftar Tagihan' +
+            '</button>';
+
+            document.getElementById('payment-content').innerHTML = html;
         }
 
         // ==================== PAYMENT DISPLAY ====================

@@ -76,7 +76,9 @@ const PaymentModal = {
 
         // If there's an existing pending payment, show it instead
         if (this.currentPayment) {
-            if (this.currentPayment.payment_method === 'qris') {
+            if (this.currentPayment.payment_method === 'asuransi') {
+                this.renderInsurancePending(this.currentPayment);
+            } else if (this.currentPayment.payment_method === 'qris') {
                 this.renderQRISDisplay(this.currentPayment);
             } else {
                 this.renderVADisplay(this.currentPayment);
@@ -164,6 +166,18 @@ const PaymentModal = {
                         <i class="fas fa-chevron-right text-muted"></i>
                     </div>
                 </div>
+
+                <!-- Insurance Option -->
+                <div class="payment-method-card mb-2" data-method="asuransi">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt fa-2x text-info mr-3"></i>
+                        <div class="flex-grow-1">
+                            <strong>Asuransi</strong>
+                            <small class="d-block text-muted">Klaim asuransi kesehatan (status pending)</small>
+                        </div>
+                        <i class="fas fa-chevron-right text-muted"></i>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer px-0 pb-0">
@@ -189,6 +203,12 @@ const PaymentModal = {
         // Credit card has its own form
         if (method === 'credit_card') {
             this.renderCreditCardForm();
+            return;
+        }
+
+        // Insurance has its own form
+        if (method === 'asuransi') {
+            this.renderInsuranceForm();
             return;
         }
 
@@ -856,6 +876,207 @@ const PaymentModal = {
                     this.handleSuccess();
                 }
             });
+        }
+    },
+
+    /**
+     * Render insurance payment form
+     */
+    renderInsuranceForm() {
+        const content = document.getElementById('payment-modal-content');
+        if (!content) return;
+
+        content.innerHTML = `
+            <div class="payment-insurance-form">
+                <div class="amount-display text-center mb-3">
+                    <strong>Total Tagihan:</strong>
+                    <span class="h4 text-primary ml-2">Rp ${this.formatCurrency(this.billingTotal)}</span>
+                </div>
+
+                <div class="alert alert-info small">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Pembayaran asuransi akan berstatus <strong>pending</strong> sampai klaim disetujui.
+                </div>
+
+                <form id="insurance-payment-form">
+                    <div class="form-group">
+                        <label for="insurance-provider">Nama Asuransi <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="insurance-provider"
+                               placeholder="Contoh: BPJS, Prudential, AXA Mandiri" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="insurance-number">Nomor Polis / Kartu</label>
+                        <input type="text" class="form-control" id="insurance-number"
+                               placeholder="Nomor polis atau kartu asuransi">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="insurance-notes">Catatan</label>
+                        <textarea class="form-control" id="insurance-notes" rows="2"
+                                  placeholder="Catatan tambahan (opsional)"></textarea>
+                    </div>
+
+                    <div id="insurance-error-message" class="alert alert-danger d-none"></div>
+                </form>
+            </div>
+
+            <div class="modal-footer px-0 pb-0">
+                <button type="button" class="btn btn-secondary" onclick="PaymentModal.renderMethodSelection()">
+                    <i class="fas fa-arrow-left mr-1"></i>Kembali
+                </button>
+                <button type="button" class="btn btn-info" id="btn-submit-insurance" onclick="PaymentModal.processInsurance()">
+                    <i class="fas fa-shield-alt mr-1"></i>Buat Klaim Asuransi
+                </button>
+            </div>
+        `;
+    },
+
+    /**
+     * Process insurance payment submission
+     */
+    async processInsurance() {
+        const provider = document.getElementById('insurance-provider')?.value?.trim();
+        const number = document.getElementById('insurance-number')?.value?.trim();
+        const notes = document.getElementById('insurance-notes')?.value?.trim();
+        const errorDiv = document.getElementById('insurance-error-message');
+        const submitBtn = document.getElementById('btn-submit-insurance');
+
+        if (!provider) {
+            if (errorDiv) {
+                errorDiv.textContent = 'Nama asuransi wajib diisi';
+                errorDiv.classList.remove('d-none');
+            }
+            return;
+        }
+
+        if (errorDiv) errorDiv.classList.add('d-none');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memproses...';
+        }
+
+        try {
+            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/create-insurance-payment`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    insurance_provider: provider,
+                    insurance_number: number,
+                    notes: notes
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Gagal membuat pembayaran asuransi');
+            }
+
+            this.currentPayment = result.data;
+            this.renderInsurancePending(result.data);
+
+        } catch (error) {
+            console.error('[PaymentModal] Insurance payment failed:', error);
+            if (errorDiv) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.remove('d-none');
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-shield-alt mr-1"></i>Buat Klaim Asuransi';
+            }
+        }
+    },
+
+    /**
+     * Render insurance pending state
+     */
+    renderInsurancePending(data) {
+        const content = document.getElementById('payment-modal-content');
+        if (!content) return;
+
+        const info = data.insurance_info || {};
+
+        content.innerHTML = `
+            <div class="payment-insurance-pending text-center">
+                <div class="mb-3">
+                    <i class="fas fa-shield-alt fa-4x text-info"></i>
+                </div>
+                <h5 class="text-info mb-3">Klaim Asuransi Dibuat</h5>
+
+                <div class="bg-light rounded p-3 mb-3 text-left">
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">Asuransi:</div>
+                        <div class="col-7"><strong>${info.provider || '-'}</strong></div>
+                    </div>
+                    ${info.number ? `
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">No. Polis/Kartu:</div>
+                        <div class="col-7">${info.number}</div>
+                    </div>` : ''}
+                    <div class="row mb-2">
+                        <div class="col-5 text-muted">Jumlah:</div>
+                        <div class="col-7"><strong class="text-primary">Rp ${this.formatCurrency(data.amount)}</strong></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5 text-muted">Status:</div>
+                        <div class="col-7">
+                            <span class="badge badge-warning">
+                                <i class="fas fa-hourglass-half mr-1"></i>Pending
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-muted small">
+                    Status akan berubah menjadi <strong>Paid</strong> setelah klaim asuransi dikonfirmasi.
+                </p>
+            </div>
+
+            <div class="modal-footer px-0 pb-0">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-success" onclick="PaymentModal.confirmInsurance(${data.payment_id})">
+                    <i class="fas fa-check mr-1"></i>Konfirmasi Klaim
+                </button>
+            </div>
+        `;
+    },
+
+    /**
+     * Confirm insurance payment (mark as paid)
+     */
+    async confirmInsurance(paymentId) {
+        if (!confirm('Konfirmasi bahwa klaim asuransi telah disetujui dan pembayaran diterima?')) {
+            return;
+        }
+
+        try {
+            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/confirm-insurance/${paymentId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Gagal mengkonfirmasi');
+            }
+
+            this.handleSuccess();
+
+        } catch (error) {
+            console.error('[PaymentModal] Confirm insurance failed:', error);
+            if (window.showError) {
+                window.showError(error.message);
+            } else {
+                alert('Error: ' + error.message);
+            }
         }
     },
 
