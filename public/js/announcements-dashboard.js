@@ -37,6 +37,20 @@ function initializeSocket() {
             window.loadUnreadUsgCount();
         }
     });
+
+    // Listen for new patient notifications (bell badge)
+    socket.on('notification:new', () => {
+        if (typeof window.loadNotificationCount === 'function') {
+            window.loadNotificationCount();
+        }
+    });
+
+    // Listen for document updates (resume medis auto-publish)
+    socket.on('document:patient_updated', () => {
+        if (typeof window.loadNotificationCount === 'function') {
+            window.loadNotificationCount();
+        }
+    });
 }
 
 async function loadAnnouncements() {
