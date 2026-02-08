@@ -1649,6 +1649,7 @@
             // Authenticated, load data
             loadProfile();
             loadNotificationCount();
+            loadUnreadUsgCount();
             // loadAnnouncements handled by announcements-dashboard.js
             // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
@@ -1813,6 +1814,39 @@
                 // Silently fail
             }
         }
+
+        // ==================== UNREAD USG COUNT ====================
+        async function loadUnreadUsgCount() {
+            const token = getToken();
+            try {
+                const response = await fetch('/api/patient-documents/unread-usg-count?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+
+                // Find the Dokumen menu card and update/create badge
+                const dokumenCard = document.querySelector('.menu-card:first-child');
+                if (data.success && data.count > 0 && dokumenCard) {
+                    let badge = dokumenCard.querySelector('.usg-badge');
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'usg-badge';
+                        badge.style.cssText = 'position:absolute;top:8px;right:8px;background:#ef4444;color:#fff;font-size:11px;font-weight:600;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px;';
+                        dokumenCard.style.position = 'relative';
+                        dokumenCard.appendChild(badge);
+                    }
+                    badge.textContent = data.count;
+                    badge.style.display = 'flex';
+                } else if (dokumenCard) {
+                    const badge = dokumenCard.querySelector('.usg-badge');
+                    if (badge) badge.style.display = 'none';
+                }
+            } catch (error) {
+                // Silently fail
+            }
+        }
+        // Expose for Socket.IO listener in announcements-dashboard.js
+        window.loadUnreadUsgCount = loadUnreadUsgCount;
 
         // ==================== ANNOUNCEMENTS ====================
         // Announcements are loaded by external js/announcements-dashboard.js

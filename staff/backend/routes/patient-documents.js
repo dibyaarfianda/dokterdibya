@@ -674,6 +674,31 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
 // =====================================================
 
 /**
+ * GET /api/patient-documents/unread-usg-count
+ * Get count of unviewed USG photos for the authenticated patient
+ */
+router.get('/unread-usg-count', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient?.patientId || req.patient?.id;
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        const [rows] = await db.query(
+            `SELECT COUNT(*) as count FROM patient_documents
+             WHERE patient_id = ? AND document_type IN ('usg_photo','usg_2d','usg_4d','patient_usg')
+             AND status = 'published' AND first_viewed_at IS NULL`,
+            [patientId]
+        );
+
+        res.json({ success: true, count: rows[0].count });
+    } catch (error) {
+        logger.error('Unread USG count error', error);
+        res.status(500).json({ success: false, message: 'Failed to get unread count' });
+    }
+});
+
+/**
  * GET /api/patient-documents/my-documents
  * Get documents for authenticated patient
  * Query params: type (optional) - filter by document_type

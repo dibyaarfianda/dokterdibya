@@ -405,6 +405,23 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <!-- Socket.IO for real-time USG updates from staff -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        (function() {
+            var socketUrl = location.hostname === 'localhost'
+                ? 'http://localhost:3000'
+                : 'https://dokterdibya.com';
+            var socket = io(socketUrl, { transports: ['polling'] });
+
+            socket.on('usg:patient_updated', function(data) {
+                if (window.refreshUsgGallery) {
+                    window.refreshUsgGallery();
+                }
+            });
+        })();
+    </script>
+
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
 
@@ -423,6 +440,7 @@
         window.navigateLightbox = navigateLightbox;
         window.setAsThumbnail = setAsThumbnail;
         window.downloadImage = downloadImage;
+        window.refreshUsgGallery = loadUsgImages;
 
         /**
          * Analyze image to determine if it's grayscale (2D) or colored (4D)

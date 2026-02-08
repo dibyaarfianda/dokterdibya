@@ -903,6 +903,82 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             }
         }
 
+        // Auto-publish USG photos to patient portal when USG section is saved
+        if (section === 'usg') {
+            try {
+                const photos = data.photos || [];
+                const patientId = recordRow.patient_id;
+
+                // 1. Get currently published USG docs for this MR
+                const [existingDocs] = await db.query(
+                    `SELECT id, file_url FROM patient_documents
+                     WHERE patient_id = ? AND mr_id = ? AND document_type = 'usg_photo' AND status = 'published'`,
+                    [patientId, normalizedMrId]
+                );
+
+                // 2. Build sets for comparison
+                const existingUrls = new Set(existingDocs.map(d => d.file_url));
+                const currentUrls = new Set(photos.map(p => p.url));
+
+                // 3. Delete removed photos from patient_documents
+                const toDelete = existingDocs.filter(d => !currentUrls.has(d.file_url));
+                if (toDelete.length > 0) {
+                    await db.query(
+                        `DELETE FROM patient_documents WHERE id IN (?)`,
+                        [toDelete.map(d => d.id)]
+                    );
+                }
+
+                // 4. Insert new photos into patient_documents
+                const toInsert = photos.filter(p => !existingUrls.has(p.url));
+                for (const photo of toInsert) {
+                    await db.query(
+                        `INSERT INTO patient_documents
+                         (patient_id, mr_id, document_type, title, file_url, file_path, file_name, file_type, file_size,
+                          source, status, published_at, published_by, created_by, created_at)
+                         VALUES (?, ?, 'usg_photo', ?, ?, ?, ?, ?, ?, 'clinic', 'published', NOW(), ?, ?, NOW())`,
+                        [patientId, normalizedMrId, photo.name || 'Foto USG',
+                         photo.url, photo.key || photo.filename, photo.name, photo.type || 'image/jpeg', photo.size || 0,
+                         req.user.id || null, req.user.id || null]
+                    );
+                }
+
+                // 5. Send notification only if new photos were added
+                if (toInsert.length > 0) {
+                    const { createPatientNotification } = require('./patient-notifications');
+                    await createPatientNotification({
+                        patient_id: patientId,
+                        type: 'document',
+                        title: 'Foto USG Baru',
+                        message: `${toInsert.length} foto USG baru telah tersedia. Klik untuk melihat.`,
+                        link: '/album-usg.html',
+                        icon: 'fa fa-image',
+                        icon_color: 'text-primary'
+                    });
+                }
+
+                // 6. Broadcast Socket.IO event for real-time refresh on patient side
+                const realtimeSync = require('../realtime-sync');
+                realtimeSync.broadcast({
+                    type: 'usg:patient_updated',
+                    patient_id: patientId,
+                    mr_id: normalizedMrId,
+                    added: toInsert.length,
+                    removed: toDelete.length
+                });
+
+                if (toInsert.length > 0 || toDelete.length > 0) {
+                    logger.info('USG auto-published to patient portal', {
+                        mrId: normalizedMrId, patientId,
+                        added: toInsert.length, removed: toDelete.length
+                    });
+                }
+            } catch (autoPublishError) {
+                logger.warn('USG auto-publish warning:', autoPublishError);
+                // Don't fail the save
+            }
+        }
+
         logger.info('Saved section data for Sunday Clinic', {
             mrId: normalizedMrId,
             section,
