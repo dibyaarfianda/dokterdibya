@@ -113,15 +113,9 @@
             align-items: center;
             padding: 40px 0 32px;
         }
-        .app-name {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
         .app-tagline {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-top: 4px;
+            font-size: 18px;
+            color: rgba(255,255,255,0.8);
         }
 
         /* Form Section */
@@ -129,6 +123,9 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
         }
         .form-title {
             font-size: 24px;
@@ -138,12 +135,13 @@
         .form-subtitle {
             font-size: 14px;
             color: var(--text-muted);
-            margin-bottom: 28px;
+            margin-bottom: 30px;
         }
 
         /* Input Group */
         .input-group {
             margin-bottom: 16px;
+            width: 100%;
         }
         .input-label {
             display: block;
@@ -165,10 +163,7 @@
             fill: var(--text-muted);
             transition: fill 0.2s;
         }
-        input[type="email"],
-        input[type="password"],
-        input[type="text"],
-        input[type="tel"] {
+        input[type="text"] {
             width: 100%;
             padding: 16px 16px 16px 48px;
             font-size: 16px;
@@ -195,6 +190,8 @@
         /* Error Message */
         .error-message {
             display: none;
+            width: 100%;
+            max-width: 320px;
             padding: 12px 16px;
             background: rgba(239, 68, 68, 0.15);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -256,6 +253,7 @@
 
         .btn-google-large {
             width: 100%;
+            max-width: 320px;
             padding: 16px 24px;
             font-size: 16px;
             border-radius: 12px;
@@ -294,8 +292,7 @@
 
         /* Footer Links */
         .footer-links {
-            margin-top: auto;
-            padding-top: 24px;
+            margin-top: 24px;
             text-align: center;
         }
         .footer-links a {
@@ -361,29 +358,29 @@
         <div class="page active" id="page-login">
             <div class="logo-section">
                 <img src="/db-logo.png" alt="dokterDIBYA" style="width: 120px; height: 120px; margin-bottom: 16px; border-radius: 24px; background: white; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-                <div class="app-tagline" style="font-size: 18px; color: rgba(255,255,255,0.8);">Portal Privat Anda</div>
+                <div class="app-tagline">Portal Privat Anda</div>
             </div>
 
-            <div class="form-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
+            <div class="form-section">
                 <h1 class="form-title">Selamat Datang</h1>
-                <p class="form-subtitle" style="margin-bottom: 30px;">Masuk untuk mengakses portal pasien</p>
+                <p class="form-subtitle">Masuk untuk mengakses portal pasien</p>
 
                 <div class="error-message" id="login-error">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                     <span id="login-error-text">Login gagal</span>
                 </div>
 
-                <button type="button" class="btn btn-google-large" id="btn-google" onclick="loginWithGoogle()" style="width: 100%; max-width: 320px; padding: 16px 24px; font-size: 16px; border-radius: 12px; background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s;">
+                <button type="button" class="btn-google-large" id="btn-google" onclick="loginWithGoogle()">
                     <svg width="24" height="24" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    <span style="font-weight: 500;">Masuk dengan Google</span>
+                    <span>Masuk dengan Google</span>
                 </button>
 
-                <div class="footer-links" style="margin-top: 24px;">
+                <div class="footer-links">
                     <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-regcode'); return false;">Daftar</a></p>
                 </div>
             </div>
@@ -396,18 +393,18 @@
             </button>
 
             <div class="logo-section" style="padding-top: 60px;">
-                <div class="app-name">Daftar Baru</div>
-                <div class="app-tagline">Masukkan kode registrasi untuk mendaftar</div>
+                <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Daftar Baru</div>
+                <div class="app-tagline" style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">Masukkan kode registrasi untuk mendaftar</div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" style="justify-content: flex-start;">
                 <div class="error-message" id="regcode-error">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                     <span id="regcode-error-text">Kode tidak valid</span>
                 </div>
 
                 <!-- Step 1: Code Input -->
-                <div id="regcode-step1">
+                <div id="regcode-step1" style="width: 100%; max-width: 320px;">
                     <div style="background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
                         <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="vertical-align: middle; margin-right: 8px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
@@ -415,7 +412,7 @@
                         </p>
                     </div>
 
-                    <form id="regcode-form">
+                    <form id="regcode-form" onsubmit="handleRegCodeSubmit(event)">
                         <div class="input-group">
                             <label class="input-label">Kode Registrasi</label>
                             <div class="input-wrapper">
@@ -431,7 +428,7 @@
                 </div>
 
                 <!-- Step 2: Code Valid - Show Google Sign-In -->
-                <div id="regcode-step2" style="display: none;">
+                <div id="regcode-step2" style="display: none; width: 100%; max-width: 320px;">
                     <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
                         <p style="font-size: 14px; color: #10b981; margin: 0; display: flex; align-items: center; gap: 8px;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
@@ -439,17 +436,17 @@
                         </p>
                     </div>
 
-                    <button type="button" class="btn btn-google-large" id="btn-google-register" onclick="registerWithGoogle()" style="width: 100%; padding: 16px 24px; font-size: 16px; border-radius: 12px; background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s;">
+                    <button type="button" class="btn-google-large" id="btn-google-register" onclick="registerWithGoogle()">
                         <svg width="24" height="24" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                         </svg>
-                        <span style="font-weight: 500;">Daftar dengan Google</span>
+                        <span>Daftar dengan Google</span>
                     </button>
 
-                    <button type="button" class="btn btn-secondary" onclick="resetRegCodePage()" style="margin-top: 12px;">
+                    <button type="button" class="btn btn-secondary" onclick="resetRegCodePage()" style="margin-top: 12px; max-width: 320px;">
                         <span>Gunakan Kode Lain</span>
                     </button>
                 </div>
@@ -513,8 +510,8 @@
         }
 
         // ==================== REGISTRATION CODE ====================
-        document.getElementById('regcode-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+        function handleRegCodeSubmit(event) {
+            event.preventDefault();
             document.getElementById('regcode-error').classList.remove('show');
 
             var code = document.getElementById('regcode-input').value.trim();
@@ -524,7 +521,7 @@
             }
 
             validateRegCode(code);
-        });
+        }
 
         async function validateRegCode(code) {
             var btn = document.getElementById('btn-validate-code');
