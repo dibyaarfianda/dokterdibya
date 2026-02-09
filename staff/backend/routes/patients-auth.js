@@ -810,10 +810,13 @@ router.post('/google-auth-code', async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
+        const intakeCompleted = patient.intake_completed === 1;
+
         res.json({
             success: true,
             message: 'Login dengan Google berhasil',
             token,
+            intake_completed: intakeCompleted,
             user: {
                 id: patient.id,
                 medicalRecordId: patient.id,
@@ -824,6 +827,7 @@ router.post('/google-auth-code', async (req, res) => {
                 photo_url: patient.photo_url,
                 email_verified: 1,
                 google_id: patient.google_id || googleId,
+                intake_completed: intakeCompleted,
                 role: 'patient'
             }
         });

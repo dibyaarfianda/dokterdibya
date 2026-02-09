@@ -588,6 +588,14 @@
             errorEl.classList.add('show');
         }
 
+        // ==================== POST-LOGIN REDIRECT ====================
+        function getPostLoginUrl(data) {
+            if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
+                return '/patient-intake.html';
+            }
+            return '/patient-menu.html';
+        }
+
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
         var googleCodeClient = null;
         var pendingGoogleAction = null; // 'login' or 'register'
@@ -648,7 +656,7 @@
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }
                     localStorage.setItem('auth_provider', 'google');
-                    window.location.href = '/patient-menu.html';
+                    window.location.href = getPostLoginUrl(data);
                 } else {
                     overlay.classList.add('hidden');
                     if (data.code_required) {
@@ -817,7 +825,7 @@
                         localStorage.setItem('patient_user', JSON.stringify(user));
                     }
                     localStorage.setItem('auth_provider', 'email');
-                    window.location.href = '/patient-menu.html';
+                    window.location.href = '/patient-intake.html';
                 } else {
                     showError('register-error', data.message || 'Pendaftaran gagal. Silakan coba lagi.');
                 }
