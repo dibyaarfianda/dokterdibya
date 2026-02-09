@@ -14,6 +14,7 @@ const logger = require('../utils/logger');
 const PatientPasswordService = require('../services/PatientPasswordService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
+const pushService = require('../services/pushNotificationService');
 
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
@@ -845,6 +846,111 @@ router.post('/google-auth-code', async (req, res) => {
     } catch (error) {
         console.error('Google auth code error:', error);
         res.status(500).json({ success: false, message: 'Gagal memproses login Google' });
+    }
+});
+
+// ==================== PUSH TOKEN ENDPOINTS ====================
+
+// Register push token (PWA web push or FCM mobile)
+router.post('/push-token', verifyToken, async (req, res) => {
+    try {
+        var patientId = req.user?.id;
+        var { platform, token, endpoint, p256dh, auth } = req.body;
+
+        if (!platform) {
+            return res.status(400).json({ success: false, message: 'platform is required (web/android/ios)' });
+        }
+
+        var tokenData;
+        if (platform === 'web') {
+            if (!endpoint) {
+                return res.status(400).json({ success: false, message: 'endpoint is required for web push' });
+            }
+            tokenData = { endpoint: endpoint, p256dh: p256dh, auth: auth };
+        } else {
+            if (!token) {
+                return res.status(400).json({ success: false, message: 'token is required for mobile push' });
+            }
+            tokenData = { token: token };
+        }
+
+        var result = await pushService.registerToken(patientId, platform, tokenData);
+
+        if (result.success) {
+            // Also update legacy patients.fcm_token for backward compat (mobile only)
+            if (platform !== 'web' && token) {
+                db.query('UPDATE patients SET fcm_token = ? WHERE id = ?', [token, patientId])
+                    .catch(function() {});
+            }
+            res.json({ success: true, message: 'Push token registered' });
+        } else {
+            res.status(400).json({ success: false, message: result.error });
+        }
+    } catch (error) {
+        console.error('Error registering push token:', error);
+        res.status(500).json({ success: false, message: 'Failed to register push token' });
+    }
+});
+
+// Unregister push token
+router.delete('/push-token', verifyToken, async (req, res) => {
+    try {
+        var patientId = req.user?.id;
+        var tokenValue = req.body?.token || req.body?.endpoint;
+
+        if (!tokenValue) {
+            // If no specific token, remove all tokens for this patient
+            await pushService.unregisterAllTokens(patientId);
+        } else {
+            await pushService.unregisterToken(patientId, tokenValue);
+        }
+
+        // Also clear legacy column
+        db.query('UPDATE patients SET fcm_token = NULL WHERE id = ?', [patientId])
+            .catch(function() {});
+
+        res.json({ success: true, message: 'Push token unregistered' });
+    } catch (error) {
+        console.error('Error unregistering push token:', error);
+        res.status(500).json({ success: false, message: 'Failed to unregister push token' });
+    }
+});
+
+// Legacy FCM token endpoints (backward compat for existing mobile app)
+router.post('/fcm-token', verifyToken, async (req, res) => {
+    try {
+        var patientId = req.user?.id;
+        var fcm_token = req.body?.fcm_token;
+
+        if (!fcm_token) {
+            return res.status(400).json({ success: false, message: 'FCM token is required' });
+        }
+
+        await pushService.registerToken(patientId, 'android', { token: fcm_token });
+        await db.query('UPDATE patients SET fcm_token = ? WHERE id = ?', [fcm_token, patientId]);
+
+        res.json({ success: true, message: 'FCM token registered successfully' });
+    } catch (error) {
+        console.error('Error registering FCM token:', error);
+        res.status(500).json({ success: false, message: 'Failed to register FCM token' });
+    }
+});
+
+router.delete('/fcm-token', verifyToken, async (req, res) => {
+    try {
+        var patientId = req.user?.id;
+
+        var [rows] = await db.query('SELECT fcm_token FROM patients WHERE id = ?', [patientId]);
+        if (rows[0]?.fcm_token) {
+            await pushService.unregisterToken(patientId, rows[0].fcm_token);
+        }
+
+        await db.query('UPDATE patients SET fcm_token = NULL WHERE id = ?', [patientId]);
+
+        res.json({ success: true, message: 'FCM token unregistered successfully' });
+    } catch (error) {
+        console.error('Error unregistering FCM token:', error);
+        res.status(500).json({ success: false, message: 'Failed to unregister FCM token' });
     }
 });
 

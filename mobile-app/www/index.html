@@ -1284,6 +1284,39 @@
             }
         }
 
+        // Register FCM push token to backend
+        function registerPushTokenToBackend(fcmToken) {
+            if (!fcmToken) return;
+            var authToken = localStorage.getItem('vps_auth_token');
+            if (!authToken) {
+                console.log('[Notif] No auth token yet, will register after login');
+                return;
+            }
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            fetch('/api/patients/push-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + authToken
+                },
+                body: JSON.stringify({
+                    platform: isIOS ? 'ios' : 'android',
+                    token: fcmToken
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    console.log('[Notif] Push token registered to backend');
+                } else {
+                    console.warn('[Notif] Backend rejected token:', data.message);
+                }
+            })
+            .catch(function(err) {
+                console.warn('[Notif] Failed to register token:', err.message);
+            });
+        }
+
         // Request notification permission on first launch
         // IMPORTANT: This also saves permission status to localStorage for external URL access
         async function requestNotificationPermissionOnStart() {
@@ -1316,7 +1349,7 @@
                         console.log('[Notif] Saved permission status:', permissionGranted);
                     }
 
-                    // Request Push Notifications permission
+                    // Request Push Notifications permission and register FCM token
                     if (PushNotifications) {
                         const pushStatus = await PushNotifications.checkPermissions();
                         console.log('[Notif] Push permission status:', pushStatus.receive);
@@ -1324,6 +1357,40 @@
                             const result = await PushNotifications.requestPermissions();
                             console.log('[Notif] Push permission result:', result.receive);
                         }
+
+                        // Listen for FCM token registration
+                        PushNotifications.addListener('registration', (fcmToken) => {
+                            console.log('[Notif] FCM token received:', fcmToken.value?.substring(0, 20) + '...');
+                            // Save token for later registration after login
+                            localStorage.setItem('fcm_push_token', fcmToken.value);
+                            // If already logged in, register immediately
+                            registerPushTokenToBackend(fcmToken.value);
+                        });
+
+                        PushNotifications.addListener('registrationError', (error) => {
+                            console.error('[Notif] FCM registration error:', error);
+                        });
+
+                        // Listen for incoming push notifications (foreground)
+                        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                            console.log('[Notif] Push received (foreground):', notification.title);
+                        });
+
+                        // Listen for notification tap (user clicked notification)
+                        PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+                            console.log('[Notif] Notification tapped:', action.notification?.data);
+                            var data = action.notification?.data;
+                            if (data && data.url) {
+                                window.location.href = data.url;
+                            } else if (data && data.link) {
+                                window.location.href = data.link;
+                            }
+                        });
+
+                        // Register for push notifications (triggers 'registration' event)
+                        PushNotifications.register().catch(function(e) {
+                            console.error('[Notif] PushNotifications.register() failed:', e);
+                        });
                     }
 
                     // Mark as asked

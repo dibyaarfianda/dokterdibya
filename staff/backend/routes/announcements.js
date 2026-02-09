@@ -554,45 +554,22 @@ async function sendAnnouncementToAllPatients(announcement) {
 
         logger.info(`Created ${patients.length} patient notifications for announcement`);
 
-        // Send FCM push notifications to patients with tokens
-        const fcmTokens = patients
-            .filter(p => p.fcm_token)
-            .map(p => p.fcm_token);
-
-        if (fcmTokens.length > 0 && firebase.isInitialized()) {
-            logger.info(`Sending FCM to ${fcmTokens.length} devices`);
-
-            // FCM has a limit of 500 tokens per batch
-            const fcmBatchSize = 500;
-            for (let i = 0; i < fcmTokens.length; i += fcmBatchSize) {
-                const batch = fcmTokens.slice(i, i + fcmBatchSize);
-
-                const result = await firebase.sendNotificationToMultiple(
-                    batch,
-                    announcement.title,
-                    announcement.message.substring(0, 100),
-                    {
-                        type: 'announcement',
-                        announcement_id: String(announcement.id),
-                        priority: announcement.priority || 'normal'
-                    }
-                );
-
-                logger.info(`FCM batch result: ${result.successCount} success, ${result.failureCount} failed`);
-
-                // Remove invalid tokens
-                if (result.invalidTokens && result.invalidTokens.length > 0) {
-                    for (const token of result.invalidTokens) {
-                        await db.query(
-                            'UPDATE patients SET fcm_token = NULL WHERE fcm_token = ?',
-                            [token]
-                        );
-                    }
-                    logger.info(`Removed ${result.invalidTokens.length} invalid FCM tokens`);
+        // Send push notifications to all devices (Web Push + FCM) via unified service
+        try {
+            const pushService = require('../services/pushNotificationService');
+            const pushResult = await pushService.sendToAll(
+                announcement.title,
+                announcement.message.substring(0, 100),
+                {
+                    type: 'announcement',
+                    announcement_id: String(announcement.id),
+                    priority: announcement.priority || 'normal',
+                    url: '/patient-menu.html#pengumuman'
                 }
-            }
-        } else {
-            logger.info('No FCM tokens or Firebase not initialized');
+            );
+            logger.info(`Push broadcast: ${pushResult.sent} sent, ${pushResult.failed} failed`);
+        } catch (pushError) {
+            logger.warn('Push broadcast failed:', pushError.message);
         }
 
     } catch (error) {

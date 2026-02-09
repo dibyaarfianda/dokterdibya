@@ -253,40 +253,19 @@ async function createPatientNotification({
             console.warn('Failed to broadcast Socket.IO notification:', broadcastError.message);
         }
 
-        // Send FCM push notification (mobile app)
+        // Send push notification to all patient devices (Web Push + FCM)
         try {
-            const firebase = require('../services/firebase');
-            if (firebase.isInitialized()) {
-                // Get patient's FCM token
-                const [patients] = await db.query(
-                    'SELECT fcm_token FROM patients WHERE id = ?',
-                    [patient_id]
-                );
-
-                if (patients.length > 0 && patients[0].fcm_token) {
-                    const fcmResult = await firebase.sendNotification(
-                        patients[0].fcm_token,
-                        title,
-                        message,
-                        {
-                            notification_id: String(result.insertId),
-                            type: type,
-                            link: link || ''
-                        }
-                    );
-
-                    // Remove invalid token from database
-                    if (fcmResult.shouldRemove) {
-                        await db.query(
-                            'UPDATE patients SET fcm_token = NULL WHERE id = ?',
-                            [patient_id]
-                        );
-                        console.log(`Removed invalid FCM token for patient ${patient_id}`);
-                    }
-                }
-            }
-        } catch (fcmError) {
-            console.warn('Failed to send FCM notification:', fcmError.message);
+            const pushService = require('../services/pushNotificationService');
+            pushService.sendToPatient(patient_id, title, message, {
+                notification_id: String(result.insertId),
+                type: type,
+                link: link || '',
+                url: link || '/patient-menu.html'
+            }).catch(function(err) {
+                console.warn('Push notification send failed:', err.message);
+            });
+        } catch (pushError) {
+            console.warn('Failed to send push notification:', pushError.message);
         }
 
         return { success: true, id: result.insertId };
