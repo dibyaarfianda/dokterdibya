@@ -28,7 +28,7 @@ const HTTP_CONCURRENCY = parseInt(process.env.MEDIFY_HTTP_CONCURRENCY) || 5;
  * Find patients who need syncing for a source
  */
 async function findPatientsToSync(source) {
-    const [patients] = await pool.query(
+    const patients = await pool.query(
         `SELECT DISTINCT p.id, p.full_name, p.birth_date, p.age, p.whatsapp as alamat
          FROM patients p
          JOIN sunday_clinic_records scr ON p.id = scr.patient_id
@@ -87,7 +87,7 @@ async function processBatch(batchId, source) {
 
     try {
         // Get all pending jobs
-        const [jobs] = await pool.query(
+        const jobs = await pool.query(
             `SELECT id, patient_id, patient_name, patient_age
              FROM medify_import_jobs
              WHERE batch_id = ? AND status = 'pending'
@@ -123,11 +123,12 @@ async function processBatch(batchId, source) {
                 );
 
                 // Get patient details
-                const [[patient]] = await pool.query(
+                const patientRows = await pool.query(
                     `SELECT id, full_name, birth_date, age, whatsapp as phone
                      FROM patients WHERE id = ?`,
                     [job.patient_id]
                 );
+                const patient = patientRows[0];
 
                 if (!patient) {
                     throw new Error('Patient not found in database');
@@ -286,7 +287,7 @@ async function processBatchHttp(batchId, source) {
 
     try {
         // Get all pending jobs
-        const [jobs] = await pool.query(
+        const jobs = await pool.query(
             `SELECT id, patient_id, patient_name, patient_age
              FROM medify_import_jobs
              WHERE batch_id = ? AND status = 'pending'
@@ -322,11 +323,12 @@ async function processBatchHttp(batchId, source) {
                 );
 
                 // Get patient details from our DB
-                const [[patient]] = await pool.query(
+                const patientRows = await pool.query(
                     `SELECT id, full_name, birth_date, age, whatsapp as phone
                      FROM patients WHERE id = ?`,
                     [job.patient_id]
                 );
+                const patient = patientRows[0];
 
                 if (!patient) {
                     throw new Error('Patient not found in database');
@@ -452,12 +454,12 @@ async function syncSource(source, mode = 'puppeteer') {
 
     try {
         // Check if credentials exist
-        const [creds] = await pool.query(
+        const creds = await pool.query(
             'SELECT id FROM medify_credentials WHERE simrs_source = ? AND is_active = TRUE',
             [source]
         );
 
-        if (creds.length === 0) {
+        if (!creds || creds.length === 0) {
             console.log(`[MedifyWorker] No active credentials for ${source}, skipping`);
             return { success: false, reason: 'No credentials' };
         }
