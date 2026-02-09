@@ -266,4 +266,91 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/patient-activity/stats
+ * Aggregated statistics for the patient activity dashboard.
+ * All queries use existing indexes (event_type, created_at, patient_id).
+ */
+router.get('/stats', verifyToken, requireSuperadmin, async (req, res) => {
+    try {
+        const days = Math.min(parseInt(req.query.days) || 30, 90);
+        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // 1. Top pages (most viewed) — uses idx_event_type + idx_created_at
+        const [topPages] = await db.query(
+            `SELECT page_name, COUNT(*) as views
+             FROM patient_activity_log
+             WHERE event_type = 'view_halaman' AND created_at >= ? AND page_name IS NOT NULL
+             GROUP BY page_name
+             ORDER BY views DESC
+             LIMIT 10`,
+            [since]
+        );
+
+        // 2. Login trend per day — uses idx_event_type + idx_created_at
+        const [loginTrend] = await db.query(
+            `SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as date, COUNT(*) as count
+             FROM patient_activity_log
+             WHERE event_type = 'login' AND created_at >= ?
+             GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+             ORDER BY date ASC`,
+            [since]
+        );
+
+        // 3. Top active patients — uses idx_patient_id + idx_created_at
+        const [topPatients] = await db.query(
+            `SELECT pal.patient_id, p.full_name, COUNT(*) as total_events,
+                    SUM(pal.event_type = 'login') as logins,
+                    SUM(pal.event_type = 'view_halaman') as page_views,
+                    SUM(pal.event_type = 'booking') as bookings,
+                    SUM(pal.event_type = 'pembayaran') as payments
+             FROM patient_activity_log pal
+             LEFT JOIN patients p ON pal.patient_id = p.id
+             WHERE pal.created_at >= ?
+             GROUP BY pal.patient_id, p.full_name
+             ORDER BY total_events DESC
+             LIMIT 10`,
+            [since]
+        );
+
+        // 4. Event breakdown — uses idx_event_type + idx_created_at
+        const [eventBreakdown] = await db.query(
+            `SELECT event_type, COUNT(*) as count
+             FROM patient_activity_log
+             WHERE created_at >= ?
+             GROUP BY event_type
+             ORDER BY count DESC`,
+            [since]
+        );
+
+        // 5. Activity per hour of day (engagement pattern)
+        const [hourlyPattern] = await db.query(
+            `SELECT HOUR(created_at) as hour, COUNT(*) as count
+             FROM patient_activity_log
+             WHERE created_at >= ?
+             GROUP BY HOUR(created_at)
+             ORDER BY hour ASC`,
+            [since]
+        );
+
+        res.json({
+            success: true,
+            days,
+            topPages,
+            loginTrend,
+            topPatients,
+            eventBreakdown,
+            hourlyPattern
+        });
+
+    } catch (error) {
+        logger.error('Failed to load patient activity stats', { error: error.message });
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load stats',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

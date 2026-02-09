@@ -6037,6 +6037,28 @@ Contoh Markdown:
                                         </div>
                                     </div>
 
+                                    <!-- Statistics Section (collapsible) -->
+                                    <div class="card card-outline card-primary mb-4" id="pa-stats-card">
+                                        <div class="card-header py-2" style="cursor:pointer;" onclick="togglePatientStats()">
+                                            <h3 class="card-title"><i class="fas fa-chart-bar mr-2"></i>Statistik Aktivitas</h3>
+                                            <div class="card-tools">
+                                                <span class="badge badge-light mr-2" id="pa-stats-period">30 hari terakhir</span>
+                                                <button type="button" class="btn btn-tool" onclick="event.stopPropagation(); loadPatientStats();">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                                <i class="fas fa-chevron-down" id="pa-stats-toggle-icon"></i>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0" id="pa-stats-body" style="display:none;">
+                                            <div class="row p-3" id="pa-stats-content">
+                                                <div class="text-center py-4 w-100 text-muted">
+                                                    <i class="fas fa-spinner fa-spin fa-lg"></i>
+                                                    <p class="mb-0 mt-2">Memuat statistik...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Filters -->
                                     <div class="row mb-3">
                                         <div class="col-md-3">
@@ -9838,6 +9860,181 @@ Apakah Anda yakin ingin melanjutkan?`;
         } catch (error) {
             console.error('Load patient activity error:', error);
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
+        }
+    };
+
+    // ============================================
+    // Patient Activity Statistics
+    // ============================================
+    let paStatsLoaded = false;
+
+    window.togglePatientStats = function() {
+        const body = document.getElementById('pa-stats-body');
+        const icon = document.getElementById('pa-stats-toggle-icon');
+        if (body.style.display === 'none') {
+            body.style.display = '';
+            icon.className = 'fas fa-chevron-up';
+            if (!paStatsLoaded) loadPatientStats();
+        } else {
+            body.style.display = 'none';
+            icon.className = 'fas fa-chevron-down';
+        }
+    };
+
+    window.loadPatientStats = async function() {
+        const content = document.getElementById('pa-stats-content');
+        content.innerHTML = '<div class="text-center py-4 w-100 text-muted"><i class="fas fa-spinner fa-spin fa-lg"></i><p class="mb-0 mt-2">Memuat statistik...</p></div>';
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/patient-activity/stats?days=30', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (!response.ok) throw new Error('Failed to load stats');
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Error');
+
+            paStatsLoaded = true;
+            document.getElementById('pa-stats-period').textContent = result.days + ' hari terakhir';
+
+            // Event type labels
+            const eventLabels = {
+                login: 'Login',
+                view_halaman: 'Page View',
+                booking: 'Booking',
+                pembayaran: 'Pembayaran'
+            };
+
+            const eventIcons = {
+                login: 'fas fa-sign-in-alt text-secondary',
+                view_halaman: 'fas fa-eye text-dark',
+                booking: 'fas fa-calendar-check text-info',
+                pembayaran: 'fas fa-credit-card text-danger'
+            };
+
+            // Build HTML for all stats panels
+            let html = '';
+
+            // --- Column 1: Top Pages + Event Breakdown ---
+            html += '<div class="col-lg-4 col-12 mb-3">';
+
+            // Top Pages
+            html += '<h6 class="font-weight-bold"><i class="fas fa-file-alt mr-1 text-primary"></i> Halaman Terpopuler</h6>';
+            if (result.topPages && result.topPages.length > 0) {
+                html += '<table class="table table-sm table-borderless mb-3"><tbody>';
+                const maxViews = result.topPages[0].views;
+                result.topPages.forEach(function(p, i) {
+                    const pct = Math.round((p.views / maxViews) * 100);
+                    html += '<tr>' +
+                        '<td class="py-1" style="width:20px;"><small class="text-muted">' + (i + 1) + '.</small></td>' +
+                        '<td class="py-1"><small>' + (p.page_name || '-') + '</small>' +
+                        '<div class="progress" style="height:4px;"><div class="progress-bar bg-primary" style="width:' + pct + '%"></div></div></td>' +
+                        '<td class="py-1 text-right" style="width:40px;"><strong>' + p.views + '</strong></td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-muted small">Belum ada data page view</p>';
+            }
+
+            // Event Breakdown
+            html += '<h6 class="font-weight-bold mt-3"><i class="fas fa-chart-pie mr-1 text-success"></i> Breakdown Event</h6>';
+            if (result.eventBreakdown && result.eventBreakdown.length > 0) {
+                var totalEvents = result.eventBreakdown.reduce(function(s, e) { return s + e.count; }, 0);
+                html += '<table class="table table-sm table-borderless mb-0"><tbody>';
+                result.eventBreakdown.forEach(function(e) {
+                    var pct = totalEvents > 0 ? Math.round((e.count / totalEvents) * 100) : 0;
+                    var icon = eventIcons[e.event_type] || 'fas fa-circle text-muted';
+                    var label = eventLabels[e.event_type] || e.event_type;
+                    html += '<tr>' +
+                        '<td class="py-1"><i class="' + icon + ' mr-1"></i><small>' + label + '</small></td>' +
+                        '<td class="py-1 text-right"><strong>' + e.count + '</strong> <small class="text-muted">(' + pct + '%)</small></td>' +
+                        '</tr>';
+                });
+                html += '<tr class="border-top"><td class="py-1"><small class="font-weight-bold">Total</small></td><td class="py-1 text-right"><strong>' + totalEvents + '</strong></td></tr>';
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-muted small">Belum ada data</p>';
+            }
+
+            html += '</div>';
+
+            // --- Column 2: Login Trend ---
+            html += '<div class="col-lg-4 col-12 mb-3">';
+            html += '<h6 class="font-weight-bold"><i class="fas fa-chart-line mr-1 text-info"></i> Tren Login Harian</h6>';
+            if (result.loginTrend && result.loginTrend.length > 0) {
+                var maxLogin = Math.max.apply(null, result.loginTrend.map(function(d) { return d.count; }));
+                html += '<div style="max-height:280px; overflow-y:auto;">';
+                html += '<table class="table table-sm table-borderless mb-0"><tbody>';
+                result.loginTrend.forEach(function(d) {
+                    var dt = new Date(d.date);
+                    var dayStr = dt.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' });
+                    var pct = maxLogin > 0 ? Math.round((d.count / maxLogin) * 100) : 0;
+                    html += '<tr>' +
+                        '<td class="py-1" style="width:100px;"><small>' + dayStr + '</small></td>' +
+                        '<td class="py-1"><div class="progress" style="height:14px;"><div class="progress-bar bg-info" style="width:' + pct + '%; font-size:10px; line-height:14px;">' + (pct > 20 ? d.count : '') + '</div></div></td>' +
+                        '<td class="py-1 text-right" style="width:30px;"><strong>' + d.count + '</strong></td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table></div>';
+            } else {
+                html += '<p class="text-muted small">Belum ada data login</p>';
+            }
+
+            // Hourly Pattern
+            html += '<h6 class="font-weight-bold mt-3"><i class="fas fa-clock mr-1 text-warning"></i> Jam Aktif</h6>';
+            if (result.hourlyPattern && result.hourlyPattern.length > 0) {
+                var maxHour = Math.max.apply(null, result.hourlyPattern.map(function(h) { return h.count; }));
+                html += '<div style="display:flex; align-items:flex-end; gap:2px; height:60px; margin-bottom:4px;">';
+                for (var h = 0; h < 24; h++) {
+                    var found = result.hourlyPattern.find(function(x) { return x.hour === h; });
+                    var cnt = found ? found.count : 0;
+                    var barH = maxHour > 0 ? Math.max(2, Math.round((cnt / maxHour) * 55)) : 2;
+                    var color = cnt === maxHour && cnt > 0 ? '#28a745' : (cnt > 0 ? '#17a2b8' : '#e9ecef');
+                    html += '<div title="' + String(h).padStart(2, '0') + ':00 - ' + cnt + ' event" style="flex:1; height:' + barH + 'px; background:' + color + '; border-radius:2px 2px 0 0;"></div>';
+                }
+                html += '</div>';
+                html += '<div style="display:flex; justify-content:space-between;"><small class="text-muted">00</small><small class="text-muted">06</small><small class="text-muted">12</small><small class="text-muted">18</small><small class="text-muted">23</small></div>';
+            } else {
+                html += '<p class="text-muted small">Belum ada data</p>';
+            }
+
+            html += '</div>';
+
+            // --- Column 3: Top Active Patients ---
+            html += '<div class="col-lg-4 col-12 mb-3">';
+            html += '<h6 class="font-weight-bold"><i class="fas fa-users mr-1 text-purple"></i> Pasien Paling Aktif</h6>';
+            if (result.topPatients && result.topPatients.length > 0) {
+                html += '<table class="table table-sm table-hover mb-0"><thead><tr>' +
+                    '<th class="py-1"><small>Pasien</small></th>' +
+                    '<th class="py-1 text-center" title="Login"><small><i class="fas fa-sign-in-alt"></i></small></th>' +
+                    '<th class="py-1 text-center" title="Page View"><small><i class="fas fa-eye"></i></small></th>' +
+                    '<th class="py-1 text-center" title="Booking"><small><i class="fas fa-calendar-check"></i></small></th>' +
+                    '<th class="py-1 text-center" title="Bayar"><small><i class="fas fa-credit-card"></i></small></th>' +
+                    '<th class="py-1 text-right"><small>Total</small></th>' +
+                    '</tr></thead><tbody>';
+                result.topPatients.forEach(function(pt) {
+                    var name = pt.full_name || pt.patient_id;
+                    html += '<tr>' +
+                        '<td class="py-1"><small>' + name + '</small></td>' +
+                        '<td class="py-1 text-center"><small>' + (pt.logins || 0) + '</small></td>' +
+                        '<td class="py-1 text-center"><small>' + (pt.page_views || 0) + '</small></td>' +
+                        '<td class="py-1 text-center"><small>' + (pt.bookings || 0) + '</small></td>' +
+                        '<td class="py-1 text-center"><small>' + (pt.payments || 0) + '</small></td>' +
+                        '<td class="py-1 text-right"><strong>' + pt.total_events + '</strong></td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-muted small">Belum ada data</p>';
+            }
+            html += '</div>';
+
+            content.innerHTML = html;
+
+        } catch (error) {
+            console.error('Load patient stats error:', error);
+            content.innerHTML = '<div class="text-center py-4 w-100 text-danger"><i class="fas fa-exclamation-triangle fa-lg"></i><p class="mb-0 mt-2">Gagal memuat statistik</p></div>';
         }
     };
 
