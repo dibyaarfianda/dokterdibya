@@ -10,6 +10,7 @@ const pool = require('../utils/database');
 const { verifyToken, requireRoles } = require('../middleware/auth');
 const activityLogger = require('../services/activityLogger');
 const medifyService = require('../services/medifyPuppeteerService');
+const httpService = require('../services/medifyHttpService');
 
 // Restrict to dokter and admin roles
 const requireDocterOrAdmin = requireRoles('dokter', 'admin');
@@ -21,7 +22,7 @@ const requireDocterOrAdmin = requireRoles('dokter', 'admin');
  */
 router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res) => {
     const { source } = req.params;
-    const { date } = req.body; // Required: target date (YYYY-MM-DD)
+    const { date, mode } = req.body; // mode: 'http' | 'puppeteer' (default)
     const userId = req.user.id;
     const userName = req.user.name;
 
@@ -31,6 +32,9 @@ router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res)
             message: 'Date is required (format: YYYY-MM-DD)'
         });
     }
+
+    // Validate sync mode
+    const syncMode = mode === 'http' ? 'http' : 'puppeteer';
 
     try {
         // Validate source
@@ -61,17 +65,19 @@ router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res)
 
         // Log activity
         await activityLogger.log(userId, userName, 'MEDIFY Sync Started',
-            `Source: ${source}, Batch: ${batchId}, Date: ${date}`);
+            `Source: ${source}, Batch: ${batchId}, Date: ${date}, Mode: ${syncMode}`);
 
         // Start background processing (async - don't await)
-        processSync(batchId, source, date, userId).catch(err => {
+        const syncFn = syncMode === 'http' ? processSyncHttp : processSync;
+        syncFn(batchId, source, date, userId).catch(err => {
             console.error('[Medify] Sync error:', err);
         });
 
         res.json({
             success: true,
-            message: `Sync dimulai untuk tanggal ${date}`,
-            batchId
+            message: `Sync dimulai untuk tanggal ${date} (mode: ${syncMode})`,
+            batchId,
+            mode: syncMode
         });
 
     } catch (error) {
@@ -385,6 +391,290 @@ async function processSyncJobs(batchId, source, page) {
     }
 }
 
+// =============================================================================
+// HTTP MODE - processSyncHttp
+// =============================================================================
+
+/**
+ * Process sync using HTTP mode (no browser required).
+ * Same flow as processSync but uses direct HTTP requests.
+ */
+async function processSyncHttp(batchId, source, targetDate, userId) {
+    console.log(`[Medify-HTTP] Starting sync for ${source} on ${targetDate}`);
+
+    const emitProgress = (phase, data) => {
+        if (global.io) {
+            global.io.emit('medify_progress', { batchId, phase, ...data });
+        }
+    };
+
+    const session = httpService.createSession(source);
+
+    try {
+        // Step 1: Login
+        emitProgress('login', { message: 'Logging in to SIMRS (HTTP mode)...' });
+        console.log(`[Medify-HTTP] Logging in to ${source}...`);
+        await session.login();
+        console.log(`[Medify-HTTP] Login successful`);
+        emitProgress('login', { message: 'Login successful', done: true });
+
+        // Step 2: Scrape history for target date
+        emitProgress('scrape', { message: 'Searching patient history...' });
+        console.log(`[Medify-HTTP] Searching history for ${targetDate}...`);
+        const simrsPatients = await session.searchPatientHistory(targetDate, targetDate);
+        console.log(`[Medify-HTTP] Found ${simrsPatients.length} Dr. Dibya patients in SIMRS`);
+        emitProgress('scrape', {
+            message: `Found ${simrsPatients.length} patients in SIMRS`,
+            total: simrsPatients.length,
+            done: true
+        });
+
+        if (simrsPatients.length === 0) {
+            await session.close();
+            console.log(`[Medify-HTTP] No patients found for ${targetDate}`);
+            emitProgress('complete', { message: 'No patients found', matches: 0, noMatches: 0 });
+            return;
+        }
+
+        // Step 3: Get ALL patients from our database
+        const dbPatients = await pool.query(
+            `SELECT p.id, p.full_name, p.birth_date, p.age, p.whatsapp
+             FROM patients p
+             WHERE p.full_name IS NOT NULL`
+        );
+        console.log(`[Medify-HTTP] Loaded ${dbPatients.length} patients from database`);
+
+        const normalizeName = (name) => {
+            if (!name) return '';
+            return name.toLowerCase()
+                .replace(/^(ny\.?|tn\.?|sdr\.?|sdri\.?|dr\.?|drg\.?)\s*/i, '')
+                .replace(/[.,]/g, '')
+                .trim();
+        };
+
+        // Step 4: Match SIMRS patients against DB patients
+        emitProgress('matching', { message: 'Mencocokkan pasien...', total: simrsPatients.length, current: 0 });
+        const matches = [];
+        const noMatches = [];
+
+        for (let i = 0; i < simrsPatients.length; i++) {
+            const simrsPatient = simrsPatients[i];
+            console.log(`[Medify-HTTP] Processing ${i + 1}/${simrsPatients.length}: ${simrsPatient.name}`);
+            emitProgress('matching', {
+                message: `Mencocokkan: ${simrsPatient.name}`,
+                total: simrsPatients.length,
+                current: i + 1
+            });
+
+            // Quick name filter
+            const simrsNameNorm = normalizeName(simrsPatient.name);
+            const potentialMatches = dbPatients.filter(dbp => {
+                const dbNameNorm = normalizeName(dbp.full_name);
+                const simrsWords = simrsNameNorm.split(/\s+/);
+                const dbWords = dbNameNorm.split(/\s+/);
+                return simrsWords.some(sw => sw.length >= 3 && dbWords.some(dw => dw.includes(sw) || sw.includes(dw)));
+            });
+
+            if (potentialMatches.length === 0) {
+                console.log(`[Medify-HTTP] No name match for ${simrsPatient.name}`);
+                noMatches.push({ name: simrsPatient.name, reason: 'no_name_match' });
+                continue;
+            }
+
+            // Extract identity via HTTP
+            console.log(`[Medify-HTTP] Extracting identity for ${simrsPatient.name}...`);
+            const identity = await session.extractPatientIdentity(simrsPatient.medId);
+            await httpService.delay(500); // Smaller delay than puppeteer
+
+            // 5-factor matching
+            let bestMatch = null;
+            let bestScore = 0;
+            let bestFactors = [];
+
+            for (const dbPatient of potentialMatches) {
+                const result = httpService.countMatchingFactors(
+                    { ...simrsPatient, ...identity },
+                    dbPatient
+                );
+                if (result.matchCount > bestScore) {
+                    bestScore = result.matchCount;
+                    bestMatch = dbPatient;
+                    bestFactors = result.factors;
+                }
+            }
+
+            if (bestScore >= 3) {
+                console.log(`[Medify-HTTP] MATCH: ${simrsPatient.name} → ${bestMatch.full_name} (${bestScore} factors: ${bestFactors.join(', ')})`);
+                matches.push({
+                    simrsPatient: { ...simrsPatient, ...identity },
+                    dbPatient: bestMatch,
+                    matchScore: bestScore,
+                    matchFactors: bestFactors
+                });
+            } else {
+                console.log(`[Medify-HTTP] No strong match for ${simrsPatient.name} (best: ${bestScore} factors)`);
+                noMatches.push({ name: simrsPatient.name, reason: `only_${bestScore}_factors` });
+            }
+        }
+
+        console.log(`[Medify-HTTP] Matching complete: ${matches.length} matches, ${noMatches.length} no matches`);
+        emitProgress('matching', {
+            message: `Selesai: ${matches.length} pasien cocok`,
+            total: simrsPatients.length,
+            current: simrsPatients.length,
+            matches: matches.length,
+            done: true
+        });
+
+        // Step 5: Create import jobs
+        if (matches.length > 0) {
+            const values = matches.map(m => [
+                batchId,
+                m.dbPatient.id,
+                m.dbPatient.full_name,
+                m.dbPatient.age || calculateAge(m.dbPatient.birth_date),
+                source,
+                'pending',
+                userId,
+                m.simrsPatient.medId,
+                m.matchScore,
+                m.matchFactors.join(',')
+            ]);
+
+            await pool.query(
+                `INSERT INTO medify_import_jobs
+                 (batch_id, patient_id, patient_name, patient_age, simrs_source, status, created_by, simrs_med_id, match_score, match_factors)
+                 VALUES ?`,
+                [values]
+            );
+
+            // Step 6: Process CPPT extraction via HTTP
+            await processSyncJobsHttp(batchId, source, session);
+        }
+
+        await session.close();
+        console.log(`[Medify-HTTP] Sync complete for ${source}`);
+
+        emitProgress('complete', { message: 'Sync selesai' });
+
+        // Get stats and emit completion
+        const stats = await pool.query(`
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END) as skipped
+            FROM medify_import_jobs WHERE batch_id = ?
+        `, [batchId]);
+
+        if (global.io) {
+            global.io.emit('medify_sync_complete', {
+                batchId,
+                stats: stats[0] || { total: 0, success: 0, failed: 0, skipped: 0 }
+            });
+        }
+
+    } catch (error) {
+        console.error(`[Medify-HTTP] Sync error:`, error);
+        await session.close();
+
+        await pool.query(
+            `UPDATE medify_import_jobs
+             SET status = 'failed', error_message = ?
+             WHERE batch_id = ? AND status = 'pending'`,
+            [error.message, batchId]
+        );
+
+        if (global.io) {
+            global.io.emit('medify_sync_complete', {
+                batchId,
+                error: error.message,
+                stats: { total: 0, success: 0, failed: 0, skipped: 0 }
+            });
+        }
+    }
+}
+
+/**
+ * Process sync jobs using HTTP mode (extract CPPT for each pending job)
+ */
+async function processSyncJobsHttp(batchId, source, session) {
+    const jobs = await pool.query(
+        `SELECT id, patient_id, patient_name, simrs_med_id
+         FROM medify_import_jobs
+         WHERE batch_id = ? AND status = 'pending'`,
+        [batchId]
+    );
+
+    console.log(`[Medify-HTTP] Processing ${jobs.length} CPPT extractions...`);
+
+    const emitExtractProgress = (data) => {
+        if (global.io) {
+            global.io.emit('medify_progress', { batchId, phase: 'extract', ...data });
+        }
+    };
+
+    emitExtractProgress({ message: 'Mengekstrak rekam medis...', total: jobs.length, current: 0 });
+
+    for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        emitExtractProgress({
+            message: `Ekstrak: ${job.patient_name}`,
+            total: jobs.length,
+            current: i + 1
+        });
+        try {
+            await pool.query(
+                `UPDATE medify_import_jobs SET status = 'processing' WHERE id = ?`,
+                [job.id]
+            );
+
+            // Extract CPPT via HTTP
+            const cpptResult = await session.extractCPPT(job.simrs_med_id);
+            await httpService.delay(500);
+
+            if (cpptResult.skipReason) {
+                await pool.query(
+                    `UPDATE medify_import_jobs
+                     SET status = 'skipped', error_message = ?, completed_at = NOW()
+                     WHERE id = ?`,
+                    [cpptResult.skipReason, job.id]
+                );
+                continue;
+            }
+
+            // Parse CPPT with AI
+            console.log(`[Medify-HTTP] Parsing CPPT for ${job.patient_name}...`);
+            const aiParseResult = await parseWithAI(cpptResult.rawText, 'obstetri');
+
+            // Save to medical record
+            console.log(`[Medify-HTTP] Saving medical record for ${job.patient_name}...`);
+            const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult);
+
+            await pool.query(
+                `UPDATE medify_import_jobs
+                 SET status = 'success',
+                     cppt_data = ?,
+                     records_imported = ?,
+                     completed_at = NOW()
+                 WHERE id = ?`,
+                [JSON.stringify(cpptResult), recordsSaved, job.id]
+            );
+
+            console.log(`[Medify-HTTP] CPPT extracted and saved for ${job.patient_name} (${recordsSaved} sections)`);
+
+        } catch (error) {
+            console.error(`[Medify-HTTP] CPPT extraction failed for ${job.patient_name}:`, error.message);
+            await pool.query(
+                `UPDATE medify_import_jobs
+                 SET status = 'failed', error_message = ?, completed_at = NOW()
+                 WHERE id = ?`,
+                [error.message, job.id]
+            );
+        }
+    }
+}
+
 /**
  * GET /api/medify-batch/status
  * Get current sync status
@@ -569,7 +859,7 @@ router.post('/credentials', verifyToken, requireRoles('dokter'), async (req, res
  * Test SIMRS connection with credentials
  */
 router.post('/test-connection', verifyToken, requireRoles('dokter'), async (req, res) => {
-    const { source } = req.body;
+    const { source, mode } = req.body;
 
     try {
         if (!['rsia_melinda', 'rsud_gambiran'].includes(source)) {
@@ -579,6 +869,29 @@ router.post('/test-connection', verifyToken, requireRoles('dokter'), async (req,
             });
         }
 
+        // HTTP mode test
+        if (mode === 'http') {
+            const session = httpService.createSession(source);
+            try {
+                await session.login();
+                await session.close();
+
+                res.json({
+                    success: true,
+                    message: 'Connection successful (HTTP mode)',
+                    mode: 'http'
+                });
+            } catch (error) {
+                await session.close();
+                res.status(400).json({
+                    success: false,
+                    message: `Connection failed (HTTP): ${error.message}`
+                });
+            }
+            return;
+        }
+
+        // Puppeteer mode test (default)
         const browser = await medifyService.getBrowser();
         const page = await browser.newPage();
 
@@ -588,7 +901,8 @@ router.post('/test-connection', verifyToken, requireRoles('dokter'), async (req,
 
             res.json({
                 success: true,
-                message: 'Connection successful'
+                message: 'Connection successful (Puppeteer mode)',
+                mode: 'puppeteer'
             });
 
         } catch (error) {

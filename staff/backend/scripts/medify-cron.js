@@ -3,8 +3,11 @@
  * MEDIFY Daily Sync Cron Script
  * Runs daily to sync medical records from SIMRS Melinda and Gambiran
  *
- * Usage: node medify-cron.js [source]
- * source: rsia_melinda (default) or rsud_gambiran
+ * Usage:
+ *   node medify-cron.js                          # All sources, HTTP mode (default)
+ *   node medify-cron.js rsia_melinda              # Specific source, HTTP mode
+ *   node medify-cron.js rsia_melinda --mode http  # Explicit HTTP mode
+ *   node medify-cron.js --use-puppeteer           # Fallback to puppeteer
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
@@ -30,11 +33,15 @@ function generateSystemToken() {
     );
 }
 
-// Make API request
-function makeRequest(url, token) {
+/**
+ * Make API request with optional JSON body
+ */
+function makeRequest(url, token, body = null) {
     return new Promise((resolve, reject) => {
         const urlObj = new URL(url);
         const client = urlObj.protocol === 'https:' ? https : http;
+
+        const bodyStr = body ? JSON.stringify(body) : '';
 
         const options = {
             hostname: urlObj.hostname,
@@ -43,7 +50,8 @@ function makeRequest(url, token) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {})
             }
         };
 
@@ -60,6 +68,10 @@ function makeRequest(url, token) {
         });
 
         req.on('error', reject);
+
+        if (bodyStr) {
+            req.write(bodyStr);
+        }
         req.end();
     });
 }
@@ -103,9 +115,18 @@ async function checkCredentials(token, source) {
     }
 }
 
-async function runSync(source) {
+/**
+ * Get today's date in YYYY-MM-DD format (local timezone)
+ */
+function getTodayDate() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+async function runSync(source, mode = 'http') {
     const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] MEDIFY Cron: Starting sync for ${source}`);
+    const targetDate = getTodayDate();
+    console.log(`[${timestamp}] MEDIFY Cron: Starting sync for ${source} (mode: ${mode}, date: ${targetDate})`);
 
     try {
         const token = generateSystemToken();
@@ -117,14 +138,16 @@ async function runSync(source) {
             return { success: false, message: 'Credentials not configured' };
         }
 
-        // Trigger sync
+        // Trigger sync with date and mode
         const url = `${API_BASE}/api/medify-batch/sync/${source}`;
-        const result = await makeRequest(url, token);
+        const result = await makeRequest(url, token, {
+            date: targetDate,
+            mode: mode
+        });
 
         if (result.status === 200 && result.data.success) {
-            console.log(`[${timestamp}] MEDIFY Cron: Sync started for ${source}`);
+            console.log(`[${timestamp}] MEDIFY Cron: Sync started for ${source} (mode: ${result.data.mode || mode})`);
             console.log(`[${timestamp}] MEDIFY Cron: Batch ID: ${result.data.batchId}`);
-            console.log(`[${timestamp}] MEDIFY Cron: Patients: ${result.data.count}`);
             return { success: true, ...result.data };
         } else if (result.status === 409) {
             console.log(`[${timestamp}] MEDIFY Cron: Sync already in progress for ${source}`);
@@ -142,20 +165,31 @@ async function runSync(source) {
 
 async function main() {
     const args = process.argv.slice(2);
-    const source = args[0];
+
+    // Determine mode: default HTTP, with --use-puppeteer fallback
+    let mode = 'http';
+    if (args.includes('--use-puppeteer')) {
+        mode = 'puppeteer';
+    } else if (args.includes('--mode')) {
+        const modeIdx = args.indexOf('--mode');
+        if (args[modeIdx + 1]) {
+            mode = args[modeIdx + 1] === 'puppeteer' ? 'puppeteer' : 'http';
+        }
+    }
+
+    // Find source argument (first arg that's not a flag)
+    const source = args.find(a => !a.startsWith('--') && SOURCES.includes(a));
+
+    console.log(`MEDIFY Cron: Mode = ${mode}`);
 
     if (source) {
         // Run for specific source
-        if (!SOURCES.includes(source)) {
-            console.error(`Invalid source: ${source}. Must be one of: ${SOURCES.join(', ')}`);
-            process.exit(1);
-        }
-        await runSync(source);
+        await runSync(source, mode);
     } else {
         // Run for all configured sources
         console.log('MEDIFY Cron: Running sync for all configured sources...\n');
         for (const src of SOURCES) {
-            await runSync(src);
+            await runSync(src, mode);
             console.log(''); // Empty line between sources
         }
     }
