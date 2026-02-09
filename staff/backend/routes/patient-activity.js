@@ -2,7 +2,8 @@
 
 /**
  * Patient Activity API
- * Aggregates patient activities: bookings, intake forms, registrations
+ * Aggregates patient activities: bookings, intake forms, registrations,
+ * plus tracked events from patient_activity_log (login, page views, payments)
  */
 
 const express = require('express');
@@ -32,9 +33,8 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
 
         // Build queries for each activity type
         const queries = [];
-        const countQueries = [];
 
-        // Booking activities
+        // Booking activities (from sunday_appointments table)
         if (!type || type === 'booking') {
             let bookingQuery = `
                 SELECT
@@ -59,7 +59,7 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             queries.push({ query: bookingQuery, params: bookingParams });
         }
 
-        // Intake form activities
+        // Intake form activities (from patient_intake_submissions table)
         if (!type || type === 'intake') {
             let intakeQuery = `
                 SELECT
@@ -83,7 +83,7 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             queries.push({ query: intakeQuery, params: intakeParams });
         }
 
-        // Registration activities
+        // Registration activities (from patients table)
         if (!type || type === 'registration') {
             let regQuery = `
                 SELECT
@@ -105,6 +105,81 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             }
 
             queries.push({ query: regQuery, params: regParams });
+        }
+
+        // Login activities (from patient_activity_log)
+        if (!type || type === 'login') {
+            let loginQuery = `
+                SELECT
+                    'login' as type,
+                    pal.created_at as timestamp,
+                    p.full_name as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT('Login dari ', COALESCE(SUBSTRING(pal.user_agent, 1, 80), 'unknown')) as details
+                FROM patient_activity_log pal
+                LEFT JOIN patients p ON pal.patient_id = p.id
+                WHERE pal.event_type = 'login' AND DATE(pal.created_at) BETWEEN ? AND ?
+            `;
+            const loginParams = [fromDate, toDate];
+
+            if (search) {
+                loginQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                loginParams.push(searchTerm, searchTerm);
+            }
+
+            queries.push({ query: loginQuery, params: loginParams });
+        }
+
+        // Page view activities (from patient_activity_log)
+        if (!type || type === 'view_halaman') {
+            let viewQuery = `
+                SELECT
+                    'view_halaman' as type,
+                    pal.created_at as timestamp,
+                    p.full_name as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT('Buka halaman: ', COALESCE(pal.page_name, '-')) as details
+                FROM patient_activity_log pal
+                LEFT JOIN patients p ON pal.patient_id = p.id
+                WHERE pal.event_type = 'view_halaman' AND DATE(pal.created_at) BETWEEN ? AND ?
+            `;
+            const viewParams = [fromDate, toDate];
+
+            if (search) {
+                viewQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                viewParams.push(searchTerm, searchTerm);
+            }
+
+            queries.push({ query: viewQuery, params: viewParams });
+        }
+
+        // Payment activities (from patient_activity_log)
+        if (!type || type === 'pembayaran') {
+            let payQuery = `
+                SELECT
+                    'pembayaran' as type,
+                    pal.created_at as timestamp,
+                    p.full_name as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    COALESCE(pal.details, 'Pembayaran online') as details
+                FROM patient_activity_log pal
+                LEFT JOIN patients p ON pal.patient_id = p.id
+                WHERE pal.event_type = 'pembayaran' AND DATE(pal.created_at) BETWEEN ? AND ?
+            `;
+            const payParams = [fromDate, toDate];
+
+            if (search) {
+                payQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                payParams.push(searchTerm, searchTerm);
+            }
+
+            queries.push({ query: payQuery, params: payParams });
         }
 
         // Combine all queries with UNION ALL
@@ -151,6 +226,21 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
 
         const [[totalPatients]] = await db.query('SELECT COUNT(*) as count FROM patients');
 
+        const [[loginStats]] = await db.query(
+            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'login' AND DATE(created_at) BETWEEN ? AND ?",
+            [statsFromDate, statsToDate]
+        );
+
+        const [[pageViewStats]] = await db.query(
+            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND DATE(created_at) BETWEEN ? AND ?",
+            [statsFromDate, statsToDate]
+        );
+
+        const [[paymentStats]] = await db.query(
+            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND DATE(created_at) BETWEEN ? AND ?",
+            [statsFromDate, statsToDate]
+        );
+
         res.json({
             success: true,
             data,
@@ -159,7 +249,10 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                 appointments: appointmentStats.count,
                 intakes: intakeStats.count,
                 registrations: regStats.count,
-                totalPatients: totalPatients.count
+                totalPatients: totalPatients.count,
+                logins: loginStats.count,
+                pageViews: pageViewStats.count,
+                payments: paymentStats.count
             }
         });
 

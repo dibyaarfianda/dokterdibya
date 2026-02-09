@@ -13,6 +13,7 @@ const r2Storage = require('../services/r2Storage');
 const logger = require('../utils/logger');
 const PatientPasswordService = require('../services/PatientPasswordService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
+const patientActivityLogger = require('../services/patientActivityLogger');
 
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
@@ -373,6 +374,9 @@ router.post('/login', async (req, res) => {
         // Check if intake form is completed
         const intakeCompleted = patient.intake_completed === 1;
 
+        // Track login activity (fire-and-forget)
+        patientActivityLogger.logActivity(patient.id, patientActivityLogger.EVENTS.LOGIN, null, req);
+
         res.json({
             message: 'Login berhasil',
             success: true,
@@ -640,6 +644,9 @@ router.post('/auth/google', async (req, res) => {
         // Check if intake form is completed
         const intakeCompleted = patient.intake_completed === 1;
 
+        // Track login activity (fire-and-forget)
+        patientActivityLogger.logActivity(patient.id, patientActivityLogger.EVENTS.LOGIN, null, req);
+
         res.json({
             message: isNewPatient ? 'Pendaftaran dengan Google berhasil' : 'Login dengan Google berhasil',
             token,
@@ -812,6 +819,9 @@ router.post('/google-auth-code', async (req, res) => {
 
         const intakeCompleted = patient.intake_completed === 1;
 
+        // Track login activity (fire-and-forget)
+        patientActivityLogger.logActivity(patient.id, patientActivityLogger.EVENTS.LOGIN, null, req);
+
         res.json({
             success: true,
             message: 'Login dengan Google berhasil',
@@ -836,6 +846,20 @@ router.post('/google-auth-code', async (req, res) => {
         console.error('Google auth code error:', error);
         res.status(500).json({ success: false, message: 'Gagal memproses login Google' });
     }
+});
+
+// Track page view (fire-and-forget, responds immediately)
+router.post('/track-page', verifyToken, (req, res) => {
+    const pageName = req.body && req.body.page_name;
+    if (pageName && req.user && req.user.id) {
+        patientActivityLogger.logActivity(
+            req.user.id,
+            patientActivityLogger.EVENTS.VIEW_HALAMAN,
+            { page_name: pageName, detail: pageName },
+            req
+        );
+    }
+    res.json({ ok: true });
 });
 
 // Verify token endpoint

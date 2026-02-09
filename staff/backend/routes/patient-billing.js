@@ -12,6 +12,7 @@ const { sendSuccess, sendError } = require('../utils/response');
 const { verifyPatientToken } = require('../middleware/auth');
 const xenditPayment = require('../utils/xendit-payment');
 const { handlePaymentSuccess } = require('./billing-payment');
+const patientActivityLogger = require('../services/patientActivityLogger');
 
 // All routes require patient authentication
 router.use(verifyPatientToken);
@@ -222,6 +223,9 @@ router.post('/:billingId/create-payment', async (req, res) => {
             method: payment_method,
             amount
         });
+
+        // Track payment activity (fire-and-forget)
+        patientActivityLogger.logActivity(patientId, patientActivityLogger.EVENTS.PEMBAYARAN, { detail: payment_method + ' Rp' + amount }, req);
 
         // Build response
         const responseData = {

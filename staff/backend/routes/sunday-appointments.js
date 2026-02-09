@@ -5,6 +5,7 @@ const { createSundayClinicRecord } = require('../services/sundayClinicService');
 const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
+const patientActivityLogger = require('../services/patientActivityLogger');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -424,6 +425,9 @@ router.post('/book', verifyToken, async (req, res) => {
             slot_number: slot_number,
             status: 'confirmed'
         });
+
+        // Track booking activity (fire-and-forget)
+        patientActivityLogger.logActivity(req.user.id, patientActivityLogger.EVENTS.BOOKING, { detail: 'Booking ' + appointment_date + ' Sesi ' + session }, req);
 
         res.status(201).json({
             message: 'Janji temu berhasil dibuat dan langsung terkonfirmasi!',
