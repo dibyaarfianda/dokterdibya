@@ -2954,10 +2954,7 @@ async function applyMenuVisibility(user) {
         'dashboard': null, // Dashboard always visible
         'kelola_pasien': ['nav-kelola-pasien'],
         'pasien_baru': ['nav-kelola-pasien'], // Same as kelola_pasien
-        'klinik_privat': ['nav-section-klinik-privat', 'nav-klinik-private', 'nav-klinik-private-pasien'],
-        'rsia_melinda': ['nav-section-rsia-melinda', 'nav-rsia-melinda', 'nav-rsia-melinda-pasien'],
-        'rsud_gambiran': ['nav-section-rsud-gambiran', 'nav-rsud-gambiran', 'nav-rsud-gambiran-pasien'],
-        'rs_bhayangkara': ['nav-section-rs-bhayangkara', 'nav-rs-bhayangkara', 'nav-rs-bhayangkara-pasien'],
+        'klinik_privat': ['nav-klinik-private'],
         'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan', 'management-nav-kelola-supplier'],
         'keuangan': ['nav-invoice-history'],
         'kelola_roles': ['management-nav-kelola-roles'],

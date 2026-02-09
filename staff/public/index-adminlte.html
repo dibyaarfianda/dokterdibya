@@ -1635,28 +1635,31 @@
                             <p>Kelola Pasien</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-jadwal">
+                        <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <p>Jadwal</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-notifications">
+                        <a href="#" class="nav-link" onclick="showNotificationsPage(); return false;">
+                            <i class="nav-icon fas fa-bell"></i>
+                            <p>Inbox</p>
+                        </a>
+                    </li>
+
+                    <!-- THE PORTAL -->
+                    <li class="nav-header">THE PORTAL</li>
                     <li class="nav-item" id="nav-pengumuman">
                         <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
                             <i class="nav-icon fas fa-bullhorn"></i>
                             <p>Pengumuman</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-penjualan-obat">
-                        <a href="#" class="nav-link" onclick="showPenjualanObatPage(); return false;">
-                            <i class="nav-icon fas fa-pills"></i>
-                            <p>Penjualan Obat</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-notifications">
-                        <a href="#" class="nav-link" onclick="showNotificationsPage(); return false;">
-                            <i class="nav-icon fas fa-bell"></i>
-                            <p>Notifikasi</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-jadwal">
-                        <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
-                            <i class="nav-icon fas fa-calendar-alt"></i>
-                            <p>Jadwal</p>
+                    <li class="nav-item d-none" id="nav-birth-congrats">
+                        <a href="#" class="nav-link" onclick="showBirthCongratsPage(); return false;">
+                            <i class="nav-icon fas fa-baby" style="color: #007bff;"></i>
+                            <p>Ucapan Kelahiran</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
@@ -1677,189 +1680,18 @@
                             </p>
                         </a>
                     </li>
-
-                    <!-- KLINIK -->
-                    <li class="nav-header">KLINIK</li>
-
-                    <!-- KLINIK PRIVAT (Collapsible) -->
-                    <li class="nav-item has-treeview" id="nav-section-klinik-privat">
-                        <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-clinic-medical" style="color: #3c8dbc;"></i>
-                            <p>Klinik Privat<i class="fas fa-angle-left right"></i></p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item" id="nav-klinik-private">
-                                <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); markBadgeRead('klinik_private'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>
-                                        Janji Temu
-                                        <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span>
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-klinik-private-pasien">
-                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('klinik_private'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Pasien</p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="management-nav-kelola-tindakan">
-                                <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Layanan</p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="management-nav-kelola-obat">
-                                <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Obat/Alkes</p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-estimasi-biaya">
-                                <a href="#" class="nav-link" onclick="showEstimasiBiayaPage(); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Estimasi Biaya</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- RSIA MELINDA (Collapsible) -->
-                    <li class="nav-item has-treeview" id="nav-section-rsia-melinda">
-                        <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-hospital" style="color: #e91e63;"></i>
-                            <p>RSIA Melinda<i class="fas fa-angle-left right"></i></p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item" id="nav-rsia-melinda">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); markBadgeRead('rsia_melinda'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>
-                                        Janji Temu
-                                        <span class="badge badge-warning right d-none" id="badge-rsia-melinda">0</span>
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-rsia-melinda-pasien">
-                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rsia_melinda'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Pasien</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- RSUD GAMBIRAN (Collapsible) -->
-                    <li class="nav-item has-treeview" id="nav-section-rsud-gambiran">
-                        <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-hospital" style="color: #17a2b8;"></i>
-                            <p>RSUD Gambiran<i class="fas fa-angle-left right"></i></p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item" id="nav-rsud-gambiran">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); markBadgeRead('rsud_gambiran'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>
-                                        Janji Temu
-                                        <span class="badge badge-warning right d-none" id="badge-rsud-gambiran">0</span>
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-rsud-gambiran-pasien">
-                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rsud_gambiran'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Pasien</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- RS BHAYANGKARA (Collapsible) -->
-                    <li class="nav-item has-treeview" id="nav-section-rs-bhayangkara">
-                        <a href="#" class="nav-link">
-                            <i class="nav-icon fas fa-hospital-alt" style="color: #28a745;"></i>
-                            <p>RS Bhayangkara<i class="fas fa-angle-left right"></i></p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                            <li class="nav-item" id="nav-rs-bhayangkara">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rs_bhayangkara'); markBadgeRead('rs_bhayangkara'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>
-                                        Janji Temu
-                                        <span class="badge badge-warning right d-none" id="badge-rs-bhayangkara">0</span>
-                                    </p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-rs-bhayangkara-pasien">
-                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rs_bhayangkara'); return false;">
-                                    <i class="fas fa-circle nav-icon" style="font-size: 6px;"></i>
-                                    <p>Pasien</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-
-                    <!-- BULK UPLOAD USG (All Staff) -->
                     <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
                         <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
                             <i class="nav-icon fas fa-cloud-upload-alt" style="color: #6f42c1;"></i>
-                            <p>Bulk Upload USG</p>
+                            <p>Upload USG</p>
                         </a>
                     </li>
-
-                    <!-- MEDIFY SYNC (Dokter Only) -->
-                    <li class="nav-item dokter-only d-none" id="nav-medify-sync">
-                        <a href="#" class="nav-link" onclick="showMedifySyncPage(); return false;">
-                            <i class="nav-icon fas fa-hospital-user" style="color: #17a2b8;"></i>
-                            <p>MEDIFY Sync</p>
+                    <li class="nav-item dokter-only d-none" id="nav-mobile-app">
+                        <a href="#" class="nav-link" onclick="showMobileAppPage(); return false;">
+                            <i class="nav-icon fas fa-mobile-alt"></i>
+                            <p>Aplikasi Mobile</p>
                         </a>
                     </li>
-
-                    <!-- MANAGEMENT -->
-                    <li class="nav-header" id="management-header">MANAGEMENT</li>
-
-                    <li class="nav-item dokter-only d-none" id="finance-analysis-nav">
-                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
-                            <i class="nav-icon fas fa-chart-line"></i>
-                            <p>Finance Analysis</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item d-none" id="nav-birth-congrats">
-                        <a href="#" class="nav-link" onclick="showBirthCongratsPage(); return false;">
-                            <i class="nav-icon fas fa-baby" style="color: #007bff;"></i>
-                            <p>Ucapan Kelahiran</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-supplier">
-                        <a href="#" class="nav-link" onclick="showKelolaSupplierPage(); return false;">
-                            <i class="nav-icon fas fa-truck"></i>
-                            <p>Supplier</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-activity-log">
-                        <a href="#" class="nav-link" onclick="showActivityLogPage(); return false;">
-                            <i class="nav-icon fas fa-history"></i>
-                            <p>Log Aktivitas Obat</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-roles">
-                        <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
-                            <i class="nav-icon fas fa-user-shield"></i>
-                            <p>Roles Manajemen</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item dokter-only d-none" id="nav-staff-activity">
-                        <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
-                            <i class="nav-icon fas fa-user-clock"></i>
-                            <p>Aktivitas Staff</p>
-                        </a>
-                    </li>
-
                     <li class="nav-item dokter-only d-none" id="nav-patient-activity">
                         <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-check"></i>
@@ -1867,24 +1699,81 @@
                         </a>
                     </li>
 
+                    <!-- KLINIK -->
+                    <li class="nav-header">KLINIK</li>
+                    <li class="nav-item" id="nav-klinik-private">
+                        <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); markBadgeRead('klinik_private'); return false;">
+                            <i class="nav-icon fas fa-calendar-check" style="color: #3c8dbc;"></i>
+                            <p>
+                                Janji Temu
+                                <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span>
+                            </p>
+                        </a>
+                    </li>
                     <li class="nav-item dokter-only d-none" id="nav-booking-settings">
                         <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
                             <i class="nav-icon fas fa-calendar-day"></i>
                             <p>Pengaturan Sesi</p>
                         </a>
                     </li>
-
-                    <li class="nav-item dokter-only d-none" id="nav-import-fields">
-                        <a href="#" class="nav-link" onclick="showImportFieldsPage(); return false;">
-                            <i class="nav-icon fas fa-file-import"></i>
-                            <p>Import Fields</p>
+                    <li class="nav-item" id="management-nav-kelola-tindakan">
+                        <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
+                            <i class="nav-icon fas fa-hand-holding-medical"></i>
+                            <p>Layanan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-estimasi-biaya">
+                        <a href="#" class="nav-link" onclick="showEstimasiBiayaPage(); return false;">
+                            <i class="nav-icon fas fa-calculator"></i>
+                            <p>Estimasi Biaya</p>
                         </a>
                     </li>
 
-                    <li class="nav-item dokter-only d-none" id="nav-mobile-app">
-                        <a href="#" class="nav-link" onclick="showMobileAppPage(); return false;">
-                            <i class="nav-icon fas fa-mobile-alt"></i>
-                            <p>Aplikasi Mobile</p>
+                    <!-- APOTIK -->
+                    <li class="nav-header">APOTIK</li>
+                    <li class="nav-item" id="nav-penjualan-obat">
+                        <a href="#" class="nav-link" onclick="showPenjualanObatPage(); return false;">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Penjualan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="management-nav-kelola-obat">
+                        <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
+                            <i class="nav-icon fas fa-capsules"></i>
+                            <p>Obat/Alkes</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="management-nav-kelola-supplier">
+                        <a href="#" class="nav-link" onclick="showKelolaSupplierPage(); return false;">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Supplier</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="management-nav-activity-log">
+                        <a href="#" class="nav-link" onclick="showActivityLogPage(); return false;">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>Log Aktivitas</p>
+                        </a>
+                    </li>
+
+                    <!-- MANAGEMENT -->
+                    <li class="nav-header" id="management-header">MANAGEMENT</li>
+                    <li class="nav-item dokter-only d-none" id="finance-analysis-nav">
+                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Analisis Finansial</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="management-nav-kelola-roles">
+                        <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Staff Roles</p>
+                        </a>
+                    </li>
+                    <li class="nav-item dokter-only d-none" id="nav-staff-activity">
+                        <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
+                            <i class="nav-icon fas fa-user-clock"></i>
+                            <p>Aktivitas Staff</p>
                         </a>
                     </li>
                 </ul>
