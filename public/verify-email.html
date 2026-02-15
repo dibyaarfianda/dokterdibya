@@ -347,7 +347,7 @@
         // Get email from session
         const email = sessionStorage.getItem('registration_email');
         if (!email) {
-            window.location.href = 'register.html';
+            window.location.href = 'patient-login.html';
         }
 
         document.getElementById('userEmail').textContent = email;

@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const email = sessionStorage.getItem('registration_email');
 
     if (!verifiedToken || !email) {
-        window.location.href = '/register.html';
+        window.location.href = '/patient-login.html';
         return;
     }
 
