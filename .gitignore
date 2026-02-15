@@ -33,6 +33,9 @@ Thumbs.db
 android-native/gradle/wrapper/gradle-8.2-bin.zip
 staff/backend/config/*firebase*.json
 
+# Backup files
+*.backup-*
+
 # Keystores (security - do not commit)
 *.jks
 *.keystore
