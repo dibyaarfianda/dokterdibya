@@ -7,7 +7,7 @@ Complete mobile-first registration flow for new patients with email verification
 
 ```
 ┌─────────────────┐
-│  register.html  │  Step 1: Email Registration
+│  patient-login.html  │  Step 1: Email Registration
 └────────┬────────┘
          │
          │ Submit email
@@ -47,9 +47,9 @@ Complete mobile-first registration flow for new patients with email verification
 
 ## Files Created
 
-### 1. register.html
-**Path**: `/var/www/dokterdibya/staff/public/register.html`
-**URL**: `https://dokterdibya.com/staff/register.html`
+### 1. patient-login.html
+**Path**: `/var/www/dokterdibya/staff/public/patient-login.html`
+**URL**: `https://dokterdibya.com/staff/patient-login.html`
 
 **Features**:
 - Email-only registration
@@ -470,7 +470,7 @@ ALTER TABLE patients ADD FOREIGN KEY (user_id) REFERENCES users(id);
 
 ## Testing Checklist
 
-### register.html
+### patient-login.html
 - [ ] Valid email formats accepted
 - [ ] Invalid email formats rejected
 - [ ] Duplicate email shows error
@@ -516,7 +516,7 @@ ALTER TABLE patients ADD FOREIGN KEY (user_id) REFERENCES users(id);
 ### Files to Deploy
 ```
 /var/www/dokterdibya/staff/public/
-├── register.html
+├── patient-login.html
 ├── verify-email.html
 ├── set-password.html
 ├── identitas-awal.html
@@ -524,7 +524,7 @@ ALTER TABLE patients ADD FOREIGN KEY (user_id) REFERENCES users(id);
 ```
 
 ### URLs
-- Registration: `https://dokterdibya.com/staff/register.html`
+- Registration: `https://dokterdibya.com/staff/patient-login.html`
 - Verification: `https://dokterdibya.com/staff/verify-email.html`
 - Set Password: `https://dokterdibya.com/staff/set-password.html`
 - Identity Form: `https://dokterdibya.com/staff/identitas-awal.html`

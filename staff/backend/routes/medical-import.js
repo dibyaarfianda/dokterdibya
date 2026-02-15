@@ -35,6 +35,10 @@ Return this exact JSON structure:
     "pekerjaan": "Occupation or null",
     "no_identitas": "NIK/KTP number or null"
   },
+  "metadata": {
+    "dokter": "Name of doctor/DPJP/Physician matching 'Dibya' or null",
+    "poli": "Polyclinic name or null"
+  },
   "subjective": {
     "keluhan_utama": "Chief complaint or null",
     "rps": "History of present illness or null",
@@ -80,6 +84,7 @@ Return this exact JSON structure:
 
 FIELD KEYWORDS (Indonesian medical terms):
 - NAMA: Nama Pasien, Nama Lengkap, Name, Nm
+- DOKTER: DPJP, Dokter, Dr, Physician, Medical Officer
 - TB/TINGGI: Tinggi Badan, TB, T.B., Height
 - BB/BERAT: Berat Badan, BB, B.B., Weight
 - HPHT: Hari Pertama Haid Terakhir, LMP
@@ -360,6 +365,30 @@ function detectLocation(text) {
         }
     }
 
+    return null;
+}
+
+/**
+ * Detect doctor/DPJP from text
+ * Returns detected name or null
+ */
+function detectDoctor(text) {
+    // Look for "Dr. ", "Dokter ", "DPJP"
+    const doctorPatterns = [
+        /(?:DPJP|Dokter|Dr\.?)\s*(?:Penanggung\s*Jawab)?\s*[:]\s*([a-zA-Z\s\.,]+?)(?:\n|;|$)/i,
+        /(?:DPJP|Dokter|Dr\.?)\s+([a-zA-Z\s\.,]+?)(?:\n|;|$)/i
+    ];
+
+    for (const pattern of doctorPatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+            const name = match[1].trim();
+            // Filter out common false positives if necessary
+            if (name.length > 3) {
+                return name;
+            }
+        }
+    }
     return null;
 }
 
@@ -1372,6 +1401,19 @@ router.post('/api/medical-import/bulk', verifyToken, async (req, res) => {
                     continue;
                 }
 
+                // Filter by doctor (Dr. Dibya Arfianda)
+                const detectedDoctor = detectDoctor(text);
+                // If doctor is detected AND it does NOT match "Dibya", then skip
+                if (detectedDoctor && !/dibya|arfianda/i.test(detectedDoctor)) {
+                    results.push({
+                        index: i,
+                        skipped: true,
+                        reason: `Skipped: Doctor mismatch (${detectedDoctor})`,
+                        patient_name: 'Skipped'
+                    });
+                    continue;
+                }
+
                 // Parse the record
                 const parsed = {
                     identity: parseIdentity(text),
@@ -1397,6 +1439,7 @@ router.post('/api/medical-import/bulk', verifyToken, async (req, res) => {
                     visit_date_detected: !!parseVisitDate(text),
                     visit_location: visit_location,
                     visit_location_detected: !!detectLocation(text),
+                    doctor_detected: detectedDoctor,
                     confidence: calculateConfidence(parsed),
                     patient_name: parsed.identity.nama || 'Unknown'
                 });

@@ -1329,14 +1329,8 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
                     return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
                 }
 
-                // Guard: confirmed billing - only dokter can edit
+                // Guard: confirmed billing - block if pending payment
                 if (existingBilling.status === 'confirmed') {
-                    const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
-                    if (!isDokterEdit) {
-                        await connection.rollback();
-                        return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
-                    }
-                    // Block if pending payment
                     const [[pendingPay]] = await connection.query(
                         `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`, [billingId]
                     );
@@ -1559,14 +1553,8 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
                 return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
             }
 
-            // Guard: confirmed billing - only dokter can edit
+            // Guard: confirmed billing - block if pending payment
             if (existingBilling.status === 'confirmed') {
-                const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
-                if (!isDokterEdit) {
-                    await connection.rollback();
-                    return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
-                }
-                // Block if pending payment
                 const [[pendingPay]] = await connection.query(
                     `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`, [billingId]
                 );
@@ -1689,18 +1677,16 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
     }
 });
 
-// Confirm billing (doctor action only)
+// Confirm billing (all staff)
 router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
 
     try {
-        // Check if user is dokter or superadmin
-        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
-
-        if (!isDokter) {
+        // Block patient users from confirming
+        if (req.user.user_type === 'patient') {
             return res.status(403).json({
                 success: false,
-                message: 'Hanya dokter yang dapat mengkonfirmasi tagihan'
+                message: 'Akses ditolak'
             });
         }
 
@@ -1737,7 +1723,7 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
         );
 
         const patientName = record?.patient_name || 'Pasien';
-        const doctorName = req.user.name || req.user.id || 'Dokter';
+        const staffName = req.user.name || req.user.id || 'Staff';
 
         // Broadcast notification to all connected clients
         if (realtimeSync && realtimeSync.broadcast) {
@@ -1745,14 +1731,14 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
                 type: 'billing_confirmed',
                 mrId: normalizedMrId,
                 patientName,
-                doctorName,
+                doctorName: staffName,
                 timestamp: new Date().toISOString()
             });
         }
 
         // Log activity
         await activityLogger.logFromRequest(req, 'Confirm Billing',
-            `Confirmed billing for ${patientName} (MR: ${normalizedMrId})`);
+            `Confirmed billing for ${patientName} (MR: ${normalizedMrId}) by ${staffName}`);
 
         res.json({
             success: true,
@@ -2239,18 +2225,11 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
 
         const billing = billingRows[0];
         const billingId = billing.id;
-        const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
 
         // Paid billing cannot be edited
         if (billing.status === 'paid') {
             await connection.rollback();
             return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
-        }
-
-        // Confirmed billing: only dokter can edit
-        if (billing.status === 'confirmed' && !isDokterEdit) {
-            await connection.rollback();
-            return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
         }
 
         // Block edit if pending payment exists
@@ -2351,18 +2330,11 @@ router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, n
 
         const billing = billingRows[0];
         const billingId = billing.id;
-        const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
 
         // Paid billing cannot be edited
         if (billing.status === 'paid') {
             await connection.rollback();
             return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
-        }
-
-        // Confirmed billing: only dokter can edit
-        if (billing.status === 'confirmed' && !isDokterEdit) {
-            await connection.rollback();
-            return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
         }
 
         // Block edit if pending payment exists
@@ -2470,7 +2442,6 @@ router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, n
         }
 
         const billing = billingRows[0];
-        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
 
         // Paid billing cannot be edited by anyone
         if (billing.status === 'paid') {
@@ -2478,15 +2449,6 @@ router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, n
             return res.status(400).json({
                 success: false,
                 message: 'Tagihan sudah dibayar, tidak dapat diubah.'
-            });
-        }
-
-        // Confirmed billing: only dokter can edit
-        if (billing.status === 'confirmed' && !isDokter) {
-            await connection.rollback();
-            return res.status(400).json({
-                success: false,
-                message: 'Tidak dapat menghapus item. Tagihan sudah dikonfirmasi.'
             });
         }
 
