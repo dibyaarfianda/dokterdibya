@@ -21,10 +21,29 @@ const pool = mysql.createPool({
 // Connection health check
 pool.on('connection', (connection) => {
     logger.info('New database connection established');
-    
+
     connection.on('error', (err) => {
-        logger.error('Database connection error:', err);
+        logger.error('Database connection error:', err.message);
+        // Destroy broken connections so the pool doesn't try to reuse them
+        if (err.code === 'ECONNRESET' || err.code === 'PROTOCOL_CONNECTION_LOST' || err.fatal) {
+            try {
+                connection.destroy();
+            } catch (e) {
+                // ignore destroy errors
+            }
+        }
     });
+});
+
+// Handle mysql2 pool errors that cause uncaught exceptions
+process.on('uncaughtException', (err) => {
+    if (err.message && err.message.includes("Cannot read properties of undefined (reading 'once')")) {
+        logger.warn('MySQL2 pool connection error caught - pool will auto-recover');
+        return; // Don't crash, the pool will create new connections
+    }
+    // For other uncaught exceptions, log and exit
+    logger.error('Uncaught Exception:', err);
+    process.exit(1);
 });
 
 // Test connection on startup
