@@ -456,6 +456,49 @@ router.post('/book', verifyToken, async (req, res) => {
 });
 
 /**
+ * GET /api/sunday-appointments/my-bookings
+ * Get patient's bookings (used by patient portal)
+ * Supports ?status=confirmed,pending filter
+ */
+router.get('/my-bookings', verifyToken, async (req, res) => {
+    try {
+        let query = `SELECT id, appointment_date, session, slot_number, chief_complaint,
+                            consultation_category, status, notes, created_at
+                     FROM sunday_appointments
+                     WHERE patient_id = ?`;
+        const params = [req.user.id];
+
+        // Optional status filter
+        if (req.query.status) {
+            const statuses = req.query.status.split(',').map(s => s.trim());
+            query += ` AND status IN (${statuses.map(() => '?').join(',')})`;
+            params.push(...statuses);
+        }
+
+        query += ` ORDER BY appointment_date DESC, session ASC, slot_number ASC`;
+
+        const [bookings] = await db.query(query, params);
+
+        const formatted = bookings.map(b => ({
+            ...b,
+            appointment_date: b.appointment_date,
+            slot_time: getSlotTime(b.session, b.slot_number),
+            sessionLabel: getSessionLabel(b.session),
+            categoryLabel: getCategoryLabel(b.consultation_category),
+            dateFormatted: new Date(b.appointment_date).toLocaleDateString('id-ID', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            })
+        }));
+
+        res.json({ success: true, bookings: formatted });
+
+    } catch (error) {
+        console.error('Error getting patient bookings:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
  * GET /api/sunday-appointments/patient
  * Get patient's appointments
  */
