@@ -734,6 +734,8 @@ export default {
 
         const items = billing.items || [];
         const status = billing.status || 'draft';
+        const userRole = window.currentStaffIdentity?.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -750,18 +752,14 @@ export default {
             return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
         };
 
-        // Check user role - dokter can edit even after confirmation
-        const userRole = window.currentStaffIdentity?.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
-
         // Calculate total
         let subtotal = 0;
         const itemsHtml = items.map(item => {
             const itemTotal = (item.quantity || 1) * (item.price || 0);
             subtotal += itemTotal;
 
-            // Show delete button for obat items when draft, or when confirmed and user is dokter
-            const showDeleteBtn = item.item_type === 'obat' && (status === 'draft' || (status === 'confirmed' && isDokter));
+            // Show delete button for obat items when draft or confirmed (not paid)
+            const showDeleteBtn = item.item_type === 'obat' && (status === 'draft' || status === 'confirmed');
             const deleteBtn = showDeleteBtn
                 ? `<button type="button" class="btn btn-sm btn-outline-danger ml-2 delete-obat-btn"
                            data-item-id="${item.id}"
@@ -795,35 +793,17 @@ export default {
         // Action buttons
         let actionsHtml = '';
         if (status === 'draft') {
-            // DRAFT: Only dokter can confirm, all others wait
-            if (isDokter) {
-                actionsHtml = `
-                    <button type="button" class="btn btn-primary" id="btn-confirm-billing">
-                        <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
-                    </button>
-                    <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
-                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
-                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-                    </button>`;
-            } else {
-                // Non-dokter: All buttons disabled until confirmed
-                actionsHtml = `
-                    <div class="alert alert-info mb-3">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Menunggu konfirmasi dokter
-                    </div>
-                    <button type="button" class="btn btn-secondary mr-2" id="btn-request-revision" disabled>
-                        <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
-                    </button>
-                    <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
-                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
-                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-                    </button>`;
-            }
+            // DRAFT: All staff can confirm
+            actionsHtml = `
+                <button type="button" class="btn btn-primary" id="btn-confirm-billing">
+                    <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+                </button>
+                <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
+                    <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                </button>
+                <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
+                    <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                </button>`;
         } else if (status === 'confirmed') {
             // CONFIRMED: Show print buttons + Mark as Paid button + Pay Online button
             const markPaidBtn = `
