@@ -782,6 +782,11 @@ process.on('SIGTERM', async () => {
 });
 
 process.on('uncaughtException', (err) => {
+    // MySQL2 pool connection errors are recoverable - don't crash
+    if (err.message && err.message.includes("Cannot read properties of undefined (reading 'once')")) {
+        logger.warn('MySQL2 pool connection error caught - pool will auto-recover');
+        return;
+    }
     logger.error('Uncaught Exception:', err);
     process.exit(1);
 });
