@@ -35,17 +35,6 @@ pool.on('connection', (connection) => {
     });
 });
 
-// Handle mysql2 pool errors that cause uncaught exceptions
-process.on('uncaughtException', (err) => {
-    if (err.message && err.message.includes("Cannot read properties of undefined (reading 'once')")) {
-        logger.warn('MySQL2 pool connection error caught - pool will auto-recover');
-        return; // Don't crash, the pool will create new connections
-    }
-    // For other uncaught exceptions, log and exit
-    logger.error('Uncaught Exception:', err);
-    process.exit(1);
-});
-
 // Test connection on startup
 (async () => {
     try {
