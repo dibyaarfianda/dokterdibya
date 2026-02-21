@@ -590,6 +590,10 @@
 
         // ==================== POST-LOGIN REDIRECT ====================
         function getPostLoginUrl(data) {
+            // Check if profile needs completion (name, phone, birth_date)
+            if (data.needs_profile_completion) {
+                return '/complete-profile.html';
+            }
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
                 return '/patient-intake.html';
             }

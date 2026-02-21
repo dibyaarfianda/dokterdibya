@@ -577,12 +577,13 @@ router.post('/auth/google', async (req, res) => {
             }
 
             // Create new patient with medical record ID
+            // NOTE: full_name is left NULL so user is forced to enter real name in complete-profile
             const medicalRecordId = await generateUniqueMedicalRecordId();
 
             const [result] = await db.query(
-                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status)
-                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active')`,
-                [medicalRecordId, name, email, googleId, picture]
+                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status, patient_type, profile_completed)
+                 VALUES (?, NULL, ?, ?, ?, 1, NOW(), 'active', 'web', 0)`,
+                [medicalRecordId, email, googleId, picture]
             );
 
             // Mark non-public registration code as used (if code was required and provided)
@@ -600,11 +601,12 @@ router.post('/auth/google', async (req, res) => {
             patient = {
                 id: medicalRecordId,
                 medical_record_id: medicalRecordId,
-                full_name: name,
+                full_name: null,
                 email,
                 phone: null,
                 google_id: googleId,
-                photo_url: picture
+                photo_url: picture,
+                profile_completed: 0
             };
         }
         
@@ -639,8 +641,8 @@ router.post('/auth/google', async (req, res) => {
             }
         }
 
-        // Check if profile is incomplete (needs phone/birth_date)
-        const needsProfileCompletion = !patient.phone || !patient.birth_date;
+        // Check if profile is incomplete (needs full_name/phone/birth_date)
+        const needsProfileCompletion = !patient.full_name || !patient.phone || !patient.birth_date;
 
         // Check if intake form is completed
         const intakeCompleted = patient.intake_completed === 1;
@@ -784,22 +786,24 @@ router.post('/google-auth-code', async (req, res) => {
             }
 
             // Create new patient
+            // NOTE: full_name is left NULL so user is forced to enter real name in complete-profile
             const medicalRecordId = await generateUniqueMedicalRecordId();
             console.log('[GOOGLE-AUTH-CODE] Creating new patient:', medicalRecordId, 'for email:', email);
 
             await db.query(
-                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status)
-                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active')`,
-                [medicalRecordId, name, email, googleId, picture]
+                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status, patient_type, profile_completed)
+                 VALUES (?, NULL, ?, ?, ?, 1, NOW(), 'active', 'web', 0)`,
+                [medicalRecordId, email, googleId, picture]
             );
 
             patient = {
                 id: medicalRecordId,
-                full_name: name,
+                full_name: null,
                 email,
                 phone: null,
                 google_id: googleId,
-                photo_url: picture
+                photo_url: picture,
+                profile_completed: 0
             };
             console.log('[GOOGLE-AUTH-CODE] Patient created successfully');
         }
@@ -819,6 +823,7 @@ router.post('/google-auth-code', async (req, res) => {
         );
 
         const intakeCompleted = patient.intake_completed === 1;
+        const needsProfileCompletion = !patient.full_name || !patient.phone || !patient.birth_date;
 
         // Track login activity (fire-and-forget)
         patientActivityLogger.logActivity(patient.id, patientActivityLogger.EVENTS.LOGIN, null, req);
@@ -828,6 +833,7 @@ router.post('/google-auth-code', async (req, res) => {
             message: 'Login dengan Google berhasil',
             token,
             intake_completed: intakeCompleted,
+            needs_profile_completion: needsProfileCompletion,
             user: {
                 id: patient.id,
                 medicalRecordId: patient.id,
@@ -1300,14 +1306,11 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
     try {
         const { fullname, phone, birth_date, age, registration_code } = req.body;
 
+        const { google_flow } = req.body;
+
         // Validation
         if (!fullname || !phone || !birth_date) {
             return res.status(400).json({ message: 'Nama, nomor telepon, dan tanggal lahir harus diisi' });
-        }
-
-        // Validate registration code is required
-        if (!registration_code) {
-            return res.status(400).json({ message: 'Kode registrasi wajib diisi' });
         }
 
         // Validate phone format (Indonesian mobile with country code 628)
@@ -1316,34 +1319,60 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
             return res.status(400).json({ message: 'Format nomor telepon tidak valid. Harus dimulai dengan 628 dan 12-15 digit total' });
         }
 
-        // Validate registration code
-        const [regCodes] = await db.query(
-            `SELECT * FROM registration_codes
-             WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
-            [registration_code.toUpperCase()]
-        );
-
-        if (regCodes.length === 0) {
-            return res.status(400).json({ message: 'Kode registrasi tidak valid atau sudah kadaluarsa' });
+        // Check if user is a Google Sign-In user (skip registration code for them)
+        let isGoogleUser = false;
+        if (google_flow) {
+            const [patientCheck] = await db.query(
+                'SELECT google_id FROM patients WHERE id = ?',
+                [req.user.id]
+            );
+            isGoogleUser = patientCheck.length > 0 && !!patientCheck[0].google_id;
         }
 
-        const regCode = regCodes[0];
+        let regCode = null;
 
-        // If code has a specific phone, validate it matches
-        if (regCode.phone && regCode.phone !== phone) {
-            return res.status(400).json({ message: 'Nomor telepon tidak sesuai dengan kode registrasi' });
+        if (!isGoogleUser) {
+            // Registration code required for non-Google users
+            if (!registration_code) {
+                return res.status(400).json({ message: 'Kode registrasi wajib diisi' });
+            }
+
+            // Validate registration code
+            const [regCodes] = await db.query(
+                `SELECT * FROM registration_codes
+                 WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+                [registration_code.toUpperCase()]
+            );
+
+            if (regCodes.length === 0) {
+                return res.status(400).json({ message: 'Kode registrasi tidak valid atau sudah kadaluarsa' });
+            }
+
+            regCode = regCodes[0];
+
+            // If code has a specific phone, validate it matches
+            if (regCode.phone && regCode.phone !== phone) {
+                return res.status(400).json({ message: 'Nomor telepon tidak sesuai dengan kode registrasi' });
+            }
         }
 
         // Update patient data and mark profile as completed
+        // Also set whatsapp = phone so both fields are populated
         await db.query(
             `UPDATE patients
-             SET full_name = ?, phone = ?, birth_date = ?, age = ?, profile_completed = 1
+             SET full_name = ?, phone = ?, whatsapp = ?, birth_date = ?, age = ?, profile_completed = 1, patient_type = 'web'
              WHERE id = ?`,
-            [fullname, phone, birth_date, age || null, req.user.id]
+            [fullname, phone, phone, birth_date, age || null, req.user.id]
         );
 
-        // Mark registration code as used (only for non-public codes)
-        if (!regCode.is_public) {
+        // Also update users table name
+        await db.query(
+            'UPDATE users SET name = ? WHERE email = (SELECT email FROM patients WHERE id = ?)',
+            [fullname, req.user.id]
+        ).catch(() => {}); // Non-critical
+
+        // Mark registration code as used (only for non-Google-flow, non-public codes)
+        if (regCode && !regCode.is_public) {
             await db.query(
                 `UPDATE registration_codes
                  SET status = 'used', used_at = NOW(), used_by_patient_id = ?

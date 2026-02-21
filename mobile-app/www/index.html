@@ -764,14 +764,20 @@
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-menu.html';
         const INTAKE_URL = 'https://dokterdibya.com/patient-intake.html';
+        const COMPLETE_PROFILE_URL = 'https://dokterdibya.com/complete-profile.html';
 
         // Helper: Get redirect URL based on intake completion status
         function getPostLoginUrl(data, token) {
             const userJson = data.user ? JSON.stringify(data.user) : localStorage.getItem('patient_user');
             let baseUrl;
 
+            // Check if profile needs completion (name, phone, birth_date)
+            if (data.needs_profile_completion) {
+                console.log('[Redirect] Profile not completed, redirecting to complete-profile');
+                baseUrl = COMPLETE_PROFILE_URL;
+            }
             // If intake not completed, redirect to intake form
-            if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
+            else if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
                 console.log('[Redirect] Intake not completed, redirecting to intake form');
                 baseUrl = INTAKE_URL;
             } else {

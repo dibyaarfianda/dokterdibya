@@ -1,28 +1,36 @@
-// Complete Profile Form Handler v4.1 - New Registration Flow with Registration Code
+// Complete Profile Form Handler v5.0 - Supports both Email Registration and Google Sign-In flows
 
-// Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', async function() {
-    // Check if we're coming from email verification
+    // Detect which flow the user came from
     const verifiedToken = sessionStorage.getItem('verified_token');
     const email = sessionStorage.getItem('registration_email');
+    const googleToken = localStorage.getItem('vps_auth_token');
+    const authProvider = localStorage.getItem('auth_provider');
 
-    if (!verifiedToken || !email) {
+    // Determine flow type
+    const isGoogleFlow = !verifiedToken && googleToken && authProvider === 'google';
+    const isEmailFlow = verifiedToken && email;
+
+    if (!isGoogleFlow && !isEmailFlow) {
+        // No valid session - redirect to login
         window.location.href = '/patient-login.html';
         return;
     }
 
-    // Check if registration code is required
+    // Check if registration code is required (only for email flow)
     let registrationCodeRequired = false;
-    try {
-        const response = await fetch('/api/registration-codes/settings');
-        const data = await response.json();
-        registrationCodeRequired = data.registration_code_required === true;
-    } catch (error) {
-        console.log('Could not check registration code settings, assuming required');
-        registrationCodeRequired = true;
+    if (!isGoogleFlow) {
+        try {
+            const response = await fetch('/api/registration-codes/settings');
+            const data = await response.json();
+            registrationCodeRequired = data.registration_code_required === true;
+        } catch (error) {
+            console.log('Could not check registration code settings, assuming required');
+            registrationCodeRequired = true;
+        }
     }
 
-    // Show registration code field if required
+    // Show registration code field if required (only for email flow, Google users already used code)
     const regCodeGroup = document.getElementById('registration-code-group');
     const regCodeInput = document.getElementById('registration_code');
     if (registrationCodeRequired && regCodeGroup) {
@@ -108,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
-        // Validate registration code if required
+        // Validate registration code if required (email flow only)
         if (registrationCodeRequired && !registrationCode) {
             showError('Kode registrasi harus diisi. Hubungi klinik untuk mendapatkan kode.');
             return;
@@ -134,23 +142,71 @@ document.addEventListener('DOMContentLoaded', async function() {
             submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
         }
 
-        // Save profile data to sessionStorage for use in set-password
-        const profileData = {
-            fullname,
-            phone,
-            birth_date: birthdate,
-            age: age ? parseInt(age) : null,
-            email: email,
-            registration_code: registrationCode || null
-        };
+        if (isGoogleFlow) {
+            // Google flow: call API directly (user already has JWT token)
+            try {
+                const response = await fetch('/api/patients/complete-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + googleToken
+                    },
+                    body: JSON.stringify({
+                        fullname,
+                        phone,
+                        birth_date: birthdate,
+                        age: age ? parseInt(age) : null,
+                        registration_code: registrationCode || null,
+                        google_flow: true
+                    })
+                });
 
-        sessionStorage.setItem('profile_data', JSON.stringify(profileData));
+                const data = await response.json();
 
-        // Redirect to set-password page
-        window.location.href = 'set-password.html';
+                if (response.ok && data.success) {
+                    // Update stored user data with new profile info
+                    const storedUser = JSON.parse(localStorage.getItem('patient_user') || '{}');
+                    storedUser.full_name = fullname;
+                    storedUser.fullname = fullname;
+                    storedUser.phone = phone;
+                    localStorage.setItem('patient_user', JSON.stringify(storedUser));
+
+                    // Redirect to intake form
+                    window.location.href = '/patient-intake.html';
+                } else {
+                    showError(data.message || 'Gagal menyimpan profil. Silakan coba lagi.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Simpan & Lanjutkan';
+                    }
+                }
+            } catch (error) {
+                console.error('Complete profile error:', error);
+                showError('Terjadi kesalahan. Silakan coba lagi.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Simpan & Lanjutkan';
+                }
+            }
+        } else {
+            // Email flow: save to sessionStorage and redirect to set-password
+            const profileData = {
+                fullname,
+                phone,
+                birth_date: birthdate,
+                age: age ? parseInt(age) : null,
+                email: email,
+                registration_code: registrationCode || null
+            };
+
+            sessionStorage.setItem('profile_data', JSON.stringify(profileData));
+
+            // Redirect to set-password page
+            window.location.href = 'set-password.html';
+        }
     });
 
     function showError(message) {
-        alert(message); // Simple alert for now
+        alert(message);
     }
 });
