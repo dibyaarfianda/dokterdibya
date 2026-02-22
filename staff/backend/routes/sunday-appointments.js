@@ -407,6 +407,14 @@ router.post('/book', verifyToken, async (req, res) => {
         const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
         const category = validCategories.includes(consultation_category) ? consultation_category : 'obstetri';
 
+        // Remove any cancelled/no_show entry for this slot to avoid UNIQUE constraint violation
+        await db.query(
+            `DELETE FROM sunday_appointments
+             WHERE appointment_date = ? AND session = ? AND slot_number = ?
+             AND status IN ('cancelled', 'no_show')`,
+            [appointment_date, session, slot_number]
+        );
+
         // Create appointment with auto-confirmed status
         const [result] = await db.query(
             `INSERT INTO sunday_appointments
