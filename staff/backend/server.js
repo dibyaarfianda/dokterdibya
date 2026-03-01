@@ -448,6 +448,10 @@ app.use('/api/tanya-stats', tanyaStatsRoutes);
 const appVersionRoutes = require('./routes/app-version');
 app.use('/api/app-version', appVersionRoutes);
 
+// COMM Integration endpoints (API key authenticated)
+const commIntegrationRoutes = require('./routes/comm-integration');
+app.use('/api/integration/comm', commIntegrationRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',
