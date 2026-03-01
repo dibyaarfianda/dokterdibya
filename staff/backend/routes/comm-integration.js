@@ -202,17 +202,38 @@ router.post('/assessments', async (req, res) => {
     try {
         const { patientId, mrId, doctorName, assessmentType, data } = req.body;
 
-        if (!patientId || !data) {
+        // Support two formats:
+        // 1. Frontend: { patientId, mrId, data: {...} }
+        // 2. Sync job: { patient_name, no_rm, facility, diagnosis, ... }
+        const isSyncFormat = !patientId && req.body.no_rm;
+        const effectivePatientId = patientId || req.body.patient_name || 'unknown';
+        const effectiveData = data || req.body;
+
+        if (!effectivePatientId) {
             return res.status(400).json({
                 success: false,
-                message: 'patientId and data are required'
+                message: 'patientId (or patient_name for sync) is required'
             });
         }
 
         const recordData = {
             source: 'comm',
-            assessment_type: assessmentType || 'clinical_assessment',
-            ...data,
+            assessment_type: assessmentType || (isSyncFormat ? 'comm_sync' : 'clinical_assessment'),
+            ...(data ? data : {}),
+            // Include sync-specific fields if present
+            ...(isSyncFormat ? {
+                facility: req.body.facility,
+                no_rm: req.body.no_rm,
+                patient_name: req.body.patient_name,
+                case_id: req.body.case_id,
+                diagnosis: req.body.diagnosis,
+                diagnosis_level: req.body.diagnosis_level,
+                uk_formatted: req.body.uk_formatted,
+                saved_by: req.body.saved_by,
+                cppt_assessment: req.body.cppt_assessment,
+                r2_key: req.body.r2_key,
+                record_data: req.body.record_data,
+            } : {}),
             received_at: new Date().toISOString()
         };
 
@@ -228,12 +249,12 @@ router.post('/assessments', async (req, res) => {
                 record_data = VALUES(record_data),
                 doctor_name = VALUES(doctor_name),
                 updated_at = CURRENT_TIMESTAMP`,
-            [patientId, normalizedMrId, doctorName || 'COMM System', JSON.stringify(recordData)]
+            [effectivePatientId, normalizedMrId, doctorName || 'COMM System', JSON.stringify(recordData)]
         );
 
         logger.info('COMM assessment saved', {
             recordId: result.insertId,
-            patientId,
+            patientId: effectivePatientId,
             mrId,
             assessmentType
         });
