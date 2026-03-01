@@ -577,13 +577,14 @@ router.post('/auth/google', async (req, res) => {
             }
 
             // Create new patient with medical record ID
-            // NOTE: full_name is left NULL so user is forced to enter real name in complete-profile
+            // Use Google display name as temporary; user still forced to complete profile (profile_completed=0)
             const medicalRecordId = await generateUniqueMedicalRecordId();
+            const tempName = name || email.split('@')[0];
 
             const [result] = await db.query(
                 `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status, patient_type, profile_completed)
-                 VALUES (?, NULL, ?, ?, ?, 1, NOW(), 'active', 'web', 0)`,
-                [medicalRecordId, email, googleId, picture]
+                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active', 'web', 0)`,
+                [medicalRecordId, tempName, email, googleId, picture]
             );
 
             // Mark non-public registration code as used (if code was required and provided)
@@ -601,7 +602,7 @@ router.post('/auth/google', async (req, res) => {
             patient = {
                 id: medicalRecordId,
                 medical_record_id: medicalRecordId,
-                full_name: null,
+                full_name: tempName,
                 email,
                 phone: null,
                 google_id: googleId,
@@ -609,7 +610,7 @@ router.post('/auth/google', async (req, res) => {
                 profile_completed: 0
             };
         }
-        
+
         // Generate JWT token
         const token = jwt.sign(
             { 
@@ -786,19 +787,20 @@ router.post('/google-auth-code', async (req, res) => {
             }
 
             // Create new patient
-            // NOTE: full_name is left NULL so user is forced to enter real name in complete-profile
+            // Use Google display name as temporary; user still forced to complete profile (profile_completed=0)
             const medicalRecordId = await generateUniqueMedicalRecordId();
+            const tempName = name || email.split('@')[0];
             console.log('[GOOGLE-AUTH-CODE] Creating new patient:', medicalRecordId, 'for email:', email);
 
             await db.query(
                 `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status, patient_type, profile_completed)
-                 VALUES (?, NULL, ?, ?, ?, 1, NOW(), 'active', 'web', 0)`,
-                [medicalRecordId, email, googleId, picture]
+                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active', 'web', 0)`,
+                [medicalRecordId, tempName, email, googleId, picture]
             );
 
             patient = {
                 id: medicalRecordId,
-                full_name: null,
+                full_name: tempName,
                 email,
                 phone: null,
                 google_id: googleId,
