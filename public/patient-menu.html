@@ -1716,6 +1716,22 @@
                     </div>
                 </div>
 
+                <!-- Notification Permission Banner -->
+                <div id="notif-permission-banner" style="display:none; background:linear-gradient(135deg, #1a3a5c, #1e5799); border-radius:12px; padding:16px 18px; margin-bottom:12px; border:1px solid rgba(40,167,233,0.3);">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:42px; height:42px; border-radius:50%; background:rgba(40,167,233,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i class="fa fa-bell" style="color:#28a7e9; font-size:18px;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="color:#fff; font-weight:600; font-size:14px; margin-bottom:3px;">Aktifkan Notifikasi</div>
+                            <div style="color:rgba(255,255,255,0.7); font-size:12px;">Dapatkan info rekam medis, jadwal, dan pengumuman langsung di HP Anda</div>
+                        </div>
+                    </div>
+                    <button onclick="requestNotifPermission()" style="margin-top:12px; width:100%; padding:10px; border:none; border-radius:8px; background:#28a7e9; color:#fff; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit;">
+                        <i class="fa fa-check-circle"></i> Izinkan Notifikasi
+                    </button>
+                </div>
+
                 <!-- Download App Banner (only visible on web browser) -->
                 <div class="download-app-banner" id="download-banner">
                     <h4><i class="fa fa-mobile"></i> Dapatkan Aplikasi</h4>
@@ -2613,6 +2629,6 @@
         window.getAppVersion = getAppVersion;
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+<script src="/js/push-subscribe.js?v=20260306"></script>
 </body>
 </html>

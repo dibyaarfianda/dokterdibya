@@ -34,6 +34,31 @@
             return;
         }
 
+        // Check notification permission first
+        if (!('Notification' in window)) {
+            console.log(LOG_PREFIX, 'Notification API not supported');
+            return;
+        }
+
+        if (Notification.permission === 'denied') {
+            console.log(LOG_PREFIX, 'Notification permission denied');
+            showNotifBanner();
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            // Not yet asked — show banner to prompt user
+            console.log(LOG_PREFIX, 'Notification permission not yet granted, showing banner');
+            showNotifBanner();
+            return;
+        }
+
+        // Permission granted — proceed with subscription
+        doSubscribe(token);
+    }
+
+    // Perform the actual push subscription
+    function doSubscribe(token) {
         navigator.serviceWorker.ready.then(function(registration) {
             // Check existing subscription
             registration.pushManager.getSubscription().then(function(existing) {
@@ -52,6 +77,42 @@
             });
         });
     }
+
+    // Show notification permission banner
+    function showNotifBanner() {
+        // Wait for DOM ready
+        function tryShow() {
+            var banner = document.getElementById('notif-permission-banner');
+            if (banner) {
+                banner.style.display = 'block';
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', tryShow);
+        } else {
+            tryShow();
+        }
+    }
+
+    // Request notification permission (called from banner button)
+    window.requestNotifPermission = function() {
+        Notification.requestPermission().then(function(permission) {
+            var banner = document.getElementById('notif-permission-banner');
+            if (permission === 'granted') {
+                console.log(LOG_PREFIX, 'Permission granted by user');
+                if (banner) banner.style.display = 'none';
+                var token = getToken();
+                if (token) doSubscribe(token);
+            } else if (permission === 'denied') {
+                console.log(LOG_PREFIX, 'Permission denied by user');
+                if (banner) {
+                    banner.innerHTML = '<div style="padding:14px 18px;color:#ff6b6b;font-size:13px;">' +
+                        '<i class="fa fa-times-circle"></i> Notifikasi diblokir. Buka pengaturan browser untuk mengaktifkan.' +
+                        '</div>';
+                }
+            }
+        });
+    };
 
     // Fetch VAPID public key from backend
     function fetchVapidKey() {
