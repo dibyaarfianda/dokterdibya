@@ -114,7 +114,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                             AND scr.last_activity_at = latest_visit.max_activity
                     ) latest ON p.id = latest.patient_id
                     LEFT JOIN (
-                        SELECT mr_id COLLATE utf8mb4_general_ci as mr_id, MAX(created_at) as resume_date
+                        SELECT mr_id, MAX(created_at) as resume_date
                         FROM medical_records
                         WHERE record_type = 'resume_medis'
                         GROUP BY mr_id
@@ -183,7 +183,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                  ORDER BY scr.last_activity_at DESC LIMIT 1) as last_visit_type,
                 (SELECT JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime'))
                  FROM medical_records mr
-                 WHERE mr.patient_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+                 WHERE mr.patient_id = p.id
                  AND mr.record_type = 'anamnesa'
                  AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
                  ORDER BY mr.created_at DESC LIMIT 1) as anamnesa_datetime
@@ -276,11 +276,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
 
         const [rows] = await db.query(query, params);
 
-        // Map phone to whatsapp if whatsapp is null (for backward compatibility)
-        // Use actual_last_visit from sunday_appointments if last_visit is null
-        // Also use last_visit_date from sunday_clinic_records for location-based queries
-        // Calculate resume_status for each patient
-        // Also fetch HPL data for obstetri patients
+        // Enrich patients in parallel (all per-patient queries run concurrently)
         const mappedRows = await Promise.all(rows.map(async (patient) => {
             let resume_status = null;
             let hpl = null;
@@ -288,54 +284,44 @@ router.get('/api/patients', verifyToken, async (req, res) => {
             let is_obstetri = false;
             let has_delivered = false;
 
-            // Only calculate if patient has an MR
+            // Run resume status + obstetri queries in parallel for each patient
+            const promises = [];
+
+            // Resume status queries (parallel)
             if (patient.mr_id) {
-                try {
-                    // Check if resume_medis record exists in medical_records
-                    const [resumeRecord] = await db.query(
-                        `SELECT 1 FROM medical_records WHERE mr_id = ? AND record_type = 'resume_medis' LIMIT 1`,
-                        [patient.mr_id]
-                    );
+                promises.push(
+                    Promise.all([
+                        db.query(`SELECT 1 FROM medical_records WHERE mr_id = ? AND record_type = 'resume_medis' LIMIT 1`, [patient.mr_id]),
+                        db.query(`SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type = 'resume_medis' AND status = 'published' LIMIT 1`, [patient.mr_id]),
+                        db.query(`SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type IN ('usg_2d', 'usg_4d', 'patient_usg') AND status = 'published' LIMIT 1`, [patient.mr_id])
+                    ]).then(([[resumeRecord], [resumeDoc], [usgDoc]]) => {
+                        const hasResumeRecord = resumeRecord.length > 0;
+                        const hasPublishedResume = resumeDoc.length > 0;
+                        const hasPublishedUsg = usgDoc.length > 0;
 
-                    // Check if there's a published resume document
-                    const [resumeDoc] = await db.query(
-                        `SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type = 'resume_medis' AND status = 'published' LIMIT 1`,
-                        [patient.mr_id]
-                    );
-
-                    // Check if there's a published USG document
-                    const [usgDoc] = await db.query(
-                        `SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type IN ('usg_2d', 'usg_4d', 'patient_usg') AND status = 'published' LIMIT 1`,
-                        [patient.mr_id]
-                    );
-
-                    const hasResumeRecord = resumeRecord.length > 0;
-                    const hasPublishedResume = resumeDoc.length > 0;
-                    const hasPublishedUsg = usgDoc.length > 0;
-
-                    if (hasPublishedResume && hasPublishedUsg) {
-                        resume_status = 'sudah_kirim_usg_resume';
-                    } else if (hasPublishedResume) {
-                        resume_status = 'sudah_kirim_resume';
-                    } else if (hasResumeRecord) {
-                        resume_status = 'sudah_simpan';
-                    } else {
+                        if (hasPublishedResume && hasPublishedUsg) {
+                            resume_status = 'sudah_kirim_usg_resume';
+                        } else if (hasPublishedResume) {
+                            resume_status = 'sudah_kirim_resume';
+                        } else if (hasResumeRecord) {
+                            resume_status = 'sudah_simpan';
+                        } else {
+                            resume_status = 'belum_generate';
+                        }
+                    }).catch(err => {
+                        console.error('Error calculating resume status for patient', patient.id, err.message);
                         resume_status = 'belum_generate';
-                    }
-                } catch (err) {
-                    console.error('Error calculating resume status for patient', patient.id, err.message);
-                    resume_status = 'belum_generate';
-                }
+                    })
+                );
             }
 
-            // Check if patient is obstetri and get HPL data (only for obstetri patients who haven't delivered)
-            try {
-                // Get the latest obstetri record for this patient
-                const [obstetriRecord] = await db.query(`
+            // Obstetri/HPL query (parallel with resume)
+            promises.push(
+                db.query(`
                     SELECT scr.mr_id, scr.mr_category,
                         JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
                     FROM sunday_clinic_records scr
-                    JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                    JOIN medical_records mr ON mr.mr_id = scr.mr_id
                         AND mr.record_type = 'anamnesa'
                     WHERE scr.patient_id = ?
                         AND scr.mr_category = 'obstetri'
@@ -343,38 +329,34 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                         AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
                     ORDER BY scr.last_activity_at DESC
                     LIMIT 1
-                `, [patient.id]);
+                `, [patient.id]).then(async ([obstetriRecord]) => {
+                    if (obstetriRecord.length > 0 && obstetriRecord[0].hpht) {
+                        is_obstetri = true;
+                        const hpht = new Date(obstetriRecord[0].hpht);
+                        if (!isNaN(hpht.getTime())) {
+                            const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                            hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
 
-                if (obstetriRecord.length > 0 && obstetriRecord[0].hpht) {
-                    is_obstetri = true;
-                    const hpht = new Date(obstetriRecord[0].hpht);
-                    if (!isNaN(hpht.getTime())) {
-                        // Calculate HPL (HPHT + 280 days)
-                        const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                        // Format HPL as YYYY-MM-DD using local timezone
-                        hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-                        // Calculate days pregnant
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-
-                        // Check if patient has delivered (birth_congratulations entry)
-                        const [birthRecord] = await db.query(
-                            `SELECT 1 FROM birth_congratulations WHERE patient_id = ? LIMIT 1`,
-                            [patient.id]
-                        );
-                        has_delivered = birthRecord.length > 0;
+                            const [birthRecord] = await db.query(
+                                `SELECT 1 FROM birth_congratulations WHERE patient_id = ? LIMIT 1`,
+                                [patient.id]
+                            );
+                            has_delivered = birthRecord.length > 0;
+                        }
                     }
-                }
-            } catch (err) {
-                console.error('Error fetching HPL data for patient', patient.id, err.message);
-            }
+                }).catch(err => {
+                    console.error('Error fetching HPL data for patient', patient.id, err.message);
+                })
+            );
+
+            await Promise.all(promises);
 
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                // Only use anamnesa_datetime - actual examination date from anamnesa section
-                // Do NOT fallback to booking dates as those can be in the future
                 last_visit: patient.anamnesa_datetime || null,
                 resume_status,
                 hpl,
@@ -450,7 +432,7 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
                  WHERE sa.patient_id = p.id AND sa.status IN ('completed','confirmed')) as actual_last_visit,
                 (SELECT JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime'))
                  FROM medical_records mr
-                 WHERE mr.patient_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+                 WHERE mr.patient_id = p.id
                  AND mr.record_type = 'anamnesa'
                  AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
                  ORDER BY mr.created_at DESC LIMIT 1) as anamnesa_datetime
@@ -583,7 +565,7 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
                     SELECT scr.mr_id, scr.mr_category,
                         JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
                     FROM sunday_clinic_records scr
-                    JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                    JOIN medical_records mr ON mr.mr_id = scr.mr_id
                         AND mr.record_type = 'anamnesa'
                     WHERE scr.patient_id = ?
                         AND scr.mr_category = 'obstetri'
@@ -737,7 +719,7 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                     JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
                     ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
                 FROM sunday_clinic_records scr
-                JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                JOIN medical_records mr ON mr.mr_id = scr.mr_id
                     AND mr.record_type = 'anamnesa'
                 WHERE scr.mr_category = 'obstetri'
                 AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
@@ -816,7 +798,7 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                     JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
                     ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
                 FROM sunday_clinic_records scr
-                JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                JOIN medical_records mr ON mr.mr_id = scr.mr_id
                     AND mr.record_type = 'anamnesa'
                 WHERE scr.mr_category = 'obstetri'
                 AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
@@ -988,7 +970,7 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
             SELECT
                 JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
             FROM sunday_clinic_records scr
-            JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+            JOIN medical_records mr ON mr.mr_id = scr.mr_id
                 AND mr.record_type = 'anamnesa'
             WHERE scr.patient_id = ?
                 AND scr.mr_category = 'obstetri'
@@ -1485,7 +1467,7 @@ router.get('/api/patients/medications', verifyPatientToken, async (req, res) => 
                     ELSE 0
                 END as is_current
             FROM sunday_clinic_records scr
-            JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+            JOIN medical_records mr ON mr.mr_id = scr.mr_id
                 AND mr.record_type = 'planning'
             WHERE scr.patient_id = ?
                 AND JSON_EXTRACT(mr.record_data, '$.terapi') IS NOT NULL

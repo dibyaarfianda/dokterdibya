@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 
@@ -10,6 +11,9 @@ const { createPatientNotification } = require('./patient-notifications');
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
+        const cached = cache.get('booking-settings:staff', 'long');
+        if (cached) return res.json(cached);
+
         const [settings] = await db.query(
             `SELECT id, session_number, session_name, start_time, end_time,
                     slot_duration, max_slots, is_active, created_at, updated_at
@@ -25,7 +29,9 @@ router.get('/', verifyToken, async (req, res) => {
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
         }));
 
-        res.json({ success: true, settings: formatted });
+        const response = { success: true, settings: formatted };
+        cache.set('booking-settings:staff', response, 'long');
+        res.json(response);
     } catch (error) {
         console.error('Error fetching booking settings:', error);
         res.status(500).json({ success: false, message: 'Gagal mengambil data pengaturan booking' });
@@ -38,6 +44,9 @@ router.get('/', verifyToken, async (req, res) => {
  */
 router.get('/public', async (req, res) => {
     try {
+        const cached = cache.get('booking-settings:public', 'long');
+        if (cached) return res.json(cached);
+
         const [settings] = await db.query(
             `SELECT session_number, session_name, start_time, end_time,
                     slot_duration, max_slots
@@ -57,7 +66,9 @@ router.get('/public', async (req, res) => {
             maxSlots: s.max_slots
         }));
 
-        res.json({ success: true, sessions });
+        const response = { success: true, sessions };
+        cache.set('booking-settings:public', response, 'long');
+        res.json(response);
     } catch (error) {
         console.error('Error fetching public booking settings:', error);
         res.status(500).json({ success: false, message: 'Gagal mengambil data sesi' });
@@ -106,6 +117,7 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
             [session_name, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0, id]
         );
 
+        cache.delPattern('booking-settings:');
         res.json({ success: true, message: 'Pengaturan sesi berhasil diupdate' });
     } catch (error) {
         console.error('Error updating booking setting:', error);
@@ -141,6 +153,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
             [session_number, session_name, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0]
         );
 
+        cache.delPattern('booking-settings:');
         res.status(201).json({ success: true, message: 'Sesi baru berhasil ditambahkan' });
     } catch (error) {
         console.error('Error creating booking setting:', error);
@@ -177,6 +190,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
 
         await db.query('DELETE FROM booking_settings WHERE id = ?', [id]);
 
+        cache.delPattern('booking-settings:');
         res.json({ success: true, message: 'Sesi berhasil dihapus' });
     } catch (error) {
         console.error('Error deleting booking setting:', error);

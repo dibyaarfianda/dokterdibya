@@ -7087,84 +7087,18 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <!-- SweetAlert2 for dialogs -->
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
+<script defer src="scripts/rum.js?v=v62"></script>
+
 <!-- Core app modules -->
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v61';
+    window.__assetVersion = 'v62';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
 
-<!-- Global Debug Function for Appointments - Available Immediately -->
-<script>
-    // Set up debug function immediately (before modules load) - DISABLED
-    window.debugAppointments_DISABLED_2 = function() {
-        console.log('🔧 [DEBUG] ===== APPOINTMENTS DEBUG (Global) - DISABLED =====');
-        
-        // Basic checks that don't require the module
-        const btn = document.getElementById('btn-add-appointment');
-        const modal = document.getElementById('appointment-modal');
-        const appointmentsPage = document.getElementById('appointments-page');
-        
-        console.log('🔧 [DEBUG] Basic DOM checks:');
-        console.log('  - Button exists?', !!btn);
-        console.log('  - Modal exists?', !!modal);
-        console.log('  - Appointments page exists?', !!appointmentsPage);
-        console.log('  - Appointments page visible?', appointmentsPage && !appointmentsPage.classList.contains('d-none'));
-        console.log('  - window.openNewAppointment type:', typeof window.openNewAppointment);
-        console.log('  - jQuery available?', typeof $ !== 'undefined');
-        console.log('  - Bootstrap modal available?', typeof $ !== 'undefined' && $.fn.modal);
-        
-        if (btn) {
-            console.log('🔧 [DEBUG] Button details:');
-            console.log('  - ID:', btn.id);
-            console.log('  - Text:', btn.textContent);
-            console.log('  - onclick:', btn.onclick);
-            console.log('  - parent:', btn.parentNode);
-            console.log('  - disabled?', btn.disabled);
-            console.log('  - style.display:', btn.style.display);
-            console.log('  - style.visibility:', btn.style.visibility);
-            console.log('  - computed style:', window.getComputedStyle(btn).display);
-            
-            // Check for event listeners (if possible)
-            console.log('🔧 [DEBUG] Trying to check event listeners...');
-            try {
-                const listeners = typeof getEventListeners !== 'undefined' ? getEventListeners(btn) : 'getEventListeners not available (Chrome DevTools)';
-                console.log('  - Event listeners:', listeners);
-            } catch (e) {
-                console.log('  - Cannot check event listeners (use Chrome DevTools)');
-            }
-        }
-        
-        // If the module is loaded, try to call openNewAppointment
-        if (typeof window.openNewAppointment === 'function') {
-            console.log('🔧 [DEBUG] Module appears to be loaded (window.openNewAppointment exists)');
-            console.log('🔧 [DEBUG] Attempting to manually trigger modal...');
-            try {
-                window.openNewAppointment();
-            } catch (err) {
-                console.error('❌ [DEBUG] Error calling openNewAppointment:', err);
-            }
-        } else {
-            console.warn('⚠️ [DEBUG] Appointments module not loaded yet');
-            console.warn('⚠️ [DEBUG] Navigate to the appointments page first, then try again');
-        }
-        
-        console.log('🔧 [DEBUG] ===== END DEBUG (Global) =====');
-        
-        return {
-            buttonExists: !!btn,
-            modalExists: !!modal,
-            pageExists: !!appointmentsPage,
-            pageVisible: appointmentsPage && !appointmentsPage.classList.contains('d-none'),
-            functionExists: typeof window.openNewAppointment === 'function',
-            jqueryExists: typeof $ !== 'undefined'
-        };
-    };
-    
-    console.log('✅ window.debugAppointments is now available globally');
-</script>
 
 <script type="module">
     // Use stable version string for cache busting (set above from CACHE_VERSION)
@@ -7183,46 +7117,25 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
     // Wait for auth to initialize before checking state
     const { initAuth: initAuthLib, fetchMe } = await import('./scripts/vps-auth-v2.js?v=' + v);
-    console.log('[DEBUG] Before initAuthLib, auth.currentUser:', auth.currentUser);
-    await initAuthLib(); // Wait for auth initialization to complete
-    console.log('[DEBUG] After initAuthLib, auth.currentUser:', auth.currentUser);
-    console.log('[DEBUG] Full auth object:', JSON.stringify(auth, null, 2));
+    await initAuthLib();
 
     // Now check authentication
-    const user = auth.currentUser; // Use the already set currentUser
-    console.log('[AUTH CHECK] user object:', user);
-    console.log('[AUTH CHECK] user properties:', user ? { id: user.id, name: user.name, email: user.email, role: user.role, role_display_name: user.role_display_name } : 'null');
-    console.log('[AUTH CHECK] Full user JSON:', user ? JSON.stringify(user) : 'null');
+    const user = auth.currentUser;
 
     if (!user) {
-        // Not logged in, redirect to login page
         window.location.replace('login.html');
     } else {
-        // IMMEDIATE navbar update - before anything else can fail
+        // IMMEDIATE navbar update
         const navName = document.getElementById('navbar-user-name');
         const navRole = document.getElementById('navbar-user-role');
-        console.log('[NAVBAR EARLY] Elements found:', { navName: !!navName, navRole: !!navRole });
-        console.log('[NAVBAR EARLY] Before update - name:', navName?.textContent, 'role:', navRole?.textContent);
-        console.log('[NAVBAR EARLY] User values - name:', user.name, 'email:', user.email, 'role:', user.role, 'role_display_name:', user.role_display_name);
-
         const newName = user.name || user.email || 'Unknown User';
         const newRole = user.role_display_name || user.role || 'Staff';
-        console.log('[NAVBAR EARLY] Will set - name:', newName, 'role:', newRole);
+        if (navName) navName.textContent = newName;
+        if (navRole) navRole.textContent = newRole;
 
-        if (navName) {
-            navName.textContent = newName;
-            console.log('[NAVBAR EARLY] After set name, actual value:', navName.textContent);
-        }
-        if (navRole) {
-            navRole.textContent = newRole;
-            console.log('[NAVBAR EARLY] After set role, actual value:', navRole.textContent);
-        }
-
-        // Verify after 100ms
-        setTimeout(() => {
-            console.log('[NAVBAR CHECK 100ms] name:', document.getElementById('navbar-user-name')?.textContent);
-            console.log('[NAVBAR CHECK 100ms] role:', document.getElementById('navbar-user-role')?.textContent);
-        }, 100);
+        // Set RUM context
+        window.__userRole = user.role || 'unknown';
+        window.__currentPage = 'dashboard';
 
         // User is logged in, initialize app
         initializeApp(user);

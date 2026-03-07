@@ -204,6 +204,8 @@ function setTitleAndActive(title, navId, mobileAction) {
             detail: { page: mobileAction }
         }));
     }
+    // Update RUM page context
+    window.__currentPage = mobileAction || title || 'unknown';
     // Log page navigation for audit
     logActivity('Page View', `Viewed ${title}`);
 }

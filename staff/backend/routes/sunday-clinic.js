@@ -3591,7 +3591,7 @@ router.get('/last-anthropometry/:patientId', verifyToken, async (req, res, next)
                 scr.mr_id,
                 scr.created_at as visit_date
             FROM medical_records mr
-            JOIN sunday_clinic_records scr ON mr.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id COLLATE utf8mb4_unicode_ci
+            JOIN sunday_clinic_records scr ON mr.mr_id = scr.mr_id
             WHERE scr.patient_id = ?
               AND mr.record_type = 'physical_exam'
               AND (? IS NULL OR scr.mr_id != ?)

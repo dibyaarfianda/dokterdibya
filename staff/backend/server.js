@@ -146,17 +146,33 @@ const billingsRoutes = require('./routes/billings');
 const visitInvoicesRoutes = require('./routes/visit-invoices');
 const aiRoutes = require('./routes/ai');
 const kickCounterRoutes = require('./routes/kick-counter');
+const rumRoutes = require('./routes/rum');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
 logsRoutes.setSocketIO(io);
 statusRoutes.setSocketIO(io);
 
-// Serve static staff assets directly from the merged repo
-app.use(express.static(path.join(__dirname, '../public')));
+// Serve static staff assets with cache headers
+// Versioned assets (?v=xxx) get long cache; HTML gets no-cache
+app.use(express.static(path.join(__dirname, '../public'), {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        } else if (filePath.match(/\.(js|css)$/)) {
+            // JS/CSS use ?v= versioning, safe to cache for 7 days
+            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+        } else if (filePath.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|woff2?|ttf|eot)$/)) {
+            // Static images/fonts cached for 30 days
+            res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+        }
+    }
+}));
 
 // Serve uploaded files (lab results, etc.)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
+    maxAge: '7d'
+}));
 
 // Sunday Clinic dynamic routes (e.g., /sunday-clinic/mr0001/identitas)
 app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
@@ -461,9 +477,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     }
 }));
 
-// Metrics endpoint
+// RUM (Real User Monitoring) telemetry - no auth required
+app.use('/api/rum', rumRoutes);
+
+// Metrics endpoint (includes cache stats + RUM summary)
 app.get('/api/metrics', (req, res) => {
     const metrics = getMetrics();
+    const { getRumSummary, getCacheStats } = require('./routes/rum');
+    metrics.rum = getRumSummary();
+    metrics.cache = getCacheStats();
     res.json(metrics);
 });
 

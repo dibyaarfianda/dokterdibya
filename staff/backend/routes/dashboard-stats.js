@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const cache = require('../utils/cache');
 const { verifyToken } = require('../middleware/auth');
 
 /**
@@ -9,6 +10,10 @@ const { verifyToken } = require('../middleware/auth');
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
+        const cacheKey = 'dashboard-stats';
+        const cached = cache.get(cacheKey, 'short');
+        if (cached) return res.json(cached);
+
         // 1. Total Patients Count
         const [totalPatientsResult] = await db.query(
             'SELECT COUNT(*) as total FROM patients WHERE status = ?',
@@ -96,7 +101,7 @@ router.get('/', verifyToken, async (req, res) => {
             };
         });
 
-        res.json({
+        const response = {
             success: true,
             stats: {
                 totalPatients,
@@ -105,7 +110,9 @@ router.get('/', verifyToken, async (req, res) => {
                 nextSundayDate: nextSundayStr
             },
             appointments: formattedAppointments
-        });
+        };
+        cache.set(cacheKey, response, 'short');
+        res.json(response);
 
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
