@@ -1340,7 +1340,7 @@
                     // Try to reload the appointments module
                     console.log('[DEBUG] Attempting to manually load appointments module...');
                     try {
-                        import('./scripts/appointments.js?v=' + Date.now()).then(module => {
+                        import('./scripts/appointments.js?v=' + (window.__assetVersion || 'v1')).then(module => {
                             console.log('[DEBUG] Module loaded manually:', module);
                             if (module && module.initAppointments) {
                                 module.initAppointments();
@@ -7089,10 +7089,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
 <!-- Core app modules -->
 <script>
-    // Dynamic cache busting - force reload on every page load
-    const cacheBuster = Date.now();
-    // Note: mobile-menu.js and mobile-action-bar.js are no longer loaded
-    // Mobile navigation is now handled by inline functions in the HTML above
+    // Stable version string for cache busting - bump when deploying new code
+    // Synced with CACHE_VERSION from cache clear script above
+    window.__assetVersion = 'v61';
+    // Polyfill requestIdleCallback for Safari
+    window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
 
 <!-- Global Debug Function for Appointments - Available Immediately -->
@@ -7166,29 +7167,20 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 <script type="module">
-    // Dynamic cache busting for all imports
-    const v = Date.now();
-    window.__assetVersion = v;
-    
-    // Import modules with cache buster
+    // Use stable version string for cache busting (set above from CACHE_VERSION)
+    const v = window.__assetVersion;
+
+    // Critical startup modules only - auth + shell + dashboard
     const { auth, getIdToken } = await import('./scripts/vps-auth-v2.js?v=' + v);
-    // Expose auth and getIdToken globally for chat-popup.js
     window.auth = auth;
     window.getIdToken = getIdToken;
-    await import('./scripts/toast.js?v=' + v); // Toast notification system
+    await import('./scripts/toast.js?v=' + v);
     const { initMain } = await import('./scripts/main.js?v=' + v);
-    const { initBilling } = await import('./scripts/billing.js?v=' + v);
     const { initDashboard } = await import('./scripts/dashboard.js?v=' + v);
     const { initAuth } = await import('./scripts/auth.js?v=' + v);
-    const { initFinanceDashboard } = await import('./scripts/finance-dashboard.js?v=' + v);
-    const { initAnalyticsDashboard } = await import('./scripts/analytics.js?v=' + v);
-    await import('./scripts/medical-exam.js?v=' + v); // Medical examination pages
-    // Chat is now handled by chat-popup.js loaded at bottom of page
-    const { initPatients } = await import('./scripts/patients.js?v=' + v);
-    // initCashier now loaded dynamically when Cashier page is opened
     const { initSessionManager, restoreSessionOnLoad } = await import('./scripts/session-manager.js?v=' + v);
     const { initRealtimeSync } = await import('./scripts/realtime-sync.js?v=' + v);
-    
+
     // Wait for auth to initialize before checking state
     const { initAuth: initAuthLib, fetchMe } = await import('./scripts/vps-auth-v2.js?v=' + v);
     console.log('[DEBUG] Before initAuthLib, auth.currentUser:', auth.currentUser);
@@ -7237,6 +7229,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
     }
     
     function initializeApp(user) {
+        const v = window.__assetVersion;
+
         // Initialize core UI (pages, clock, navigation)
         try {
             initMain();
@@ -7246,18 +7240,17 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
         // Initialize feature areas
         try {
-            initAuth(user); // Pass user to avoid module instance mismatch
+            initAuth(user);
         } catch (error) {
             console.error('❌ Error initializing auth UI:', error);
         }
 
-        // Direct navbar update (bypass auth.js module issues)
+        // Direct navbar update
         if (user) {
             const navName = document.getElementById('navbar-user-name');
             const navRole = document.getElementById('navbar-user-role');
             if (navName) navName.textContent = user.name || user.email || 'User';
             if (navRole) navRole.textContent = user.role_display_name || user.role || 'Staff';
-            console.log('[NAVBAR] Updated directly:', user.name, user.role);
         }
 
         try {
@@ -7266,7 +7259,6 @@ body.mobile-app-mode .mobile-action-bar-force button {
             console.error('❌ Error initializing session manager:', error);
         }
 
-        // initBilling(); - Now loaded dynamically when Tindakan/Obat pages are opened
         try {
             initDashboard();
         } catch (error) {
@@ -7275,14 +7267,10 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
         // Load current registration code for dashboard
         try {
-            console.log('[REG CODE] Checking window.loadDashboardCurrentCode:', typeof window.loadDashboardCurrentCode);
             if (typeof window.loadDashboardCurrentCode === 'function') {
-                console.log('[REG CODE] Calling loadDashboardCurrentCode...');
                 window.loadDashboardCurrentCode();
             } else {
-                console.log('[REG CODE] Function not found, will retry in 500ms');
                 setTimeout(() => {
-                    console.log('[REG CODE RETRY] Checking again:', typeof window.loadDashboardCurrentCode);
                     if (typeof window.loadDashboardCurrentCode === 'function') {
                         window.loadDashboardCurrentCode();
                     }
@@ -7292,39 +7280,36 @@ body.mobile-app-mode .mobile-action-bar-force button {
             console.error('❌ Error loading dashboard code:', error);
         }
 
-        if (user.role === 'superadmin') {
-            try {
-                initFinanceDashboard();
-            } catch (error) {
-                console.error('❌ Error initializing finance dashboard:', error);
+        // Lazy-load non-critical modules after initial render
+        // These modules are loaded in the background and init on first page access
+        requestIdleCallback(() => {
+            // Patients module - needed for search/kelola pasien
+            import('./scripts/patients.js?v=' + v).then(m => {
+                if (m.initPatients) m.initPatients();
+            }).catch(e => console.error('❌ patients.js:', e));
+
+            // Medical exam - needed when opening exam pages
+            import('./scripts/medical-exam.js?v=' + v).catch(e => console.error('❌ medical-exam.js:', e));
+
+            // Finance & Analytics - superadmin only
+            if (user.role === 'superadmin') {
+                import('./scripts/finance-dashboard.js?v=' + v).then(m => {
+                    if (m.initFinanceDashboard) m.initFinanceDashboard();
+                }).catch(e => console.error('❌ finance-dashboard.js:', e));
+
+                import('./scripts/analytics.js?v=' + v).then(m => {
+                    if (m.initAnalyticsDashboard) m.initAnalyticsDashboard();
+                }).catch(e => console.error('❌ analytics.js:', e));
             }
+        }, { timeout: 3000 });
 
-            try {
-                initAnalyticsDashboard(); // Finance page charts
-            } catch (error) {
-                console.error('❌ Error initializing analytics dashboard:', error);
-            }
-        }
-
-        try {
-            initPatients();
-        } catch (error) {
-            console.error('❌ Error initializing patients:', error);
-        }
-
-        // Chat is now handled by chat-popup.js loaded at bottom of page
-        // initCashier() - Now loaded dynamically when Cashier page is opened
-
-        // Real-time sync is now initialized in main.js via onAuthStateChanged
-        // This ensures single socket connection and proper cleanup on auth state changes
-        console.log('🔄 Real-time sync will be initialized by main.js');
+        // Real-time sync initialized in main.js via onAuthStateChanged
 
         // Restore session if exists
         try {
             restoreSessionOnLoad().then(session => {
                 if (session && session.patient) {
                     console.log('✅ Session restored for patient:', session.patient.name);
-                    // TODO: Restore UI state based on session data
                 }
             }).catch(error => {
                 console.warn('⚠️ Session restore failed (non-critical):', error);
