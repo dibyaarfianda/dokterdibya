@@ -1095,7 +1095,7 @@
                                         ${isDoctor ? '<i class="fa fa-user-md"></i> ' + escapeHtml(senderName) : '<i class="fa fa-user"></i> Anda'} - ${rDateStr}
                                     </div>
                                     <p class="message-text">${escapeHtml(r.message)}</p>
-                                    ${r.image_url ? `<img src="${r.image_url}" class="message-image" onclick="window.open('${r.image_url}', '_blank')">` : ''}
+                                    ${r.image_signed_url ? `<img src="${r.image_signed_url}" class="message-image" onclick="window.open('${r.image_signed_url}', '_blank')">` : ''}
                                 </div>
                             </div>
                         `;
@@ -1120,7 +1120,7 @@
                         <div class="original-question">
                             <div class="original-question-label">Pertanyaan Anda</div>
                             <p class="original-question-text">${escapeHtml(q.question_text)}</p>
-                            ${q.image_url ? `<img src="${q.image_url}" class="message-image" style="margin-top: 10px;" onclick="window.open('${q.image_url}', '_blank')">` : ''}
+                            ${q.image_signed_url ? `<img src="${q.image_signed_url}" class="message-image" style="margin-top: 10px;" onclick="window.open('${q.image_signed_url}', '_blank')">` : ''}
                         </div>
                         <div style="margin-bottom: 10px; font-size: 13px; color: rgba(255,255,255,0.6);">
                             <i class="fa fa-user-md"></i> Dokter: <strong style="color: #8b5cf6;">${escapeHtml(doctorName)}</strong>
