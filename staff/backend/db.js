@@ -45,16 +45,10 @@ pool.on('connection', (connection) => {
     }
 })();
 
-// Graceful pool closure
-process.on('SIGINT', async () => {
-    try {
-        await pool.end();
-        logger.info('Database connection pool closed');
-        process.exit(0);
-    } catch (err) {
-        logger.error('Error closing database pool:', err);
-        process.exit(1);
-    }
-});
+// Note: Graceful pool closure is handled by server.js shutdown handler
+
+// Wrap pool with query monitor for slow query tracking
+const { wrapDbPool } = require('./middleware/dbMonitor');
+wrapDbPool(pool);
 
 module.exports = pool;

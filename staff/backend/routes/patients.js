@@ -12,6 +12,25 @@ const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const activityLogger = require('../services/activityLogger');
+const logger = require('../utils/logger');
+
+// Enrichment failure counters — exposed via getEnrichmentStats() for /api/metrics
+const _enrichFailures = {
+    resumeRecords: 0,
+    resumeDocs: 0,
+    usgDocs: 0,
+    obstetriHpl: 0,
+    birthRecords: 0,
+    total: 0,
+};
+function getEnrichmentStats() {
+    return { ..._enrichFailures };
+}
+function _enrichFail(key, err) {
+    _enrichFailures[key]++;
+    _enrichFailures.total++;
+    logger.warn(`Enrichment batch failed: ${key}`, { error: err.message || err });
+}
 
 // Configure multer for birth photo upload
 const birthPhotoUpload = multer({
@@ -60,13 +79,21 @@ router.get('/api/patients/vapid-key', (req, res) => {
 // GET ALL PATIENTS (Protected - requires authentication and permission)
 router.get('/api/patients', verifyToken, async (req, res) => {
     try {
-        const { search, limit, hospital, sort, page, _, last_visit_location } = req.query;
+        const { search, limit, hospital, sort, page, _, last_visit_location, cursor } = req.query;
         const clientCacheControl = (req.headers['cache-control'] || '').toLowerCase();
         const clientRequestsFresh = clientCacheControl.includes('no-cache') || clientCacheControl.includes('no-store');
         const bypassCache = typeof _ !== 'undefined' || clientRequestsFresh;
 
+        // Decode cursor for keyset pagination (optional — falls back to offset)
+        let cursorData = null;
+        if (cursor) {
+            try {
+                cursorData = JSON.parse(Buffer.from(cursor, 'base64url').toString());
+            } catch { /* invalid cursor, ignore */ }
+        }
+
         // Generate cache key and honor bypass flag (frontend sends _=timestamp)
-        const cacheKey = `patients:list:${search || 'all'}:${limit || 'all'}:${hospital || 'all'}:${sort || 'default'}:${page || '1'}:${last_visit_location || 'all'}`;
+        const cacheKey = `patients:list:${search || 'all'}:${limit || 'all'}:${hospital || 'all'}:${sort || 'default'}:${cursor || page || '1'}:${last_visit_location || 'all'}`;
 
         if (!bypassCache) {
             const cached = cache.get(cacheKey, 'short');
@@ -211,6 +238,25 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         if (limit) {
             pageNum = parseInt(page) || 1;
             limitNum = parseInt(limit);
+
+            // Cursor-based keyset pagination: append WHERE clause to seek
+            // past the last-seen row instead of using OFFSET (O(1) vs O(N)).
+            if (cursorData && !last_visit_location && !hospital) {
+                if (sort === 'name' && cursorData.fn) {
+                    query += (query.includes('WHERE') ? ' AND' : ' WHERE') +
+                        ' (p.full_name > ? OR (p.full_name = ? AND p.id > ?))';
+                    params.push(cursorData.fn, cursorData.fn, cursorData.id);
+                } else if (cursorData.lv) {
+                    query += (query.includes('WHERE') ? ' AND' : ' WHERE') +
+                        ' (p.last_visit < ? OR (p.last_visit = ? AND p.id < ?))';
+                    params.push(cursorData.lv, cursorData.lv, cursorData.id);
+                } else if (cursorData.id) {
+                    query += (query.includes('WHERE') ? ' AND' : ' WHERE') +
+                        ' p.id < ?';
+                    params.push(cursorData.id);
+                }
+            }
+
             const offset = (pageNum - 1) * limitNum;
 
             // Count total for pagination
@@ -269,90 +315,136 @@ router.get('/api/patients', verifyToken, async (req, res) => {
             const [countResult] = await db.query(countQuery, countParams);
             total = countResult[0]?.total || 0;
 
-            // Apply limit and offset
-            query += ' LIMIT ? OFFSET ?';
-            params.push(limitNum, offset);
+            // Apply limit and offset (cursor mode skips OFFSET — seek is in WHERE)
+            if (cursorData && !last_visit_location && !hospital) {
+                query += ' LIMIT ?';
+                params.push(limitNum);
+            } else {
+                query += ' LIMIT ? OFFSET ?';
+                params.push(limitNum, offset);
+            }
         }
 
         const [rows] = await db.query(query, params);
 
-        // Enrich patients in parallel (all per-patient queries run concurrently)
-        const mappedRows = await Promise.all(rows.map(async (patient) => {
+        // Batch-enrich patients (4 queries total instead of N×5)
+        const mrIds = rows.map(p => p.mr_id).filter(Boolean);
+        const patientIds = rows.map(p => p.id);
+
+        // Build lookup maps from batch queries (run all in parallel)
+        const resumeRecordSet = new Set();
+        const resumeDocSet = new Set();
+        const usgDocSet = new Set();
+        const obstetriMap = {}; // patient_id -> hpht
+        const birthSet = new Set();
+
+        const batchPromises = [];
+
+        if (mrIds.length > 0) {
+            const placeholders = mrIds.map(() => '?').join(',');
+
+            // Batch 1: resume records
+            batchPromises.push(
+                db.query(`SELECT DISTINCT mr_id FROM medical_records WHERE mr_id IN (${placeholders}) AND record_type = 'resume_medis'`, mrIds)
+                    .then(([rows]) => rows.forEach(r => resumeRecordSet.add(r.mr_id)))
+                    .catch(err => _enrichFail('resumeRecords', err))
+            );
+
+            // Batch 2: published resume docs
+            batchPromises.push(
+                db.query(`SELECT DISTINCT mr_id FROM patient_documents WHERE mr_id IN (${placeholders}) AND document_type = 'resume_medis' AND status = 'published'`, mrIds)
+                    .then(([rows]) => rows.forEach(r => resumeDocSet.add(r.mr_id)))
+                    .catch(err => _enrichFail('resumeDocs', err))
+            );
+
+            // Batch 3: published USG docs
+            batchPromises.push(
+                db.query(`SELECT DISTINCT mr_id FROM patient_documents WHERE mr_id IN (${placeholders}) AND document_type IN ('usg_2d', 'usg_4d', 'patient_usg') AND status = 'published'`, mrIds)
+                    .then(([rows]) => rows.forEach(r => usgDocSet.add(r.mr_id)))
+                    .catch(err => _enrichFail('usgDocs', err))
+            );
+        }
+
+        if (patientIds.length > 0) {
+            const pPlaceholders = patientIds.map(() => '?').join(',');
+
+            // Batch 4: obstetri/HPL
+            // REQUIRES: collation migration (20260307_performance_indexes_up.sql)
+            // to align medical_records.mr_id → utf8mb4_unicode_ci.
+            // Without the migration, this JOIN will fail on collation mismatch.
+            batchPromises.push(
+                db.query(`
+                    SELECT t.patient_id, t.hpht FROM (
+                        SELECT scr.patient_id,
+                            JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
+                            ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                        FROM sunday_clinic_records scr
+                        JOIN medical_records mr
+                            ON mr.mr_id = scr.mr_id
+                            AND mr.record_type = 'anamnesa'
+                        WHERE scr.patient_id IN (${pPlaceholders})
+                            AND scr.mr_category = 'obstetri'
+                            AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) IS NOT NULL
+                            AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                    ) t WHERE t.rn = 1
+                `, patientIds)
+                    .then(([rows]) => rows.forEach(r => { obstetriMap[r.patient_id] = r.hpht; }))
+                    .catch(err => _enrichFail('obstetriHpl', err))
+            );
+        }
+
+        await Promise.all(batchPromises);
+
+        // Batch 5: birth records (only for obstetri patients)
+        const obstetriPatientIds = Object.keys(obstetriMap);
+        if (obstetriPatientIds.length > 0) {
+            const bPlaceholders = obstetriPatientIds.map(() => '?').join(',');
+            try {
+                const [birthRows] = await db.query(
+                    `SELECT DISTINCT patient_id FROM birth_congratulations WHERE patient_id IN (${bPlaceholders})`,
+                    obstetriPatientIds
+                );
+                birthRows.forEach(r => birthSet.add(r.patient_id));
+            } catch (err) { _enrichFail('birthRecords', err); }
+        }
+
+        // Map results using lookup sets
+        const mappedRows = rows.map(patient => {
             let resume_status = null;
+            if (patient.mr_id) {
+                const hasResumeRecord = resumeRecordSet.has(patient.mr_id);
+                const hasPublishedResume = resumeDocSet.has(patient.mr_id);
+                const hasPublishedUsg = usgDocSet.has(patient.mr_id);
+
+                if (hasPublishedResume && hasPublishedUsg) {
+                    resume_status = 'sudah_kirim_usg_resume';
+                } else if (hasPublishedResume) {
+                    resume_status = 'sudah_kirim_resume';
+                } else if (hasResumeRecord) {
+                    resume_status = 'sudah_simpan';
+                } else {
+                    resume_status = 'belum_generate';
+                }
+            }
+
             let hpl = null;
             let days_pregnant = null;
             let is_obstetri = false;
             let has_delivered = false;
 
-            // Run resume status + obstetri queries in parallel for each patient
-            const promises = [];
-
-            // Resume status queries (parallel)
-            if (patient.mr_id) {
-                promises.push(
-                    Promise.all([
-                        db.query(`SELECT 1 FROM medical_records WHERE mr_id = ? AND record_type = 'resume_medis' LIMIT 1`, [patient.mr_id]),
-                        db.query(`SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type = 'resume_medis' AND status = 'published' LIMIT 1`, [patient.mr_id]),
-                        db.query(`SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type IN ('usg_2d', 'usg_4d', 'patient_usg') AND status = 'published' LIMIT 1`, [patient.mr_id])
-                    ]).then(([[resumeRecord], [resumeDoc], [usgDoc]]) => {
-                        const hasResumeRecord = resumeRecord.length > 0;
-                        const hasPublishedResume = resumeDoc.length > 0;
-                        const hasPublishedUsg = usgDoc.length > 0;
-
-                        if (hasPublishedResume && hasPublishedUsg) {
-                            resume_status = 'sudah_kirim_usg_resume';
-                        } else if (hasPublishedResume) {
-                            resume_status = 'sudah_kirim_resume';
-                        } else if (hasResumeRecord) {
-                            resume_status = 'sudah_simpan';
-                        } else {
-                            resume_status = 'belum_generate';
-                        }
-                    }).catch(err => {
-                        console.error('Error calculating resume status for patient', patient.id, err.message);
-                        resume_status = 'belum_generate';
-                    })
-                );
+            const hphtStr = obstetriMap[patient.id];
+            if (hphtStr) {
+                is_obstetri = true;
+                const hpht = new Date(hphtStr);
+                if (!isNaN(hpht.getTime())) {
+                    const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                    hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
+                    has_delivered = birthSet.has(patient.id);
+                }
             }
-
-            // Obstetri/HPL query (parallel with resume)
-            promises.push(
-                db.query(`
-                    SELECT scr.mr_id, scr.mr_category,
-                        JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
-                    FROM sunday_clinic_records scr
-                    JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                        AND mr.record_type = 'anamnesa'
-                    WHERE scr.patient_id = ?
-                        AND scr.mr_category = 'obstetri'
-                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) IS NOT NULL
-                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                    ORDER BY scr.last_activity_at DESC
-                    LIMIT 1
-                `, [patient.id]).then(async ([obstetriRecord]) => {
-                    if (obstetriRecord.length > 0 && obstetriRecord[0].hpht) {
-                        is_obstetri = true;
-                        const hpht = new Date(obstetriRecord[0].hpht);
-                        if (!isNaN(hpht.getTime())) {
-                            const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                            hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-
-                            const [birthRecord] = await db.query(
-                                `SELECT 1 FROM birth_congratulations WHERE patient_id = ? LIMIT 1`,
-                                [patient.id]
-                            );
-                            has_delivered = birthRecord.length > 0;
-                        }
-                    }
-                }).catch(err => {
-                    console.error('Error fetching HPL data for patient', patient.id, err.message);
-                })
-            );
-
-            await Promise.all(promises);
 
             return {
                 ...patient,
@@ -364,7 +456,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 is_obstetri,
                 has_delivered
             };
-        }));
+        });
 
         const response = {
             success: true,
@@ -380,6 +472,19 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 totalPages: Math.ceil(total / limitNum),
                 limit: limitNum
             };
+
+            // Cursor-based pagination hint — allows clients to switch to
+            // keyset pagination for large datasets. The cursor encodes the
+            // last row's sort key so the DB can seek instead of offset-skip.
+            if (mappedRows.length > 0) {
+                const lastRow = mappedRows[mappedRows.length - 1];
+                const cursorPayload = {
+                    id: lastRow.id,
+                    lv: lastRow.last_visit || lastRow.created_at || null,
+                    fn: lastRow.full_name || null,
+                };
+                response.pagination.nextCursor = Buffer.from(JSON.stringify(cursorPayload)).toString('base64url');
+            }
         }
 
         // Cache the result unless caller explicitly requested a fresh fetch
@@ -1723,5 +1828,6 @@ router.delete('/api/patients/:patientId/birth-congratulations', verifyToken, asy
     }
 });
 
+router.getEnrichmentStats = getEnrichmentStats;
 module.exports = router;
 

@@ -2379,8 +2379,10 @@ async function loadNotificationBadges() {
 // Export markBadgeRead to window
 window.markBadgeRead = markBadgeRead;
 
-// Reload badges every 2 minutes
-setInterval(loadNotificationBadges, 120000);
+// Reload badges every 2 minutes (only when tab visible)
+setInterval(() => {
+    if (document.visibilityState === 'visible') loadNotificationBadges();
+}, 120000);
 
 // ==================== END NOTIFICATION BADGES ====================
 

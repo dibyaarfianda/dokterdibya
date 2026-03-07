@@ -60,6 +60,28 @@ function pcts(arr) {
 // Summary builder
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Cost tracking — lightweight counters for observability
+// ---------------------------------------------------------------------------
+
+const costCounters = {
+    totalPayloadBytes: 0,
+    r2AccessCount: 0,
+    socketEventsEmitted: 0,
+    beaconsReceived: 0,
+};
+
+function trackCost(key, value = 1) {
+    if (key in costCounters) costCounters[key] += value;
+}
+
+function getCostSummary() {
+    return {
+        ...costCounters,
+        totalPayloadKB: Math.round(costCounters.totalPayloadBytes / 1024),
+    };
+}
+
 function getRumSummary() {
     const webVitals = {};
     for (const vital of ['LCP', 'INP', 'CLS', 'FCP', 'domContentLoaded', 'load', 'firstPaint', 'firstContentfulPaint']) {
@@ -122,6 +144,11 @@ router.post('/', (req, res) => {
         }
     }
 
+    // Track cost metrics
+    costCounters.beaconsReceived++;
+    const bodySize = JSON.stringify(body).length;
+    trackCost('totalPayloadBytes', bodySize);
+
     return res.json({ success: true, accepted });
 });
 
@@ -135,3 +162,5 @@ router.get('/summary', (req, res) => {
 module.exports = router;
 module.exports.getRumSummary = getRumSummary;
 module.exports.getCacheStats = getCacheStats;
+module.exports.getCostSummary = getCostSummary;
+module.exports.trackCost = trackCost;

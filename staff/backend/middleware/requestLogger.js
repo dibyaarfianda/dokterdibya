@@ -33,10 +33,11 @@ const stream = {
     }
 };
 
-// Skip logging for health check endpoint in production
+// Skip logging for high-frequency/noisy endpoints in production
+const SKIP_PATHS = ['/api/health', '/api/rum', '/api/notifications/count', '/api/notifications/badge-counts'];
 const skip = (req, res) => {
     if (process.env.NODE_ENV === 'production') {
-        return req.originalUrl === '/api/health';
+        return SKIP_PATHS.some(p => req.originalUrl.startsWith(p));
     }
     return false;
 };

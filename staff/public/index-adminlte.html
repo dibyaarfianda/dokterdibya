@@ -10339,8 +10339,9 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
     }
     
-    // Auto-refresh floating panel every 30 seconds
+    // Auto-refresh floating panel every 30 seconds (only when visible)
     setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
         const panel = document.getElementById('floating-kelola-pasien');
         if (panel && !panel.classList.contains('d-none')) {
             loadFloatingPanelPatients();
@@ -12175,16 +12176,23 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initNotificationSystem() {
-    console.log('[Notifications] Initializing notification system');
-
     // Load notifications initially
     loadNotifications();
     loadNotificationCount();
 
-    // Poll for new notifications every 30 seconds
+    // Poll for new notifications every 30 seconds, pause when tab hidden
     notificationPollInterval = setInterval(() => {
-        loadNotificationCount();
+        if (document.visibilityState === 'visible') {
+            loadNotificationCount();
+        }
     }, 30000);
+
+    // Resume immediately when tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            loadNotificationCount();
+        }
+    });
 
     // Load notifications when dropdown is opened
     const notificationDropdown = document.getElementById('notification-dropdown');

@@ -83,28 +83,19 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Rate limiting COMPLETELY DISABLED for development
-// Uncomment and configure for production use
-/*
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: 'Too many login attempts, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-    skipSuccessfulRequests: true,
-});
+// Smart rate limiting — IP-keyed, endpoint-tiered
+const { authLimiter, expensiveLimiter, standardLimiter, coalesce, getCoalesceStats } = require('./middleware/rateLimiter');
 app.use('/api/auth/', authLimiter);
+app.use('/api/ai/', expensiveLimiter);
+app.use('/api/medical-import/', expensiveLimiter);
+app.use('/api/usg-bulk-upload/', expensiveLimiter);
+app.use('/api/pdf/', expensiveLimiter);
+app.use('/api/', standardLimiter);
 
-const limiter = rateLimit({
-    windowMs: 60000,
-    max: 1000,
-    message: 'Too many requests from this IP, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-app.use('/api/', limiter);
-*/
+// Request coalescing for high-traffic GET endpoints
+app.use('/api/notifications/count', coalesce);
+app.use('/api/dashboard-stats', coalesce);
+app.use('/api/patients', coalesce);
 
 // Database connection pool
 const pool = require('./db');
@@ -483,9 +474,23 @@ app.use('/api/rum', rumRoutes);
 // Metrics endpoint (includes cache stats + RUM summary)
 app.get('/api/metrics', (req, res) => {
     const metrics = getMetrics();
-    const { getRumSummary, getCacheStats } = require('./routes/rum');
+    const { getRumSummary, getCacheStats, getCostSummary } = require('./routes/rum');
+    const { getDbStats } = require('./middleware/dbMonitor');
+    const pdfQueue = require('./services/pdfQueue');
     metrics.rum = getRumSummary();
     metrics.cache = getCacheStats();
+    metrics.db = getDbStats();
+    metrics.cost = getCostSummary();
+    metrics.cost.socketEventsEmitted = _socketEmitCount;
+    metrics.cost.activeSocketConnections = io.sockets.sockets.size;
+    metrics.coalescing = getCoalesceStats();
+    metrics.pdfQueue = pdfQueue.getStats();
+    metrics.enrichment = patientsRoutes.getEnrichmentStats ? patientsRoutes.getEnrichmentStats() : {};
+    metrics.cluster = {
+        pid: process.pid,
+        workerId: process.env.NODE_APP_INSTANCE || 0,
+        uptime: Math.floor(process.uptime()),
+    };
     res.json(metrics);
 });
 
@@ -552,6 +557,37 @@ const appointmentScheduler = require('./services/appointmentScheduler');
 appointmentScheduler.initSchedulers();
 logger.info('Appointment schedulers initialized');
 
+// Track socket emission volume for cost observability
+const _origIoEmit = io.emit.bind(io);
+let _socketEmitCount = 0;
+io.emit = function (...args) {
+    _socketEmitCount++;
+    return _origIoEmit(...args);
+};
+
+// Debounced users:list broadcast — coalesces rapid connect/disconnect events
+let _usersListTimer = null;
+function broadcastUsersList() {
+    if (_usersListTimer) return; // already scheduled
+    _usersListTimer = setTimeout(() => {
+        _usersListTimer = null;
+        const list = [];
+        for (const [, client] of io.sockets.sockets) {
+            if (client.userName) {
+                list.push({
+                    userId: client.userId,
+                    name: client.userName,
+                    role: client.userRole,
+                    photo: client.userPhoto,
+                    activity: client.userActivity || 'Idle',
+                    timestamp: client.activityTimestamp || new Date().toISOString()
+                });
+            }
+        }
+        io.emit('users:list', list);
+    }, 500);
+}
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
     const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
@@ -572,8 +608,6 @@ io.on('connection', (socket) => {
         socket.userPhoto = data.photo || null;
         socket.activityTimestamp = new Date().toISOString();
 
-        logger.info(`User registered on socket: ${data.name} (${data.role}) [ID: ${data.userId}]`);
-        
         // Broadcast to others that a new user connected
         socket.broadcast.emit('user:connected', {
             userId: data.userId,
@@ -584,48 +618,33 @@ io.on('connection', (socket) => {
             timestamp: socket.activityTimestamp
         });
         
-        // Send current online users list to all clients (including newly connected)
-        const onlineUsersList = [];
-        for (const [id, client] of io.sockets.sockets) {
-            if (client.userName) {
-                onlineUsersList.push({
-                    userId: client.userId,
-                    name: client.userName,
-                    role: client.userRole,
-                    photo: client.userPhoto,
-                    activity: client.userActivity || 'Idle',
-                    timestamp: client.activityTimestamp || new Date().toISOString()
-                });
-            }
-        }
-        io.emit('users:list', onlineUsersList);
+        // Debounced broadcast of online users list
+        broadcastUsersList();
         
         // Send current selected patient to newly connected user (if any)
         if (currentSelectedPatient) {
-            logger.info(`Sending current patient to new user ${data.name}: ${currentSelectedPatient.patientName} (ID: ${currentSelectedPatient.patientId})`);
             socket.emit('patient:selected', currentSelectedPatient);
-        } else {
-            logger.info(`No current patient selected, skipping auto-select for ${data.name}`);
         }
     });
     
-    // Activity update
+    // Activity update — throttled to max 1 broadcast per 2 seconds per socket
     socket.on('activity:update', (data) => {
         socket.userActivity = data.activity;
         socket.activityTimestamp = data.timestamp;
-        
-        // Broadcast activity to all other clients
-        socket.broadcast.emit('user:activity', {
-            userId: data.userId,
-            activity: data.activity,
-            timestamp: data.timestamp
-        });
+
+        const now = Date.now();
+        if (!socket._lastActivityBroadcast || now - socket._lastActivityBroadcast > 2000) {
+            socket._lastActivityBroadcast = now;
+            socket.broadcast.emit('user:activity', {
+                userId: data.userId,
+                activity: data.activity,
+                timestamp: data.timestamp
+            });
+        }
     });
     
     // Patient selection broadcast
     socket.on('patient:select', async (data) => {
-        logger.info(`Patient selected by ${data.userName}: ${data.patientName} (ID: ${data.patientId})`);
-
         // Log activity to database
         await activityLogger.log(
             data.userId,
@@ -637,16 +656,13 @@ io.on('connection', (socket) => {
 
         // Store current selected patient globally
         currentSelectedPatient = data;
-        logger.info(`Current selected patient stored: ${JSON.stringify(currentSelectedPatient)}`);
 
-        // Broadcast to all other clients (including future connections)
+        // Broadcast to all other clients
         socket.broadcast.emit('patient:selected', data);
-        logger.info(`Broadcast patient:selected to all other clients`);
     });
     
     // Anamnesa update broadcast
     socket.on('anamnesa:update', async (data) => {
-        logger.info(`Anamnesa updated by ${data.userName} for ${data.patientName}`);
 
         // Log activity to database
         await activityLogger.log(
@@ -662,7 +678,6 @@ io.on('connection', (socket) => {
 
     // Physical exam update broadcast
     socket.on('physical:update', async (data) => {
-        logger.info(`Physical exam updated by ${data.userName} for ${data.patientName}`);
 
         // Log activity to database
         await activityLogger.log(
@@ -678,7 +693,6 @@ io.on('connection', (socket) => {
 
     // USG exam update broadcast
     socket.on('usg:update', async (data) => {
-        logger.info(`USG exam updated by ${data.userName} for ${data.patientName}`);
 
         // Log activity to database
         await activityLogger.log(
@@ -694,7 +708,6 @@ io.on('connection', (socket) => {
 
     // Lab exam update broadcast
     socket.on('lab:update', async (data) => {
-        logger.info(`Lab exam updated by ${data.userName} for ${data.patientName}`);
 
         // Log activity to database
         await activityLogger.log(
@@ -710,7 +723,6 @@ io.on('connection', (socket) => {
     
     // Billing update broadcast
     socket.on('billing:update', async (data) => {
-        logger.info(`Billing updated by ${data.userName} for ${data.patientName}`);
 
         // Log activity to database
         await activityLogger.log(
@@ -726,7 +738,6 @@ io.on('connection', (socket) => {
 
     // Visit completion broadcast
     socket.on('visit:complete', async (data) => {
-        logger.info(`Visit completed by ${data.userName} for ${data.patientName}`);
 
         // Log activity to database
         await activityLogger.log(
@@ -742,8 +753,6 @@ io.on('connection', (socket) => {
     
     // Announcement broadcast (to all clients including patients)
     socket.on('announcement:new', (data) => {
-        logger.info(`New announcement created: ${data.title} by ${data.created_by_name}`);
-        // Broadcast to all connected clients
         io.emit('announcement:new', data);
     });
     
@@ -774,38 +783,54 @@ io.on('connection', (socket) => {
             });
         }
         
-        // Broadcast updated online users list to all remaining clients
-        const onlineUsersList = [];
-        for (const [id, client] of io.sockets.sockets) {
-            if (client.userName) {
-                onlineUsersList.push({
-                    userId: client.userId,
-                    name: client.userName,
-                    role: client.userRole
-                });
-            }
-        }
-        io.emit('users:list', onlineUsersList);
+        // Debounced broadcast of updated users list
+        broadcastUsersList();
     });
 });
+
+// Async PDF queue routes
+const pdfQueueRoutes = require('./routes/pdf-queue');
+app.use('/api/pdf/queue', pdfQueueRoutes);
+
+// SLO dashboard
+const sloRoutes = require('./routes/slo');
+app.use('/api/slo', sloRoutes);
 
 // Start server
 server.listen(PORT, () => {
     logger.info(`Backend server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info('Socket.io real-time enabled');
+
+    // Signal PM2 that the process is ready (for zero-downtime reload)
+    if (typeof process.send === 'function') {
+        process.send('ready');
+    }
 });
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-    logger.info('SIGTERM received, closing server...');
+// Graceful shutdown — handles both SIGTERM (PM2 reload) and SIGINT (Ctrl+C)
+function gracefulShutdown(signal) {
+    logger.info(`${signal} received, closing server...`);
     server.close(async () => {
         logger.info('HTTP server closed');
-        await pool.end();
-        logger.info('Database connections closed');
+        try {
+            await pool.end();
+            logger.info('Database connections closed');
+        } catch (err) {
+            logger.error('Error closing database pool:', err);
+        }
         process.exit(0);
     });
-});
+
+    // Force exit after 10s if graceful shutdown stalls
+    setTimeout(() => {
+        logger.warn('Forced exit after 10s timeout');
+        process.exit(1);
+    }, 10000).unref();
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('uncaughtException', (err) => {
     // MySQL2 pool connection errors are recoverable - don't crash

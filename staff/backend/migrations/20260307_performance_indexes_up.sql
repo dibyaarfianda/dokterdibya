@@ -72,3 +72,11 @@ ALTER TABLE sunday_appointments ADD INDEX idx_sa_patient_status_date (patient_id
 --    predicate + sort in a single index range scan.
 -- ============================================================
 ALTER TABLE medical_records ADD INDEX idx_mr_patient_type_created (patient_id, record_type, created_at DESC);
+
+-- ============================================================
+-- 8. birth_congratulations: Add index on (patient_id)
+--    Reason: Enrichment checks `WHERE patient_id IN (...)` for
+--    obstetri patients. Without an index this does a full scan.
+--    Small table now but used in batch enrichment for every request.
+-- ============================================================
+ALTER TABLE birth_congratulations ADD INDEX idx_birth_patient (patient_id);

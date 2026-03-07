@@ -16,7 +16,10 @@ function initializeSocket() {
         ? 'http://localhost:3000' 
         : 'https://dokterdibya.com';
     
-    socket = io(socketUrl);
+    socket = io(socketUrl, {
+        transports: ['polling'],
+        upgrade: false
+    });
 
     socket.on('connect', () => {});
 

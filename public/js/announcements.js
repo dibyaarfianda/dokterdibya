@@ -16,11 +16,12 @@ function initializeSocket() {
         ? 'http://localhost:3000' 
         : 'https://dibyaklinik.com';
     
-    socket = io(socketUrl);
-
-    socket.on('connect', () => {
-        console.log('Socket connected for announcements');
+    socket = io(socketUrl, {
+        transports: ['polling'],
+        upgrade: false
     });
+
+    socket.on('connect', () => {});
 
     // Listen for new announcements
     socket.on('announcement:new', (announcement) => {
