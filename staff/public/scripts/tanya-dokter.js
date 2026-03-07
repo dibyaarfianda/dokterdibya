@@ -270,7 +270,7 @@
                             ${isDoctor ? '<i class="fas fa-user-md"></i> ' + escapeHtml(senderName) : '<i class="fas fa-user"></i> Pasien'} - ${rDateStr}
                         </small>
                         <p class="mb-0 mt-1" style="white-space: pre-wrap;">${escapeHtml(r.message)}</p>
-                        ${r.image_url ? `<img src="${r.image_url}" class="img-fluid mt-2 rounded" style="max-height: 200px; cursor: pointer;" onclick="window.open('${r.image_url}', '_blank')">` : ''}
+                        ${r.image_signed_url ? `<img src="${r.image_signed_url}" class="img-fluid mt-2 rounded" style="max-height: 200px; cursor: pointer;" onclick="window.open('${r.image_signed_url}', '_blank')">` : ''}
                     </div>
                 </div>
             `;
@@ -312,7 +312,7 @@
             <!-- Original Question -->
             <div class="p-3 rounded mb-4" style="background: #e3f2fd; border-left: 4px solid #2196f3;">
                 <p class="mb-0" style="white-space: pre-wrap; line-height: 1.6;">${escapeHtml(question.question_text)}</p>
-                ${question.image_url ? `<img src="${question.image_url}" class="img-fluid mt-3 rounded" style="max-height: 300px; cursor: pointer;" onclick="window.open('${question.image_url}', '_blank')">` : ''}
+                ${question.image_signed_url ? `<img src="${question.image_signed_url}" class="img-fluid mt-3 rounded" style="max-height: 300px; cursor: pointer;" onclick="window.open('${question.image_signed_url}', '_blank')">` : ''}
             </div>
 
             <!-- Replies -->
