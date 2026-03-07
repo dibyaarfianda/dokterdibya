@@ -1847,6 +1847,11 @@
                 return;
             }
 
+            // Register service worker for push notifications and offline support
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(function() {});
+            }
+
             // Authenticated, load data
             loadProfile();
             loadNotificationCount();

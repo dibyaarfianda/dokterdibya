@@ -22,3 +22,6 @@ ALTER TABLE sunday_appointments DROP INDEX idx_sa_patient_status_date;
 
 -- 7. Drop medical_records composite index
 ALTER TABLE medical_records DROP INDEX idx_mr_patient_type_created;
+
+-- 8. Drop birth_congratulations index
+ALTER TABLE birth_congratulations DROP INDEX idx_birth_patient;

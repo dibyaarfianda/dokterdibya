@@ -6,7 +6,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const NodeCache = require('node-cache');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+
+// Per-user notification count cache (10 second TTL — reduces DB load from 30s polling)
+const notifCountCache = new NodeCache({ stdTTL: 10, checkperiod: 5, useClones: false });
 
 /**
  * GET /api/notifications
@@ -89,6 +93,11 @@ router.get('/count', verifyToken, async (req, res) => {
         const userId = req.user.id;
         const roleId = req.user.role_id;
 
+        // Short-lived per-user cache to absorb 30s polling bursts
+        const cacheKey = `notif-count:${userId}`;
+        const cached = notifCountCache.get(cacheKey);
+        if (cached !== undefined) return res.json(cached);
+
         // Count unread notifications
         const [notifCountResult] = await db.query(`
             SELECT COUNT(*) as count
@@ -113,12 +122,14 @@ router.get('/count', verifyToken, async (req, res) => {
 
         const totalCount = notifCountResult[0].count + announcementCountResult[0].count;
 
-        res.json({
+        const response = {
             success: true,
             count: totalCount,
             notifications: notifCountResult[0].count,
             announcements: announcementCountResult[0].count
-        });
+        };
+        notifCountCache.set(cacheKey, response);
+        res.json(response);
 
     } catch (error) {
         console.error('Error fetching notification count:', error);

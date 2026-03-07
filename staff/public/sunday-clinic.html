@@ -592,82 +592,28 @@
 </head>
 <body class="hold-transition sidebar-mini">
     <script>
-        // CRITICAL: Unregister service worker immediately
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-                registrations.forEach(reg => {
-                    console.log('[SW] Force unregistering service worker');
-                    reg.unregister();
-                });
-            });
-        }
-
-        // Cache version control - increment to force refresh
+        // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260111193043';
+            const SC_CACHE_VERSION = 'v20260307';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
-                console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
-
+                if (currentVersion && 'caches' in window) {
+                    // Only delete sunday-clinic-specific caches, not all caches
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            if (name.includes('dynamic') || name.includes('sunday')) {
+                                caches.delete(name);
+                            }
+                        });
+                    });
+                }
+                localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
+                // Only hard-reload if this is a version upgrade (not first visit)
                 if (currentVersion) {
-                    // Show update notification
-                    const notification = document.createElement('div');
-                    notification.style.cssText = `
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%);
-                        background: #fff;
-                        padding: 30px 40px;
-                        border-radius: 12px;
-                        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                        z-index: 99999;
-                        text-align: center;
-                        font-family: Arial, sans-serif;
-                    `;
-                    notification.innerHTML = `
-                        <div style="font-size: 24px; margin-bottom: 15px;">
-                            <i class="fas fa-sync-alt fa-spin" style="color: #007bff;"></i>
-                        </div>
-                        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #333;">Memperbarui Aplikasi</h3>
-                        <p style="margin: 0; color: #666; font-size: 14px;">Membersihkan cache lama...</p>
-                    `;
-                    document.body.appendChild(notification);
-
-                    console.log('[SundayClinic] Clearing all caches and reloading...');
-
-                    // Clear all caches
-                    if ('caches' in window) {
-                        caches.keys().then(names => {
-                            console.log('[SundayClinic] Deleting caches:', names);
-                            return Promise.all(names.map(name => caches.delete(name)));
-                        });
-                    }
-
-                    // Unregister service worker to force fresh install
-                    if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.getRegistrations().then(registrations => {
-                            registrations.forEach(reg => {
-                                console.log('[SundayClinic] Unregistering service worker');
-                                reg.unregister();
-                            });
-                        });
-                    }
-
-                    // Update notification text and reload
-                    setTimeout(() => {
-                        notification.querySelector('p').textContent = 'Memuat ulang aplikasi...';
-                        setTimeout(() => {
-                            localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
-                            const url = new URL(window.location.href);
-                            url.searchParams.set('_v', Date.now());
-                            window.location.replace(url.href);
-                        }, 300);
-                    }, 800);
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('_v', Date.now());
+                    window.location.replace(url.href);
                     return;
-                } else {
-                    // First time load
-                    localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
                 }
             }
         })();

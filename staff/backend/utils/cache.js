@@ -6,6 +6,9 @@
 const NodeCache = require('node-cache');
 const logger = require('./logger');
 
+// Stale-safe fallback store — holds last known good value (30 min TTL)
+const staleStore = new NodeCache({ stdTTL: 1800, checkperiod: 300, useClones: false });
+
 // Create cache instances with different TTLs
 const caches = {
     // Short-lived cache (5 minutes) - for frequently changing data
@@ -31,24 +34,34 @@ const caches = {
 };
 
 /**
- * Get from cache or execute function and cache result
+ * Get from cache or execute function and cache result.
+ * Stale-safe: on fn() failure, returns stale cached value if available.
  */
 const getOrSet = async (key, fn, ttl = 'medium') => {
     const cache = caches[ttl] || caches.medium;
-    
+
     // Try to get from cache
     const cached = cache.get(key);
     if (cached !== undefined) {
-        logger.debug(`Cache hit: ${key}`);
         return cached;
     }
-    
+
     // Execute function and cache result
-    logger.debug(`Cache miss: ${key}`);
-    const result = await fn();
-    cache.set(key, result);
-    
-    return result;
+    try {
+        const result = await fn();
+        cache.set(key, result);
+        // Keep a stale copy across all tiers for fallback
+        staleStore.set(key, result);
+        return result;
+    } catch (err) {
+        // Stale-safe fallback: return last known good value on error
+        const stale = staleStore.get(key);
+        if (stale !== undefined) {
+            logger.warn(`Cache stale-safe fallback for: ${key}`);
+            return stale;
+        }
+        throw err;
+    }
 };
 
 /**
@@ -99,7 +112,8 @@ const delPattern = (pattern) => {
  */
 const clear = () => {
     Object.values(caches).forEach(cache => cache.flushAll());
-    logger.info('All caches cleared');
+    staleStore.flushAll();
+    logger.info('All caches cleared (including stale fallback store)');
 };
 
 /**
