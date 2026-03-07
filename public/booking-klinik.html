@@ -838,6 +838,17 @@
             document.getElementById('alert-container').innerHTML = '';
         }
 
+        // Handle 401 - redirect to login
+        function handle401(response) {
+            if (response.status === 401) {
+                localStorage.removeItem('vps_auth_token');
+                sessionStorage.removeItem('vps_auth_token');
+                window.location.href = '/patient-login.html';
+                return true;
+            }
+            return false;
+        }
+
         // Load available Sundays
         async function loadSundays() {
             try {
@@ -845,6 +856,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                if (handle401(response)) return;
                 if (!response.ok) throw new Error('Failed to load dates');
 
                 const data = await response.json();
@@ -899,6 +911,7 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
+                if (handle401(response)) return;
                 if (!response.ok) throw new Error('Failed to load slots');
 
                 const data = await response.json();
@@ -1075,6 +1088,7 @@
 
                 const data = await response.json();
 
+                if (handle401(response)) return;
                 if (!response.ok) {
                     if (response.status === 409) {
                         showAlert(`<strong><i class="fa fa-exclamation-triangle"></i> Slot Sudah Terisi</strong><br>${data.message}`, 'warning');
