@@ -3,9 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <!-- Cache controlled via versioned URLs instead of no-cache headers -->
     <title>dokterDIBYA | Administrator</title>
 
     <!-- Favicon -->
@@ -26,12 +24,16 @@
     <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png">
 
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js"></script>
+    <script src="scripts/error-handler.js?v=20260307"></script>
 
+    <!-- DNS prefetch for CDNs -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://cdn.datatables.net">
+    <link rel="dns-prefetch" href="https://cdn.socket.io">
     <!-- Poppins Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 
     <!-- Font & Icons (Font Awesome 5) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
@@ -1536,8 +1538,7 @@
 
     <!-- Mobile Responsive CSS (using styles/ version with mobile-app-mode) -->
 
-    <!-- Marked.js for Markdown support -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>
+    <!-- Marked.js loaded at bottom with defer -->
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper" id="main-app">
@@ -7078,13 +7079,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
 <!-- ApexCharts for Finance Analysis -->
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script defer src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <!-- Markdown parser and HTML sanitizer for announcements -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 <!-- SweetAlert2 for dialogs -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Core app modules -->
 <script>
