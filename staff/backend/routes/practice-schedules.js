@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const cache = require('../utils/cache');
 const { isSuperadminRole } = require('../constants/roles');
 
 // JWT Secret - Required
@@ -59,14 +60,20 @@ router.get('/', optionalAuth, async (req, res) => {
             return res.status(400).json({ message: 'Lokasi tidak valid' });
         }
         
+        const cacheKey = `practice-schedules:${location}`;
+        const cached = cache.get(cacheKey, 'long');
+        if (cached) return res.json(cached);
+
         const [schedules] = await db.query(
-            `SELECT * FROM practice_schedules 
-             WHERE location = ? AND is_active = 1 
+            `SELECT * FROM practice_schedules
+             WHERE location = ? AND is_active = 1
              ORDER BY day_of_week ASC, start_time ASC`,
             [location]
         );
-        
-        res.json({ schedules });
+
+        const response = { schedules };
+        cache.set(cacheKey, response, 'long');
+        res.json(response);
         
     } catch (error) {
         console.error('Error getting practice schedules:', error);
@@ -121,9 +128,10 @@ router.post('/', verifyStaffToken, async (req, res) => {
             [location, day_of_week, start_time, end_time, notes || null]
         );
         
-        res.status(201).json({ 
+        cache.delPattern('practice-schedules:');
+        res.status(201).json({
             message: 'Jadwal berhasil ditambahkan',
-            id: result.insertId 
+            id: result.insertId
         });
         
     } catch (error) {
@@ -153,8 +161,9 @@ router.put('/:id', verifyStaffToken, async (req, res) => {
             return res.status(404).json({ message: 'Jadwal tidak ditemukan' });
         }
         
+        cache.delPattern('practice-schedules:');
         res.json({ message: 'Jadwal berhasil diupdate' });
-        
+
     } catch (error) {
         console.error('Error updating schedule:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat mengupdate jadwal' });
@@ -183,8 +192,9 @@ router.delete('/:id', verifyStaffToken, async (req, res) => {
             return res.status(404).json({ message: 'Jadwal tidak ditemukan' });
         }
         
+        cache.delPattern('practice-schedules:');
         res.json({ message: 'Jadwal berhasil dihapus' });
-        
+
     } catch (error) {
         console.error('Error deleting schedule:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menghapus jadwal' });
