@@ -1,11 +1,13 @@
 package com.dokterdibya.pharm.data.api
 
+import android.util.Base64
 import com.dokterdibya.pharm.data.repository.AuthState
 import com.dokterdibya.pharm.data.repository.TokenRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -47,6 +49,15 @@ class AuthInterceptor @Inject constructor(
             result
         }
 
+        // Check if token is expired before sending request
+        if (token != null && isTokenExpired(token)) {
+            android.util.Log.e("AuthInterceptor", "Token expired! Clearing and triggering re-login.")
+            runBlocking { tokenRepository.clearAll() }
+            authState.notifyTokenExpired("Sesi Anda telah berakhir. Silakan login kembali.")
+            // Proceed without token — will get 401
+            return chain.proceed(originalRequest)
+        }
+
         val response = if (token != null) {
             android.util.Log.d("AuthInterceptor", "Adding token to request: ${token.take(20)}...")
             val newRequest = originalRequest.newBuilder()
@@ -71,5 +82,19 @@ class AuthInterceptor @Inject constructor(
         }
 
         return response
+    }
+
+    private fun isTokenExpired(token: String): Boolean {
+        return try {
+            val parts = token.split(".")
+            if (parts.size != 3) return true
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP))
+            val json = JSONObject(payload)
+            val exp = json.getLong("exp")
+            val nowSec = System.currentTimeMillis() / 1000
+            exp < nowSec
+        } catch (e: Exception) {
+            false // if we can't parse, let the server decide
+        }
     }
 }

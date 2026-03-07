@@ -2,6 +2,7 @@ package com.dokterdibya.pharm.data.repository
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import android.util.Base64
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -9,6 +10,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -73,7 +75,33 @@ class TokenRepository @Inject constructor(
 
     fun isLoggedIn(): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
-            preferences[TOKEN_KEY] != null
+            val token = preferences[TOKEN_KEY]
+            if (token != null && isTokenExpired(token)) {
+                android.util.Log.d("TokenRepository", "Token expired, clearing...")
+                context.dataStore.edit { it.clear() }
+                false
+            } else {
+                token != null
+            }
+        }
+    }
+
+    /**
+     * Decode JWT and check if exp claim is in the past.
+     * Returns true if token is expired or cannot be parsed.
+     */
+    private fun isTokenExpired(token: String): Boolean {
+        return try {
+            val parts = token.split(".")
+            if (parts.size != 3) return true
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP))
+            val json = JSONObject(payload)
+            val exp = json.getLong("exp")
+            val nowSec = System.currentTimeMillis() / 1000
+            exp < nowSec
+        } catch (e: Exception) {
+            android.util.Log.e("TokenRepository", "Failed to parse JWT exp: ${e.message}")
+            true // treat unparseable tokens as expired
         }
     }
 }
