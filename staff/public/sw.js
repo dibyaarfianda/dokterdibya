@@ -63,21 +63,23 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up OLD caches only, keep current
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
+  const CURRENT_CACHES = [CACHE_NAME, STATIC_CACHE, DYNAMIC_CACHE];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       console.log('[SW] Found caches:', cacheNames);
-      // Delete ALL caches to force fresh reload
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          console.log('[SW] Deleting cache:', cacheName);
-          return caches.delete(cacheName);
-        })
+        cacheNames
+          .filter((cacheName) => !CURRENT_CACHES.includes(cacheName))
+          .map((cacheName) => {
+            console.log('[SW] Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          })
       );
     }).then(() => {
-      console.log('[SW] All caches cleared, claiming clients');
+      console.log('[SW] Old caches cleaned, claiming clients');
       return self.clients.claim();
     })
   );
@@ -103,8 +105,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // IMPORTANT: Bypass SW for JavaScript files to prevent caching issues
-  // This ensures users always get the latest code
+  // JavaScript files use stable version strings (?v=vXX) for cache busting
+  // Let browser HTTP cache handle them directly (not SW cache)
   if (url.pathname.endsWith('.js') && url.pathname.includes('/scripts/')) {
     return;
   }
