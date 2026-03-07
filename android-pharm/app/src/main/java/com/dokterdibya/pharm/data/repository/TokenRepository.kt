@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONObject
 import javax.inject.Inject
@@ -76,14 +77,18 @@ class TokenRepository @Inject constructor(
     fun isLoggedIn(): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
             val token = preferences[TOKEN_KEY]
-            if (token != null && isTokenExpired(token)) {
-                android.util.Log.d("TokenRepository", "Token expired, clearing...")
-                context.dataStore.edit { it.clear() }
-                false
-            } else {
-                token != null
-            }
+            token != null && !isTokenExpired(token)
         }
+    }
+
+    suspend fun clearIfExpired(): Boolean {
+        val token = getToken().first()
+        if (token != null && isTokenExpired(token)) {
+            android.util.Log.d("TokenRepository", "Token expired, clearing...")
+            clearAll()
+            return true
+        }
+        return false
     }
 
     /**
