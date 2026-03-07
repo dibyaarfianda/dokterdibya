@@ -2262,6 +2262,12 @@
                 const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
+                if (response.status === 401) {
+                    localStorage.removeItem('vps_auth_token');
+                    sessionStorage.removeItem('vps_auth_token');
+                    window.location.href = '/patient-login.html';
+                    return;
+                }
                 const data = await response.json();
 
                 if (data.success && data.bookings && data.bookings.length > 0) {
