@@ -206,7 +206,7 @@ router.post('/assessments', async (req, res) => {
         // 1. Frontend: { patientId, mrId, data: {...} }
         // 2. Sync job: { patient_name, no_rm, facility, diagnosis, ... }
         const isSyncFormat = !patientId && req.body.no_rm;
-        const effectivePatientId = patientId || req.body.patient_name || 'unknown';
+        const effectivePatientId = patientId || req.body.no_rm || 'unknown';
         const effectiveData = data || req.body;
 
         if (!effectivePatientId) {
