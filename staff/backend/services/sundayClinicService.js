@@ -433,88 +433,107 @@ async function createSundayClinicRecord({
     intakeData = null,
     createdBy = null
 }, transactionConnection = null) {
-    const conn = transactionConnection || await db.getConnection();
-    const manageTransaction = !transactionConnection;
-
-    try {
-        if (manageTransaction) {
-            await conn.beginTransaction();
-        }
-
-        // Check if record already exists for this appointment
-        const existing = await findRecordByAppointment(appointmentId, conn);
-        if (existing) {
-            if (manageTransaction) {
-                await conn.commit();
-                conn.release();
-            }
-            return { record: existing, created: false };
-        }
-
-        // Determine category if not provided
-        let mrCategory = category;
-        if (!mrCategory && intakeData) {
-            mrCategory = determineMrCategory(intakeData);
-            logger.info('Auto-determined MR category from intake data', {
-                patientId,
-                appointmentId,
-                category: mrCategory
-            });
-        }
-
-        // Default to obstetri if still not determined
-        if (!mrCategory || !VALID_CATEGORIES.includes(mrCategory)) {
-            mrCategory = 'obstetri';
-            logger.warn('Using default category: obstetri', { patientId, appointmentId });
-        }
-
-        // Generate category-based MR ID
-        const { mrId, sequence } = await generateCategoryBasedMrId(mrCategory, conn);
-        const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
-
-        const createdByValue = createdBy && /^\d+$/.test(String(createdBy))
-            ? parseInt(createdBy, 10)
-            : null;
-
-        // Insert record with category and sequence
-        const [result] = await conn.query(
-            `INSERT INTO sunday_clinic_records
-             (mr_id, mr_category, mr_sequence, patient_id, appointment_id, folder_path, status, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)`,
-            [mrId, mrCategory, sequence, patientId, appointmentId || null, folderPath, createdByValue]
-        );
-
-        const [rows] = await conn.query(
-            'SELECT * FROM sunday_clinic_records WHERE id = ? LIMIT 1',
-            [result.insertId]
-        );
-
-        if (manageTransaction) {
-            await conn.commit();
-        }
-
-        logger.info('Created Sunday Clinic record', {
-            mrId,
-            category: mrCategory,
-            sequence,
-            patientId,
-            appointmentId
-        });
-
-        return { record: rows[0], created: true };
-    } catch (error) {
-        if (manageTransaction) {
-            await conn.rollback();
-        }
-        logger.error('Failed to create Sunday Clinic record', {
+    // Determine category upfront
+    let mrCategory = category;
+    if (!mrCategory && intakeData) {
+        mrCategory = determineMrCategory(intakeData);
+        logger.info('Auto-determined MR category from intake data', {
             patientId,
             appointmentId,
-            error: error.message
+            category: mrCategory
         });
-        throw error;
-    } finally {
-        if (manageTransaction) {
-            conn.release();
+    }
+    if (!mrCategory || !VALID_CATEGORIES.includes(mrCategory)) {
+        mrCategory = 'obstetri';
+        logger.warn('Using default category: obstetri', { patientId, appointmentId });
+    }
+
+    const createdByValue = createdBy && /^\d+$/.test(String(createdBy))
+        ? parseInt(createdBy, 10)
+        : null;
+
+    const MAX_RETRIES = 3;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        const conn = transactionConnection || await db.getConnection();
+        const manageTransaction = !transactionConnection;
+
+        try {
+            if (manageTransaction) {
+                await conn.beginTransaction();
+            }
+
+            // Check if record already exists for this appointment
+            if (appointmentId) {
+                const existing = await findRecordByAppointment(appointmentId, conn);
+                if (existing) {
+                    if (manageTransaction) {
+                        await conn.commit();
+                        conn.release();
+                    }
+                    return { record: existing, created: false };
+                }
+            }
+
+            // Generate category-based MR ID
+            const { mrId, sequence } = await generateCategoryBasedMrId(mrCategory, conn);
+            const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
+
+            // Insert record with category and sequence
+            const [result] = await conn.query(
+                `INSERT INTO sunday_clinic_records
+                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, folder_path, status, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)`,
+                [mrId, mrCategory, sequence, patientId, appointmentId || null, folderPath, createdByValue]
+            );
+
+            const [rows] = await conn.query(
+                'SELECT * FROM sunday_clinic_records WHERE id = ? LIMIT 1',
+                [result.insertId]
+            );
+
+            if (manageTransaction) {
+                await conn.commit();
+            }
+
+            logger.info('Created Sunday Clinic record', {
+                mrId,
+                category: mrCategory,
+                sequence,
+                patientId,
+                appointmentId
+            });
+
+            return { record: rows[0], created: true };
+        } catch (error) {
+            if (manageTransaction) {
+                await conn.rollback();
+                conn.release();
+            }
+
+            // Retry on duplicate key error (counter out of sync)
+            if (error.code === 'ER_DUP_ENTRY' && attempt < MAX_RETRIES) {
+                logger.warn(`Duplicate key on attempt ${attempt}, syncing counter and retrying...`, {
+                    patientId, appointmentId, error: error.message
+                });
+                // Sync counter to actual max before retry
+                await db.query(`
+                    UPDATE sunday_clinic_mr_counters
+                    SET current_sequence = (SELECT COALESCE(MAX(mr_sequence), 0) FROM sunday_clinic_records)
+                    WHERE category = 'unified'
+                `);
+                continue;
+            }
+
+            logger.error('Failed to create Sunday Clinic record', {
+                patientId,
+                appointmentId,
+                error: error.message
+            });
+            throw error;
+        } finally {
+            // Only release if we manage the transaction AND we're not retrying
+            // (conn.release is already called in catch for retry cases)
         }
     }
 }
