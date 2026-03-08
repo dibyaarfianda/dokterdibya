@@ -711,12 +711,147 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
     `;
 }
 
-// Start hospital examination - navigate to sunday-clinic with patient info
+// Start hospital examination - show category modal then create/open DRD
 function startHospitalExam(appointmentId, patientId, patientName) {
-    // Navigate to sunday-clinic page with patient info
-    // Add cache-bust timestamp for mobile WebView
-    const baseUrl = `sunday-clinic.html?patient=${patientId}&appointment=${appointmentId}&location=${currentHospitalLocation}&_cb=${Date.now()}`;
-    window.location.href = window.buildMobileUrl ? window.buildMobileUrl(baseUrl) : baseUrl;
+    const location = currentHospitalLocation;
+    if (!location) {
+        alert('Lokasi rumah sakit tidak diketahui.');
+        return;
+    }
+
+    // Remove existing modal if any
+    const existingModal = document.getElementById('hospital-category-modal');
+    if (existingModal) existingModal.remove();
+
+    const safeName = (patientName || '-').replace(/</g, '&lt;');
+
+    const modalHtml = `
+        <div class="modal fade" id="hospital-category-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-stethoscope mr-2"></i>Pilih Kategori Konsultasi
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Pasien: <strong>${safeName}</strong></p>
+                        <div class="category-options">
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="hospital_mr_category" value="obstetri" checked>
+                                <span class="ml-2"><i class="fas fa-baby text-info mr-1"></i> <strong>Obstetri</strong> - Kehamilan & Persalinan</span>
+                            </label>
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="hospital_mr_category" value="gyn_repro">
+                                <span class="ml-2"><i class="fas fa-venus text-success mr-1"></i> <strong>Ginekologi Reproduksi</strong> - Program Hamil, KB</span>
+                            </label>
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="hospital_mr_category" value="gyn_special">
+                                <span class="ml-2"><i class="fas fa-microscope text-warning mr-1"></i> <strong>Ginekologi Khusus</strong> - Kista, Miom, dll</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" id="btn-hospital-start">
+                            <i class="fas fa-check mr-1"></i>Mulai Konsultasi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = $('#hospital-category-modal');
+    modal.modal('show');
+
+    document.getElementById('btn-hospital-start').addEventListener('click', async () => {
+        const selectedCategory = document.querySelector('input[name="hospital_mr_category"]:checked').value;
+        modal.modal('hide');
+        await _startHospitalRecord(patientId, patientName, location, selectedCategory);
+    });
+
+    modal.on('hidden.bs.modal', function() { this.remove(); });
+}
+
+// Internal: check existing DRD or create new one, then redirect
+async function _startHospitalRecord(patientId, patientName, location, category) {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            alert('Sesi login berakhir. Silakan login ulang.');
+            return;
+        }
+
+        // 1. Check for existing DRD today at this location
+        const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${location}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const checkResult = await checkRes.json();
+
+        let mrId;
+
+        if (checkResult.success && checkResult.existingMrId) {
+            // Use existing DRD
+            mrId = checkResult.existingMrId;
+            console.log('[HospitalExam] Using existing DRD:', mrId);
+        } else {
+            // 2. Create new DRD via start-walk-in
+            const createRes = await fetch('/api/sunday-clinic/start-walk-in', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    patient_id: patientId,
+                    category: category,
+                    location: location
+                })
+            });
+
+            if (!createRes.ok) {
+                const errData = await createRes.json().catch(() => ({}));
+                throw new Error(errData.message || 'Gagal membuat rekam medis');
+            }
+
+            const createResult = await createRes.json();
+            mrId = createResult.data?.mrId || createResult.mrId || createResult.mr_id;
+            console.log('[HospitalExam] Created new DRD:', mrId);
+        }
+
+        if (!mrId) {
+            throw new Error('Tidak dapat menentukan MR ID');
+        }
+
+        // 3. Update session
+        try {
+            const { updateSessionPatient } = await import('./session-manager.js');
+            updateSessionPatient({
+                id: patientId,
+                patientId: patientId,
+                name: patientName,
+                sundayClinic: {
+                    mrId: mrId,
+                    location: location
+                }
+            });
+        } catch (sessionError) {
+            console.warn('Unable to update session:', sessionError);
+        }
+
+        // 4. Redirect to Sunday Clinic page
+        const mrSlug = String(mrId).toLowerCase();
+        window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
+
+    } catch (error) {
+        console.error('[HospitalExam] Error:', error);
+        alert('Gagal membuka rekam medis: ' + error.message);
+    }
 }
 
 function getStatusBadge(status) {
