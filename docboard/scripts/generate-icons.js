@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 // Run on VPS where sharp is available:
 // cd /var/www/dokterdibya/docboard && node scripts/generate-icons.js
-const path = require('path');
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const require = createRequire(import.meta.url);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function generate() {
   const sharp = require('sharp');
@@ -13,10 +18,10 @@ async function generate() {
   </svg>`;
 
   const buf = Buffer.from(svg);
-  const outDir = path.join(__dirname, '../public/icons');
+  const outDir = join(__dirname, '../public/icons');
 
-  await sharp(buf).resize(512, 512).png().toFile(path.join(outDir, 'icon-512.png'));
-  await sharp(buf).resize(192, 192).png().toFile(path.join(outDir, 'icon-192.png'));
+  await sharp(buf).resize(512, 512).png().toFile(join(outDir, 'icon-512.png'));
+  await sharp(buf).resize(192, 192).png().toFile(join(outDir, 'icon-192.png'));
   console.log('Icons generated in', outDir);
 }
 
