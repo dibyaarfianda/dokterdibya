@@ -459,6 +459,28 @@ app.use('/api/app-version', appVersionRoutes);
 const commIntegrationRoutes = require('./routes/comm-integration');
 app.use('/api/integration/comm', commIntegrationRoutes);
 
+// DocBoard routes (Doctor Scheduler PWA)
+const docboardRoutes = require('./routes/docboard');
+app.use('/api/docboard', docboardRoutes);
+
+// Serve DocBoard PWA static files (production build)
+const docboardDistPath = path.join(__dirname, '../../docboard/dist');
+app.use('/docboard', express.static(docboardDistPath, {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        } else if (filePath.match(/\.[a-f0-9]+\.(js|css)$/)) {
+            // Vite hashed assets - cache for 1 year
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+    }
+}));
+
+// DocBoard SPA fallback - serve index.html for all /docboard/* routes
+app.get('/docboard/*', (req, res) => {
+    res.sendFile(path.join(docboardDistPath, 'index.html'));
+});
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',

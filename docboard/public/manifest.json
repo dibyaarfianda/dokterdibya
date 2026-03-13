@@ -1,0 +1,29 @@
+{
+  "name": "DocBoard - Doctor Scheduler",
+  "short_name": "DocBoard",
+  "description": "Unified doctor schedule across all locations",
+  "start_url": "/docboard/",
+  "scope": "/docboard/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F172A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/docboard/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/docboard/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/docboard/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
