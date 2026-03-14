@@ -129,5 +129,11 @@ export const api = {
   },
   addExternalStaff(data) {
     return request('/surgery/external-staff', { method: 'POST', body: JSON.stringify(data) });
+  },
+  lookupRM(mrId) {
+    return request(`/surgery/lookup-rm/${encodeURIComponent(mrId)}`);
+  },
+  searchPatient(query) {
+    return request(`/surgery/search-patient?q=${encodeURIComponent(query)}`);
   }
 };
