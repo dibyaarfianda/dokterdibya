@@ -6,6 +6,41 @@ const logger = require('../utils/logger');
 // All routes inherit verifyStaffToken from parent router (docboard.js)
 
 /**
+ * GET /lookup-rm/:mrId
+ * Fetch patient data from SIMRS by medical record number (DRD)
+ */
+router.get('/lookup-rm/:mrId', async (req, res) => {
+  try {
+    const data = await surgeryService.lookupByMrId(req.params.mrId);
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'RM tidak ditemukan' });
+    }
+    res.json({ success: true, ...data });
+  } catch (error) {
+    logger.error('Surgery RM lookup error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /search-patient?q=name
+ * Search patients by name, returns list with their RM numbers
+ */
+router.get('/search-patient', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 2) {
+      return res.json({ success: true, patients: [] });
+    }
+    const patients = await surgeryService.searchPatients(q);
+    res.json({ success: true, patients });
+  } catch (error) {
+    logger.error('Surgery patient search error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * GET /operation-types
  */
 router.get('/operation-types', async (req, res) => {

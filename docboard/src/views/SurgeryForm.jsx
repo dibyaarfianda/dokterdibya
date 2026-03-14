@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS } from '../utils/constants';
@@ -11,6 +11,8 @@ export default function SurgeryForm({ id }) {
   const [form, setForm] = useState({
     patient_name: '',
     patient_age: '',
+    patient_id: '',
+    mr_id: '',
     diagnosis: '',
     operation_type_id: '',
     operation_type_other: '',
@@ -32,6 +34,19 @@ export default function SurgeryForm({ id }) {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: '', role: 'Asisten Operator', phone: '' });
   const [opSearch, setOpSearch] = useState('');
+
+  // RM Lookup state
+  const [rmInput, setRmInput] = useState('');
+  const [rmLoading, setRmLoading] = useState(false);
+  const [rmResult, setRmResult] = useState(null);
+  const [rmError, setRmError] = useState('');
+
+  // Patient search state
+  const [patientSearch, setPatientSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const searchTimeout = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -55,6 +70,8 @@ export default function SurgeryForm({ id }) {
           setForm({
             patient_name: s.patient_name || '',
             patient_age: s.patient_age || '',
+            patient_id: s.patient_id || '',
+            mr_id: s.mr_id || '',
             diagnosis: s.diagnosis || '',
             operation_type_id: s.operation_type_id || '',
             operation_type_other: s.operation_type_other || '',
@@ -67,6 +84,7 @@ export default function SurgeryForm({ id }) {
             special_notes: s.special_notes || '',
             team_members: s.team_members || []
           });
+          if (s.mr_id) setRmInput(s.mr_id);
         }
       }
     } catch (err) {
@@ -78,6 +96,149 @@ export default function SurgeryForm({ id }) {
 
   function updateField(field, value) {
     setForm(f => ({ ...f, [field]: value }));
+  }
+
+  // =====================================================
+  // RM LOOKUP
+  // =====================================================
+
+  async function handleRmLookup() {
+    if (!rmInput.trim()) return;
+    setRmLoading(true);
+    setRmError('');
+    setRmResult(null);
+
+    try {
+      const data = await api.lookupRM(rmInput.trim());
+      setRmResult(data);
+      // Auto-fill form fields
+      setForm(f => ({
+        ...f,
+        patient_name: data.patient?.name || f.patient_name,
+        patient_age: data.patient?.age || f.patient_age,
+        patient_id: data.patient?.id || f.patient_id,
+        mr_id: rmInput.trim(),
+        diagnosis: data.clinical?.diagnosis || f.diagnosis,
+        lab_results: data.clinical?.lab_results || f.lab_results,
+        usg_results: data.clinical?.usg_results || f.usg_results,
+        // Pre-select location from visit
+        location: data.visit?.location || f.location
+      }));
+
+      // Add allergy to notes if exists
+      if (data.patient?.allergy && data.patient.allergy !== '-') {
+        setForm(f => ({
+          ...f,
+          special_notes: f.special_notes
+            ? f.special_notes
+            : `Alergi: ${data.patient.allergy}`
+        }));
+      }
+    } catch (err) {
+      setRmError(err.message || 'RM tidak ditemukan');
+    } finally {
+      setRmLoading(false);
+    }
+  }
+
+  // =====================================================
+  // PATIENT SEARCH
+  // =====================================================
+
+  function handlePatientSearchInput(value) {
+    setPatientSearch(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    if (value.length < 2) {
+      setSearchResults([]);
+      setShowSearch(false);
+      return;
+    }
+
+    setShowSearch(true);
+    searchTimeout.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const data = await api.searchPatient(value);
+        setSearchResults(data.patients || []);
+      } catch (err) {
+        console.error('Search error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  }
+
+  function selectPatient(patient) {
+    setPatientSearch('');
+    setSearchResults([]);
+    setShowSearch(false);
+
+    // Set RM input and auto-lookup
+    if (patient.latest_mr_id) {
+      setRmInput(patient.latest_mr_id);
+      // Auto-fill basic info first
+      setForm(f => ({
+        ...f,
+        patient_name: patient.name || f.patient_name,
+        patient_age: patient.age || f.patient_age,
+        patient_id: patient.id || f.patient_id,
+        mr_id: patient.latest_mr_id
+      }));
+      // Then do full RM lookup
+      setTimeout(async () => {
+        setRmLoading(true);
+        try {
+          const data = await api.lookupRM(patient.latest_mr_id);
+          setRmResult(data);
+          setForm(f => ({
+            ...f,
+            diagnosis: data.clinical?.diagnosis || f.diagnosis,
+            lab_results: data.clinical?.lab_results || f.lab_results,
+            usg_results: data.clinical?.usg_results || f.usg_results,
+            location: data.visit?.location || f.location
+          }));
+          if (data.patient?.allergy && data.patient.allergy !== '-' && !f.special_notes) {
+            setForm(f => ({ ...f, special_notes: `Alergi: ${data.patient.allergy}` }));
+          }
+        } catch {} finally {
+          setRmLoading(false);
+        }
+      }, 0);
+    } else {
+      setForm(f => ({
+        ...f,
+        patient_name: patient.name || f.patient_name,
+        patient_age: patient.age || f.patient_age,
+        patient_id: patient.id || f.patient_id
+      }));
+    }
+  }
+
+  // =====================================================
+  // RM HISTORY SELECT
+  // =====================================================
+
+  async function selectVisitHistory(mrId) {
+    setRmInput(mrId);
+    setRmLoading(true);
+    setRmError('');
+    try {
+      const data = await api.lookupRM(mrId);
+      setRmResult(data);
+      setForm(f => ({
+        ...f,
+        mr_id: mrId,
+        diagnosis: data.clinical?.diagnosis || f.diagnosis,
+        lab_results: data.clinical?.lab_results || f.lab_results,
+        usg_results: data.clinical?.usg_results || f.usg_results,
+        location: data.visit?.location || f.location
+      }));
+    } catch (err) {
+      setRmError(err.message);
+    } finally {
+      setRmLoading(false);
+    }
   }
 
   async function handleSubmit(e) {
@@ -112,23 +273,16 @@ export default function SurgeryForm({ id }) {
   }
 
   function addTeamMember(member) {
-    setForm(f => ({
-      ...f,
-      team_members: [...f.team_members, member]
-    }));
+    setForm(f => ({ ...f, team_members: [...f.team_members, member] }));
   }
 
   function removeTeamMember(index) {
-    setForm(f => ({
-      ...f,
-      team_members: f.team_members.filter((_, i) => i !== index)
-    }));
+    setForm(f => ({ ...f, team_members: f.team_members.filter((_, i) => i !== index) }));
   }
 
   async function handleAddExternalStaff(e) {
     e.preventDefault();
     if (!newStaff.name) return;
-
     try {
       const data = await api.addExternalStaff(newStaff);
       const created = data.staff;
@@ -150,7 +304,6 @@ export default function SurgeryForm({ id }) {
       )
     : opTypes;
 
-  // Group op types by category
   const groupedOps = {};
   for (const t of filteredOpTypes) {
     if (!groupedOps[t.category]) groupedOps[t.category] = [];
@@ -161,6 +314,10 @@ export default function SurgeryForm({ id }) {
     obstetri: 'Obstetri',
     ginekologi: 'Ginekologi',
     onkologi_ginekologi: 'Onkologi Ginekologi'
+  };
+
+  const locLabels = {
+    klinik_private: 'Klinik', rsia_melinda: 'Melinda', rsud_gambiran: 'Gambiran', rs_bhayangkara: 'Bhayangkara'
   };
 
   if (loading) {
@@ -180,6 +337,107 @@ export default function SurgeryForm({ id }) {
 
       <form onSubmit={handleSubmit} class="surgery-form">
         {error && <div class="form-error">{error}</div>}
+
+        {/* RM Lookup Section */}
+        <div class="form-section rm-section">
+          <div class="form-section-title">Cari Pasien</div>
+
+          {/* Search by name */}
+          <div class="form-group" style="position:relative">
+            <label>Cari Nama</label>
+            <input
+              type="text"
+              value={patientSearch}
+              onInput={e => handlePatientSearchInput(e.target.value)}
+              placeholder="Ketik nama pasien..."
+            />
+            {showSearch && (
+              <div class="search-dropdown">
+                {searchLoading ? (
+                  <div class="search-loading">Mencari...</div>
+                ) : searchResults.length === 0 ? (
+                  <div class="search-empty">Tidak ditemukan</div>
+                ) : (
+                  searchResults.map(p => (
+                    <button key={p.id} type="button" class="search-result" onClick={() => selectPatient(p)}>
+                      <div class="search-result-name">{p.name}</div>
+                      <div class="search-result-meta">
+                        {p.age ? `${p.age} th` : ''} {p.latest_mr_id ? `• ${p.latest_mr_id}` : ''}
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* OR: direct RM input */}
+          <div class="rm-divider"><span>atau masukkan RM</span></div>
+
+          <div class="rm-input-row">
+            <input
+              type="text"
+              value={rmInput}
+              onInput={e => setRmInput(e.target.value.toUpperCase())}
+              placeholder="DRD0510"
+              class="rm-input"
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleRmLookup())}
+            />
+            <button type="button" class="btn-rm-fetch" onClick={handleRmLookup} disabled={rmLoading}>
+              {rmLoading ? '...' : 'Fetch'}
+            </button>
+          </div>
+
+          {rmError && <div class="rm-error">{rmError}</div>}
+
+          {/* Show fetched patient info */}
+          {rmResult && (
+            <div class="rm-result">
+              <div class="rm-result-check">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3">
+                  <polyline points="20,6 9,17 4,12" />
+                </svg>
+                Data ditemukan
+              </div>
+              <div class="rm-result-info">
+                <strong>{rmResult.patient?.name}</strong>
+                {rmResult.patient?.age && <span> ({rmResult.patient.age} th)</span>}
+              </div>
+              {rmResult.patient?.allergy && rmResult.patient.allergy !== '-' && (
+                <div class="rm-result-allergy">Alergi: {rmResult.patient.allergy}</div>
+              )}
+              {rmResult.clinical?.diagnosis && (
+                <div class="rm-result-diag">Dx: {rmResult.clinical.diagnosis}</div>
+              )}
+
+              {/* Visit history */}
+              {rmResult.history && rmResult.history.length > 1 && (
+                <div class="rm-history">
+                  <div class="rm-history-label">Riwayat kunjungan:</div>
+                  <div class="rm-history-list">
+                    {rmResult.history.slice(0, 5).map(v => {
+                      const d = new Date(v.date);
+                      const dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' });
+                      const isActive = v.mr_id === rmInput;
+                      return (
+                        <button
+                          key={v.mr_id}
+                          type="button"
+                          class={`rm-history-item ${isActive ? 'active' : ''}`}
+                          onClick={() => !isActive && selectVisitHistory(v.mr_id)}
+                        >
+                          <span class="rm-history-id">{v.mr_id}</span>
+                          <span class="rm-history-date">{dateStr}</span>
+                          <span class="rm-history-loc">{locLabels[v.location] || v.location}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Patient Info */}
         <div class="form-section">
@@ -295,7 +553,6 @@ export default function SurgeryForm({ id }) {
             </div>
           )}
 
-          {/* Add from existing staff */}
           <div class="team-add-section">
             {externalStaff.filter(s => !form.team_members.some(m => m.id === s.id && m.is_external)).length > 0 && (
               <div class="team-existing">
@@ -304,12 +561,8 @@ export default function SurgeryForm({ id }) {
                   {externalStaff
                     .filter(s => !form.team_members.some(m => m.id === s.id && m.is_external))
                     .map(s => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        class="staff-chip"
-                        onClick={() => addTeamMember({ id: s.id, name: s.name, role: s.role, is_external: true })}
-                      >
+                      <button key={s.id} type="button" class="staff-chip"
+                        onClick={() => addTeamMember({ id: s.id, name: s.name, role: s.role, is_external: true })}>
                         + {s.name}
                       </button>
                     ))}
@@ -318,9 +571,7 @@ export default function SurgeryForm({ id }) {
             )}
 
             {!showAddStaff ? (
-              <button type="button" class="btn-text" onClick={() => setShowAddStaff(true)}>
-                + Tambah Staff Baru
-              </button>
+              <button type="button" class="btn-text" onClick={() => setShowAddStaff(true)}>+ Tambah Staff Baru</button>
             ) : (
               <div class="add-staff-form">
                 <input type="text" placeholder="Nama" value={newStaff.name} onInput={e => setNewStaff(p => ({ ...p, name: e.target.value }))} />

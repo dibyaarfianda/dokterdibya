@@ -1687,3 +1687,173 @@ input { font-family: inherit; }
 .actions-dropdown button:last-child { border-bottom: none; }
 .actions-dropdown button:hover { background: var(--bg); }
 .text-danger { color: var(--red) !important; }
+
+/* =====================================================
+   RM LOOKUP & PATIENT SEARCH
+   ===================================================== */
+.rm-section {
+  border-left: 3px solid var(--blue);
+}
+.rm-input-row {
+  display: flex;
+  gap: 8px;
+}
+.rm-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Fira Code', monospace, sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--bg);
+}
+.rm-input:focus { border-color: var(--blue); outline: none; }
+.btn-rm-fetch {
+  padding: 10px 20px;
+  background: var(--blue);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.btn-rm-fetch:disabled { opacity: 0.6; }
+.rm-error {
+  color: var(--red);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.rm-divider {
+  text-align: center;
+  margin: 12px 0;
+  position: relative;
+}
+.rm-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+.rm-divider span {
+  position: relative;
+  background: var(--card);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* RM Result */
+.rm-result {
+  margin-top: 10px;
+  padding: 12px;
+  background: #F0FDF4;
+  border-radius: var(--radius-sm);
+  border: 1px solid #BBF7D0;
+}
+.rm-result-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #16A34A;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.rm-result-info {
+  font-size: 14px;
+}
+.rm-result-allergy {
+  font-size: 12px;
+  color: var(--red);
+  font-weight: 600;
+  margin-top: 4px;
+}
+.rm-result-diag {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* RM History */
+.rm-history {
+  margin-top: 10px;
+  border-top: 1px solid #BBF7D0;
+  padding-top: 8px;
+}
+.rm-history-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+}
+.rm-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rm-history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 11px;
+}
+.rm-history-item.active {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+.rm-history-id { font-weight: 700; font-family: monospace; }
+.rm-history-date { color: var(--text-tertiary); }
+.rm-history-item.active .rm-history-date { color: rgba(255,255,255,0.7); }
+.rm-history-loc { color: var(--text-tertiary); }
+.rm-history-item.active .rm-history-loc { color: rgba(255,255,255,0.7); }
+
+/* Patient Search Dropdown */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+}
+.search-loading, .search-empty {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.search-result {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.search-result:last-child { border-bottom: none; }
+.search-result:hover { background: #F8FAFC; }
+.search-result-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.search-result-meta {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
