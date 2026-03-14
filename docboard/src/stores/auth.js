@@ -37,12 +37,15 @@ export async function login(email, password) {
 
   const data = await res.json();
 
-  if (!res.ok || !data.token) {
+  // Backend wraps response in { success, data: { token, user }, message }
+  const token = data.token || data.data?.token;
+
+  if (!res.ok || !token) {
     throw new Error(data.message || 'Login gagal');
   }
 
-  setToken(data.token);
-  const payload = JSON.parse(atob(data.token.split('.')[1]));
+  setToken(token);
+  const payload = JSON.parse(atob(token.split('.')[1]));
   user.value = payload;
   return payload;
 }
