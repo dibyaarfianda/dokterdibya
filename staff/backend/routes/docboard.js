@@ -3,10 +3,14 @@ const router = express.Router();
 const { verifyStaffToken } = require('../middleware/auth');
 const { requireRoles } = require('../middleware/auth');
 const docboardService = require('../services/DocBoardService');
+const surgeryRoutes = require('./surgery');
 const logger = require('../utils/logger');
 
 // All routes require staff authentication
 router.use(verifyStaffToken);
+
+// Mount surgery sub-routes
+router.use('/surgery', surgeryRoutes);
 
 /**
  * GET /api/docboard/calendar/:year/:month

@@ -3,7 +3,9 @@ import { useEffect } from 'preact/hooks';
 import BottomNav from './components/BottomNav';
 import Calendar from './views/Calendar';
 import DayDetail from './views/DayDetail';
-import Patients from './views/Patients';
+import SurgeryList from './views/SurgeryList';
+import SurgeryForm from './views/SurgeryForm';
+import SurgeryDetail from './views/SurgeryDetail';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Login from './views/Login';
@@ -39,7 +41,10 @@ export default function App() {
         <Router onChange={handleRoute}>
           <Calendar path="/docboard/" />
           <DayDetail path="/docboard/day/:date" />
-          <Patients path="/docboard/patients" />
+          <SurgeryList path="/docboard/surgery" />
+          <SurgeryForm path="/docboard/surgery/new" />
+          <SurgeryForm path="/docboard/surgery/edit/:id" />
+          <SurgeryDetail path="/docboard/surgery/:id" />
           <Notifications path="/docboard/notifications" />
           <Settings path="/docboard/settings" />
           <Calendar default />
