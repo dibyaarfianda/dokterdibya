@@ -516,26 +516,23 @@
         // Load USG Images
         async function loadUsgImages() {
             try {
-                // Fetch all USG types
-                const [responsePhoto, response2d, response4d] = await Promise.all([
-                    apiRequest('/api/patient-documents/my-documents?type=usg_photo'),
-                    apiRequest('/api/patient-documents/my-documents?type=usg_2d'),
-                    apiRequest('/api/patient-documents/my-documents?type=usg_4d')
-                ]);
+                // Single API call for all USG types
+                const response = await apiRequest('/api/patient-documents/my-documents?type=usg_photo,usg_2d,usg_4d');
 
                 allImages = [];
 
-                // Add explicitly typed images
-                if (response2d && response2d.success && response2d.documents) {
-                    allImages = allImages.concat(response2d.documents.map(d => ({ ...d, type: 'usg_2d', detectedType: 'usg_2d' })));
-                }
-                if (response4d && response4d.success && response4d.documents) {
-                    allImages = allImages.concat(response4d.documents.map(d => ({ ...d, type: 'usg_4d', detectedType: 'usg_4d' })));
-                }
-
-                // Add usg_photo images (will detect 2D/4D automatically)
-                if (responsePhoto && responsePhoto.success && responsePhoto.documents) {
-                    allImages = allImages.concat(responsePhoto.documents.map(d => ({ ...d, type: 'usg_photo', detectedType: null })));
+                if (response && response.success && response.documents) {
+                    allImages = response.documents.map(d => {
+                        if (d.document_type === 'usg_2d') {
+                            return { ...d, type: 'usg_2d', detectedType: 'usg_2d' };
+                        } else if (d.document_type === 'usg_4d') {
+                            return { ...d, type: 'usg_4d', detectedType: 'usg_4d' };
+                        } else {
+                            // usg_photo: use cached detection, default to usg_2d
+                            const cached = localStorage.getItem(`usg_type_${d.id}`);
+                            return { ...d, type: 'usg_photo', detectedType: cached || 'usg_2d' };
+                        }
+                    });
                 }
 
                 // Sort by date descending
@@ -549,42 +546,32 @@
 
                 filterByType('all');
 
-                // Auto-detect types for usg_photo images in background
-                detectAllImageTypes();
+                // Auto-detect types for usg_photo images that aren't cached yet (background, non-blocking)
+                detectUncachedImageTypes();
             } catch (error) {
                 console.error('Error loading USG:', error);
                 showToast('Gagal memuat album', 'error');
             }
         }
 
-        // Detect types for all usg_photo images
-        async function detectAllImageTypes() {
-            const photosToDetect = allImages.filter(img => img.type === 'usg_photo' && !img.detectedType);
+        // Detect types only for usg_photo images not yet cached (runs in background)
+        async function detectUncachedImageTypes() {
+            const photosToDetect = allImages.filter(img => img.type === 'usg_photo' && !localStorage.getItem(`usg_type_${img.id}`));
+            if (photosToDetect.length === 0) return;
 
+            let anyNew = false;
             for (const img of photosToDetect) {
                 try {
-                    // Check cache first
-                    const cacheKey = `usg_type_${img.id}`;
-                    const cached = localStorage.getItem(cacheKey);
-
-                    if (cached) {
-                        img.detectedType = cached;
-                    } else {
-                        const detected = await detectUsgType(img.file_url);
-                        img.detectedType = detected;
-                        // Cache the result
-                        localStorage.setItem(cacheKey, detected);
-                    }
+                    const detected = await detectUsgType(img.file_url);
+                    img.detectedType = detected;
+                    localStorage.setItem(`usg_type_${img.id}`, detected);
+                    anyNew = true;
                 } catch (e) {
-                    console.error('Error detecting type for image:', img.id, e);
-                    img.detectedType = 'usg_2d'; // Default to 2D
+                    img.detectedType = 'usg_2d';
                 }
             }
 
-            // Re-render if any types were detected
-            if (photosToDetect.length > 0) {
-                renderGallery();
-            }
+            if (anyNew) renderGallery();
         }
 
         // Filter by type

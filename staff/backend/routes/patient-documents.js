@@ -725,10 +725,16 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
         `;
         const params = [patientId];
 
-        // Filter by type if provided
+        // Filter by type if provided (supports comma-separated types e.g. 'usg_photo,usg_2d,usg_4d')
         if (type) {
-            query += ' AND pd.document_type = ?';
-            params.push(type);
+            const types = type.split(',').map(t => t.trim()).filter(Boolean);
+            if (types.length === 1) {
+                query += ' AND pd.document_type = ?';
+                params.push(types[0]);
+            } else if (types.length > 1) {
+                query += ` AND pd.document_type IN (${types.map(() => '?').join(',')})`;
+                params.push(...types);
+            }
         }
 
         query += ' ORDER BY pd.published_at DESC';
