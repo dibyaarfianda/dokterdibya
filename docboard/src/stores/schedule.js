@@ -21,3 +21,8 @@ export const syncStatus = signal({});
 // Notifications
 export const notifications = signal([]);
 export const unreadCount = signal(0);
+
+// Surgery
+export const surgeryCalendarData = signal({});
+export const upcomingSurgeries = signal([]);
+export const operationTypes = signal([]);

@@ -94,5 +94,40 @@ export const api = {
       method: 'DELETE',
       body: JSON.stringify({ endpoint })
     });
+  },
+
+  // Surgery
+  getSurgeryCalendar(year, month) {
+    return request(`/surgery/calendar/${year}/${month}`);
+  },
+  getDaySurgeries(date) {
+    return request(`/surgery/day/${date}`);
+  },
+  getSurgery(id) {
+    return request(`/surgery/${id}`);
+  },
+  createSurgery(data) {
+    return request('/surgery', { method: 'POST', body: JSON.stringify(data) });
+  },
+  updateSurgery(id, data) {
+    return request(`/surgery/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+  },
+  updateSurgeryStatus(id, status, reason) {
+    return request(`/surgery/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) });
+  },
+  deleteSurgery(id) {
+    return request(`/surgery/${id}`, { method: 'DELETE' });
+  },
+  getOperationTypes() {
+    return request('/surgery/operation-types');
+  },
+  getUpcomingSurgeries(days = 7) {
+    return request(`/surgery/upcoming?days=${days}`);
+  },
+  getExternalStaff() {
+    return request('/surgery/external-staff');
+  },
+  addExternalStaff(data) {
+    return request('/surgery/external-staff', { method: 'POST', body: JSON.stringify(data) });
   }
 };

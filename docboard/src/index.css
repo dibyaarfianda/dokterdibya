@@ -1100,3 +1100,590 @@ input { font-family: inherit; }
     height: 6px;
   }
 }
+
+/* =====================================================
+   SURGERY SCHEDULER STYLES
+   ===================================================== */
+
+/* View Header */
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.view-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.btn-back {
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+  color: var(--text-secondary);
+}
+.btn-back:hover { background: var(--border); }
+.btn-icon-primary {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--blue);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.btn-icon:hover { background: var(--border); }
+
+/* Surgery List */
+.view-surgery { padding-bottom: 80px; }
+
+.surgery-groups {
+  padding: 0 16px;
+}
+.surgery-group {
+  margin-bottom: 20px;
+}
+.surgery-date-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.surgery-date-header.today {
+  border-bottom-color: var(--blue);
+}
+.surgery-date-day {
+  font-weight: 600;
+  font-size: 14px;
+}
+.surgery-date-num {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.surgery-date-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.surgery-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.surgery-card:hover { box-shadow: var(--shadow-md); }
+.surgery-card-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 44px;
+}
+.surgery-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.surgery-loc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.surgery-card-body { flex: 1; min-width: 0; }
+.surgery-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.surgery-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.surgery-op-badge {
+  background: #EEF2FF;
+  color: var(--blue);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+}
+.surgery-loc-name {
+  color: var(--text-tertiary);
+}
+.surgery-card-diag {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.surgery-card-right {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-lg { font-size: 12px; padding: 4px 12px; }
+
+/* FAB */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--blue);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+  z-index: 20;
+}
+.fab:active { transform: scale(0.95); }
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-tertiary);
+}
+.empty-state p { margin: 16px 0; font-size: 14px; }
+.empty-state .btn-primary { margin-top: 8px; }
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+/* =====================================================
+   SURGERY FORM
+   ===================================================== */
+.view-surgery-form {
+  padding-bottom: 100px;
+}
+.surgery-form {
+  padding: 0 16px;
+}
+.form-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.form-section-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.form-group {
+  margin-bottom: 12px;
+}
+.form-group:last-child { margin-bottom: 0; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text-primary);
+  transition: border-color 0.15s;
+}
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--blue);
+  outline: none;
+}
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+.form-row .form-group { flex: 1; }
+.form-error {
+  background: #FEE2E2;
+  color: var(--red);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* Operation Type Selector */
+.op-search {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg);
+  margin-bottom: 12px;
+}
+.op-search:focus { border-color: var(--blue); outline: none; }
+.op-type-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.op-category { margin-bottom: 10px; }
+.op-category-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.op-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.op-chip {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+.op-chip:hover { border-color: var(--blue); }
+.op-chip.selected {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+
+/* Location Options */
+.location-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.location-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.location-option.selected {
+  font-weight: 600;
+}
+.loc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Team Members */
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.team-member .team-name { font-weight: 600; flex: 1; }
+.team-member .team-role { color: var(--text-tertiary); font-size: 12px; }
+.team-remove {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.team-remove:hover { background: #FEE2E2; color: var(--red); }
+
+.staff-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.staff-chip {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: 1px dashed var(--border);
+  color: var(--blue);
+}
+.staff-chip:hover { background: #EEF2FF; border-style: solid; }
+
+.btn-text {
+  font-size: 13px;
+  color: var(--blue);
+  font-weight: 600;
+  padding: 8px 0;
+}
+.add-staff-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+}
+.add-staff-form input, .add-staff-form select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.add-staff-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-small {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--blue);
+  color: white;
+}
+.btn-ghost {
+  background: none;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* Buttons */
+.btn-primary {
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.btn-primary:disabled { opacity: 0.6; }
+.btn-full { width: 100%; }
+.btn-lg { padding: 14px 20px; font-size: 16px; margin: 16px 0; }
+
+/* =====================================================
+   SURGERY DETAIL
+   ===================================================== */
+.view-surgery-detail {
+  padding-bottom: 80px;
+}
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 3px solid var(--blue);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+.detail-header-actions {
+  display: flex;
+  gap: 4px;
+}
+.detail-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 8px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.detail-patient-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.detail-patient-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+.detail-patient-age {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.detail-op-name {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.op-code-badge {
+  background: #EEF2FF;
+  color: var(--blue);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.op-cat-badge {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.detail-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-schedule-date {
+  font-size: 15px;
+  font-weight: 600;
+}
+.detail-schedule-time {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.detail-schedule-loc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.detail-text {
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+.detail-notes {
+  background: #FFFBEB;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 3px solid var(--amber);
+}
+.detail-team {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.detail-team-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.team-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #EEF2FF;
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.detail-team-member .team-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.detail-team-member .team-role {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* Actions dropdown */
+.actions-dropdown {
+  position: sticky;
+  top: 60px;
+  margin: 0 16px 8px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 15;
+  overflow: hidden;
+}
+.actions-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.actions-dropdown button:last-child { border-bottom: none; }
+.actions-dropdown button:hover { background: var(--bg); }
+.text-danger { color: var(--red) !important; }

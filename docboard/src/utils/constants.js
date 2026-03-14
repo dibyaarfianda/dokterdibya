@@ -47,4 +47,19 @@ export const VISIT_STATUS = {
   no_show: { label: 'Tidak Hadir', color: '#94A3B8' }
 };
 
+export const SURGERY_STATUS = {
+  planned: { label: 'Rencana', color: '#F59E0B', bg: '#FEF3C7' },
+  confirmed: { label: 'Konfirmasi', color: '#3B82F6', bg: '#DBEAFE' },
+  in_progress: { label: 'Berlangsung', color: '#8B5CF6', bg: '#EDE9FE' },
+  completed: { label: 'Selesai', color: '#22C55E', bg: '#DCFCE7' },
+  cancelled: { label: 'Batal', color: '#EF4444', bg: '#FEE2E2' },
+  postponed: { label: 'Ditunda', color: '#94A3B8', bg: '#F1F5F9' }
+};
+
+export const OP_CATEGORY = {
+  obstetri: { label: 'Obstetri', color: '#EC4899' },
+  ginekologi: { label: 'Ginekologi', color: '#3B82F6' },
+  onkologi_ginekologi: { label: 'Onkologi', color: '#EF4444' }
+};
+
 export const API_BASE = '/api/docboard';
