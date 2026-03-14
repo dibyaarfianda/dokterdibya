@@ -22,7 +22,7 @@ class SurgeryService {
 
     // 2. Get patient demographics
     const [patients] = await pool.query(
-      `SELECT id, full_name, birth_date, phone, whatsapp, allergy, medical_history, husband_name
+      `SELECT id, full_name, birth_date, phone, whatsapp, allergy, medical_history
        FROM patients WHERE id = ?`,
       [record.patient_id]
     );
@@ -126,8 +126,7 @@ class SurgeryService {
         birth_date: patient.birth_date,
         phone: patient.phone || patient.whatsapp || '',
         allergy: patient.allergy || '',
-        medical_history: patient.medical_history || '',
-        husband_name: patient.husband_name || ''
+        medical_history: patient.medical_history || ''
       },
       visit: {
         mr_id: mrId,
