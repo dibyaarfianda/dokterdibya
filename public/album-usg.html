@@ -341,12 +341,7 @@
                 </div>
             </div>
 
-            <!-- Filter Tabs -->
-            <div class="filter-tabs">
-                <div class="filter-tab active" data-type="all" onclick="filterByType('all')">Semua</div>
-                <div class="filter-tab" data-type="usg_2d" onclick="filterByType('usg_2d')">USG 2D</div>
-                <div class="filter-tab" data-type="usg_4d" onclick="filterByType('usg_4d')">USG 4D</div>
-            </div>
+
 
             <!-- Gallery -->
             <div class="usg-gallery" id="usg-gallery">
@@ -428,10 +423,8 @@
         // State
         let allImages = [];
         let filteredImages = [];
-        let currentFilter = 'all';
         let currentLightboxIndex = 0;
         let customThumbnailId = localStorage.getItem('usg_thumbnail_id');
-        let detectedTypes = {}; // Cache for detected 2D/4D types
 
         // Make functions globally available
         window.filterByType = filterByType;
@@ -441,67 +434,6 @@
         window.setAsThumbnail = setAsThumbnail;
         window.downloadImage = downloadImage;
         window.refreshUsgGallery = loadUsgImages;
-
-        /**
-         * Analyze image to determine if it's grayscale (2D) or colored (4D)
-         * @param {string} imageUrl - URL of the image to analyze
-         * @returns {Promise<string>} - 'usg_2d' or 'usg_4d'
-         */
-        async function detectUsgType(imageUrl) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-
-                img.onload = function() {
-                    try {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        // Sample a smaller version for performance
-                        const sampleSize = 100;
-                        canvas.width = sampleSize;
-                        canvas.height = sampleSize;
-
-                        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
-                        const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
-                        const pixels = imageData.data;
-
-                        let coloredPixels = 0;
-                        const threshold = 15; // Tolerance for color difference
-                        const totalSamples = (sampleSize * sampleSize);
-
-                        // Sample pixels to check for color
-                        for (let i = 0; i < pixels.length; i += 4) {
-                            const r = pixels[i];
-                            const g = pixels[i + 1];
-                            const b = pixels[i + 2];
-
-                            // Check if pixel has significant color difference (not grayscale)
-                            const rgDiff = Math.abs(r - g);
-                            const gbDiff = Math.abs(g - b);
-                            const rbDiff = Math.abs(r - b);
-
-                            if (rgDiff > threshold || gbDiff > threshold || rbDiff > threshold) {
-                                coloredPixels++;
-                            }
-                        }
-
-                        // If more than 5% of pixels are colored, it's 4D
-                        const colorRatio = coloredPixels / totalSamples;
-                        resolve(colorRatio > 0.05 ? 'usg_4d' : 'usg_2d');
-                    } catch (e) {
-                        console.error('Error analyzing image:', e);
-                        resolve('usg_2d'); // Default to 2D on error
-                    }
-                };
-
-                img.onerror = function() {
-                    resolve('usg_2d'); // Default to 2D on error
-                };
-
-                img.src = imageUrl;
-            });
-        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -522,17 +454,7 @@
                 allImages = [];
 
                 if (response && response.success && response.documents) {
-                    allImages = response.documents.map(d => {
-                        if (d.document_type === 'usg_2d') {
-                            return { ...d, type: 'usg_2d', detectedType: 'usg_2d' };
-                        } else if (d.document_type === 'usg_4d') {
-                            return { ...d, type: 'usg_4d', detectedType: 'usg_4d' };
-                        } else {
-                            // usg_photo: use cached detection, default to usg_2d
-                            const cached = localStorage.getItem(`usg_type_${d.id}`);
-                            return { ...d, type: 'usg_photo', detectedType: cached || 'usg_2d' };
-                        }
-                    });
+                    allImages = response.documents;
                 }
 
                 // Sort by date descending
@@ -545,55 +467,16 @@
                 document.getElementById('total-count').textContent = `${allImages.length} foto`;
 
                 filterByType('all');
-
-                // Auto-detect types for usg_photo images that aren't cached yet (background, non-blocking)
-                detectUncachedImageTypes();
             } catch (error) {
                 console.error('Error loading USG:', error);
                 showToast('Gagal memuat album', 'error');
             }
         }
 
-        // Detect types only for usg_photo images not yet cached (runs in background)
-        async function detectUncachedImageTypes() {
-            const photosToDetect = allImages.filter(img => img.type === 'usg_photo' && !localStorage.getItem(`usg_type_${img.id}`));
-            if (photosToDetect.length === 0) return;
-
-            let anyNew = false;
-            for (const img of photosToDetect) {
-                try {
-                    const detected = await detectUsgType(img.file_url);
-                    img.detectedType = detected;
-                    localStorage.setItem(`usg_type_${img.id}`, detected);
-                    anyNew = true;
-                } catch (e) {
-                    img.detectedType = 'usg_2d';
-                }
-            }
-
-            if (anyNew) renderGallery();
-        }
-
-        // Filter by type
+        // Show all images (no type filtering)
         function filterByType(type) {
-            currentFilter = type;
-
-            // Update tabs
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.type === type);
-            });
-
-            // Filter images - use detectedType for better accuracy
-            if (type === 'all') {
-                filteredImages = [...allImages];
-            } else {
-                filteredImages = allImages.filter(img => {
-                    // Use detectedType if available, otherwise use original type
-                    const effectiveType = img.detectedType || img.type;
-                    return effectiveType === type || img.document_type === type;
-                });
-            }
-
+            currentFilter = 'all';
+            filteredImages = [...allImages];
             renderGallery();
         }
 
@@ -632,7 +515,7 @@
                     <div class="usg-item" onclick="openLightbox(${index})">
                         ${isNew ? '<span class="new-badge">BARU</span>' : ''}
                         ${isThumbnail ? '<span class="thumbnail-badge"><i class="fa fa-star"></i></span>' : ''}
-                        ${currentFilter === 'all' && typeLabel ? `<span class="type-badge">${typeLabel}</span>` : ''}
+
                         <img src="${img.file_url}" alt="USG ${dateStr}" loading="lazy"
                              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EError%3C/text%3E%3C/svg%3E'">
                         <div class="overlay">
