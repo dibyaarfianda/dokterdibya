@@ -400,7 +400,7 @@
                         title: doc.title,
                         description: doc.description,
                         isNew: !doc.first_viewed_at,
-                        fileType: doc.file_type || getFileType(doc.file_url)
+                        fileType: normalizeMimeType(doc.file_type) || getFileType(doc.file_url)
                     }));
 
                     // Sort by date descending
@@ -419,6 +419,14 @@
                 console.error('Error loading lab results:', error);
                 showToast('Gagal memuat hasil lab', 'error');
             }
+        }
+
+        // Normalize MIME type to simple type ('image', 'pdf', 'unknown')
+        function normalizeMimeType(mimeType) {
+            if (!mimeType) return null;
+            if (mimeType.startsWith('image/')) return 'image';
+            if (mimeType === 'application/pdf') return 'pdf';
+            return null;
         }
 
         // Get file type from URL (handles signed URLs with query params)
