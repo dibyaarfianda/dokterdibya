@@ -178,7 +178,7 @@ class DocBoardAIService {
               COALESCE(ot.name, ss.operation_type_other) as operation_name,
               COALESCE(ot.category, 'obstetri') as operation_category
        FROM surgery_schedules ss
-       LEFT JOIN operation_types ot ON ss.operation_type_id = ot.id
+       LEFT JOIN surgery_operation_types ot ON ss.operation_type_id = ot.id
        WHERE ss.surgery_date = ? AND ss.status NOT IN ('cancelled', 'postponed')
        ORDER BY ss.surgery_time`,
       [date]
