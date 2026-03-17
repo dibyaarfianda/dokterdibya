@@ -424,11 +424,51 @@ class DocBoardService {
   }
 
   /**
-   * Get notification history (placeholder - returns empty for now)
+   * Get notification history from docboard_notifications
+   * Returns global notifications (user_id IS NULL) and user-specific ones
    */
-  async getNotifications(userId) {
-    // Future: implement notification storage
-    return [];
+  async getNotifications(userId, limit = 50) {
+    const [rows] = await pool.query(
+      `SELECT id, user_id, type, title, message, location, reference_id, is_read, created_at
+       FROM docboard_notifications
+       WHERE user_id IS NULL OR user_id = ?
+       ORDER BY created_at DESC
+       LIMIT ?`,
+      [userId || '', limit]
+    );
+    return rows;
+  }
+
+  /**
+   * Mark a single notification as read
+   */
+  async markNotificationRead(id) {
+    await pool.query(
+      'UPDATE docboard_notifications SET is_read = 1 WHERE id = ?',
+      [id]
+    );
+  }
+
+  /**
+   * Mark all notifications as read for a user (including global ones)
+   */
+  async markAllNotificationsRead(userId) {
+    await pool.query(
+      'UPDATE docboard_notifications SET is_read = 1 WHERE user_id IS NULL OR user_id = ?',
+      [userId || '']
+    );
+  }
+
+  /**
+   * Get unread notification count
+   */
+  async getUnreadCount(userId) {
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) as count FROM docboard_notifications
+       WHERE is_read = 0 AND (user_id IS NULL OR user_id = ?)`,
+      [userId || '']
+    );
+    return rows[0].count;
   }
 
   /**

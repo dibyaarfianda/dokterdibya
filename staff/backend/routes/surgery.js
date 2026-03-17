@@ -3,6 +3,7 @@ const router = express.Router();
 const PDFDocument = require('pdfkit');
 const jwt = require('jsonwebtoken');
 const surgeryService = require('../services/SurgeryService');
+const docboardPush = require('../services/DocBoardPushService');
 const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
@@ -450,6 +451,12 @@ router.post('/', async (req, res) => {
     }
 
     const surgery = await surgeryService.createSurgery(req.body, req.user?.id);
+
+    // Send push notification for new booking (fire-and-forget)
+    docboardPush.sendNewBookingNotification(surgery).catch(err => {
+      logger.error('Failed to send new booking notification:', err.message);
+    });
+
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery create error:', error);
@@ -480,6 +487,12 @@ router.patch('/:id/status', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Status diperlukan' });
     }
     const surgery = await surgeryService.updateStatus(req.params.id, status, reason);
+
+    // Send push notification for status change (fire-and-forget)
+    docboardPush.sendStatusChangeNotification(surgery, status).catch(err => {
+      logger.error('Failed to send status change notification:', err.message);
+    });
+
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery status update error:', error);

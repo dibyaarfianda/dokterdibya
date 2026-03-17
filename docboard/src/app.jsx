@@ -11,6 +11,7 @@ import Settings from './views/Settings';
 import Analytics from './views/Analytics';
 import Login from './views/Login';
 import { initAuth, isLoggedIn, isLoading } from './stores/auth';
+import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
 import { signal } from '@preact/signals';
 
 export const currentUrl = signal(typeof window !== 'undefined' ? window.location.pathname : '/docboard/');
@@ -23,6 +24,16 @@ export default function App() {
   useEffect(() => {
     initAuth();
   }, []);
+
+  // Start polling unread count when logged in
+  useEffect(() => {
+    if (isLoggedIn.value) {
+      startUnreadPolling();
+    } else {
+      stopUnreadPolling();
+    }
+    return () => stopUnreadPolling();
+  }, [isLoggedIn.value]);
 
   if (isLoading.value) {
     return (
