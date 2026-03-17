@@ -2,6 +2,7 @@ import { useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import CalendarGrid from '../components/CalendarGrid';
 import WeeklyView from '../components/WeeklyView';
+import MorningBriefing from '../components/MorningBriefing';
 import { SkeletonCalendar } from '../components/SkeletonLoader';
 import { api } from '../services/api';
 import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData } from '../stores/schedule';
@@ -77,6 +78,8 @@ export default function Calendar() {
   const todayStr = today();
   const todayEvents = calendarData.value[todayStr];
   const isWeekView = calendarView.value === 'week';
+  const now = new Date();
+  const isCurrentMonth = currentYear.value === now.getFullYear() && currentMonth.value === now.getMonth();
 
   return (
     <div class="view-calendar">
@@ -103,6 +106,9 @@ export default function Calendar() {
           <polyline points="9,18 15,12 9,6" />
         </svg>
       </div>
+
+      {/* AI Morning Briefing - only on current month */}
+      {isCurrentMonth && <MorningBriefing />}
 
       {/* View toggle */}
       <div class="view-toggle">

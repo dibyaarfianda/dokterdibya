@@ -122,7 +122,7 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* AI placeholder */}
+      {/* AI Assistant */}
       <div class="settings-card ai-card">
         <div class="ai-card-content">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2">
@@ -130,10 +130,10 @@ export default function Settings() {
           </svg>
           <div>
             <div class="ai-card-title">AI Assistant</div>
-            <div class="ai-card-desc">Briefing otomatis, prediksi volume pasien, dan lainnya</div>
+            <div class="ai-card-desc">Morning briefing otomatis tersedia di halaman Kalender</div>
           </div>
         </div>
-        <span class="coming-soon-badge">Segera Hadir</span>
+        <span class="ai-active-badge">Aktif</span>
       </div>
 
       {/* Logout */}

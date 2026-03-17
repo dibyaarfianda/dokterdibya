@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyStaffToken } = require('../middleware/auth');
 const { requireRoles } = require('../middleware/auth');
 const docboardService = require('../services/DocBoardService');
+const docboardPush = require('../services/DocBoardPushService');
 const surgeryRoutes = require('./surgery');
 const logger = require('../utils/logger');
 
@@ -185,6 +186,60 @@ router.get('/notifications', async (req, res) => {
 });
 
 /**
+ * PATCH /api/docboard/notifications/read-all
+ * Mark all notifications as read (must be before :id route)
+ */
+router.patch('/notifications/read-all', async (req, res) => {
+  try {
+    await docboardService.markAllNotificationsRead(req.user?.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('DocBoard mark all notifications read error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/docboard/notifications/unread-count
+ * Get unread notification count (must be before :id route)
+ */
+router.get('/notifications/unread-count', async (req, res) => {
+  try {
+    const count = await docboardService.getUnreadCount(req.user?.id);
+    res.json({ success: true, count });
+  } catch (error) {
+    logger.error('DocBoard unread count error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PATCH /api/docboard/notifications/:id/read
+ * Mark a single notification as read
+ */
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    await docboardService.markNotificationRead(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('DocBoard mark notification read error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/docboard/push/vapid-key
+ * Return public VAPID key for push subscription
+ */
+router.get('/push/vapid-key', (req, res) => {
+  const key = docboardPush.getVapidPublicKey();
+  if (!key) {
+    return res.status(503).json({ success: false, message: 'Push notifications not configured' });
+  }
+  res.json({ success: true, vapidKey: key });
+});
+
+/**
  * POST /api/docboard/push/register
  * Register push notification token
  */
@@ -230,14 +285,36 @@ router.delete('/push/unregister', async (req, res) => {
 });
 
 /**
- * POST /api/docboard/ai/briefing
- * AI placeholder - morning briefing
+ * GET /api/docboard/ai/briefing/:date
+ * AI morning briefing for a given date
  */
-router.post('/ai/briefing', (req, res) => {
-  res.status(501).json({
-    success: false,
-    message: 'AI Briefing - Segera Hadir'
-  });
+router.get('/ai/briefing/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    const refresh = req.query.refresh === 'true';
+    const userId = req.user?.id || 'unknown';
+
+    // Validate date format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ success: false, message: 'Format tanggal tidak valid (YYYY-MM-DD)' });
+    }
+
+    const docboardAI = require('../services/DocBoardAIService');
+    const result = await docboardAI.generateBriefing(date, userId, refresh);
+
+    if (!result.success) {
+      return res.status(500).json({ success: false, message: result.error || 'Gagal generate briefing' });
+    }
+
+    res.json({
+      success: true,
+      briefing: result.data,
+      cached: result.cached || false
+    });
+  } catch (error) {
+    logger.error('DocBoard AI briefing error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 /**
