@@ -145,5 +145,11 @@ export const api = {
   getSurgeryAnalytics(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return request(`/surgery/analytics${qs ? '?' + qs : ''}`);
+  },
+
+  // PDF Export - returns URL string (not a fetch, used with window.open)
+  getExportPDFUrl(startDate, endDate) {
+    const token = getToken();
+    return `${API_BASE}/surgery/export/pdf?start=${startDate}&end=${endDate}&token=${token}`;
   }
 };

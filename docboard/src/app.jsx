@@ -8,6 +8,7 @@ import SurgeryForm from './views/SurgeryForm';
 import SurgeryDetail from './views/SurgeryDetail';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
+import Analytics from './views/Analytics';
 import Login from './views/Login';
 import { initAuth, isLoggedIn, isLoading } from './stores/auth';
 import { signal } from '@preact/signals';
@@ -46,6 +47,7 @@ export default function App() {
           <SurgeryForm path="/docboard/surgery/edit/:id" />
           <SurgeryDetail path="/docboard/surgery/:id" />
           <Notifications path="/docboard/notifications" />
+          <Analytics path="/docboard/analytics" />
           <Settings path="/docboard/settings" />
           <Calendar default />
         </Router>

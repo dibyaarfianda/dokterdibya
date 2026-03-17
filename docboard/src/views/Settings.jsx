@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
+import { route } from 'preact-router';
 import { user, logout } from '../stores/auth';
 import { api } from '../services/api';
 import { LOCATIONS, SYNC_STATUS } from '../utils/constants';
@@ -99,6 +100,26 @@ export default function Settings() {
             </div>
           );
         })}
+      </div>
+
+      {/* Analytics */}
+      <div class="settings-card settings-card-link" onClick={() => route('/docboard/analytics')}>
+        <div class="settings-link-row">
+          <div class="settings-link-icon" style={{ background: '#EEF2FF', color: '#3B82F6' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </div>
+          <div class="settings-link-info">
+            <div class="settings-link-title">Statistik Operasi</div>
+            <div class="settings-link-desc">Lihat data & tren operasi</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
+            <polyline points="9,18 15,12 9,6" />
+          </svg>
+        </div>
       </div>
 
       {/* AI placeholder */}
