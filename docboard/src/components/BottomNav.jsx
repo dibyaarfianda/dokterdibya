@@ -1,9 +1,10 @@
 import { currentUrl } from '../app';
+import { unreadCount } from '../stores/notifications';
 
 const tabs = [
   { path: '/docboard/', icon: 'calendar', label: 'Jadwal' },
   { path: '/docboard/surgery', icon: 'surgery', label: 'Operasi' },
-  { path: '/docboard/notifications', icon: 'bell', label: 'Notif' },
+  { path: '/docboard/notifications', icon: 'bell', label: 'Notif', badge: true },
   { path: '/docboard/settings', icon: 'menu', label: 'Lainnya' }
 ];
 
@@ -52,7 +53,14 @@ export default function BottomNav() {
             href={tab.path}
             class={`bottom-nav-item ${isActive ? 'active' : ''}`}
           >
-            <span class="bottom-nav-icon">{icons[tab.icon]}</span>
+            <span class="bottom-nav-icon">
+              {icons[tab.icon]}
+              {tab.badge && unreadCount.value > 0 && (
+                <span class="nav-badge">
+                  {unreadCount.value > 99 ? '99+' : unreadCount.value}
+                </span>
+              )}
+            </span>
             <span class="bottom-nav-label">{tab.label}</span>
           </a>
         );

@@ -4,13 +4,18 @@ import { user, logout } from '../stores/auth';
 import { api } from '../services/api';
 import { LOCATIONS, SYNC_STATUS } from '../utils/constants';
 import { relativeTime } from '../utils/date';
+import { isPushSupported, isPushSubscribed, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 
 export default function Settings() {
   const [syncData, setSyncData] = useState({});
   const [syncing, setSyncing] = useState({});
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(true);
+  const [pushSupported] = useState(isPushSupported());
 
   useEffect(() => {
     loadSyncStatus();
+    checkPushStatus();
   }, []);
 
   async function loadSyncStatus() {
@@ -19,6 +24,55 @@ export default function Settings() {
       setSyncData(data.statuses || {});
     } catch (err) {
       console.error('Failed to load sync status:', err);
+    }
+  }
+
+  async function checkPushStatus() {
+    if (!pushSupported) {
+      setPushLoading(false);
+      return;
+    }
+    try {
+      const subscribed = await isPushSubscribed();
+      setPushEnabled(subscribed);
+    } catch {
+      // ignore
+    }
+    setPushLoading(false);
+  }
+
+  async function handlePushToggle() {
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribeFromPush();
+        setPushEnabled(false);
+      } else {
+        await subscribeToPush();
+        setPushEnabled(true);
+      }
+    } catch (err) {
+      alert(err.message || 'Gagal mengubah pengaturan notifikasi');
+    }
+    setPushLoading(false);
+  }
+
+  async function handleTestNotification() {
+    if (!pushEnabled) {
+      alert('Aktifkan notifikasi push terlebih dahulu');
+      return;
+    }
+    // Show a test notification locally
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification('DocBoard Test', {
+        body: 'Notifikasi push berfungsi dengan baik!',
+        icon: '/docboard/icons/icon-192.png',
+        badge: '/docboard/icons/icon-192.png',
+        vibrate: [200, 100, 200]
+      });
+    } catch (err) {
+      alert('Gagal menampilkan notifikasi test: ' + err.message);
     }
   }
 
@@ -56,6 +110,43 @@ export default function Settings() {
             <div class="profile-name">{user.value?.name || 'User'}</div>
             <div class="profile-role">{user.value?.role || ''}</div>
           </div>
+        </div>
+      </div>
+
+      {/* Push Notifications */}
+      <div class="settings-section">
+        <h3 class="settings-section-title">Notifikasi Push</h3>
+        <div class="settings-card">
+          <div class="push-toggle-row">
+            <div class="push-toggle-info">
+              <div class="push-toggle-label">Notifikasi Push</div>
+              <div class="push-toggle-desc">
+                {!pushSupported
+                  ? 'Browser tidak mendukung push notification'
+                  : pushEnabled
+                    ? 'Aktif - menerima notifikasi operasi'
+                    : 'Nonaktif - aktifkan untuk menerima notifikasi'}
+              </div>
+            </div>
+            <label class={`toggle-switch ${!pushSupported ? 'disabled' : ''}`}>
+              <input
+                type="checkbox"
+                checked={pushEnabled}
+                disabled={!pushSupported || pushLoading}
+                onChange={handlePushToggle}
+              />
+              <span class="toggle-slider" />
+            </label>
+          </div>
+          {pushEnabled && (
+            <button class="btn-test-notif" onClick={handleTestNotification}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              Kirim Notifikasi Test
+            </button>
+          )}
         </div>
       </div>
 
