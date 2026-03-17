@@ -2,11 +2,13 @@ import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY } from '../utils/constants';
+import PostOpNotesForm from '../components/PostOpNotesForm';
 
 export default function SurgeryDetail({ id }) {
   const [surgery, setSurgery] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showActions, setShowActions] = useState(false);
+  const [showPostOpForm, setShowPostOpForm] = useState(false);
 
   useEffect(() => { loadSurgery(); }, [id]);
 
@@ -200,10 +202,103 @@ export default function SurgeryDetail({ id }) {
         </div>
       )}
 
-      {s.post_op_notes && (
-        <div class="detail-card">
-          <div class="detail-label">Catatan Post-Op</div>
-          <div class="detail-text">{s.post_op_notes}</div>
+      {/* Post-Op Notes Section */}
+      {(s.status === 'in_progress' || s.status === 'completed') && (
+        showPostOpForm ? (
+          <PostOpNotesForm
+            surgeryId={id}
+            existingNotes={s.post_op_notes}
+            onSaved={() => {
+              setShowPostOpForm(false);
+              loadSurgery();
+            }}
+            onCancel={() => setShowPostOpForm(false)}
+          />
+        ) : s.post_op_notes ? (
+          <div class="detail-card">
+            <div class="postop-header">
+              <div class="detail-label" style="margin-bottom:0">Catatan Post-Op</div>
+              <button class="btn-postop-edit" onClick={() => setShowPostOpForm(true)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                Edit
+              </button>
+            </div>
+            {renderPostOpNotes(s.post_op_notes)}
+          </div>
+        ) : (
+          <div class="detail-card">
+            <button class="btn-add-postop" onClick={() => setShowPostOpForm(true)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Tambah Catatan Post-Op
+            </button>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+function renderPostOpNotes(notes) {
+  let parsed = notes;
+  if (typeof notes === 'string') {
+    try { parsed = JSON.parse(notes); } catch { return <div class="detail-text">{notes}</div>; }
+  }
+  if (typeof parsed !== 'object' || parsed === null) {
+    return <div class="detail-text">{String(notes)}</div>;
+  }
+
+  const komplikasiLabels = { tidak_ada: 'Tidak Ada', minor: 'Minor', mayor: 'Mayor' };
+
+  return (
+    <div class="postop-notes-display">
+      {parsed.prosedur && (
+        <div class="postop-field">
+          <div class="postop-field-label">Prosedur</div>
+          <div class="postop-field-value">{parsed.prosedur}</div>
+        </div>
+      )}
+      {parsed.temuan && (
+        <div class="postop-field">
+          <div class="postop-field-label">Temuan Operasi</div>
+          <div class="postop-field-value">{parsed.temuan}</div>
+        </div>
+      )}
+      <div class="postop-field">
+        <div class="postop-field-label">Komplikasi</div>
+        <div class="postop-field-value">
+          <span class={`komplikasi-badge komplikasi-${parsed.komplikasi || 'tidak_ada'}`}>
+            {komplikasiLabels[parsed.komplikasi] || 'Tidak Ada'}
+          </span>
+          {parsed.komplikasi_detail && (
+            <span class="komplikasi-detail"> - {parsed.komplikasi_detail}</span>
+          )}
+        </div>
+      </div>
+      {(parsed.estimasi_perdarahan || parsed.durasi_operasi) && (
+        <div class="postop-metrics">
+          {parsed.estimasi_perdarahan && (
+            <div class="postop-metric">
+              <div class="postop-metric-value">{parsed.estimasi_perdarahan}</div>
+              <div class="postop-metric-label">ml perdarahan</div>
+            </div>
+          )}
+          {parsed.durasi_operasi && (
+            <div class="postop-metric">
+              <div class="postop-metric-value">{parsed.durasi_operasi}</div>
+              <div class="postop-metric-label">menit durasi</div>
+            </div>
+          )}
+        </div>
+      )}
+      {parsed.catatan_tambahan && (
+        <div class="postop-field">
+          <div class="postop-field-label">Catatan Tambahan</div>
+          <div class="postop-field-value postop-extra-notes">{parsed.catatan_tambahan}</div>
         </div>
       )}
     </div>

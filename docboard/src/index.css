@@ -1857,3 +1857,168 @@ input { font-family: inherit; }
   color: var(--text-tertiary);
   margin-top: 2px;
 }
+
+/* =====================================================
+   POST-OP NOTES
+   ===================================================== */
+.postop-form-card {
+  border-left: 3px solid var(--green);
+}
+.postop-form-card .form-group {
+  margin-bottom: 12px;
+}
+.postop-form-card .form-group textarea,
+.postop-form-card .form-group input,
+.postop-form-card .form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text-primary);
+  transition: border-color 0.15s;
+}
+.postop-form-card .form-group textarea:focus,
+.postop-form-card .form-group input:focus,
+.postop-form-card .form-group select:focus {
+  border-color: var(--blue);
+  outline: none;
+}
+.postop-form-card .form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.postop-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.postop-actions .btn-secondary {
+  flex: 1;
+}
+.postop-actions .btn-primary {
+  flex: 2;
+}
+.postop-success {
+  background: #DCFCE7;
+  color: #16A34A;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Post-Op Notes Display */
+.postop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.btn-postop-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.btn-postop-edit:hover {
+  background: #EEF2FF;
+}
+.btn-add-postop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+  border: 2px dashed #BBF7D0;
+  border-radius: var(--radius-sm);
+  background: none;
+  transition: all 0.15s;
+}
+.btn-add-postop:hover {
+  background: #F0FDF4;
+  border-color: var(--green);
+}
+
+.postop-notes-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.postop-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+.postop-field-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+.postop-extra-notes {
+  background: #FFFBEB;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid var(--amber);
+}
+.postop-metrics {
+  display: flex;
+  gap: 12px;
+}
+.postop-metric {
+  flex: 1;
+  background: var(--bg);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.postop-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.postop-metric-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Komplikasi Badges */
+.komplikasi-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.komplikasi-tidak_ada {
+  background: #DCFCE7;
+  color: #16A34A;
+}
+.komplikasi-minor {
+  background: #FEF3C7;
+  color: #D97706;
+}
+.komplikasi-mayor {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+.komplikasi-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

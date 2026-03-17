@@ -135,5 +135,15 @@ export const api = {
   },
   searchPatient(query) {
     return request(`/surgery/search-patient?q=${encodeURIComponent(query)}`);
+  },
+  updatePostOpNotes(id, notes) {
+    return request(`/surgery/${id}/post-op-notes`, {
+      method: 'PATCH',
+      body: JSON.stringify({ post_op_notes: notes })
+    });
+  },
+  getSurgeryAnalytics(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/surgery/analytics${qs ? '?' + qs : ''}`);
   }
 };
