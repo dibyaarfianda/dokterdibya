@@ -83,6 +83,57 @@ export function isToday(dateStr) {
   return dateStr === today();
 }
 
+// Get Monday of the week containing the given date
+export function getWeekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun, 1=Mon, ...
+  const diff = day === 0 ? -6 : 1 - day; // Adjust so Monday=start
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+// Get array of 7 date strings (Mon-Sun) for the week containing the given date
+export function getWeekDays(date) {
+  const monday = getWeekStart(date);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push({
+      date: formatDateLocal(d),
+      day: d.getDate(),
+      dayName: DAYS_ID[d.getDay()],
+      dayNameFull: DAYS_FULL[d.getDay()],
+      dateObj: d
+    });
+  }
+  return days;
+}
+
+// Format week label like "10 - 16 Mar 2026"
+export function getWeekLabel(weekStart) {
+  const monday = new Date(weekStart);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const startDay = monday.getDate();
+  const endDay = sunday.getDate();
+  const startMonth = monday.getMonth();
+  const endMonth = sunday.getMonth();
+  const startYear = monday.getFullYear();
+  const endYear = sunday.getFullYear();
+
+  if (startYear !== endYear) {
+    return `${startDay} ${MONTHS_SHORT[startMonth]} ${startYear} - ${endDay} ${MONTHS_SHORT[endMonth]} ${endYear}`;
+  } else if (startMonth !== endMonth) {
+    return `${startDay} ${MONTHS_SHORT[startMonth]} - ${endDay} ${MONTHS_SHORT[endMonth]} ${endYear}`;
+  } else {
+    return `${startDay} - ${endDay} ${MONTHS_SHORT[endMonth]} ${endYear}`;
+  }
+}
+
 export function relativeTime(dateStr) {
   if (!dateStr) return '-';
   const now = new Date();
