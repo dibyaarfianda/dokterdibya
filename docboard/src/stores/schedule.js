@@ -6,6 +6,10 @@ export const currentMonth = signal(new Date().getMonth());
 export const calendarData = signal({}); // { 'YYYY-MM-DD': { locations: [...] } }
 export const calendarLoading = signal(false);
 
+// Weekly view state
+export const calendarView = signal('month'); // 'month' | 'week'
+export const currentWeekStart = signal(null); // Monday of current week (Date object)
+
 // Day detail state
 export const selectedDate = signal(null);
 export const dayDetail = signal(null);

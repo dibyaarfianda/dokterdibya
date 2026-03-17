@@ -1,15 +1,21 @@
 import { useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import CalendarGrid from '../components/CalendarGrid';
+import WeeklyView from '../components/WeeklyView';
 import { SkeletonCalendar } from '../components/SkeletonLoader';
 import { api } from '../services/api';
-import { currentYear, currentMonth, calendarData, calendarLoading } from '../stores/schedule';
-import { getMonthName, today } from '../utils/date';
+import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData } from '../stores/schedule';
+import { getMonthName, today, getWeekStart } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
 
 export default function Calendar() {
   useEffect(() => {
     loadCalendar();
+  }, [currentYear.value, currentMonth.value]);
+
+  // Load surgery calendar data alongside regular calendar
+  useEffect(() => {
+    loadSurgeryCalendar();
   }, [currentYear.value, currentMonth.value]);
 
   async function loadCalendar() {
@@ -21,6 +27,15 @@ export default function Calendar() {
       console.error('Failed to load calendar:', err);
     } finally {
       calendarLoading.value = false;
+    }
+  }
+
+  async function loadSurgeryCalendar() {
+    try {
+      const data = await api.getSurgeryCalendar(currentYear.value, currentMonth.value + 1);
+      surgeryCalendarData.value = data.days || {};
+    } catch (err) {
+      console.error('Failed to load surgery calendar:', err);
     }
   }
 
@@ -52,8 +67,16 @@ export default function Calendar() {
     route(`/docboard/day/${date}`);
   }
 
+  function switchView(view) {
+    calendarView.value = view;
+    if (view === 'week' && !currentWeekStart.value) {
+      currentWeekStart.value = getWeekStart(new Date());
+    }
+  }
+
   const todayStr = today();
   const todayEvents = calendarData.value[todayStr];
+  const isWeekView = calendarView.value === 'week';
 
   return (
     <div class="view-calendar">
@@ -81,33 +104,60 @@ export default function Calendar() {
         </svg>
       </div>
 
-      {/* Month navigation */}
-      <div class="month-nav">
-        <button class="month-nav-btn" onClick={prevMonth}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15,18 9,12 15,6" />
-          </svg>
+      {/* View toggle */}
+      <div class="view-toggle">
+        <button
+          class={`view-toggle-btn${!isWeekView ? ' active' : ''}`}
+          onClick={() => switchView('month')}
+        >
+          Bulan
         </button>
-        <button class="month-nav-title" onClick={goToToday}>
-          {getMonthName(currentMonth.value)} {currentYear.value}
-        </button>
-        <button class="month-nav-btn" onClick={nextMonth}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9,18 15,12 9,6" />
-          </svg>
+        <button
+          class={`view-toggle-btn${isWeekView ? ' active' : ''}`}
+          onClick={() => switchView('week')}
+        >
+          Minggu
         </button>
       </div>
 
-      {/* Calendar grid */}
-      {calendarLoading.value ? (
-        <SkeletonCalendar />
+      {isWeekView ? (
+        /* Weekly view */
+        calendarLoading.value ? (
+          <SkeletonCalendar />
+        ) : (
+          <WeeklyView />
+        )
       ) : (
-        <CalendarGrid
-          year={currentYear.value}
-          month={currentMonth.value}
-          events={calendarData.value}
-          onDayClick={handleDayClick}
-        />
+        <>
+          {/* Month navigation */}
+          <div class="month-nav">
+            <button class="month-nav-btn" onClick={prevMonth}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15,18 9,12 15,6" />
+              </svg>
+            </button>
+            <button class="month-nav-title" onClick={goToToday}>
+              {getMonthName(currentMonth.value)} {currentYear.value}
+            </button>
+            <button class="month-nav-btn" onClick={nextMonth}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9,18 15,12 9,6" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Calendar grid */}
+          {calendarLoading.value ? (
+            <SkeletonCalendar />
+          ) : (
+            <CalendarGrid
+              year={currentYear.value}
+              month={currentMonth.value}
+              events={calendarData.value}
+              onDayClick={handleDayClick}
+            />
+          )}
+        </>
       )}
 
       {/* Location legend */}
