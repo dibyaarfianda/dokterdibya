@@ -1224,6 +1224,22 @@ class SundayClinicApp {
 
             this.showSuccess('Data USG berhasil disimpan!');
 
+            // Auto-generate diagnosis (update with new USG data)
+            try {
+                const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
+                const freshState = stateManager.getState();
+                const stateForGen = {
+                    ...freshState,
+                    recordData: { ...freshState.recordData, usg: data }
+                };
+                const diagText = generateObstetricDiagnosis(stateForGen);
+                if (diagText) {
+                    stateManager.updateSectionData('diagnosis', { diagnosis_utama: diagText });
+                    const textarea = document.getElementById('diagnosis-utama');
+                    if (textarea) textarea.value = diagText;
+                }
+            } catch (e) { console.warn('[AutoDiag]', e); }
+
             // Reload the record to show updated metadata
             await this.fetchRecord(this.currentMrId);
 
@@ -1491,6 +1507,22 @@ class SundayClinicApp {
 
             // Show success message
             this.showSuccess('Anamnesa berhasil disimpan!');
+
+            // Auto-generate diagnosis
+            try {
+                const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
+                const freshState = stateManager.getState();
+                const stateForGen = {
+                    ...freshState,
+                    recordData: { ...freshState.recordData, anamnesa: data }
+                };
+                const diagText = generateObstetricDiagnosis(stateForGen);
+                if (diagText) {
+                    stateManager.updateSectionData('diagnosis', { diagnosis_utama: diagText });
+                    const textarea = document.getElementById('diagnosis-utama');
+                    if (textarea) textarea.value = diagText;
+                }
+            } catch (e) { console.warn('[AutoDiag]', e); }
 
             // Reload the record to show updated metadata
             await this.fetchRecord(this.currentMrId);
