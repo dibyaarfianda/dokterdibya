@@ -1224,7 +1224,10 @@ class SundayClinicApp {
 
             this.showSuccess('Data USG berhasil disimpan!');
 
-            // Auto-generate diagnosis (update with new USG data)
+            // Reload the record to show updated metadata
+            await this.fetchRecord(this.currentMrId);
+
+            // Auto-generate diagnosis (after fetchRecord so state is fresh)
             try {
                 const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
                 const freshState = stateManager.getState();
@@ -1239,9 +1242,6 @@ class SundayClinicApp {
                     if (textarea) textarea.value = diagText;
                 }
             } catch (e) { console.warn('[AutoDiag]', e); }
-
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
             console.error('[SundayClinic] Save USG failed:', error);
@@ -1508,7 +1508,10 @@ class SundayClinicApp {
             // Show success message
             this.showSuccess('Anamnesa berhasil disimpan!');
 
-            // Auto-generate diagnosis
+            // Reload the record to show updated metadata
+            await this.fetchRecord(this.currentMrId);
+
+            // Auto-generate diagnosis (after fetchRecord so state is fresh)
             try {
                 const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
                 const freshState = stateManager.getState();
@@ -1523,9 +1526,6 @@ class SundayClinicApp {
                     if (textarea) textarea.value = diagText;
                 }
             } catch (e) { console.warn('[AutoDiag]', e); }
-
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
 
             // Re-enable button
             btn.disabled = false;
