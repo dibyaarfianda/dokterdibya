@@ -30,3 +30,7 @@ export const unreadCount = signal(0);
 export const surgeryCalendarData = signal({});
 export const upcomingSurgeries = signal([]);
 export const operationTypes = signal([]);
+
+// AI Briefing
+export const briefingData = signal(null);
+export const briefingLoading = signal(false);

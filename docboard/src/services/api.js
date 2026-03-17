@@ -81,7 +81,23 @@ export const api = {
     return request('/notifications');
   },
 
-  // Push token registration
+  markNotificationRead(id) {
+    return request(`/notifications/${id}/read`, { method: 'PATCH' });
+  },
+
+  markAllNotificationsRead() {
+    return request('/notifications/read-all', { method: 'PATCH' });
+  },
+
+  getUnreadCount() {
+    return request('/notifications/unread-count');
+  },
+
+  // Push
+  getVapidKey() {
+    return request('/push/vapid-key');
+  },
+
   registerPush(subscription) {
     return request('/push/register', {
       method: 'POST',
@@ -151,5 +167,10 @@ export const api = {
   getExportPDFUrl(startDate, endDate) {
     const token = getToken();
     return `${API_BASE}/surgery/export/pdf?start=${startDate}&end=${endDate}&token=${token}`;
+  },
+
+  // AI Briefing
+  getBriefing(date, refresh = false) {
+    return request(`/ai/briefing/${date}${refresh ? '?refresh=true' : ''}`);
   }
 };
