@@ -1,0 +1,2396 @@
+:root {
+    --sc-bg: #f4f6f9;
+    --sc-border: #d2d6dc;
+    --sc-muted: #6b7280;
+    --sc-primary: #3c8dbc;
+    --sc-card-bg: #ffffff;
+    /* Match AdminLTE typography variables */
+    --font-family-base: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-size-base: 0.875rem; /* 14px */
+}
+
+/* Apply Poppins font globally - match AdminLTE */
+body, .sidebar, .main-sidebar, .content-wrapper, .card, .btn, .nav-link, .brand-text,
+h1, h2, h3, h4, h5, h6, p, span, div, a, input, select, textarea, table, th, td {
+    font-family: var(--font-family-base) !important;
+}
+
+/* Badges - regular font weight instead of bold */
+.badge {
+    font-weight: 400 !important;
+}
+
+/* Sidebar navigation styles - match AdminLTE exactly */
+.sidebar .nav-sidebar .nav-link {
+    font-size: 14px !important;
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+    padding-left: 6px !important;
+    color: #000000 !important;
+}
+
+.sidebar .nav-sidebar .nav-link .nav-icon {
+    font-size: 14px !important;
+    color: #000000 !important;
+}
+
+.sidebar .nav-sidebar .nav-item {
+    margin-bottom: 0 !important;
+}
+
+.sidebar .nav-sidebar .nav-link:hover {
+    background-color: rgba(0,0,0,0.08) !important;
+    color: #000000 !important;
+}
+
+.sidebar .nav-sidebar .nav-link:hover .nav-icon {
+    color: #000000 !important;
+}
+
+.sidebar .nav-sidebar .nav-link.active {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+.sidebar .nav-sidebar .nav-link.active .nav-icon {
+    color: #fff !important;
+}
+
+.sidebar .nav-header {
+    color: rgba(0,0,0,0.6) !important;
+}
+
+/* Sidebar background and width - match AdminLTE */
+.main-sidebar {
+    background-color: #FAFAFA !important;
+}
+
+body:not(.sidebar-collapse) .main-sidebar {
+    width: 210px !important;
+}
+
+body.sidebar-collapse .main-sidebar {
+    width: 4.6rem !important;
+}
+
+.main-sidebar .brand-link {
+    background-color: #FAFAFA !important;
+}
+
+/* Content area margin - match AdminLTE sidebar width */
+body:not(.sidebar-collapse) .content-wrapper,
+body:not(.sidebar-collapse) .main-footer,
+body:not(.sidebar-collapse) .main-header {
+    margin-left: 210px !important;
+}
+
+body.sidebar-collapse .content-wrapper,
+body.sidebar-collapse .main-footer,
+body.sidebar-collapse .main-header {
+    margin-left: 4.6rem !important;
+}
+
+/* Submenu bullet icons - match AdminLTE */
+.sidebar .nav-treeview .nav-link i.fas.fa-circle.nav-icon,
+.nav-sidebar .nav-treeview .nav-link i.fa-circle {
+    font-size: 9px !important;
+    width: 1rem !important;
+    margin-left: 1.3rem !important;
+    margin-right: 0.5rem !important;
+    text-align: center !important;
+}
+
+/* Standardize all fonts to match AdminLTE exactly - uses Poppins */
+#sunday-clinic-root {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Preserve Font Awesome icons - don't override their font-family */
+#sunday-clinic-root .fa,
+#sunday-clinic-root .fas,
+#sunday-clinic-root .far,
+#sunday-clinic-root .fab,
+#sunday-clinic-root .fal,
+#sunday-clinic-root .fad,
+#sunday-clinic-root [class*="fa-"] {
+    font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
+}
+
+#sunday-clinic-root h1,
+#sunday-clinic-root h2,
+#sunday-clinic-root h3,
+#sunday-clinic-root h4,
+#sunday-clinic-root h5,
+#sunday-clinic-root h6 {
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+}
+
+#sunday-clinic-root h1 { font-size: 20px; }
+#sunday-clinic-root h2 { font-size: 18px; }
+#sunday-clinic-root h3 { font-size: 16px; }
+#sunday-clinic-root h4 { font-size: 15px; }
+#sunday-clinic-root h5 { font-size: 14px; }
+#sunday-clinic-root h6 { font-size: 13px; }
+
+#sunday-clinic-root .form-control,
+#sunday-clinic-root textarea,
+#sunday-clinic-root input,
+#sunday-clinic-root select {
+    font-size: 14px;
+    padding: 0.375rem 0.75rem;
+}
+
+#sunday-clinic-root .btn {
+    font-size: 14px;
+    padding: 0.375rem 0.75rem;
+}
+
+#sunday-clinic-root .btn-sm {
+    font-size: 13px;
+    padding: 0.25rem 0.5rem;
+}
+
+#sunday-clinic-root .table {
+    font-size: 14px;
+}
+
+#sunday-clinic-root .table th {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+#sunday-clinic-root .table td {
+    font-size: 14px;
+}
+
+#sunday-clinic-root .form-group label,
+#sunday-clinic-root label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+#sunday-clinic-root {
+    min-height: 320px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.sc-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.sc-sidebar {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.sc-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.5rem 0.4rem 6px;
+    border-radius: 0;
+    border: none;
+    background-color: transparent;
+    color: #000000;
+    font-size: 14px;
+    font-weight: 400;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+    margin: 0;
+}
+
+.sc-nav-link i {
+    width: 1.6rem;
+    margin-right: 0.3rem;
+    text-align: center;
+    font-size: 14px;
+    color: #000000;
+}
+
+.sc-nav-link:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: #000000;
+}
+
+.sc-nav-link:hover i {
+    color: #000000;
+}
+
+.sc-nav-link.active {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+.sc-nav-link.active i {
+    color: #ffffff;
+}
+
+.sc-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sc-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.sc-summary-card {
+    background-color: var(--sc-card-bg);
+    border: 1px solid var(--sc-border);
+    border-radius: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.sc-summary-card h4 {
+    margin: 0 0 0.35rem;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sc-summary-card .sc-summary-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.sc-summary-meta {
+    margin-top: 0.35rem;
+    font-size: 14px;
+    color: var(--sc-muted);
+}
+
+.sc-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+}
+
+.sc-pill--danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.sc-pill--info {
+    background-color: #e0f2fe;
+    border-color: #bae6fd;
+    color: #0369a1;
+}
+
+.sc-section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sc-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.sc-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.sc-section-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.sc-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.sc-grid.two {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.sc-grid.three {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.sc-card {
+    background-color: var(--sc-card-bg);
+    border: 1px solid var(--sc-border);
+    border-radius: 0.85rem;
+    padding: 1.25rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.sc-card h4 {
+    margin: 0 0 0.75rem;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.sc-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.sc-info-table th,
+.sc-info-table td {
+    padding: 8px 6px;
+    vertical-align: top;
+}
+
+.sc-info-table th {
+    width: 42%;
+    color: var(--sc-muted);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.sc-info-table td {
+    color: #1f2937;
+    font-weight: 400;
+}
+
+.sc-info-table tbody tr + tr {
+    border-top: 1px solid #e5e7eb;
+}
+
+.sc-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.sc-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.75rem;
+    background-color: #f3f4f6;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.sc-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--sc-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    font-size: 14px;
+}
+
+.sc-data-table th {
+    background-color: #f4f6f9;
+    color: #374151;
+    font-weight: 600;
+    padding: 0.65rem;
+}
+
+.sc-data-table td {
+    padding: 0.6rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.sc-note {
+    margin-top: 0.75rem;
+    font-size: 13px;
+    color: var(--sc-muted);
+}
+
+.sc-empty {
+    border: 1px dashed var(--sc-border);
+    border-radius: 0.75rem;
+    padding: 1.2rem;
+    text-align: center;
+    color: var(--sc-muted);
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.sc-empty strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 0.35rem;
+}
+
+@media (max-width: 992px) {
+    .sc-layout {
+        flex-direction: column;
+    }
+
+    .sc-sidebar {
+        flex-direction: row;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .sc-nav-link {
+        flex: 1 0 auto;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .sc-summary {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .route-meta {
+        margin-top: 1rem;
+        width: 100%;
+        text-align: left;
+    }
+}
+
+    .sc-directory-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 2.5rem 1.75rem;
+        background-color: rgba(17, 24, 39, 0.7);
+        backdrop-filter: blur(3px);
+        z-index: 2100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .sc-directory-overlay.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .sc-directory {
+        width: min(1100px, 100%);
+        max-height: calc(100vh - 5rem);
+        background-color: #ffffff;
+        border-radius: 1rem;
+        border: 1px solid var(--sc-border);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sc-directory-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding: 1.5rem 1.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .sc-directory-title {
+        margin: 0 0 0.35rem;
+        font-size: 20px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .sc-directory-subtitle {
+        margin: 0;
+        font-size: 14px;
+        color: var(--sc-muted);
+    }
+
+    .sc-directory-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .sc-directory-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .sc-directory-column--patients {
+        flex: 0 0 42%;
+        padding: 1.25rem 1.5rem;
+        border-right: 1px solid #e5e7eb;
+    }
+
+    .sc-directory-column--visits {
+        flex: 0 0 58%;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .sc-directory-search {
+        margin-bottom: 1rem;
+    }
+
+    .sc-directory-patient-list,
+    .sc-directory-visit-list {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .sc-directory-patient-list::-webkit-scrollbar,
+    .sc-directory-visit-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sc-directory-patient-list::-webkit-scrollbar-thumb,
+    .sc-directory-visit-list::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.6);
+        border-radius: 999px;
+    }
+
+    .sc-directory-patient {
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.85rem;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+
+    .sc-directory-patient:hover {
+        border-color: var(--sc-primary);
+        box-shadow: 0 12px 24px rgba(60, 141, 188, 0.18);
+    }
+
+    .sc-directory-patient.is-active {
+        border-color: var(--sc-primary);
+        background-color: rgba(60, 141, 188, 0.08);
+        box-shadow: 0 16px 32px rgba(60, 141, 188, 0.2);
+    }
+
+    .sc-directory-patient-name {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .sc-directory-patient-meta {
+        margin-top: 0.25rem;
+        color: var(--sc-muted);
+        font-size: 13px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .sc-directory-visit {
+        text-align: left;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.9rem;
+        background-color: #ffffff;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+
+    .sc-directory-visit:hover {
+        border-color: #34d399;
+        box-shadow: 0 12px 24px rgba(16, 185, 129, 0.18);
+    }
+
+    .sc-directory-visit.is-active {
+        border-color: #2563eb;
+        background-color: rgba(37, 99, 235, 0.08);
+        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
+    }
+
+    .sc-directory-visit strong {
+        display: block;
+        font-size: 15px;
+        color: #065f46;
+        margin-bottom: 0.35rem;
+    }
+
+    .sc-directory-visit-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        font-size: 13px;
+        color: var(--sc-muted);
+    }
+
+    .sc-directory-visit-note {
+        margin-top: 0.35rem;
+        font-size: 13px;
+        color: #374151;
+    }
+
+    .sc-directory-info {
+        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.85rem 1rem;
+        background-color: #f9fafb;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .sc-directory-info h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .sc-directory-info p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--sc-muted);
+    }
+
+    .sc-directory-placeholder {
+        border: 1px dashed #d1d5db;
+        border-radius: 0.75rem;
+        padding: 1.1rem;
+        text-align: center;
+        color: var(--sc-muted);
+        background-color: rgba(243, 244, 246, 0.6);
+        font-size: 14px;
+    }
+
+    .sc-directory-empty,
+    .sc-directory-error {
+        border: 1px dashed #d1d5db;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        text-align: center;
+        color: var(--sc-muted);
+        background-color: rgba(249, 250, 251, 0.7);
+        font-size: 14px;
+    }
+
+    .sc-directory-error {
+        color: #b91c1c;
+        border-color: #fecaca;
+        background-color: #fef2f2;
+    }
+
+    .sc-directory-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: var(--sc-muted);
+        padding: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+        .sc-directory-body {
+            flex-direction: column;
+        }
+
+        .sc-directory-column--patients,
+        .sc-directory-column--visits {
+            flex: 1 0 auto;
+            padding: 1.25rem 1.5rem;
+            border-right: none;
+        }
+
+        .sc-directory-column--patients {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sc-directory-patient-list,
+        .sc-directory-visit-list {
+            max-height: 280px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .sc-directory {
+            border-radius: 0.75rem;
+        }
+
+        .sc-directory-header {
+            padding: 1.25rem;
+        }
+
+        .sc-directory-body {
+            padding: 0 0 1.25rem;
+        }
+
+        .sc-directory-column--patients,
+        .sc-directory-column--visits {
+            padding: 1rem 1.25rem 0;
+        }
+    }
+
+/* Improve textarea readability across all staff pages */
+textarea.form-control,
+textarea,
+.form-control {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+}
+
+/* Specifically for planning/prescription textareas */
+#planning-tindakan,
+#planning-terapi,
+#planning-rencana {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: 1.6 !important;
+}
+
+
+/* ==================== PATIENT HISTORY SIDEBAR ==================== */
+
+.patient-history-sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 320px;
+    background: #fff;
+    z-index: 1040;
+    box-shadow: -2px 0 15px rgba(0,0,0,0.15);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.patient-history-sidebar.open {
+    transform: translateX(0);
+}
+
+.patient-sidebar-header {
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #3c8dbc, #2a6f97);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.patient-sidebar-header h5 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.patient-sidebar-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.patient-sidebar-section {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.patient-sidebar-section.flex-grow-1 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Collapse wrapper inside flex-grow section - also needs to stretch */
+.patient-sidebar-section .collapse.flex-grow-1 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.patient-sidebar-section .section-header {
+    padding: 12px 15px;
+    background: #f8f9fa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 14px;
+    user-select: none;
+}
+
+.patient-sidebar-section .section-header:hover {
+    background: #e9ecef;
+}
+
+.patient-sidebar-section .section-header .toggle-icon {
+    transition: transform 0.2s;
+}
+
+.patient-sidebar-section .section-header[aria-expanded="false"] .toggle-icon,
+.patient-sidebar-section .section-header.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+/* Queue List */
+.queue-list {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.queue-item {
+    padding: 8px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.queue-item:hover {
+    background: #f0f8ff;
+}
+
+.queue-item.active {
+    background: #e3f2fd;
+    border-left: 3px solid #2196f3;
+}
+
+.queue-item .queue-number {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #6c757d;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.queue-item.active .queue-number {
+    background: #2196f3;
+}
+
+.queue-item .queue-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.queue-item .queue-name {
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.queue-item .queue-detail {
+    font-size: 12px;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Search Results */
+.search-results {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    padding: 8px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-result-item:hover {
+    background: #f0f8ff;
+}
+
+.search-result-item .result-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.search-result-item .result-detail {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+/* Current Patient Info */
+.current-patient-info {
+    background: #e8f4fc;
+    padding: 12px 15px !important;
+}
+
+.current-patient-info .patient-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #2c3e50;
+    margin-bottom: 6px;
+}
+
+.current-patient-info .patient-meta {
+    font-size: 13px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+/* Visit History Cards */
+.visit-history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    min-height: 0;
+}
+
+.visit-card {
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+}
+
+.visit-card-header {
+    padding: 12px 14px;
+    background: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 56px;
+}
+
+.visit-card-header:hover {
+    background: #e9ecef;
+}
+
+.visit-card-header .visit-mr {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1f2937;
+    margin-bottom: 2px;
+}
+
+.visit-card-header .visit-date {
+    font-size: 13px;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+.visit-card-header .location-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.visit-card-body {
+    padding: 14px 14px;
+    font-size: 14px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.visit-card-body .resume-preview {
+    white-space: pre-wrap;
+    font-size: 12px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: #f9fafb;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Sidebar Footer */
+.patient-sidebar-footer {
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+/* Body adjustment when sidebar is open */
+body.patient-sidebar-open .content-wrapper {
+    margin-right: 320px !important;
+    transition: margin-right 0.3s ease;
+}
+
+body.patient-sidebar-open .main-header {
+    margin-right: 320px !important;
+    transition: margin-right 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+    .patient-history-sidebar {
+        width: 100%;
+        max-width: 350px;
+    }
+
+    body.patient-sidebar-open .content-wrapper,
+    body.patient-sidebar-open .main-header {
+        margin-right: 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .patient-history-sidebar {
+        max-width: 100%;
+    }
+}
+
+/* Copy Modal Styles */
+#copy-data-preview .copy-field-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+#copy-data-preview .copy-field-row:last-child {
+    border-bottom: none;
+}
+
+#copy-data-preview .copy-field-label {
+    font-weight: 600;
+    min-width: 180px;
+    font-size: 14px;
+}
+
+#copy-data-preview .copy-field-value {
+    color: #4b5563;
+    font-size: 14px;
+    flex: 1;
+}
+
+/* Toggle button active state */
+#btn-toggle-patient-sidebar.active {
+    background-color: #6c757d !important;
+    color: #fff !important;
+    border-color: #6c757d !important;
+}
+
+/* ==================== HEADER QUEUE DROPDOWN ==================== */
+#header-queue-dropdown {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#header-queue-dropdown .dropdown-header {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.header-queue-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.header-queue-item:hover {
+    background-color: #f8f9fa;
+}
+
+.header-queue-item:last-child {
+    border-bottom: none;
+}
+
+.header-queue-item .queue-number {
+    width: 28px;
+    height: 28px;
+    background: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 12px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.header-queue-item.active .queue-number {
+    background: #0d6efd;
+    color: white;
+}
+
+.header-queue-item .queue-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.header-queue-item .queue-name {
+    font-weight: 500;
+    font-size: 14px;
+    color: #212529;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.header-queue-item .queue-meta {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.header-queue-item .queue-status {
+    margin-left: 8px;
+}
+
+/* ==================== PATIENT SEARCH MODAL ==================== */
+#patientSearchModal .modal-dialog {
+    margin-top: 80px;
+}
+
+#patientSearchModal .modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+#patientSearchModal .form-control-lg {
+    font-size: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.search-result-item:hover {
+    background-color: #f0f7ff;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item .patient-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.search-result-item .patient-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-item .patient-name {
+    font-weight: 500;
+    font-size: 15px;
+    color: #212529;
+}
+
+.search-result-item .patient-details {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.search-result-item .patient-mr {
+    font-size: 12px;
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+/* Keyboard shortcut hint */
+.keyboard-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #6c757d;
+}
+
+.keyboard-hint kbd {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* Green background for completed examination (selesai diperiksa) */
+.patient-selesai {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* =============================================
+   MOBILE APP MODE - WebView from Capacitor App
+   Activated when ?mobile=1 parameter is present
+   ============================================= */
+
+/* Prevent horizontal scroll - lock to single page view */
+html.mobile-app-mode,
+body.mobile-app-mode {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+    position: relative !important;
+    /* Android WebView handles safe area via native padding */
+}
+
+body.mobile-app-mode,
+body.mobile-app-mode .wrapper,
+body.mobile-app-mode .content-wrapper,
+body.mobile-app-mode .content,
+body.mobile-app-mode .container-fluid,
+body.mobile-app-mode .card,
+body.mobile-app-mode .card-body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+}
+
+body.mobile-app-mode * {
+    max-width: 100vw !important;
+}
+
+/* Hide sidebars in mobile mode */
+body.mobile-app-mode .main-sidebar {
+    display: none !important;
+}
+
+/* Patient history sidebar - mobile overlay mode */
+body.mobile-app-mode .patient-history-sidebar {
+    width: 100% !important;
+    max-width: 100vw !important;
+    z-index: 9999 !important; /* Above everything else */
+    transform: translateX(100%) !important; /* Hidden by default */
+}
+
+body.mobile-app-mode .patient-history-sidebar.open {
+    transform: translateX(0) !important; /* Slide in when open */
+}
+
+/* Content area full width - no margins */
+body.mobile-app-mode .content-wrapper,
+body.mobile-app-mode.sidebar-collapse .content-wrapper,
+body.mobile-app-mode:not(.sidebar-collapse) .content-wrapper {
+    margin-left: 0 !important;
+    padding-bottom: 85px; /* Space for footer nav */
+}
+
+body.mobile-app-mode .main-header,
+body.mobile-app-mode.sidebar-collapse .main-header,
+body.mobile-app-mode:not(.sidebar-collapse) .main-header {
+    margin-left: 0 !important;
+}
+
+/* Override AdminLTE container margins/padding */
+body.mobile-app-mode .content {
+    padding: 8px !important;
+}
+
+body.mobile-app-mode .container-fluid {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+body.mobile-app-mode .card {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Simplified mobile header - hide unnecessary items */
+body.mobile-app-mode .main-header .btn-group,
+body.mobile-app-mode .main-header .datetime-display {
+    display: none !important;
+}
+
+/* Show patient history toggle button in mobile */
+body.mobile-app-mode .main-header #btn-toggle-patient-sidebar {
+    display: inline-flex !important;
+    font-size: 9px !important;
+    padding: 4px 8px !important;
+    min-width: auto !important;
+}
+
+/* Show Antrian button on mobile */
+body.mobile-app-mode .main-header #btn-header-queue {
+    display: inline-flex !important;
+    font-size: 9px !important;
+    padding: 4px 8px !important;
+}
+
+body.mobile-app-mode .main-header #btn-header-queue .badge {
+    font-size: 8px !important;
+}
+
+body.mobile-app-mode .main-header #btn-header-queue span:not(.badge) {
+    display: none !important;
+}
+
+/* Queue dropdown on mobile */
+body.mobile-app-mode #header-queue-dropdown {
+    width: 280px !important;
+    max-width: 90vw !important;
+    font-size: 9px !important;
+}
+
+body.mobile-app-mode .header-queue-list {
+    font-size: 9px !important;
+}
+
+body.mobile-app-mode .header-queue-list .dropdown-item {
+    padding: 6px 10px !important;
+    font-size: 9px !important;
+}
+
+body.mobile-app-mode .main-header {
+    display: block !important; /* Override mobile-responsive.css hiding */
+    padding: 8px 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Style the back button (replaces hamburger) in mobile mode */
+body.mobile-app-mode .main-header .navbar-nav:first-child .nav-link {
+    font-size: 18px !important;
+    color: #333 !important;
+}
+
+body.mobile-app-mode .content-wrapper {
+    padding-top: 110px !important; /* Space for fixed header (2 rows: title + search/queue) */
+}
+
+body.mobile-app-mode .main-header .navbar-nav:first-child {
+    flex: 1;
+}
+
+body.mobile-app-mode .main-header .clinic-header-title {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 100px);
+}
+
+/* Mobile back button */
+.mobile-back-btn {
+    display: none;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 12px;
+    padding: 6px 10px;
+    margin-right: 6px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+body.mobile-app-mode .mobile-back-btn {
+    display: inline-flex;
+    align-items: center;
+}
+
+.mobile-back-btn:hover {
+    color: #0d6efd;
+}
+
+/* Mobile Footer Navigation */
+.mobile-section-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1px solid #dee2e6;
+    z-index: 1030;
+    padding: 8px 0 calc(20px + env(safe-area-inset-bottom, 0)); /* Extra 20px for Android nav */
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+
+body.mobile-app-mode .mobile-section-nav {
+    display: block;
+}
+
+/* Chat popup container - above footer section nav */
+body.mobile-app-mode #chat-popup-container {
+    position: fixed !important;
+    bottom: 70px !important;
+    right: 12px !important;
+    z-index: 99998 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    /* Don't create containing block for fixed children */
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* Chat toggle button - ensure visible and clickable */
+body.mobile-app-mode #chat-toggle-btn,
+body.mobile-app-mode .chat-toggle-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: linear-gradient(135deg, #007BFF 0%, #007BFF 100%) !important;
+    border-radius: 50% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 20px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
+}
+
+/* Chat box in Sunday Clinic mobile mode - use explicit dimensions */
+body.mobile-app-mode #chat-box,
+body.mobile-app-mode .chat-box {
+    position: fixed !important;
+    top: 10% !important;
+    left: 5% !important;
+    width: 90% !important;
+    height: 65% !important;
+    max-width: none !important;
+    max-height: none !important;
+    z-index: 100000 !important;
+    pointer-events: auto !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border: 1px solid #ddd !important;
+    padding-bottom: 8px !important;
+}
+
+/* Chat input container spacing */
+body.mobile-app-mode .chat-input-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    flex-shrink: 0 !important;
+    background: #fff !important;
+}
+
+/* Chat box OPEN state - using class instead of attribute selector */
+body.mobile-app-mode #chat-box.chat-open,
+body.mobile-app-mode .chat-box.chat-open {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Also keep attribute selector as fallback */
+body.mobile-app-mode #chat-box[style*="display: flex"],
+body.mobile-app-mode #chat-box[style*="display:flex"],
+body.mobile-app-mode #chat-box[style*="flex"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Chat box elements must be interactive */
+body.mobile-app-mode #chat-box *,
+body.mobile-app-mode .chat-box * {
+    pointer-events: auto !important;
+}
+
+/* CRITICAL: Override wildcard font-size for chat elements */
+body.mobile-app-mode #chat-popup-container,
+body.mobile-app-mode #chat-popup-container * {
+    font-size: inherit !important;
+}
+
+body.mobile-app-mode #chat-toggle-btn i,
+body.mobile-app-mode .chat-toggle-btn i {
+    font-size: 24px !important;
+}
+
+body.mobile-app-mode #chat-box,
+body.mobile-app-mode .chat-box {
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode .chat-header {
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode .chat-messages {
+    font-size: 13px !important;
+}
+
+body.mobile-app-mode .chat-input {
+    font-size: 14px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important; /* Allow flex item to shrink below content size */
+    max-width: none !important;
+}
+
+/* Send button fix - prevent wildcard from shrinking it */
+body.mobile-app-mode .chat-send-btn,
+body.mobile-app-mode #chat-send-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    padding: 0 !important;
+}
+
+body.mobile-app-mode .chat-send-btn i,
+body.mobile-app-mode #chat-send-btn i {
+    font-size: 16px !important;
+    line-height: 1 !important;
+}
+
+/* ==================== PATIENT SIDEBAR MOBILE STYLES ==================== */
+
+/* Sidebar container - full width, no overflow */
+body.mobile-app-mode .patient-sidebar-header,
+body.mobile-app-mode .patient-sidebar-body,
+body.mobile-app-mode .patient-sidebar-footer {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+/* Sidebar header mobile */
+body.mobile-app-mode .patient-sidebar-header {
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+}
+
+body.mobile-app-mode .patient-sidebar-header h5 {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-header .btn {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+}
+
+/* Sidebar body mobile - ensure proper scrolling */
+body.mobile-app-mode .patient-sidebar-body {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/* Current patient info mobile */
+body.mobile-app-mode .current-patient-info {
+    font-size: 9px !important;
+    padding: 8px 10px !important;
+    overflow: hidden !important;
+}
+
+body.mobile-app-mode .current-patient-info * {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+}
+
+body.mobile-app-mode .current-patient-info strong {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode .current-patient-info .patient-name {
+    font-size: 11px !important;
+}
+
+body.mobile-app-mode .current-patient-info .patient-meta {
+    font-size: 9px !important;
+}
+
+/* Visit cards mobile */
+body.mobile-app-mode .visit-card {
+    font-size: 14px !important;
+    margin-bottom: 20px !important;
+    overflow: visible !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    border-radius: 12px !important;
+}
+
+body.mobile-app-mode .visit-card * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.mobile-app-mode .visit-card-header {
+    padding: 20px 18px !important;
+    min-height: 90px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+body.mobile-app-mode .visit-card-header > div:first-child {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+body.mobile-app-mode .visit-mr {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-bottom: 10px !important;
+}
+
+body.mobile-app-mode .visit-date {
+    font-size: 14px !important;
+    margin-top: 6px !important;
+}
+
+body.mobile-app-mode .location-badge {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+}
+
+body.mobile-app-mode .visit-history-list {
+    padding: 12px 14px !important;
+    max-height: none !important;
+    min-height: 300px !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    flex: 1 1 auto !important;
+}
+
+/* Ensure collapse is visible in mobile */
+body.mobile-app-mode .collapse.show,
+body.mobile-app-mode #history-content.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+/* Flex-grow for collapse content */
+body.mobile-app-mode #history-content.flex-grow-1,
+body.mobile-app-mode #history-content {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    min-height: 400px !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+body.mobile-app-mode .visit-card-body {
+    font-size: 14px !important;
+    padding: 20px 18px !important;
+    line-height: 1.6 !important;
+}
+
+body.mobile-app-mode .visit-card-body .btn {
+    font-size: 14px !important;
+    padding: 12px 18px !important;
+    margin-top: 12px !important;
+}
+
+/* Section headers mobile */
+body.mobile-app-mode .patient-sidebar-section .section-header {
+    font-size: 14px !important;
+    padding: 12px 14px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-weight: 600 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-section .section-header > span:first-of-type {
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+body.mobile-app-mode .patient-sidebar-section .section-header .badge {
+    font-size: 9px !important;
+    padding: 2px 5px !important;
+    flex-shrink: 0 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-section .section-header .toggle-icon {
+    flex-shrink: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Sidebar footer mobile */
+body.mobile-app-mode .patient-sidebar-footer {
+    padding: 8px 10px !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-footer .btn {
+    font-size: 9px !important;
+    padding: 5px 8px !important;
+    white-space: normal !important;
+    line-height: 1.2 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-footer small {
+    font-size: 8px !important;
+    display: block !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Identity table mobile styles */
+body.mobile-app-mode .identity-table .identity-label {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+}
+
+body.mobile-app-mode .identity-table .identity-value {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+    word-break: break-word !important;
+}
+
+/* Patient sidebar section mobile - allow content to show */
+body.mobile-app-mode .patient-sidebar-section {
+    overflow: visible !important;
+    height: auto !important;
+}
+
+/* Ensure flex-grow for visit history section */
+body.mobile-app-mode .patient-sidebar-section.flex-grow-1 {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 400px !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+.section-nav-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+    padding: 0 70px 0 8px; /* Extra right padding for chat bubble */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.section-nav-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.section-btn {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    font-size: 9px;
+    border-radius: 8px;
+    min-width: 56px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.section-btn i {
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.section-btn.active {
+    background: #0d6efd;
+    color: white;
+}
+
+.section-btn:active {
+    transform: scale(0.95);
+}
+
+/* Hide category-specific buttons based on record type */
+body.mobile-app-mode.category-obstetri .gyn-only {
+    display: none !important;
+}
+
+body.mobile-app-mode.category-gyn_repro .obs-only,
+body.mobile-app-mode.category-gyn_special .obs-only {
+    display: none !important;
+}
+
+/* Hide billing for non-private locations */
+body.mobile-app-mode:not(.location-klinik_private) .billing-only {
+    display: none !important;
+}
+
+/* Mobile-specific form adjustments - compact & clean */
+body.mobile-app-mode .card-body {
+    padding: 6px;
+}
+
+body.mobile-app-mode .card-header {
+    padding: 4px 6px;
+}
+
+body.mobile-app-mode .form-group {
+    margin-bottom: 4px !important;
+}
+
+body.mobile-app-mode label {
+    font-size: 9px;
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+/* Tighter vertical spacing */
+body.mobile-app-mode .sc-card {
+    padding: 6px !important;
+    margin-bottom: 6px !important;
+}
+
+body.mobile-app-mode .sc-section {
+    margin-bottom: 6px !important;
+}
+
+body.mobile-app-mode .sc-section-header {
+    margin-bottom: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+body.mobile-app-mode .mb-3 {
+    margin-bottom: 6px !important;
+}
+
+body.mobile-app-mode .mb-2 {
+    margin-bottom: 4px !important;
+}
+
+body.mobile-app-mode .mt-2 {
+    margin-top: 4px !important;
+}
+
+body.mobile-app-mode .mt-3 {
+    margin-top: 6px !important;
+}
+
+body.mobile-app-mode .py-2 {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+body.mobile-app-mode p {
+    margin-bottom: 4px !important;
+}
+
+body.mobile-app-mode input,
+body.mobile-app-mode textarea,
+body.mobile-app-mode select {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+    line-height: 1.3 !important;
+}
+
+body.mobile-app-mode .form-control {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+    height: auto;
+    min-height: 24px;
+    line-height: 1.3 !important;
+}
+
+body.mobile-app-mode textarea.form-control {
+    min-height: 32px;
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+}
+
+/* Force textarea text size with high specificity */
+body.mobile-app-mode #sunday-clinic-root textarea,
+body.mobile-app-mode .sc-card textarea,
+body.mobile-app-mode .card-body textarea,
+body.mobile-app-mode textarea#planning-tindakan,
+body.mobile-app-mode textarea#planning-terapi,
+body.mobile-app-mode textarea#planning-rencana {
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+}
+
+body.mobile-app-mode .btn {
+    min-height: 28px;
+    font-size: 9px;
+    padding: 4px 8px;
+}
+
+body.mobile-app-mode .btn-sm {
+    min-height: 24px;
+    font-size: 8px;
+    padding: 3px 6px;
+}
+
+body.mobile-app-mode h2,
+body.mobile-app-mode h3 {
+    font-size: 9px !important;
+    margin-bottom: 5px;
+}
+
+body.mobile-app-mode h4,
+body.mobile-app-mode h5 {
+    font-size: 9px !important;
+    margin-bottom: 5px;
+}
+
+body.mobile-app-mode h6 {
+    font-size: 9px !important;
+    margin-bottom: 4px;
+}
+
+/* Force 9px on ALL elements in mobile mode */
+body.mobile-app-mode * {
+    font-size: 9px !important;
+}
+
+/* Placeholder text */
+body.mobile-app-mode ::placeholder {
+    font-size: 9px !important;
+}
+
+body.mobile-app-mode ::-webkit-input-placeholder {
+    font-size: 9px !important;
+}
+
+/* Force input/textarea/select values to 9px */
+body.mobile-app-mode input,
+body.mobile-app-mode textarea,
+body.mobile-app-mode select,
+body.mobile-app-mode .form-control,
+body.mobile-app-mode [contenteditable] {
+    font-size: 9px !important;
+    line-height: 1.3 !important;
+}
+
+/* Exceptions - icons stay at 12px */
+body.mobile-app-mode .section-btn i,
+body.mobile-app-mode .fas,
+body.mobile-app-mode .far,
+body.mobile-app-mode .fab,
+body.mobile-app-mode i.fa,
+body.mobile-app-mode i[class*="fa-"] {
+    font-size: 12px !important;
+}
+
+body.mobile-app-mode .small,
+body.mobile-app-mode small {
+    font-size: 8px !important;
+}
+
+body.mobile-app-mode .table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+body.mobile-app-mode .table td,
+body.mobile-app-mode .table th {
+    padding: 4px 6px;
+    font-size: 9px;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    hyphens: auto;
+    white-space: normal !important;
+    vertical-align: top;
+    text-overflow: clip !important;
+    overflow: visible !important;
+    max-width: 100% !important;
+}
+
+/* Patient identity table - ensure text wraps */
+body.mobile-app-mode .table-borderless td,
+body.mobile-app-mode .table-sm td,
+body.mobile-app-mode .sc-patient-info td {
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-all !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    overflow: visible !important;
+}
+
+/* Allow long text to wrap in table cells */
+body.mobile-app-mode table,
+body.mobile-app-mode .table-responsive {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+body.mobile-app-mode .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Summary cards compact */
+body.mobile-app-mode .summary-card,
+body.mobile-app-mode .sc-summary-card {
+    padding: 6px 10px;
+    font-size: 9px;
+}
+
+body.mobile-app-mode .summary-card h6,
+body.mobile-app-mode .sc-summary-card h6 {
+    font-size: 9px;
+}
+
+/* Section headers compact */
+body.mobile-app-mode .section-header {
+    padding: 6px 8px;
+    font-size: 9px;
+}
+
+/* Hide pushmenu toggle (hamburger) in mobile mode */
+body.mobile-app-mode [data-widget="pushmenu"],
+body.mobile-app-mode .nav-link[data-widget="pushmenu"],
+body.mobile-app-mode .navbar-nav .nav-item:first-child:has([data-widget="pushmenu"]) {
+    display: none !important;
+}
+
+/* Also hide by icon class as fallback */
+body.mobile-app-mode .main-header .fa-bars {
+    display: none !important;
+}
+
+body.mobile-app-mode .main-header .nav-link:has(.fa-bars) {
+    display: none !important;
+}
+
+/* Tighter row spacing */
+body.mobile-app-mode .row {
+    margin-left: -4px;
+    margin-right: -4px;
+}
+
+body.mobile-app-mode .row > [class*="col-"] {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+/* Form row even tighter */
+body.mobile-app-mode .form-row {
+    margin-left: -3px;
+    margin-right: -3px;
+}
+
+body.mobile-app-mode .form-row > [class*="col"] {
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+/* USG Trimester selector - 2x2 grid on mobile */
+body.mobile-app-mode .trimester-selector .btn-group {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+}
+
+body.mobile-app-mode .trimester-selector .btn-group .btn {
+    border-radius: 6px !important;
+    font-size: 9px !important;
+    padding: 6px 4px !important;
+    white-space: normal;
+    line-height: 1.2;
+    margin: 0 !important;
+    border: 1px solid #007bff !important;
+}
+
+body.mobile-app-mode .trimester-selector .btn-group .btn.active {
+    background: #007bff !important;
+    color: white !important;
+}
+
+/* Input groups compact */
+body.mobile-app-mode .input-group-text {
+    font-size: 9px;
+    padding: 4px 6px;
+}
+
+body.mobile-app-mode .input-group-prepend,
+body.mobile-app-mode .input-group-append {
+    font-size: 9px;
+}
+
+/* Resume medis button group - grid layout */
+body.mobile-app-mode .button-group,
+body.mobile-app-mode #resume-button-group {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 4px !important;
+    width: 100% !important;
+}
+
+body.mobile-app-mode .button-group .btn,
+body.mobile-app-mode #resume-button-group .btn {
+    margin: 0 !important;
+    padding: 6px 4px !important;
+    font-size: 8px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+body.mobile-app-mode .button-group .btn i,
+body.mobile-app-mode #resume-button-group .btn i {
+    font-size: 10px !important;
+    margin-right: 2px !important;
+}
+
+/* Badges and alerts */
+body.mobile-app-mode .badge {
+    font-size: 8px;
+    padding: 2px 5px;
+}
+
+body.mobile-app-mode .alert {
+    font-size: 9px;
+    padding: 6px 8px;
+}
+
+/* Radio and checkbox - vertical alignment fix */
+body.mobile-app-mode .custom-control {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 20px !important;
+    padding-left: 20px !important;
+}
+
+body.mobile-app-mode .custom-control-label {
+    font-size: 9px;
+    line-height: 1.3 !important;
+    padding-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+body.mobile-app-mode .custom-control-label::before,
+body.mobile-app-mode .custom-control-label::after {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 14px !important;
+    height: 14px !important;
+}
+
+body.mobile-app-mode .custom-control-input {
+    width: 14px !important;
+    height: 14px !important;
+}
+
+body.mobile-app-mode .form-check {
+    display: flex !important;
+    align-items: center !important;
+    min-height: 20px !important;
+    padding-left: 20px !important;
+    margin-bottom: 2px !important;
+}
+
+body.mobile-app-mode .form-check-input {
+    margin-top: 0 !important;
+    width: 14px !important;
+    height: 14px !important;
+}
+
+body.mobile-app-mode .form-check-label {
+    font-size: 9px;
+    line-height: 1.3 !important;
+    margin-left: 4px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Inline radio/checkbox groups */
+body.mobile-app-mode .custom-control-inline,
+body.mobile-app-mode .form-check-inline {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-right: 8px !important;
+}
+
+/* List groups */
+body.mobile-app-mode .list-group-item {
+    padding: 5px 8px;
+    font-size: 9px;
+}
+
+/* SC card specific */
+body.mobile-app-mode .sc-card {
+    padding: 6px;
+    margin-bottom: 6px;
+}
+
+body.mobile-app-mode .sc-card-header {
+    font-size: 9px;
+    padding: 5px 6px;
+}
+
+/* Content wrapper padding - don't override padding-top! */
+body.mobile-app-mode .content-wrapper {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    /* padding-top is set to 110px above for header space */
+}
+
+/* Prevent any overflow */
+body.mobile-app-mode .sc-form-section,
+body.mobile-app-mode .card,
+body.mobile-app-mode .sc-card,
+body.mobile-app-mode .sc-section {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+}
+
+/* Force table to stay within bounds */
+body.mobile-app-mode .sc-card table,
+body.mobile-app-mode .sc-section table {
+    max-width: 100% !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+body.mobile-app-mode .sc-card td,
+body.mobile-app-mode .sc-card th,
+body.mobile-app-mode .sc-section td,
+body.mobile-app-mode .sc-section th {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+}
+
+/* Resume medis - prevent overflow */
+body.mobile-app-mode pre,
+body.mobile-app-mode .resume-content,
+body.mobile-app-mode .resume-medis-content,
+body.mobile-app-mode [class*="resume"] {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-all !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+/* ==================== HIDE UI ELEMENTS ==================== */
+
+/* Hide location badge (RSIA Melinda, etc) */
+#location-context-badge {
+    display: none !important;
+}
+
+/* Show updated badge layout (removed old rule that hid badges) */
+
+/* Hide Import and Bulk buttons in header (keep Riwayat visible) */
+.main-header .btn-group button[onclick*="Import"],
+.main-header .btn-group button[onclick*="Bulk"] {
+    display: none !important;
+}
+
+/* Hide the entire button group if it contains Import/Bulk */
+.main-header .nav-item .btn-group {
+    display: none !important;
+}
