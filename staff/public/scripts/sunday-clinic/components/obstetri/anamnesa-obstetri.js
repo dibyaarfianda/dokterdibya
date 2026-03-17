@@ -211,16 +211,11 @@ export default {
                             </div>
                         </div>
 
-                        <h4>
-                            <i class="fas fa-notes-medical mr-1"></i> Riwayat Persalinan
-                            <span class="gpal-auto-badge" id="gpal-auto-badge" style="display:none;">(auto-hitung GPAL)</span>
-                        </h4>
-                        <p class="rp-subtitle">Catatan detail semua persalinan dan kehamilan sebelumnya</p>
+                        <h4>Riwayat Persalinan <span class="gpal-auto-badge" id="gpal-auto-badge" style="display:none;">(auto-hitung GPAL)</span></h4>
 
                         <div id="anamnesa-riwayat-persalinan-container"></div>
 
                         <div class="rp-empty-state" id="anamnesa-rp-empty">
-                            <i class="fas fa-clipboard-list" style="font-size:24px; color:#ccc; display:block; margin-bottom:8px;"></i>
                             Belum ada riwayat persalinan yang dicatat
                         </div>
 
@@ -234,15 +229,15 @@ export default {
                         </div>
 
                         <div class="rp-ektopik-box mt-3">
-                            <label class="main-label">Riwayat Hamil Ektopik</label>
+                            <label class="font-weight-bold" style="display:block; margin-bottom:8px;">Riwayat Hamil Ektopik</label>
                             <div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="anamnesa-riwayat-ektopik" id="ektopik-tidak" value="Tidak pernah" ${riwayatEktopik !== 'Pernah' ? 'checked' : ''}>
-                                    <label class="form-check-label" for="ektopik-tidak" style="font-size:13px;">Tidak pernah</label>
+                                    <label class="form-check-label" for="ektopik-tidak" style="font-size:14px;">Tidak pernah</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="anamnesa-riwayat-ektopik" id="ektopik-pernah" value="Pernah" ${riwayatEktopik === 'Pernah' ? 'checked' : ''}>
-                                    <label class="form-check-label" for="ektopik-pernah" style="font-size:13px;">Pernah</label>
+                                    <label class="form-check-label" for="ektopik-pernah" style="font-size:14px;">Pernah</label>
                                 </div>
                             </div>
                             <div id="ektopik-detail" style="display:${riwayatEktopik === 'Pernah' ? 'block' : 'none'}; margin-top:10px;">
