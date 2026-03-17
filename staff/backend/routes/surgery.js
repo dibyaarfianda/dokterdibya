@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const PDFDocument = require('pdfkit');
+const jwt = require('jsonwebtoken');
 const surgeryService = require('../services/SurgeryService');
 const logger = require('../utils/logger');
 
@@ -129,6 +131,55 @@ router.put('/external-staff/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     logger.error('External staff update error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PATCH /:id/post-op-notes
+ * Update post-op notes for a surgery (must be in_progress or completed)
+ */
+router.patch('/:id/post-op-notes', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { post_op_notes } = req.body;
+
+    if (!post_op_notes) {
+      return res.status(400).json({ success: false, message: 'post_op_notes diperlukan' });
+    }
+
+    // Check surgery exists and has valid status
+    const surgery = await surgeryService.getSurgeryById(id);
+    if (!surgery) {
+      return res.status(404).json({ success: false, message: 'Jadwal operasi tidak ditemukan' });
+    }
+
+    if (surgery.status !== 'in_progress' && surgery.status !== 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Catatan post-op hanya bisa ditambahkan saat operasi sedang berlangsung atau selesai'
+      });
+    }
+
+    const updated = await surgeryService.updateSurgery(id, { post_op_notes });
+    res.json({ success: true, surgery: updated });
+  } catch (error) {
+    logger.error('Surgery post-op notes update error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /analytics
+ * Returns aggregated surgery statistics
+ */
+router.get('/analytics', async (req, res) => {
+  try {
+    const { period, location } = req.query;
+    const analytics = await surgeryService.getAnalytics(period || '30d', location || null);
+    res.json({ success: true, analytics });
+  } catch (error) {
+    logger.error('Surgery analytics error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
