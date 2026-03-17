@@ -382,12 +382,164 @@ class SurgeryService {
     }));
   }
 
+  async getForExport(startDate, endDate) {
+    const [rows] = await pool.query(
+      `SELECT s.*, ot.code as op_code, ot.name as op_name, ot.name_id as op_name_id, ot.category as op_category
+       FROM surgery_schedules s
+       JOIN surgery_operation_types ot ON s.operation_type_id = ot.id
+       WHERE s.surgery_date BETWEEN ? AND ? AND s.status != 'cancelled'
+       ORDER BY s.surgery_date, s.surgery_time, s.created_at`,
+      [startDate, endDate]
+    );
+
+    return rows.map(r => ({
+      ...r,
+      team_members: typeof r.team_members === 'string' ? JSON.parse(r.team_members) : r.team_members
+    }));
+  }
+
   async getTomorrowSurgeries() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
     return this.getDaySurgeries(dateStr);
+  }
+
+  // =====================================================
+  // ANALYTICS
+  // =====================================================
+
+  async getAnalytics(period, location) {
+    // Calculate date range based on period
+    const now = new Date();
+    const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    let startDate;
+    switch (period) {
+      case '3m':
+        const m3 = new Date(now);
+        m3.setMonth(m3.getMonth() - 3);
+        startDate = `${m3.getFullYear()}-${String(m3.getMonth() + 1).padStart(2, '0')}-${String(m3.getDate()).padStart(2, '0')}`;
+        break;
+      case '6m':
+        const m6 = new Date(now);
+        m6.setMonth(m6.getMonth() - 6);
+        startDate = `${m6.getFullYear()}-${String(m6.getMonth() + 1).padStart(2, '0')}-${String(m6.getDate()).padStart(2, '0')}`;
+        break;
+      case '1y':
+        const y1 = new Date(now);
+        y1.setFullYear(y1.getFullYear() - 1);
+        startDate = `${y1.getFullYear()}-${String(y1.getMonth() + 1).padStart(2, '0')}-${String(y1.getDate()).padStart(2, '0')}`;
+        break;
+      default: // 30d
+        const d30 = new Date(now);
+        d30.setDate(d30.getDate() - 30);
+        startDate = `${d30.getFullYear()}-${String(d30.getMonth() + 1).padStart(2, '0')}-${String(d30.getDate()).padStart(2, '0')}`;
+    }
+
+    const locationFilter = location ? 'AND s.location = ?' : '';
+    const params = location ? [startDate, endDate, location] : [startDate, endDate];
+
+    // Total count
+    const [totalRows] = await pool.query(
+      `SELECT COUNT(*) as total FROM surgery_schedules s WHERE s.surgery_date BETWEEN ? AND ? ${locationFilter}`,
+      params
+    );
+    const total = totalRows[0].total;
+
+    // Count by month
+    const [monthlyRows] = await pool.query(
+      `SELECT YEAR(s.surgery_date) as yr, MONTH(s.surgery_date) as mo, COUNT(*) as count
+       FROM surgery_schedules s
+       WHERE s.surgery_date BETWEEN ? AND ? ${locationFilter}
+       GROUP BY yr, mo
+       ORDER BY yr, mo`,
+      params
+    );
+
+    // Count by operation type (top 10)
+    const [opTypeRows] = await pool.query(
+      `SELECT ot.name as op_name, ot.name_id as op_name_id, ot.code as op_code, COUNT(*) as count
+       FROM surgery_schedules s
+       JOIN surgery_operation_types ot ON s.operation_type_id = ot.id
+       WHERE s.surgery_date BETWEEN ? AND ? ${locationFilter}
+       GROUP BY s.operation_type_id, ot.name, ot.name_id, ot.code
+       ORDER BY count DESC
+       LIMIT 10`,
+      params
+    );
+
+    // Count by status
+    const [statusRows] = await pool.query(
+      `SELECT s.status, COUNT(*) as count
+       FROM surgery_schedules s
+       WHERE s.surgery_date BETWEEN ? AND ? ${locationFilter}
+       GROUP BY s.status`,
+      params
+    );
+
+    // Count by location
+    const [locationRows] = await pool.query(
+      `SELECT s.location, COUNT(*) as count
+       FROM surgery_schedules s
+       WHERE s.surgery_date BETWEEN ? AND ? ${locationFilter}
+       GROUP BY s.location
+       ORDER BY count DESC`,
+      params
+    );
+
+    // Calculate rates
+    const statusMap = {};
+    for (const row of statusRows) {
+      statusMap[row.status] = row.count;
+    }
+    const completedCount = statusMap['completed'] || 0;
+    const cancelledCount = statusMap['cancelled'] || 0;
+    const postponedCount = statusMap['postponed'] || 0;
+
+    const completionRate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+    const cancelRate = total > 0 ? Math.round((cancelledCount / total) * 100) : 0;
+    const postponeRate = total > 0 ? Math.round((postponedCount / total) * 100) : 0;
+
+    // Top operation name
+    const topOp = opTypeRows.length > 0
+      ? (opTypeRows[0].op_name_id || opTypeRows[0].op_name)
+      : '-';
+
+    // Average per month
+    const monthCount = monthlyRows.length || 1;
+    const avgPerMonth = Math.round(total / monthCount);
+
+    return {
+      period,
+      startDate,
+      endDate,
+      total,
+      completionRate,
+      cancelRate,
+      postponeRate,
+      topOperation: topOp,
+      avgPerMonth,
+      byMonth: monthlyRows.map(r => ({
+        year: r.yr,
+        month: r.mo,
+        count: r.count
+      })),
+      byOperationType: opTypeRows.map(r => ({
+        name: r.op_name_id || r.op_name,
+        code: r.op_code,
+        count: r.count
+      })),
+      byStatus: statusRows.map(r => ({
+        status: r.status,
+        count: r.count
+      })),
+      byLocation: locationRows.map(r => ({
+        location: r.location,
+        count: r.count
+      }))
+    };
   }
 
   // =====================================================
