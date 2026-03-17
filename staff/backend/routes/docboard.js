@@ -6,6 +6,14 @@ const docboardService = require('../services/DocBoardService');
 const surgeryRoutes = require('./surgery');
 const logger = require('../utils/logger');
 
+// Allow token from query string for PDF downloads (window.open can't set headers)
+router.use((req, res, next) => {
+  if (req.query.token && !req.headers['authorization']) {
+    req.headers['authorization'] = `Bearer ${req.query.token}`;
+  }
+  next();
+});
+
 // All routes require staff authentication
 router.use(verifyStaffToken);
 
