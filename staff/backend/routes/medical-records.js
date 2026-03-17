@@ -385,7 +385,8 @@ router.get('/api/medical-records/copyable-data/:mrId', verifyToken, async (req, 
             'alergi_obat', 'alergi_makanan', 'alergi_lingkungan',
             'riwayat_penyakit_dahulu', 'riwayat_keluarga', 'detail_riwayat_penyakit',
             'usia_menarche', 'lama_siklus', 'siklus_teratur',
-            'metode_kb_terakhir', 'riwayat_kehamilan_saat_ini'
+            'metode_kb_terakhir', 'riwayat_kehamilan_saat_ini',
+            'riwayat_persalinan', 'riwayat_ektopik', 'ektopik_kehamilan_ke'
         ];
 
         const copyableData = {};
@@ -775,7 +776,39 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
                 if (anamnesa.anak_hidup) resume += `, dengan ${anamnesa.anak_hidup} anak hidup`;
                 resume += '.\n\n';
             }
-            
+
+            // Riwayat Persalinan Detail
+            if (anamnesa.riwayat_persalinan && Array.isArray(anamnesa.riwayat_persalinan) && anamnesa.riwayat_persalinan.length > 0) {
+                resume += 'Riwayat Persalinan:\n';
+                let deliveryNum = 0;
+                let abortusNum = 0;
+                anamnesa.riwayat_persalinan.forEach(entry => {
+                    if (entry.type === 'DELIVERY') {
+                        deliveryNum++;
+                        const parts = [`Tahun ${entry.tahun}`];
+                        if (entry.persalinan) parts.push(entry.persalinan);
+                        if (entry.metode_persalinan) parts.push(entry.metode_persalinan);
+                        if (entry.berat_lahir) parts.push(`BB ${entry.berat_lahir}g`);
+                        if (entry.jenis_kelamin) parts.push(entry.jenis_kelamin);
+                        resume += `- Persalinan ${deliveryNum}: ${parts.join(', ')}\n`;
+                    } else {
+                        abortusNum++;
+                        const kuretaseText = entry.kuretase === 'Ya' ? 'dengan kuretase' : 'tanpa kuretase';
+                        resume += `- Abortus ${abortusNum}: Tahun ${entry.tahun}, ${kuretaseText}\n`;
+                    }
+                });
+                resume += '\n';
+            }
+
+            // Riwayat Hamil Ektopik
+            if (anamnesa.riwayat_ektopik && anamnesa.riwayat_ektopik === 'Pernah') {
+                resume += `Riwayat Hamil Ektopik: Pernah`;
+                if (anamnesa.ektopik_kehamilan_ke) {
+                    resume += ` (pada kehamilan ke-${anamnesa.ektopik_kehamilan_ke})`;
+                }
+                resume += '\n\n';
+            }
+
             // Riwayat Menstruasi dan Kehamilan
             if (anamnesa.hpht || anamnesa.hpl || anamnesa.usia_kehamilan) {
                 resume += 'Riwayat Menstruasi dan Kehamilan:\n';

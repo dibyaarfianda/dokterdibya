@@ -101,6 +101,9 @@ export default {
         const metodeKbTerakhir = anamnesa.metode_kb_terakhir ?? '';
         const kegagalanKb = anamnesa.kegagalan_kb ?? '';
         const jenisKbGagal = anamnesa.jenis_kb_gagal ?? '';
+        const riwayatPersalinan = anamnesa.riwayat_persalinan || [];
+        const riwayatEktopik = anamnesa.riwayat_ektopik || 'Tidak pernah';
+        const ektopikKehamilanKe = anamnesa.ektopik_kehamilan_ke || '';
 
         return `
             <div class="sc-section">
@@ -208,6 +211,47 @@ export default {
                             </div>
                         </div>
 
+                        <h4>
+                            <i class="fas fa-notes-medical mr-1"></i> Riwayat Persalinan
+                            <span class="gpal-auto-badge" id="gpal-auto-badge" style="display:none;">(auto-hitung GPAL)</span>
+                        </h4>
+                        <p class="rp-subtitle">Catatan detail semua persalinan dan kehamilan sebelumnya</p>
+
+                        <div id="anamnesa-riwayat-persalinan-container"></div>
+
+                        <div class="rp-empty-state" id="anamnesa-rp-empty">
+                            <i class="fas fa-clipboard-list" style="font-size:24px; color:#ccc; display:block; margin-bottom:8px;"></i>
+                            Belum ada riwayat persalinan yang dicatat
+                        </div>
+
+                        <div class="rp-add-buttons">
+                            <button type="button" class="btn btn-outline-primary" id="btn-add-persalinan">
+                                <i class="fas fa-plus mr-1"></i> Persalinan
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" id="btn-add-abortus">
+                                <i class="fas fa-plus mr-1"></i> Abortus
+                            </button>
+                        </div>
+
+                        <div class="rp-ektopik-box mt-3">
+                            <label class="main-label">Riwayat Hamil Ektopik</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="anamnesa-riwayat-ektopik" id="ektopik-tidak" value="Tidak pernah" ${riwayatEktopik !== 'Pernah' ? 'checked' : ''}>
+                                    <label class="form-check-label" for="ektopik-tidak" style="font-size:13px;">Tidak pernah</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="anamnesa-riwayat-ektopik" id="ektopik-pernah" value="Pernah" ${riwayatEktopik === 'Pernah' ? 'checked' : ''}>
+                                    <label class="form-check-label" for="ektopik-pernah" style="font-size:13px;">Pernah</label>
+                                </div>
+                            </div>
+                            <div id="ektopik-detail" style="display:${riwayatEktopik === 'Pernah' ? 'block' : 'none'}; margin-top:10px;">
+                                <label class="rp-field-label">Pada kehamilan ke berapa?</label>
+                                <input type="number" class="form-control form-control-sm" id="ektopik-kehamilan-ke"
+                                    min="1" max="20" placeholder="Contoh: 2" style="max-width:120px;" value="${escapeHtml(String(ektopikKehamilanKe))}">
+                            </div>
+                        </div>
+
                         <h4>Riwayat Menstruasi</h4>
                         <div class="form-group mb-3">
                             <label class="font-weight-bold">Usia Menarche</label>
@@ -256,11 +300,12 @@ export default {
     async afterRender(state) {
         // Cleanup old listeners first
         this.cleanup();
-        
+
         // Setup HPHT calculator
         setTimeout(() => {
             this.setupHPHTCalculator();
             this.setupSaveHandler();
+            this.initRiwayatPersalinan(state);
         }, 100);
     },
 
@@ -268,12 +313,360 @@ export default {
      * Cleanup event listeners
      */
     cleanup() {
-        // Remove old listeners by replacing elements or using AbortController
-        // Store references for cleanup
         if (this._abortController) {
             this._abortController.abort();
         }
         this._abortController = new AbortController();
+        // Cleanup window exports
+        delete window.collectRiwayatPersalinanData;
+    },
+
+    // ═══════════════════════════════════════════
+    // Riwayat Persalinan Methods
+    // ═══════════════════════════════════════════
+
+    _rpEntries: [],
+    _rpNextId: 0,
+    _rpExpandedId: null,
+
+    _RP_PERSALINAN_OPTIONS: ['Aterm', 'Preterm'],
+    _RP_METODE_OPTIONS: ['Spt B (Spontan)', 'SC (Caesar)', 'Vakum', 'Forceps'],
+    _RP_GENDER_OPTIONS: ['Laki-laki', 'Perempuan'],
+    _RP_KURETASE_OPTIONS: ['Ya', 'Tidak'],
+
+    initRiwayatPersalinan(state) {
+        const anamnesa = state.recordData?.anamnesa || {};
+        const saved = anamnesa.riwayat_persalinan || [];
+        const signal = this._abortController.signal;
+
+        // Load saved data
+        this._rpEntries = saved.map(entry => ({
+            ...entry,
+            _id: this._rpNextId++
+        }));
+
+        // Render cards
+        this.renderAllRPCards(null);
+
+        // Add button listeners
+        const btnAdd = document.getElementById('btn-add-persalinan');
+        const btnAbortus = document.getElementById('btn-add-abortus');
+        if (btnAdd) btnAdd.addEventListener('click', () => this.addRPEntry('DELIVERY'), { signal });
+        if (btnAbortus) btnAbortus.addEventListener('click', () => this.addRPEntry('ABORTUS'), { signal });
+
+        // Ektopik radio listeners
+        const radios = document.querySelectorAll('input[name="anamnesa-riwayat-ektopik"]');
+        radios.forEach(r => r.addEventListener('change', () => this.toggleEktopikDetail(), { signal }));
+
+        // Event delegation on container
+        const container = document.getElementById('anamnesa-riwayat-persalinan-container');
+        if (container) {
+            container.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-rp-action]');
+                if (!target) return;
+                const action = target.dataset.rpAction;
+                const id = parseInt(target.dataset.rpId);
+                if (action === 'toggle') this.toggleRPCard(id);
+                else if (action === 'delete') this.deleteRPEntry(id);
+                else if (action === 'select') {
+                    const field = target.dataset.rpField;
+                    const value = target.dataset.rpValue;
+                    this.selectRPOption(id, field, value, target);
+                }
+            }, { signal });
+
+            container.addEventListener('change', (e) => {
+                const target = e.target.closest('[data-rp-field]');
+                if (!target) return;
+                const id = parseInt(target.dataset.rpId);
+                const field = target.dataset.rpField;
+                let value = target.value;
+                if (target.type === 'number') value = value ? parseInt(value) : null;
+                this.updateRPEntry(id, field, value);
+            }, { signal });
+        }
+
+        // Window export for save
+        window.collectRiwayatPersalinanData = () => this.collectRiwayatPersalinanData();
+    },
+
+    _rpEscapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    },
+
+    _rpGetOrderNumber(entry) {
+        const sameType = this._rpEntries.filter(e => e.type === entry.type);
+        return sameType.indexOf(entry) + 1;
+    },
+
+    _rpGetSummary(entry) {
+        if (entry.type === 'DELIVERY') {
+            const parts = [
+                entry.tahun + (entry.bulan ? '/' + entry.bulan : ''),
+                entry.persalinan || '',
+                entry.metode_persalinan || '',
+                entry.berat_lahir ? entry.berat_lahir + 'g' : '',
+                entry.jenis_kelamin || ''
+            ].filter(Boolean);
+            return parts.join(' - ') || 'Data belum lengkap';
+        }
+        return entry.tahun + ' - ' + (entry.kuretase === 'Ya' ? 'Kuretase' : 'Tanpa kuretase');
+    },
+
+    renderRPCard(entry, expanded) {
+        const idx = entry._id;
+        const isDelivery = entry.type === 'DELIVERY';
+        const summary = this._rpGetSummary(entry);
+        const esc = (s) => this._rpEscapeHtml(s);
+        const currentYear = new Date().getFullYear();
+
+        let bodyHtml = '';
+        if (isDelivery) {
+            bodyHtml = `
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="rp-field-label">Tahun <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control form-control-sm" data-rp-id="${idx}" data-rp-field="tahun"
+                            value="${entry.tahun}" min="1980" max="${currentYear}">
+                    </div>
+                    <div class="col-6">
+                        <label class="rp-field-label">Bulan <span class="text-muted">(opsional)</span></label>
+                        <input type="number" class="form-control form-control-sm" data-rp-id="${idx}" data-rp-field="bulan"
+                            value="${entry.bulan || ''}" min="1" max="12" placeholder="1-12">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="rp-field-label">Persalinan <span class="text-danger">*</span></label>
+                    <div class="rp-btn-group">
+                        ${this._RP_PERSALINAN_OPTIONS.map(opt => `
+                            <button type="button" class="rp-option-btn ${entry.persalinan === opt ? 'active' : ''}"
+                                data-rp-action="select" data-rp-id="${idx}" data-rp-field="persalinan" data-rp-value="${esc(opt)}">
+                                ${opt === 'Aterm' ? 'Aterm (&gt;37 mg)' : 'Preterm (20-36 mg)'}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="rp-field-label">Metode Persalinan <span class="text-danger">*</span></label>
+                    <div class="rp-btn-group">
+                        ${this._RP_METODE_OPTIONS.map(opt => `
+                            <button type="button" class="rp-option-btn ${entry.metode_persalinan === opt ? 'active' : ''}"
+                                data-rp-action="select" data-rp-id="${idx}" data-rp-field="metode_persalinan" data-rp-value="${esc(opt)}">
+                                ${esc(opt)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="rp-field-label">Berat Lahir (gram) <span class="text-muted">(opsional)</span></label>
+                    <input type="number" class="form-control form-control-sm" data-rp-id="${idx}" data-rp-field="berat_lahir"
+                        value="${entry.berat_lahir || ''}" min="500" max="6000" placeholder="Contoh: 3200">
+                </div>
+                <div class="mb-3">
+                    <label class="rp-field-label">Jenis Kelamin <span class="text-muted">(opsional)</span></label>
+                    <div class="rp-btn-group">
+                        ${this._RP_GENDER_OPTIONS.map(opt => `
+                            <button type="button" class="rp-option-btn ${entry.jenis_kelamin === opt ? 'active' : ''}"
+                                data-rp-action="select" data-rp-id="${idx}" data-rp-field="jenis_kelamin" data-rp-value="${esc(opt)}">
+                                ${esc(opt)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            bodyHtml = `
+                <div class="mb-3">
+                    <label class="rp-field-label">Tahun <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control form-control-sm" data-rp-id="${idx}" data-rp-field="tahun"
+                        value="${entry.tahun}" min="1980" max="${currentYear}">
+                </div>
+                <div class="mb-3">
+                    <label class="rp-field-label">Kuretase <span class="text-danger">*</span></label>
+                    <div class="rp-btn-group">
+                        ${this._RP_KURETASE_OPTIONS.map(opt => `
+                            <button type="button" class="rp-option-btn ${entry.kuretase === opt ? 'active' : ''}"
+                                data-rp-action="select" data-rp-id="${idx}" data-rp-field="kuretase" data-rp-value="${esc(opt)}">
+                                ${esc(opt)}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <small class="text-muted d-block mt-1">Apakah dilakukan tindakan kuretase?</small>
+                </div>
+            `;
+        }
+
+        const typeLabel = isDelivery ? 'Persalinan' : 'Abortus';
+        const headerIcon = isDelivery ? 'fa-baby' : 'fa-times-circle';
+        const headerIconColor = isDelivery ? '#3c8dbc' : '#f0ad4e';
+        const orderNum = this._rpGetOrderNumber(entry);
+
+        return `
+            <div class="rp-entry-card" data-rp-type="${entry.type}" data-rp-id="${idx}">
+                <div class="rp-card-header" data-rp-action="toggle" data-rp-id="${idx}">
+                    <div class="rp-header-left">
+                        <i class="fas ${headerIcon} rp-header-icon" style="color:${headerIconColor}"></i>
+                        <div style="min-width:0;">
+                            <div class="rp-header-title">${typeLabel} #${orderNum}</div>
+                            <div class="rp-header-summary" id="rp-summary-${idx}">${esc(summary)}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-down rp-chevron ${expanded ? 'rotated' : ''}" id="rp-chevron-${idx}"></i>
+                </div>
+                <div class="rp-card-body ${expanded ? 'show' : ''}" id="rp-body-${idx}">
+                    ${bodyHtml}
+                    <button type="button" class="btn btn-outline-danger btn-sm rp-delete-btn" data-rp-action="delete" data-rp-id="${idx}">
+                        <i class="fas fa-trash mr-1"></i> Hapus riwayat ini
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    renderAllRPCards(expandedId) {
+        const container = document.getElementById('anamnesa-riwayat-persalinan-container');
+        const emptyState = document.getElementById('anamnesa-rp-empty');
+        const autoBadge = document.getElementById('gpal-auto-badge');
+        if (!container) return;
+
+        if (this._rpEntries.length === 0) {
+            container.innerHTML = '';
+            if (emptyState) emptyState.style.display = 'block';
+            if (autoBadge) autoBadge.style.display = 'none';
+        } else {
+            if (emptyState) emptyState.style.display = 'none';
+            if (autoBadge) autoBadge.style.display = 'inline';
+            container.innerHTML = this._rpEntries.map(entry =>
+                this.renderRPCard(entry, entry._id === expandedId)
+            ).join('');
+        }
+    },
+
+    addRPEntry(type) {
+        const entry = {
+            _id: this._rpNextId++,
+            type,
+            tahun: new Date().getFullYear(),
+            bulan: null,
+            persalinan: type === 'DELIVERY' ? 'Aterm' : null,
+            metode_persalinan: type === 'DELIVERY' ? 'Spt B (Spontan)' : null,
+            berat_lahir: null,
+            jenis_kelamin: null,
+            kuretase: type === 'ABORTUS' ? 'Tidak' : null
+        };
+        this._rpEntries.push(entry);
+        this.renderAllRPCards(entry._id);
+        this.recalcGPAL();
+    },
+
+    deleteRPEntry(id) {
+        this._rpEntries = this._rpEntries.filter(e => e._id !== id);
+        this.renderAllRPCards(null);
+        this.recalcGPAL();
+    },
+
+    updateRPEntry(id, field, value) {
+        const entry = this._rpEntries.find(e => e._id === id);
+        if (!entry) return;
+        entry[field] = value;
+        // Update summary without re-rendering all
+        const summaryEl = document.getElementById(`rp-summary-${id}`);
+        if (summaryEl) summaryEl.textContent = this._rpGetSummary(entry);
+    },
+
+    selectRPOption(id, field, value, btn) {
+        const entry = this._rpEntries.find(e => e._id === id);
+        if (!entry) return;
+
+        // Toggle: if already active, deselect (only for optional fields)
+        const optionalFields = ['jenis_kelamin'];
+        if (optionalFields.includes(field) && entry[field] === value) {
+            entry[field] = null;
+            btn.classList.remove('active');
+        } else {
+            entry[field] = value;
+            const group = btn.parentElement;
+            group.querySelectorAll('.rp-option-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const summaryEl = document.getElementById(`rp-summary-${id}`);
+        if (summaryEl) summaryEl.textContent = this._rpGetSummary(entry);
+    },
+
+    toggleRPCard(id) {
+        const body = document.getElementById(`rp-body-${id}`);
+        const chevron = document.getElementById(`rp-chevron-${id}`);
+        if (body && chevron) {
+            body.classList.toggle('show');
+            chevron.classList.toggle('rotated');
+        }
+    },
+
+    recalcGPAL() {
+        if (this._rpEntries.length === 0) return;
+
+        const deliveries = this._rpEntries.filter(e => e.type === 'DELIVERY');
+        const abortusCount = this._rpEntries.filter(e => e.type === 'ABORTUS').length;
+        const paraCount = deliveries.length;
+        const gravida = paraCount + abortusCount + 1; // +1 kehamilan saat ini
+
+        const gEl = document.getElementById('anamnesa-gravida');
+        const pEl = document.getElementById('anamnesa-para');
+        const aEl = document.getElementById('anamnesa-abortus');
+        const hEl = document.getElementById('anamnesa-anak-hidup');
+
+        if (gEl) gEl.value = gravida;
+        if (pEl) pEl.value = paraCount;
+        if (aEl) aEl.value = abortusCount;
+        if (hEl) hEl.value = paraCount; // default, can be overridden
+    },
+
+    collectRiwayatPersalinanData() {
+        const ektopikStatus = document.querySelector('input[name="anamnesa-riwayat-ektopik"]:checked')?.value || 'Tidak pernah';
+        const ektopikKe = document.getElementById('ektopik-kehamilan-ke')?.value || '';
+
+        return {
+            riwayat_persalinan: this._rpEntries.map(entry => {
+                const clean = { type: entry.type, tahun: entry.tahun };
+                if (entry.type === 'DELIVERY') {
+                    clean.bulan = entry.bulan || null;
+                    clean.persalinan = entry.persalinan || 'Aterm';
+                    clean.metode_persalinan = entry.metode_persalinan || 'Spt B (Spontan)';
+                    clean.berat_lahir = entry.berat_lahir || null;
+                    clean.jenis_kelamin = entry.jenis_kelamin || null;
+                    clean.kuretase = null;
+                } else {
+                    clean.bulan = null;
+                    clean.persalinan = null;
+                    clean.metode_persalinan = null;
+                    clean.berat_lahir = null;
+                    clean.jenis_kelamin = null;
+                    clean.kuretase = entry.kuretase || 'Tidak';
+                }
+                return clean;
+            }),
+            riwayat_ektopik: ektopikStatus,
+            ektopik_kehamilan_ke: ektopikStatus === 'Pernah' && ektopikKe ? parseInt(ektopikKe) : null
+        };
+    },
+
+    toggleEktopikDetail() {
+        const isPernah = document.getElementById('ektopik-pernah')?.checked;
+        const detail = document.getElementById('ektopik-detail');
+        if (detail) {
+            detail.style.display = isPernah ? 'block' : 'none';
+            if (!isPernah) {
+                const input = document.getElementById('ektopik-kehamilan-ke');
+                if (input) input.value = '';
+            }
+        }
     },
 
     /**
