@@ -2394,3 +2394,193 @@ body.mobile-app-mode [class*="resume"] {
 .main-header .nav-item .btn-group {
     display: none !important;
 }
+
+/* ═══════════════════════════════════════════════
+   Riwayat Persalinan (RP) Styles
+   ═══════════════════════════════════════════════ */
+
+.rp-subtitle {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
+.rp-ektopik-box {
+    background: #e8f4fd;
+    border: 1px solid #b8daff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+.rp-ektopik-box label.main-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
+}
+.rp-ektopik-box .form-check-inline {
+    margin-right: 20px;
+}
+
+.rp-entry-card {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    transition: box-shadow 0.2s;
+}
+.rp-entry-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.rp-entry-card[data-rp-type="ABORTUS"] {
+    border-color: #ffe082;
+}
+
+.rp-card-header {
+    background: #f8f9fa;
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+.rp-entry-card[data-rp-type="ABORTUS"] .rp-card-header {
+    background: #fff8e1;
+}
+.rp-card-header:hover {
+    background: #e9ecef;
+}
+.rp-entry-card[data-rp-type="ABORTUS"] .rp-card-header:hover {
+    background: #fff3cd;
+}
+
+.rp-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.rp-header-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.rp-header-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+}
+.rp-header-summary {
+    font-size: 11px;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rp-chevron {
+    transition: transform 0.2s;
+    color: #999;
+    flex-shrink: 0;
+}
+.rp-chevron.rotated {
+    transform: rotate(180deg);
+}
+
+.rp-card-body {
+    padding: 14px;
+    border-top: 1px solid #dee2e6;
+    display: none;
+}
+.rp-entry-card[data-rp-type="ABORTUS"] .rp-card-body {
+    border-top-color: #ffe082;
+}
+.rp-card-body.show {
+    display: block;
+}
+
+.rp-field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 4px;
+}
+.rp-field-label .text-danger {
+    font-weight: 400;
+}
+.rp-field-label .text-muted {
+    font-weight: 400;
+    font-size: 11px;
+}
+
+.rp-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.rp-btn-group .rp-option-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.rp-btn-group .rp-option-btn:hover {
+    border-color: #adb5bd;
+}
+.rp-btn-group .rp-option-btn.active {
+    border-color: #3c8dbc;
+    background: rgba(60,141,188,0.08);
+    color: #3c8dbc;
+    font-weight: 600;
+}
+.rp-entry-card[data-rp-type="ABORTUS"] .rp-btn-group .rp-option-btn.active {
+    border-color: #f0ad4e;
+    background: rgba(240,173,78,0.08);
+    color: #c77c00;
+}
+
+.rp-empty-state {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.rp-add-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.rp-add-buttons .btn {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-width: 2px;
+}
+
+.rp-delete-btn {
+    width: 100%;
+    margin-top: 12px;
+    font-size: 12px;
+}
+
+.gpal-auto-badge {
+    font-size: 10px;
+    color: #3c8dbc;
+    font-weight: 400;
+}

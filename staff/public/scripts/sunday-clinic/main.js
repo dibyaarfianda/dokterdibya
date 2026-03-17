@@ -1432,6 +1432,16 @@ class SundayClinicApp {
                 jenis_kb_gagal: document.getElementById('anamnesa-jenis-kb-gagal')?.value || ''
             };
 
+            // Collect riwayat persalinan data if available
+            if (typeof window.collectRiwayatPersalinanData === 'function') {
+                const rpData = window.collectRiwayatPersalinanData();
+                if (rpData) {
+                    data.riwayat_persalinan = rpData.riwayat_persalinan || [];
+                    data.riwayat_ektopik = rpData.riwayat_ektopik || '';
+                    data.ektopik_kehamilan_ke = rpData.ektopik_kehamilan_ke || null;
+                }
+            }
+
             // Get MR ID and token from state
             const state = stateManager.getState();
             const mrId = state.currentMrId ||
