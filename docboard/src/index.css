@@ -2368,3 +2368,91 @@ input { font-family: inherit; }
   color: var(--text-secondary);
   margin-top: 1px;
 }
+
+/* =====================================================
+   VIEW HEADER ACTIONS (multiple buttons in header)
+   ===================================================== */
+.view-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* =====================================================
+   EXPORT BUTTON & DROPDOWN
+   ===================================================== */
+.export-btn-wrapper {
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 200px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.export-dropdown-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px 6px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background 0.1s;
+}
+.export-option:hover {
+  background: var(--bg);
+}
+.export-option svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.export-date-picker {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.export-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.export-date-row label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 44px;
+}
+.export-date-row input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+.export-date-row input:focus {
+  border-color: var(--blue);
+  outline: none;
+}

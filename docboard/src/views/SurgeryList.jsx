@@ -3,6 +3,7 @@ import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
 import { today } from '../utils/date';
+import ExportButton from '../components/ExportButton';
 
 export default function SurgeryList() {
   const [surgeries, setSurgeries] = useState([]);
@@ -37,11 +38,14 @@ export default function SurgeryList() {
     <div class="view-surgery">
       <div class="view-header">
         <h1>Jadwal Operasi</h1>
-        <button class="btn-icon-primary" onClick={() => route('/docboard/surgery/new')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+        <div class="view-header-actions">
+          <ExportButton />
+          <button class="btn-icon-primary" onClick={() => route('/docboard/surgery/new')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {loading ? (
