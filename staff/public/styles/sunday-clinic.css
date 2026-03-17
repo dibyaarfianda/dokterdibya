@@ -2399,26 +2399,12 @@ body.mobile-app-mode [class*="resume"] {
    Riwayat Persalinan (RP) Styles
    ═══════════════════════════════════════════════ */
 
-.rp-subtitle {
-    font-size: 12px;
-    color: #6c757d;
-    margin-top: -8px;
-    margin-bottom: 12px;
-}
-
 .rp-ektopik-box {
     background: #e8f4fd;
     border: 1px solid #b8daff;
     border-radius: 8px;
     padding: 12px;
     margin-bottom: 12px;
-}
-.rp-ektopik-box label.main-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
-    display: block;
 }
 .rp-ektopik-box .form-check-inline {
     margin-right: 20px;
@@ -2468,12 +2454,12 @@ body.mobile-app-mode [class*="resume"] {
     flex-shrink: 0;
 }
 .rp-header-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: #333;
 }
 .rp-header-summary {
-    font-size: 11px;
+    font-size: 12px;
     color: #6c757d;
     white-space: nowrap;
     overflow: hidden;
@@ -2502,9 +2488,9 @@ body.mobile-app-mode [class*="resume"] {
 }
 
 .rp-field-label {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
-    color: #555;
+    color: #333;
     margin-bottom: 4px;
 }
 .rp-field-label .text-danger {
@@ -2523,8 +2509,8 @@ body.mobile-app-mode [class*="resume"] {
 .rp-btn-group .rp-option-btn {
     flex: 1;
     min-width: 0;
-    padding: 6px 8px;
-    font-size: 12px;
+    padding: 6px 10px;
+    font-size: 13px;
     border: 2px solid #dee2e6;
     border-radius: 6px;
     background: #fff;
@@ -2556,7 +2542,7 @@ body.mobile-app-mode [class*="resume"] {
     border: 2px dashed #dee2e6;
     border-radius: 8px;
     color: #6c757d;
-    font-size: 13px;
+    font-size: 14px;
     margin-bottom: 10px;
 }
 
@@ -2567,7 +2553,7 @@ body.mobile-app-mode [class*="resume"] {
 }
 .rp-add-buttons .btn {
     flex: 1;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     padding: 8px 12px;
     border-width: 2px;
@@ -2576,7 +2562,6 @@ body.mobile-app-mode [class*="resume"] {
 .rp-delete-btn {
     width: 100%;
     margin-top: 12px;
-    font-size: 12px;
 }
 
 .gpal-auto-badge {
