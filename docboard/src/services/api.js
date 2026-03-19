@@ -300,5 +300,17 @@ export const api = {
   },
   checkPolicy(action, resource, resourceId) {
     return request('/command/policy-check', { method: 'POST', body: JSON.stringify({ action, resource, resource_id: resourceId }) });
+  },
+  getMetricsTrend(days) {
+    return request('/command/metrics?days=' + (days || 7));
+  },
+  getComplianceUsageTrend(days) {
+    return request('/command/compliance-usage?days=' + (days || 7));
+  },
+  pruneRuleExecutions(days, dryRun) {
+    return request('/command/prune-rules?days=' + (days || '') + '&dry_run=' + (dryRun ? 'true' : 'false'), { method: 'POST' });
+  },
+  getAlertLog(limit) {
+    return request('/command/alerts?limit=' + (limit || 20));
   }
 };
