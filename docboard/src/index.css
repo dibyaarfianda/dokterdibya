@@ -3084,3 +3084,104 @@ input { font-family: inherit; }
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+/* ==============================
+   OR Board
+   ============================== */
+.view-or-board { padding-bottom: 80px; }
+.view-or-board .view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+}
+.or-board-meta { display: flex; align-items: center; gap: 8px; }
+.or-date-input {
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.or-board-date {
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.or-board-total {
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.or-board-updated {
+  padding: 0 16px 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.or-board-locations {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+}
+.or-location-card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.or-location-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-left: 4px solid;
+  background: var(--bg-secondary);
+}
+.or-location-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.or-location-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.or-surgery-list { display: flex; flex-direction: column; }
+.or-surgery-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--border);
+}
+.or-surgery-item:last-child { border-bottom: none; }
+.or-surgery-time {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 44px;
+}
+.or-surgery-info { flex: 1; min-width: 0; }
+.or-surgery-patient { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.or-surgery-op { font-size: 12px; color: var(--text-secondary); }
+.or-surgery-anest { font-size: 11px; color: var(--text-muted); }
+.or-surgery-status { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.or-surgery-dur { font-size: 11px; color: var(--text-muted); min-width: 28px; text-align: right; }
+
+/* ==============================
+   Outcome Form & Display
+   ============================== */
+.outcome-form { display: flex; flex-direction: column; gap: 8px; }
+.outcome-form .form-group { margin-bottom: 0; }
+.outcome-form .form-row { display: flex; gap: 8px; }
+.outcome-form .form-row .form-group { flex: 1; }
+.outcome-display { display: flex; flex-direction: column; gap: 6px; }
+.outcome-row { font-size: 14px; color: var(--text-primary); }
+.outcome-key { font-weight: 600; color: var(--text-secondary); margin-right: 4px; }

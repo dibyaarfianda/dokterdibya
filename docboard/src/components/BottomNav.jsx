@@ -4,6 +4,7 @@ import { unreadCount } from '../stores/notifications';
 const tabs = [
   { path: '/docboard/', icon: 'calendar', label: 'Jadwal' },
   { path: '/docboard/surgery', icon: 'surgery', label: 'Operasi' },
+  { path: '/docboard/or-board', icon: 'orboard', label: 'OR Board' },
   { path: '/docboard/notifications', icon: 'bell', label: 'Notif', badge: true },
   { path: '/docboard/settings', icon: 'menu', label: 'Lainnya' }
 ];
@@ -23,6 +24,12 @@ const icons = {
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M3 10h18" />
       <path d="M12 14v4M10 16h4" />
+    </svg>
+  ),
+  orboard: (
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+      <rect x="2" y="3" width="20" height="18" rx="2" />
+      <path d="M2 9h20" /><path d="M9 3v18" />
     </svg>
   ),
   bell: (

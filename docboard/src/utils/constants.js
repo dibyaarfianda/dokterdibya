@@ -62,4 +62,45 @@ export const OP_CATEGORY = {
   onkologi_ginekologi: { label: 'Onkologi', color: '#EF4444' }
 };
 
+// DocBoard role permissions
+// dokter = full access, admin = secretary (scheduling), bidan = anesthesiologist view
+export const ROLE_PERMISSIONS = {
+  dokter: {
+    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: true,
+    canChangeStatus: true, canEditClinical: true, canEditAnesthesia: true,
+    canEditOutcome: true, canViewORBoard: true, canEditChecklist: true
+  },
+  admin: {
+    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
+    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
+    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+  },
+  bidan: {
+    canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
+    canChangeStatus: false, canEditClinical: false, canEditAnesthesia: true,
+    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+  }
+};
+
+export function getRolePermissions(role) {
+  return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.bidan;
+}
+
+// Outcome constants
+export const COMPLICATION_GRADES = {
+  none: { label: 'Tidak Ada', color: '#22C55E' },
+  grade_1: { label: 'Grade I', color: '#F59E0B' },
+  grade_2: { label: 'Grade II', color: '#F59E0B' },
+  grade_3a: { label: 'Grade IIIa', color: '#EF4444' },
+  grade_3b: { label: 'Grade IIIb', color: '#EF4444' },
+  grade_4a: { label: 'Grade IVa', color: '#DC2626' },
+  grade_4b: { label: 'Grade IVb', color: '#DC2626' },
+  grade_5: { label: 'Grade V (Mortalitas)', color: '#7F1D1D' }
+};
+
+export const WOUND_CLASSES = {
+  clean: 'Clean', clean_contaminated: 'Clean-Contaminated',
+  contaminated: 'Contaminated', dirty: 'Dirty/Infected'
+};
+
 export const API_BASE = '/api/docboard';
