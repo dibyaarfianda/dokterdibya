@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const surgeryService = require('../services/SurgeryService');
 const docboardPush = require('../services/DocBoardPushService');
 const whatsapp = require('../services/whatsappService');
+const { requireRoles } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
@@ -94,6 +95,20 @@ router.get('/day/:date', async (req, res) => {
     res.json({ success: true, surgeries });
   } catch (error) {
     logger.error('Surgery day error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /or-board?date=YYYY-MM-DD
+ * OR Board: today's surgeries grouped by location
+ */
+router.get('/or-board', async (req, res) => {
+  try {
+    const data = await surgeryService.getORBoard(req.query.date);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    logger.error('OR Board error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -491,6 +506,34 @@ router.get('/analytics', async (req, res) => {
 });
 
 /**
+ * GET /:id/outcome
+ * Post-op outcome for a surgery
+ */
+router.get('/:id/outcome', async (req, res) => {
+  try {
+    const outcome = await surgeryService.getOutcome(req.params.id);
+    res.json({ success: true, outcome });
+  } catch (error) {
+    logger.error('Surgery outcome get error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /:id/outcome
+ * Save/update post-op outcome (doctor only)
+ */
+router.put('/:id/outcome', requireRoles('dokter'), async (req, res) => {
+  try {
+    const outcome = await surgeryService.saveOutcome(req.params.id, req.body, req.user?.id);
+    res.json({ success: true, outcome });
+  } catch (error) {
+    logger.error('Surgery outcome save error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * GET /:id/audit
  * Audit log entries for a surgery
  */
@@ -596,9 +639,9 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 /**
- * DELETE /:id
+ * DELETE /:id (doctor only)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRoles('dokter'), async (req, res) => {
   try {
     await surgeryService.deleteSurgery(req.params.id);
     res.json({ success: true });

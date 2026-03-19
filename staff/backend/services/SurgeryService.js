@@ -701,6 +701,85 @@ class SurgeryService {
     logger.info(`Checklist updated for surgery #${surgeryId}`);
     return this.getChecklist(surgeryId);
   }
+
+  // =====================================================
+  // OR BOARD
+  // =====================================================
+
+  async getORBoard(date) {
+    const now = new Date();
+    const dateStr = date || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const [rows] = await pool.query(
+      `SELECT s.id, s.patient_name, s.patient_age, s.status, s.location,
+              s.surgery_time, s.estimated_duration_min, s.anesthesia_type, s.asa_score,
+              s.created_at, s.updated_at,
+              ot.code as op_code, ot.name as op_name, ot.name_id as op_name_id, ot.category as op_category
+       FROM surgery_schedules s
+       JOIN surgery_operation_types ot ON s.operation_type_id = ot.id
+       WHERE s.surgery_date = ? AND s.status NOT IN ('cancelled')
+       ORDER BY s.surgery_time, s.created_at`,
+      [dateStr]
+    );
+
+    // Group by location
+    const byLocation = {};
+    for (const row of rows) {
+      if (!byLocation[row.location]) byLocation[row.location] = [];
+      byLocation[row.location].push(row);
+    }
+
+    return {
+      date: dateStr,
+      last_updated: new Date().toISOString(),
+      total: rows.length,
+      byLocation
+    };
+  }
+
+  // =====================================================
+  // POST-OP OUTCOMES
+  // =====================================================
+
+  async getOutcome(surgeryId) {
+    const [rows] = await pool.query(
+      'SELECT * FROM surgery_outcomes WHERE surgery_id = ?',
+      [surgeryId]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  }
+
+  async saveOutcome(surgeryId, data, userId) {
+    const {
+      complication_grade, wound_class, estimated_blood_loss, actual_duration_min,
+      disposition, readmission, readmission_reason, follow_up_date, follow_up_notes, notes
+    } = data;
+
+    await pool.query(
+      `INSERT INTO surgery_outcomes
+       (surgery_id, complication_grade, wound_class, estimated_blood_loss, actual_duration_min,
+        disposition, readmission, readmission_reason, follow_up_date, follow_up_notes, notes, recorded_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         complication_grade = VALUES(complication_grade), wound_class = VALUES(wound_class),
+         estimated_blood_loss = VALUES(estimated_blood_loss), actual_duration_min = VALUES(actual_duration_min),
+         disposition = VALUES(disposition), readmission = VALUES(readmission),
+         readmission_reason = VALUES(readmission_reason), follow_up_date = VALUES(follow_up_date),
+         follow_up_notes = VALUES(follow_up_notes), notes = VALUES(notes), recorded_by = VALUES(recorded_by)`,
+      [
+        surgeryId,
+        complication_grade || 'none', wound_class || null,
+        estimated_blood_loss || null, actual_duration_min || null,
+        disposition || null, readmission ? 1 : 0,
+        readmission_reason || null, follow_up_date || null,
+        follow_up_notes || null, notes || null, userId || null
+      ]
+    );
+
+    logger.info(`Outcome saved for surgery #${surgeryId}`);
+    await this.logAudit(surgeryId, 'updated', userId, { outcome: complication_grade });
+    return this.getOutcome(surgeryId);
+  }
 }
 
 module.exports = new SurgeryService();

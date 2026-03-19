@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
-import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY } from '../utils/constants';
+import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY, COMPLICATION_GRADES, WOUND_CLASSES, getRolePermissions } from '../utils/constants';
+import { userRole } from '../stores/auth';
 import PostOpNotesForm from '../components/PostOpNotesForm';
 
 const ASA_LABELS = {
@@ -27,6 +28,11 @@ export default function SurgeryDetail({ id }) {
   const [showAudit, setShowAudit] = useState(false);
   const [checklist, setChecklist] = useState(null);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [outcome, setOutcome] = useState(null);
+  const [showOutcome, setShowOutcome] = useState(false);
+  const [outcomeForm, setOutcomeForm] = useState(null);
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const perms = getRolePermissions(userRole.value);
 
   useEffect(() => { loadSurgery(); }, [id]);
 
@@ -73,6 +79,34 @@ export default function SurgeryDetail({ id }) {
     } catch (err) {
       console.error('Checklist update failed:', err);
     }
+  }
+
+  async function loadOutcome() {
+    try {
+      const data = await api.getOutcome(id);
+      setOutcome(data.outcome);
+      setOutcomeForm(data.outcome || {
+        complication_grade: 'none', wound_class: '', estimated_blood_loss: '',
+        actual_duration_min: '', disposition: '', readmission: false,
+        readmission_reason: '', follow_up_date: '', follow_up_notes: '', notes: ''
+      });
+      setShowOutcome(true);
+    } catch (err) {
+      console.error('Failed to load outcome:', err);
+    }
+  }
+
+  async function handleSaveOutcome(e) {
+    e.preventDefault();
+    setSavingOutcome(true);
+    try {
+      const data = await api.saveOutcome(id, outcomeForm);
+      setOutcome(data.outcome);
+      setOutcomeForm(data.outcome);
+    } catch (err) {
+      alert('Gagal menyimpan: ' + err.message);
+    }
+    setSavingOutcome(false);
   }
 
   async function updateStatus(newStatus) {
@@ -122,12 +156,14 @@ export default function SurgeryDetail({ id }) {
           </svg>
         </button>
         <div class="detail-header-actions">
-          <button class="btn-icon" onClick={() => route(`/docboard/surgery/edit/${id}`)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
+          {perms.canEditSurgery && (
+            <button class="btn-icon" onClick={() => route(`/docboard/surgery/edit/${id}`)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          )}
           <button class="btn-icon" onClick={() => setShowActions(!showActions)}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" />
@@ -139,16 +175,16 @@ export default function SurgeryDetail({ id }) {
       {/* Actions dropdown */}
       {showActions && (
         <div class="actions-dropdown">
-          {s.status === 'planned' && <button onClick={() => updateStatus('confirmed')}>Konfirmasi</button>}
-          {(s.status === 'planned' || s.status === 'confirmed') && <button onClick={() => updateStatus('in_progress')}>Mulai Operasi</button>}
-          {s.status === 'in_progress' && <button onClick={() => updateStatus('completed')}>Selesai</button>}
-          {s.status !== 'cancelled' && s.status !== 'completed' && (
+          {perms.canChangeStatus && s.status === 'planned' && <button onClick={() => updateStatus('confirmed')}>Konfirmasi</button>}
+          {perms.canChangeStatus && (s.status === 'planned' || s.status === 'confirmed') && <button onClick={() => updateStatus('in_progress')}>Mulai Operasi</button>}
+          {perms.canChangeStatus && s.status === 'in_progress' && <button onClick={() => updateStatus('completed')}>Selesai</button>}
+          {perms.canChangeStatus && s.status !== 'cancelled' && s.status !== 'completed' && (
             <>
               <button onClick={() => updateStatus('postponed')}>Tunda</button>
               <button onClick={() => updateStatus('cancelled')} class="text-danger">Batalkan</button>
             </>
           )}
-          <button onClick={handleDelete} class="text-danger">Hapus</button>
+          {perms.canDeleteSurgery && <button onClick={handleDelete} class="text-danger">Hapus</button>}
         </div>
       )}
 
@@ -342,6 +378,86 @@ export default function SurgeryDetail({ id }) {
             </button>
           </div>
         )
+      )}
+
+      {/* Post-Op Outcome */}
+      {s.status === 'completed' && (
+        <div class="detail-card">
+          {!showOutcome ? (
+            <button class="btn-text" onClick={loadOutcome} style="width:100%;text-align:center;padding:8px 0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+              Outcome Operasi
+            </button>
+          ) : outcomeForm ? (
+            <>
+              <div class="detail-label">Outcome Operasi</div>
+              {perms.canEditOutcome ? (
+                <form onSubmit={handleSaveOutcome} class="outcome-form">
+                  <div class="form-group">
+                    <label>Komplikasi (Clavien-Dindo)</label>
+                    <select value={outcomeForm.complication_grade || 'none'} onChange={e => setOutcomeForm(f => ({ ...f, complication_grade: e.target.value }))}>
+                      {Object.entries(COMPLICATION_GRADES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                    </select>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Wound Class</label>
+                      <select value={outcomeForm.wound_class || ''} onChange={e => setOutcomeForm(f => ({ ...f, wound_class: e.target.value }))}>
+                        <option value="">--</option>
+                        {Object.entries(WOUND_CLASSES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Perdarahan (ml)</label>
+                      <input type="number" value={outcomeForm.estimated_blood_loss || ''} onInput={e => setOutcomeForm(f => ({ ...f, estimated_blood_loss: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Durasi Aktual (menit)</label>
+                      <input type="number" value={outcomeForm.actual_duration_min || ''} onInput={e => setOutcomeForm(f => ({ ...f, actual_duration_min: e.target.value }))} />
+                    </div>
+                    <div class="form-group">
+                      <label>Disposisi</label>
+                      <select value={outcomeForm.disposition || ''} onChange={e => setOutcomeForm(f => ({ ...f, disposition: e.target.value }))}>
+                        <option value="">--</option>
+                        <option value="ward">Ruang Rawat</option>
+                        <option value="icu">ICU</option>
+                        <option value="discharge">Pulang</option>
+                        <option value="transfer">Transfer</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Follow-up</label>
+                    <input type="date" value={outcomeForm.follow_up_date || ''} onInput={e => setOutcomeForm(f => ({ ...f, follow_up_date: e.target.value }))} />
+                  </div>
+                  <div class="form-group">
+                    <label>Catatan</label>
+                    <textarea rows="2" value={outcomeForm.notes || ''} onInput={e => setOutcomeForm(f => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                  <button type="submit" class="btn-primary btn-full" disabled={savingOutcome}>
+                    {savingOutcome ? 'Menyimpan...' : 'Simpan Outcome'}
+                  </button>
+                </form>
+              ) : outcome ? (
+                <div class="outcome-display">
+                  <div class="outcome-row"><span class="outcome-key">Komplikasi:</span> <span style={{ color: (COMPLICATION_GRADES[outcome.complication_grade] || {}).color }}>{(COMPLICATION_GRADES[outcome.complication_grade] || {}).label || outcome.complication_grade}</span></div>
+                  {outcome.wound_class && <div class="outcome-row"><span class="outcome-key">Wound Class:</span> {WOUND_CLASSES[outcome.wound_class] || outcome.wound_class}</div>}
+                  {outcome.estimated_blood_loss && <div class="outcome-row"><span class="outcome-key">Perdarahan:</span> {outcome.estimated_blood_loss} ml</div>}
+                  {outcome.actual_duration_min && <div class="outcome-row"><span class="outcome-key">Durasi:</span> {outcome.actual_duration_min} menit</div>}
+                  {outcome.disposition && <div class="outcome-row"><span class="outcome-key">Disposisi:</span> {outcome.disposition}</div>}
+                  {outcome.follow_up_date && <div class="outcome-row"><span class="outcome-key">Follow-up:</span> {outcome.follow_up_date}</div>}
+                  {outcome.notes && <div class="outcome-row"><span class="outcome-key">Catatan:</span> {outcome.notes}</div>}
+                </div>
+              ) : (
+                <div class="detail-text" style="color:var(--text-muted)">Belum ada data outcome</div>
+              )}
+            </>
+          ) : null}
+        </div>
       )}
 
       {/* Audit Log */}
