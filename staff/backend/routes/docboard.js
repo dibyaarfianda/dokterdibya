@@ -486,9 +486,15 @@ router.get('/command/rules/:id/executions', async (req, res) => {
   }
 });
 
-// Compliance (with date range validation and pagination)
+// Compliance (with date range validation, pagination, and rate limiting)
 router.get('/command/compliance', requireRoles('dokter', 'managerial'), async (req, res) => {
   try {
+    // Rate limit check
+    const rl = commandCenter.constructor.checkComplianceRateLimit(req.user?.id);
+    if (rl.limited) {
+      res.set('Retry-After', String(rl.retryAfterSec));
+      return res.status(429).json({ success: false, error_code: 'RATE_LIMITED', message: 'Terlalu banyak permintaan. Coba lagi dalam ' + rl.retryAfterSec + ' detik.', retry_after_sec: rl.retryAfterSec });
+    }
     const enabled = await commandCenter.isEnabled('phase5_compliance');
     if (!enabled) return res.status(403).json({ success: false, message: 'Compliance not enabled' });
     const { start, end, location, page, limit } = req.query;
@@ -557,6 +563,29 @@ router.post('/command/cleanup', requireRoles('dokter'), async (req, res) => {
   } catch (error) {
     logger.error('Cleanup error:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Phase 5.4: Metrics trend (dokter only)
+router.get('/command/metrics', requireRoles('dokter'), async (req, res) => {
+  try {
+    const days = req.query.days || 30;
+    const trend = await commandCenter.getMetricsTrend(days);
+    res.json({ success: true, trend });
+  } catch (error) {
+    logger.error('[ERR:METRICS_READ] Metrics trend error:', error.message);
+    res.status(500).json({ success: false, error_code: 'METRICS_READ', message: error.message });
+  }
+});
+
+// Phase 5.4: Manual metrics persist (dokter only)
+router.post('/command/metrics/persist', requireRoles('dokter'), async (req, res) => {
+  try {
+    const result = await commandCenter.persistDailyMetrics();
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('[ERR:METRICS_PERSIST] Manual persist error:', error.message);
+    res.status(500).json({ success: false, error_code: 'METRICS_PERSIST', message: error.message });
   }
 });
 

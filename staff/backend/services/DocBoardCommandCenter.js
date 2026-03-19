@@ -12,21 +12,62 @@ const COMPLIANCE_MAX_ROWS = Math.min(500, parseInt(process.env.DOCBOARD_MAX_COMP
 const COMPLIANCE_TOTAL_CAP = 2000;
 const SLOW_QUERY_MS = parseInt(process.env.DOCBOARD_SLOW_QUERY_MS) || 1000;
 const HEALTH_WINDOW_MIN = parseInt(process.env.DOCBOARD_HEALTH_WINDOW_MINUTES) || 60;
+const SLOW_ALERT_THRESHOLD = parseInt(process.env.DOCBOARD_SLOW_ALERT_THRESHOLD) || 5;
+const SLOW_ALERT_COOLDOWN_MS = parseInt(process.env.DOCBOARD_SLOW_ALERT_COOLDOWN_MS) || 15 * 60 * 1000;
+const COMPLIANCE_RATE_LIMIT = parseInt(process.env.DOCBOARD_COMPLIANCE_RATE_LIMIT) || 10;
+const COMPLIANCE_RATE_WINDOW_MS = parseInt(process.env.DOCBOARD_COMPLIANCE_RATE_WINDOW_MS) || 60 * 1000;
 let lastCleanupRun = null;
 let lastCleanupResult = null;
 let lastRuleExecCleanupRun = null;
 let lastRuleExecCleanupResult = null;
+let lastSlowAlertTs = 0;
 
-// In-memory metrics ring buffer (last HEALTH_WINDOW_MIN minutes)
+// In-memory metrics ring buffer
 const metricsLog = [];
 const MAX_METRICS = 200;
+
+// Compliance rate limit tracker: { userId: [timestamps] }
+const complianceRateMap = {};
 
 function recordMetric(endpoint, durationMs, meta) {
   metricsLog.push({ endpoint, duration_ms: durationMs, ts: Date.now(), ...meta });
   if (metricsLog.length > MAX_METRICS) metricsLog.shift();
   if (durationMs >= SLOW_QUERY_MS) {
     logger.warn('[SLOW] ' + endpoint + ' took ' + durationMs + 'ms', meta || {});
+    checkSlowAlert();
   }
+}
+
+function checkSlowAlert() {
+  const now = Date.now();
+  if (now - lastSlowAlertTs < SLOW_ALERT_COOLDOWN_MS) return;
+  const windowStart = now - HEALTH_WINDOW_MIN * 60 * 1000;
+  const recentSlow = metricsLog.filter(m => m.ts >= windowStart && m.duration_ms >= SLOW_QUERY_MS);
+  if (recentSlow.length >= SLOW_ALERT_THRESHOLD) {
+    lastSlowAlertTs = now;
+    const endpoints = {};
+    for (const m of recentSlow) { endpoints[m.endpoint] = (endpoints[m.endpoint] || 0) + 1; }
+    logger.error('[ALERT:SLOW_QUERIES] ' + recentSlow.length + ' slow queries in ' + HEALTH_WINDOW_MIN + 'min (threshold: ' + SLOW_ALERT_THRESHOLD + ')', endpoints);
+    // Fire push notification (non-blocking)
+    try {
+      const push = require('./DocBoardPushService');
+      push.storeGlobalNotification('slow_alert', 'Peringatan: Query lambat', recentSlow.length + ' query lambat dalam ' + HEALTH_WINDOW_MIN + ' menit', null, null);
+      push.sendToAllStaff('Peringatan: Query lambat', recentSlow.length + ' query >=' + SLOW_QUERY_MS + 'ms terdeteksi', { type: 'slow_alert', url: '/docboard/command' }).catch(function() {});
+    } catch { /* push may not be ready */ }
+  }
+}
+
+function checkComplianceRateLimit(userId) {
+  const now = Date.now();
+  const key = userId || 'anon';
+  if (!complianceRateMap[key]) complianceRateMap[key] = [];
+  complianceRateMap[key] = complianceRateMap[key].filter(ts => now - ts < COMPLIANCE_RATE_WINDOW_MS);
+  if (complianceRateMap[key].length >= COMPLIANCE_RATE_LIMIT) {
+    const retryAfterSec = Math.ceil((complianceRateMap[key][0] + COMPLIANCE_RATE_WINDOW_MS - now) / 1000);
+    return { limited: true, retryAfterSec };
+  }
+  complianceRateMap[key].push(now);
+  return { limited: false };
 }
 
 function getRecentMetrics() {
@@ -449,9 +490,62 @@ class DocBoardCommandCenter {
       cleanup: {
         policy_log: { last_run: lastCleanupRun, last_result: lastCleanupResult },
         rule_executions: { last_run: lastRuleExecCleanupRun, last_result: lastRuleExecCleanupResult }
-      }
+      },
+      alerts: { slow_threshold: SLOW_ALERT_THRESHOLD, slow_cooldown_ms: SLOW_ALERT_COOLDOWN_MS, last_slow_alert: lastSlowAlertTs > 0 ? new Date(lastSlowAlertTs).toISOString() : null },
+      rate_limit: { compliance_per_window: COMPLIANCE_RATE_LIMIT, window_ms: COMPLIANCE_RATE_WINDOW_MS }
     };
   }
+
+  // =====================================================
+  // PERSISTENT DAILY METRICS
+  // =====================================================
+
+  async persistDailyMetrics() {
+    const now = new Date();
+    const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    const metrics = getRecentMetrics();
+    const complianceCount = (metrics.by_endpoint.compliance || {}).count || 0;
+
+    // Get cleanup stats for today
+    let policyDeleted = 0;
+    let rulesDeleted = 0;
+    if (lastCleanupResult && lastCleanupResult.deleted) policyDeleted = lastCleanupResult.deleted;
+    if (lastRuleExecCleanupResult && lastRuleExecCleanupResult.deleted) rulesDeleted = lastRuleExecCleanupResult.deleted;
+
+    // Compute avg/max from ring buffer
+    let avgMs = null;
+    let maxMs = 0;
+    if (metricsLog.length > 0) {
+      const totalMs = metricsLog.reduce((s, m) => s + m.duration_ms, 0);
+      avgMs = Math.round(totalMs / metricsLog.length);
+      maxMs = Math.max(...metricsLog.map(m => m.duration_ms));
+    }
+
+    try {
+      await pool.query(
+        'INSERT INTO docboard_metrics_daily (metric_date, total_requests, slow_requests, avg_processing_ms, max_processing_ms, compliance_requests, cleanup_policy_deleted, cleanup_rules_deleted, by_endpoint) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE total_requests = VALUES(total_requests), slow_requests = VALUES(slow_requests), avg_processing_ms = VALUES(avg_processing_ms), max_processing_ms = VALUES(max_processing_ms), compliance_requests = VALUES(compliance_requests), cleanup_policy_deleted = VALUES(cleanup_policy_deleted), cleanup_rules_deleted = VALUES(cleanup_rules_deleted), by_endpoint = VALUES(by_endpoint)',
+        [dateStr, metrics.total_requests, metrics.slow_requests, avgMs, maxMs, complianceCount, policyDeleted, rulesDeleted, JSON.stringify(metrics.by_endpoint)]
+      );
+      logger.info('[Metrics] Daily snapshot persisted for ' + dateStr);
+      return { date: dateStr, persisted: true };
+    } catch (err) {
+      logger.error('[ERR:METRICS_PERSIST] Failed to persist daily metrics:', err.message);
+      return { date: dateStr, persisted: false, error: err.message };
+    }
+  }
+
+  async getMetricsTrend(days) {
+    const limit = Math.min(90, Math.max(1, parseInt(days) || 30));
+    const [rows] = await pool.query(
+      'SELECT * FROM docboard_metrics_daily ORDER BY metric_date DESC LIMIT ?', [limit]);
+    return rows.map(r => ({
+      ...r,
+      by_endpoint: typeof r.by_endpoint === 'string' ? JSON.parse(r.by_endpoint) : r.by_endpoint
+    }));
+  }
 }
+
+// Export rate limiter for use in routes
+DocBoardCommandCenter.checkComplianceRateLimit = checkComplianceRateLimit;
 
 module.exports = new DocBoardCommandCenter();
