@@ -2891,3 +2891,68 @@ input { font-family: inherit; }
   flex-shrink: 0;
   margin-top: 5px;
 }
+
+/* ==============================
+   Anesthesia Display
+   ============================== */
+.detail-anesthesia {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.anesthesia-item {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.anesthesia-key {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+/* ==============================
+   Audit Log Timeline
+   ============================== */
+.audit-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+}
+.audit-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  position: relative;
+}
+.audit-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  flex-shrink: 0;
+  margin-top: 5px;
+  margin-left: -16px;
+}
+.audit-content {
+  flex: 1;
+  min-width: 0;
+}
+.audit-action {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.audit-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  word-break: break-word;
+}
+.audit-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
