@@ -1,4 +1,5 @@
 import { API_BASE } from '../utils/constants';
+import { enqueue, replayQueue, queueCount, syncState } from '../utils/offlineQueue';
 
 function getToken() {
   return localStorage.getItem('docboard_token');
@@ -11,6 +12,8 @@ export function setToken(token) {
 export function clearToken() {
   localStorage.removeItem('docboard_token');
 }
+
+export { queueCount, syncState };
 
 async function request(path, options = {}) {
   const token = getToken();
@@ -38,6 +41,39 @@ async function request(path, options = {}) {
   }
 
   return data;
+}
+
+/**
+ * Mutating request with offline queue fallback.
+ * If network fails, queues the operation for later replay.
+ */
+async function mutate(path, options = {}) {
+  try {
+    return await request(path, options);
+  } catch (err) {
+    // Check if this is a real network failure (not a server error)
+    if (err.name === 'TypeError' || err.message === 'Failed to fetch') {
+      const method = options.method || 'POST';
+      const body = options.body ? JSON.parse(options.body) : {};
+      await enqueue(method, path, body);
+      return { success: true, queued: true, message: 'Disimpan offline, akan sync saat online' };
+    }
+    throw err;
+  }
+}
+
+/**
+ * Replay queued offline mutations. Call on reconnect.
+ */
+export async function syncOfflineQueue() {
+  return replayQueue(request);
+}
+
+// Auto-replay on online event
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    syncOfflineQueue().catch(() => {});
+  });
 }
 
 export const api = {
@@ -123,13 +159,13 @@ export const api = {
     return request(`/surgery/${id}`);
   },
   createSurgery(data) {
-    return request('/surgery', { method: 'POST', body: JSON.stringify(data) });
+    return mutate('/surgery', { method: 'POST', body: JSON.stringify(data) });
   },
   updateSurgery(id, data) {
-    return request(`/surgery/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    return mutate(`/surgery/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
   updateSurgeryStatus(id, status, reason) {
-    return request(`/surgery/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) });
+    return mutate(`/surgery/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) });
   },
   deleteSurgery(id) {
     return request(`/surgery/${id}`, { method: 'DELETE' });
@@ -207,6 +243,12 @@ export const api = {
   },
   saveOutcome(surgeryId, data) {
     return request(`/surgery/${surgeryId}/outcome`, { method: 'PUT', body: JSON.stringify(data) });
+  },
+
+  // Outcome analytics
+  getOutcomeAnalytics(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/surgery/analytics/outcomes${qs ? '?' + qs : ''}`);
   },
 
   // Clinic analytics

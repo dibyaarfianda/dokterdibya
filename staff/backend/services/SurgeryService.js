@@ -274,8 +274,20 @@ class SurgeryService {
       operation_type_id, operation_type_other,
       location, surgery_date, surgery_time, estimated_duration_min,
       anesthesia_type, asa_score, npo_status,
-      team_members, special_notes
+      team_members, special_notes, idempotency_key
     } = data;
+
+    // Idempotency check: if key provided and already exists, return existing record
+    if (idempotency_key) {
+      const [existing] = await pool.query(
+        'SELECT id FROM surgery_schedules WHERE idempotency_key = ?',
+        [idempotency_key]
+      );
+      if (existing.length > 0) {
+        logger.info(`Surgery create deduplicated by idempotency_key: ${idempotency_key}`);
+        return this.getSurgeryById(existing[0].id);
+      }
+    }
 
     const [result] = await pool.query(
       `INSERT INTO surgery_schedules
@@ -284,8 +296,8 @@ class SurgeryService {
         operation_type_id, operation_type_other,
         location, surgery_date, surgery_time, estimated_duration_min,
         anesthesia_type, asa_score, npo_status,
-        team_members, special_notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        team_members, special_notes, created_by, idempotency_key)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         patient_name, patient_age || null, patient_id || null, mr_id || null,
         diagnosis, lab_results || null, radiology_results || null, usg_results || null,
@@ -293,7 +305,7 @@ class SurgeryService {
         location, surgery_date, surgery_time || null, estimated_duration_min || null,
         anesthesia_type || null, asa_score || null, npo_status || null,
         team_members ? JSON.stringify(team_members) : null,
-        special_notes || null, userId || null
+        special_notes || null, userId || null, idempotency_key || null
       ]
     );
 
@@ -591,6 +603,81 @@ class SurgeryService {
         location: r.location,
         count: r.count
       }))
+    };
+  }
+
+  // =====================================================
+  // OUTCOME ANALYTICS
+  // =====================================================
+
+  async getOutcomeAnalytics(period) {
+    const now = new Date();
+    const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    let startDate;
+    switch (period) {
+      case '3m': { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; break; }
+      case '6m': { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; break; }
+      case '1y': { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; break; }
+      default: { const d = new Date(now); d.setDate(d.getDate() - 30); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+    }
+
+    // Total outcomes recorded
+    const [totals] = await pool.query(
+      `SELECT COUNT(*) as total,
+              SUM(CASE WHEN o.complication_grade = 'none' THEN 1 ELSE 0 END) as no_complication,
+              SUM(CASE WHEN o.readmission = 1 THEN 1 ELSE 0 END) as readmissions,
+              AVG(o.actual_duration_min) as avg_duration,
+              AVG(o.estimated_blood_loss) as avg_blood_loss
+       FROM surgery_outcomes o
+       JOIN surgery_schedules s ON o.surgery_id = s.id
+       WHERE s.surgery_date BETWEEN ? AND ?`,
+      [startDate, endDate]
+    );
+
+    // By complication grade
+    const [byGrade] = await pool.query(
+      `SELECT o.complication_grade, COUNT(*) as count
+       FROM surgery_outcomes o
+       JOIN surgery_schedules s ON o.surgery_id = s.id
+       WHERE s.surgery_date BETWEEN ? AND ?
+       GROUP BY o.complication_grade ORDER BY count DESC`,
+      [startDate, endDate]
+    );
+
+    // By wound class
+    const [byWound] = await pool.query(
+      `SELECT o.wound_class, COUNT(*) as count
+       FROM surgery_outcomes o
+       JOIN surgery_schedules s ON o.surgery_id = s.id
+       WHERE s.surgery_date BETWEEN ? AND ? AND o.wound_class IS NOT NULL
+       GROUP BY o.wound_class ORDER BY count DESC`,
+      [startDate, endDate]
+    );
+
+    // Monthly trend
+    const [byMonth] = await pool.query(
+      `SELECT YEAR(s.surgery_date) as year, MONTH(s.surgery_date) as month,
+              COUNT(*) as total,
+              SUM(CASE WHEN o.complication_grade != 'none' THEN 1 ELSE 0 END) as complications
+       FROM surgery_outcomes o
+       JOIN surgery_schedules s ON o.surgery_id = s.id
+       WHERE s.surgery_date BETWEEN ? AND ?
+       GROUP BY year, month ORDER BY year, month`,
+      [startDate, endDate]
+    );
+
+    const total = totals[0].total || 0;
+    const noComplicationRate = total > 0 ? Math.round((totals[0].no_complication / total) * 100) : 0;
+
+    return {
+      period, startDate, endDate, total,
+      noComplicationRate,
+      readmissions: totals[0].readmissions || 0,
+      avgDuration: totals[0].avg_duration ? Math.round(totals[0].avg_duration) : null,
+      avgBloodLoss: totals[0].avg_blood_loss ? Math.round(totals[0].avg_blood_loss) : null,
+      byGrade: byGrade.map(r => ({ grade: r.complication_grade, count: r.count })),
+      byWound: byWound.map(r => ({ woundClass: r.wound_class, count: r.count })),
+      byMonth: byMonth.map(r => ({ year: r.year, month: r.month, total: r.total, complications: r.complications }))
     };
   }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
-import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
+import { LOCATIONS, SURGERY_STATUS, COMPLICATION_GRADES } from '../utils/constants';
 import { getMonthName } from '../utils/date';
 
 const PERIODS = [
@@ -16,6 +16,7 @@ export default function Analytics() {
   const [tab, setTab] = useState('surgery');
   const [data, setData] = useState(null);
   const [clinicData, setClinicData] = useState(null);
+  const [outcomeData, setOutcomeData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -28,9 +29,12 @@ export default function Analytics() {
       if (tab === 'surgery') {
         const res = await api.getSurgeryAnalytics({ period });
         setData(res.analytics);
-      } else {
+      } else if (tab === 'clinic') {
         const res = await api.getClinicAnalytics({ period });
         setClinicData(res.analytics);
+      } else if (tab === 'outcomes') {
+        const res = await api.getOutcomeAnalytics({ period });
+        setOutcomeData(res.analytics);
       }
     } catch (err) {
       console.error('Failed to load analytics:', err);
@@ -57,6 +61,7 @@ export default function Analytics() {
       <div class="analytics-tabs">
         <button class={`analytics-tab ${tab === 'surgery' ? 'active' : ''}`} onClick={() => setTab('surgery')}>Operasi</button>
         <button class={`analytics-tab ${tab === 'clinic' ? 'active' : ''}`} onClick={() => setTab('clinic')}>Klinik</button>
+        <button class={`analytics-tab ${tab === 'outcomes' ? 'active' : ''}`} onClick={() => setTab('outcomes')}>Outcome</button>
       </div>
 
       {/* Period selector */}
@@ -225,6 +230,44 @@ export default function Analytics() {
                   return { label: loc ? loc.name : item.location, value: item.count, color: loc ? loc.color : '#94A3B8' };
                 })}
               />
+            </div>
+          )}
+        </div>
+      ) : tab === 'outcomes' && outcomeData ? (
+        <div class="analytics-content">
+          <div class="analytics-summary">
+            <SummaryCard label="Total Outcome" value={outcomeData.total}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>}
+            />
+            <SummaryCard label="Tanpa Komplikasi" value={`${outcomeData.noComplicationRate}%`} color="#22C55E"
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22,4 12,14.01 9,11.01" /></svg>}
+            />
+            <SummaryCard label="Readmisi" value={outcomeData.readmissions}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>}
+            />
+            {outcomeData.avgDuration && (
+              <SummaryCard label="Rata-rata Durasi" value={`${outcomeData.avgDuration}m`}
+                icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" /></svg>}
+              />
+            )}
+          </div>
+
+          {outcomeData.byGrade.length > 0 && (
+            <div class="analytics-card">
+              <h3 class="analytics-card-title">Distribusi Komplikasi (Clavien-Dindo)</h3>
+              <HorizontalBars
+                items={outcomeData.byGrade.map(item => {
+                  const g = COMPLICATION_GRADES[item.grade] || {};
+                  return { label: g.label || item.grade, value: item.count, color: g.color || '#94A3B8' };
+                })}
+              />
+            </div>
+          )}
+
+          {outcomeData.byMonth.length > 0 && (
+            <div class="analytics-card">
+              <h3 class="analytics-card-title">Tren Bulanan</h3>
+              <MonthlyChart data={outcomeData.byMonth} />
             </div>
           )}
         </div>
