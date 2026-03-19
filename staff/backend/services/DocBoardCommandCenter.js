@@ -16,6 +16,9 @@ const SLOW_ALERT_THRESHOLD = parseInt(process.env.DOCBOARD_SLOW_ALERT_THRESHOLD)
 const SLOW_ALERT_COOLDOWN_MS = parseInt(process.env.DOCBOARD_SLOW_ALERT_COOLDOWN_MS) || 15 * 60 * 1000;
 const COMPLIANCE_RATE_LIMIT = parseInt(process.env.DOCBOARD_COMPLIANCE_RATE_LIMIT) || 10;
 const COMPLIANCE_RATE_WINDOW_MS = parseInt(process.env.DOCBOARD_COMPLIANCE_RATE_WINDOW_MS) || 60 * 1000;
+const RULE_LOG_RETENTION_DEFAULT = parseInt(process.env.DOCBOARD_RULE_LOG_RETENTION_DAYS_DEFAULT) || 90;
+const RULE_LOG_RETENTION_MIN = parseInt(process.env.DOCBOARD_RULE_LOG_RETENTION_DAYS_MIN) || 7;
+const RULE_LOG_RETENTION_MAX = parseInt(process.env.DOCBOARD_RULE_LOG_RETENTION_DAYS_MAX) || 365;
 let lastCleanupRun = null;
 let lastCleanupResult = null;
 let lastRuleExecCleanupRun = null;
@@ -40,7 +43,10 @@ function recordMetric(endpoint, durationMs, meta) {
 
 function checkSlowAlert() {
   const now = Date.now();
-  if (now - lastSlowAlertTs < SLOW_ALERT_COOLDOWN_MS) return;
+  if (now - lastSlowAlertTs < SLOW_ALERT_COOLDOWN_MS) {
+    logAlertDelivery('slow_query', 'skipped_cooldown', null, { slow_count: 'skipped', threshold: SLOW_ALERT_THRESHOLD });
+    return;
+  }
   const windowStart = now - HEALTH_WINDOW_MIN * 60 * 1000;
   const recentSlow = metricsLog.filter(m => m.ts >= windowStart && m.duration_ms >= SLOW_QUERY_MS);
   if (recentSlow.length >= SLOW_ALERT_THRESHOLD) {
@@ -48,13 +54,23 @@ function checkSlowAlert() {
     const endpoints = {};
     for (const m of recentSlow) { endpoints[m.endpoint] = (endpoints[m.endpoint] || 0) + 1; }
     logger.error('[ALERT:SLOW_QUERIES] ' + recentSlow.length + ' slow queries in ' + HEALTH_WINDOW_MIN + 'min (threshold: ' + SLOW_ALERT_THRESHOLD + ')', endpoints);
-    // Fire push notification (non-blocking)
     try {
       const push = require('./DocBoardPushService');
       push.storeGlobalNotification('slow_alert', 'Peringatan: Query lambat', recentSlow.length + ' query lambat dalam ' + HEALTH_WINDOW_MIN + ' menit', null, null);
-      push.sendToAllStaff('Peringatan: Query lambat', recentSlow.length + ' query >=' + SLOW_QUERY_MS + 'ms terdeteksi', { type: 'slow_alert', url: '/docboard/command' }).catch(function() {});
-    } catch { /* push may not be ready */ }
+      push.sendToAllStaff('Peringatan: Query lambat', recentSlow.length + ' query >=' + SLOW_QUERY_MS + 'ms terdeteksi', { type: 'slow_alert', url: '/docboard/command' })
+        .then(function() { logAlertDelivery('slow_query', 'sent', null, { slow_count: recentSlow.length, endpoints }); })
+        .catch(function(err) { logAlertDelivery('slow_query', 'failed', err.message, { slow_count: recentSlow.length, endpoints }); });
+    } catch (err) {
+      logAlertDelivery('slow_query', 'failed', err.message, { slow_count: recentSlow.length });
+    }
   }
+}
+
+function logAlertDelivery(alertType, status, errorMsg, context) {
+  pool.query(
+    'INSERT INTO docboard_alert_log (alert_type, status, error_message, context) VALUES (?, ?, ?, ?)',
+    [alertType, status, errorMsg || null, JSON.stringify(context || {})]
+  ).catch(function() { /* non-blocking */ });
 }
 
 function checkComplianceRateLimit(userId) {
@@ -541,6 +557,72 @@ class DocBoardCommandCenter {
     return rows.map(r => ({
       ...r,
       by_endpoint: typeof r.by_endpoint === 'string' ? JSON.parse(r.by_endpoint) : r.by_endpoint
+    }));
+  }
+
+  // =====================================================
+  // COMPLIANCE USAGE TRACKING
+  // =====================================================
+
+  async recordComplianceUsage(userId) {
+    const now = new Date();
+    const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    try {
+      await pool.query(
+        'INSERT INTO docboard_compliance_usage (usage_date, user_id, request_count, last_access_at) VALUES (?, ?, 1, NOW()) ON DUPLICATE KEY UPDATE request_count = request_count + 1, last_access_at = NOW()',
+        [dateStr, userId || 'unknown']);
+    } catch { /* non-blocking */ }
+  }
+
+  async getComplianceUsageTrend(days) {
+    const limit = Math.min(90, Math.max(1, parseInt(days) || 30));
+    const [rows] = await pool.query(
+      'SELECT usage_date, user_id, request_count, last_access_at FROM docboard_compliance_usage ORDER BY usage_date DESC, request_count DESC LIMIT ?',
+      [limit * 10]);
+    // Group by date
+    const byDate = {};
+    for (const r of rows) {
+      const d = typeof r.usage_date === 'string' ? r.usage_date : r.usage_date.toISOString().slice(0, 10);
+      if (!byDate[d]) byDate[d] = { date: d, total: 0, users: [] };
+      byDate[d].total += r.request_count;
+      byDate[d].users.push({ user_id: r.user_id, count: r.request_count });
+    }
+    return Object.values(byDate).slice(0, limit);
+  }
+
+  // =====================================================
+  // RULE EXECUTION LOG PRUNE (admin command)
+  // =====================================================
+
+  async pruneRuleExecutions(retentionDays, dryRun) {
+    const days = Math.min(RULE_LOG_RETENTION_MAX, Math.max(RULE_LOG_RETENTION_MIN, parseInt(retentionDays) || RULE_LOG_RETENTION_DEFAULT));
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffStr = cutoff.toISOString().slice(0, 19).replace('T', ' ');
+
+    const [countRows] = await pool.query(
+      'SELECT COUNT(*) as count FROM docboard_rule_executions WHERE created_at < ?', [cutoffStr]);
+    const toDelete = countRows[0].count;
+
+    if (dryRun || toDelete === 0) {
+      return { dry_run: !!dryRun, would_delete: toDelete, retention_days: days, applied_min: RULE_LOG_RETENTION_MIN, applied_max: RULE_LOG_RETENTION_MAX, cutoff: cutoffStr };
+    }
+
+    const [del] = await pool.query('DELETE FROM docboard_rule_executions WHERE created_at < ?', [cutoffStr]);
+    logger.info('[Prune] Rule executions: deleted ' + del.affectedRows + ' rows older than ' + days + 'd');
+    return { dry_run: false, deleted: del.affectedRows, retention_days: days, applied_min: RULE_LOG_RETENTION_MIN, applied_max: RULE_LOG_RETENTION_MAX, cutoff: cutoffStr };
+  }
+
+  // =====================================================
+  // ALERT LOG READ
+  // =====================================================
+
+  async getAlertLog(limit) {
+    const [rows] = await pool.query(
+      'SELECT * FROM docboard_alert_log ORDER BY created_at DESC LIMIT ?', [Math.min(100, parseInt(limit) || 20)]);
+    return rows.map(r => ({
+      ...r,
+      context: typeof r.context === 'string' ? JSON.parse(r.context) : r.context
     }));
   }
 }

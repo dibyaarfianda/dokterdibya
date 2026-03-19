@@ -502,6 +502,8 @@ router.get('/command/compliance', requireRoles('dokter', 'managerial'), async (r
     const validation = commandCenter.validateComplianceRange(start, end);
     if (!validation.valid) return res.status(400).json({ success: false, message: validation.message });
     const report = await commandCenter.getComplianceReport(start, end, location, page, limit);
+    // Track compliance usage (non-blocking)
+    commandCenter.recordComplianceUsage(req.user?.id).catch(function() {});
     res.json({ success: true, report });
   } catch (error) {
     const status = error.statusCode || 500;
@@ -586,6 +588,42 @@ router.post('/command/metrics/persist', requireRoles('dokter'), async (req, res)
   } catch (error) {
     logger.error('[ERR:METRICS_PERSIST] Manual persist error:', error.message);
     res.status(500).json({ success: false, error_code: 'METRICS_PERSIST', message: error.message });
+  }
+});
+
+// Phase 5.5: Compliance usage trend (dokter only)
+router.get('/command/compliance-usage', requireRoles('dokter'), async (req, res) => {
+  try {
+    const trend = await commandCenter.getComplianceUsageTrend(req.query.days);
+    res.json({ success: true, trend });
+  } catch (error) {
+    logger.error('[ERR:COMPLIANCE_USAGE] Usage trend error:', error.message);
+    res.status(500).json({ success: false, error_code: 'COMPLIANCE_USAGE', message: error.message });
+  }
+});
+
+// Phase 5.5: Rule execution log prune (dokter only)
+router.post('/command/prune-rules', requireRoles('dokter'), async (req, res) => {
+  try {
+    const dryRun = req.query.dry_run !== 'false';
+    const days = req.query.days || req.body.days;
+    const result = await commandCenter.pruneRuleExecutions(days, dryRun);
+    await commandCenter.logCleanupAudit(req.user?.id, 'rule_executions_prune', dryRun ? 'dry_run' : 'real', result);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('[ERR:PRUNE_RULES] Prune error:', error.message);
+    res.status(500).json({ success: false, error_code: 'PRUNE_RULES', message: error.message });
+  }
+});
+
+// Phase 5.5: Alert delivery log (dokter only)
+router.get('/command/alerts', requireRoles('dokter'), async (req, res) => {
+  try {
+    const alerts = await commandCenter.getAlertLog(req.query.limit);
+    res.json({ success: true, alerts });
+  } catch (error) {
+    logger.error('[ERR:ALERT_LOG] Alert log error:', error.message);
+    res.status(500).json({ success: false, error_code: 'ALERT_LOG', message: error.message });
   }
 });
 

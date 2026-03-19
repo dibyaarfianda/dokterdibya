@@ -7,6 +7,7 @@ export default function CommandDashboard() {
   const [data, setData] = useState(null);
   const [conflicts, setConflicts] = useState(null);
   const [flags, setFlags] = useState({});
+  const [metricsTrend, setMetricsTrend] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,6 +22,8 @@ export default function CommandDashboard() {
       if (flagRes.flags && flagRes.flags.phase5_dashboard) {
         var dashRes = await api.getDashboard();
         setData(dashRes);
+        // Load metrics trend (non-blocking)
+        api.getMetricsTrend(7).then(function(r) { setMetricsTrend(r.trend || []); }).catch(function() {});
       }
       if (flagRes.flags && flagRes.flags.phase5_conflict_detection) {
         var confRes = await api.getConflicts();
@@ -71,6 +74,28 @@ export default function CommandDashboard() {
               })}
             </div>
           </div>
+
+          {/* Metrics Trend (read-only) */}
+          {metricsTrend.length > 0 && (
+            <div style="padding:0 16px">
+              <div class="detail-card">
+                <div class="detail-label">Tren 7 Hari Terakhir</div>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  {metricsTrend.slice(0, 7).map(function(m, i) {
+                    var d = typeof m.metric_date === 'string' ? m.metric_date : new Date(m.metric_date).toISOString().slice(0,10);
+                    return (
+                      <div key={i} style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)">
+                        <span style="color:var(--text-secondary)">{d}</span>
+                        <span>{m.total_requests || 0} req</span>
+                        <span style="color:var(--text-muted)">{m.slow_requests || 0} slow</span>
+                        <span style="color:var(--text-muted)">{m.compliance_requests || 0} comp</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style="padding:0 16px;font-size:11px;color:var(--text-muted);margin-bottom:12px">
             Update: {new Date(data.last_updated).toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})}
