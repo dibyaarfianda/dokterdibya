@@ -22,6 +22,9 @@ export default function SurgeryForm({ id }) {
     lab_results: '',
     radiology_results: '',
     usg_results: '',
+    anesthesia_type: '',
+    asa_score: '',
+    npo_status: '',
     special_notes: '',
     team_members: []
   });
@@ -81,6 +84,9 @@ export default function SurgeryForm({ id }) {
             lab_results: s.lab_results || '',
             radiology_results: s.radiology_results || '',
             usg_results: s.usg_results || '',
+            anesthesia_type: s.anesthesia_type || '',
+            asa_score: s.asa_score || '',
+            npo_status: s.npo_status || '',
             special_notes: s.special_notes || '',
             team_members: s.team_members || []
           });
@@ -535,6 +541,40 @@ export default function SurgeryForm({ id }) {
           <div class="form-group">
             <label>Hasil USG</label>
             <textarea rows="2" value={form.usg_results} onInput={e => updateField('usg_results', e.target.value)} placeholder="Temuan USG..." />
+          </div>
+        </div>
+
+        {/* Anesthesia */}
+        <div class="form-section">
+          <div class="form-section-title">Anestesi</div>
+          <div class="form-group">
+            <label>Jenis Anestesi</label>
+            <select value={form.anesthesia_type} onChange={e => updateField('anesthesia_type', e.target.value)}>
+              <option value="">-- Pilih --</option>
+              <option value="GA">General Anesthesia (GA)</option>
+              <option value="Spinal">Spinal</option>
+              <option value="Epidural">Epidural</option>
+              <option value="Combined Spinal-Epidural">Combined Spinal-Epidural</option>
+              <option value="Local">Local Anesthesia</option>
+              <option value="Sedation">Sedation</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ASA Score</label>
+              <select value={form.asa_score} onChange={e => updateField('asa_score', e.target.value)}>
+                <option value="">--</option>
+                <option value="1">ASA I</option>
+                <option value="2">ASA II</option>
+                <option value="3">ASA III</option>
+                <option value="4">ASA IV</option>
+                <option value="5">ASA V</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Status Puasa (NPO)</label>
+              <input type="text" value={form.npo_status} onInput={e => updateField('npo_status', e.target.value)} placeholder="contoh: Puasa sejak jam 00:00" />
+            </div>
           </div>
         </div>
 

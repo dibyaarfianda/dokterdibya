@@ -273,6 +273,7 @@ class SurgeryService {
       diagnosis, lab_results, radiology_results, usg_results,
       operation_type_id, operation_type_other,
       location, surgery_date, surgery_time, estimated_duration_min,
+      anesthesia_type, asa_score, npo_status,
       team_members, special_notes
     } = data;
 
@@ -282,23 +283,29 @@ class SurgeryService {
         diagnosis, lab_results, radiology_results, usg_results,
         operation_type_id, operation_type_other,
         location, surgery_date, surgery_time, estimated_duration_min,
+        anesthesia_type, asa_score, npo_status,
         team_members, special_notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         patient_name, patient_age || null, patient_id || null, mr_id || null,
         diagnosis, lab_results || null, radiology_results || null, usg_results || null,
         operation_type_id, operation_type_other || null,
         location, surgery_date, surgery_time || null, estimated_duration_min || null,
+        anesthesia_type || null, asa_score || null, npo_status || null,
         team_members ? JSON.stringify(team_members) : null,
         special_notes || null, userId || null
       ]
     );
 
     logger.info(`Surgery scheduled: ${patient_name} - ${surgery_date} at ${location}`, { id: result.insertId });
+
+    // Audit log
+    await this.logAudit(result.insertId, 'created', userId, { patient_name, operation_type_id, location, surgery_date });
+
     return this.getSurgeryById(result.insertId);
   }
 
-  async updateSurgery(id, data) {
+  async updateSurgery(id, data, userId) {
     const fields = [];
     const values = [];
 
@@ -307,13 +314,16 @@ class SurgeryService {
       'diagnosis', 'lab_results', 'radiology_results', 'usg_results',
       'operation_type_id', 'operation_type_other',
       'location', 'surgery_date', 'surgery_time', 'estimated_duration_min',
+      'anesthesia_type', 'asa_score', 'npo_status',
       'special_notes', 'post_op_notes', 'status', 'cancellation_reason'
     ];
 
+    const changedFields = {};
     for (const field of allowedFields) {
       if (data[field] !== undefined) {
         fields.push(`${field} = ?`);
         values.push(data[field]);
+        changedFields[field] = data[field];
       }
     }
 
@@ -321,6 +331,7 @@ class SurgeryService {
     if (data.team_members !== undefined) {
       fields.push('team_members = ?');
       values.push(JSON.stringify(data.team_members));
+      changedFields.team_members = '(updated)';
     }
 
     if (fields.length === 0) return this.getSurgeryById(id);
@@ -332,10 +343,14 @@ class SurgeryService {
     );
 
     logger.info(`Surgery updated: #${id}`);
+
+    // Audit log
+    await this.logAudit(id, 'updated', userId, changedFields);
+
     return this.getSurgeryById(id);
   }
 
-  async updateStatus(id, status, reason) {
+  async updateStatus(id, status, reason, userId) {
     const fields = ['status = ?'];
     const values = [status];
 
@@ -351,6 +366,12 @@ class SurgeryService {
     );
 
     logger.info(`Surgery #${id} status → ${status}`);
+
+    // Audit log
+    const changes = { status };
+    if (reason) changes.reason = reason;
+    await this.logAudit(id, 'status_changed', userId, changes);
+
     return this.getSurgeryById(id);
   }
 
@@ -404,6 +425,37 @@ class SurgeryService {
     const dateStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
     return this.getDaySurgeries(dateStr);
+  }
+
+  // =====================================================
+  // AUDIT LOG
+  // =====================================================
+
+  async logAudit(surgeryId, action, userId, changes) {
+    try {
+      await pool.query(
+        `INSERT INTO surgery_audit_log (surgery_id, action, user_id, changes)
+         VALUES (?, ?, ?, ?)`,
+        [surgeryId, action, userId || null, JSON.stringify(changes || {})]
+      );
+    } catch (err) {
+      // Non-blocking — audit failure should not break the main operation
+      logger.error(`Audit log failed for surgery #${surgeryId}:`, err.message);
+    }
+  }
+
+  async getAuditLog(surgeryId) {
+    const [rows] = await pool.query(
+      `SELECT id, surgery_id, action, user_id, changes, created_at
+       FROM surgery_audit_log
+       WHERE surgery_id = ?
+       ORDER BY created_at DESC`,
+      [surgeryId]
+    );
+    return rows.map(r => ({
+      ...r,
+      changes: typeof r.changes === 'string' ? JSON.parse(r.changes) : r.changes
+    }));
   }
 
   // =====================================================

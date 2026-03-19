@@ -397,7 +397,7 @@ router.patch('/:id/post-op-notes', async (req, res) => {
       });
     }
 
-    const updated = await surgeryService.updateSurgery(id, { post_op_notes });
+    const updated = await surgeryService.updateSurgery(id, { post_op_notes }, req.user?.id);
     res.json({ success: true, surgery: updated });
   } catch (error) {
     logger.error('Surgery post-op notes update error:', error);
@@ -416,6 +416,20 @@ router.get('/analytics', async (req, res) => {
     res.json({ success: true, analytics });
   } catch (error) {
     logger.error('Surgery analytics error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /:id/audit
+ * Audit log entries for a surgery
+ */
+router.get('/:id/audit', async (req, res) => {
+  try {
+    const entries = await surgeryService.getAuditLog(req.params.id);
+    res.json({ success: true, entries });
+  } catch (error) {
+    logger.error('Surgery audit log error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -469,7 +483,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const surgery = await surgeryService.updateSurgery(req.params.id, req.body);
+    const surgery = await surgeryService.updateSurgery(req.params.id, req.body, req.user?.id);
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery update error:', error);
@@ -486,7 +500,7 @@ router.patch('/:id/status', async (req, res) => {
     if (!status) {
       return res.status(400).json({ success: false, message: 'Status diperlukan' });
     }
-    const surgery = await surgeryService.updateStatus(req.params.id, status, reason);
+    const surgery = await surgeryService.updateStatus(req.params.id, status, reason, req.user?.id);
 
     // Send push notification for status change (fire-and-forget)
     docboardPush.sendStatusChangeNotification(surgery, status).catch(err => {

@@ -4,11 +4,27 @@ import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY } from '../utils/constants';
 import PostOpNotesForm from '../components/PostOpNotesForm';
 
+const ASA_LABELS = {
+  1: 'ASA I - Sehat',
+  2: 'ASA II - Penyakit sistemik ringan',
+  3: 'ASA III - Penyakit sistemik berat',
+  4: 'ASA IV - Mengancam jiwa',
+  5: 'ASA V - Moribund'
+};
+
+const AUDIT_ACTION_LABELS = {
+  created: 'Dibuat',
+  updated: 'Diubah',
+  status_changed: 'Status berubah'
+};
+
 export default function SurgeryDetail({ id }) {
   const [surgery, setSurgery] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showActions, setShowActions] = useState(false);
   const [showPostOpForm, setShowPostOpForm] = useState(false);
+  const [auditLog, setAuditLog] = useState([]);
+  const [showAudit, setShowAudit] = useState(false);
 
   useEffect(() => { loadSurgery(); }, [id]);
 
@@ -21,6 +37,16 @@ export default function SurgeryDetail({ id }) {
       console.error('Failed to load surgery:', err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAuditLog() {
+    try {
+      const data = await api.getSurgeryAuditLog(id);
+      setAuditLog(data.entries || []);
+      setShowAudit(true);
+    } catch (err) {
+      console.error('Failed to load audit log:', err);
     }
   }
 
@@ -139,6 +165,30 @@ export default function SurgeryDetail({ id }) {
         </div>
       </div>
 
+      {/* Anesthesia */}
+      {(s.anesthesia_type || s.asa_score || s.npo_status) && (
+        <div class="detail-card">
+          <div class="detail-label">Anestesi</div>
+          <div class="detail-anesthesia">
+            {s.anesthesia_type && (
+              <div class="anesthesia-item">
+                <span class="anesthesia-key">Jenis:</span> {s.anesthesia_type}
+              </div>
+            )}
+            {s.asa_score && (
+              <div class="anesthesia-item">
+                <span class="anesthesia-key">ASA:</span> {ASA_LABELS[s.asa_score] || `ASA ${s.asa_score}`}
+              </div>
+            )}
+            {s.npo_status && (
+              <div class="anesthesia-item">
+                <span class="anesthesia-key">NPO:</span> {s.npo_status}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Diagnosis */}
       <div class="detail-card">
         <div class="detail-label">Diagnosis</div>
@@ -239,6 +289,51 @@ export default function SurgeryDetail({ id }) {
           </div>
         )
       )}
+
+      {/* Audit Log */}
+      <div class="detail-card">
+        {!showAudit ? (
+          <button class="btn-text" onClick={loadAuditLog} style="width:100%;text-align:center;padding:8px 0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px">
+              <circle cx="12" cy="12" r="10" /><polyline points="12,6 12,12 16,14" />
+            </svg>
+            Riwayat Perubahan
+          </button>
+        ) : (
+          <>
+            <div class="detail-label">Riwayat Perubahan</div>
+            {auditLog.length === 0 ? (
+              <div class="detail-text" style="color:var(--text-muted)">Belum ada riwayat</div>
+            ) : (
+              <div class="audit-timeline">
+                {auditLog.map(entry => {
+                  const d = new Date(entry.created_at);
+                  const timeStr = d.toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                  const changes = entry.changes || {};
+                  let detail = '';
+                  if (entry.action === 'status_changed' && changes.status) {
+                    const st = SURGERY_STATUS[changes.status];
+                    detail = st ? st.label : changes.status;
+                    if (changes.reason) detail += ` — ${changes.reason}`;
+                  } else if (entry.action === 'updated') {
+                    detail = Object.keys(changes).join(', ');
+                  }
+                  return (
+                    <div key={entry.id} class="audit-entry">
+                      <div class="audit-dot" />
+                      <div class="audit-content">
+                        <div class="audit-action">{AUDIT_ACTION_LABELS[entry.action] || entry.action}</div>
+                        {detail && <div class="audit-detail">{detail}</div>}
+                        <div class="audit-meta">{timeStr}{entry.user_id ? ` • ${entry.user_id}` : ''}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

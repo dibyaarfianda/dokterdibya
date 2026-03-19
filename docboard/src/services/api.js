@@ -158,6 +158,9 @@ export const api = {
       body: JSON.stringify({ post_op_notes: notes })
     });
   },
+  getSurgeryAuditLog(id) {
+    return request(`/surgery/${id}/audit`);
+  },
   getSurgeryAnalytics(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return request(`/surgery/analytics${qs ? '?' + qs : ''}`);
