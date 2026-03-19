@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const jwt = require('jsonwebtoken');
 const surgeryService = require('../services/SurgeryService');
 const docboardPush = require('../services/DocBoardPushService');
+const whatsapp = require('../services/whatsappService');
 const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
@@ -93,6 +94,75 @@ router.get('/day/:date', async (req, res) => {
     res.json({ success: true, surgeries });
   } catch (error) {
     logger.error('Surgery day error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /templates
+ */
+router.get('/templates', async (req, res) => {
+  try {
+    const templates = await surgeryService.getTemplates(req.user?.id);
+    res.json({ success: true, templates });
+  } catch (error) {
+    logger.error('Surgery templates error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /templates
+ */
+router.post('/templates', async (req, res) => {
+  try {
+    const { name, default_data } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: 'Nama template diperlukan' });
+    const template = await surgeryService.createTemplate(req.user?.id, name, default_data || {});
+    res.json({ success: true, template });
+  } catch (error) {
+    logger.error('Surgery template create error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * DELETE /templates/:id
+ */
+router.delete('/templates/:id', async (req, res) => {
+  try {
+    await surgeryService.deleteTemplate(req.params.id, req.user?.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Surgery template delete error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /:id/checklist
+ */
+router.get('/:id/checklist', async (req, res) => {
+  try {
+    const checklist = await surgeryService.getChecklist(req.params.id);
+    res.json({ success: true, checklist });
+  } catch (error) {
+    logger.error('Surgery checklist get error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /:id/checklist
+ */
+router.put('/:id/checklist', async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) return res.status(400).json({ success: false, message: 'Items array diperlukan' });
+    const checklist = await surgeryService.updateChecklist(req.params.id, items, req.user?.id);
+    res.json({ success: true, checklist });
+  } catch (error) {
+    logger.error('Surgery checklist update error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -506,6 +576,17 @@ router.patch('/:id/status', async (req, res) => {
     docboardPush.sendStatusChangeNotification(surgery, status).catch(err => {
       logger.error('Failed to send status change notification:', err.message);
     });
+
+    // WhatsApp: send confirmation to patient when surgery is confirmed (fire-and-forget)
+    if (status === 'confirmed' && surgery.patient_id && whatsapp.fonnte.enabled) {
+      const pool = require('../db');
+      pool.query('SELECT phone, whatsapp FROM patients WHERE id = ?', [surgery.patient_id])
+        .then(([rows]) => {
+          const p = rows[0];
+          const phone = p?.whatsapp || p?.phone;
+          if (phone) whatsapp.sendSurgeryConfirmation(surgery, phone).catch(() => {});
+        }).catch(() => {});
+    }
 
     res.json({ success: true, surgery });
   } catch (error) {

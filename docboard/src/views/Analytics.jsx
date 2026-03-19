@@ -13,18 +13,25 @@ const PERIODS = [
 
 export default function Analytics() {
   const [period, setPeriod] = useState('3m');
+  const [tab, setTab] = useState('surgery');
   const [data, setData] = useState(null);
+  const [clinicData, setClinicData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => { loadAnalytics(); }, [period]);
+  useEffect(() => { loadAnalytics(); }, [period, tab]);
 
   async function loadAnalytics() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.getSurgeryAnalytics({ period });
-      setData(res.analytics);
+      if (tab === 'surgery') {
+        const res = await api.getSurgeryAnalytics({ period });
+        setData(res.analytics);
+      } else {
+        const res = await api.getClinicAnalytics({ period });
+        setClinicData(res.analytics);
+      }
     } catch (err) {
       console.error('Failed to load analytics:', err);
       setError(err.message);
@@ -42,8 +49,14 @@ export default function Analytics() {
               <polyline points="15,18 9,12 15,6" />
             </svg>
           </button>
-          <h1>Statistik Operasi</h1>
+          <h1>Statistik</h1>
         </div>
+      </div>
+
+      {/* Tab toggle */}
+      <div class="analytics-tabs">
+        <button class={`analytics-tab ${tab === 'surgery' ? 'active' : ''}`} onClick={() => setTab('surgery')}>Operasi</button>
+        <button class={`analytics-tab ${tab === 'clinic' ? 'active' : ''}`} onClick={() => setTab('clinic')}>Klinik</button>
       </div>
 
       {/* Period selector */}
@@ -68,7 +81,7 @@ export default function Analytics() {
           <p>{error}</p>
           <button class="btn-secondary" onClick={loadAnalytics}>Coba Lagi</button>
         </div>
-      ) : data ? (
+      ) : tab === 'surgery' && data ? (
         <div class="analytics-content">
           {/* Summary Cards */}
           <div class="analytics-summary">
@@ -178,6 +191,42 @@ export default function Analytics() {
             <RateCard label="Batal" value={data.cancelRate} color="#EF4444" />
             <RateCard label="Ditunda" value={data.postponeRate} color="#94A3B8" />
           </div>
+        </div>
+      ) : tab === 'clinic' && clinicData ? (
+        <div class="analytics-content">
+          <div class="analytics-summary">
+            <SummaryCard label="Total Pasien" value={clinicData.totalPatients}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>}
+            />
+            <SummaryCard label="Selesai" value={`${clinicData.completionRate}%`} color="#22C55E"
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22,4 12,14.01 9,11.01" /></svg>}
+            />
+            <SummaryCard label="Rata-rata/Hari" value={clinicData.avgPerDay}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>}
+            />
+            <SummaryCard label="Hari Aktif" value={clinicData.activeDays}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M3 10h18" /><path d="M8 2v4" /><path d="M16 2v4" /></svg>}
+            />
+          </div>
+
+          {clinicData.byMonth.length > 0 && (
+            <div class="analytics-card">
+              <h3 class="analytics-card-title">Pasien per Bulan</h3>
+              <MonthlyChart data={clinicData.byMonth} />
+            </div>
+          )}
+
+          {clinicData.byLocation.length > 0 && (
+            <div class="analytics-card">
+              <h3 class="analytics-card-title">Distribusi Lokasi</h3>
+              <HorizontalBars
+                items={clinicData.byLocation.map(item => {
+                  const loc = LOCATIONS[item.location];
+                  return { label: loc ? loc.name : item.location, value: item.count, color: loc ? loc.color : '#94A3B8' };
+                })}
+              />
+            </div>
+          )}
         </div>
       ) : null}
     </div>

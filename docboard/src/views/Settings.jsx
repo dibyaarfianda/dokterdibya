@@ -6,16 +6,26 @@ import { LOCATIONS, SYNC_STATUS } from '../utils/constants';
 import { relativeTime } from '../utils/date';
 import { isPushSupported, isPushSubscribed, subscribeToPush, unsubscribeFromPush } from '../utils/push';
 
+const NOTIF_PREFS = [
+  { key: 'notify_new_booking', label: 'Operasi Baru', desc: 'Saat operasi dijadwalkan' },
+  { key: 'notify_status_change', label: 'Perubahan Status', desc: 'Saat status operasi berubah' },
+  { key: 'notify_reminder', label: 'Reminder Harian', desc: 'Pengingat operasi besok (21:00)' },
+  { key: 'notify_sync_failure', label: 'Sync Gagal', desc: 'Saat sinkronisasi data gagal' }
+];
+
 export default function Settings() {
   const [syncData, setSyncData] = useState({});
   const [syncing, setSyncing] = useState({});
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(true);
   const [pushSupported] = useState(isPushSupported());
+  const [prefs, setPrefs] = useState({ notify_new_booking: true, notify_status_change: true, notify_reminder: true, notify_sync_failure: true });
+  const [prefsLoading, setPrefsLoading] = useState(false);
 
   useEffect(() => {
     loadSyncStatus();
     checkPushStatus();
+    loadPreferences();
   }, []);
 
   async function loadSyncStatus() {
@@ -88,6 +98,26 @@ export default function Settings() {
     }
   }
 
+  async function loadPreferences() {
+    try {
+      const data = await api.getPreferences();
+      if (data.preferences) setPrefs(data.preferences);
+    } catch { /* preferences endpoint may not exist yet */ }
+  }
+
+  async function togglePref(key) {
+    const updated = { ...prefs, [key]: !prefs[key] };
+    setPrefs(updated);
+    setPrefsLoading(true);
+    try {
+      await api.updatePreferences(updated);
+    } catch (err) {
+      setPrefs(prefs); // revert
+      alert('Gagal menyimpan: ' + err.message);
+    }
+    setPrefsLoading(false);
+  }
+
   function handleLogout() {
     if (confirm('Keluar dari DocBoard?')) {
       logout();
@@ -149,6 +179,27 @@ export default function Settings() {
           )}
         </div>
       </div>
+
+      {/* Notification Preferences */}
+      {pushEnabled && (
+        <div class="settings-section">
+          <h3 class="settings-section-title">Jenis Notifikasi</h3>
+          <div class="settings-card">
+            {NOTIF_PREFS.map(np => (
+              <div key={np.key} class="pref-toggle-row">
+                <div class="pref-toggle-info">
+                  <div class="pref-toggle-label">{np.label}</div>
+                  <div class="pref-toggle-desc">{np.desc}</div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked={prefs[np.key] !== false} onChange={() => togglePref(np.key)} disabled={prefsLoading} />
+                  <span class="toggle-slider" />
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Sync Status */}
       <div class="settings-section">

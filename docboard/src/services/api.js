@@ -175,5 +175,38 @@ export const api = {
   // AI Briefing
   getBriefing(date, refresh = false) {
     return request(`/ai/briefing/${date}${refresh ? '?refresh=true' : ''}`);
+  },
+
+  // Templates
+  getTemplates() {
+    return request('/surgery/templates');
+  },
+  createTemplate(name, defaultData) {
+    return request('/surgery/templates', { method: 'POST', body: JSON.stringify({ name, default_data: defaultData }) });
+  },
+  deleteTemplate(id) {
+    return request(`/surgery/templates/${id}`, { method: 'DELETE' });
+  },
+
+  // Checklist
+  getChecklist(surgeryId) {
+    return request(`/surgery/${surgeryId}/checklist`);
+  },
+  updateChecklist(surgeryId, items) {
+    return request(`/surgery/${surgeryId}/checklist`, { method: 'PUT', body: JSON.stringify({ items }) });
+  },
+
+  // Clinic analytics
+  getClinicAnalytics(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/analytics/clinic${qs ? '?' + qs : ''}`);
+  },
+
+  // Preferences
+  getPreferences() {
+    return request('/preferences');
+  },
+  updatePreferences(prefs) {
+    return request('/preferences', { method: 'PUT', body: JSON.stringify({ preferences: prefs }) });
   }
 };

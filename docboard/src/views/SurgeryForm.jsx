@@ -37,6 +37,8 @@ export default function SurgeryForm({ id }) {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: '', role: 'Asisten Operator', phone: '' });
   const [opSearch, setOpSearch] = useState('');
+  const [templates, setTemplates] = useState([]);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   // RM Lookup state
   const [rmInput, setRmInput] = useState('');
@@ -58,12 +60,14 @@ export default function SurgeryForm({ id }) {
   async function loadData() {
     setLoading(true);
     try {
-      const [typesData, staffData] = await Promise.all([
+      const [typesData, staffData, tplData] = await Promise.all([
         api.getOperationTypes(),
-        api.getExternalStaff()
+        api.getExternalStaff(),
+        api.getTemplates().catch(() => ({ templates: [] }))
       ]);
       setOpTypes(typesData.types || []);
       setExternalStaff(staffData.staff || []);
+      setTemplates(tplData.templates || []);
 
       if (isEdit) {
         const data = await api.getSurgery(id);
@@ -247,6 +251,45 @@ export default function SurgeryForm({ id }) {
     }
   }
 
+  function applyTemplate(tpl) {
+    const d = tpl.default_data || {};
+    setForm(f => ({
+      ...f,
+      ...d,
+      // Keep patient-specific fields if already filled
+      patient_name: f.patient_name || d.patient_name || '',
+      patient_age: f.patient_age || d.patient_age || '',
+      patient_id: f.patient_id || d.patient_id || '',
+      mr_id: f.mr_id || d.mr_id || '',
+      diagnosis: f.diagnosis || d.diagnosis || '',
+      team_members: d.team_members || f.team_members || []
+    }));
+  }
+
+  async function handleSaveTemplate() {
+    const name = prompt('Nama template:');
+    if (!name) return;
+    setSavingTemplate(true);
+    try {
+      const { patient_name, patient_age, patient_id, mr_id, diagnosis, ...templateData } = form;
+      const res = await api.createTemplate(name, templateData);
+      setTemplates(prev => [...prev, res.template]);
+    } catch (err) {
+      alert('Gagal menyimpan template: ' + err.message);
+    }
+    setSavingTemplate(false);
+  }
+
+  async function handleDeleteTemplate(id) {
+    if (!confirm('Hapus template ini?')) return;
+    try {
+      await api.deleteTemplate(id);
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      alert('Gagal menghapus: ' + err.message);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -343,6 +386,23 @@ export default function SurgeryForm({ id }) {
 
       <form onSubmit={handleSubmit} class="surgery-form">
         {error && <div class="form-error">{error}</div>}
+
+        {/* Templates */}
+        {!isEdit && templates.length > 0 && (
+          <div class="form-section template-section">
+            <div class="form-section-title">Template</div>
+            <div class="template-chips">
+              {templates.map(t => (
+                <div key={t.id} class="template-chip-wrap">
+                  <button type="button" class="template-chip" onClick={() => applyTemplate(t)}>
+                    {t.name}
+                  </button>
+                  <button type="button" class="template-delete" onClick={() => handleDeleteTemplate(t.id)} title="Hapus">&times;</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* RM Lookup Section */}
         <div class="form-section rm-section">
@@ -644,6 +704,11 @@ export default function SurgeryForm({ id }) {
         <button type="submit" class="btn-primary btn-full btn-lg" disabled={saving}>
           {saving ? 'Menyimpan...' : (isEdit ? 'Update' : 'Simpan Jadwal')}
         </button>
+        {!isEdit && (
+          <button type="button" class="btn-text btn-full" onClick={handleSaveTemplate} disabled={savingTemplate} style="margin-top:8px">
+            {savingTemplate ? 'Menyimpan...' : 'Simpan sebagai Template'}
+          </button>
+        )}
       </form>
     </div>
   );

@@ -328,4 +328,45 @@ router.post('/ai/suggest', (req, res) => {
   });
 });
 
+/**
+ * GET /api/docboard/analytics/clinic
+ * Clinic visit analytics from docboard_events
+ */
+router.get('/analytics/clinic', async (req, res) => {
+  try {
+    const { period } = req.query;
+    const analytics = await docboardService.getClinicAnalytics(period || '30d');
+    res.json({ success: true, analytics });
+  } catch (error) {
+    logger.error('DocBoard clinic analytics error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/docboard/preferences
+ */
+router.get('/preferences', async (req, res) => {
+  try {
+    const prefs = await docboardService.getPreferences(req.user?.id);
+    res.json({ success: true, preferences: prefs });
+  } catch (error) {
+    logger.error('DocBoard get preferences error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /api/docboard/preferences
+ */
+router.put('/preferences', async (req, res) => {
+  try {
+    const prefs = await docboardService.updatePreferences(req.user?.id, req.body.preferences || req.body);
+    res.json({ success: true, preferences: prefs });
+  } catch (error) {
+    logger.error('DocBoard update preferences error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

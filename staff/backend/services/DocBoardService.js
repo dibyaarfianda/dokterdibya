@@ -472,6 +472,88 @@ class DocBoardService {
   }
 
   /**
+   * Get clinic visit analytics from docboard_events
+   */
+  async getClinicAnalytics(period) {
+    const now = new Date();
+    const endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    let startDate;
+    switch (period) {
+      case '3m': { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; break; }
+      case '6m': { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; break; }
+      case '1y': { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; break; }
+      default: { const d = new Date(now); d.setDate(d.getDate() - 30); startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+    }
+
+    // Total patients & completed
+    const [totals] = await pool.query(
+      `SELECT SUM(patient_count) as total_patients, SUM(completed_count) as total_completed, COUNT(*) as total_events
+       FROM docboard_events WHERE event_date BETWEEN ? AND ? AND is_disabled = 0`,
+      [startDate, endDate]
+    );
+    const totalPatients = totals[0].total_patients || 0;
+    const totalCompleted = totals[0].total_completed || 0;
+    const completionRate = totalPatients > 0 ? Math.round((totalCompleted / totalPatients) * 100) : 0;
+
+    // By location
+    const [byLocation] = await pool.query(
+      `SELECT location, SUM(patient_count) as count, SUM(completed_count) as completed
+       FROM docboard_events WHERE event_date BETWEEN ? AND ? AND is_disabled = 0
+       GROUP BY location ORDER BY count DESC`,
+      [startDate, endDate]
+    );
+
+    // By month
+    const [byMonth] = await pool.query(
+      `SELECT YEAR(event_date) as year, MONTH(event_date) as month, SUM(patient_count) as count
+       FROM docboard_events WHERE event_date BETWEEN ? AND ? AND is_disabled = 0
+       GROUP BY year, month ORDER BY year, month`,
+      [startDate, endDate]
+    );
+
+    // Daily average
+    const [dayCount] = await pool.query(
+      `SELECT COUNT(DISTINCT event_date) as days FROM docboard_events
+       WHERE event_date BETWEEN ? AND ? AND is_disabled = 0 AND patient_count > 0`,
+      [startDate, endDate]
+    );
+    const activeDays = dayCount[0].days || 1;
+    const avgPerDay = Math.round(totalPatients / activeDays * 10) / 10;
+
+    return {
+      period, startDate, endDate,
+      totalPatients, totalCompleted, completionRate,
+      avgPerDay, activeDays,
+      byLocation: byLocation.map(r => ({ location: r.location, count: r.count, completed: r.completed })),
+      byMonth: byMonth.map(r => ({ year: r.year, month: r.month, count: r.count }))
+    };
+  }
+
+  /**
+   * Get/set notification preferences for a user
+   */
+  async getPreferences(userId) {
+    const [rows] = await pool.query(
+      'SELECT preferences FROM docboard_preferences WHERE user_id = ?',
+      [userId]
+    );
+    if (rows.length === 0) {
+      return { notify_new_booking: true, notify_status_change: true, notify_reminder: true, notify_sync_failure: true };
+    }
+    const prefs = typeof rows[0].preferences === 'string' ? JSON.parse(rows[0].preferences) : rows[0].preferences;
+    return prefs;
+  }
+
+  async updatePreferences(userId, preferences) {
+    await pool.query(
+      `INSERT INTO docboard_preferences (user_id, preferences) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE preferences = VALUES(preferences)`,
+      [userId, JSON.stringify(preferences)]
+    );
+    return preferences;
+  }
+
+  /**
    * Register push token
    */
   async registerPushToken(userId, platform, endpoint, p256dh, authKey) {

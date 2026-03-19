@@ -25,6 +25,8 @@ export default function SurgeryDetail({ id }) {
   const [showPostOpForm, setShowPostOpForm] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
   const [showAudit, setShowAudit] = useState(false);
+  const [checklist, setChecklist] = useState(null);
+  const [showChecklist, setShowChecklist] = useState(false);
 
   useEffect(() => { loadSurgery(); }, [id]);
 
@@ -47,6 +49,29 @@ export default function SurgeryDetail({ id }) {
       setShowAudit(true);
     } catch (err) {
       console.error('Failed to load audit log:', err);
+    }
+  }
+
+  async function loadChecklist() {
+    try {
+      const data = await api.getChecklist(id);
+      setChecklist(data.checklist);
+      setShowChecklist(true);
+    } catch (err) {
+      console.error('Failed to load checklist:', err);
+    }
+  }
+
+  async function toggleChecklistItem(key) {
+    if (!checklist) return;
+    const updated = checklist.items.map(item =>
+      item.key === key ? { ...item, checked: !item.checked, checked_at: !item.checked ? new Date().toISOString() : null } : item
+    );
+    try {
+      const data = await api.updateChecklist(id, updated);
+      setChecklist(data.checklist);
+    } catch (err) {
+      console.error('Checklist update failed:', err);
     }
   }
 
@@ -234,6 +259,35 @@ export default function SurgeryDetail({ id }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Pre-op Checklist */}
+      {s.status !== 'completed' && s.status !== 'cancelled' && (
+        <div class="detail-card">
+          {!showChecklist ? (
+            <button class="btn-text" onClick={loadChecklist} style="width:100%;text-align:center;padding:8px 0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px">
+                <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              Checklist Pre-Op
+            </button>
+          ) : checklist ? (
+            <>
+              <div class="detail-label">Checklist Pre-Op</div>
+              <div class="checklist-items">
+                {checklist.items.map(item => (
+                  <label key={item.key} class={`checklist-item ${item.checked ? 'checked' : ''}`}>
+                    <input type="checkbox" checked={item.checked} onChange={() => toggleChecklistItem(item.key)} />
+                    <span class="checklist-label">{item.label}</span>
+                  </label>
+                ))}
+              </div>
+              <div class="checklist-progress">
+                {checklist.items.filter(i => i.checked).length}/{checklist.items.length} selesai
+              </div>
+            </>
+          ) : null}
         </div>
       )}
 

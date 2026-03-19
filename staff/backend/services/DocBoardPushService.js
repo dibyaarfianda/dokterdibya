@@ -81,25 +81,60 @@ async function sendWebPush(tokenRow, title, body, data) {
   return webpush.sendNotification(subscription, payload, { TTL: 86400 });
 }
 
+// Map notification type to preference key
+const TYPE_PREF_MAP = {
+  new_booking: 'notify_new_booking',
+  status_change: 'notify_status_change',
+  surgery_reminder: 'notify_reminder',
+  sync_failure: 'notify_sync_failure'
+};
+
 /**
  * Send push notification to all staff with registered tokens.
- * Also stores the notification in the database.
+ * Respects per-user notification preferences.
  */
 async function sendToAllStaff(title, body, data = {}) {
   try {
     const [tokens] = await db.query(
-      'SELECT id, endpoint, p256dh, auth_key FROM docboard_push_tokens'
+      'SELECT pt.id, pt.user_id, pt.endpoint, pt.p256dh, pt.auth_key FROM docboard_push_tokens pt'
     );
 
     if (!tokens || tokens.length === 0) {
       return { success: true, sent: 0, failed: 0, reason: 'no_tokens' };
     }
 
+    // Load preferences for all users who have tokens
+    const userIds = [...new Set(tokens.map(t => t.user_id).filter(Boolean))];
+    let prefsMap = {};
+    if (userIds.length > 0) {
+      try {
+        const [prefRows] = await db.query(
+          'SELECT user_id, preferences FROM docboard_preferences WHERE user_id IN (?)',
+          [userIds]
+        );
+        for (const row of prefRows) {
+          const p = typeof row.preferences === 'string' ? JSON.parse(row.preferences) : row.preferences;
+          prefsMap[row.user_id] = p;
+        }
+      } catch { /* preferences table may not exist yet */ }
+    }
+
+    const prefKey = TYPE_PREF_MAP[data.type] || null;
+
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
     const invalidTokenIds = [];
 
     for (const t of tokens) {
+      // Check user preference
+      if (prefKey && t.user_id && prefsMap[t.user_id]) {
+        if (prefsMap[t.user_id][prefKey] === false) {
+          skipped++;
+          continue;
+        }
+      }
+
       try {
         await sendWebPush(t, title, body, data);
         sent++;
@@ -121,7 +156,7 @@ async function sendToAllStaff(title, body, data = {}) {
       });
     }
 
-    return { success: true, sent, failed };
+    return { success: true, sent, failed, skipped };
   } catch (err) {
     logger.error('Failed to send docboard push to all staff:', err.message);
     return { success: false, sent: 0, failed: 0, error: err.message };
@@ -250,13 +285,29 @@ async function sendDailyReminders() {
     }
 
     let sentCount = 0;
+    let waSent = 0;
+    const whatsapp = require('./whatsappService');
+
     for (const surgery of surgeries) {
       await sendSurgeryReminder(surgery);
       sentCount++;
+
+      // Also send WhatsApp reminder if patient has phone
+      if (surgery.patient_id && whatsapp.fonnte.enabled) {
+        try {
+          const [patients] = await db.query('SELECT phone, whatsapp FROM patients WHERE id = ?', [surgery.patient_id]);
+          const p = patients[0];
+          const phone = p?.whatsapp || p?.phone;
+          if (phone) {
+            const waResult = await whatsapp.sendSurgeryReminder(surgery, phone);
+            if (waResult.success) waSent++;
+          }
+        } catch { /* non-blocking */ }
+      }
     }
 
-    logger.info(`DocBoard: Sent ${sentCount} surgery reminders for ${tomorrowStr}`);
-    return { sent: sentCount };
+    logger.info(`DocBoard: Sent ${sentCount} push + ${waSent} WhatsApp reminders for ${tomorrowStr}`);
+    return { sent: sentCount, whatsapp: waSent };
   } catch (err) {
     logger.error('DocBoard: Failed to send daily reminders:', err.message);
     return { sent: 0, error: err.message };
