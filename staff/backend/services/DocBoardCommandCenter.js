@@ -6,10 +6,14 @@ let flagCache = {};
 let flagCacheTime = 0;
 const FLAG_CACHE_TTL = 60000;
 const POLICY_RETENTION_DAYS = parseInt(process.env.DOCBOARD_POLICY_RETENTION_DAYS) || 90;
+const RULE_EXEC_RETENTION_DAYS = parseInt(process.env.DOCBOARD_RULE_EXEC_RETENTION_DAYS) || 90;
 const COMPLIANCE_MAX_DAYS = 93;
 const COMPLIANCE_MAX_ROWS = 500;
+const COMPLIANCE_TOTAL_CAP = 2000;
 let lastCleanupRun = null;
 let lastCleanupResult = null;
+let lastRuleExecCleanupRun = null;
+let lastRuleExecCleanupResult = null;
 
 class DocBoardCommandCenter {
   async getFlags() {
@@ -261,6 +265,20 @@ class DocBoardCommandCenter {
       'SELECT COUNT(*) as total FROM surgery_schedules s WHERE s.surgery_date BETWEEN ? AND ? ' + locFilter, params);
     const totalRows = countRows[0].total;
 
+    // Pre-flight: estimate total payload across all sections
+    const [policyCount] = await pool.query(
+      'SELECT COUNT(*) as c FROM docboard_policy_log WHERE created_at BETWEEN ? AND ?',
+      [startDate + ' 00:00:00', endDate + ' 23:59:59']);
+    const [ruleExecCount] = await pool.query(
+      'SELECT COUNT(*) as c FROM docboard_rule_executions WHERE created_at BETWEEN ? AND ?',
+      [startDate + ' 00:00:00', endDate + ' 23:59:59']);
+    const estimatedTotal = totalRows + (policyCount[0].c || 0) + (ruleExecCount[0].c || 0);
+    if (estimatedTotal > COMPLIANCE_TOTAL_CAP) {
+      const err = new Error('Total data melebihi batas (' + estimatedTotal + ' rows, max ' + COMPLIANCE_TOTAL_CAP + '). Persempit rentang tanggal atau filter lokasi.');
+      err.statusCode = 400;
+      throw err;
+    }
+
     const [surgeries] = await pool.query(
       'SELECT s.id, s.patient_name, s.surgery_date, s.location, s.status, s.created_by, s.created_at, s.updated_at, ot.name_id as operation, ot.code as op_code, o.complication_grade, o.wound_class FROM surgery_schedules s LEFT JOIN surgery_operation_types ot ON s.operation_type_id = ot.id LEFT JOIN surgery_outcomes o ON o.surgery_id = s.id WHERE s.surgery_date BETWEEN ? AND ? ' + locFilter + ' ORDER BY s.surgery_date, s.surgery_time LIMIT ? OFFSET ?', [...params, rowLimit, offset]);
     const ids = surgeries.map(s => s.id);
@@ -295,7 +313,7 @@ class DocBoardCommandCenter {
     const toDelete = countRows[0].count;
 
     if (dryRun || toDelete === 0) {
-      const result = { dry_run: !!dryRun, would_delete: toDelete, retention_days: POLICY_RETENTION_DAYS, cutoff: cutoffStr };
+      const result = { target: 'policy_log', dry_run: !!dryRun, would_delete: toDelete, retention_days: POLICY_RETENTION_DAYS, cutoff: cutoffStr };
       lastCleanupRun = new Date().toISOString();
       lastCleanupResult = result;
       logger.info('[Cleanup] Policy log ' + (dryRun ? 'dry run' : 'no rows') + ': ' + toDelete + ' rows older than ' + POLICY_RETENTION_DAYS + 'd');
@@ -304,11 +322,58 @@ class DocBoardCommandCenter {
 
     const [deleteResult] = await pool.query(
       'DELETE FROM docboard_policy_log WHERE created_at < ?', [cutoffStr]);
-    const result = { dry_run: false, deleted: deleteResult.affectedRows, retention_days: POLICY_RETENTION_DAYS, cutoff: cutoffStr };
+    const result = { target: 'policy_log', dry_run: false, deleted: deleteResult.affectedRows, retention_days: POLICY_RETENTION_DAYS, cutoff: cutoffStr };
     lastCleanupRun = new Date().toISOString();
     lastCleanupResult = result;
     logger.info('[Cleanup] Policy log: deleted ' + deleteResult.affectedRows + ' rows older than ' + POLICY_RETENTION_DAYS + 'd');
     return result;
+  }
+
+  // =====================================================
+  // RULE EXECUTION LOG CLEANUP
+  // =====================================================
+
+  async cleanupRuleExecutions(dryRun) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - RULE_EXEC_RETENTION_DAYS);
+    const cutoffStr = cutoff.toISOString().slice(0, 19).replace('T', ' ');
+
+    const [countRows] = await pool.query(
+      'SELECT COUNT(*) as count FROM docboard_rule_executions WHERE created_at < ?', [cutoffStr]);
+    const toDelete = countRows[0].count;
+
+    if (dryRun || toDelete === 0) {
+      const result = { target: 'rule_executions', dry_run: !!dryRun, would_delete: toDelete, retention_days: RULE_EXEC_RETENTION_DAYS, cutoff: cutoffStr };
+      lastRuleExecCleanupRun = new Date().toISOString();
+      lastRuleExecCleanupResult = result;
+      logger.info('[Cleanup] Rule executions ' + (dryRun ? 'dry run' : 'no rows') + ': ' + toDelete + ' rows older than ' + RULE_EXEC_RETENTION_DAYS + 'd');
+      return result;
+    }
+
+    const [deleteResult] = await pool.query(
+      'DELETE FROM docboard_rule_executions WHERE created_at < ?', [cutoffStr]);
+    const result = { target: 'rule_executions', dry_run: false, deleted: deleteResult.affectedRows, retention_days: RULE_EXEC_RETENTION_DAYS, cutoff: cutoffStr };
+    lastRuleExecCleanupRun = new Date().toISOString();
+    lastRuleExecCleanupResult = result;
+    logger.info('[Cleanup] Rule executions: deleted ' + deleteResult.affectedRows + ' rows older than ' + RULE_EXEC_RETENTION_DAYS + 'd');
+    return result;
+  }
+
+  // =====================================================
+  // CLEANUP AUDIT TRAIL
+  // =====================================================
+
+  async logCleanupAudit(userId, target, mode, result) {
+    try {
+      await pool.query(
+        'INSERT INTO docboard_policy_log (user_id, action, resource, resource_id, decision, reason) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId || 'system', 'admin.cleanup', target, null, 'allow',
+         JSON.stringify({ mode, deleted: result.deleted || 0, would_delete: result.would_delete || 0 })]
+      );
+      logger.info('[Audit] Cleanup logged: ' + target + ' ' + mode + ' by ' + (userId || 'system'));
+    } catch (err) {
+      logger.error('[Audit] Failed to log cleanup:', err.message);
+    }
   }
 
   // =====================================================
@@ -331,8 +396,12 @@ class DocBoardCommandCenter {
       timestamp: new Date().toISOString(),
       flag_cache: flagStatus,
       policy_log: { total_rows: policyLogCount, retention_days: POLICY_RETENTION_DAYS },
-      rule_executions: { total_rows: ruleExecCount },
-      cleanup: { last_run: lastCleanupRun, last_result: lastCleanupResult }
+      rule_executions: { total_rows: ruleExecCount, retention_days: RULE_EXEC_RETENTION_DAYS },
+      compliance: { max_days: COMPLIANCE_MAX_DAYS, max_rows_per_page: COMPLIANCE_MAX_ROWS, total_cap: COMPLIANCE_TOTAL_CAP },
+      cleanup: {
+        policy_log: { last_run: lastCleanupRun, last_result: lastCleanupResult },
+        rule_executions: { last_run: lastRuleExecCleanupRun, last_result: lastRuleExecCleanupResult }
+      }
     };
   }
 }

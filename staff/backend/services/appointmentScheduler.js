@@ -292,6 +292,7 @@ function startPolicyLogCleanupScheduler() {
             logger.info('[Scheduler] Running policy log cleanup...');
             const commandCenter = require('./DocBoardCommandCenter');
             const result = await commandCenter.cleanupPolicyLog(false);
+            await commandCenter.logCleanupAudit('system', 'policy_log', 'real', result);
             logger.info('[Scheduler] Policy log cleanup completed', result);
         } catch (error) {
             logger.error('[Scheduler] Policy log cleanup error:', error);
@@ -299,6 +300,25 @@ function startPolicyLogCleanupScheduler() {
     });
 
     logger.info('[Scheduler] Policy log cleanup scheduler started (runs daily at 03:00 WIB)');
+}
+
+/**
+ * Cleanup old rule execution log entries daily at 03:15 WIB
+ */
+function startRuleExecCleanupScheduler() {
+    cron.schedule('15 3 * * *', async () => {
+        try {
+            logger.info('[Scheduler] Running rule execution log cleanup...');
+            const commandCenter = require('./DocBoardCommandCenter');
+            const result = await commandCenter.cleanupRuleExecutions(false);
+            await commandCenter.logCleanupAudit('system', 'rule_executions', 'real', result);
+            logger.info('[Scheduler] Rule execution log cleanup completed', result);
+        } catch (error) {
+            logger.error('[Scheduler] Rule execution log cleanup error:', error);
+        }
+    });
+
+    logger.info('[Scheduler] Rule execution log cleanup scheduler started (runs daily at 03:15 WIB)');
 }
 
 /**
@@ -310,6 +330,7 @@ function initSchedulers() {
     startPublicCodeScheduler();
     startSurgeryReminderScheduler();
     startPolicyLogCleanupScheduler();
+    startRuleExecCleanupScheduler();
     logger.info('[Scheduler] All appointment schedulers initialized');
 }
 
