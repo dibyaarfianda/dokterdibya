@@ -506,6 +506,20 @@ router.get('/analytics', async (req, res) => {
 });
 
 /**
+ * GET /analytics/outcomes
+ * Outcome trends and complication distribution
+ */
+router.get('/analytics/outcomes', async (req, res) => {
+  try {
+    const analytics = await surgeryService.getOutcomeAnalytics(req.query.period || '30d');
+    res.json({ success: true, analytics });
+  } catch (error) {
+    logger.error('Outcome analytics error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * GET /:id/outcome
  * Post-op outcome for a surgery
  */

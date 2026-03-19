@@ -52,11 +52,13 @@ class DocBoardAIService {
         }
       }
 
-      // Gather data for the briefing
-      const [patientData, surgeryData, scheduleData] = await Promise.all([
+      // Gather data for the briefing (today + 2-day lookahead)
+      const [patientData, surgeryData, scheduleData, lookaheadData, riskData] = await Promise.all([
         this.getPatientCounts(date),
         this.getSurgeries(date),
-        this.getScheduleForDate(date)
+        this.getScheduleForDate(date),
+        this.getLookahead(date, 2),
+        this.getRiskCues(date)
       ]);
 
       // Try AI generation first, fall back to structured summary
@@ -66,17 +68,17 @@ class DocBoardAIService {
       if (openai) {
         try {
           briefingContent = await this.generateAIBriefing(
-            date, patientData, surgeryData, scheduleData
+            date, patientData, surgeryData, scheduleData, lookaheadData, riskData
           );
         } catch (aiError) {
           logger.warn('AI briefing generation failed, using fallback:', aiError.message);
           briefingContent = this.generateFallbackBriefing(
-            date, patientData, surgeryData, scheduleData
+            date, patientData, surgeryData, scheduleData, lookaheadData, riskData
           );
         }
       } else {
         briefingContent = this.generateFallbackBriefing(
-          date, patientData, surgeryData, scheduleData
+          date, patientData, surgeryData, scheduleData, lookaheadData, riskData
         );
       }
 
@@ -204,9 +206,67 @@ class DocBoardAIService {
   }
 
   /**
+   * Get surgery lookahead for next N days after date
+   */
+  async getLookahead(date, days) {
+    const results = [];
+    for (let i = 1; i <= days; i++) {
+      const d = new Date(date + 'T00:00:00+07:00');
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const dayName = DAYS_ID[d.getDay()];
+      const [rows] = await pool.query(
+        `SELECT COUNT(*) as count FROM surgery_schedules
+         WHERE surgery_date = ? AND status NOT IN ('cancelled', 'postponed')`,
+        [dateStr]
+      );
+      results.push({ date: dateStr, dayName, surgeryCount: rows[0].count });
+    }
+    return results;
+  }
+
+  /**
+   * Get risk cues from surgery data for a date
+   */
+  async getRiskCues(date) {
+    const cues = [];
+    const [surgeries] = await pool.query(
+      `SELECT ss.patient_name, ss.asa_score, ss.anesthesia_type, ss.location,
+              ss.estimated_duration_min, ot.name_id as op_name
+       FROM surgery_schedules ss
+       LEFT JOIN surgery_operation_types ot ON ss.operation_type_id = ot.id
+       WHERE ss.surgery_date = ? AND ss.status NOT IN ('cancelled', 'postponed')`,
+      [date]
+    );
+
+    for (const s of surgeries) {
+      if (s.asa_score && s.asa_score >= 3) {
+        cues.push(`ASA ${s.asa_score}: ${s.patient_name} (${s.op_name || 'operasi'}) - risiko anestesi tinggi`);
+      }
+      if (s.estimated_duration_min && s.estimated_duration_min >= 180) {
+        cues.push(`Durasi panjang: ${s.patient_name} - estimasi ${s.estimated_duration_min} menit`);
+      }
+    }
+
+    // Check if multiple surgeries at same location/time
+    const byLocation = {};
+    for (const s of surgeries) {
+      if (!byLocation[s.location]) byLocation[s.location] = 0;
+      byLocation[s.location]++;
+    }
+    for (const [loc, count] of Object.entries(byLocation)) {
+      if (count >= 3) {
+        cues.push(`${LOCATION_LABELS[loc] || loc}: ${count} operasi - jadwal padat`);
+      }
+    }
+
+    return cues;
+  }
+
+  /**
    * Generate AI-powered briefing using OpenAI
    */
-  async generateAIBriefing(date, patientData, surgeryData, scheduleData) {
+  async generateAIBriefing(date, patientData, surgeryData, scheduleData, lookaheadData, riskData) {
     const openai = getOpenAI();
     const dateObj = new Date(date + 'T00:00:00+07:00');
     const dayName = DAYS_ID[dateObj.getDay()];
@@ -229,6 +289,16 @@ class DocBoardAIService {
       return `- ${LOCATION_LABELS[loc] || s.location}: ${String(s.start_time).substring(0, 5)} - ${String(s.end_time).substring(0, 5)}`;
     }).join('\n');
 
+    // Build lookahead summary
+    const lookaheadSummary = (lookaheadData || []).map(d =>
+      `- ${d.dayName} (${d.date}): ${d.surgeryCount} operasi`
+    ).join('\n');
+
+    // Risk cues
+    const riskSummary = (riskData || []).length > 0
+      ? riskData.join('\n')
+      : 'Tidak ada peringatan risiko khusus';
+
     const prompt = `Hari: ${dayName}, ${date}
 
 DATA PASIEN HARI INI:
@@ -241,6 +311,12 @@ ${surgerySummary}
 JADWAL PRAKTEK:
 ${scheduleSummary || 'Tidak ada jadwal praktek'}
 
+LOOKAHEAD (2 hari ke depan):
+${lookaheadSummary || 'Tidak ada data'}
+
+PERINGATAN RISIKO:
+${riskSummary}
+
 Buatkan morning briefing terstruktur dengan format JSON berikut:
 {
   "summary": "Ringkasan 1-2 kalimat tentang hari ini",
@@ -252,13 +328,17 @@ Buatkan morning briefing terstruktur dengan format JSON berikut:
     { "patient_name": "nama", "operation": "tipe operasi", "location": "lokasi", "time": "HH:MM", "status": "status" }
   ],
   "schedule_notes": ["catatan jadwal 1", "catatan 2"],
-  "reminders": ["pengingat penting 1", "pengingat 2"]
+  "reminders": ["pengingat penting 1", "pengingat 2"],
+  "risk_alerts": ["peringatan risiko 1"],
+  "lookahead": [{ "date": "YYYY-MM-DD", "day": "Nama Hari", "surgery_count": 0 }]
 }
 
 Kriteria:
 - Summary harus natural dan informatif dalam Bahasa Indonesia
 - Jika ada operasi, sebutkan di summary
 - Reminders bisa berisi tips seperti persiapan alat, check pasien priority, dll
+- risk_alerts berisi peringatan ASA tinggi, durasi panjang, jadwal padat
+- lookahead berisi ringkasan 2 hari ke depan
 - Jika tidak ada pasien, berikan summary yang sesuai (hari libur/kosong)
 - schedule_notes berisi catatan singkat tentang jadwal praktek hari ini`;
 
@@ -289,6 +369,8 @@ Kriteria:
       surgeries: result.surgeries || [],
       schedule_notes: result.schedule_notes || [],
       reminders: result.reminders || [],
+      risk_alerts: result.risk_alerts || [],
+      lookahead: result.lookahead || [],
       ai_generated: true,
       tokens_used: response.usage?.total_tokens || 0
     };
@@ -297,7 +379,7 @@ Kriteria:
   /**
    * Generate a structured briefing without AI (fallback)
    */
-  generateFallbackBriefing(date, patientData, surgeryData, scheduleData) {
+  generateFallbackBriefing(date, patientData, surgeryData, scheduleData, lookaheadData, riskData) {
     const dateObj = new Date(date + 'T00:00:00+07:00');
     const dayName = DAYS_ID[dateObj.getDay()];
     const totalPatients = patientData.reduce((sum, p) => sum + (p.patient_count || 0), 0);
@@ -351,6 +433,11 @@ Kriteria:
       reminders.push('Volume pasien tinggi, pastikan manajemen waktu');
     }
 
+    // Add risk cues to reminders
+    if (riskData && riskData.length > 0) {
+      for (const cue of riskData) reminders.push(cue);
+    }
+
     return {
       summary,
       patient_overview: patientOverview,
@@ -358,6 +445,8 @@ Kriteria:
       surgeries,
       schedule_notes: scheduleNotes,
       reminders,
+      risk_alerts: riskData || [],
+      lookahead: (lookaheadData || []).map(d => ({ date: d.date, day: d.dayName, surgery_count: d.surgeryCount })),
       ai_generated: false,
       tokens_used: 0
     };

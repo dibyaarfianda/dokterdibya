@@ -13,6 +13,7 @@ import ORBoard from './views/ORBoard';
 import Login from './views/Login';
 import { initAuth, isLoggedIn, isLoading } from './stores/auth';
 import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
+import { queueCount, syncState } from './services/api';
 import { signal } from '@preact/signals';
 
 export const currentUrl = signal(typeof window !== 'undefined' ? window.location.pathname : '/docboard/');
@@ -50,6 +51,13 @@ export default function App() {
 
   return (
     <div class="app-shell">
+      {queueCount.value > 0 && (
+        <div class={`offline-banner ${syncState.value === 'conflict' ? 'conflict' : ''}`}>
+          {syncState.value === 'syncing' ? 'Menyinkronkan...' :
+           syncState.value === 'conflict' ? `${queueCount.value} item konflik` :
+           `${queueCount.value} perubahan menunggu sync`}
+        </div>
+      )}
       <main class="app-content">
         <Router onChange={handleRoute}>
           <Calendar path="/docboard/" />
