@@ -631,6 +631,76 @@ class SurgeryService {
     await pool.query(`UPDATE surgery_external_staff SET ${fields.join(', ')} WHERE id = ?`, values);
     logger.info(`External staff #${id} updated`);
   }
+
+  // =====================================================
+  // TEMPLATES
+  // =====================================================
+
+  async getTemplates(userId) {
+    const [rows] = await pool.query(
+      'SELECT id, name, default_data, created_at FROM surgery_templates WHERE user_id = ? ORDER BY name',
+      [userId]
+    );
+    return rows.map(r => ({
+      ...r,
+      default_data: typeof r.default_data === 'string' ? JSON.parse(r.default_data) : r.default_data
+    }));
+  }
+
+  async createTemplate(userId, name, defaultData) {
+    const [result] = await pool.query(
+      'INSERT INTO surgery_templates (user_id, name, default_data) VALUES (?, ?, ?)',
+      [userId, name, JSON.stringify(defaultData)]
+    );
+    logger.info(`Surgery template created: "${name}" by ${userId}`);
+    return { id: result.insertId, name, default_data: defaultData };
+  }
+
+  async deleteTemplate(id, userId) {
+    await pool.query('DELETE FROM surgery_templates WHERE id = ? AND user_id = ?', [id, userId]);
+    logger.info(`Surgery template #${id} deleted`);
+  }
+
+  // =====================================================
+  // PRE-OP CHECKLIST
+  // =====================================================
+
+  static DEFAULT_CHECKLIST_ITEMS = [
+    { key: 'informed_consent', label: 'Informed consent ditandatangani', checked: false },
+    { key: 'lab_results', label: 'Hasil lab lengkap', checked: false },
+    { key: 'blood_type', label: 'Golongan darah & crossmatch', checked: false },
+    { key: 'npo_verified', label: 'Status puasa (NPO) diverifikasi', checked: false },
+    { key: 'anesthesia_assessment', label: 'Asesmen anestesi selesai', checked: false },
+    { key: 'site_marking', label: 'Marking lokasi operasi', checked: false },
+    { key: 'iv_access', label: 'Akses IV terpasang', checked: false },
+    { key: 'allergy_check', label: 'Alergi diperiksa', checked: false },
+    { key: 'instruments_ready', label: 'Instrumen & alat siap', checked: false },
+    { key: 'blood_available', label: 'Darah tersedia (jika perlu)', checked: false }
+  ];
+
+  async getChecklist(surgeryId) {
+    const [rows] = await pool.query(
+      'SELECT * FROM surgery_checklists WHERE surgery_id = ?',
+      [surgeryId]
+    );
+    if (rows.length === 0) {
+      return { surgery_id: surgeryId, items: SurgeryService.DEFAULT_CHECKLIST_ITEMS, is_new: true };
+    }
+    const row = rows[0];
+    row.items = typeof row.items === 'string' ? JSON.parse(row.items) : row.items;
+    return row;
+  }
+
+  async updateChecklist(surgeryId, items, userId) {
+    await pool.query(
+      `INSERT INTO surgery_checklists (surgery_id, items, updated_by)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE items = VALUES(items), updated_by = VALUES(updated_by)`,
+      [surgeryId, JSON.stringify(items), userId]
+    );
+    logger.info(`Checklist updated for surgery #${surgeryId}`);
+    return this.getChecklist(surgeryId);
+  }
 }
 
 module.exports = new SurgeryService();

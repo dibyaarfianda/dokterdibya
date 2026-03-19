@@ -175,6 +175,57 @@ ${this.clinicName}`;
             fallback: 'wa.me links always available'
         };
     }
+
+    // =====================================================
+    // SURGERY-SPECIFIC MESSAGES
+    // =====================================================
+
+    static LOCATION_NAMES = {
+        klinik_private: 'Klinik Privat',
+        rsia_melinda: 'RSIA Melinda',
+        rsud_gambiran: 'RSUD Gambiran',
+        rs_bhayangkara: 'RS Bhayangkara'
+    };
+
+    /**
+     * Send surgery confirmation to patient.
+     * Returns result or safe fallback if not configured.
+     */
+    async sendSurgeryConfirmation(surgery, phone) {
+        const locName = WhatsAppService.LOCATION_NAMES[surgery.location] || surgery.location;
+        const dateObj = new Date(surgery.surgery_date);
+        const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const timeStr = surgery.surgery_time ? surgery.surgery_time.substring(0, 5) : '';
+
+        const message = `Yth. ${surgery.patient_name},\n\n` +
+            `Jadwal operasi Anda telah *dikonfirmasi*:\n\n` +
+            `Tanggal: ${dateStr}\n` +
+            (timeStr ? `Jam: ${timeStr} WIB\n` : '') +
+            `Lokasi: ${locName}\n\n` +
+            (surgery.npo_status ? `Catatan puasa: ${surgery.npo_status}\n\n` : '') +
+            `Mohon hadir 1 jam sebelum jadwal operasi.\n\n` +
+            `_${this.clinicName}_`;
+
+        return this.sendViaFonnte(phone, message);
+    }
+
+    /**
+     * Send surgery reminder (day before) to patient.
+     */
+    async sendSurgeryReminder(surgery, phone) {
+        const locName = WhatsAppService.LOCATION_NAMES[surgery.location] || surgery.location;
+        const timeStr = surgery.surgery_time ? surgery.surgery_time.substring(0, 5) : '';
+
+        const message = `Yth. ${surgery.patient_name},\n\n` +
+            `Pengingat: Anda memiliki jadwal operasi *besok*.\n\n` +
+            (timeStr ? `Jam: ${timeStr} WIB\n` : '') +
+            `Lokasi: ${locName}\n\n` +
+            (surgery.npo_status ? `*Penting - Puasa:* ${surgery.npo_status}\n\n` : '') +
+            `Mohon hadir 1 jam sebelum jadwal.\n\n` +
+            `_${this.clinicName}_`;
+
+        return this.sendViaFonnte(phone, message);
+    }
 }
 
 module.exports = new WhatsAppService();
