@@ -264,6 +264,24 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Command Center */}
+      <div class="settings-card settings-card-link" onClick={() => route('/docboard/command')}>
+        <div class="settings-link-row">
+          <div class="settings-link-icon" style={{ background: '#FEF3C7', color: '#D97706' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="18" rx="2" /><path d="M2 9h20" /><path d="M9 3v18" />
+            </svg>
+          </div>
+          <div class="settings-link-info">
+            <div class="settings-link-title">Command Center</div>
+            <div class="settings-link-desc">Dashboard, rules, compliance</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
+            <polyline points="9,18 15,12 9,6" />
+          </svg>
+        </div>
+      </div>
+
       {/* AI Assistant */}
       <div class="settings-card ai-card">
         <div class="ai-card-content">

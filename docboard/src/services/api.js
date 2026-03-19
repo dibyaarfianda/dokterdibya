@@ -263,5 +263,42 @@ export const api = {
   },
   updatePreferences(prefs) {
     return request('/preferences', { method: 'PUT', body: JSON.stringify({ preferences: prefs }) });
+  },
+
+  // Phase 5: Command Center
+  getFeatureFlags() {
+    return request('/flags');
+  },
+  setFeatureFlag(key, enabled) {
+    return request('/flags/' + key, { method: 'PUT', body: JSON.stringify({ enabled }) });
+  },
+  getDashboard() {
+    return request('/command/dashboard');
+  },
+  getConflicts(date) {
+    return request('/command/conflicts' + (date ? '?date=' + date : ''));
+  },
+  getRules() {
+    return request('/command/rules');
+  },
+  createRule(data) {
+    return request('/command/rules', { method: 'POST', body: JSON.stringify(data) });
+  },
+  updateRule(id, data) {
+    return request('/command/rules/' + id, { method: 'PUT', body: JSON.stringify(data) });
+  },
+  deleteRule(id) {
+    return request('/command/rules/' + id, { method: 'DELETE' });
+  },
+  getRuleExecutions(ruleId) {
+    return request('/command/rules/' + ruleId + '/executions');
+  },
+  getComplianceReport(start, end, location) {
+    let qs = '?start=' + start + '&end=' + end;
+    if (location) qs += '&location=' + location;
+    return request('/command/compliance' + qs);
+  },
+  checkPolicy(action, resource, resourceId) {
+    return request('/command/policy-check', { method: 'POST', body: JSON.stringify({ action, resource, resource_id: resourceId }) });
   }
 };

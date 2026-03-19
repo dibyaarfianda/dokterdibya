@@ -598,6 +598,12 @@ router.post('/', async (req, res) => {
       logger.error('Failed to send new booking notification:', err.message);
     });
 
+    // Evaluate rules engine (fire-and-forget)
+    try {
+      const cc = require('../services/DocBoardCommandCenter');
+      cc.evaluateRules('surgery_created', surgery).catch(() => {});
+    } catch { /* rules engine may not be ready */ }
+
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery create error:', error);
