@@ -8,12 +8,41 @@ const FLAG_CACHE_TTL = 60000;
 const POLICY_RETENTION_DAYS = parseInt(process.env.DOCBOARD_POLICY_RETENTION_DAYS) || 90;
 const RULE_EXEC_RETENTION_DAYS = parseInt(process.env.DOCBOARD_RULE_EXEC_RETENTION_DAYS) || 90;
 const COMPLIANCE_MAX_DAYS = 93;
-const COMPLIANCE_MAX_ROWS = 500;
+const COMPLIANCE_MAX_ROWS = Math.min(500, parseInt(process.env.DOCBOARD_MAX_COMPLIANCE_LIMIT) || 500);
 const COMPLIANCE_TOTAL_CAP = 2000;
+const SLOW_QUERY_MS = parseInt(process.env.DOCBOARD_SLOW_QUERY_MS) || 1000;
+const HEALTH_WINDOW_MIN = parseInt(process.env.DOCBOARD_HEALTH_WINDOW_MINUTES) || 60;
 let lastCleanupRun = null;
 let lastCleanupResult = null;
 let lastRuleExecCleanupRun = null;
 let lastRuleExecCleanupResult = null;
+
+// In-memory metrics ring buffer (last HEALTH_WINDOW_MIN minutes)
+const metricsLog = [];
+const MAX_METRICS = 200;
+
+function recordMetric(endpoint, durationMs, meta) {
+  metricsLog.push({ endpoint, duration_ms: durationMs, ts: Date.now(), ...meta });
+  if (metricsLog.length > MAX_METRICS) metricsLog.shift();
+  if (durationMs >= SLOW_QUERY_MS) {
+    logger.warn('[SLOW] ' + endpoint + ' took ' + durationMs + 'ms', meta || {});
+  }
+}
+
+function getRecentMetrics() {
+  const cutoff = Date.now() - HEALTH_WINDOW_MIN * 60 * 1000;
+  const recent = metricsLog.filter(m => m.ts >= cutoff);
+  const slow = recent.filter(m => m.duration_ms >= SLOW_QUERY_MS);
+  const byEndpoint = {};
+  for (const m of recent) {
+    if (!byEndpoint[m.endpoint]) byEndpoint[m.endpoint] = { count: 0, total_ms: 0, max_ms: 0 };
+    byEndpoint[m.endpoint].count++;
+    byEndpoint[m.endpoint].total_ms += m.duration_ms;
+    if (m.duration_ms > byEndpoint[m.endpoint].max_ms) byEndpoint[m.endpoint].max_ms = m.duration_ms;
+  }
+  for (const k in byEndpoint) byEndpoint[k].avg_ms = Math.round(byEndpoint[k].total_ms / byEndpoint[k].count);
+  return { window_minutes: HEALTH_WINDOW_MIN, total_requests: recent.length, slow_requests: slow.length, slow_threshold_ms: SLOW_QUERY_MS, by_endpoint: byEndpoint };
+}
 
 class DocBoardCommandCenter {
   async getFlags() {
@@ -80,6 +109,7 @@ class DocBoardCommandCenter {
   }
 
   async getDashboard() {
+    const _start = Date.now();
     const now = new Date();
     const todayStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
@@ -101,8 +131,11 @@ class DocBoardCommandCenter {
     const totalOps = rates.reduce((s, r) => s + r.count, 0);
     const completedOps = (rates.find(r => r.status === 'completed') || {}).count || 0;
 
+    const _duration = Date.now() - _start;
+    recordMetric('dashboard', _duration);
     return {
       date: todayStr, last_updated: new Date().toISOString(),
+      _meta: { processing_ms: _duration },
       today: { surgeries: todaySurgeries, patients: todayPatients,
         totalSurgeries: todaySurgeries.reduce((s, r) => s + r.count, 0),
         totalPatients: todayPatients.reduce((s, r) => s + (r.patient_count || 0), 0) },
@@ -199,6 +232,7 @@ class DocBoardCommandCenter {
   }
 
   async detectConflicts(date) {
+    const _start = Date.now();
     const now = new Date();
     const dateStr = date || now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     const [surgeries] = await pool.query(
@@ -231,7 +265,9 @@ class DocBoardCommandCenter {
           confidence: 'medium' });
       }
     }
-    return { date: dateStr, conflicts, total: conflicts.length };
+    const _duration = Date.now() - _start;
+    recordMetric('conflicts', _duration, { date: dateStr, count: conflicts.length });
+    return { date: dateStr, conflicts, total: conflicts.length, _meta: { processing_ms: _duration } };
   }
 
   validateComplianceRange(startDate, endDate) {
@@ -254,6 +290,7 @@ class DocBoardCommandCenter {
   }
 
   async getComplianceReport(startDate, endDate, location, page, limit) {
+    const _start = Date.now();
     const pageNum = Math.max(1, parseInt(page) || 1);
     const rowLimit = Math.min(COMPLIANCE_MAX_ROWS, Math.max(1, parseInt(limit) || 100));
     const offset = (pageNum - 1) * rowLimit;
@@ -290,9 +327,13 @@ class DocBoardCommandCenter {
     const [ruleExecs] = await pool.query(
       'SELECT re.rule_id, r.name as rule_name, re.status, re.error_message, re.created_at FROM docboard_rule_executions re JOIN docboard_rules r ON re.rule_id = r.id WHERE re.created_at BETWEEN ? AND ? ORDER BY re.created_at',
       [startDate + ' 00:00:00', endDate + ' 23:59:59']);
+    const _duration = Date.now() - _start;
+    const capped = estimatedTotal > COMPLIANCE_TOTAL_CAP * 0.8;
+    recordMetric('compliance', _duration, { range: startDate + '~' + endDate, rows: totalRows, estimated: estimatedTotal });
     return {
       period: { startDate, endDate, location: location || 'all' },
       pagination: { page: pageNum, limit: rowLimit, totalRows, totalPages: Math.ceil(totalRows / rowLimit) },
+      _meta: { processing_ms: _duration, applied_limits: { max_per_page: COMPLIANCE_MAX_ROWS, total_cap: COMPLIANCE_TOTAL_CAP, max_days: COMPLIANCE_MAX_DAYS }, estimated_total_rows: estimatedTotal, near_cap: capped },
       generated_at: new Date().toISOString(),
       summary: { totalSurgeries: totalRows, completed: surgeries.filter(s => s.status === 'completed').length, cancelled: surgeries.filter(s => s.status === 'cancelled').length, withOutcomes: surgeries.filter(s => s.complication_grade).length, policyDecisions: policy.length, ruleExecutions: ruleExecs.length },
       surgeries, auditEntries: audit, policyEntries: policy, ruleExecutions: ruleExecs
@@ -382,22 +423,29 @@ class DocBoardCommandCenter {
 
   async getHealth() {
     const flagStatus = this.getFlagCacheStatus();
+    const metrics = getRecentMetrics();
 
     let policyLogCount = 0;
     let ruleExecCount = 0;
+    let ruleExecThroughput = null;
     try {
       const [plc] = await pool.query('SELECT COUNT(*) as c FROM docboard_policy_log');
       policyLogCount = plc[0].c;
       const [rec] = await pool.query('SELECT COUNT(*) as c FROM docboard_rule_executions');
       ruleExecCount = rec[0].c;
+      const [recent] = await pool.query(
+        "SELECT status, COUNT(*) as c FROM docboard_rule_executions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) GROUP BY status");
+      ruleExecThroughput = { last_24h: {} };
+      for (const r of recent) ruleExecThroughput.last_24h[r.status] = r.c;
     } catch { /* tables may not exist */ }
 
     return {
       timestamp: new Date().toISOString(),
       flag_cache: flagStatus,
+      performance: metrics,
       policy_log: { total_rows: policyLogCount, retention_days: POLICY_RETENTION_DAYS },
-      rule_executions: { total_rows: ruleExecCount, retention_days: RULE_EXEC_RETENTION_DAYS },
-      compliance: { max_days: COMPLIANCE_MAX_DAYS, max_rows_per_page: COMPLIANCE_MAX_ROWS, total_cap: COMPLIANCE_TOTAL_CAP },
+      rule_executions: { total_rows: ruleExecCount, retention_days: RULE_EXEC_RETENTION_DAYS, throughput: ruleExecThroughput },
+      compliance: { max_days: COMPLIANCE_MAX_DAYS, max_rows_per_page: COMPLIANCE_MAX_ROWS, total_cap: COMPLIANCE_TOTAL_CAP, slow_threshold_ms: SLOW_QUERY_MS },
       cleanup: {
         policy_log: { last_run: lastCleanupRun, last_result: lastCleanupResult },
         rule_executions: { last_run: lastRuleExecCleanupRun, last_result: lastRuleExecCleanupResult }
