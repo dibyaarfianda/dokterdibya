@@ -284,6 +284,24 @@ function startSurgeryReminderScheduler() {
 }
 
 /**
+ * Cleanup old policy log entries daily at 03:00 WIB
+ */
+function startPolicyLogCleanupScheduler() {
+    cron.schedule('0 3 * * *', async () => {
+        try {
+            logger.info('[Scheduler] Running policy log cleanup...');
+            const commandCenter = require('./DocBoardCommandCenter');
+            const result = await commandCenter.cleanupPolicyLog(false);
+            logger.info('[Scheduler] Policy log cleanup completed', result);
+        } catch (error) {
+            logger.error('[Scheduler] Policy log cleanup error:', error);
+        }
+    });
+
+    logger.info('[Scheduler] Policy log cleanup scheduler started (runs daily at 03:00 WIB)');
+}
+
+/**
  * Initialize all schedulers
  */
 function initSchedulers() {
@@ -291,6 +309,7 @@ function initSchedulers() {
     startAutoConfirmScheduler();
     startPublicCodeScheduler();
     startSurgeryReminderScheduler();
+    startPolicyLogCleanupScheduler();
     logger.info('[Scheduler] All appointment schedulers initialized');
 }
 

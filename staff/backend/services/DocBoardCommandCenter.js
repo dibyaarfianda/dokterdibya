@@ -5,6 +5,11 @@ const logger = require('../utils/logger');
 let flagCache = {};
 let flagCacheTime = 0;
 const FLAG_CACHE_TTL = 60000;
+const POLICY_RETENTION_DAYS = parseInt(process.env.DOCBOARD_POLICY_RETENTION_DAYS) || 90;
+const COMPLIANCE_MAX_DAYS = 93;
+const COMPLIANCE_MAX_ROWS = 500;
+let lastCleanupRun = null;
+let lastCleanupResult = null;
 
 class DocBoardCommandCenter {
   async getFlags() {
@@ -25,6 +30,20 @@ class DocBoardCommandCenter {
     await pool.query('UPDATE docboard_feature_flags SET enabled = ? WHERE flag_key = ?', [enabled ? 1 : 0, flagKey]);
     flagCache[flagKey] = enabled;
     logger.info('Feature flag ' + flagKey + ' set to ' + enabled);
+  }
+
+  invalidateCache() {
+    flagCache = {};
+    flagCacheTime = 0;
+    logger.info('[CommandCenter] Flag cache invalidated');
+  }
+
+  getFlagCacheStatus() {
+    return {
+      cached_keys: Object.keys(flagCache).length,
+      cache_age_ms: flagCacheTime > 0 ? Date.now() - flagCacheTime : null,
+      ttl_ms: FLAG_CACHE_TTL
+    };
   }
 
   async checkPolicy(userId, role, action, resource, resourceId) {
@@ -211,11 +230,39 @@ class DocBoardCommandCenter {
     return { date: dateStr, conflicts, total: conflicts.length };
   }
 
-  async getComplianceReport(startDate, endDate, location) {
+  validateComplianceRange(startDate, endDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      return { valid: false, message: 'Format tanggal tidak valid (YYYY-MM-DD)' };
+    }
+    const s = new Date(startDate + 'T00:00:00');
+    const e = new Date(endDate + 'T00:00:00');
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) {
+      return { valid: false, message: 'Tanggal tidak valid' };
+    }
+    if (e < s) {
+      return { valid: false, message: 'Tanggal akhir harus setelah tanggal awal' };
+    }
+    const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
+    if (diffDays > COMPLIANCE_MAX_DAYS) {
+      return { valid: false, message: 'Rentang maksimal ' + COMPLIANCE_MAX_DAYS + ' hari (diminta ' + diffDays + ' hari)' };
+    }
+    return { valid: true, diffDays };
+  }
+
+  async getComplianceReport(startDate, endDate, location, page, limit) {
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const rowLimit = Math.min(COMPLIANCE_MAX_ROWS, Math.max(1, parseInt(limit) || 100));
+    const offset = (pageNum - 1) * rowLimit;
+
     const locFilter = location ? 'AND s.location = ?' : '';
     const params = location ? [startDate, endDate, location] : [startDate, endDate];
+    // Count total for pagination
+    const [countRows] = await pool.query(
+      'SELECT COUNT(*) as total FROM surgery_schedules s WHERE s.surgery_date BETWEEN ? AND ? ' + locFilter, params);
+    const totalRows = countRows[0].total;
+
     const [surgeries] = await pool.query(
-      'SELECT s.id, s.patient_name, s.surgery_date, s.location, s.status, s.created_by, s.created_at, s.updated_at, ot.name_id as operation, ot.code as op_code, o.complication_grade, o.wound_class FROM surgery_schedules s LEFT JOIN surgery_operation_types ot ON s.operation_type_id = ot.id LEFT JOIN surgery_outcomes o ON o.surgery_id = s.id WHERE s.surgery_date BETWEEN ? AND ? ' + locFilter + ' ORDER BY s.surgery_date, s.surgery_time', params);
+      'SELECT s.id, s.patient_name, s.surgery_date, s.location, s.status, s.created_by, s.created_at, s.updated_at, ot.name_id as operation, ot.code as op_code, o.complication_grade, o.wound_class FROM surgery_schedules s LEFT JOIN surgery_operation_types ot ON s.operation_type_id = ot.id LEFT JOIN surgery_outcomes o ON o.surgery_id = s.id WHERE s.surgery_date BETWEEN ? AND ? ' + locFilter + ' ORDER BY s.surgery_date, s.surgery_time LIMIT ? OFFSET ?', [...params, rowLimit, offset]);
     const ids = surgeries.map(s => s.id);
     let audit = [];
     if (ids.length > 0) { const [rows] = await pool.query('SELECT surgery_id, action, user_id, changes, created_at FROM surgery_audit_log WHERE surgery_id IN (?) ORDER BY created_at', [ids]); audit = rows; }
@@ -227,9 +274,65 @@ class DocBoardCommandCenter {
       [startDate + ' 00:00:00', endDate + ' 23:59:59']);
     return {
       period: { startDate, endDate, location: location || 'all' },
+      pagination: { page: pageNum, limit: rowLimit, totalRows, totalPages: Math.ceil(totalRows / rowLimit) },
       generated_at: new Date().toISOString(),
-      summary: { totalSurgeries: surgeries.length, completed: surgeries.filter(s => s.status === 'completed').length, cancelled: surgeries.filter(s => s.status === 'cancelled').length, withOutcomes: surgeries.filter(s => s.complication_grade).length, policyDecisions: policy.length, ruleExecutions: ruleExecs.length },
+      summary: { totalSurgeries: totalRows, completed: surgeries.filter(s => s.status === 'completed').length, cancelled: surgeries.filter(s => s.status === 'cancelled').length, withOutcomes: surgeries.filter(s => s.complication_grade).length, policyDecisions: policy.length, ruleExecutions: ruleExecs.length },
       surgeries, auditEntries: audit, policyEntries: policy, ruleExecutions: ruleExecs
+    };
+  }
+
+  // =====================================================
+  // POLICY LOG CLEANUP
+  // =====================================================
+
+  async cleanupPolicyLog(dryRun) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - POLICY_RETENTION_DAYS);
+    const cutoffStr = cutoff.toISOString().slice(0, 19).replace('T', ' ');
+
+    const [countRows] = await pool.query(
+      'SELECT COUNT(*) as count FROM docboard_policy_log WHERE created_at < ?', [cutoffStr]);
+    const toDelete = countRows[0].count;
+
+    if (dryRun || toDelete === 0) {
+      const result = { dry_run: !!dryRun, would_delete: toDelete, retention_days: POLICY_RETENTION_DAYS, cutoff: cutoffStr };
+      lastCleanupRun = new Date().toISOString();
+      lastCleanupResult = result;
+      logger.info('[Cleanup] Policy log ' + (dryRun ? 'dry run' : 'no rows') + ': ' + toDelete + ' rows older than ' + POLICY_RETENTION_DAYS + 'd');
+      return result;
+    }
+
+    const [deleteResult] = await pool.query(
+      'DELETE FROM docboard_policy_log WHERE created_at < ?', [cutoffStr]);
+    const result = { dry_run: false, deleted: deleteResult.affectedRows, retention_days: POLICY_RETENTION_DAYS, cutoff: cutoffStr };
+    lastCleanupRun = new Date().toISOString();
+    lastCleanupResult = result;
+    logger.info('[Cleanup] Policy log: deleted ' + deleteResult.affectedRows + ' rows older than ' + POLICY_RETENTION_DAYS + 'd');
+    return result;
+  }
+
+  // =====================================================
+  // OPERATIONAL HEALTH / METRICS
+  // =====================================================
+
+  async getHealth() {
+    const flagStatus = this.getFlagCacheStatus();
+
+    let policyLogCount = 0;
+    let ruleExecCount = 0;
+    try {
+      const [plc] = await pool.query('SELECT COUNT(*) as c FROM docboard_policy_log');
+      policyLogCount = plc[0].c;
+      const [rec] = await pool.query('SELECT COUNT(*) as c FROM docboard_rule_executions');
+      ruleExecCount = rec[0].c;
+    } catch { /* tables may not exist */ }
+
+    return {
+      timestamp: new Date().toISOString(),
+      flag_cache: flagStatus,
+      policy_log: { total_rows: policyLogCount, retention_days: POLICY_RETENTION_DAYS },
+      rule_executions: { total_rows: ruleExecCount },
+      cleanup: { last_run: lastCleanupRun, last_result: lastCleanupResult }
     };
   }
 }

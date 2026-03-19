@@ -486,14 +486,16 @@ router.get('/command/rules/:id/executions', async (req, res) => {
   }
 });
 
-// Compliance
+// Compliance (with date range validation and pagination)
 router.get('/command/compliance', requireRoles('dokter', 'managerial'), async (req, res) => {
   try {
     const enabled = await commandCenter.isEnabled('phase5_compliance');
     if (!enabled) return res.status(403).json({ success: false, message: 'Compliance not enabled' });
-    const { start, end, location } = req.query;
-    if (!start || !end) return res.status(400).json({ success: false, message: 'start and end required' });
-    const report = await commandCenter.getComplianceReport(start, end, location);
+    const { start, end, location, page, limit } = req.query;
+    if (!start || !end) return res.status(400).json({ success: false, message: 'Parameter start dan end diperlukan (YYYY-MM-DD)' });
+    const validation = commandCenter.validateComplianceRange(start, end);
+    if (!validation.valid) return res.status(400).json({ success: false, message: validation.message });
+    const report = await commandCenter.getComplianceReport(start, end, location, page, limit);
     res.json({ success: true, report });
   } catch (error) {
     logger.error('Compliance report error:', error);
@@ -511,6 +513,35 @@ router.post('/command/policy-check', async (req, res) => {
     res.json({ success: true, ...result });
   } catch (error) {
     logger.error('Policy check error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Phase 5.1: Cache invalidation (dokter only)
+router.post('/flags/invalidate', requireRoles('dokter'), (req, res) => {
+  commandCenter.invalidateCache();
+  res.json({ success: true, message: 'Flag cache invalidated' });
+});
+
+// Phase 5.1: Operational health/metrics (dokter only)
+router.get('/command/health', requireRoles('dokter'), async (req, res) => {
+  try {
+    const health = await commandCenter.getHealth();
+    res.json({ success: true, ...health });
+  } catch (error) {
+    logger.error('Health check error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Phase 5.1: Policy log cleanup (dokter only)
+router.post('/command/cleanup', requireRoles('dokter'), async (req, res) => {
+  try {
+    const dryRun = req.query.dry_run !== 'false';
+    const result = await commandCenter.cleanupPolicyLog(dryRun);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Cleanup error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
