@@ -413,8 +413,8 @@ router.get('/command/dashboard', async (req, res) => {
     const data = await commandCenter.getDashboard();
     res.json({ success: true, ...data });
   } catch (error) {
-    logger.error('Dashboard error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    logger.error('[ERR:DASH_FAIL] Dashboard error:', error.message);
+    res.status(500).json({ success: false, error_code: 'DASH_FAIL', message: error.message });
   }
 });
 
@@ -426,8 +426,8 @@ router.get('/command/conflicts', async (req, res) => {
     const data = await commandCenter.detectConflicts(req.query.date);
     res.json({ success: true, ...data });
   } catch (error) {
-    logger.error('Conflict detection error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    logger.error('[ERR:CONFLICT_FAIL] Conflict detection error:', error.message);
+    res.status(500).json({ success: false, error_code: 'CONFLICT_FAIL', message: error.message });
   }
 });
 
@@ -498,9 +498,10 @@ router.get('/command/compliance', requireRoles('dokter', 'managerial'), async (r
     const report = await commandCenter.getComplianceReport(start, end, location, page, limit);
     res.json({ success: true, report });
   } catch (error) {
-    logger.error('Compliance report error:', error);
     const status = error.statusCode || 500;
-    res.status(status).json({ success: false, message: error.message });
+    const code = status === 400 ? 'COMPLIANCE_VALIDATION' : 'COMPLIANCE_FAIL';
+    logger.error('[ERR:' + code + '] Compliance report error:', error.message);
+    res.status(status).json({ success: false, error_code: code, message: error.message });
   }
 });
 
