@@ -369,4 +369,150 @@ router.put('/preferences', async (req, res) => {
   }
 });
 
+// =====================================================
+// PHASE 5: Command Center Routes (feature-flagged)
+// =====================================================
+const commandCenter = require('../services/DocBoardCommandCenter');
+
+// Feature flag middleware
+async function requireFlag(flagKey) {
+  return async function(req, res, next) {
+    const enabled = await commandCenter.isEnabled(flagKey);
+    if (!enabled) return res.status(403).json({ success: false, message: 'Feature not enabled: ' + flagKey });
+    next();
+  };
+}
+
+// GET /api/docboard/flags
+router.get('/flags', async (req, res) => {
+  try {
+    const flags = await commandCenter.getFlags();
+    res.json({ success: true, flags });
+  } catch (error) {
+    logger.error('Get flags error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// PUT /api/docboard/flags/:key (dokter only)
+router.put('/flags/:key', requireRoles('dokter'), async (req, res) => {
+  try {
+    await commandCenter.setFlag(req.params.key, req.body.enabled);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Set flag error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/docboard/command/dashboard
+router.get('/command/dashboard', async (req, res) => {
+  try {
+    const enabled = await commandCenter.isEnabled('phase5_dashboard');
+    if (!enabled) return res.status(403).json({ success: false, message: 'Dashboard not enabled' });
+    const data = await commandCenter.getDashboard();
+    res.json({ success: true, ...data });
+  } catch (error) {
+    logger.error('Dashboard error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/docboard/command/conflicts?date=YYYY-MM-DD
+router.get('/command/conflicts', async (req, res) => {
+  try {
+    const enabled = await commandCenter.isEnabled('phase5_conflict_detection');
+    if (!enabled) return res.status(403).json({ success: false, message: 'Conflict detection not enabled' });
+    const data = await commandCenter.detectConflicts(req.query.date);
+    res.json({ success: true, ...data });
+  } catch (error) {
+    logger.error('Conflict detection error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Rules CRUD
+router.get('/command/rules', async (req, res) => {
+  try {
+    const enabled = await commandCenter.isEnabled('phase5_rules_engine');
+    if (!enabled) return res.status(403).json({ success: false, message: 'Rules engine not enabled' });
+    const rules = await commandCenter.getRules();
+    res.json({ success: true, rules });
+  } catch (error) {
+    logger.error('Get rules error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/command/rules', requireRoles('dokter'), async (req, res) => {
+  try {
+    const enabled = await commandCenter.isEnabled('phase5_rules_engine');
+    if (!enabled) return res.status(403).json({ success: false, message: 'Rules engine not enabled' });
+    const rule = await commandCenter.createRule(req.body, req.user?.id);
+    res.json({ success: true, rule });
+  } catch (error) {
+    logger.error('Create rule error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/command/rules/:id', requireRoles('dokter'), async (req, res) => {
+  try {
+    await commandCenter.updateRule(req.params.id, req.body);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Update rule error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/command/rules/:id', requireRoles('dokter'), async (req, res) => {
+  try {
+    await commandCenter.deleteRule(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Delete rule error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/command/rules/:id/executions', async (req, res) => {
+  try {
+    const execs = await commandCenter.getRuleExecutions(req.params.id);
+    res.json({ success: true, executions: execs });
+  } catch (error) {
+    logger.error('Get rule executions error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Compliance
+router.get('/command/compliance', requireRoles('dokter', 'managerial'), async (req, res) => {
+  try {
+    const enabled = await commandCenter.isEnabled('phase5_compliance');
+    if (!enabled) return res.status(403).json({ success: false, message: 'Compliance not enabled' });
+    const { start, end, location } = req.query;
+    if (!start || !end) return res.status(400).json({ success: false, message: 'start and end required' });
+    const report = await commandCenter.getComplianceReport(start, end, location);
+    res.json({ success: true, report });
+  } catch (error) {
+    logger.error('Compliance report error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Policy check endpoint (for frontend to verify before action)
+router.post('/command/policy-check', async (req, res) => {
+  try {
+    const enabled = await commandCenter.isEnabled('phase5_policies');
+    if (!enabled) return res.json({ success: true, allowed: true, message: 'Policies not enabled - default allow' });
+    const { action, resource, resource_id } = req.body;
+    const result = await commandCenter.checkPolicy(req.user?.id, req.user?.role, action, resource, resource_id);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Policy check error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

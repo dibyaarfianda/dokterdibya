@@ -10,6 +10,7 @@ import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Analytics from './views/Analytics';
 import ORBoard from './views/ORBoard';
+import CommandDashboard from './views/CommandDashboard';
 import Login from './views/Login';
 import { initAuth, isLoggedIn, isLoading } from './stores/auth';
 import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
@@ -68,6 +69,7 @@ export default function App() {
           <SurgeryDetail path="/docboard/surgery/:id" />
           <Notifications path="/docboard/notifications" />
           <ORBoard path="/docboard/or-board" />
+          <CommandDashboard path="/docboard/command" />
           <Analytics path="/docboard/analytics" />
           <Settings path="/docboard/settings" />
           <Calendar default />
