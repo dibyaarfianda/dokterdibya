@@ -499,7 +499,8 @@ router.get('/command/compliance', requireRoles('dokter', 'managerial'), async (r
     res.json({ success: true, report });
   } catch (error) {
     logger.error('Compliance report error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    const status = error.statusCode || 500;
+    res.status(status).json({ success: false, message: error.message });
   }
 });
 
@@ -534,12 +535,24 @@ router.get('/command/health', requireRoles('dokter'), async (req, res) => {
   }
 });
 
-// Phase 5.1: Policy log cleanup (dokter only)
+// Phase 5.1+5.2: Cleanup with target selection and audit trail (dokter only)
 router.post('/command/cleanup', requireRoles('dokter'), async (req, res) => {
   try {
     const dryRun = req.query.dry_run !== 'false';
-    const result = await commandCenter.cleanupPolicyLog(dryRun);
-    res.json({ success: true, ...result });
+    const target = req.query.target || 'all'; // policy_log, rule_executions, all
+    const mode = dryRun ? 'dry_run' : 'real';
+    const results = {};
+
+    if (target === 'policy_log' || target === 'all') {
+      results.policy_log = await commandCenter.cleanupPolicyLog(dryRun);
+      await commandCenter.logCleanupAudit(req.user?.id, 'policy_log', mode, results.policy_log);
+    }
+    if (target === 'rule_executions' || target === 'all') {
+      results.rule_executions = await commandCenter.cleanupRuleExecutions(dryRun);
+      await commandCenter.logCleanupAudit(req.user?.id, 'rule_executions', mode, results.rule_executions);
+    }
+
+    res.json({ success: true, target, mode, results });
   } catch (error) {
     logger.error('Cleanup error:', error);
     res.status(500).json({ success: false, message: error.message });
