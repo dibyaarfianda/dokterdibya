@@ -265,12 +265,32 @@ async function generatePublicCodeNow() {
 }
 
 /**
+ * Send daily surgery reminders at 21:00 WIB (9 PM)
+ * Notifies about tomorrow's surgeries
+ */
+function startSurgeryReminderScheduler() {
+    cron.schedule('0 21 * * *', async () => {
+        try {
+            logger.info('[Scheduler] Running daily surgery reminder job...');
+            const docboardPush = require('./DocBoardPushService');
+            const result = await docboardPush.sendDailyReminders();
+            logger.info('[Scheduler] Surgery reminder job completed', result);
+        } catch (error) {
+            logger.error('[Scheduler] Error in surgery reminder job:', error);
+        }
+    });
+
+    logger.info('[Scheduler] Surgery reminder scheduler started (runs daily at 21:00 WIB)');
+}
+
+/**
  * Initialize all schedulers
  */
 function initSchedulers() {
     logger.info('[Scheduler] Initializing appointment schedulers...');
     startAutoConfirmScheduler();
     startPublicCodeScheduler();
+    startSurgeryReminderScheduler();
     logger.info('[Scheduler] All appointment schedulers initialized');
 }
 
