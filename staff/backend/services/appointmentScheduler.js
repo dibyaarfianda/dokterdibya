@@ -322,6 +322,24 @@ function startRuleExecCleanupScheduler() {
 }
 
 /**
+ * Persist daily metrics snapshot at 23:55 WIB
+ */
+function startDailyMetricsScheduler() {
+    cron.schedule('55 23 * * *', async () => {
+        try {
+            logger.info('[Scheduler] Persisting daily metrics...');
+            const commandCenter = require('./DocBoardCommandCenter');
+            const result = await commandCenter.persistDailyMetrics();
+            logger.info('[Scheduler] Daily metrics persisted', result);
+        } catch (error) {
+            logger.error('[Scheduler] Daily metrics persist error:', error);
+        }
+    });
+
+    logger.info('[Scheduler] Daily metrics scheduler started (runs daily at 23:55 WIB)');
+}
+
+/**
  * Initialize all schedulers
  */
 function initSchedulers() {
@@ -331,6 +349,7 @@ function initSchedulers() {
     startSurgeryReminderScheduler();
     startPolicyLogCleanupScheduler();
     startRuleExecCleanupScheduler();
+    startDailyMetricsScheduler();
     logger.info('[Scheduler] All appointment schedulers initialized');
 }
 
