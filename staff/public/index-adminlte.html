@@ -1470,7 +1470,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v61'; // Increment this to force refresh - Added patientActivity to pages object
+            const CACHE_VERSION = 'v62'; // Increment this to force refresh - SweetAlert2 for kelola pasien actions
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -7094,7 +7094,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v62';
+    window.__assetVersion = 'v63';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -8125,7 +8125,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 // Mark as delivered button (only for obstetri patients who haven't delivered)
                 let deliveryButton = '';
                 if (patient.is_obstetri && !patient.has_delivered) {
-                    deliveryButton = `<button class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}')" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+                    deliveryButton = `<button type="button" class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
                 }
 
                 return `
@@ -8143,12 +8143,12 @@ body.mobile-app-mode .mobile-action-bar-force button {
                                 <i class="fas fa-eye"></i>
                             </button>
                             ${deliveryButton}
-                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
-                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
+                            <button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
+                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}', this)"
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${patient.full_name}')" title="Hapus">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${patient.full_name}')" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -8390,7 +8390,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 // Mark as delivered button
                 let deliveryButton = '';
                 if (patient.is_obstetri && !patient.has_delivered) {
-                    deliveryButton = `<button class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}')" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+                    deliveryButton = `<button type="button" class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
                 }
 
                 return `
@@ -8408,12 +8408,12 @@ body.mobile-app-mode .mobile-action-bar-force button {
                                 <i class="fas fa-eye"></i>
                             </button>
                             ${deliveryButton}
-                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
-                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
+                            <button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
+                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}', this)"
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -8578,16 +8578,24 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
 
     // Mark patient as delivered (create birth_congratulations entry)
-    window.markAsDelivered = async function(patientId, patientName) {
-        if (!confirm(`Tandai "${patientName}" sudah melahirkan?\n\nIni akan menghapus pasien dari daftar monitoring kehamilan.`)) {
-            return;
-        }
+    window.markAsDelivered = async function(patientId, patientName, btnEl) {
+        const confirmResult = await Swal.fire({
+            title: 'Tandai Sudah Melahirkan?',
+            text: `Tandai "${patientName}" sudah melahirkan? Ini akan menghapus pasien dari daftar monitoring kehamilan.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Tandai',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#28a745'
+        });
 
-        // Find the clicked button and disable it while processing
-        const btn = event && event.target ? event.target.closest('button') : null;
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        if (!confirmResult.isConfirmed) return;
+
+        // Disable button while processing
+        const originalHtml = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         }
 
         try {
@@ -8605,9 +8613,9 @@ Apakah Anda yakin ingin melanjutkan?`;
                 throw new Error(result.message || 'Gagal menandai pasien');
             }
 
-            // Update the row in-place instead of reloading the entire table
-            if (btn) {
-                const row = btn.closest('tr');
+            // Update the row in-place — no table reload needed
+            if (btnEl) {
+                const row = btnEl.closest('tr');
                 if (row) {
                     // Update HPL column (4th cell, index 3) to show "Sudah Lahir"
                     const hplCell = row.cells[3];
@@ -8615,39 +8623,44 @@ Apakah Anda yakin ingin melanjutkan?`;
                         hplCell.innerHTML = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
                     }
                     // Remove the delivery button
-                    btn.remove();
+                    btnEl.remove();
                 }
             }
 
-            alert(`✅ ${patientName} berhasil ditandai sudah melahirkan!`);
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: `${patientName} ditandai sudah melahirkan!`, timer: 2000, showConfirmButton: false });
 
         } catch (error) {
             console.error('Error marking patient as delivered:', error);
-            alert('❌ Gagal menandai pasien: ' + error.message);
-            // Restore button on error
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-baby"></i>';
+            Swal.fire({ icon: 'error', title: 'Gagal', text: error.message });
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = originalHtml;
             }
         }
     };
 
-    window.togglePatientStatus = async function(patientId, currentStatus, patientName) {
+    window.togglePatientStatus = async function(patientId, currentStatus, patientName, btnEl) {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
 
-        if (!confirm(`Apakah Anda yakin ingin ${action} pasien "${patientName}"?`)) {
-            return;
-        }
+        const confirmResult = await Swal.fire({
+            title: `${action.charAt(0).toUpperCase() + action.slice(1)} pasien?`,
+            text: `Apakah Anda yakin ingin ${action} pasien "${patientName}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya',
+            cancelButtonText: 'Batal'
+        });
 
-        const btn = event && event.target ? event.target.closest('button') : null;
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        if (!confirmResult.isConfirmed) return;
+
+        const originalHtml = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         }
 
         try {
-            // Use unified patients endpoint
             const response = await fetch(`/api/patients/${patientId}/status`, {
                 method: 'PATCH',
                 headers: {
@@ -8661,36 +8674,33 @@ Apakah Anda yakin ingin melanjutkan?`;
                 throw new Error('Failed to update status');
             }
 
-            // Update the row in-place instead of reloading the entire table
-            if (btn) {
-                const row = btn.closest('tr');
+            // Update the row in-place
+            if (btnEl) {
+                const row = btnEl.closest('tr');
                 if (row) {
-                    // Update status badge (8th cell, index 7)
                     const statusCell = row.cells[7];
                     if (statusCell) {
                         statusCell.innerHTML = newStatus === 'active'
                             ? '<span class="badge badge-success">Aktif</span>'
                             : '<span class="badge badge-secondary">Nonaktif</span>';
                     }
-                    // Update the toggle button itself
                     const escapedName = patientName.replace(/'/g, "\\'");
-                    btn.disabled = false;
-                    btn.className = `btn btn-sm btn-${newStatus === 'active' ? 'warning' : 'success'}`;
-                    btn.setAttribute('onclick', `togglePatientStatus('${patientId}', '${newStatus}', '${escapedName}')`);
-                    btn.setAttribute('title', newStatus === 'active' ? 'Nonaktifkan' : 'Aktifkan');
-                    btn.innerHTML = `<i class="fas fa-${newStatus === 'active' ? 'ban' : 'check'}"></i>`;
+                    btnEl.disabled = false;
+                    btnEl.className = `btn btn-sm btn-${newStatus === 'active' ? 'warning' : 'success'}`;
+                    btnEl.setAttribute('onclick', `togglePatientStatus('${patientId}', '${newStatus}', '${escapedName}', this)`);
+                    btnEl.setAttribute('title', newStatus === 'active' ? 'Nonaktifkan' : 'Aktifkan');
+                    btnEl.innerHTML = `<i class="fas fa-${newStatus === 'active' ? 'ban' : 'check'}"></i>`;
                 }
             }
 
-            alert(`Status pasien berhasil diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`);
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: `Status diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`, timer: 2000, showConfirmButton: false });
 
         } catch (error) {
             console.error('Error updating patient status:', error);
-            alert('Gagal mengubah status pasien');
-            // Restore button on error
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fas fa-${currentStatus === 'active' ? 'ban' : 'check'}"></i>`;
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal mengubah status pasien' });
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = originalHtml;
             }
         }
     };
