@@ -8583,6 +8583,13 @@ Apakah Anda yakin ingin melanjutkan?`;
             return;
         }
 
+        // Find the clicked button and disable it while processing
+        const btn = event && event.target ? event.target.closest('button') : null;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
         try {
             const response = await fetch(`/api/patients/${patientId}/mark-delivered`, {
                 method: 'POST',
@@ -8598,23 +8605,47 @@ Apakah Anda yakin ingin melanjutkan?`;
                 throw new Error(result.message || 'Gagal menandai pasien');
             }
 
+            // Update the row in-place instead of reloading the entire table
+            if (btn) {
+                const row = btn.closest('tr');
+                if (row) {
+                    // Update HPL column (4th cell, index 3) to show "Sudah Lahir"
+                    const hplCell = row.cells[3];
+                    if (hplCell) {
+                        hplCell.innerHTML = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
+                    }
+                    // Remove the delivery button
+                    btn.remove();
+                }
+            }
+
             alert(`✅ ${patientName} berhasil ditandai sudah melahirkan!`);
-            loadWebPatients(); // Reload the patient list
 
         } catch (error) {
             console.error('Error marking patient as delivered:', error);
             alert('❌ Gagal menandai pasien: ' + error.message);
+            // Restore button on error
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-baby"></i>';
+            }
         }
     };
 
     window.togglePatientStatus = async function(patientId, currentStatus, patientName) {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
-        
+
         if (!confirm(`Apakah Anda yakin ingin ${action} pasien "${patientName}"?`)) {
             return;
         }
-        
+
+        const btn = event && event.target ? event.target.closest('button') : null;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
         try {
             // Use unified patients endpoint
             const response = await fetch(`/api/patients/${patientId}/status`, {
@@ -8625,23 +8656,42 @@ Apakah Anda yakin ingin melanjutkan?`;
                 },
                 body: JSON.stringify({ status: newStatus })
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to update status');
             }
-            
-            alert(`Status pasien berhasil diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`);
-            loadWebPatients(); // Reload the main list
-            
-            // Also reload floating panel if visible
-            const floatingPanel = document.getElementById('floating-kelola-pasien');
-            if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
-                loadFloatingPanelPatients();
+
+            // Update the row in-place instead of reloading the entire table
+            if (btn) {
+                const row = btn.closest('tr');
+                if (row) {
+                    // Update status badge (8th cell, index 7)
+                    const statusCell = row.cells[7];
+                    if (statusCell) {
+                        statusCell.innerHTML = newStatus === 'active'
+                            ? '<span class="badge badge-success">Aktif</span>'
+                            : '<span class="badge badge-secondary">Nonaktif</span>';
+                    }
+                    // Update the toggle button itself
+                    const escapedName = patientName.replace(/'/g, "\\'");
+                    btn.disabled = false;
+                    btn.className = `btn btn-sm btn-${newStatus === 'active' ? 'warning' : 'success'}`;
+                    btn.setAttribute('onclick', `togglePatientStatus('${patientId}', '${newStatus}', '${escapedName}')`);
+                    btn.setAttribute('title', newStatus === 'active' ? 'Nonaktifkan' : 'Aktifkan');
+                    btn.innerHTML = `<i class="fas fa-${newStatus === 'active' ? 'ban' : 'check'}"></i>`;
+                }
             }
-            
+
+            alert(`Status pasien berhasil diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`);
+
         } catch (error) {
             console.error('Error updating patient status:', error);
             alert('Gagal mengubah status pasien');
+            // Restore button on error
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-${currentStatus === 'active' ? 'ban' : 'check'}"></i>`;
+            }
         }
     };
     
