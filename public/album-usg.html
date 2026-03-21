@@ -467,6 +467,7 @@
                 filterByType('all');
             } catch (error) {
                 console.error('Error loading USG:', error);
+                document.getElementById('usg-gallery').innerHTML = '<div style="grid-column:1/-1;color:red;padding:20px;word-break:break-all;">DEBUG: ' + error.message + '<br>' + error.stack + '</div>';
                 showToast(`Gagal memuat album: ${error.message}`, 'error');
             }
         }
