@@ -448,6 +448,11 @@
 
                 if (response && response.success && response.documents) {
                     window.allImages = response.documents;
+                } else if (!response.success) {
+                    // API returned error response
+                    console.error('API error:', response.message);
+                    showToast(`Error: ${response.message}`, 'error');
+                    throw new Error(response.message || 'Failed to load documents');
                 }
 
                 // Sort by date descending
@@ -462,7 +467,7 @@
                 filterByType('all');
             } catch (error) {
                 console.error('Error loading USG:', error);
-                showToast('Gagal memuat album', 'error');
+                showToast(`Gagal memuat album: ${error.message}`, 'error');
             }
         }
 

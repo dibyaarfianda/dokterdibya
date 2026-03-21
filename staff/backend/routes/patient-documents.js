@@ -749,16 +749,26 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
             'rs_bhayangkara': { name: 'RS Bhayangkara', logo: '/images/bhayangkara-logo.png', color: '#28a745' }
         };
 
-        // Generate signed URLs for R2 files
+        // Generate signed URLs for R2 files (with graceful fallback)
         const enrichedDocuments = await Promise.all(documents.map(async (doc) => {
             let fileUrl = doc.file_url;
 
-            // If file_url looks like an R2 key (not a full URL), generate signed URL
+            // If file_url looks like an R2 key (not a full URL), try to generate signed URL
             if (fileUrl && !fileUrl.startsWith('http') && !fileUrl.startsWith('/')) {
                 try {
                     fileUrl = await r2Storage.getSignedDownloadUrl(fileUrl, 3600); // 1 hour expiry
                 } catch (e) {
-                    logger.error('Error generating signed URL for document', { id: doc.id, error: e.message });
+                    // R2 error - log but don't fail endpoint
+                    logger.warn('Error generating signed URL for document', {
+                        id: doc.id,
+                        error: e.message,
+                        r2_configured: r2Storage.isR2Configured()
+                    });
+                    // Return R2 public URL as fallback
+                    if (r2Storage.R2_PUBLIC_URL && doc.file_url) {
+                        fileUrl = `${r2Storage.R2_PUBLIC_URL}/${doc.file_url}`;
+                    }
+                    // If all else fails, keep original fileUrl
                 }
             }
 
