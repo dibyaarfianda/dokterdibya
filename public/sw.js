@@ -3,7 +3,10 @@
  * Provides offline support and caching
  */
 
-const CACHE_NAME = 'dokterdibya-patient-v1';
+// CRITICAL: Increment this on every deploy to force cache refresh
+// Format: v1, v2, v3, etc. (changes timestamp to current date YYYYMMDD)
+const CACHE_VERSION = '20260321'; // Change this after each update
+const CACHE_NAME = `dokterdibya-patient-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache immediately on install
