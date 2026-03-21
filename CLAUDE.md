@@ -981,3 +981,43 @@ async function showTestNotification() {
 **Files:**
 - `public/scripts/vitamin-notifications.js` - notification service with WebView detection
 - `mobile-app/www/index.html` - local page that requests permission on first launch
+
+### 31. PWA Cache Versioning - Force Fresh Updates on Deploy
+
+**CRITICAL: Service worker cache MUST be version-controlled to force refresh.**
+
+**Problem:** Old cached files cause patients to see outdated code even after deploy. Patient has to hard-reset (Ctrl+Shift+R) to get fresh files. Most patients don't know or won't do this.
+
+**Solution:** Update `CACHE_VERSION` in `public/sw.js` on every deploy:
+
+```javascript
+// public/sw.js - CHANGE THIS DATE EVERY TIME YOU DEPLOY
+const CACHE_VERSION = '20260321'; // Use today's date: YYYYMMDD
+const CACHE_NAME = `dokterdibya-patient-${CACHE_VERSION}`;
+```
+
+**How it works:**
+1. When you deploy → increment CACHE_VERSION (use today's date YYYYMMDD)
+2. Service worker automatically deletes old cache (activate event, line 44-54)
+3. Patients get fresh files on next page load (no hard-reset needed!)
+
+**Deployment Checklist:**
+```bash
+# Before git push:
+1. Make your changes to patient portal code
+2. Update CACHE_VERSION in public/sw.js to today's date (YYYYMMDD)
+3. git add .
+4. git commit -m "..."
+5. git push origin main
+# Done! Patients auto-get fresh cache on next load
+```
+
+**Example:**
+- Deploy on 2026-03-21 → Set `CACHE_VERSION = '20260321'`
+- Deploy on 2026-03-22 → Set `CACHE_VERSION = '20260322'`
+
+**Why this works:**
+- Different cache name = browser treats as new cache
+- Old cache is automatically deleted by service worker
+- No hard-reset needed for patients
+- Transparent update process
