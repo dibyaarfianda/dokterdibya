@@ -1158,6 +1158,11 @@
             to { transform: rotate(360deg); }
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Reduce animations on mobile */
         @media (max-width: 768px) {
             .menu-card {
@@ -1532,6 +1537,75 @@
         <div id="content-wrapper" style="display: none;">
             <div class="content-container">
 
+                <!-- Idul Fitri Greeting Card -->
+                <div class="dashboard-card" id="eid-greeting-card" style="display: none; margin-bottom: 20px; padding: 0; overflow: hidden; border: 1px solid rgba(218, 165, 32, 0.4); border-radius: 16px; position: relative;">
+                    <!-- Close button -->
+                    <button onclick="dismissEidGreeting()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">&times;</button>
+
+                    <!-- Background with gradient -->
+                    <div style="background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 30%, #1a3a2a 60%, #0d2818 100%); padding: 28px 24px; position: relative; overflow: hidden;">
+
+                        <!-- Decorative stars -->
+                        <div style="position: absolute; top: 15px; left: 20px; color: rgba(218,165,32,0.3); font-size: 8px;">&#9733;</div>
+                        <div style="position: absolute; top: 40px; left: 60px; color: rgba(218,165,32,0.2); font-size: 6px;">&#9733;</div>
+                        <div style="position: absolute; top: 20px; right: 55px; color: rgba(218,165,32,0.25); font-size: 10px;">&#9733;</div>
+                        <div style="position: absolute; top: 55px; right: 90px; color: rgba(218,165,32,0.15); font-size: 7px;">&#9733;</div>
+                        <div style="position: absolute; bottom: 60px; left: 40px; color: rgba(218,165,32,0.2); font-size: 6px;">&#9733;</div>
+                        <div style="position: absolute; bottom: 40px; right: 40px; color: rgba(218,165,32,0.15); font-size: 8px;">&#9733;</div>
+
+                        <!-- Crescent Moon & Mosque SVG -->
+                        <div style="text-align: center; margin-bottom: 16px;">
+                            <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Crescent Moon -->
+                                <circle cx="60" cy="32" r="22" fill="#DAA520"/>
+                                <circle cx="70" cy="28" r="18" fill="#0d1b2a"/>
+                                <!-- Star -->
+                                <polygon points="50,18 52,24 58,24 53,28 55,34 50,30 45,34 47,28 42,24 48,24" fill="#DAA520" opacity="0.9"/>
+                                <!-- Mosque Silhouette -->
+                                <rect x="25" y="68" width="70" height="30" rx="2" fill="rgba(218,165,32,0.15)"/>
+                                <!-- Main dome -->
+                                <ellipse cx="60" cy="68" rx="20" ry="14" fill="rgba(218,165,32,0.2)"/>
+                                <!-- Left minaret -->
+                                <rect x="28" y="52" width="6" height="46" rx="1" fill="rgba(218,165,32,0.18)"/>
+                                <ellipse cx="31" cy="52" rx="5" ry="4" fill="rgba(218,165,32,0.2)"/>
+                                <rect x="30" y="45" width="2" height="8" fill="rgba(218,165,32,0.25)"/>
+                                <!-- Right minaret -->
+                                <rect x="86" y="52" width="6" height="46" rx="1" fill="rgba(218,165,32,0.18)"/>
+                                <ellipse cx="89" cy="52" rx="5" ry="4" fill="rgba(218,165,32,0.2)"/>
+                                <rect x="88" y="45" width="2" height="8" fill="rgba(218,165,32,0.25)"/>
+                                <!-- Small dome left -->
+                                <ellipse cx="42" cy="72" rx="8" ry="6" fill="rgba(218,165,32,0.15)"/>
+                                <!-- Small dome right -->
+                                <ellipse cx="78" cy="72" rx="8" ry="6" fill="rgba(218,165,32,0.15)"/>
+                                <!-- Door -->
+                                <rect x="55" y="82" width="10" height="16" rx="5" fill="rgba(218,165,32,0.25)"/>
+                            </svg>
+                        </div>
+
+                        <!-- Greeting Text -->
+                        <div style="text-align: center;">
+                            <p style="font-size: 11px; color: rgba(218,165,32,0.7); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; font-weight: 400;">Selamat Hari Raya</p>
+                            <h2 style="font-size: 28px; font-weight: 700; color: #DAA520; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 2px 12px rgba(218,165,32,0.3);">Idul Fitri</h2>
+                            <p style="font-size: 15px; color: rgba(218,165,32,0.8); margin-bottom: 18px; font-weight: 500;">1 Syawal 1447 H</p>
+
+                            <div style="width: 40px; height: 1px; background: linear-gradient(90deg, transparent, rgba(218,165,32,0.5), transparent); margin: 0 auto 16px;"></div>
+
+                            <p style="font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.7; max-width: 320px; margin: 0 auto 16px; font-weight: 300;">
+                                Taqabbalallahu minna wa minkum.<br>
+                                Mohon maaf lahir dan batin atas segala khilaf selama ini.
+                                Semoga Allah SWT senantiasa melimpahkan keberkahan dan kesehatan bagi Anda sekeluarga.
+                            </p>
+
+                            <div style="width: 40px; height: 1px; background: linear-gradient(90deg, transparent, rgba(218,165,32,0.5), transparent); margin: 0 auto 14px;"></div>
+
+                            <p style="color: rgba(218,165,32,0.8); font-weight: 500; font-size: 13px;">
+                                salam hangat,<br>
+                                <span style="font-size: 15px; font-weight: 600;">dr. Dibya & Tim</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Welcome Message -->
                 <div class="dashboard-card" id="welcome-section" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(40, 167, 233, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid rgba(40, 167, 233, 0.3);">
                     <h3 class="collapsible-header" onclick="toggleWelcomeSection()">
@@ -1860,6 +1934,7 @@
             // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
             loadBirthData();
+            showEidGreeting();
 
             // Show download banner only on web browser (not Capacitor)
             const isCapacitorApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
@@ -2091,6 +2166,42 @@
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
             }
+        }
+
+        // ==================== IDUL FITRI GREETING ====================
+        function showEidGreeting() {
+            // Show Eid greeting from March 28 to April 5, 2026
+            const now = new Date();
+            const start = new Date(2026, 2, 28); // March 28, 2026
+            const end = new Date(2026, 3, 6);    // April 6, 2026 (exclusive)
+
+            if (now < start || now >= end) return;
+
+            // Check if user dismissed it today
+            const dismissKey = 'eid_greeting_dismissed_2026';
+            const dismissed = localStorage.getItem(dismissKey);
+            if (dismissed) {
+                const dismissedDate = new Date(dismissed);
+                // Allow showing again after 24 hours
+                if (now - dismissedDate < 24 * 60 * 60 * 1000) return;
+            }
+
+            const card = document.getElementById('eid-greeting-card');
+            if (card) {
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.6s ease-out';
+            }
+        }
+
+        function dismissEidGreeting() {
+            const card = document.getElementById('eid-greeting-card');
+            if (card) {
+                card.style.transition = 'opacity 0.3s, transform 0.3s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.95)';
+                setTimeout(() => { card.style.display = 'none'; }, 300);
+            }
+            localStorage.setItem('eid_greeting_dismissed_2026', new Date().toISOString());
         }
 
         // ==================== BIRTH CONGRATULATIONS ====================
