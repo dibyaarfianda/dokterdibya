@@ -420,21 +420,12 @@
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
 
-        // State
-        let allImages = [];
-        let filteredImages = [];
-        let currentFilter = 'all';
-        let currentLightboxIndex = 0;
-        let customThumbnailId = localStorage.getItem('usg_thumbnail_id');
-
-        // Make functions globally available
-        window.filterByType = filterByType;
-        window.openLightbox = openLightbox;
-        window.closeLightbox = closeLightbox;
-        window.navigateLightbox = navigateLightbox;
-        window.setAsThumbnail = setAsThumbnail;
-        window.downloadImage = downloadImage;
-        window.refreshUsgGallery = loadUsgImages;
+        // State - declared on window to ensure accessibility
+        window.allImages = [];
+        window.filteredImages = [];
+        window.currentFilter = 'all';
+        window.currentLightboxIndex = 0;
+        window.customThumbnailId = localStorage.getItem('usg_thumbnail_id');
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -449,23 +440,24 @@
         // Load USG Images
         async function loadUsgImages() {
             try {
-                // Single API call for all USG types
-                const response = await apiRequest('/api/patient-documents/my-documents?type=usg_photo,usg_2d,usg_4d');
+                // Single API call for all USG types with cache-bust parameter
+                const cacheBust = Math.floor(Date.now() / 60000); // Change every minute
+                const response = await apiRequest(`/api/patient-documents/my-documents?type=usg_photo,usg_2d,usg_4d&t=${cacheBust}`);
 
-                allImages = [];
+                window.allImages = [];
 
                 if (response && response.success && response.documents) {
-                    allImages = response.documents;
+                    window.allImages = response.documents;
                 }
 
                 // Sort by date descending
-                allImages.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
+                window.allImages.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
 
                 // Update stats
-                const newCount = allImages.filter(img => !img.first_viewed_at).length;
-                document.getElementById('stat-total').textContent = allImages.length;
+                const newCount = window.allImages.filter(img => !img.first_viewed_at).length;
+                document.getElementById('stat-total').textContent = window.allImages.length;
                 document.getElementById('stat-new').textContent = newCount;
-                document.getElementById('total-count').textContent = `${allImages.length} foto`;
+                document.getElementById('total-count').textContent = `${window.allImages.length} foto`;
 
                 filterByType('all');
             } catch (error) {
@@ -476,8 +468,8 @@
 
         // Show all images (no type filtering)
         function filterByType(type) {
-            currentFilter = 'all';
-            filteredImages = [...allImages];
+            window.currentFilter = 'all';
+            window.filteredImages = [...window.allImages];
             renderGallery();
         }
 
@@ -485,7 +477,7 @@
         function renderGallery() {
             const gallery = document.getElementById('usg-gallery');
 
-            if (filteredImages.length === 0) {
+            if (window.filteredImages.length === 0) {
                 gallery.innerHTML = `
                     <div style="grid-column: 1 / -1;">
                         <div class="empty-state">
@@ -502,11 +494,11 @@
                 'usg_4d': '4D'
             };
 
-            gallery.innerHTML = filteredImages.map((img, index) => {
+            gallery.innerHTML = window.filteredImages.map((img, index) => {
                 const date = new Date(img.published_at || img.created_at);
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !img.first_viewed_at;
-                const isThumbnail = customThumbnailId && parseInt(customThumbnailId) === img.id;
+                const isThumbnail = window.customThumbnailId && parseInt(window.customThumbnailId) === img.id;
 
                 // Use detectedType for badge, fallback to original type
                 const effectiveType = img.detectedType || img.type;
@@ -530,8 +522,8 @@
 
         // Open lightbox
         async function openLightbox(index) {
-            currentLightboxIndex = index;
-            const img = filteredImages[index];
+            window.currentLightboxIndex = index;
+            const img = window.filteredImages[index];
 
             document.getElementById('lightbox-modal').classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -544,7 +536,7 @@
                     await apiRequest(`/api/patient-documents/${img.id}/view`, { method: 'POST' });
                     img.first_viewed_at = new Date().toISOString();
                     // Update stats
-                    const newCount = allImages.filter(i => !i.first_viewed_at).length;
+                    const newCount = window.allImages.filter(i => !i.first_viewed_at).length;
                     document.getElementById('stat-new').textContent = newCount;
                 } catch (e) {
                     console.error('Error marking viewed:', e);
@@ -582,22 +574,22 @@
 
         // Navigate lightbox
         function navigateLightbox(direction) {
-            currentLightboxIndex += direction;
+            window.currentLightboxIndex += direction;
 
-            if (currentLightboxIndex < 0) {
-                currentLightboxIndex = filteredImages.length - 1;
-            } else if (currentLightboxIndex >= filteredImages.length) {
-                currentLightboxIndex = 0;
+            if (window.currentLightboxIndex < 0) {
+                window.currentLightboxIndex = window.filteredImages.length - 1;
+            } else if (window.currentLightboxIndex >= window.filteredImages.length) {
+                window.currentLightboxIndex = 0;
             }
 
-            updateLightboxContent(filteredImages[currentLightboxIndex]);
+            updateLightboxContent(window.filteredImages[window.currentLightboxIndex]);
         }
 
         // Set as thumbnail
         function setAsThumbnail() {
-            const img = filteredImages[currentLightboxIndex];
-            customThumbnailId = img.id.toString();
-            localStorage.setItem('usg_thumbnail_id', customThumbnailId);
+            const img = window.filteredImages[window.currentLightboxIndex];
+            window.customThumbnailId = img.id.toString();
+            localStorage.setItem('usg_thumbnail_id', window.customThumbnailId);
 
             // Update button
             const btnThumbnail = document.getElementById('btn-thumbnail');
@@ -612,7 +604,7 @@
 
         // Download image
         function downloadImage() {
-            const img = filteredImages[currentLightboxIndex];
+            const img = window.filteredImages[window.currentLightboxIndex];
             const link = document.createElement('a');
             link.href = img.file_url;
             link.download = `USG_${new Date(img.published_at || img.created_at).toISOString().split('T')[0]}.jpg`;
@@ -630,6 +622,15 @@
             if (e.key === 'ArrowLeft') navigateLightbox(-1);
             if (e.key === 'ArrowRight') navigateLightbox(1);
         });
+
+        // Export functions to global scope AFTER all functions are defined
+        window.filterByType = filterByType;
+        window.openLightbox = openLightbox;
+        window.closeLightbox = closeLightbox;
+        window.navigateLightbox = navigateLightbox;
+        window.setAsThumbnail = setAsThumbnail;
+        window.downloadImage = downloadImage;
+        window.refreshUsgGallery = loadUsgImages;
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
