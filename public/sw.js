@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Format: v1, v2, v3, etc. (changes timestamp to current date YYYYMMDD)
-const CACHE_VERSION = '20260321'; // Change this after each update
+const CACHE_VERSION = '20260321-fix'; // Increment cache version to force clear
 const CACHE_NAME = `dokterdibya-patient-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
