@@ -4,9 +4,9 @@
  */
 
 // CRITICAL: Increment this on every deploy to force cache refresh
-// Format: v1, v2, v3, etc. (changes timestamp to current date YYYYMMDD)
-const CACHE_VERSION = '20260321-fix'; // Increment cache version to force clear
-const CACHE_NAME = `dokterdibya-patient-${CACHE_VERSION}`;
+// Use timestamp format to force all old caches to be abandoned
+const CACHE_VERSION = '1708761600'; // Unix timestamp to ensure cache invalidation
+const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache immediately on install
