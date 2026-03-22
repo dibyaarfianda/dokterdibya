@@ -722,6 +722,8 @@ router.get('/unread-counts', verifyPatientToken, async (req, res) => {
         const counts = rows[0] || { usg: 0, lab: 0, resume_medis: 0 };
         const total = (counts.usg || 0) + (counts.lab || 0) + (counts.resume_medis || 0);
 
+        logger.info(`[DOC-BADGE] unread-counts patient=${patientId} usg=${counts.usg||0} lab=${counts.lab||0} resume=${counts.resume_medis||0} total=${total}`);
+
         res.json({
             success: true,
             counts: {
@@ -769,6 +771,8 @@ router.post('/mark-all-viewed', verifyPatientToken, async (req, res) => {
              AND status = 'published' AND first_viewed_at IS NULL`,
             [patientId, ...types]
         );
+
+        logger.info(`[DOC-BADGE] mark-all-viewed patient=${patientId} category=${category}`);
 
         res.json({ success: true });
     } catch (error) {
