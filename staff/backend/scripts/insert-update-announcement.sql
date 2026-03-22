@@ -20,7 +20,7 @@ INSERT INTO announcements (
     'html',
     'system',
     'Sistem Dokter Dibya',
-    'high',
+    'urgent',
     'active',
     NOW()
 );

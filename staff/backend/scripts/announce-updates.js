@@ -20,7 +20,7 @@ async function broadcastAnnouncement() {
             content_type: 'html',
             created_by: 'system',
             created_by_name: 'Sistem Dokter Dibya',
-            priority: 'high',
+            priority: 'urgent',
             status: 'active'
         };
 
