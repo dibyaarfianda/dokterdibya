@@ -66,20 +66,16 @@
 
         /* Navbar */
         .nav-bar {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             padding: 10px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        /* In Capacitor app, navbar sticks below safe area */
-        .capacitor-app .nav-bar {
-            position: sticky;
-            top: 0;
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 1000;
         }
 
         .nav-bar .nav-container {
@@ -1545,7 +1541,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main id="main-content">
+    <main id="main-content" style="padding-top: 56px;">
         <!-- Loading State -->
         <div class="loading" id="loading-state">
             <i class="fa fa-spinner fa-spin"></i>
