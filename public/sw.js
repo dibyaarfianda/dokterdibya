@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260322'; // 2026-03-22 - document sub-menu badges
+const CACHE_VERSION = '20260322b'; // 2026-03-22 - skip staff paths
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -75,6 +75,11 @@ self.addEventListener('fetch', (event) => {
 
   // Skip API calls - always fetch from network
   if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // Skip staff panel - not managed by patient SW
+  if (url.pathname.startsWith('/staff/')) {
     return;
   }
 
