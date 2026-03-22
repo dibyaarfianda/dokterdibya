@@ -719,19 +719,17 @@ router.get('/unread-counts', verifyPatientToken, async (req, res) => {
             [patientId]
         );
 
-        const counts = rows[0] || { usg: 0, lab: 0, resume_medis: 0 };
-        const total = (counts.usg || 0) + (counts.lab || 0) + (counts.resume_medis || 0);
+        const raw = rows[0] || { usg: 0, lab: 0, resume_medis: 0 };
+        const usg = Number(raw.usg) || 0;
+        const lab = Number(raw.lab) || 0;
+        const resume_medis = Number(raw.resume_medis) || 0;
+        const total = usg + lab + resume_medis;
 
-        logger.info(`[DOC-BADGE] unread-counts patient=${patientId} usg=${counts.usg||0} lab=${counts.lab||0} resume=${counts.resume_medis||0} total=${total}`);
+        logger.info(`[DOC-BADGE] unread-counts patient=${patientId} usg=${usg} lab=${lab} resume=${resume_medis} total=${total}`);
 
         res.json({
             success: true,
-            counts: {
-                usg: counts.usg || 0,
-                lab: counts.lab || 0,
-                resume_medis: counts.resume_medis || 0,
-                total: total
-            }
+            counts: { usg, lab, resume_medis, total }
         });
     } catch (error) {
         logger.error('Unread counts error', error);
