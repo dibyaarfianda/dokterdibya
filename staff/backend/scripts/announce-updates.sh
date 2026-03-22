@@ -4,7 +4,7 @@
 
 set -e
 
-echo "🎉 Membuat Announcement tentang 5 Update Terakhir..."
+echo "🎉 Mengupdate Announcement dengan semua update terbaru..."
 
 # Read SQL from file
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -16,18 +16,17 @@ if [ ! -f "$SQL_FILE" ]; then
 fi
 
 # Execute SQL
-echo "📝 Insert announcement ke database..."
+echo "📝 Update announcement di database..."
 mysql -u root dibyaklinik < "$SQL_FILE"
 
 echo ""
-echo "✅ Announcement berhasil dibuat!"
+echo "✅ Announcement berhasil diupdate!"
 echo ""
-echo "📢 Informasi yang ditampilkan ke pasien:"
-echo "   - Judul: 🎉 Pembaruan Portal Pasien - Perbaikan Album USG & Performa"
-echo "   - Prioritas: HIGH"
+echo "📢 Update yang ditampilkan ke pasien:"
+echo "   - Judul: 🎉 Pembaruan Portal Pasien - Maret 2026"
+echo "   - 9 poin update (Badge Dokumen, Album USG, Performa)"
+echo "   - Prioritas: URGENT"
 echo "   - Status: ACTIVE"
 echo ""
-echo "📱 Patients akan melihat notifikasi saat membuka portal mereka"
-echo ""
-echo "💡 Tip: Patients perlu reload (F5) untuk update cache terbaru"
+echo "📱 Patients akan melihat pengumuman terbaru saat membuka portal"
 echo ""
