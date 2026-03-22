@@ -852,6 +852,31 @@
             letter-spacing: 0.5px;
         }
 
+        /* Unread count badge for sub-menu items */
+        .unread-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            padding: 0 6px;
+            margin-left: auto;
+        }
+
+        .sheet-menu-item {
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        .sheet-menu-item .arrow {
+            margin-left: 8px;
+        }
+
         /* Quick Status */
         .quick-status {
             margin-bottom: 15px;
@@ -2128,18 +2153,26 @@
             }
         }
 
-        // ==================== UNREAD USG COUNT ====================
-        async function loadUnreadUsgCount() {
+        // ==================== UNREAD DOCUMENT COUNTS ====================
+        // Store unread counts globally for sub-menu badges
+        window._unreadDocCounts = { usg: 0, lab: 0, resume_medis: 0, total: 0 };
+
+        async function loadUnreadDocCounts() {
             const token = getToken();
             try {
-                const response = await fetch('/api/patient-documents/unread-usg-count?_t=' + Date.now(), {
+                const response = await fetch('/api/patient-documents/unread-counts?_t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await response.json();
 
-                // Find the Dokumen menu card and update/create badge
+                if (data.success && data.counts) {
+                    window._unreadDocCounts = data.counts;
+                }
+
+                // Update main Dokumen card badge with total count
                 const dokumenCard = document.querySelector('.menu-card:first-child');
-                if (data.success && data.count > 0 && dokumenCard) {
+                const total = window._unreadDocCounts.total || 0;
+                if (total > 0 && dokumenCard) {
                     let badge = dokumenCard.querySelector('.usg-badge');
                     if (!badge) {
                         badge = document.createElement('span');
@@ -2148,7 +2181,7 @@
                         dokumenCard.style.position = 'relative';
                         dokumenCard.appendChild(badge);
                     }
-                    badge.textContent = data.count;
+                    badge.textContent = total;
                     badge.style.display = 'flex';
                 } else if (dokumenCard) {
                     const badge = dokumenCard.querySelector('.usg-badge');
@@ -2158,8 +2191,10 @@
                 // Silently fail
             }
         }
-        // Expose for Socket.IO listener in announcements-dashboard.js
-        window.loadUnreadUsgCount = loadUnreadUsgCount;
+
+        // Backward compatibility alias
+        window.loadUnreadUsgCount = loadUnreadDocCounts;
+        window.loadUnreadDocCounts = loadUnreadDocCounts;
         window.loadNotificationCount = loadNotificationCount;
 
         // ==================== ANNOUNCEMENTS ====================
@@ -2533,26 +2568,42 @@
             document.getElementById('sheet-icon').style.background = data.color;
             document.getElementById('sheet-title').textContent = data.title;
 
+            // Map sub-menu labels to unread count keys (for Dokumen category)
+            const unreadKeyMap = {
+                'Album USG': 'usg',
+                'Hasil Lab': 'lab',
+                'Resume Medis Saya': 'resume_medis'
+            };
+
             // Build menu items
             let menuHtml = '';
             data.items.forEach(function(item) {
-                const badgeHtml = item.badge ? '<span class="item-badge">' + item.badge + '</span>' : '';
+                let badgeHtml = item.badge ? '<span class="item-badge">' + item.badge + '</span>' : '';
+
+                // Add unread count badge for Dokumen sub-menus
+                const unreadKey = unreadKeyMap[item.label];
+                const unreadCount = unreadKey ? (window._unreadDocCounts[unreadKey] || 0) : 0;
+                const unreadBadgeHtml = unreadCount > 0 ? '<span class="unread-badge">' + unreadCount + '</span>' : '';
+
                 if (item.comingSoon) {
                     menuHtml += '<a href="#" onclick="showComingSoon(event)" class="sheet-menu-item">' +
                         '<i class="fa ' + item.icon + ' menu-icon"></i>' +
                         '<span>' + item.label + badgeHtml + '</span>' +
+                        unreadBadgeHtml +
                         '<i class="fa fa-chevron-right arrow"></i>' +
                     '</a>';
                 } else if (item.onclick) {
                     menuHtml += '<a href="#" onclick="closeBottomSheet(); ' + item.onclick + '; return false;" class="sheet-menu-item">' +
                         '<i class="fa ' + item.icon + ' menu-icon"></i>' +
                         '<span>' + item.label + badgeHtml + '</span>' +
+                        unreadBadgeHtml +
                         '<i class="fa fa-chevron-right arrow"></i>' +
                     '</a>';
                 } else {
                     menuHtml += '<a href="' + item.href + '" class="sheet-menu-item">' +
                         '<i class="fa ' + item.icon + ' menu-icon"></i>' +
                         '<span>' + item.label + badgeHtml + '</span>' +
+                        unreadBadgeHtml +
                         '<i class="fa fa-chevron-right arrow"></i>' +
                     '</a>';
                 }
