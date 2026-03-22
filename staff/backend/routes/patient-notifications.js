@@ -197,6 +197,37 @@ router.post('/:id/read', verifyPatientToken, async (req, res) => {
 });
 
 /**
+ * POST /api/patient-notifications/mark-read-by-link
+ * Mark notifications as read by matching link field
+ * Used when patient opens a document page (album-usg, hasil-lab, dokumen-medis)
+ */
+router.post('/mark-read-by-link', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient?.patientId || req.patient?.id;
+        const { link } = req.body;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        if (!link) {
+            return res.status(400).json({ success: false, message: 'Link is required' });
+        }
+
+        const [result] = await db.query(
+            'UPDATE patient_notifications SET is_read = 1, read_at = NOW() WHERE patient_id = ? AND link = ? AND is_read = 0',
+            [patientId, link]
+        );
+
+        res.json({ success: true, marked: result.affectedRows });
+
+    } catch (error) {
+        console.error('Error marking notifications by link:', error);
+        res.status(500).json({ success: false, message: 'Gagal menandai notifikasi' });
+    }
+});
+
+/**
  * POST /api/patient-notifications/read-all
  * Mark all notifications as read
  */

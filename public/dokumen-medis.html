@@ -434,6 +434,15 @@
 
             await loadDocuments();
 
+            // Mark bell notifications for this page as read
+            try {
+                await apiRequest('/api/patient-notifications/mark-read-by-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ link: '/dokumen-medis.html' })
+                });
+            } catch (e) { /* silent */ }
+
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
         });
