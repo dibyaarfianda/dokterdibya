@@ -433,13 +433,6 @@
 
             await loadUsgImages();
 
-            // Mark all USG documents as viewed (clears badge on menu)
-            apiRequest('/api/patient-documents/mark-all-viewed', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ category: 'usg' })
-            }).catch(() => {});
-
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
         });
@@ -548,9 +541,10 @@
                 try {
                     await apiRequest(`/api/patient-documents/${img.id}/view`, { method: 'POST' });
                     img.first_viewed_at = new Date().toISOString();
-                    // Update stats
+                    // Update stats and re-render to remove BARU badge
                     const newCount = window.allImages.filter(i => !i.first_viewed_at).length;
                     document.getElementById('stat-new').textContent = newCount;
+                    renderGallery();
                 } catch (e) {
                     console.error('Error marking viewed:', e);
                 }

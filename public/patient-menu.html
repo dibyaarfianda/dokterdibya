@@ -1994,6 +1994,22 @@
             }
         });
 
+        // Auto-refresh badge counts when user navigates back to this page
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                // Page was restored from bfcache, refresh counts
+                loadUnreadDocCounts();
+                loadNotificationCount();
+            }
+        });
+        // Also refresh on visibility change (e.g. switching tabs back)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                loadUnreadDocCounts();
+                loadNotificationCount();
+            }
+        });
+
         // ==================== LOAD PROFILE ====================
         async function loadProfile() {
             const token = getToken();
