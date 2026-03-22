@@ -383,6 +383,13 @@
 
             await loadLabResults();
 
+            // Mark all lab documents as viewed (clears badge on menu)
+            apiRequest('/api/patient-documents/mark-all-viewed', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category: 'lab' })
+            }).catch(() => {});
+
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
         });

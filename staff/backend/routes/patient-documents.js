@@ -699,6 +699,85 @@ router.get('/unread-usg-count', verifyPatientToken, async (req, res) => {
 });
 
 /**
+ * GET /api/patient-documents/unread-counts
+ * Get unread counts broken down by category: usg, lab, resume_medis
+ */
+router.get('/unread-counts', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient?.patientId || req.patient?.id;
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        const [rows] = await db.query(
+            `SELECT
+                SUM(CASE WHEN document_type IN ('usg_photo','usg_2d','usg_4d','patient_usg') THEN 1 ELSE 0 END) as usg,
+                SUM(CASE WHEN document_type = 'lab_result' THEN 1 ELSE 0 END) as lab,
+                SUM(CASE WHEN document_type = 'resume_medis' THEN 1 ELSE 0 END) as resume_medis
+             FROM patient_documents
+             WHERE patient_id = ? AND status = 'published' AND first_viewed_at IS NULL`,
+            [patientId]
+        );
+
+        const counts = rows[0] || { usg: 0, lab: 0, resume_medis: 0 };
+        const total = (counts.usg || 0) + (counts.lab || 0) + (counts.resume_medis || 0);
+
+        res.json({
+            success: true,
+            counts: {
+                usg: counts.usg || 0,
+                lab: counts.lab || 0,
+                resume_medis: counts.resume_medis || 0,
+                total: total
+            }
+        });
+    } catch (error) {
+        logger.error('Unread counts error', error);
+        res.status(500).json({ success: false, message: 'Failed to get unread counts' });
+    }
+});
+
+/**
+ * POST /api/patient-documents/mark-all-viewed
+ * Mark all documents of a specific category as viewed
+ */
+router.post('/mark-all-viewed', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient?.patientId || req.patient?.id;
+        const { category } = req.body;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        const typeMap = {
+            'usg': ['usg_photo', 'usg_2d', 'usg_4d', 'patient_usg'],
+            'lab': ['lab_result'],
+            'resume_medis': ['resume_medis']
+        };
+
+        const types = typeMap[category];
+        if (!types) {
+            return res.status(400).json({ success: false, message: 'Invalid category' });
+        }
+
+        await db.query(
+            `UPDATE patient_documents
+             SET first_viewed_at = COALESCE(first_viewed_at, NOW()),
+                 view_count = view_count + 1
+             WHERE patient_id = ? AND document_type IN (${types.map(() => '?').join(',')})
+             AND status = 'published' AND first_viewed_at IS NULL`,
+            [patientId, ...types]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        logger.error('Mark all viewed error', error);
+        res.status(500).json({ success: false, message: 'Failed to mark documents as viewed' });
+    }
+});
+
+/**
  * GET /api/patient-documents/my-documents
  * Get documents for authenticated patient
  * Query params: type (optional) - filter by document_type
