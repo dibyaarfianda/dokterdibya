@@ -220,12 +220,24 @@ router.get('/available', verifyToken, async (req, res) => {
         
         // Check if it's a Sunday (0 = Sunday)
         if (dayOfWeek !== 0) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 message: 'Janji temu hanya tersedia di hari Minggu',
                 debug: { date, dayOfWeek, dateObj: appointmentDate.toISOString() }
             });
         }
-        
+
+        // Check if date is disabled (cuti/libur)
+        const [disabledCheck] = await db.query(
+            `SELECT reason FROM disabled_practice_dates
+             WHERE disabled_date = ? AND (location IS NULL OR location = 'klinik_privat')`,
+            [date]
+        );
+        if (disabledCheck.length > 0) {
+            return res.status(400).json({
+                message: `Maaf, tanggal ini tidak tersedia. ${disabledCheck[0].reason || 'Jadwal tidak tersedia'}`
+            });
+        }
+
         // Get booked slots for this date
         const [bookedSlots] = await db.query(
             `SELECT session, slot_number FROM sunday_appointments
@@ -303,7 +315,10 @@ router.get('/sundays', verifyToken, async (req, res) => {
         // Create a set of disabled date strings for fast lookup
         const disabledSet = new Set(disabledDates.map(d => {
             const dateObj = new Date(d.disabled_date);
-            return dateObj.toISOString().split('T')[0];
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
         }));
 
         // Filter out disabled Sundays

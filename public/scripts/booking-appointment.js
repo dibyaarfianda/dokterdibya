@@ -108,11 +108,16 @@ async function loadSlots() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!response.ok) throw new Error('Failed to load slots');
-        
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            showAlert(errData.message || 'Gagal memuat slot', 'warning');
+            prevStep();
+            return;
+        }
+
         const data = await response.json();
         renderSessions(data.sessions);
-        
+
     } catch (error) {
         console.error('Error loading slots:', error);
         showAlert('Gagal memuat slot. Silakan coba lagi.', 'danger');
