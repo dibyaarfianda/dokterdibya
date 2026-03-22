@@ -10,37 +10,31 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            /* Backgrounds */
-            --bg-primary: #0a0a0f;
-            --bg-card: rgba(255, 255, 255, 0.04);
-            --bg-card-solid: #111118;
-            --bg-elevated: rgba(255, 255, 255, 0.06);
+            --bg-primary: #f7f7f7;
+            --bg-card: #ffffff;
+            --bg-elevated: #ffffff;
 
-            /* Borders */
-            --border-subtle: rgba(255, 255, 255, 0.06);
-            --border-line: rgba(255, 255, 255, 0.1);
+            --border-subtle: #e6e6e6;
+            --border-line: #d9d9d9;
 
-            /* Text */
-            --text-primary: #f5f5f7;
-            --text-secondary: rgba(255, 255, 255, 0.55);
-            --text-tertiary: rgba(255, 255, 255, 0.3);
+            --text-primary: #1a1a1a;
+            --text-heading: rgba(0, 0, 0, 0.8);
+            --text-secondary: rgba(114, 114, 114, 0.8);
+            --text-tertiary: #b3b3b3;
 
-            /* Martin Signature */
             --martin-yellow: #ffdd00;
             --martin-yellow-hover: #ffe01a;
             --martin-blue: #002bdc;
-            --martin-blue-light: #3b5bff;
 
-            /* Functional */
-            --color-success: #34d399;
+            --color-success: #059669;
             --color-danger: #ef4444;
 
-            /* Radius — Martin: minimal */
-            --radius-none: 0px;
             --radius-xs: 2px;
             --radius-sm: 4px;
             --radius-pill: 30px;
             --radius-circle: 50%;
+
+            --shadow-card: 0px 11px 40px -13px rgba(0, 0, 0, 0.14);
         }
 
         *, *::before, *::after {
@@ -57,7 +51,6 @@
             min-height: 100%;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         /* ── Animations (Martin springy) ── */
@@ -83,23 +76,6 @@
             }
         }
 
-        /* ── Decorative helpers ── */
-        .yellow-bar {
-            display: block;
-            width: 40px;
-            height: 4px;
-            background: var(--martin-yellow);
-            border-radius: 2px;
-        }
-
-        .tag-label {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: var(--text-tertiary);
-        }
-
         /* ══════════════════════════════════════
            1. NAVBAR
            ══════════════════════════════════════ */
@@ -114,7 +90,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 10px 16px;
-            background: rgba(10, 10, 15, 0.85);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
@@ -131,7 +107,7 @@
             line-height: 1.1;
         }
 
-        .navbar-brand-title .light { font-weight: 300; color: #fff; }
+        .navbar-brand-title .light { font-weight: 300; color: #000; }
         .navbar-brand-title .bold {
             font-weight: 900;
             color: var(--martin-yellow);
@@ -157,9 +133,9 @@
             width: 40px;
             height: 40px;
             border-radius: var(--radius-circle);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid var(--border-subtle);
             background: transparent;
-            color: var(--text-secondary);
+            color: #000;
             font-size: 16px;
             display: flex;
             align-items: center;
@@ -184,7 +160,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid var(--bg-primary);
+            border: 2px solid #fff;
         }
 
         .avatar-circle {
@@ -216,13 +192,14 @@
         }
 
         /* ══════════════════════════════════════
-           2. WELCOME CARD (Martin hero)
+           2. WELCOME CARD
            ══════════════════════════════════════ */
         .welcome-card {
             background: var(--bg-card);
             border-left: 4px solid var(--martin-yellow);
             border-radius: var(--radius-xs);
             padding: 24px 20px;
+            box-shadow: var(--shadow-card);
         }
 
         .welcome-tag {
@@ -239,6 +216,7 @@
             font-weight: 900;
             letter-spacing: 0.5px;
             line-height: 1.15;
+            color: #000;
             margin-bottom: 12px;
         }
 
@@ -298,9 +276,10 @@
             align-items: center;
             gap: 12px;
             background: var(--bg-card);
-            border: 1px solid var(--border-line);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
             padding: 14px;
+            box-shadow: var(--shadow-card);
             transition: transform 0.2s ease;
         }
 
@@ -318,13 +297,13 @@
         }
 
         .chip-icon.yellow {
-            background: rgba(255, 221, 0, 0.12);
-            color: var(--martin-yellow);
+            background: rgba(255, 221, 0, 0.15);
+            color: #000;
         }
 
         .chip-icon.pink {
             background: rgba(244, 114, 182, 0.12);
-            color: #f472b6;
+            color: #000;
         }
 
         .chip-text { display: flex; flex-direction: column; gap: 4px; }
@@ -334,13 +313,13 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 2px;
-            color: var(--text-primary);
+            color: #000;
         }
 
         .chip-sub {
             font-size: 12px;
             font-weight: 300;
-            color: var(--text-tertiary);
+            color: var(--text-secondary);
         }
 
         /* ══════════════════════════════════════
@@ -348,9 +327,10 @@
            ══════════════════════════════════════ */
         .collapsible-card {
             background: var(--bg-card);
-            border-left: 4px solid var(--martin-blue-light);
+            border-left: 4px solid var(--martin-blue);
             border-radius: var(--radius-xs);
             overflow: hidden;
+            box-shadow: var(--shadow-card);
         }
 
         .collapsible-trigger {
@@ -367,7 +347,7 @@
             text-align: left;
         }
 
-        .collapsible-trigger:active { background: rgba(255, 255, 255, 0.02); }
+        .collapsible-trigger:active { background: rgba(0, 0, 0, 0.02); }
 
         .collapsible-trigger .trigger-icon {
             font-size: 16px;
@@ -381,6 +361,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 3px;
+            color: #000;
         }
 
         .collapsible-trigger .trigger-chevron {
@@ -415,7 +396,7 @@
         .collapsible-signature .name {
             font-size: 13px;
             font-weight: 600;
-            color: var(--martin-yellow);
+            color: var(--martin-blue);
         }
 
         .collapsible-signature .title {
@@ -430,10 +411,7 @@
            ══════════════════════════════════════ */
         .birth-card {
             border-radius: var(--radius-sm);
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
             overflow: hidden;
-            box-shadow: 0px 8px 30px -10px rgba(0, 0, 0, 0.4);
         }
 
         .birth-image {
@@ -465,6 +443,12 @@
             margin-top: -40px;
             position: relative;
             z-index: 2;
+            background: var(--bg-card);
+            margin-left: 12px;
+            margin-right: 12px;
+            border-radius: var(--radius-xs);
+            padding-top: 24px;
+            box-shadow: var(--shadow-card);
         }
 
         .birth-tag {
@@ -480,6 +464,7 @@
             font-size: 24px;
             font-weight: 900;
             line-height: 1.2;
+            color: #000;
             margin-bottom: 10px;
         }
 
@@ -503,25 +488,25 @@
         .birth-baby-name {
             font-size: 20px;
             font-weight: 700;
-            color: var(--text-primary);
+            color: var(--martin-blue);
             margin-bottom: 16px;
         }
 
         .birth-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            border: 1px solid var(--border-line);
+            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
             overflow: hidden;
         }
 
         .birth-stat {
             padding: 14px 12px;
-            border-bottom: 1px solid var(--border-line);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .birth-stat:nth-child(odd) {
-            border-right: 1px solid var(--border-line);
+            border-right: 1px solid var(--border-subtle);
         }
 
         .birth-stat:nth-child(n+3) {
@@ -540,6 +525,7 @@
         .birth-stat-value {
             font-size: 15px;
             font-weight: 600;
+            color: #000;
         }
 
         /* ══════════════════════════════════════
@@ -547,9 +533,9 @@
            ══════════════════════════════════════ */
         .announcement-card {
             background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
             padding: 20px;
+            box-shadow: var(--shadow-card);
             transition: transform 0.15s ease;
         }
 
@@ -589,6 +575,7 @@
         .announcement-title {
             font-size: 15px;
             font-weight: 600;
+            color: #000;
         }
 
         .announcement-body {
@@ -603,9 +590,9 @@
            ══════════════════════════════════════ */
         .tanya-card {
             background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
             overflow: hidden;
+            box-shadow: var(--shadow-card);
         }
 
         .tanya-top-bar {
@@ -622,7 +609,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 4px;
-            color: var(--martin-yellow);
+            color: #000;
             margin-bottom: 8px;
         }
 
@@ -681,6 +668,15 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 5px;
+            color: #000;
+        }
+
+        .yellow-bar {
+            display: block;
+            width: 40px;
+            height: 4px;
+            background: var(--martin-yellow);
+            border-radius: 2px;
         }
 
         .menu-grid {
@@ -701,12 +697,14 @@
             border-radius: var(--radius-xs);
             cursor: pointer;
             text-align: center;
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: var(--shadow-card);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                        box-shadow 0.2s ease;
         }
 
         .menu-item:active {
             transform: scale(0.95);
-            box-shadow: 0px 8px 30px -10px rgba(255, 221, 0, 0.15);
+            box-shadow: 0px 11px 40px -13px rgba(0, 0, 0, 0.2);
         }
 
         .icon-wrap {
@@ -720,13 +718,11 @@
             position: relative;
         }
 
-        .icon-wrap.yellow { background: rgba(255, 221, 0, 0.08); color: var(--martin-yellow); }
-        .icon-wrap.pink { background: rgba(244, 114, 182, 0.08); color: #f472b6; }
-        .icon-wrap.green { background: rgba(52, 211, 153, 0.08); color: var(--color-success); }
-        .icon-wrap.orange { background: rgba(255, 221, 0, 0.08); color: var(--martin-yellow); }
-        .icon-wrap.blue { background: rgba(0, 43, 220, 0.08); color: var(--martin-blue-light); }
-        .icon-wrap.gold { background: rgba(255, 221, 0, 0.08); color: var(--martin-yellow); }
-        .icon-wrap.muted { background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.4); }
+        .icon-wrap.yellow  { background: rgba(255, 221, 0, 0.15); color: #000; }
+        .icon-wrap.pink    { background: rgba(244, 114, 182, 0.12); color: #000; }
+        .icon-wrap.green   { background: rgba(52, 211, 153, 0.12); color: #000; }
+        .icon-wrap.blue    { background: rgba(0, 43, 220, 0.08); color: var(--martin-blue); }
+        .icon-wrap.muted   { background: rgba(0, 0, 0, 0.04); color: #999; }
 
         .menu-badge {
             position: absolute;
@@ -742,13 +738,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid var(--bg-primary);
+            border: 2px solid var(--bg-card);
         }
 
         .menu-item h3 {
             font-size: 12px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: #000;
         }
 
         .menu-item .menu-sub {
@@ -767,7 +763,7 @@
             left: 0;
             right: 0;
             z-index: 100;
-            background: rgba(10, 10, 15, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid var(--border-subtle);
@@ -795,6 +791,7 @@
             min-width: 56px;
             min-height: 40px;
             font-family: inherit;
+            position: relative;
             transition: transform 0.15s ease;
         }
 
@@ -813,8 +810,20 @@
             color: var(--text-tertiary);
         }
 
-        .nav-item.active i { color: var(--martin-yellow); }
-        .nav-item.active span { color: var(--martin-yellow); font-weight: 600; }
+        .nav-item.active i { color: #000; }
+        .nav-item.active span { color: #000; font-weight: 600; }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 4px;
+            background: var(--martin-yellow);
+            border-radius: 0 0 2px 2px;
+        }
 
         /* ══════════════════════════════════════
            RESPONSIVE — Tablet (600px)
@@ -842,9 +851,14 @@
             .birth-title { font-size: 28px; }
 
             .welcome-card,
-            .collapsible-card,
+            .collapsible-trigger,
             .announcement-card,
             .tanya-inner {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .collapsible-body {
                 padding-left: 24px;
                 padding-right: 24px;
             }
@@ -946,7 +960,7 @@
     <!-- ══ 5. BIRTH CONGRATULATIONS CARD ══ -->
     <section class="birth-card animate-in delay-4">
         <div class="birth-image">
-            <img src="https://placehold.co/600x400/0a0a1a/ffdd00?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
+            <img src="https://placehold.co/600x400/f7f7f7/002bdc?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
         </div>
         <div class="birth-body">
             <div class="birth-tag">Selamat</div>
@@ -1041,7 +1055,7 @@
                 <div class="menu-sub">Booking praktik</div>
             </div>
             <div class="menu-item">
-                <div class="icon-wrap orange">
+                <div class="icon-wrap yellow">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
                 <h3>Edukasi</h3>
@@ -1055,7 +1069,7 @@
                 <div class="menu-sub">Konsultasi online</div>
             </div>
             <div class="menu-item">
-                <div class="icon-wrap gold">
+                <div class="icon-wrap yellow">
                     <i class="fa-solid fa-credit-card"></i>
                 </div>
                 <h3>Tagihan</h3>
