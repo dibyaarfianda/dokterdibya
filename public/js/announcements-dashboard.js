@@ -48,10 +48,12 @@ function initializeSocket() {
         }
     });
 
-    // Listen for document updates (resume medis auto-publish)
+    // Listen for document updates (resume medis, lab auto-publish)
     socket.on('document:patient_updated', () => {
-        if (typeof window.loadNotificationCount === 'function') {
-            window.loadNotificationCount();
+        if (typeof window.loadUnreadDocCounts === 'function') {
+            window.loadUnreadDocCounts();
+        } else if (typeof window.loadUnreadUsgCount === 'function') {
+            window.loadUnreadUsgCount();
         }
     });
 }
