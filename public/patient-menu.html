@@ -2144,8 +2144,8 @@
         async function loadNotificationCount() {
             const token = getToken();
             try {
-                const response = await fetch('/api/patient-notifications/count', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                const response = await fetch('/api/patient-notifications/count?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
                 });
                 const data = await response.json();
                 const badge = document.getElementById('notif-badge');

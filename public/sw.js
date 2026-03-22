@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260322e'; // 2026-03-22 - mark bell notif read on doc pages
+const CACHE_VERSION = '20260322f'; // 2026-03-22 - fix bell badge cache-busting
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
