@@ -6,34 +6,41 @@
     <title>Dokter Dibya — Portal Pasien</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --bg-primary: #050508;
+            /* Backgrounds */
+            --bg-primary: #0a0a0f;
             --bg-card: rgba(255, 255, 255, 0.04);
-            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --bg-card-solid: #111118;
             --bg-elevated: rgba(255, 255, 255, 0.06);
 
+            /* Borders */
             --border-subtle: rgba(255, 255, 255, 0.06);
-            --border-accent: rgba(255, 255, 255, 0.12);
+            --border-line: rgba(255, 255, 255, 0.1);
 
+            /* Text */
             --text-primary: #f5f5f7;
-            --text-secondary: rgba(255, 255, 255, 0.6);
-            --text-tertiary: rgba(255, 255, 255, 0.35);
+            --text-secondary: rgba(255, 255, 255, 0.55);
+            --text-tertiary: rgba(255, 255, 255, 0.3);
 
-            --accent-blue: #3b82f6;
-            --accent-cyan: #22d3ee;
-            --accent-purple: #a78bfa;
-            --accent-pink: #f472b6;
-            --accent-green: #34d399;
-            --accent-orange: #fb923c;
-            --accent-gold: #fbbf24;
+            /* Martin Signature */
+            --martin-yellow: #ffdd00;
+            --martin-yellow-hover: #ffe01a;
+            --martin-blue: #002bdc;
+            --martin-blue-light: #3b5bff;
 
-            --radius-sm: 10px;
-            --radius-md: 14px;
-            --radius-lg: 20px;
-            --radius-xl: 24px;
+            /* Functional */
+            --color-success: #34d399;
+            --color-danger: #ef4444;
+
+            /* Radius — Martin: minimal */
+            --radius-none: 0px;
+            --radius-xs: 2px;
+            --radius-sm: 4px;
+            --radius-pill: 30px;
+            --radius-circle: 50%;
         }
 
         *, *::before, *::after {
@@ -44,7 +51,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Poppins', Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100%;
@@ -53,13 +60,13 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        /* ── Animations ── */
+        /* ── Animations (Martin springy) ── */
         @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-in { animation: fadeSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .animate-in { animation: fadeSlideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
         .delay-1 { animation-delay: 0.05s; }
         .delay-2 { animation-delay: 0.1s; }
         .delay-3 { animation-delay: 0.15s; }
@@ -76,6 +83,23 @@
             }
         }
 
+        /* ── Decorative helpers ── */
+        .yellow-bar {
+            display: block;
+            width: 40px;
+            height: 4px;
+            background: var(--martin-yellow);
+            border-radius: 2px;
+        }
+
+        .tag-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+        }
+
         /* ══════════════════════════════════════
            1. NAVBAR
            ══════════════════════════════════════ */
@@ -90,34 +114,36 @@
             align-items: center;
             justify-content: space-between;
             padding: 10px 16px;
-            background: rgba(5, 5, 8, 0.8);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
         }
 
         .navbar-brand {
             display: flex;
             flex-direction: column;
-            gap: 1px;
+            gap: 2px;
         }
 
         .navbar-brand-title {
-            font-size: 18px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            font-size: 20px;
             line-height: 1.1;
         }
 
-        .navbar-brand-title span {
-            color: var(--accent-blue);
+        .navbar-brand-title .light { font-weight: 300; color: #fff; }
+        .navbar-brand-title .bold {
+            font-weight: 900;
+            color: var(--martin-yellow);
+            letter-spacing: 1px;
         }
 
         .navbar-brand-sub {
             font-size: 9px;
-            font-weight: 400;
+            font-weight: 500;
             color: var(--text-tertiary);
-            letter-spacing: 0.2px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .navbar-actions {
@@ -130,27 +156,28 @@
             position: relative;
             width: 40px;
             height: 40px;
-            border-radius: 50%;
-            border: none;
-            background: var(--bg-elevated);
+            border-radius: var(--radius-circle);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: transparent;
             color: var(--text-secondary);
             font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transition: transform 0.2s ease;
         }
 
-        .btn-bell:active { transform: scale(0.92); }
+        .btn-bell:active { transform: scale(0.9); }
 
         .btn-bell .badge-dot {
             position: absolute;
-            top: 6px;
-            right: 5px;
+            top: 5px;
+            right: 4px;
             width: 18px;
             height: 18px;
-            border-radius: 50%;
-            background: #ef4444;
+            border-radius: var(--radius-circle);
+            background: var(--color-danger);
             color: #fff;
             font-size: 10px;
             font-weight: 700;
@@ -163,21 +190,21 @@
         .avatar-circle {
             width: 36px;
             height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: var(--radius-circle);
+            background: var(--martin-yellow);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: 700;
-            color: #fff;
+            color: #000;
         }
 
         /* ══════════════════════════════════════
            MAIN CONTENT
            ══════════════════════════════════════ */
         .main-content {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 68px);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
             padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
             padding-left: 16px;
             padding-right: 16px;
@@ -189,61 +216,61 @@
         }
 
         /* ══════════════════════════════════════
-           2. WELCOME CARD
+           2. WELCOME CARD (Martin hero)
            ══════════════════════════════════════ */
         .welcome-card {
-            position: relative;
-            background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(167,139,250,0.08));
-            border: 1px solid rgba(59,130,246,0.15);
-            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border-left: 4px solid var(--martin-yellow);
+            border-radius: var(--radius-xs);
             padding: 24px 20px;
-            overflow: hidden;
         }
 
-        .welcome-card::before {
-            content: '';
-            position: absolute;
-            top: -40px;
-            right: -40px;
-            width: 140px;
-            height: 140px;
-            background: radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-
-        .welcome-greeting {
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
+        .welcome-tag {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin-bottom: 10px;
         }
 
         .welcome-name {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            line-height: 1.15;
+            margin-bottom: 12px;
+        }
+
+        .welcome-bar {
+            width: 40px;
+            height: 4px;
+            background: var(--martin-yellow);
+            border-radius: 2px;
+            margin-bottom: 12px;
         }
 
         .welcome-tagline {
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 300;
             color: var(--text-secondary);
-            margin-bottom: 12px;
-            line-height: 1.5;
+            line-height: 1.8;
+            margin-bottom: 16px;
         }
 
         .week-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(52,211,153,0.12);
-            border: 1px solid rgba(52,211,153,0.2);
-            border-radius: 20px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            border-radius: var(--radius-pill);
             padding: 6px 14px;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 600;
-            color: var(--accent-green);
+            color: var(--color-success);
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .week-badge i { font-size: 11px; }
@@ -271,9 +298,10 @@
             align-items: center;
             gap: 12px;
             background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            padding: 12px 14px;
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-xs);
+            padding: 14px;
+            transition: transform 0.2s ease;
         }
 
         .status-chip:active { transform: scale(0.97); }
@@ -281,52 +309,54 @@
         .chip-icon {
             width: 38px;
             height: 38px;
-            border-radius: 10px;
+            border-radius: var(--radius-circle);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 15px;
             flex-shrink: 0;
         }
 
-        .chip-icon.green {
-            background: rgba(52,211,153,0.15);
-            color: var(--accent-green);
+        .chip-icon.yellow {
+            background: rgba(255, 221, 0, 0.12);
+            color: var(--martin-yellow);
         }
 
         .chip-icon.pink {
-            background: rgba(244,114,182,0.15);
-            color: var(--accent-pink);
+            background: rgba(244, 114, 182, 0.12);
+            color: #f472b6;
         }
 
-        .chip-text { display: flex; flex-direction: column; gap: 2px; }
+        .chip-text { display: flex; flex-direction: column; gap: 4px; }
 
         .chip-title {
-            font-size: 13px;
+            font-size: 10px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             color: var(--text-primary);
         }
 
         .chip-sub {
-            font-size: 11px;
-            font-weight: 400;
-            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--text-tertiary);
         }
 
         /* ══════════════════════════════════════
            4. SELAMAT DATANG (Collapsible)
            ══════════════════════════════════════ */
         .collapsible-card {
-            background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02));
-            border: 1px solid rgba(59,130,246,0.1);
-            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border-left: 4px solid var(--martin-blue-light);
+            border-radius: var(--radius-xs);
             overflow: hidden;
         }
 
         .collapsible-trigger {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             padding: 16px 20px;
             cursor: pointer;
             width: 100%;
@@ -337,31 +367,26 @@
             text-align: left;
         }
 
-        .collapsible-trigger:active { background: rgba(255,255,255,0.02); }
+        .collapsible-trigger:active { background: rgba(255, 255, 255, 0.02); }
 
         .collapsible-trigger .trigger-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: rgba(59,130,246,0.15);
-            color: var(--accent-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
+            font-size: 16px;
+            color: var(--martin-yellow);
             flex-shrink: 0;
         }
 
         .collapsible-trigger .trigger-title {
             flex: 1;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
         }
 
         .collapsible-trigger .trigger-chevron {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-tertiary);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .collapsible-trigger.open .trigger-chevron {
@@ -370,26 +395,30 @@
 
         .collapsible-body {
             display: none;
-            padding: 0 20px 20px;
+            padding: 0 20px 24px;
         }
 
         .collapsible-body.show { display: block; }
 
         .collapsible-body p {
             font-size: 13px;
-            line-height: 1.7;
+            font-weight: 300;
+            line-height: 1.8;
             color: var(--text-secondary);
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
-        .collapsible-body .signature {
-            font-size: 12px;
+        .collapsible-signature {
+            text-align: right;
+        }
+
+        .collapsible-signature .name {
+            font-size: 13px;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--martin-yellow);
         }
 
-        .collapsible-body .signature span {
-            display: block;
+        .collapsible-signature .title {
             font-size: 10px;
             font-weight: 400;
             color: var(--text-tertiary);
@@ -400,10 +429,11 @@
            5. BIRTH CARD
            ══════════════════════════════════════ */
         .birth-card {
-            border-radius: var(--radius-xl);
+            border-radius: var(--radius-sm);
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             overflow: hidden;
+            box-shadow: 0px 8px 30px -10px rgba(0, 0, 0, 0.4);
         }
 
         .birth-image {
@@ -426,8 +456,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
-            background: linear-gradient(to top, rgba(5,5,8,1), transparent);
+            height: 100px;
+            background: linear-gradient(to top, var(--bg-primary), transparent);
         }
 
         .birth-body {
@@ -437,59 +467,78 @@
             z-index: 2;
         }
 
-        .birth-emoji {
-            font-size: 28px;
-            margin-bottom: 8px;
+        .birth-tag {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--martin-yellow);
+            margin-bottom: 6px;
         }
 
         .birth-title {
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 6px;
+            font-size: 24px;
+            font-weight: 900;
             line-height: 1.2;
+            margin-bottom: 10px;
+        }
+
+        .birth-bar {
+            width: 40px;
+            height: 4px;
+            background: var(--martin-yellow);
+            border-radius: 2px;
+            margin-bottom: 12px;
         }
 
         .birth-doctor {
             font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             color: var(--text-tertiary);
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .birth-baby-name {
             font-size: 20px;
             font-weight: 700;
-            color: var(--accent-purple);
+            color: var(--text-primary);
             margin-bottom: 16px;
         }
 
         .birth-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            border: 1px solid var(--border-line);
+            border-radius: var(--radius-xs);
+            overflow: hidden;
         }
 
         .birth-stat {
-            background: var(--bg-elevated);
-            border-radius: var(--radius-sm);
-            padding: 12px;
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--border-line);
+        }
+
+        .birth-stat:nth-child(odd) {
+            border-right: 1px solid var(--border-line);
+        }
+
+        .birth-stat:nth-child(n+3) {
+            border-bottom: none;
         }
 
         .birth-stat-label {
             font-size: 10px;
             font-weight: 500;
-            color: var(--text-tertiary);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 2px;
+            color: var(--text-tertiary);
             margin-bottom: 4px;
         }
 
         .birth-stat-value {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
         }
 
@@ -499,8 +548,9 @@
         .announcement-card {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: 16px;
+            border-radius: var(--radius-xs);
+            padding: 20px;
+            transition: transform 0.15s ease;
         }
 
         .announcement-card:active { transform: scale(0.98); }
@@ -508,81 +558,80 @@
         .announcement-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
+            gap: 14px;
+            margin-bottom: 12px;
         }
 
         .announcement-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: rgba(251,191,36,0.15);
-            color: var(--accent-gold);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-size: 16px;
+            color: var(--martin-yellow);
             flex-shrink: 0;
         }
 
-        .announcement-meta {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
+        .announcement-separator {
+            width: 3px;
+            height: 30px;
+            background: var(--martin-yellow);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .announcement-meta { display: flex; flex-direction: column; gap: 4px; }
+
+        .announcement-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--martin-yellow);
         }
 
         .announcement-title {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
-            letter-spacing: -0.2px;
-        }
-
-        .announcement-date {
-            font-size: 11px;
-            color: var(--text-tertiary);
         }
 
         .announcement-body {
             font-size: 13px;
+            font-weight: 300;
             color: var(--text-secondary);
-            line-height: 1.6;
+            line-height: 1.8;
         }
 
         /* ══════════════════════════════════════
            7. TANYA DOKTER CARD
            ══════════════════════════════════════ */
         .tanya-card {
-            background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(251,146,60,0.04));
-            border: 1px solid rgba(251,191,36,0.12);
-            border-radius: var(--radius-lg);
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xs);
+            overflow: hidden;
+        }
+
+        .tanya-top-bar {
+            height: 4px;
+            background: var(--martin-yellow);
+        }
+
+        .tanya-inner {
             padding: 20px;
         }
 
-        .tanya-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .tanya-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--martin-yellow);
             margin-bottom: 8px;
         }
 
-        .tanya-header i {
-            font-size: 18px;
-            color: var(--accent-gold);
-        }
-
-        .tanya-header h3 {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--accent-gold);
-            letter-spacing: -0.2px;
-        }
-
         .tanya-desc {
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 300;
             color: var(--text-secondary);
-            line-height: 1.5;
-            margin-bottom: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
         }
 
         .tanya-actions {
@@ -593,43 +642,45 @@
 
         .tanya-btn {
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            background: rgba(251,191,36,0.08);
-            border: 1px solid rgba(251,191,36,0.1);
-            border-radius: var(--radius-md);
-            padding: 16px 8px;
+            background: var(--martin-yellow);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-xs);
+            padding: 14px 8px;
             cursor: pointer;
-            text-align: center;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: transform 0.15s ease;
         }
 
-        .tanya-btn:active { transform: scale(0.95); }
-
-        .tanya-btn i {
-            font-size: 20px;
-            color: var(--accent-gold);
+        .tanya-btn:active {
+            transform: scale(0.97);
+            background: var(--martin-yellow-hover);
         }
 
-        .tanya-btn-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .tanya-btn-sub {
-            font-size: 10px;
-            color: var(--text-tertiary);
-        }
+        .tanya-btn i { font-size: 14px; }
 
         /* ══════════════════════════════════════
            8. MENU GRID
            ══════════════════════════════════════ */
-        .section-title {
-            font-size: 17px;
+        .menu-section-header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .menu-section-title {
+            font-size: 12px;
             font-weight: 700;
-            letter-spacing: -0.3px;
-            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
         }
 
         .menu-grid {
@@ -644,44 +695,24 @@
             flex-direction: column;
             align-items: center;
             gap: 10px;
-            padding: 20px 8px 16px;
+            padding: 20px 12px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-xs);
             cursor: pointer;
-            overflow: hidden;
             text-align: center;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        .menu-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
+        .menu-item:active {
+            transform: scale(0.95);
+            box-shadow: 0px 8px 30px -10px rgba(255, 221, 0, 0.15);
         }
-
-        .menu-item:active { transform: scale(0.95); }
-        .menu-item:active::before { opacity: 1; }
-
-        .menu-item.blue::before { background: radial-gradient(circle, rgba(59,130,246,0.2), transparent 70%); }
-        .menu-item.pink::before { background: radial-gradient(circle, rgba(244,114,182,0.2), transparent 70%); }
-        .menu-item.green::before { background: radial-gradient(circle, rgba(52,211,153,0.2), transparent 70%); }
-        .menu-item.orange::before { background: radial-gradient(circle, rgba(251,146,60,0.2), transparent 70%); }
-        .menu-item.purple::before { background: radial-gradient(circle, rgba(167,139,250,0.2), transparent 70%); }
-        .menu-item.gold::before { background: radial-gradient(circle, rgba(251,191,36,0.2), transparent 70%); }
-        .menu-item.gray::before { background: radial-gradient(circle, rgba(148,163,184,0.2), transparent 70%); }
 
         .icon-wrap {
             width: 48px;
             height: 48px;
-            border-radius: 14px;
+            border-radius: var(--radius-circle);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -689,13 +720,13 @@
             position: relative;
         }
 
-        .icon-wrap.blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
-        .icon-wrap.pink { background: rgba(244,114,182,0.15); color: var(--accent-pink); }
-        .icon-wrap.green { background: rgba(52,211,153,0.15); color: var(--accent-green); }
-        .icon-wrap.orange { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
-        .icon-wrap.purple { background: rgba(167,139,250,0.15); color: var(--accent-purple); }
-        .icon-wrap.gold { background: rgba(251,191,36,0.15); color: var(--accent-gold); }
-        .icon-wrap.gray { background: rgba(148,163,184,0.12); color: #94a3b8; }
+        .icon-wrap.yellow { background: rgba(255, 221, 0, 0.08); color: var(--martin-yellow); }
+        .icon-wrap.pink { background: rgba(244, 114, 182, 0.08); color: #f472b6; }
+        .icon-wrap.green { background: rgba(52, 211, 153, 0.08); color: var(--color-success); }
+        .icon-wrap.orange { background: rgba(255, 221, 0, 0.08); color: var(--martin-yellow); }
+        .icon-wrap.blue { background: rgba(0, 43, 220, 0.08); color: var(--martin-blue-light); }
+        .icon-wrap.gold { background: rgba(255, 221, 0, 0.08); color: var(--martin-yellow); }
+        .icon-wrap.muted { background: rgba(255, 255, 255, 0.04); color: rgba(255, 255, 255, 0.4); }
 
         .menu-badge {
             position: absolute;
@@ -703,8 +734,8 @@
             right: -4px;
             width: 20px;
             height: 20px;
-            border-radius: 50%;
-            background: #ef4444;
+            border-radius: var(--radius-circle);
+            background: var(--color-danger);
             color: #fff;
             font-size: 10px;
             font-weight: 700;
@@ -718,11 +749,11 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--text-primary);
-            line-height: 1.3;
         }
 
         .menu-item .menu-sub {
             font-size: 10px;
+            font-weight: 300;
             color: var(--text-tertiary);
             margin-top: -4px;
         }
@@ -736,9 +767,9 @@
             left: 0;
             right: 0;
             z-index: 100;
-            background: rgba(5, 5, 8, 0.85);
-            backdrop-filter: saturate(180%) blur(20px);
-            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid var(--border-subtle);
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
@@ -763,6 +794,8 @@
             background: none;
             min-width: 56px;
             min-height: 40px;
+            font-family: inherit;
+            transition: transform 0.15s ease;
         }
 
         .nav-item:active { transform: scale(0.9); }
@@ -774,13 +807,14 @@
 
         .nav-item span {
             font-size: 10px;
-            font-weight: 400;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             color: var(--text-tertiary);
-            font-family: 'Inter', sans-serif;
         }
 
-        .nav-item.active i { color: var(--accent-blue); }
-        .nav-item.active span { color: var(--accent-blue); font-weight: 600; }
+        .nav-item.active i { color: var(--martin-yellow); }
+        .nav-item.active span { color: var(--martin-yellow); font-weight: 600; }
 
         /* ══════════════════════════════════════
            RESPONSIVE — Tablet (600px)
@@ -803,18 +837,24 @@
 
             .menu-item h3 { font-size: 13px; }
 
-            .welcome-name { font-size: 26px; }
+            .welcome-name { font-size: 34px; }
 
-            .birth-title { font-size: 26px; }
+            .birth-title { font-size: 28px; }
+
+            .welcome-card,
+            .collapsible-card,
+            .announcement-card,
+            .tanya-inner {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
         }
 
         /* ══════════════════════════════════════
            RESPONSIVE — Desktop (768px)
            ══════════════════════════════════════ */
         @media (min-width: 768px) {
-            .navbar {
-                padding: 14px 32px;
-            }
+            .navbar { padding: 14px 32px; }
 
             .main-content {
                 max-width: 640px;
@@ -825,6 +865,8 @@
             .menu-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
+
+            .welcome-name { font-size: 40px; }
         }
     </style>
 </head>
@@ -833,7 +875,9 @@
 <!-- ══ 1. NAVBAR ══ -->
 <nav class="navbar">
     <div class="navbar-brand">
-        <div class="navbar-brand-title">dokter<span>DIBYA</span></div>
+        <div class="navbar-brand-title">
+            <span class="light">dokter</span><span class="bold">DIBYA</span>
+        </div>
         <div class="navbar-brand-sub">Portal Privat Kandungan Anda</div>
     </div>
     <div class="navbar-actions">
@@ -850,8 +894,9 @@
 
     <!-- ══ 2. WELCOME CARD ══ -->
     <section class="welcome-card animate-in delay-1">
-        <div class="welcome-greeting">Selamat sore &#x1F44B;</div>
+        <div class="welcome-tag">Selamat Sore</div>
         <div class="welcome-name">Dian Permatasari</div>
+        <div class="welcome-bar"></div>
         <div class="welcome-tagline">Pasien privat dr. Dibya Arfianda, Sp.OG — semua data kehamilan Anda tersimpan aman di sini.</div>
         <div class="week-badge">
             <i class="fa-solid fa-baby"></i>
@@ -862,7 +907,7 @@
     <!-- ══ 3. QUICK STATUS ROW ══ -->
     <section class="status-row animate-in delay-2">
         <div class="status-chip">
-            <div class="chip-icon green">
+            <div class="chip-icon yellow">
                 <i class="fa-solid fa-calendar-check"></i>
             </div>
             <div class="chip-text">
@@ -884,18 +929,16 @@
     <!-- ══ 4. SELAMAT DATANG (Collapsible) ══ -->
     <section class="collapsible-card animate-in delay-3">
         <button class="collapsible-trigger" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('show');" type="button">
-            <div class="trigger-icon">
-                <i class="fa-solid fa-heart"></i>
-            </div>
+            <i class="fa-solid fa-heart trigger-icon"></i>
             <span class="trigger-title">Selamat Datang</span>
             <i class="fa-solid fa-chevron-down trigger-chevron"></i>
         </button>
         <div class="collapsible-body">
             <p>Terima kasih telah mempercayakan kesehatan kandungan Anda kepada kami. Portal ini dirancang khusus agar Anda bisa memantau perkembangan kehamilan, melihat hasil USG, dan berkonsultasi langsung dengan saya kapan saja.</p>
             <p>Jangan ragu untuk menggunakan fitur Tanya Dokter jika ada keluhan atau pertanyaan di luar jam praktik.</p>
-            <div class="signature">
-                dr. Dibya Arfianda, Sp.OG
-                <span>Dokter Spesialis Obstetri & Ginekologi</span>
+            <div class="collapsible-signature">
+                <div class="name">dr. Dibya Arfianda, Sp.OG</div>
+                <div class="title">Dokter Spesialis Obstetri & Ginekologi</div>
             </div>
         </div>
     </section>
@@ -903,12 +946,13 @@
     <!-- ══ 5. BIRTH CONGRATULATIONS CARD ══ -->
     <section class="birth-card animate-in delay-4">
         <div class="birth-image">
-            <img src="https://placehold.co/600x400/1a1a2e/8b5cf6?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
+            <img src="https://placehold.co/600x400/0a0a1a/ffdd00?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
         </div>
         <div class="birth-body">
-            <div class="birth-emoji">&#x1F49C;</div>
-            <div class="birth-title">Selamat atas Kelahiran Buah Hati!</div>
-            <div class="birth-doctor">Dari dr. Dibya Arfianda, Sp.OG &bull; Klinik Privat</div>
+            <div class="birth-tag">Selamat</div>
+            <div class="birth-title">Kelahiran Buah Hati!</div>
+            <div class="birth-bar"></div>
+            <div class="birth-doctor">dr. Dibya Arfianda, Sp.OG &bull; Klinik Privat</div>
             <div class="birth-baby-name">Putra Nanda</div>
             <div class="birth-stats">
                 <div class="birth-stat">
@@ -937,9 +981,10 @@
             <div class="announcement-icon">
                 <i class="fa-solid fa-bullhorn"></i>
             </div>
+            <div class="announcement-separator"></div>
             <div class="announcement-meta">
+                <div class="announcement-label">Pengumuman</div>
                 <div class="announcement-title">Pembaruan Portal — Maret 2026</div>
-                <div class="announcement-date">Hari ini</div>
             </div>
         </div>
         <div class="announcement-body">
@@ -949,74 +994,75 @@
 
     <!-- ══ 7. TANYA DOKTER CARD ══ -->
     <section class="tanya-card animate-in delay-6">
-        <div class="tanya-header">
-            <i class="fa-solid fa-comment-medical"></i>
-            <h3>Tanya Dokter</h3>
-        </div>
-        <div class="tanya-desc">Konsultasikan keluhan atau pertanyaan Anda langsung kepada dr. Dibya, kapan saja.</div>
-        <div class="tanya-actions">
-            <div class="tanya-btn">
-                <i class="fa-solid fa-pen-to-square"></i>
-                <div class="tanya-btn-title">Ajukan Pertanyaan</div>
-                <div class="tanya-btn-sub">Tulis pertanyaan baru</div>
-            </div>
-            <div class="tanya-btn">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <div class="tanya-btn-title">Riwayat</div>
-                <div class="tanya-btn-sub">Lihat jawaban dokter</div>
+        <div class="tanya-top-bar"></div>
+        <div class="tanya-inner">
+            <div class="tanya-label">Tanya Dokter</div>
+            <div class="tanya-desc">Konsultasikan keluhan atau pertanyaan Anda langsung kepada dr. Dibya, kapan saja.</div>
+            <div class="tanya-actions">
+                <button class="tanya-btn" type="button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    Tanya Baru
+                </button>
+                <button class="tanya-btn" type="button">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Riwayat
+                </button>
             </div>
         </div>
     </section>
 
     <!-- ══ 8. MENU GRID ══ -->
     <section class="animate-in delay-7">
-        <div class="section-title" style="margin-bottom: 12px;">Menu</div>
+        <div class="menu-section-header">
+            <div class="menu-section-title">Menu</div>
+            <span class="yellow-bar"></span>
+        </div>
         <div class="menu-grid">
-            <div class="menu-item blue">
-                <div class="icon-wrap blue">
+            <div class="menu-item">
+                <div class="icon-wrap yellow">
                     <i class="fa-solid fa-file-lines"></i>
                     <span class="menu-badge">7</span>
                 </div>
                 <h3>Dokumen</h3>
                 <div class="menu-sub">Hasil USG & lab</div>
             </div>
-            <div class="menu-item pink">
+            <div class="menu-item">
                 <div class="icon-wrap pink">
                     <i class="fa-solid fa-heart-pulse"></i>
                 </div>
                 <h3>Aplikasi</h3>
                 <div class="menu-sub">Vitamin & pengingat</div>
             </div>
-            <div class="menu-item green">
+            <div class="menu-item">
                 <div class="icon-wrap green">
                     <i class="fa-solid fa-calendar-days"></i>
                 </div>
                 <h3>Jadwal</h3>
                 <div class="menu-sub">Booking praktik</div>
             </div>
-            <div class="menu-item orange">
+            <div class="menu-item">
                 <div class="icon-wrap orange">
                     <i class="fa-solid fa-book-open"></i>
                 </div>
                 <h3>Edukasi</h3>
                 <div class="menu-sub">Artikel kesehatan</div>
             </div>
-            <div class="menu-item purple">
-                <div class="icon-wrap purple">
+            <div class="menu-item">
+                <div class="icon-wrap blue">
                     <i class="fa-solid fa-comments"></i>
                 </div>
                 <h3>Tanya Dokter</h3>
                 <div class="menu-sub">Konsultasi online</div>
             </div>
-            <div class="menu-item gold">
+            <div class="menu-item">
                 <div class="icon-wrap gold">
                     <i class="fa-solid fa-credit-card"></i>
                 </div>
                 <h3>Tagihan</h3>
                 <div class="menu-sub">Riwayat pembayaran</div>
             </div>
-            <div class="menu-item gray">
-                <div class="icon-wrap gray">
+            <div class="menu-item">
+                <div class="icon-wrap muted">
                     <i class="fa-solid fa-circle-question"></i>
                 </div>
                 <h3>Bantuan</h3>
