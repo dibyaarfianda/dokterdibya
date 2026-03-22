@@ -544,6 +544,38 @@ router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (re
                 `Deleted ${result.affectedRows} ${recordType} record(s) for MR: ${mrId || 'N/A'}`);
         }
 
+        // Clean up patient_documents when USG records are deleted (Reset All USG)
+        if (recordType === 'usg' && result.affectedRows > 0) {
+            try {
+                let cleanupQuery = `DELETE FROM patient_documents WHERE patient_id = ? AND document_type IN ('usg_photo', 'usg_2d', 'usg_4d', 'patient_usg')`;
+                let cleanupParams = [patientId];
+
+                if (mrId && mrId !== 'null' && mrId !== 'undefined') {
+                    cleanupQuery += ' AND mr_id = ?';
+                    cleanupParams.push(mrId);
+                }
+
+                const [cleanupResult] = await db.query(cleanupQuery, cleanupParams);
+                logger.info(`USG patient_documents cleaned up: Patient ${patientId}, MR ${mrId || 'all'}, Deleted: ${cleanupResult.affectedRows}`);
+
+                // Broadcast Socket.IO event for real-time refresh on patient side
+                try {
+                    const realtimeSync = require('../realtime-sync');
+                    realtimeSync.broadcast({
+                        type: 'usg:patient_updated',
+                        patient_id: patientId,
+                        mr_id: mrId || null,
+                        added: 0,
+                        removed: cleanupResult.affectedRows
+                    });
+                } catch (socketErr) {
+                    logger.warn('Socket broadcast error during USG cleanup:', socketErr.message);
+                }
+            } catch (cleanupError) {
+                logger.warn('USG patient_documents cleanup warning:', cleanupError);
+            }
+        }
+
         res.json({
             success: true,
             message: `${result.affectedRows} record(s) deleted successfully`,
@@ -552,10 +584,10 @@ router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (re
 
     } catch (error) {
         logger.error('Error deleting medical records by type:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Failed to delete medical records',
-            error: error.message 
+            error: error.message
         });
     }
 });

@@ -159,21 +159,19 @@ async function savePhotosToDatabase(photos) {
         const context = getMedicalRecordContext(state, 'usg');
         const existingData = context?.data || {};
 
-        await fetch('/api/medical-records', {
+        // Use sunday-clinic endpoint which has auto-publish logic
+        await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                patientId,
-                visitId: mrId,
-                type: 'usg',
-                data: { ...existingData, photos },
-                timestamp: new Date().toISOString()
+                ...existingData,
+                photos
             })
         });
-        console.log('[USG GynRepro] Photos saved to database');
+        console.log('[USG GynRepro] Photos saved to database (with auto-publish)');
     } catch (error) {
         console.error('[USG GynRepro] Error saving photos:', error);
     }

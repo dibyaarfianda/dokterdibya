@@ -914,21 +914,17 @@ export default {
             // Get current USG data from state
             const usg = state.recordData?.usg || {};
 
-            const response = await fetch('/api/medical-records', {
+            // Use sunday-clinic endpoint which has auto-publish logic
+            // This ensures patient_documents is synced when photos are added/removed
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    patientId: patientId,
-                    visitId: mrId,
-                    type: 'usg',
-                    data: {
-                        ...usg,
-                        photos: photos
-                    },
-                    timestamp: new Date().toISOString()
+                    ...usg,
+                    photos: photos
                 })
             });
 
@@ -936,7 +932,7 @@ export default {
                 const errText = await response.text();
                 console.error('[USG] Failed to save photos to database:', errText);
             } else {
-                console.log('[USG] Photos saved to database successfully');
+                console.log('[USG] Photos saved to database successfully (with auto-publish)');
             }
         } catch (error) {
             console.error('[USG] Error saving photos to database:', error);
