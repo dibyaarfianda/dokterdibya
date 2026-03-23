@@ -103,7 +103,12 @@
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
             border-bottom: 1px dashed var(--line-soft);
-            animation: topbarIn 560ms cubic-bezier(0.2, 0.75, 0.22, 1) both;
+            opacity: 0;
+            transform: translateY(-18px);
+        }
+
+        body.header-animated .topbar {
+            animation: topbarIn 760ms cubic-bezier(0.2, 0.75, 0.22, 1) both;
         }
 
         .topbar-inner {
@@ -209,8 +214,11 @@
             align-items: center;
             gap: 10px;
             opacity: 0;
-            transform: translateY(10px);
-            animation: fadeUp 700ms cubic-bezier(0.2, 0.75, 0.22, 1) 120ms forwards;
+            transform: translateY(14px);
+        }
+
+        body.header-animated .hero-manifest .kicker {
+            animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 180ms forwards;
         }
 
         .hero-manifest .kicker::before {
@@ -230,8 +238,12 @@
             font-weight: 700;
             max-width: 20ch;
             opacity: 0;
-            transform: translateY(14px);
-            animation: fadeUp 760ms cubic-bezier(0.2, 0.75, 0.22, 1) 280ms forwards;
+            transform: translateY(20px);
+            filter: blur(5px);
+        }
+
+        body.header-animated .manifest-title {
+            animation: titleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 300ms forwards;
         }
 
         .manifest-title .tracked {
@@ -244,8 +256,11 @@
             color: var(--text-secondary);
             margin-bottom: 14px;
             opacity: 0;
-            transform: translateY(8px);
-            animation: fadeUp 680ms cubic-bezier(0.2, 0.75, 0.22, 1) 210ms forwards;
+            transform: translateY(10px);
+        }
+
+        body.header-animated .manifest-title .tracked {
+            animation: fadeUp 880ms cubic-bezier(0.2, 0.75, 0.22, 1) 250ms forwards;
         }
 
         .manifest-copy {
@@ -254,8 +269,11 @@
             max-width: 48ch;
             line-height: 1.75;
             opacity: 0;
-            transform: translateY(12px);
-            animation: fadeUp 760ms cubic-bezier(0.2, 0.75, 0.22, 1) 420ms forwards;
+            transform: translateY(16px);
+        }
+
+        body.header-animated .manifest-copy {
+            animation: fadeUp 940ms cubic-bezier(0.2, 0.75, 0.22, 1) 500ms forwards;
         }
 
         .gallery {
@@ -516,6 +534,19 @@
             }
         }
 
+        @keyframes titleIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+                filter: blur(5px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
+        }
+
         @keyframes pulseDot {
             0%,
             100% {
@@ -681,5 +712,23 @@
             </a>
         </div>
     </nav>
+
+    <script>
+        (function() {
+            function triggerHeaderAnimation() {
+                document.body.classList.remove('header-animated');
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        document.body.classList.add('header-animated');
+                    });
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', triggerHeaderAnimation);
+            window.addEventListener('pageshow', function() {
+                triggerHeaderAnimation();
+            });
+        })();
+    </script>
 </body>
 </html>
