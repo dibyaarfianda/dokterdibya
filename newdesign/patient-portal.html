@@ -136,7 +136,7 @@
         body.header-animated .topbar {
             opacity: 1;
             transform: translateY(0);
-            transition: transform 0.7s cubic-bezier(0.2, 0.75, 0.22, 1), border-color 0.3s ease, opacity 0.6s ease;
+            transition: transform 0.5s cubic-bezier(0.2, 0.75, 0.22, 1), border-color 0.3s ease, opacity 0.5s ease;
         }
 
         body.header-animated .topbar.header-hidden {
@@ -2288,13 +2288,17 @@
                 });
             });
 
-            // Scroll-responsive navbar (Anvil-style: hide on scroll down, show on scroll up)
+            // Scroll-responsive navbar (Anvil-style)
+            // Scroll down even slightly = header hides completely
+            // Scroll up even slightly = header shows completely
             var lastScrollY = window.scrollY;
             var topbar = document.getElementById('topbar');
             var ticking = false;
+            var scrollThreshold = 5; // pixels of scroll to trigger
 
             function onScroll() {
                 var currentY = window.scrollY;
+                var delta = currentY - lastScrollY;
 
                 if (currentY > 10) {
                     topbar.classList.add('scrolled');
@@ -2302,13 +2306,21 @@
                     topbar.classList.remove('scrolled');
                 }
 
-                if (currentY > lastScrollY && currentY > 80) {
-                    topbar.classList.add('header-hidden');
-                } else {
+                // At top of page — always show
+                if (currentY <= 10) {
                     topbar.classList.remove('header-hidden');
                 }
+                // Scroll down by threshold — hide
+                else if (delta > scrollThreshold) {
+                    topbar.classList.add('header-hidden');
+                    lastScrollY = currentY;
+                }
+                // Scroll up by threshold — show
+                else if (delta < -scrollThreshold) {
+                    topbar.classList.remove('header-hidden');
+                    lastScrollY = currentY;
+                }
 
-                lastScrollY = currentY;
                 ticking = false;
             }
 
