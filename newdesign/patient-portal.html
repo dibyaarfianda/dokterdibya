@@ -128,7 +128,7 @@
             background: rgba(255, 255, 255, 0.9);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
-            border-bottom: 2px dashed var(--line-soft);
+            border-bottom: 1.5px dashed var(--line-soft);
             transform: translateY(-100%);
             opacity: 0;
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, border-color 0.3s ease !important;
@@ -169,7 +169,7 @@
             border-radius: 50%;
             display: grid;
             place-items: center;
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             color: var(--accent);
             font-size: 13px;
             font-weight: 700;
@@ -299,7 +299,7 @@
             top: calc(100% + 8px);
             right: 0;
             background: var(--bg-surface);
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 12px;
             min-width: 180px;
             padding: 6px 0;
@@ -334,7 +334,7 @@
         }
 
         .dropdown-menu-custom a.logout {
-            border-top: 2px dashed var(--line-soft);
+            border-top: 1.5px dashed var(--line-soft);
             margin-top: 4px;
         }
 
@@ -403,7 +403,7 @@
 
         /* ========== DASHBOARD CARD (Collapsible sections) ========== */
         .dash-card {
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 14px;
@@ -459,7 +459,7 @@
 
         /* ========== EID GREETING CARD ========== */
         .eid-card {
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 12px;
             margin-bottom: 14px;
             padding: 0;
@@ -473,7 +473,7 @@
             top: 12px;
             right: 12px;
             background: rgba(0, 0, 0, 0.06);
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
             color: var(--text-muted);
             width: 28px;
             height: 28px;
@@ -587,7 +587,7 @@
         /* ========== ANNOUNCEMENTS (override inline styles from announcements-dashboard.js) ========== */
         .announcement-item {
             background: var(--bg-surface) !important;
-            border: 2px dashed var(--line-soft) !important;
+            border: 1.5px dashed var(--line-soft) !important;
             border-left: 3px dashed var(--line-strong) !important;
             border-radius: 10px !important;
             padding: 16px !important;
@@ -620,7 +620,7 @@
         }
 
         .announcement-item div[style*="border-top"] {
-            border-top: 2px dashed var(--line-soft) !important;
+            border-top: 1.5px dashed var(--line-soft) !important;
         }
 
         .announcement-item small[style*="color: #28a7e9"] {
@@ -642,7 +642,7 @@
         #announcements-container button[style*="background: linear-gradient"],
         #announcements-container button[style*="background:linear-gradient"] {
             background: transparent !important;
-            border: 2px dashed var(--line-strong) !important;
+            border: 1.5px dashed var(--line-strong) !important;
             color: var(--text-primary) !important;
         }
 
@@ -653,7 +653,7 @@
         /* Override toggle button (Lihat X Pengumuman Lainnya / Lihat Lebih Sedikit) */
         #toggle-announcements-btn {
             background: var(--bg-surface) !important;
-            border: 2px dashed var(--line-strong) !important;
+            border: 1.5px dashed var(--line-strong) !important;
             color: var(--text-primary) !important;
             border-radius: 10px !important;
             font-family: var(--font-main) !important;
@@ -670,7 +670,7 @@
         /* Override error/retry button in announcements */
         #announcements-container button[onclick*="loadAnnouncements"] {
             background: var(--bg-surface) !important;
-            border: 2px dashed var(--line-strong) !important;
+            border: 1.5px dashed var(--line-strong) !important;
             color: var(--text-primary) !important;
             font-family: var(--font-main) !important;
         }
@@ -678,7 +678,7 @@
         /* Override dismiss button */
         #announcements-container button[onclick*="remove"] {
             background: var(--bg-surface) !important;
-            border: 2px dashed var(--line-soft) !important;
+            border: 1.5px dashed var(--line-soft) !important;
             color: var(--text-muted) !important;
         }
 
@@ -707,7 +707,7 @@
             align-items: center;
             gap: 10px;
             padding: 12px 14px;
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 10px;
             text-decoration: none;
             color: var(--text-body);
@@ -742,7 +742,7 @@
         }
 
         .status-card {
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 12px;
             padding: 14px;
             display: flex;
@@ -755,7 +755,7 @@
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
             background: var(--accent-soft);
             display: flex;
             align-items: center;
@@ -787,7 +787,7 @@
 
         /* ========== BIRTH CONGRATULATIONS CARD ========== */
         .birth-congrats-card {
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 14px;
@@ -803,10 +803,10 @@
             z-index: 10;
         }
 
-        #birth-corner-tl { top: 0; left: 0; border-top: 2px dashed var(--accent); border-left: 2px dashed var(--accent); }
-        #birth-corner-tr { top: 0; right: 0; border-top: 2px dashed var(--accent); border-right: 2px dashed var(--accent); }
-        #birth-corner-bl { bottom: 0; left: 0; border-bottom: 2px dashed var(--accent); border-left: 2px dashed var(--accent); }
-        #birth-corner-br { bottom: 0; right: 0; border-bottom: 2px dashed var(--accent); border-right: 2px dashed var(--accent); }
+        #birth-corner-tl { top: 0; left: 0; border-top: 1.5px dashed var(--accent); border-left: 1.5px dashed var(--accent); }
+        #birth-corner-tr { top: 0; right: 0; border-top: 1.5px dashed var(--accent); border-right: 1.5px dashed var(--accent); }
+        #birth-corner-bl { bottom: 0; left: 0; border-bottom: 1.5px dashed var(--accent); border-left: 1.5px dashed var(--accent); }
+        #birth-corner-br { bottom: 0; right: 0; border-bottom: 1.5px dashed var(--accent); border-right: 1.5px dashed var(--accent); }
 
         .birth-header {
             margin-bottom: 16px;
@@ -834,7 +834,7 @@
             height: 160px;
             border-radius: 12px;
             overflow: hidden;
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             flex-shrink: 0;
             cursor: pointer;
             background: var(--bg-elevated);
@@ -876,7 +876,7 @@
             padding: 12px;
             border-radius: 10px;
             background: var(--accent-soft);
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
         }
 
         .birth-detail-label {
@@ -970,7 +970,7 @@
         }
 
         .menu-card {
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
             border-radius: 12px;
             padding: 20px 14px;
             text-align: center;
@@ -996,7 +996,7 @@
             margin: 0 auto 10px;
             font-size: 20px;
             color: var(--text-primary);
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             background: var(--accent-soft);
         }
 
@@ -1064,7 +1064,7 @@
 
         /* ========== NOTIFICATION PERMISSION BANNER ========== */
         .notif-perm-banner {
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 14px;
@@ -1081,7 +1081,7 @@
             width: 42px;
             height: 42px;
             border-radius: 50%;
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
             background: var(--accent-soft);
             display: flex;
             align-items: center;
@@ -1107,7 +1107,7 @@
             margin-top: 12px;
             width: 100%;
             padding: 10px;
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 8px;
             background: var(--accent);
             color: #ffffff;
@@ -1127,7 +1127,7 @@
         /* ========== DOWNLOAD APP BANNER ========== */
         .download-app-banner {
             display: none;
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             border-radius: 12px;
             padding: 16px 18px;
             margin-bottom: 14px;
@@ -1225,7 +1225,7 @@
             left: 0;
             right: 0;
             background: var(--bg-surface);
-            border-top: 2px dashed var(--line-strong);
+            border-top: 1.5px dashed var(--line-strong);
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
@@ -1265,7 +1265,7 @@
 
         .ios-install-prompt-close {
             background: var(--accent-soft);
-            border: 2px dashed var(--line-soft);
+            border: 1.5px dashed var(--line-soft);
             color: var(--text-muted);
             width: 32px;
             height: 32px;
@@ -1294,7 +1294,7 @@
             align-items: center;
             gap: 12px;
             padding: 12px 0;
-            border-bottom: 2px dashed var(--line-soft);
+            border-bottom: 1.5px dashed var(--line-soft);
             color: var(--text-body);
             font-size: 13px;
         }
@@ -1372,7 +1372,7 @@
             right: 0;
             bottom: 0;
             background: var(--bg-surface);
-            border-top: 2px dashed var(--line-strong);
+            border-top: 1.5px dashed var(--line-strong);
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             padding: 0 0 env(safe-area-inset-bottom);
@@ -1397,7 +1397,7 @@
 
         .bottom-sheet-header {
             padding: 0 20px 14px;
-            border-bottom: 2px dashed var(--line-soft);
+            border-bottom: 1.5px dashed var(--line-soft);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -1412,7 +1412,7 @@
             justify-content: center;
             font-size: 18px;
             color: var(--text-primary);
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             background: var(--accent-soft);
         }
 
@@ -1469,7 +1469,7 @@
             background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
-            border-top: 2px dashed var(--line-soft);
+            border-top: 1.5px dashed var(--line-soft);
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
@@ -1513,7 +1513,7 @@
             width: 30px;
             height: 5px;
             border-radius: 6px;
-            border: 2px dashed var(--line-strong);
+            border: 1.5px dashed var(--line-strong);
             background: transparent;
         }
 
@@ -1613,13 +1613,13 @@
         .green-light-glow.grow {
             opacity: 0.6;
             transform: scale(2.8);
-            transition: transform 0.5s ease-out, opacity 0.2s ease-in !important;
+            transition: transform 0.25s ease-out, opacity 0.15s ease-in !important;
         }
 
         .green-light-glow.fade {
             opacity: 0;
             transform: scale(2.8);
-            transition: opacity 0.8s ease-out !important;
+            transition: opacity 0.4s ease-out !important;
         }
 
         .hero-greeting {
@@ -2316,11 +2316,11 @@
                     setTimeout(function() {
                         glowEl.classList.remove('grow');
                         glowEl.classList.add('fade');
-                    }, 500);
+                    }, 250);
                     // Phase 3: reset
                     setTimeout(function() {
                         glowEl.className = 'green-light-glow';
-                    }, 1300);
+                    }, 700);
                 }, 3500);
             }
 
