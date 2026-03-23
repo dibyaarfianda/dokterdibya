@@ -569,76 +569,70 @@
             color: var(--text-primary);
         }
 
-        /* ========== ANNOUNCEMENTS ========== */
+        /* ========== ANNOUNCEMENTS (override inline styles from announcements-dashboard.js) ========== */
         .announcement-item {
-            border: 1px dashed var(--line-soft);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 12px;
-            background: var(--bg-surface);
-            border-left: 3px dashed var(--accent);
+            background: var(--bg-surface) !important;
+            border: 1px dashed var(--line-soft) !important;
+            border-left: 3px dashed var(--line-strong) !important;
+            border-radius: 10px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
         }
 
-        .announcement-item.priority-urgent {
-            border-left-color: var(--text-primary);
-        }
-
-        .announcement-item.priority-important {
-            border-left-color: var(--text-secondary);
+        .announcement-item:hover {
+            background: var(--bg-elevated) !important;
         }
 
         .announcement-item h4 {
-            font-size: 14px;
-            font-weight: 600;
-            margin: 0 0 8px 0;
-            color: var(--text-primary);
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: var(--text-primary) !important;
         }
 
-        .announcement-item .announcement-content {
-            font-size: 13px;
-            color: var(--text-body);
-            line-height: 1.6;
-            margin: 0 0 10px 0;
+        .announcement-item div[style*="color: #e0e0e0"],
+        .announcement-item div[style*="color:#e0e0e0"] {
+            color: var(--text-body) !important;
         }
 
-        .announcement-item .announcement-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 10px;
-            border-top: 1px dashed var(--line-soft);
-            flex-wrap: wrap;
-            gap: 8px;
+        .announcement-item span[style*="background"] {
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            font-size: 9px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px !important;
+            border-radius: 10px !important;
+            padding: 3px 8px !important;
         }
 
-        .announcement-item .announcement-author {
-            font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 600;
+        .announcement-item div[style*="border-top"] {
+            border-top: 1px dashed var(--line-soft) !important;
         }
 
-        .announcement-item .announcement-date {
-            font-size: 11px;
-            color: var(--text-muted);
+        .announcement-item small[style*="color: #28a7e9"] {
+            color: var(--text-secondary) !important;
         }
 
-        .announcement-priority-badge {
-            background: var(--accent);
-            color: #ffffff;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+        .announcement-item small[style*="color: #999"] {
+            color: var(--text-muted) !important;
         }
 
-        .announcement-priority-badge.urgent {
-            background: var(--text-primary);
+        .announcement-item button[onclick*="toggleLike"] {
+            color: var(--text-muted) !important;
         }
 
-        .announcement-priority-badge.important {
-            background: var(--text-secondary);
+        .announcement-item button[onclick*="toggleLike"]:hover {
+            background: var(--bg-elevated) !important;
+        }
+
+        #announcements-container button[style*="background: linear-gradient"],
+        #announcements-container button[style*="background:linear-gradient"] {
+            background: transparent !important;
+            border: 1px dashed var(--line-strong) !important;
+            color: var(--text-primary) !important;
+        }
+
+        #announcements-container .announcement-item * {
+            font-family: var(--font-main) !important;
         }
 
         /* ========== TANYA DOKTER ========== */
