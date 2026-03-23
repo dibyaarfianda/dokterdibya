@@ -1606,26 +1606,14 @@
             inset: 0;
             background: rgb(12, 145, 0);
             border-radius: 50%;
-            animation: greenPulse 5s ease-in-out infinite;
+            opacity: 0;
+            transform: scale(1);
+            transition: transform 0.8s ease-out, opacity 0.8s ease-out !important;
         }
 
-        @keyframes greenPulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.7;
-            }
-            10% {
-                transform: scale(2);
-                opacity: 0;
-            }
-            15% {
-                transform: scale(1);
-                opacity: 0;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 0;
-            }
+        .green-light-glow.ping {
+            opacity: 0.7;
+            transform: scale(2.2);
         }
 
         .hero-greeting {
@@ -2311,6 +2299,17 @@
                     document.body.classList.add('header-animated');
                 });
             });
+
+            // Green light ping — JS controlled with 3s interval
+            var glowEl = document.querySelector('.green-light-glow');
+            if (glowEl) {
+                setInterval(function() {
+                    glowEl.classList.add('ping');
+                    setTimeout(function() {
+                        glowEl.classList.remove('ping');
+                    }, 800);
+                }, 3500);
+            }
 
             // Re-trigger on back/forward navigation
             window.addEventListener('pageshow', function() {
