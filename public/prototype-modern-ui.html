@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#f7f7f7">
-    <title>dokterDIBYA - Anvil About Inspired</title>
+    <meta name="theme-color" content="#f4f4f4">
+    <title>dokterDIBYA - Monochrome Portal Prototype</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --bg-page: #f7f7f7;
+            --bg-page: #f4f4f4;
             --bg-secondary: #ffffff;
             --bg-surface: #ffffff;
-            --bg-elevated: #f1f1f1;
-            --text-primary: #141414;
-            --text-body: #333333;
-            --text-secondary: #595959;
-            --text-muted: #7a7a7a;
-            --accent: #d76a7d;
-            --accent-hover: #e08094;
-            --accent-soft: rgba(215, 106, 125, 0.16);
-            --success-soft: rgba(94, 167, 122, 0.16);
-            --line-soft: rgba(0, 0, 0, 0.08);
-            --line-strong: rgba(0, 0, 0, 0.14);
+            --bg-elevated: #ebebeb;
+            --text-primary: #111111;
+            --text-body: #2b2b2b;
+            --text-secondary: #4b4b4b;
+            --text-muted: #686868;
+            --accent: #111111;
+            --accent-hover: #2a2a2a;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --success-soft: rgba(0, 0, 0, 0.08);
+            --line-soft: rgba(0, 0, 0, 0.2);
+            --line-strong: rgba(0, 0, 0, 0.36);
             --font-main: 'Inter', Arial, sans-serif;
-            --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.08);
-            --shadow-hard: 0 14px 28px rgba(0, 0, 0, 0.12);
+            --shadow-soft: none;
+            --shadow-hard: none;
         }
 
         *, *::before, *::after {
@@ -87,7 +87,7 @@
             background: rgba(255, 255, 255, 0.9);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
-            border-bottom: 1px solid var(--line-soft);
+            border-bottom: 1px dashed var(--line-soft);
         }
 
         .topbar-inner {
@@ -112,7 +112,7 @@
             border-radius: 50%;
             display: grid;
             place-items: center;
-            border: 1px solid var(--line-strong);
+            border: 1px dashed var(--line-strong);
             color: var(--accent);
             font-size: 13px;
             font-weight: 700;
@@ -126,7 +126,7 @@
             letter-spacing: -0.01em;
         }
 
-        .brand-title span { color: var(--accent); }
+        .brand-title span { color: var(--text-primary); }
 
         .brand-sub {
             margin-top: 2px;
@@ -147,7 +147,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 1px solid var(--line-strong);
+            border: 1px dashed var(--line-strong);
             background: var(--bg-surface);
             color: var(--text-primary);
             display: grid;
@@ -167,7 +167,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--accent);
+            background: #111111;
             border: 2px solid var(--bg-surface);
         }
 
@@ -177,11 +177,11 @@
             border-radius: 50%;
             display: grid;
             place-items: center;
-            color: #fff;
+            color: #111111;
             font-size: 14px;
             font-weight: 700;
-            background: linear-gradient(145deg, var(--accent), #b85f72);
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: #e9e9e9;
+            border: 1px dashed var(--line-strong);
         }
 
         .hero-manifest {
@@ -225,32 +225,38 @@
         .gallery-side {
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid var(--line-soft);
+            border: 1px dashed var(--line-soft);
             box-shadow: var(--shadow-soft);
             background: var(--bg-surface);
         }
 
-        .gallery-main img,
-        .gallery-side img {
-            width: 100%;
-            display: block;
-            object-fit: cover;
+        .gallery-main,
+        .gallery-side {
+            padding: 14px;
         }
 
-        .gallery-main img {
-            min-height: 240px;
-            max-height: 300px;
+        .endpoint-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
         }
 
-        .gallery-side-grid {
+        .endpoint-list {
+            margin-top: 10px;
+            list-style: none;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
 
-        .gallery-side img {
-            min-height: 155px;
-            max-height: 185px;
+        .endpoint-list li {
+            padding: 8px 10px;
+            border: 1px dashed var(--line-soft);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-body);
+            background: #fafafa;
         }
 
         .metrics {
@@ -261,7 +267,7 @@
 
         .metric {
             padding: 16px 14px;
-            border: 1px solid var(--line-soft);
+            border: 1px dashed var(--line-soft);
             border-radius: 12px;
             background: var(--bg-surface);
             box-shadow: var(--shadow-soft);
@@ -282,7 +288,7 @@
 
         .why {
             margin-top: 24px;
-            border-top: 1px solid var(--line-soft);
+            border-top: 1px dashed var(--line-soft);
             padding-top: 18px;
         }
 
@@ -295,7 +301,7 @@
 
         .care-flow {
             margin-top: 24px;
-            border: 1px solid var(--line-soft);
+            border: 1px dashed var(--line-soft);
             border-radius: 12px;
             background: var(--bg-surface);
             box-shadow: var(--shadow-soft);
@@ -304,7 +310,7 @@
 
         .flow-head {
             padding: 12px 14px;
-            border-bottom: 1px solid var(--line-soft);
+            border-bottom: 1px dashed var(--line-soft);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -326,7 +332,7 @@
 
         .flow-item {
             padding: 12px 14px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.18);
             display: grid;
             gap: 4px;
         }
@@ -361,7 +367,7 @@
             min-height: 44px;
             padding: 0 14px;
             border-radius: 10px;
-            border: 0;
+            border: 1px dashed var(--line-strong);
             font-size: 11px;
             letter-spacing: 0.14em;
             text-transform: uppercase;
@@ -371,15 +377,15 @@
         }
 
         .flow-btn.primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 8px 20px rgba(215, 106, 125, 0.24);
+            background: #111111;
+            color: #ffffff;
+            box-shadow: none;
         }
 
         .flow-btn.secondary {
             background: transparent;
             color: var(--text-primary);
-            border: 1px solid var(--line-strong);
+            border: 1px dashed var(--line-strong);
         }
 
         .flow-btn:active { transform: scale(0.96); }
@@ -396,7 +402,7 @@
             background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
-            border-top: 1px solid var(--line-soft);
+            border-top: 1px dashed var(--line-soft);
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
@@ -435,11 +441,12 @@
         .nav-item.active::before {
             content: '';
             position: absolute;
-            top: -8px;
-            width: 26px;
-            height: 3px;
-            border-radius: 0 0 3px 3px;
-            background: var(--accent);
+            top: -10px;
+            width: 30px;
+            height: 5px;
+            border-radius: 6px;
+            border: 1px dashed var(--line-strong);
+            background: transparent;
         }
 
         .nav-item:active { transform: scale(0.9); }
@@ -449,7 +456,6 @@
             .topbar-inner { padding-left: 24px; padding-right: 24px; }
             .gallery { grid-template-columns: 1.3fr 1fr; }
             .gallery-side-grid { grid-template-columns: 1fr; }
-            .gallery-side img { min-height: 128px; max-height: 145px; }
             .metrics { grid-template-columns: repeat(3, 1fr); }
             .flow-actions { grid-template-columns: 1fr 1fr; }
             .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
@@ -492,77 +498,88 @@
 
     <main class="screen">
         <section class="hero-manifest">
-            <div class="kicker">About This Care Space</div>
+            <div class="kicker">Monochrome Portal Draft</div>
             <h1 class="manifest-title">
-                <span class="tracked">Portal yang presisi, tenang, dan personal</span>
-                Dian, seluruh perjalanan perawatan Anda disusun agar jelas dari hari ke hari.
+                <span class="tracked">Berbasis endpoint yang sudah ada</span>
+                Tampilan pasien dibuat sederhana, monokrom, dan fokus ke alur data yang nyata.
             </h1>
             <p class="manifest-copy">
-                Kami mengadaptasi pendekatan editorial Anvil untuk menampilkan informasi klinis secara lebih terarah: lebih sedikit distraksi, lebih kuat dalam hierarki, dan lebih cepat untuk mengambil keputusan penting selama masa kehamilan.
+                Konten di halaman ini tidak memakai angka asumsi. Semua modul di bawah mengikuti fitur portal pasien dokterDIBYA yang sudah terhubung ke endpoint backend.
             </p>
         </section>
 
-        <section class="gallery" aria-label="Visual highlight">
+        <section class="gallery" aria-label="Daftar endpoint pasien">
             <article class="gallery-main">
-                <img src="https://framerusercontent.com/images/R3WhB49Qk1S3CBuGz12HId9HLQ0.jpg?scale-down-to=1024&width=1504&height=958" alt="Konsultasi ibu hamil">
+                <div class="endpoint-title">Endpoint Identitas dan Dashboard</div>
+                <ul class="endpoint-list">
+                    <li>/api/patients/profile</li>
+                    <li>/api/patient-notifications/count</li>
+                    <li>/api/announcements</li>
+                    <li>/api/patients/birth-record</li>
+                    <li>/api/sunday-appointments/my-bookings</li>
+                </ul>
             </article>
             <article class="gallery-side">
-                <div class="gallery-side-grid">
-                    <img src="https://framerusercontent.com/images/NmB7YIEWngRVVPmn3gUeM1yE0M.jpg?scale-down-to=1024&width=1684&height=960" alt="Fasilitas pemeriksaan">
-                    <img src="https://framerusercontent.com/images/8cAgjnsEXNYMrJ2Uz3Na3D5F4x4.jpg?width=832&height=986" alt="Tim dokter">
-                </div>
+                <div class="endpoint-title">Endpoint Dokumen dan Aplikasi Pasien</div>
+                <ul class="endpoint-list">
+                    <li>/api/patient-documents/unread-counts</li>
+                    <li>/api/patient-documents/my-documents</li>
+                    <li>/api/patients/pregnancy-tracker</li>
+                    <li>/api/kick-counter/today</li>
+                    <li>/api/fertility-calendar</li>
+                </ul>
             </article>
         </section>
 
-        <section class="metrics" aria-label="Patient trust metrics">
+        <section class="metrics" aria-label="Modul portal pasien">
             <article class="metric">
-                <div class="metric-number">3,000+</div>
-                <p class="metric-label">Kunjungan ibu hamil didampingi secara berkelanjutan.</p>
+                <div class="metric-number">Dokumen</div>
+                <p class="metric-label">Album USG, hasil lab, resume medis, dan unggahan pasien melalui endpoint /api/patient-documents.</p>
             </article>
             <article class="metric">
-                <div class="metric-number">21</div>
-                <p class="metric-label">Titik layanan dan kolaborasi rumah sakit terhubung.</p>
+                <div class="metric-number">Jadwal</div>
+                <p class="metric-label">Booking klinik dan jadwal RS menggunakan /api/sunday-appointments dan /api/hospital-appointments.</p>
             </article>
             <article class="metric">
-                <div class="metric-number">30+</div>
-                <p class="metric-label">Staf medis dan support team siap mendampingi Anda.</p>
+                <div class="metric-number">Interaksi</div>
+                <p class="metric-label">Tanya dokter, artikel, notifikasi, dan pengumuman melalui endpoint pasien yang sudah aktif.</p>
             </article>
         </section>
 
         <section class="why">
-            <div class="section-title">Why It Works</div>
+            <div class="section-title">Konten Sesuai Sistem Nyata</div>
             <p>
-                Berbeda dari dashboard biasa, halaman ini menempatkan narasi perawatan sebagai pusat: Anda memahami konteks klinis lebih dulu, lalu mengambil aksi. Pendekatan ini membuat pengalaman terasa lebih manusiawi sekaligus profesional.
+                Halaman prototype ini hanya memakai copy berbasis fitur yang sudah ada di portal pasien dokterDIBYA: profil, intake, dokumen medis, riwayat kunjungan, jadwal, billing pasien, dan modul edukasi.
             </p>
         </section>
 
-        <section class="care-flow" aria-label="Alur perawatan hari ini">
+        <section class="care-flow" aria-label="Alur endpoint portal pasien">
             <header class="flow-head">
-                <div class="section-title">Care Flow</div>
-                <div class="date">Senin, 23 Mar</div>
+                <div class="section-title">Alur Endpoint</div>
+                <div class="date">Portal Pasien</div>
             </header>
             <ul class="flow-list">
                 <li class="flow-item">
-                    <div class="flow-time">08.30 WIB</div>
-                    <h3>Registrasi Digital Terkonfirmasi</h3>
-                    <p>Data kunjungan Anda sudah lengkap. Sistem otomatis menyesuaikan estimasi pemeriksaan.</p>
+                    <div class="flow-time">Langkah 1</div>
+                    <h3>Autentikasi dan Profil</h3>
+                    <p>Login pasien lalu mengambil data profil dari /api/patients/profile.</p>
                 </li>
                 <li class="flow-item">
-                    <div class="flow-time">09.10 WIB</div>
-                    <h3>USG Trimester Ketiga</h3>
-                    <p>Hasil USG akan langsung tersimpan pada arsip medis dan bisa ditinjau kembali kapan saja.</p>
+                    <div class="flow-time">Langkah 2</div>
+                    <h3>Status Booking dan Notifikasi</h3>
+                    <p>Ringkasan booking aktif dan badge notifikasi berasal dari /api/sunday-appointments/my-bookings dan /api/patient-notifications/count.</p>
                 </li>
                 <li class="flow-item">
-                    <div class="flow-time">10.00 WIB</div>
-                    <h3>Review Vitamin dan Edukasi</h3>
-                    <p>Jadwal konsumsi dan materi edukasi diperbarui sesuai hasil konsultasi terbaru.</p>
+                    <div class="flow-time">Langkah 3</div>
+                    <h3>Dokumen dan Layanan Lanjutan</h3>
+                    <p>Dokumen, intake, tanya dokter, tracker kehamilan, dan billing pasien memakai endpoint modul masing-masing.</p>
                 </li>
             </ul>
         </section>
 
         <section class="flow-actions" aria-label="Aksi cepat">
-            <button class="flow-btn primary">Mulai Konsultasi</button>
-            <button class="flow-btn secondary">Lihat Arsip Medis</button>
+            <button class="flow-btn primary">Buka Menu Pasien</button>
+            <button class="flow-btn secondary">Lihat Dokumen Saya</button>
         </section>
     </main>
 
@@ -581,8 +598,8 @@
                 <span>Notifikasi</span>
             </a>
             <a href="#" class="nav-item">
-                <i class="fa-solid fa-user"></i>
-                <span>Profil</span>
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Jadwal</span>
             </a>
         </div>
     </nav>
