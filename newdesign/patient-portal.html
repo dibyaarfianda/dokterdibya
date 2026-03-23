@@ -75,10 +75,13 @@
         /* ========== GRID BACKGROUND ========== */
         .grid-bg {
             position: fixed;
-            inset: 0;
-            z-index: -1;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
             pointer-events: none;
-            background:
+            background-image:
                 linear-gradient(to right, rgba(0, 0, 0, 0.07) 1px, transparent 1px),
                 linear-gradient(to bottom, rgba(0, 0, 0, 0.07) 1px, transparent 1px);
             background-size: 14px 14px;
@@ -341,6 +344,8 @@
             padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
             padding-left: 16px;
             padding-right: 16px;
+            position: relative;
+            z-index: 1;
         }
 
         /* ========== KICKER & SECTION TITLE ========== */
