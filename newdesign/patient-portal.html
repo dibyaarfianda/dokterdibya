@@ -635,6 +635,38 @@
             font-family: var(--font-main) !important;
         }
 
+        /* Override toggle button (Lihat X Pengumuman Lainnya / Lihat Lebih Sedikit) */
+        #toggle-announcements-btn {
+            background: var(--bg-surface) !important;
+            border: 1px dashed var(--line-strong) !important;
+            color: var(--text-primary) !important;
+            border-radius: 10px !important;
+            font-family: var(--font-main) !important;
+            font-weight: 600 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+        }
+
+        #toggle-announcements-btn:hover {
+            background: var(--bg-elevated) !important;
+        }
+
+        /* Override error/retry button in announcements */
+        #announcements-container button[onclick*="loadAnnouncements"] {
+            background: var(--bg-surface) !important;
+            border: 1px dashed var(--line-strong) !important;
+            color: var(--text-primary) !important;
+            font-family: var(--font-main) !important;
+        }
+
+        /* Override dismiss button */
+        #announcements-container button[onclick*="remove"] {
+            background: var(--bg-surface) !important;
+            border: 1px dashed var(--line-soft) !important;
+            color: var(--text-muted) !important;
+        }
+
         /* ========== TANYA DOKTER ========== */
         .tanya-dokter-body {
             margin-top: 14px;
