@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#f7f7f7">
-    <title>dokterDIBYA - New Portal Direction</title>
+    <title>dokterDIBYA - Anvil About Inspired</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -12,20 +12,17 @@
             --bg-page: #f7f7f7;
             --bg-secondary: #ffffff;
             --bg-surface: #ffffff;
-            --bg-surface-2: #f1f1f1;
-            --line-soft: rgba(0,0,0,0.08);
-            --line-strong: rgba(0,0,0,0.14);
+            --bg-elevated: #f1f1f1;
             --text-primary: #141414;
             --text-body: #333333;
-            --text-secondary: #585858;
+            --text-secondary: #595959;
             --text-muted: #7a7a7a;
             --accent: #d76a7d;
             --accent-hover: #e08094;
             --accent-soft: rgba(215, 106, 125, 0.16);
-            --success: #5ea77a;
-            --success-soft: rgba(94,167,122,0.18);
-            --info: #7b9fc9;
-            --info-soft: rgba(123,159,201,0.18);
+            --success-soft: rgba(94, 167, 122, 0.16);
+            --line-soft: rgba(0, 0, 0, 0.08);
+            --line-strong: rgba(0, 0, 0, 0.14);
             --font-main: 'Inter', Arial, sans-serif;
             --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.08);
             --shadow-hard: 0 14px 28px rgba(0, 0, 0, 0.12);
@@ -40,12 +37,9 @@
 
         body {
             min-height: 100%;
-            font-family: var(--font-main);
-            background:
-                radial-gradient(600px 260px at 20% -10%, rgba(215,106,125,0.12), transparent 60%),
-                radial-gradient(520px 240px at 100% 15%, rgba(123,159,201,0.12), transparent 62%),
-                var(--bg-page);
+            background: var(--bg-page);
             color: var(--text-primary);
+            font-family: var(--font-main);
             font-size: 14px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
@@ -54,31 +48,30 @@
         }
 
         ::selection {
-            background: #292929;
-            color: var(--text-primary);
+            background: #e8e8e8;
+            color: #141414;
         }
 
         .screen {
-            max-width: 680px;
+            max-width: 760px;
             margin: 0 auto;
-            padding-top: calc(env(safe-area-inset-top, 0px) + 74px);
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+            padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
             padding-left: 16px;
             padding-right: 16px;
         }
 
-        .chip-label {
+        .kicker {
             font-size: 10px;
-            line-height: 1.2;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.24em;
+            letter-spacing: 0.28em;
             color: var(--text-muted);
         }
 
-        .section-label {
+        .section-title {
+            margin-top: 8px;
             font-size: 11px;
-            line-height: 1.3;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.18em;
@@ -90,7 +83,7 @@
             top: env(safe-area-inset-top, 0px);
             left: 0;
             right: 0;
-            z-index: 30;
+            z-index: 40;
             background: rgba(255, 255, 255, 0.9);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
@@ -98,13 +91,13 @@
         }
 
         .topbar-inner {
-            max-width: 680px;
+            max-width: 760px;
             margin: 0 auto;
             padding: 12px 16px;
             display: grid;
             grid-template-columns: 1fr auto;
-            gap: 14px;
             align-items: center;
+            gap: 12px;
         }
 
         .brand {
@@ -117,13 +110,13 @@
             width: 34px;
             height: 34px;
             border-radius: 50%;
-            border: 1px solid var(--line-strong);
             display: grid;
             place-items: center;
+            border: 1px solid var(--line-strong);
+            color: var(--accent);
             font-size: 13px;
             font-weight: 700;
-            color: var(--accent);
-            background: rgba(0,0,0,0.03);
+            background: rgba(0, 0, 0, 0.03);
         }
 
         .brand-title {
@@ -138,7 +131,6 @@
         .brand-sub {
             margin-top: 2px;
             font-size: 9px;
-            line-height: 1.2;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.2em;
@@ -162,14 +154,11 @@
             place-items: center;
             position: relative;
             font-size: 15px;
-            transition: transform 0.25s ease, background 0.25s ease;
+            transition: transform 0.25s ease;
             cursor: pointer;
         }
 
-        .circle-btn:active {
-            transform: scale(0.92);
-            background: var(--bg-surface-2);
-        }
+        .circle-btn:active { transform: scale(0.92); }
 
         .notif-dot {
             position: absolute;
@@ -186,281 +175,165 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(145deg, var(--accent), #b85f72);
-            color: #ffffff;
-            font-size: 14px;
-            font-weight: 700;
             display: grid;
             place-items: center;
-            border: 1px solid rgba(0,0,0,0.1);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            background: linear-gradient(145deg, var(--accent), #b85f72);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
 
-        .hero {
-            padding-top: 10px;
+        .hero-manifest {
+            padding-top: 12px;
         }
 
-        .hero-grid {
-            display: grid;
-            gap: 16px;
-        }
-
-        .hero-text h1 {
-            margin-top: 6px;
-            font-size: 36px;
-            line-height: 1.12;
+        .manifest-title {
+            margin-top: 10px;
+            font-size: 34px;
+            line-height: 1.14;
             letter-spacing: -0.02em;
             font-weight: 700;
+            max-width: 20ch;
         }
 
-        .hero-text p {
+        .manifest-title .tracked {
+            display: block;
+            font-size: 15px;
+            line-height: 1.35;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 14px;
+        }
+
+        .manifest-copy {
             margin-top: 12px;
             color: var(--text-secondary);
-            max-width: 46ch;
-            line-height: 1.7;
+            max-width: 48ch;
+            line-height: 1.75;
         }
 
-        .vitals {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-            padding: 12px;
-            border: 1px solid var(--line-soft);
-            border-radius: 14px;
-            background: rgba(255,255,255,0.9);
-            box-shadow: var(--shadow-soft);
-        }
-
-        .vital {
-            padding: 8px;
-            border-right: 1px solid rgba(0,0,0,0.06);
-        }
-
-        .vital:last-child { border-right: 0; }
-
-        .vital .k {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .vital .v {
-            margin-top: 4px;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .quick-commands {
-            margin-top: 16px;
+        .gallery {
+            margin-top: 22px;
             display: grid;
             gap: 10px;
         }
 
-        .command-row {
+        .gallery-main,
+        .gallery-side {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--line-soft);
+            box-shadow: var(--shadow-soft);
+            background: var(--bg-surface);
+        }
+
+        .gallery-main img,
+        .gallery-side img {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        .gallery-main img {
+            min-height: 240px;
+            max-height: 300px;
+        }
+
+        .gallery-side-grid {
             display: grid;
-            grid-template-columns: auto 1fr auto;
-            gap: 12px;
-            align-items: center;
-            padding: 13px 14px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .gallery-side img {
+            min-height: 155px;
+            max-height: 185px;
+        }
+
+        .metrics {
+            margin-top: 26px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .metric {
+            padding: 16px 14px;
             border: 1px solid var(--line-soft);
             border-radius: 12px;
             background: var(--bg-surface);
-            transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
             box-shadow: var(--shadow-soft);
         }
 
-        .command-row:active {
-            transform: scale(0.98);
-            background: var(--bg-surface-2);
-            border-color: var(--line-strong);
-        }
-
-        .command-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            display: grid;
-            place-items: center;
-            color: var(--accent);
-            background: var(--accent-soft);
-            font-size: 15px;
-        }
-
-        .command-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .command-desc {
-            margin-top: 2px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .command-row .go {
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        .divider {
-            margin: 24px 0 18px;
-            height: 1px;
-            background: linear-gradient(to right, transparent, var(--line-soft), transparent);
-        }
-
-        .flow-head {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 14px;
-        }
-
-        .flow-head h2 {
-            margin-top: 6px;
-            font-size: 28px;
-            line-height: 1.2;
-            letter-spacing: -0.01em;
+        .metric-number {
+            font-size: 32px;
+            line-height: 1.1;
             font-weight: 700;
+            letter-spacing: -0.01em;
         }
 
-        .flow-head .today {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--text-muted);
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .timeline {
-            margin-top: 14px;
-            border-left: 1px solid var(--line-soft);
-            padding-left: 16px;
-            display: grid;
-            gap: 14px;
-        }
-
-        .timeline-item {
-            position: relative;
-            padding: 0 0 0 2px;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -21px;
-            top: 7px;
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: var(--bg-page);
-            border: 2px solid var(--accent);
-        }
-
-        .timeline-time {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            color: var(--text-muted);
-        }
-
-        .timeline-title {
-            margin-top: 4px;
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .timeline-note {
+        .metric-label {
             margin-top: 4px;
             color: var(--text-secondary);
             line-height: 1.6;
         }
 
-        .status-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 8px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.16em;
-            font-weight: 600;
-            border: 1px solid transparent;
-        }
-
-        .status-pill.success {
-            color: #3f7e58;
-            background: var(--success-soft);
-            border-color: rgba(94,167,122,0.35);
-        }
-
-        .status-pill.info {
-            color: #4f6f99;
-            background: var(--info-soft);
-            border-color: rgba(123,159,201,0.34);
-        }
-
-        .workspace {
+        .why {
             margin-top: 24px;
-            display: grid;
-            gap: 12px;
+            border-top: 1px solid var(--line-soft);
+            padding-top: 18px;
         }
 
-        .workspace-col {
+        .why p {
+            margin-top: 10px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            max-width: 58ch;
+        }
+
+        .care-flow {
+            margin-top: 24px;
             border: 1px solid var(--line-soft);
             border-radius: 12px;
             background: var(--bg-surface);
-            overflow: hidden;
             box-shadow: var(--shadow-soft);
+            overflow: hidden;
         }
 
-        .workspace-head {
+        .flow-head {
             padding: 12px 14px;
             border-bottom: 1px solid var(--line-soft);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
         }
 
-        .workspace-title {
-            font-size: 11px;
-            letter-spacing: 0.18em;
+        .flow-head .date {
+            font-size: 10px;
             text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted);
             font-weight: 600;
-            color: var(--text-secondary);
+            white-space: nowrap;
         }
 
-        .workspace-list {
+        .flow-list {
             list-style: none;
         }
 
-        .workspace-item {
+        .flow-item {
             padding: 12px 14px;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
             display: grid;
             gap: 4px;
         }
 
-        .workspace-item:last-child { border-bottom: 0; }
+        .flow-item:last-child { border-bottom: 0; }
 
-        .workspace-item h4 {
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .workspace-item p {
-            color: var(--text-secondary);
-            line-height: 1.6;
-            font-size: 13px;
-        }
-
-        .workspace-item .meta {
+        .flow-time {
             font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.16em;
@@ -468,65 +341,59 @@
             font-weight: 600;
         }
 
-        .action-dock {
-            margin-top: 22px;
-            padding: 10px;
-            border: 1px solid var(--line-strong);
-            border-radius: 14px;
-            background: rgba(255,255,255,0.95);
-            display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--shadow-hard);
-        }
-
-        .dock-copy {
-            min-width: 0;
-        }
-
-        .dock-copy h3 {
-            font-size: 14px;
+        .flow-item h3 {
+            font-size: 15px;
             font-weight: 600;
         }
 
-        .dock-copy p {
-            margin-top: 2px;
-            font-size: 12px;
+        .flow-item p {
             color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.6;
         }
 
-        .dock-btn {
-            border: 0;
-            min-height: 42px;
+        .flow-actions {
+            margin-top: 22px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .flow-btn {
+            min-height: 44px;
             padding: 0 14px;
             border-radius: 10px;
+            border: 0;
             font-size: 11px;
             letter-spacing: 0.14em;
             text-transform: uppercase;
             font-weight: 700;
-            background: var(--accent);
-            color: #ffffff;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(215,106,125,0.24);
             transition: transform 0.25s ease, background 0.25s ease;
         }
 
-        .dock-btn:active {
-            transform: scale(0.96);
-            background: var(--accent-hover);
+        .flow-btn.primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(215, 106, 125, 0.24);
         }
+
+        .flow-btn.secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--line-strong);
+        }
+
+        .flow-btn:active { transform: scale(0.96); }
+
+        .flow-btn.primary:active { background: var(--accent-hover); }
+        .flow-btn.secondary:active { background: var(--bg-elevated); }
 
         .bottom-nav {
             position: fixed;
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: 25;
-            background: rgba(255,255,255,0.95);
+            z-index: 30;
+            background: rgba(255, 255, 255, 0.95);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
             border-top: 1px solid var(--line-soft);
@@ -534,7 +401,7 @@
         }
 
         .bottom-inner {
-            max-width: 680px;
+            max-width: 760px;
             margin: 0 auto;
             padding: 8px 12px 10px;
             display: grid;
@@ -563,9 +430,7 @@
             font-weight: 600;
         }
 
-        .nav-item.active {
-            color: var(--text-primary);
-        }
+        .nav-item.active { color: var(--text-primary); }
 
         .nav-item.active::before {
             content: '';
@@ -577,69 +442,24 @@
             background: var(--accent);
         }
 
-        .nav-item:active {
-            transform: scale(0.9);
-        }
-
-        .fade-in {
-            opacity: 0;
-            transform: translateY(16px);
-            animation: section-in 0.48s ease forwards;
-        }
-
-        .delay-1 { animation-delay: 0.04s; }
-        .delay-2 { animation-delay: 0.08s; }
-        .delay-3 { animation-delay: 0.12s; }
-        .delay-4 { animation-delay: 0.16s; }
-
-        @keyframes section-in {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        .nav-item:active { transform: scale(0.9); }
 
         @media (min-width: 600px) {
-            .screen {
-                padding-left: 24px;
-                padding-right: 24px;
-            }
-
-            .hero-grid {
-                grid-template-columns: 1.2fr 1fr;
-                align-items: end;
-            }
-
-            .workspace {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .bottom-inner {
-                gap: 8px;
-                padding-left: 24px;
-                padding-right: 24px;
-            }
+            .screen { padding-left: 24px; padding-right: 24px; }
+            .topbar-inner { padding-left: 24px; padding-right: 24px; }
+            .gallery { grid-template-columns: 1.3fr 1fr; }
+            .gallery-side-grid { grid-template-columns: 1fr; }
+            .gallery-side img { min-height: 128px; max-height: 145px; }
+            .metrics { grid-template-columns: repeat(3, 1fr); }
+            .flow-actions { grid-template-columns: 1fr 1fr; }
+            .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
+            .manifest-title { font-size: 40px; }
         }
 
         @media (min-width: 768px) {
-            .topbar-inner {
-                padding-left: 28px;
-                padding-right: 28px;
-            }
-
-            .screen {
-                max-width: 760px;
-                padding-left: 28px;
-                padding-right: 28px;
-            }
-
-            .hero-text h1 {
-                font-size: 44px;
-            }
-
-            .flow-head h2 {
-                font-size: 32px;
-            }
+            .screen { max-width: 820px; padding-left: 28px; padding-right: 28px; }
+            .topbar-inner { max-width: 820px; padding-left: 28px; padding-right: 28px; }
+            .manifest-title { font-size: 48px; max-width: 18ch; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -657,7 +477,7 @@
                 <div class="brand-mark">DB</div>
                 <div>
                     <div class="brand-title">dokter<span>DIBYA</span></div>
-                    <div class="brand-sub">Patient Care Portal</div>
+                    <div class="brand-sub">Private Patient Portal</div>
                 </div>
             </div>
             <div class="top-actions">
@@ -671,141 +491,78 @@
     </header>
 
     <main class="screen">
-        <section class="hero fade-in delay-1">
-            <div class="hero-grid">
-                <div class="hero-text">
-                    <div class="chip-label">Selamat Datang Kembali</div>
-                    <h1>Dian, rencana perawatan Anda hari ini sudah tertata.</h1>
-                    <p>Semua informasi penting kini tersusun lebih tenang: alur kunjungan, ringkasan kondisi, dokumen medis, dan akses konsultasi dokter dalam satu layar.</p>
-                </div>
-                <div class="vitals" aria-label="Ringkasan kondisi">
-                    <div class="vital">
-                        <div class="k">Usia Kandungan</div>
-                        <div class="v">31 Minggu</div>
-                    </div>
-                    <div class="vital">
-                        <div class="k">Tekanan</div>
-                        <div class="v">118/76</div>
-                    </div>
-                    <div class="vital">
-                        <div class="k">Vitamin</div>
-                        <div class="v">2/3</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="quick-commands" aria-label="Aksi utama">
-                <button class="command-row" aria-label="Mulai check in kunjungan">
-                    <span class="command-icon"><i class="fa-solid fa-stethoscope"></i></span>
-                    <span>
-                        <span class="command-title">Mulai Kehadiran Kunjungan</span>
-                        <span class="command-desc">Konfirmasi kedatangan dengan alur yang lebih ringkas dan nyaman</span>
-                    </span>
-                    <i class="fa-solid fa-arrow-right go"></i>
-                </button>
-                <button class="command-row" aria-label="Buka dokumen medis">
-                    <span class="command-icon"><i class="fa-solid fa-folder-open"></i></span>
-                    <span>
-                        <span class="command-title">Lihat Arsip Medis</span>
-                        <span class="command-desc">USG, hasil lab, resume, dan ringkasan administrasi terbaru</span>
-                    </span>
-                    <i class="fa-solid fa-arrow-right go"></i>
-                </button>
-                <button class="command-row" aria-label="Chat dokter">
-                    <span class="command-icon"><i class="fa-solid fa-comments"></i></span>
-                    <span>
-                        <span class="command-title">Konsultasi Terarah</span>
-                        <span class="command-desc">Sampaikan pertanyaan dengan konteks perawatan yang sudah tersimpan</span>
-                    </span>
-                    <i class="fa-solid fa-arrow-right go"></i>
-                </button>
-            </div>
+        <section class="hero-manifest">
+            <div class="kicker">About This Care Space</div>
+            <h1 class="manifest-title">
+                <span class="tracked">Portal yang presisi, tenang, dan personal</span>
+                Dian, seluruh perjalanan perawatan Anda disusun agar jelas dari hari ke hari.
+            </h1>
+            <p class="manifest-copy">
+                Kami mengadaptasi pendekatan editorial Anvil untuk menampilkan informasi klinis secara lebih terarah: lebih sedikit distraksi, lebih kuat dalam hierarki, dan lebih cepat untuk mengambil keputusan penting selama masa kehamilan.
+            </p>
         </section>
 
-        <div class="divider"></div>
-
-        <section class="flow fade-in delay-2" aria-label="Alur perawatan hari ini">
-            <div class="flow-head">
-                <div>
-                    <div class="section-label">Care Flow</div>
-                    <h2>Perjalanan Hari Ini</h2>
-                </div>
-                <div class="today">Senin, 23 Mar</div>
-            </div>
-
-            <div class="timeline">
-                <article class="timeline-item">
-                    <div class="timeline-time">08.30 WIB</div>
-                    <h3 class="timeline-title">Registrasi Digital Selesai</h3>
-                    <p class="timeline-note">Data kunjungan sudah valid, estimasi masuk ruang pemeriksaan dalam 25 menit.</p>
-                    <span class="status-pill success"><i class="fa-solid fa-check"></i> Completed</span>
-                </article>
-                <article class="timeline-item">
-                    <div class="timeline-time">09.10 WIB</div>
-                    <h3 class="timeline-title">USG Trimester Ketiga</h3>
-                    <p class="timeline-note">Persiapkan kartu kontrol dan minum air putih. Hasil akan otomatis tersimpan ke dokumen medis.</p>
-                    <span class="status-pill info"><i class="fa-solid fa-circle-info"></i> Upcoming</span>
-                </article>
-                <article class="timeline-item">
-                    <div class="timeline-time">10.00 WIB</div>
-                    <h3 class="timeline-title">Review Resep dan Vitamin</h3>
-                    <p class="timeline-note">Sistem akan menampilkan jadwal minum terbaru sesuai hasil konsultasi hari ini.</p>
-                    <span class="status-pill info"><i class="fa-solid fa-clock"></i> Planned</span>
-                </article>
-            </div>
-        </section>
-
-        <section class="workspace fade-in delay-3" aria-label="Workspace informasi">
-            <article class="workspace-col">
-                <header class="workspace-head">
-                    <h3 class="workspace-title">Pembaruan Klinis</h3>
-                    <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
-                </header>
-                <ul class="workspace-list">
-                    <li class="workspace-item">
-                        <div class="meta">Alert Prioritas</div>
-                        <h4>Jadwal kontrol berpindah ke 09.10</h4>
-                        <p>Perubahan karena penyesuaian urutan pasien. Silakan hadir 15 menit sebelum waktu pemeriksaan.</p>
-                    </li>
-                    <li class="workspace-item">
-                        <div class="meta">Pengingat</div>
-                        <h4>Minum suplemen malam pukul 20.00</h4>
-                        <p>Notifikasi aktif. Anda bisa ubah jam minum dari halaman profil pengingat.</p>
-                    </li>
-                </ul>
+        <section class="gallery" aria-label="Visual highlight">
+            <article class="gallery-main">
+                <img src="https://framerusercontent.com/images/R3WhB49Qk1S3CBuGz12HId9HLQ0.jpg?scale-down-to=1024&width=1504&height=958" alt="Konsultasi ibu hamil">
             </article>
-
-            <article class="workspace-col">
-                <header class="workspace-head">
-                    <h3 class="workspace-title">Ruang Dokumen</h3>
-                    <i class="fa-solid fa-file-circle-check" aria-hidden="true"></i>
-                </header>
-                <ul class="workspace-list">
-                    <li class="workspace-item">
-                        <div class="meta">USG Terbaru</div>
-                        <h4>USG 3D - 16 Maret 2026</h4>
-                        <p>Dokumen siap diunduh. Tambahkan ke album kenangan jika diperlukan.</p>
-                    </li>
-                    <li class="workspace-item">
-                        <div class="meta">Tagihan</div>
-                        <h4>Invoice kontrol: menunggu pembayaran</h4>
-                        <p>Total Rp450.000. Pembayaran online tersedia via halaman tagihan pasien.</p>
-                    </li>
-                    <li class="workspace-item">
-                        <div class="meta">Edukasi</div>
-                        <h4>Materi baru: tanda persalinan aktif</h4>
-                        <p>Konten edukasi terbaru sudah tersedia untuk minggu ke-31.</p>
-                    </li>
-                </ul>
+            <article class="gallery-side">
+                <div class="gallery-side-grid">
+                    <img src="https://framerusercontent.com/images/NmB7YIEWngRVVPmn3gUeM1yE0M.jpg?scale-down-to=1024&width=1684&height=960" alt="Fasilitas pemeriksaan">
+                    <img src="https://framerusercontent.com/images/8cAgjnsEXNYMrJ2Uz3Na3D5F4x4.jpg?width=832&height=986" alt="Tim dokter">
+                </div>
             </article>
         </section>
 
-        <section class="action-dock fade-in delay-4" aria-label="Aksi cepat akhir">
-            <div class="dock-copy">
-                <h3>Perlu arahan tambahan dari tim dokter?</h3>
-                <p>Kirim pertanyaan kapan saja. Tim akan merespons pada jam layanan dengan pendekatan yang terarah.</p>
-            </div>
-            <button class="dock-btn">Mulai Konsultasi</button>
+        <section class="metrics" aria-label="Patient trust metrics">
+            <article class="metric">
+                <div class="metric-number">3,000+</div>
+                <p class="metric-label">Kunjungan ibu hamil didampingi secara berkelanjutan.</p>
+            </article>
+            <article class="metric">
+                <div class="metric-number">21</div>
+                <p class="metric-label">Titik layanan dan kolaborasi rumah sakit terhubung.</p>
+            </article>
+            <article class="metric">
+                <div class="metric-number">30+</div>
+                <p class="metric-label">Staf medis dan support team siap mendampingi Anda.</p>
+            </article>
+        </section>
+
+        <section class="why">
+            <div class="section-title">Why It Works</div>
+            <p>
+                Berbeda dari dashboard biasa, halaman ini menempatkan narasi perawatan sebagai pusat: Anda memahami konteks klinis lebih dulu, lalu mengambil aksi. Pendekatan ini membuat pengalaman terasa lebih manusiawi sekaligus profesional.
+            </p>
+        </section>
+
+        <section class="care-flow" aria-label="Alur perawatan hari ini">
+            <header class="flow-head">
+                <div class="section-title">Care Flow</div>
+                <div class="date">Senin, 23 Mar</div>
+            </header>
+            <ul class="flow-list">
+                <li class="flow-item">
+                    <div class="flow-time">08.30 WIB</div>
+                    <h3>Registrasi Digital Terkonfirmasi</h3>
+                    <p>Data kunjungan Anda sudah lengkap. Sistem otomatis menyesuaikan estimasi pemeriksaan.</p>
+                </li>
+                <li class="flow-item">
+                    <div class="flow-time">09.10 WIB</div>
+                    <h3>USG Trimester Ketiga</h3>
+                    <p>Hasil USG akan langsung tersimpan pada arsip medis dan bisa ditinjau kembali kapan saja.</p>
+                </li>
+                <li class="flow-item">
+                    <div class="flow-time">10.00 WIB</div>
+                    <h3>Review Vitamin dan Edukasi</h3>
+                    <p>Jadwal konsumsi dan materi edukasi diperbarui sesuai hasil konsultasi terbaru.</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="flow-actions" aria-label="Aksi cepat">
+            <button class="flow-btn primary">Mulai Konsultasi</button>
+            <button class="flow-btn secondary">Lihat Arsip Medis</button>
         </section>
     </main>
 
