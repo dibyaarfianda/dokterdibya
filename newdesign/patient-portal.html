@@ -129,16 +129,18 @@
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
             border-bottom: 1px dashed var(--line-soft);
-            transition: transform 0.35s cubic-bezier(0.2, 0.75, 0.22, 1), border-color 0.3s ease;
+            transform: translateY(-100%);
             opacity: 0;
         }
 
         body.header-animated .topbar {
-            animation: topbarIn 760ms cubic-bezier(0.2, 0.75, 0.22, 1) both;
+            opacity: 1;
+            transform: translateY(0);
+            transition: transform 0.35s cubic-bezier(0.2, 0.75, 0.22, 1), border-color 0.3s ease, opacity 0.4s ease;
         }
 
-        .topbar.header-hidden {
-            transform: translateY(-100%);
+        body.header-animated .topbar.header-hidden {
+            transform: translateY(-100%) !important;
         }
 
         .topbar.scrolled {
@@ -2268,13 +2270,14 @@
 
         // ==================== SCROLL-RESPONSIVE NAVBAR (Anvil-style) ====================
         // Scroll down = header hides, scroll up = header shows
-        (function() {
-            var lastScrollY = 0;
+        document.addEventListener('DOMContentLoaded', function() {
+            var lastScrollY = window.scrollY;
             var topbar = document.getElementById('topbar');
             var ticking = false;
 
+            if (!topbar) return;
+
             function onScroll() {
-                if (!topbar) return;
                 var currentY = window.scrollY;
 
                 // Add/remove scrolled border
@@ -2301,7 +2304,7 @@
                     ticking = true;
                 }
             }, { passive: true });
-        })();
+        });
 
         // ==================== HEADER ANIMATION ====================
         (function() {
