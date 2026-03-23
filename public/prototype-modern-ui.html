@@ -7,39 +7,47 @@
     <title>Prototype Modern UI - dokterDIBYA</title>
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-        /* ========================================
-           CSS CUSTOM PROPERTIES — Franco Dark Theme
-           ======================================== */
+        /* ==========================================================
+           1. CSS CUSTOM PROPERTIES — Anvil Dark Design System
+           ========================================================== */
         :root {
-            --bg-primary: #0c0c0c;
+            --bg-page: #0c0c0c;
             --bg-secondary: #111111;
             --bg-card: #141414;
             --bg-card-elevated: #1a1a1a;
 
-            --text-primary: #f0ece4;
+            --gradient-hero: linear-gradient(167.4deg, #141414 0%, #222222 47.87%, #141414 97.6%);
+
+            --text-primary: #ffffff;
+            --text-body: #cccccc;
             --text-secondary: #a6a6a6;
             --text-muted: #7d7d7d;
 
-            --accent-gold: #c9a96e;
-            --accent-gold-hover: #d8b980;
-            --accent-soft: rgba(201, 169, 110, 0.16);
+            --accent: #ff2244;
+            --accent-hover: #ff3355;
+            --accent-soft: rgba(255, 34, 68, 0.15);
+            --success: #0c9100;
+            --success-soft: rgba(12, 145, 0, 0.12);
+            --danger: #e45858;
+            --info: #60a5fa;
+            --info-soft: rgba(96, 165, 250, 0.12);
 
             --border-subtle: rgba(255, 255, 255, 0.08);
             --border-strong: rgba(255, 255, 255, 0.14);
+            --border-separator: rgba(255, 255, 255, 0.06);
 
-            --success: #44b678;
-            --danger: #e45858;
-
+            --font: 'Inter', Arial, sans-serif;
             --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.25);
+            --shadow-btn: 0 0.6px 0.6px -1.25px rgba(0,0,0,0.18), 0 2.3px 2.3px -2.5px rgba(0,0,0,0.16), 0 10px 10px -3.75px rgba(0,0,0,0.08);
         }
 
-        /* ========================================
-           RESET & BASE
-           ======================================== */
+        /* ==========================================================
+           2. RESET & BASE
+           ========================================================== */
         *, *::before, *::after {
             margin: 0;
             padding: 0;
@@ -48,36 +56,41 @@
         }
 
         body {
-            font-family: 'DM Sans', Arial, sans-serif;
-            background: var(--bg-primary);
+            font-family: var(--font);
+            background: var(--bg-page);
             color: var(--text-primary);
             font-weight: 400;
-            font-size: 13px;
-            line-height: 1.6;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
-            -webkit-font-smoothing: antialiased;
         }
 
-        /* ========================================
-           ANIMATIONS
-           ======================================== */
+        ::selection {
+            background: #292929;
+            color: #ffffff;
+        }
+
+        /* ==========================================================
+           3. ANIMATIONS
+           ========================================================== */
         @keyframes fadeSlideUp {
             from { opacity: 0; transform: translateY(16px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-in {
-            animation: fadeSlideUp 0.5s ease both;
-        }
-        .delay-1 { animation-delay: 0.05s; }
-        .delay-2 { animation-delay: 0.1s; }
-        .delay-3 { animation-delay: 0.15s; }
-        .delay-4 { animation-delay: 0.2s; }
-        .delay-5 { animation-delay: 0.25s; }
-        .delay-6 { animation-delay: 0.3s; }
-        .delay-7 { animation-delay: 0.35s; }
-        .delay-8 { animation-delay: 0.4s; }
+        .anim { animation: fadeSlideUp 0.5s ease both; }
+        .d1 { animation-delay: 0.05s; }
+        .d2 { animation-delay: 0.10s; }
+        .d3 { animation-delay: 0.15s; }
+        .d4 { animation-delay: 0.20s; }
+        .d5 { animation-delay: 0.25s; }
+        .d6 { animation-delay: 0.30s; }
+        .d7 { animation-delay: 0.35s; }
+        .d8 { animation-delay: 0.40s; }
+        .d9 { animation-delay: 0.45s; }
+        .d10 { animation-delay: 0.50s; }
 
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
@@ -86,9 +99,35 @@
             }
         }
 
-        /* ========================================
-           1. NAVBAR (Fixed Top)
-           ======================================== */
+        /* ==========================================================
+           4. TYPOGRAPHY UTILITIES
+           ========================================================== */
+        .label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            line-height: 1.3;
+        }
+
+        .micro {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.28em;
+            line-height: 1.2;
+        }
+
+        .accent-bar {
+            width: 36px;
+            height: 3px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        /* ==========================================================
+           ZONE A: NAVBAR
+           ========================================================== */
         .navbar {
             position: fixed;
             top: env(safe-area-inset-top, 0px);
@@ -102,6 +141,10 @@
             padding: 12px 16px;
         }
 
+        @supports not (backdrop-filter: blur(1px)) {
+            .navbar { background: rgba(12, 12, 12, 0.95); }
+        }
+
         .navbar-inner {
             max-width: 600px;
             margin: 0 auto;
@@ -110,38 +153,36 @@
             justify-content: space-between;
         }
 
-        .navbar-brand {
+        .nav-brand {
             display: flex;
             flex-direction: column;
         }
 
-        .navbar-brand-text {
+        .nav-brand-name {
             font-size: 20px;
             font-weight: 700;
             line-height: 1.2;
             color: var(--text-primary);
         }
 
-        .navbar-brand-text .brand-accent {
-            color: var(--accent-gold);
-        }
+        .nav-brand-name span { color: var(--accent); }
 
-        .navbar-subtitle {
+        .nav-brand-sub {
             font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.22em;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
-        .navbar-actions {
+        .nav-actions {
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .navbar-btn {
+        .nav-bell {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -154,14 +195,12 @@
             font-size: 16px;
             position: relative;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease;
         }
 
-        .navbar-btn:active {
-            transform: scale(0.92);
-        }
+        .nav-bell:active { transform: scale(0.92); }
 
-        .navbar-btn .badge-dot {
+        .nav-bell .dot {
             position: absolute;
             top: 8px;
             right: 8px;
@@ -172,29 +211,27 @@
             border: 2px solid var(--bg-card);
         }
 
-        .navbar-avatar {
+        .nav-avatar {
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: var(--accent-gold);
+            background: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: 700;
-            color: #0c0c0c;
+            color: #fff;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease;
         }
 
-        .navbar-avatar:active {
-            transform: scale(0.92);
-        }
+        .nav-avatar:active { transform: scale(0.92); }
 
-        /* ========================================
-           MAIN CONTENT
-           ======================================== */
-        .main-content {
+        /* ==========================================================
+           MAIN CONTENT WRAPPER
+           ========================================================== */
+        .main {
             padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
             padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
             padding-left: 16px;
@@ -203,62 +240,39 @@
             margin: 0 auto;
         }
 
-        .section-gap {
-            margin-bottom: 16px;
+        /* ==========================================================
+           ZONE B1: PATIENT GREETING (open space, no card)
+           ========================================================== */
+        .greeting {
+            padding: 8px 0 24px;
         }
 
-        /* ========================================
-           2. WELCOME HERO CARD
-           ======================================== */
-        .welcome-card {
-            background: var(--bg-card-elevated);
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-card);
-            padding: 22px 20px;
-        }
-
-        .welcome-tag {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.22em;
+        .greeting-label {
             color: var(--text-muted);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        .welcome-name {
-            font-size: 30px;
+        .greeting-name {
+            font-size: 36px;
             font-weight: 700;
-            color: var(--text-primary);
+            letter-spacing: -0.02em;
             line-height: 1.15;
-            margin-bottom: 10px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
         }
 
-        .welcome-bar {
-            width: 36px;
-            height: 3px;
-            background: var(--accent-gold);
-            border-radius: 2px;
+        .greeting .accent-bar {
             margin-bottom: 14px;
         }
 
-        .welcome-tagline {
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            line-height: 1.7;
-            margin-bottom: 16px;
-        }
-
-        .pregnancy-badge {
+        .greeting-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             padding: 6px 14px;
             border-radius: 999px;
-            background: rgba(68, 182, 120, 0.12);
-            border: 1px solid rgba(68, 182, 120, 0.2);
+            background: var(--success-soft);
+            border: 1px solid rgba(12, 145, 0, 0.2);
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
@@ -266,38 +280,465 @@
             color: var(--success);
         }
 
-        /* ========================================
-           3. QUICK STATUS ROW
-           ======================================== */
-        .quick-status-row {
+        /* ==========================================================
+           ZONE B2: APPOINTMENT SPOTLIGHT
+           ========================================================== */
+        .appointment {
+            background: var(--gradient-hero);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .appt-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .appt-info { flex: 1; min-width: 0; }
+
+        .appt-label {
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .appt-date {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .appt-meta {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .appt-big-date {
+            text-align: center;
+            flex-shrink: 0;
+            padding-top: 4px;
+        }
+
+        .appt-big-num {
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1;
+            color: rgba(255, 34, 68, 0.15);
+        }
+
+        .appt-big-month {
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 13px 16px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            min-height: 44px;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-btn);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 13px 16px;
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            min-height: 44px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        /* ==========================================================
+           ZONE B3: HEALTH SNAPSHOT ROW
+           ========================================================== */
+        .health-row {
             display: flex;
             gap: 10px;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
-            padding: 2px 0;
+            margin: 0 -16px;
+            padding: 0 16px 24px;
         }
 
-        .quick-status-row::-webkit-scrollbar {
-            display: none;
-        }
+        .health-row::-webkit-scrollbar { display: none; }
 
-        .status-chip {
-            min-width: 200px;
+        .health-chip {
+            min-width: 155px;
+            flex-shrink: 0;
             scroll-snap-align: start;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 10px 10px 0;
+            padding: 12px 14px;
+        }
+
+        .health-chip.green { border-left-color: var(--success); }
+        .health-chip.blue { border-left-color: var(--info); }
+
+        .health-chip-label {
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .health-chip-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ==========================================================
+           ZONE C: ACTIVITY FEED
+           ========================================================== */
+        .feed-section {
+            margin-bottom: 32px;
+        }
+
+        .section-label {
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* --- C1: Doctor Message (Featured Card) --- */
+        .feed-featured {
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 12px;
             box-shadow: var(--shadow-card);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .msg-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-soft);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
             flex-shrink: 0;
         }
 
-        .chip-icon {
+        .msg-sender {
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .msg-time {
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .msg-body {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-body);
+            line-height: 1.6;
+            margin-bottom: 14px;
+            position: relative;
+        }
+
+        .msg-body.collapsed {
+            max-height: 68px;
+            overflow: hidden;
+        }
+
+        .msg-body.collapsed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
+        }
+
+        .msg-toggle {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent);
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: color 0.3s ease;
+            background: none;
+            border: none;
+            font-family: var(--font);
+            padding: 0;
+            min-height: 40px;
+            line-height: 40px;
+        }
+
+        .msg-toggle:active { color: var(--accent-hover); }
+
+        .msg-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* --- C2: Announcement (Borderless Row) --- */
+        .feed-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-separator);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .feed-row:active {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .feed-row-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: var(--accent);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feed-row-content { flex: 1; min-width: 0; }
+
+        .feed-row-label {
+            color: var(--accent);
+            margin-bottom: 3px;
+        }
+
+        .feed-row-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+        }
+
+        .feed-row-snippet {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* --- C3: Document (Compact Card) --- */
+        .feed-doc {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+
+        .feed-doc:active {
+            transform: scale(0.98);
+            background: var(--bg-card-elevated);
+        }
+
+        .feed-doc-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--info-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--info);
+            flex-shrink: 0;
+        }
+
+        .feed-doc-info { flex: 1; min-width: 0; }
+
+        .feed-doc-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .feed-doc-meta {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        .feed-doc-arrow {
+            font-size: 14px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* --- C4: Education (Image Card) --- */
+        .feed-article {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-card);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .feed-article:active { transform: scale(0.98); }
+
+        .feed-article-img {
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-secondary);
+            min-height: 180px;
+            max-height: 240px;
+        }
+
+        .feed-article-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            min-height: 180px;
+            max-height: 240px;
+        }
+
+        .feed-article-img .grad {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
+        }
+
+        .feed-article-body {
+            padding: 0 20px 20px;
+            margin-top: -36px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feed-article-tag {
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+
+        .feed-article-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.25;
+            margin-bottom: 6px;
+        }
+
+        .feed-article-meta {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        /* ==========================================================
+           ZONE D: SERVICES DOCK
+           ========================================================== */
+        .services-section {
+            margin-bottom: 16px;
+        }
+
+        .services-label {
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        /* Mobile: List layout */
+        .services-list { }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-separator);
+            cursor: pointer;
+            transition: background 0.3s ease;
+            position: relative;
+        }
+
+        .service-item:last-child { border-bottom: none; }
+
+        .service-item:active {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .service-icon {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -308,439 +749,21 @@
             flex-shrink: 0;
         }
 
-        .chip-icon.gold {
-            background: var(--accent-soft);
-            color: var(--accent-gold);
-        }
+        .service-text { flex: 1; min-width: 0; }
 
-        .chip-icon.green {
-            background: rgba(68, 182, 120, 0.12);
-            color: var(--success);
-        }
-
-        .chip-text {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .chip-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-
-        .chip-subtitle {
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* ========================================
-           4. COLLAPSIBLE MESSAGE CARD
-           ======================================== */
-        .collapsible-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-card);
-            overflow: hidden;
-        }
-
-        .collapsible-trigger {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 20px;
-            cursor: pointer;
-            width: 100%;
-            border: none;
-            background: none;
-            text-align: left;
-            font-family: 'DM Sans', Arial, sans-serif;
-            transition: background 0.3s ease;
-        }
-
-        .collapsible-trigger:active {
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .collapsible-trigger .trigger-icon {
-            font-size: 16px;
-            color: var(--accent-gold);
-            flex-shrink: 0;
-        }
-
-        .collapsible-trigger .trigger-title {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.22em;
-            color: var(--text-primary);
-            flex: 1;
-        }
-
-        .collapsible-trigger .trigger-chevron {
-            font-size: 13px;
-            color: var(--text-muted);
-            transition: transform 0.3s ease;
-            flex-shrink: 0;
-        }
-
-        .collapsible-trigger.open .trigger-chevron {
-            transform: rotate(180deg);
-        }
-
-        .collapsible-body {
-            padding: 0 20px 20px;
-            display: none;
-        }
-
-        .collapsible-body.show {
-            display: block;
-        }
-
-        .collapsible-body p {
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            line-height: 1.75;
-            margin-bottom: 12px;
-        }
-
-        .collapsible-signature {
-            text-align: right;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--accent-gold);
-        }
-
-        /* ========================================
-           5. BIRTH CONGRATULATIONS CARD
-           ======================================== */
-        .birth-card {
-            border-radius: 12px;
-            overflow: hidden;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-card);
-        }
-
-        .birth-image-wrap {
-            position: relative;
-            aspect-ratio: 16 / 10;
-            overflow: hidden;
-            background: var(--bg-secondary);
-        }
-
-        .birth-image-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .birth-image-wrap .gradient-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 100px;
-            background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
-        }
-
-        .birth-body {
-            padding: 0 20px 24px;
-            margin-top: -40px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .birth-tag {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.28em;
-            color: var(--accent-gold);
-            margin-bottom: 8px;
-        }
-
-        .birth-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-primary);
-            line-height: 1.2;
-            margin-bottom: 8px;
-        }
-
-        .birth-bar {
-            width: 36px;
-            height: 3px;
-            background: var(--accent-gold);
-            border-radius: 2px;
-            margin-bottom: 14px;
-        }
-
-        .birth-doctor {
-            font-size: 10px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-
-        .birth-baby-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--accent-gold);
-            margin-bottom: 16px;
-        }
-
-        .birth-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .birth-stat {
-            padding: 14px 16px;
-        }
-
-        .birth-stat:nth-child(1) { border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
-        .birth-stat:nth-child(2) { border-bottom: 1px solid var(--border-subtle); }
-        .birth-stat:nth-child(3) { border-right: 1px solid var(--border-subtle); }
-
-        .birth-stat-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        .birth-stat-value {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        /* ========================================
-           6. ANNOUNCEMENT CARD
-           ======================================== */
-        .announcement-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-card);
-            padding: 20px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .announcement-card:active {
-            transform: scale(0.98);
-        }
-
-        .announcement-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .announcement-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--accent-soft);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .service-title {
             font-size: 14px;
-            color: var(--accent-gold);
-            flex-shrink: 0;
-        }
-
-        .announcement-title-area {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .announcement-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.22em;
-            color: var(--accent-gold);
-            margin-bottom: 2px;
-        }
-
-        .announcement-title {
-            font-size: 15px;
             font-weight: 600;
             color: var(--text-primary);
         }
 
-        .announcement-body {
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            line-height: 1.75;
-        }
-
-        /* ========================================
-           7. TANYA DOKTER CARD
-           ======================================== */
-        .ask-doctor-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-card);
-            padding: 22px 20px;
-        }
-
-        .ask-doctor-label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.22em;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .ask-doctor-desc {
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            line-height: 1.75;
-            margin-bottom: 18px;
-        }
-
-        .ask-doctor-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .ask-doctor-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 10px;
-            font-family: 'DM Sans', Arial, sans-serif;
+        .service-sub {
             font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-height: 44px;
-        }
-
-        .ask-doctor-btn.primary {
-            background: var(--accent-gold);
-            color: #0c0c0c;
-        }
-
-        .ask-doctor-btn.primary:active {
-            background: var(--accent-gold-hover);
-            transform: scale(0.97);
-        }
-
-        .ask-doctor-btn.secondary {
-            background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--border-strong);
-        }
-
-        .ask-doctor-btn.secondary:active {
-            background: rgba(255, 255, 255, 0.04);
-            transform: scale(0.97);
-        }
-
-        .ask-doctor-btn i {
-            font-size: 14px;
-        }
-
-        /* ========================================
-           8. MENU GRID
-           ======================================== */
-        .menu-section-label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.28em;
-            color: var(--text-muted);
-            margin-bottom: 14px;
-        }
-
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .menu-item {
-            position: relative;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            box-shadow: var(--shadow-card);
-            padding: 20px 12px 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .menu-item:active {
-            transform: scale(0.96);
-            background: var(--bg-card-elevated);
-        }
-
-        .menu-icon-wrap {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .menu-item-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-
-        .menu-item-subtitle {
-            font-size: 10px;
             font-weight: 400;
             color: var(--text-muted);
         }
 
-        .menu-badge {
-            position: absolute;
-            top: 8px;
-            right: 8px;
+        .service-badge {
             width: 20px;
             height: 20px;
             border-radius: 50%;
@@ -751,11 +774,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
-        /* ========================================
-           9. BOTTOM NAV (Fixed Bottom)
-           ======================================== */
+        .service-arrow {
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* Hide grid-only elements on mobile */
+        .service-item .service-sub-grid { display: none; }
+
+        /* ==========================================================
+           ZONE E: BOTTOM NAV
+           ========================================================== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -769,7 +802,11 @@
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        .bottom-nav-inner {
+        @supports not (backdrop-filter: blur(1px)) {
+            .bottom-nav { background: rgba(12, 12, 12, 0.96); }
+        }
+
+        .bnav-inner {
             max-width: 600px;
             margin: 0 auto;
             display: flex;
@@ -778,7 +815,7 @@
             padding: 8px 0 6px;
         }
 
-        .bottom-nav-item {
+        .bnav-item {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -789,40 +826,21 @@
             min-width: 64px;
             min-height: 44px;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease;
             background: none;
             border: none;
-            font-family: 'DM Sans', Arial, sans-serif;
+            font-family: var(--font);
         }
 
-        .bottom-nav-item:active {
-            transform: scale(0.9);
-        }
+        .bnav-item:active { transform: scale(0.9); }
 
-        .bottom-nav-item .nav-icon {
-            font-size: 20px;
-            color: var(--text-muted);
-            transition: color 0.3s ease;
-        }
+        .bnav-item .bi { font-size: 20px; color: var(--text-muted); }
+        .bnav-item .bl { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
 
-        .bottom-nav-item .nav-label {
-            font-size: 10px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--text-muted);
-            transition: color 0.3s ease;
-        }
+        .bnav-item.active .bi { color: var(--accent); }
+        .bnav-item.active .bl { color: var(--accent); }
 
-        .bottom-nav-item.active .nav-icon {
-            color: var(--accent-gold);
-        }
-
-        .bottom-nav-item.active .nav-label {
-            color: var(--accent-gold);
-        }
-
-        .bottom-nav-item.active::after {
+        .bnav-item.active::after {
             content: '';
             position: absolute;
             top: 0;
@@ -830,306 +848,340 @@
             transform: translateX(-50%);
             width: 24px;
             height: 3px;
-            background: var(--accent-gold);
+            background: var(--accent);
             border-radius: 0 0 3px 3px;
         }
 
-        /* ========================================
-           RESPONSIVE — Tablet (600px)
-           ======================================== */
+        /* ==========================================================
+           RESPONSIVE — Tablet (600px+)
+           ========================================================== */
         @media (min-width: 600px) {
-            .main-content {
+            .main {
                 padding-left: 24px;
                 padding-right: 24px;
             }
 
-            .section-gap {
-                margin-bottom: 24px;
+            .greeting-name { font-size: 42px; }
+            .feed-section { margin-bottom: 40px; }
+
+            .health-row {
+                margin: 0;
+                padding: 0 0 24px;
             }
 
-            .menu-grid {
+            /* Services: switch to 3-col grid */
+            .services-list {
+                display: grid;
                 grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
             }
 
-            .menu-icon-wrap {
-                width: 56px;
-                height: 56px;
-                font-size: 24px;
+            .service-item {
+                flex-direction: column;
+                text-align: center;
+                padding: 20px 12px 16px;
+                border-bottom: none;
+                background: var(--bg-card);
+                border: 1px solid var(--border-subtle);
+                border-radius: 12px;
+                box-shadow: var(--shadow-card);
+                gap: 8px;
             }
 
-            .menu-item-title {
-                font-size: 13px;
+            .service-item:active {
+                transform: scale(0.96);
+                background: var(--bg-card-elevated);
             }
 
-            .welcome-name {
-                font-size: 36px;
+            .service-icon {
+                width: 52px;
+                height: 52px;
+                font-size: 22px;
             }
 
-            .birth-title {
-                font-size: 28px;
-            }
+            .service-arrow { display: none; }
+            .service-badge { position: absolute; top: 8px; right: 8px; }
+            .service-item .service-sub { display: none; }
+            .service-item .service-sub-grid { display: block; font-size: 10px; font-weight: 400; color: var(--text-muted); }
         }
 
-        /* ========================================
-           RESPONSIVE — Desktop (768px)
-           ======================================== */
+        /* ==========================================================
+           RESPONSIVE — Desktop (768px+)
+           ========================================================== */
         @media (min-width: 768px) {
-            .navbar {
-                padding: 14px 32px;
-            }
+            .navbar { padding: 14px 32px; }
 
-            .main-content {
+            .main {
                 max-width: 640px;
                 padding-left: 32px;
                 padding-right: 32px;
             }
 
-            .menu-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
+            .greeting-name { font-size: 48px; }
 
-            .welcome-name {
-                font-size: 40px;
+            .services-list {
+                grid-template-columns: repeat(4, 1fr);
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- =============================================
-         1. NAVBAR
-         ============================================= -->
+    <!-- ===== ZONE A: NAVBAR ===== -->
     <nav class="navbar">
         <div class="navbar-inner">
-            <div class="navbar-brand">
-                <div class="navbar-brand-text">
-                    dokter<span class="brand-accent">DIBYA</span>
-                </div>
-                <div class="navbar-subtitle">Portal Privat Kandungan</div>
+            <div class="nav-brand">
+                <div class="nav-brand-name">dokter<span>DIBYA</span></div>
+                <div class="nav-brand-sub">Portal Privat Kandungan</div>
             </div>
-            <div class="navbar-actions">
-                <button class="navbar-btn" aria-label="Notifikasi">
+            <div class="nav-actions">
+                <button class="nav-bell" aria-label="Notifikasi">
                     <i class="fa-solid fa-bell"></i>
-                    <span class="badge-dot"></span>
+                    <span class="dot"></span>
                 </button>
-                <div class="navbar-avatar">D</div>
+                <div class="nav-avatar" aria-label="Profil">D</div>
             </div>
         </div>
     </nav>
 
-    <!-- =============================================
-         MAIN CONTENT
-         ============================================= -->
-    <main class="main-content">
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main">
 
-        <!-- 2. WELCOME HERO CARD -->
-        <section class="welcome-card section-gap animate-in delay-1">
-            <div class="welcome-tag">Selamat Sore</div>
-            <h1 class="welcome-name">Dian Permatasari</h1>
-            <div class="welcome-bar"></div>
-            <p class="welcome-tagline">Semoga hari Anda menyenangkan. Berikut ringkasan kesehatan ibu dan janin terkini.</p>
-            <span class="pregnancy-badge">
-                <i class="fa-solid fa-heart"></i>
+        <!-- ZONE B1: Patient Greeting (no card — open editorial space) -->
+        <section class="greeting anim d1">
+            <div class="micro greeting-label">Selamat Sore</div>
+            <h1 class="greeting-name">Dian Permatasari</h1>
+            <div class="accent-bar"></div>
+            <span class="greeting-badge">
+                <i class="fa-solid fa-heart" style="font-size: 10px;"></i>
                 Trimester 3 &bull; 32 Minggu
             </span>
         </section>
 
-        <!-- 3. QUICK STATUS CHIPS -->
-        <section class="section-gap animate-in delay-2">
-            <div class="quick-status-row">
-                <div class="status-chip">
-                    <div class="chip-icon gold">
-                        <i class="fa-solid fa-calendar-check"></i>
-                    </div>
-                    <div class="chip-text">
-                        <span class="chip-label">Booking Aktif</span>
-                        <span class="chip-subtitle">Minggu, 23 Mar &bull; 09:00</span>
-                    </div>
+        <!-- ZONE B2: Appointment Spotlight -->
+        <section class="appointment anim d2">
+            <div class="appt-row">
+                <div class="appt-info">
+                    <div class="micro appt-label">Janji Berikutnya</div>
+                    <div class="appt-date">Minggu, 23 Maret</div>
+                    <div class="appt-meta">09:00 WIB &bull; Klinik Privat</div>
                 </div>
-                <div class="status-chip">
-                    <div class="chip-icon green">
-                        <i class="fa-solid fa-capsules"></i>
-                    </div>
-                    <div class="chip-text">
-                        <span class="chip-label">Vitamin Hari Ini</span>
-                        <span class="chip-subtitle">2 dari 3 diminum</span>
-                    </div>
+                <div class="appt-big-date">
+                    <div class="appt-big-num">23</div>
+                    <div class="micro appt-big-month">Mar</div>
                 </div>
             </div>
-        </section>
-
-        <!-- 4. COLLAPSIBLE MESSAGE CARD -->
-        <section class="collapsible-card section-gap animate-in delay-3">
-            <button class="collapsible-trigger open" onclick="toggleCollapsible(this)" aria-expanded="true">
-                <i class="fa-solid fa-heart trigger-icon"></i>
-                <span class="trigger-title">Selamat Datang</span>
-                <i class="fa-solid fa-chevron-down trigger-chevron"></i>
+            <button class="btn-primary">
+                <i class="fa-solid fa-calendar-check"></i>
+                Konfirmasi Jadwal
             </button>
-            <div class="collapsible-body show">
-                <p>Terima kasih telah mempercayakan kesehatan Anda dan buah hati kepada kami. Portal ini dirancang untuk memudahkan Anda memantau perkembangan kehamilan, melihat hasil pemeriksaan, dan berkomunikasi langsung dengan dokter.</p>
-                <p>Jangan ragu untuk menggunakan fitur Tanya Dokter jika ada pertanyaan di luar jam konsultasi.</p>
-                <div class="collapsible-signature">&mdash; dr. Dibya</div>
-            </div>
         </section>
 
-        <!-- 5. BIRTH CONGRATULATIONS CARD -->
-        <section class="birth-card section-gap animate-in delay-4">
-            <div class="birth-image-wrap">
-                <img src="https://placehold.co/600x400/1a1a1a/c9a96e?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
-                <div class="gradient-overlay"></div>
-            </div>
-            <div class="birth-body">
-                <div class="birth-tag">Selamat</div>
-                <h2 class="birth-title">Kelahiran Buah Hati!</h2>
-                <div class="birth-bar"></div>
-                <div class="birth-doctor">Dipersembahkan oleh dr. Dibya, SpOG</div>
-                <div class="birth-baby-name">Putra Nanda</div>
-                <div class="birth-stats">
-                    <div class="birth-stat">
-                        <div class="birth-stat-label">Tanggal</div>
-                        <div class="birth-stat-value">15 Mar 2026</div>
-                    </div>
-                    <div class="birth-stat">
-                        <div class="birth-stat-label">Waktu</div>
-                        <div class="birth-stat-value">08:30 WIB</div>
-                    </div>
-                    <div class="birth-stat">
-                        <div class="birth-stat-label">Berat</div>
-                        <div class="birth-stat-value">3.200 gr</div>
-                    </div>
-                    <div class="birth-stat">
-                        <div class="birth-stat-label">Panjang</div>
-                        <div class="birth-stat-value">49 cm</div>
-                    </div>
+        <!-- ZONE B3: Health Snapshot Row -->
+        <section class="anim d3">
+            <div class="health-row">
+                <div class="health-chip">
+                    <div class="micro health-chip-label">Vitamin</div>
+                    <div class="health-chip-value">2 / 3 diminum</div>
+                </div>
+                <div class="health-chip green">
+                    <div class="micro health-chip-label">Berat Badan</div>
+                    <div class="health-chip-value">68 kg (+0.5)</div>
+                </div>
+                <div class="health-chip blue">
+                    <div class="micro health-chip-label">Dokumen Baru</div>
+                    <div class="health-chip-value">3 file</div>
                 </div>
             </div>
         </section>
 
-        <!-- 6. ANNOUNCEMENT CARD -->
-        <section class="announcement-card section-gap animate-in delay-5">
-            <div class="announcement-header">
-                <div class="announcement-icon">
+        <!-- ZONE C: Activity Feed -->
+        <section class="feed-section">
+            <div class="label section-label anim d4">Aktivitas Terkini</div>
+
+            <!-- C1: Doctor Message (Featured) -->
+            <article class="feed-featured anim d5">
+                <div class="msg-header">
+                    <div class="msg-avatar">dr</div>
+                    <div class="label msg-sender">Dr. Dibya, SpOG</div>
+                    <div class="msg-time">2 jam lalu</div>
+                </div>
+                <div class="msg-body collapsed" id="msgBody">
+                    Terima kasih telah mempercayakan kesehatan Anda dan buah hati kepada kami. Portal ini dirancang untuk memudahkan Anda memantau perkembangan kehamilan, melihat hasil pemeriksaan, dan berkomunikasi langsung dengan dokter.
+                    <br><br>
+                    Jangan ragu untuk menggunakan fitur Tanya Dokter jika ada pertanyaan di luar jam konsultasi. Kami selalu siap membantu Anda.
+                </div>
+                <button class="msg-toggle" onclick="toggleReadMore()" id="msgToggle">Baca selengkapnya</button>
+                <div class="msg-actions">
+                    <button class="btn-primary"><i class="fa-solid fa-pen"></i> Tanya Baru</button>
+                    <button class="btn-secondary"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</button>
+                </div>
+            </article>
+
+            <!-- C2: Announcement (Borderless Row) -->
+            <div class="feed-row anim d6">
+                <div class="feed-row-icon">
                     <i class="fa-solid fa-bullhorn"></i>
                 </div>
-                <div class="announcement-title-area">
-                    <div class="announcement-label">Pengumuman</div>
-                    <div class="announcement-title">Pembaruan Portal - Maret 2026</div>
+                <div class="feed-row-content">
+                    <div class="micro feed-row-label">Pengumuman</div>
+                    <div class="feed-row-title">Pembaruan Portal - Maret 2026</div>
+                    <div class="feed-row-snippet">Tampilan baru yang lebih modern dan mudah digunakan</div>
                 </div>
             </div>
-            <div class="announcement-body">
-                Portal pasien telah diperbarui dengan tampilan baru yang lebih modern dan mudah digunakan. Fitur Tanya Dokter kini mendukung pengiriman foto untuk konsultasi jarak jauh.
+
+            <!-- C3: Document (Compact Card) -->
+            <div class="feed-doc anim d7">
+                <div class="feed-doc-icon">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div class="feed-doc-info">
+                    <div class="feed-doc-name">Hasil USG - 20 Maret 2026</div>
+                    <div class="feed-doc-meta">dokumen-usg-20032026.pdf &bull; 2.4 MB</div>
+                </div>
+                <div class="feed-doc-arrow">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
             </div>
+
+            <!-- C4: Education (Image Card) -->
+            <article class="feed-article anim d8">
+                <div class="feed-article-img">
+                    <img src="https://placehold.co/600x340/1a1a1a/ff2244?text=Persiapan+Persalinan" alt="Artikel Edukasi" loading="lazy">
+                    <div class="grad"></div>
+                </div>
+                <div class="feed-article-body">
+                    <div class="micro feed-article-tag">Edukasi</div>
+                    <h2 class="feed-article-title">Persiapan Persalinan Trimester Ketiga</h2>
+                    <div class="feed-article-meta">5 menit baca &bull; dr. Dibya</div>
+                </div>
+            </article>
         </section>
 
-        <!-- 7. TANYA DOKTER CARD -->
-        <section class="ask-doctor-card section-gap animate-in delay-6">
-            <div class="ask-doctor-label">Tanya Dokter</div>
-            <p class="ask-doctor-desc">Punya pertanyaan seputar kehamilan? Kirim pesan langsung ke dr. Dibya dan dapatkan jawaban dalam 24 jam.</p>
-            <div class="ask-doctor-grid">
-                <button class="ask-doctor-btn primary">
-                    <i class="fa-solid fa-pen"></i>
-                    Tanya Baru
-                </button>
-                <button class="ask-doctor-btn secondary">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    Riwayat
-                </button>
-            </div>
-        </section>
-
-        <!-- 8. MENU GRID -->
-        <section class="section-gap animate-in delay-7">
-            <div class="menu-section-label">Menu</div>
-            <div class="menu-grid">
+        <!-- ZONE D: Services Dock -->
+        <section class="services-section anim d9">
+            <div class="label services-label">Layanan</div>
+            <div class="services-list">
                 <!-- Dokumen -->
-                <div class="menu-item">
-                    <span class="menu-badge">3</span>
-                    <div class="menu-icon-wrap" style="background: var(--accent-soft);">
-                        <i class="fa-solid fa-file-lines" style="color: var(--accent-gold);"></i>
+                <div class="service-item">
+                    <div class="service-icon" style="background: var(--accent-soft); color: var(--accent);">
+                        <i class="fa-solid fa-file-lines"></i>
                     </div>
-                    <div class="menu-item-title">Dokumen</div>
-                    <div class="menu-item-subtitle">Hasil lab & USG</div>
-                </div>
-                <!-- Aplikasi -->
-                <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(244,114,182,0.12);">
-                        <i class="fa-solid fa-heart-pulse" style="color: #f472b6;"></i>
+                    <div class="service-text">
+                        <div class="service-title">Dokumen</div>
+                        <div class="service-sub">USG, Lab, Riwayat</div>
+                        <div class="service-sub-grid">USG, Lab, Riwayat</div>
                     </div>
-                    <div class="menu-item-title">Aplikasi</div>
-                    <div class="menu-item-subtitle">Kesehatan ibu</div>
+                    <span class="service-badge">3</span>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
                 </div>
                 <!-- Jadwal -->
-                <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(68,182,120,0.12);">
-                        <i class="fa-solid fa-calendar-days" style="color: var(--success);"></i>
+                <div class="service-item">
+                    <div class="service-icon" style="background: var(--success-soft); color: var(--success);">
+                        <i class="fa-solid fa-calendar-days"></i>
                     </div>
-                    <div class="menu-item-title">Jadwal</div>
-                    <div class="menu-item-subtitle">Booking kontrol</div>
+                    <div class="service-text">
+                        <div class="service-title">Jadwal</div>
+                        <div class="service-sub">Booking kontrol</div>
+                        <div class="service-sub-grid">Booking kontrol</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
+                </div>
+                <!-- Kesehatan Ibu -->
+                <div class="service-item">
+                    <div class="service-icon" style="background: rgba(244,114,182,0.12); color: #f472b6;">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div class="service-text">
+                        <div class="service-title">Kesehatan Ibu</div>
+                        <div class="service-sub">Kick counter, tracker</div>
+                        <div class="service-sub-grid">Tracker</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
                 </div>
                 <!-- Edukasi -->
-                <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(96,165,250,0.12);">
-                        <i class="fa-solid fa-book-open" style="color: #60a5fa;"></i>
+                <div class="service-item">
+                    <div class="service-icon" style="background: var(--info-soft); color: var(--info);">
+                        <i class="fa-solid fa-book-open"></i>
                     </div>
-                    <div class="menu-item-title">Edukasi</div>
-                    <div class="menu-item-subtitle">Artikel kehamilan</div>
+                    <div class="service-text">
+                        <div class="service-title">Edukasi</div>
+                        <div class="service-sub">Artikel kehamilan</div>
+                        <div class="service-sub-grid">Artikel</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
                 </div>
                 <!-- Tanya Dokter -->
-                <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: var(--accent-soft);">
-                        <i class="fa-solid fa-comments" style="color: var(--accent-gold);"></i>
+                <div class="service-item">
+                    <div class="service-icon" style="background: rgba(167,139,250,0.12); color: #a78bfa;">
+                        <i class="fa-solid fa-comments"></i>
                     </div>
-                    <div class="menu-item-title">Tanya Dokter</div>
-                    <div class="menu-item-subtitle">Chat konsultasi</div>
+                    <div class="service-text">
+                        <div class="service-title">Tanya Dokter</div>
+                        <div class="service-sub">Chat konsultasi</div>
+                        <div class="service-sub-grid">Konsultasi</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
                 </div>
                 <!-- Tagihan -->
-                <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(167,139,250,0.12);">
-                        <i class="fa-solid fa-credit-card" style="color: #a78bfa;"></i>
+                <div class="service-item">
+                    <div class="service-icon" style="background: rgba(251,191,36,0.12); color: #fbbf24;">
+                        <i class="fa-solid fa-credit-card"></i>
                     </div>
-                    <div class="menu-item-title">Tagihan</div>
-                    <div class="menu-item-subtitle">Invoice & bayar</div>
+                    <div class="service-text">
+                        <div class="service-title">Tagihan</div>
+                        <div class="service-sub">Invoice & bayar</div>
+                        <div class="service-sub-grid">Invoice</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
                 </div>
                 <!-- Bantuan -->
-                <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(255,255,255,0.06);">
-                        <i class="fa-solid fa-circle-question" style="color: var(--text-muted);"></i>
+                <div class="service-item">
+                    <div class="service-icon" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                        <i class="fa-solid fa-circle-question"></i>
                     </div>
-                    <div class="menu-item-title">Bantuan</div>
-                    <div class="menu-item-subtitle">FAQ & kontak</div>
+                    <div class="service-text">
+                        <div class="service-title">Bantuan</div>
+                        <div class="service-sub">FAQ & kontak</div>
+                        <div class="service-sub-grid">FAQ</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right service-arrow"></i>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <!-- =============================================
-         9. BOTTOM NAV
-         ============================================= -->
+    <!-- ===== ZONE E: BOTTOM NAV ===== -->
     <nav class="bottom-nav">
-        <div class="bottom-nav-inner">
-            <button class="bottom-nav-item active" aria-label="Home">
-                <i class="fa-solid fa-house nav-icon"></i>
-                <span class="nav-label">Home</span>
+        <div class="bnav-inner">
+            <button class="bnav-item active" aria-label="Home">
+                <i class="fa-solid fa-house bi"></i>
+                <span class="bl">Home</span>
             </button>
-            <button class="bottom-nav-item" aria-label="Notifikasi">
-                <i class="fa-solid fa-bell nav-icon"></i>
-                <span class="nav-label">Notifikasi</span>
+            <button class="bnav-item" aria-label="Notifikasi">
+                <i class="fa-solid fa-bell bi"></i>
+                <span class="bl">Notifikasi</span>
             </button>
-            <button class="bottom-nav-item" aria-label="Profil">
-                <i class="fa-solid fa-user nav-icon"></i>
-                <span class="nav-label">Profil</span>
+            <button class="bnav-item" aria-label="Profil">
+                <i class="fa-solid fa-user bi"></i>
+                <span class="bl">Profil</span>
             </button>
         </div>
     </nav>
 
-    <!-- Minimal JS: collapsible toggle -->
+    <!-- Minimal JS -->
     <script>
-        function toggleCollapsible(trigger) {
-            trigger.classList.toggle('open');
-            var body = trigger.nextElementSibling;
-            body.classList.toggle('show');
-            trigger.setAttribute('aria-expanded', body.classList.contains('show'));
+        function toggleReadMore() {
+            var body = document.getElementById('msgBody');
+            var btn = document.getElementById('msgToggle');
+            if (body.classList.contains('collapsed')) {
+                body.classList.remove('collapsed');
+                btn.textContent = 'Tutup';
+            } else {
+                body.classList.add('collapsed');
+                btn.textContent = 'Baca selengkapnya';
+            }
         }
     </script>
 
