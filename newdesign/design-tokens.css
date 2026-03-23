@@ -1,0 +1,188 @@
+/*
+ * ==========================================================
+ * ANVIL DESIGN TOKENS — Extracted from anvil.framer.media
+ * Adapted for dokterDIBYA Patient Portal
+ * ==========================================================
+ *
+ * Reference: https://anvil.framer.media/
+ * Template:  Anvill by Mahir Abid (Framer Marketplace)
+ * Style:     Dark, minimal, monochromatic, editorial
+ * ==========================================================
+ */
+
+:root {
+    /* =====================================================
+       COLORS — Backgrounds
+       ===================================================== */
+    --bg-page:              #0c0c0c;     /* Main page background */
+    --bg-secondary:         #111111;     /* Alternate section background */
+    --bg-card:              #141414;     /* Card / surface background */
+    --bg-card-elevated:     #1a1a1a;     /* Elevated card / hover state */
+    --bg-input:             #141414;     /* Input field background */
+    --bg-selection:         #292929;     /* Text selection background */
+
+    /* Hero gradient (167.4deg angle) */
+    --gradient-hero:        linear-gradient(167.4deg, #141414 0%, #222222 47.87%, #141414 97.6%);
+
+    /* =====================================================
+       COLORS — Text
+       ===================================================== */
+    --text-primary:         #ffffff;     /* Headings, primary content */
+    --text-body:            #cccccc;     /* Body copy */
+    --text-secondary:       #a6a6a6;    /* Supporting text */
+    --text-muted:           #7d7d7d;    /* Captions, labels */
+    --text-placeholder:     #999999;    /* Input placeholder text */
+    --text-disabled:        #666666;    /* Disabled / inactive text */
+
+    /* =====================================================
+       COLORS — Accent
+       ===================================================== */
+    --accent-primary:       #ff2244;    /* Primary CTA, links, highlights (Anvil red) */
+    --accent-primary-hover: #ff3355;    /* Hover state */
+    --accent-primary-soft:  rgba(255, 34, 68, 0.15);  /* Soft tint for badges/bg */
+    --accent-success:       #0c9100;    /* Success, positive states */
+    --accent-success-soft:  rgba(12, 145, 0, 0.12);   /* Soft success bg */
+
+    /* =====================================================
+       COLORS — Borders
+       ===================================================== */
+    --border-subtle:        rgba(255, 255, 255, 0.08);  /* Default card borders */
+    --border-medium:        rgba(255, 255, 255, 0.10);  /* Slightly visible */
+    --border-strong:        rgba(255, 255, 255, 0.14);  /* Prominent borders, inputs */
+    --border-input:         #292929;     /* Input field border */
+    --border-separator:     rgba(255, 255, 255, 0.06);  /* Thin dividers */
+
+    /* =====================================================
+       TYPOGRAPHY — Font Families
+       ===================================================== */
+    --font-primary:         'Inter', Arial, sans-serif;
+    --font-secondary:       'Roboto', Arial, sans-serif;
+
+    /* =====================================================
+       TYPOGRAPHY — Font Sizes (Mobile Base)
+       ===================================================== */
+    --text-display:         48px;       /* Hero display heading */
+    --text-h1:              36px;       /* Page title */
+    --text-h2:              28px;       /* Section heading */
+    --text-h3:              20px;       /* Card heading / subsection */
+    --text-h4:              17px;       /* Small heading */
+    --text-body-lg:         16px;       /* Large body text */
+    --text-body-md:         14px;       /* Default body text */
+    --text-body-sm:         13px;       /* Small body text */
+    --text-caption:         12px;       /* Captions */
+    --text-label:           11px;       /* Uppercase labels */
+    --text-micro:           10px;       /* Tiny labels / badges */
+
+    /* =====================================================
+       TYPOGRAPHY — Font Weights
+       ===================================================== */
+    --weight-regular:       400;
+    --weight-medium:        500;
+    --weight-semibold:      600;
+    --weight-bold:          700;
+
+    /* =====================================================
+       TYPOGRAPHY — Line Heights
+       ===================================================== */
+    --leading-tight:        1.15;       /* Display headings */
+    --leading-snug:         1.25;       /* Section headings */
+    --leading-normal:       1.5;        /* Body text */
+    --leading-relaxed:      1.7;        /* Long-form content */
+
+    /* =====================================================
+       TYPOGRAPHY — Letter Spacing
+       ===================================================== */
+    --tracking-tight:       -0.02em;    /* Display headings */
+    --tracking-normal:      0em;        /* Body text */
+    --tracking-wide:        0.08em;     /* Buttons */
+    --tracking-wider:       0.18em;     /* Labels, uppercase text */
+    --tracking-widest:      0.28em;     /* Emphasis labels */
+
+    /* =====================================================
+       SPACING
+       ===================================================== */
+    --space-1:              4px;
+    --space-2:              8px;
+    --space-3:              12px;
+    --space-4:              16px;
+    --space-5:              20px;
+    --space-6:              24px;
+    --space-7:              32px;
+    --space-8:              40px;
+    --space-9:              48px;
+    --space-10:             64px;
+    --space-11:             80px;
+    --space-12:             120px;
+
+    /* =====================================================
+       BORDER RADIUS
+       ===================================================== */
+    --radius-sm:            8px;        /* Small elements */
+    --radius-md:            12px;       /* Cards, containers */
+    --radius-lg:            16px;       /* Large cards */
+    --radius-btn:           10px;       /* Buttons */
+    --radius-pill:          999px;      /* Pills, badges, tags */
+    --radius-circle:        50%;        /* Avatars, icon circles */
+
+    /* =====================================================
+       SHADOWS
+       ===================================================== */
+    --shadow-card:          0 8px 30px rgba(0, 0, 0, 0.25);
+    --shadow-card-hover:    0 12px 40px rgba(0, 0, 0, 0.35);
+    --shadow-button:        0 0.6px 0.6px -1.25px rgba(0, 0, 0, 0.18),
+                            0 2.3px 2.3px -2.5px rgba(0, 0, 0, 0.16),
+                            0 10px 10px -3.75px rgba(0, 0, 0, 0.08);
+    --shadow-elevated:      0 16px 48px rgba(0, 0, 0, 0.4);
+
+    /* =====================================================
+       TRANSITIONS
+       ===================================================== */
+    --transition-fast:      0.15s ease;
+    --transition-base:      0.3s ease;
+    --transition-slow:      0.5s ease;
+    --transition-spring:    0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* =====================================================
+       LAYOUT
+       ===================================================== */
+    --container-sm:         600px;      /* Mobile content max */
+    --container-md:         900px;      /* Content sections */
+    --container-lg:         1200px;     /* Full-width sections */
+    --navbar-height:        64px;       /* Fixed navbar height */
+    --bottomnav-height:     64px;       /* Mobile bottom nav */
+}
+
+/* =====================================================
+   RESPONSIVE OVERRIDES — Tablet (600px+)
+   ===================================================== */
+@media (min-width: 600px) {
+    :root {
+        --text-display:     56px;
+        --text-h1:          42px;
+        --text-h2:          32px;
+        --space-section:    32px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE OVERRIDES — Desktop (768px+)
+   ===================================================== */
+@media (min-width: 768px) {
+    :root {
+        --text-display:     64px;
+        --text-h1:          48px;
+        --text-h2:          36px;
+        --space-section:    40px;
+    }
+}
+
+/* =====================================================
+   RESPONSIVE OVERRIDES — Large Desktop (1200px+)
+   ===================================================== */
+@media (min-width: 1200px) {
+    :root {
+        --text-display:     72px;
+        --text-h1:          56px;
+        --text-h2:          40px;
+    }
+}
