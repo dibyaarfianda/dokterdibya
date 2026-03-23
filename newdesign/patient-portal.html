@@ -1651,10 +1651,11 @@
             margin-top: 10px;
             margin-left: auto;
             margin-right: auto;
-            font-size: 28px;
-            line-height: 1.14;
+            font-size: 42px;
+            line-height: 1.12;
             letter-spacing: -0.02em;
             font-weight: 700;
+            color: #111;
             max-width: 20ch;
             opacity: 0;
             transform: translateY(20px);
@@ -1754,14 +1755,14 @@
             .topbar-inner { padding-left: 24px; padding-right: 24px; }
             .menu-grid { grid-template-columns: repeat(3, 1fr); }
             .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
-            .hero-greeting { font-size: 34px; }
+            .hero-greeting { font-size: 54px; }
             .tanya-actions { flex-wrap: nowrap; }
         }
 
         @media (min-width: 768px) {
             .screen { max-width: 820px; padding-left: 28px; padding-right: 28px; }
             .topbar-inner { max-width: 820px; padding-left: 28px; padding-right: 28px; }
-            .hero-greeting { font-size: 40px; max-width: 18ch; }
+            .hero-greeting { font-size: 64px; max-width: 18ch; }
         }
 
         /* ========== REDUCED MOTION ========== */
@@ -1869,9 +1870,9 @@
             <section class="hero-welcome">
                 <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> Patient Portal</div>
                 <h1 class="hero-greeting" id="hero-greeting">
-                    <span class="tracked">Selamat datang kembali</span>
                     <span id="hero-patient-name">...</span>
                 </h1>
+                <div class="tracked" style="margin-top: 12px;">Selamat datang kembali</div>
             </section>
 
             <!-- Idul Fitri Greeting Card -->
