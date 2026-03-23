@@ -2,50 +2,35 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
-    <title>Prototype Modern UI - dokterDIBYA</title>
-
-    <!-- Fonts & Icons -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0c0c0c">
+    <title>dokterDIBYA - New Portal Direction</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
     <style>
-        /* ==========================================================
-           1. CSS CUSTOM PROPERTIES — Anvil Light: White + Black + Red
-           ========================================================== */
         :root {
-            --bg-page: #ffffff;
-            --bg-secondary: #f8f8f8;
-            --bg-card: #ffffff;
-            --bg-card-elevated: #f2f2f2;
-
-            --text-primary: #141414;
-            --text-body: #333333;
-            --text-secondary: #666666;
-            --text-muted: #999999;
-
-            --accent: #ff2244;
-            --accent-hover: #e61e3d;
-            --accent-soft: rgba(255, 34, 68, 0.08);
-            --success: #0c9100;
-            --success-soft: rgba(12, 145, 0, 0.08);
-            --danger: #e45858;
-            --info: #3b82f6;
-            --info-soft: rgba(59, 130, 246, 0.08);
-
-            --border-subtle: rgba(0, 0, 0, 0.08);
-            --border-strong: rgba(0, 0, 0, 0.14);
-            --border-separator: rgba(0, 0, 0, 0.06);
-
-            --font: 'Inter', Arial, sans-serif;
-            --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
-            --shadow-btn: 0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06);
+            --bg-page: #0c0c0c;
+            --bg-secondary: #111111;
+            --bg-surface: #141414;
+            --bg-surface-2: #1a1a1a;
+            --line-soft: rgba(255,255,255,0.08);
+            --line-strong: rgba(255,255,255,0.14);
+            --text-primary: #ffffff;
+            --text-body: #cccccc;
+            --text-secondary: #a6a6a6;
+            --text-muted: #7d7d7d;
+            --accent: #d76a7d;
+            --accent-hover: #e08094;
+            --accent-soft: rgba(215, 106, 125, 0.16);
+            --success: #5ea77a;
+            --success-soft: rgba(94,167,122,0.18);
+            --info: #7b9fc9;
+            --info-soft: rgba(123,159,201,0.18);
+            --font-main: 'Inter', Arial, sans-serif;
+            --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.25);
+            --shadow-hard: 0 14px 34px rgba(0, 0, 0, 0.34);
         }
 
-        /* ==========================================================
-           2. RESET & BASE
-           ========================================================== */
         *, *::before, *::after {
             margin: 0;
             padding: 0;
@@ -54,10 +39,13 @@
         }
 
         body {
-            font-family: var(--font);
-            background: var(--bg-page);
+            min-height: 100%;
+            font-family: var(--font-main);
+            background:
+                radial-gradient(600px 260px at 20% -10%, rgba(215,106,125,0.14), transparent 60%),
+                radial-gradient(520px 240px at 100% 15%, rgba(170,190,210,0.08), transparent 62%),
+                var(--bg-page);
             color: var(--text-primary);
-            font-weight: 400;
             font-size: 14px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
@@ -66,29 +54,593 @@
         }
 
         ::selection {
+            background: #292929;
+            color: var(--text-primary);
+        }
+
+        .screen {
+            max-width: 680px;
+            margin: 0 auto;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 74px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+
+        .chip-label {
+            font-size: 10px;
+            line-height: 1.2;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.24em;
+            color: var(--text-muted);
+        }
+
+        .section-label {
+            font-size: 11px;
+            line-height: 1.3;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-secondary);
+        }
+
+        .topbar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 30;
+            background: rgba(12, 12, 12, 0.88);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .topbar-inner {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--line-strong);
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent);
+            background: rgba(255,255,255,0.02);
+        }
+
+        .brand-title {
+            font-size: 19px;
+            line-height: 1.1;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        .brand-title span { color: var(--accent); }
+
+        .brand-sub {
+            margin-top: 2px;
+            font-size: 9px;
+            line-height: 1.2;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--text-muted);
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .circle-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--line-strong);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            display: grid;
+            place-items: center;
+            position: relative;
+            font-size: 15px;
+            transition: transform 0.25s ease, background 0.25s ease;
+            cursor: pointer;
+        }
+
+        .circle-btn:active {
+            transform: scale(0.92);
+            background: var(--bg-surface-2);
+        }
+
+        .notif-dot {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
             background: var(--accent);
-            color: #ffffff;
+            border: 2px solid var(--bg-surface);
         }
 
-        /* ==========================================================
-           3. ANIMATIONS
-           ========================================================== */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, var(--accent), #b85f72);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,0.16);
         }
 
-        .anim { animation: fadeSlideUp 0.5s ease both; }
-        .d1 { animation-delay: 0.05s; }
-        .d2 { animation-delay: 0.10s; }
-        .d3 { animation-delay: 0.15s; }
-        .d4 { animation-delay: 0.20s; }
-        .d5 { animation-delay: 0.25s; }
-        .d6 { animation-delay: 0.30s; }
-        .d7 { animation-delay: 0.35s; }
-        .d8 { animation-delay: 0.40s; }
-        .d9 { animation-delay: 0.45s; }
-        .d10 { animation-delay: 0.50s; }
+        .hero {
+            padding-top: 10px;
+        }
+
+        .hero-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .hero-text h1 {
+            margin-top: 6px;
+            font-size: 36px;
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+            font-weight: 700;
+        }
+
+        .hero-text p {
+            margin-top: 12px;
+            color: var(--text-secondary);
+            max-width: 46ch;
+            line-height: 1.7;
+        }
+
+        .vitals {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid var(--line-soft);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.02);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .vital {
+            padding: 8px;
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .vital:last-child { border-right: 0; }
+
+        .vital .k {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .vital .v {
+            margin-top: 4px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .quick-commands {
+            margin-top: 16px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .command-row {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 13px 14px;
+            border: 1px solid var(--line-soft);
+            border-radius: 12px;
+            background: var(--bg-surface);
+            transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .command-row:active {
+            transform: scale(0.98);
+            background: var(--bg-surface-2);
+            border-color: var(--line-strong);
+        }
+
+        .command-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            color: var(--accent);
+            background: var(--accent-soft);
+            font-size: 15px;
+        }
+
+        .command-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .command-desc {
+            margin-top: 2px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .command-row .go {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .divider {
+            margin: 24px 0 18px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--line-soft), transparent);
+        }
+
+        .flow-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .flow-head h2 {
+            margin-top: 6px;
+            font-size: 28px;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            font-weight: 700;
+        }
+
+        .flow-head .today {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .timeline {
+            margin-top: 14px;
+            border-left: 1px solid var(--line-soft);
+            padding-left: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 0 0 0 2px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -21px;
+            top: 7px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--bg-page);
+            border: 2px solid var(--accent);
+        }
+
+        .timeline-time {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+        }
+
+        .timeline-title {
+            margin-top: 4px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .timeline-note {
+            margin-top: 4px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        .status-pill.success {
+            color: #b9e5c8;
+            background: var(--success-soft);
+            border-color: rgba(94,167,122,0.35);
+        }
+
+        .status-pill.info {
+            color: #c0d6f0;
+            background: var(--info-soft);
+            border-color: rgba(123,159,201,0.34);
+        }
+
+        .workspace {
+            margin-top: 24px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .workspace-col {
+            border: 1px solid var(--line-soft);
+            border-radius: 12px;
+            background: var(--bg-surface);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .workspace-head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--line-soft);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .workspace-title {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .workspace-list {
+            list-style: none;
+        }
+
+        .workspace-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: grid;
+            gap: 4px;
+        }
+
+        .workspace-item:last-child { border-bottom: 0; }
+
+        .workspace-item h4 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .workspace-item p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .workspace-item .meta {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .action-dock {
+            margin-top: 22px;
+            padding: 10px;
+            border: 1px solid var(--line-strong);
+            border-radius: 14px;
+            background: rgba(20,20,20,0.92);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-hard);
+        }
+
+        .dock-copy {
+            min-width: 0;
+        }
+
+        .dock-copy h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .dock-copy p {
+            margin-top: 2px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dock-btn {
+            border: 0;
+            min-height: 42px;
+            padding: 0 14px;
+            border-radius: 10px;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 700;
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(215,106,125,0.24);
+            transition: transform 0.25s ease, background 0.25s ease;
+        }
+
+        .dock-btn:active {
+            transform: scale(0.96);
+            background: var(--accent-hover);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 25;
+            background: rgba(12,12,12,0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-top: 1px solid var(--line-soft);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .bottom-inner {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 8px 12px 10px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+        }
+
+        .nav-item {
+            min-height: 48px;
+            position: relative;
+            display: grid;
+            place-items: center;
+            align-content: center;
+            gap: 3px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: transform 0.25s ease, color 0.25s ease;
+        }
+
+        .nav-item i { font-size: 18px; }
+
+        .nav-item span {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 600;
+        }
+
+        .nav-item.active {
+            color: var(--text-primary);
+        }
+
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            width: 26px;
+            height: 3px;
+            border-radius: 0 0 3px 3px;
+            background: var(--accent);
+        }
+
+        .nav-item:active {
+            transform: scale(0.9);
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            animation: section-in 0.48s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.04s; }
+        .delay-2 { animation-delay: 0.08s; }
+        .delay-3 { animation-delay: 0.12s; }
+        .delay-4 { animation-delay: 0.16s; }
+
+        @keyframes section-in {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (min-width: 600px) {
+            .screen {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .hero-grid {
+                grid-template-columns: 1.2fr 1fr;
+                align-items: end;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .bottom-inner {
+                gap: 8px;
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .topbar-inner {
+                padding-left: 28px;
+                padding-right: 28px;
+            }
+
+            .screen {
+                max-width: 760px;
+                padding-left: 28px;
+                padding-right: 28px;
+            }
+
+            .hero-text h1 {
+                font-size: 44px;
+            }
+
+            .flow-head h2 {
+                font-size: 32px;
+            }
+        }
 
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
@@ -96,1092 +648,186 @@
                 transition-duration: 0.01ms !important;
             }
         }
-
-        /* ==========================================================
-           4. TYPOGRAPHY UTILITIES
-           ========================================================== */
-        .label {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            line-height: 1.3;
-        }
-
-        .micro {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.28em;
-            line-height: 1.2;
-        }
-
-        .accent-bar {
-            width: 36px;
-            height: 3px;
-            background: var(--accent);
-            border-radius: 2px;
-        }
-
-        /* ==========================================================
-           ZONE A: NAVBAR
-           ========================================================== */
-        .navbar {
-            position: fixed;
-            top: env(safe-area-inset-top, 0px);
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 16px;
-        }
-
-        @supports not (backdrop-filter: blur(1px)) {
-            .navbar { background: rgba(255, 255, 255, 0.98); }
-        }
-
-        .navbar-inner {
-            max-width: 600px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .nav-brand {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .nav-brand-name {
-            font-size: 20px;
-            font-weight: 700;
-            line-height: 1.2;
-            color: var(--text-primary);
-        }
-
-        .nav-brand-name span { color: var(--accent); }
-
-        .nav-brand-sub {
-            font-size: 9px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.22em;
-            color: var(--text-muted);
-            margin-top: 1px;
-        }
-
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nav-bell {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1px solid var(--border-strong);
-            background: var(--bg-card);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-primary);
-            font-size: 16px;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .nav-bell:active { transform: scale(0.92); }
-
-        .nav-bell .dot {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 8px;
-            height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            border: 2px solid var(--bg-card);
-        }
-
-        .nav-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--text-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .nav-avatar:active { transform: scale(0.92); }
-
-        /* ==========================================================
-           MAIN CONTENT WRAPPER
-           ========================================================== */
-        .main {
-            padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
-            padding-left: 16px;
-            padding-right: 16px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* ==========================================================
-           ZONE B1: PATIENT GREETING (open space, no card)
-           ========================================================== */
-        .greeting {
-            padding: 8px 0 28px;
-        }
-
-        .greeting-label {
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .greeting-name {
-            font-size: 36px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            line-height: 1.15;
-            color: var(--text-primary);
-            margin-bottom: 12px;
-        }
-
-        .greeting .accent-bar {
-            margin-bottom: 14px;
-        }
-
-        .greeting-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 999px;
-            background: var(--success-soft);
-            border: 1px solid rgba(12, 145, 0, 0.15);
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            color: var(--success);
-        }
-
-        /* ==========================================================
-           ZONE B2: APPOINTMENT SPOTLIGHT
-           ========================================================== */
-        .appointment {
-            background: var(--text-primary);
-            border-radius: 12px;
-            box-shadow: var(--shadow-card);
-            padding: 20px;
-            margin-bottom: 16px;
-            color: #ffffff;
-        }
-
-        .appt-row {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .appt-info { flex: 1; min-width: 0; }
-
-        .appt-label {
-            color: var(--accent);
-            margin-bottom: 8px;
-        }
-
-        .appt-date {
-            font-size: 17px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 4px;
-        }
-
-        .appt-meta {
-            font-size: 13px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .appt-big-date {
-            text-align: center;
-            flex-shrink: 0;
-            padding-top: 4px;
-        }
-
-        .appt-big-num {
-            font-size: 48px;
-            font-weight: 700;
-            line-height: 1;
-            color: rgba(255, 255, 255, 0.1);
-        }
-
-        .appt-big-month {
-            color: rgba(255, 255, 255, 0.4);
-            margin-top: 2px;
-        }
-
-        .btn-primary {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 13px 16px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-family: var(--font);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            cursor: pointer;
-            min-height: 44px;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-btn);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.97);
-            background: var(--accent-hover);
-        }
-
-        .btn-primary.on-dark {
-            background: #ffffff;
-            color: var(--text-primary);
-        }
-
-        .btn-primary.on-dark:active {
-            background: #f2f2f2;
-        }
-
-        .btn-secondary {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            padding: 13px 16px;
-            background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--border-strong);
-            border-radius: 10px;
-            font-family: var(--font);
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            cursor: pointer;
-            min-height: 44px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-secondary:active {
-            transform: scale(0.97);
-            background: var(--bg-card-elevated);
-        }
-
-        /* ==========================================================
-           ZONE B3: HEALTH SNAPSHOT ROW
-           ========================================================== */
-        .health-row {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            margin: 0 -16px;
-            padding: 0 16px 24px;
-        }
-
-        .health-row::-webkit-scrollbar { display: none; }
-
-        .health-chip {
-            min-width: 155px;
-            flex-shrink: 0;
-            scroll-snap-align: start;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-left: 3px solid var(--accent);
-            border-radius: 0 10px 10px 0;
-            padding: 12px 14px;
-        }
-
-        .health-chip.green { border-left-color: var(--success); }
-        .health-chip.blue { border-left-color: var(--info); }
-
-        .health-chip-label {
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        .health-chip-value {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        /* ==========================================================
-           ZONE C: ACTIVITY FEED
-           ========================================================== */
-        .feed-section {
-            margin-bottom: 32px;
-        }
-
-        .section-label {
-            color: var(--text-muted);
-            margin-bottom: 16px;
-        }
-
-        /* --- C1: Doctor Message (Featured Card) --- */
-        .feed-featured {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            box-shadow: var(--shadow-card);
-            padding: 20px;
-            margin-bottom: 16px;
-        }
-
-        .msg-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-
-        .msg-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--accent-soft);
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-
-        .msg-sender {
-            color: var(--text-primary);
-            flex: 1;
-        }
-
-        .msg-time {
-            font-size: 10px;
-            font-weight: 400;
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        .msg-body {
-            font-size: 14px;
-            font-weight: 400;
-            color: var(--text-body);
-            line-height: 1.6;
-            margin-bottom: 14px;
-            position: relative;
-        }
-
-        .msg-body.collapsed {
-            max-height: 68px;
-            overflow: hidden;
-        }
-
-        .msg-body.collapsed::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 32px;
-            background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
-        }
-
-        .msg-toggle {
-            display: inline-block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--accent);
-            cursor: pointer;
-            margin-bottom: 16px;
-            transition: color 0.3s ease;
-            background: none;
-            border: none;
-            font-family: var(--font);
-            padding: 0;
-            min-height: 40px;
-            line-height: 40px;
-        }
-
-        .msg-toggle:active { color: var(--accent-hover); }
-
-        .msg-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        /* --- C2: Announcement (Borderless Row) --- */
-        .feed-row {
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
-            padding: 16px 0;
-            border-bottom: 1px solid var(--border-separator);
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .feed-row:active {
-            background: rgba(0, 0, 0, 0.02);
-        }
-
-        .feed-row-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--accent-soft);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            color: var(--accent);
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .feed-row-content { flex: 1; min-width: 0; }
-
-        .feed-row-label {
-            color: var(--accent);
-            margin-bottom: 3px;
-        }
-
-        .feed-row-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 3px;
-        }
-
-        .feed-row-snippet {
-            font-size: 13px;
-            font-weight: 400;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* --- C3: Document (Compact Card) --- */
-        .feed-doc {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 16px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-card);
-        }
-
-        .feed-doc:active {
-            transform: scale(0.98);
-            background: var(--bg-card-elevated);
-        }
-
-        .feed-doc-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--info-soft);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: var(--info);
-            flex-shrink: 0;
-        }
-
-        .feed-doc-info { flex: 1; min-width: 0; }
-
-        .feed-doc-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 2px;
-        }
-
-        .feed-doc-meta {
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-muted);
-        }
-
-        .feed-doc-arrow {
-            font-size: 14px;
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        /* --- C4: Education (Image Card) --- */
-        .feed-article {
-            border-radius: 12px;
-            overflow: hidden;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            box-shadow: var(--shadow-card);
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .feed-article:active { transform: scale(0.98); }
-
-        .feed-article-img {
-            position: relative;
-            overflow: hidden;
-            background: var(--bg-secondary);
-            min-height: 180px;
-            max-height: 240px;
-        }
-
-        .feed-article-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            min-height: 180px;
-            max-height: 240px;
-        }
-
-        .feed-article-img .grad {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 100px;
-            background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
-        }
-
-        .feed-article-body {
-            padding: 0 20px 20px;
-            margin-top: -36px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .feed-article-tag {
-            color: var(--accent);
-            margin-bottom: 6px;
-        }
-
-        .feed-article-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-primary);
-            line-height: 1.25;
-            margin-bottom: 6px;
-        }
-
-        .feed-article-meta {
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-muted);
-        }
-
-        /* ==========================================================
-           ZONE D: SERVICES DOCK
-           ========================================================== */
-        .services-section {
-            margin-bottom: 16px;
-        }
-
-        .services-label {
-            color: var(--text-muted);
-            margin-bottom: 16px;
-        }
-
-        .services-list { }
-
-        .service-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--border-separator);
-            cursor: pointer;
-            transition: background 0.3s ease;
-            position: relative;
-        }
-
-        .service-item:last-child { border-bottom: none; }
-
-        .service-item:active {
-            background: rgba(0, 0, 0, 0.02);
-        }
-
-        .service-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            flex-shrink: 0;
-        }
-
-        .service-text { flex: 1; min-width: 0; }
-
-        .service-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .service-sub {
-            font-size: 12px;
-            font-weight: 400;
-            color: var(--text-muted);
-        }
-
-        .service-badge {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--accent);
-            color: #fff;
-            font-size: 10px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .service-arrow {
-            font-size: 12px;
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        .service-item .service-sub-grid { display: none; }
-
-        /* ==========================================================
-           ZONE E: BOTTOM NAV
-           ========================================================== */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-top: 1px solid var(--border-subtle);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
-
-        @supports not (backdrop-filter: blur(1px)) {
-            .bottom-nav { background: rgba(255, 255, 255, 0.98); }
-        }
-
-        .bnav-inner {
-            max-width: 600px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 8px 0 6px;
-        }
-
-        .bnav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            padding: 4px 16px;
-            cursor: pointer;
-            position: relative;
-            min-width: 64px;
-            min-height: 44px;
-            justify-content: center;
-            transition: transform 0.3s ease;
-            background: none;
-            border: none;
-            font-family: var(--font);
-        }
-
-        .bnav-item:active { transform: scale(0.9); }
-
-        .bnav-item .bi { font-size: 20px; color: var(--text-muted); }
-        .bnav-item .bl { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
-
-        .bnav-item.active .bi { color: var(--text-primary); }
-        .bnav-item.active .bl { color: var(--text-primary); }
-
-        .bnav-item.active::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 24px;
-            height: 3px;
-            background: var(--accent);
-            border-radius: 0 0 3px 3px;
-        }
-
-        /* ==========================================================
-           RESPONSIVE — Tablet (600px+)
-           ========================================================== */
-        @media (min-width: 600px) {
-            .main {
-                padding-left: 24px;
-                padding-right: 24px;
-            }
-
-            .greeting-name { font-size: 42px; }
-            .feed-section { margin-bottom: 40px; }
-
-            .health-row {
-                margin: 0;
-                padding: 0 0 24px;
-            }
-
-            .services-list {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
-            }
-
-            .service-item {
-                flex-direction: column;
-                text-align: center;
-                padding: 20px 12px 16px;
-                border-bottom: none;
-                background: var(--bg-card);
-                border: 1px solid var(--border-subtle);
-                border-radius: 12px;
-                box-shadow: var(--shadow-card);
-                gap: 8px;
-            }
-
-            .service-item:active {
-                transform: scale(0.96);
-                background: var(--bg-card-elevated);
-            }
-
-            .service-icon {
-                width: 52px;
-                height: 52px;
-                font-size: 22px;
-            }
-
-            .service-arrow { display: none; }
-            .service-badge { position: absolute; top: 8px; right: 8px; }
-            .service-item .service-sub { display: none; }
-            .service-item .service-sub-grid { display: block; font-size: 10px; font-weight: 400; color: var(--text-muted); }
-        }
-
-        /* ==========================================================
-           RESPONSIVE — Desktop (768px+)
-           ========================================================== */
-        @media (min-width: 768px) {
-            .navbar { padding: 14px 32px; }
-
-            .main {
-                max-width: 640px;
-                padding-left: 32px;
-                padding-right: 32px;
-            }
-
-            .greeting-name { font-size: 48px; }
-
-            .services-list {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
     </style>
 </head>
 <body>
-
-    <!-- ===== ZONE A: NAVBAR ===== -->
-    <nav class="navbar">
-        <div class="navbar-inner">
-            <div class="nav-brand">
-                <div class="nav-brand-name">dokter<span>DIBYA</span></div>
-                <div class="nav-brand-sub">Portal Privat Kandungan</div>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">DB</div>
+                <div>
+                    <div class="brand-title">dokter<span>DIBYA</span></div>
+                    <div class="brand-sub">Patient Care Portal</div>
+                </div>
             </div>
-            <div class="nav-actions">
-                <button class="nav-bell" aria-label="Notifikasi">
+            <div class="top-actions">
+                <button class="circle-btn" aria-label="Notifikasi">
                     <i class="fa-solid fa-bell"></i>
-                    <span class="dot"></span>
+                    <span class="notif-dot"></span>
                 </button>
-                <div class="nav-avatar" aria-label="Profil">D</div>
+                <div class="avatar" aria-label="Profil">DP</div>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- ===== MAIN CONTENT ===== -->
-    <main class="main">
-
-        <!-- ZONE B1: Patient Greeting -->
-        <section class="greeting anim d1">
-            <div class="micro greeting-label">Selamat Sore</div>
-            <h1 class="greeting-name">Dian Permatasari</h1>
-            <div class="accent-bar"></div>
-            <span class="greeting-badge">
-                <i class="fa-solid fa-heart" style="font-size: 10px;"></i>
-                Trimester 3 &bull; 32 Minggu
-            </span>
-        </section>
-
-        <!-- ZONE B2: Appointment Spotlight (dark card on white page) -->
-        <section class="appointment anim d2">
-            <div class="appt-row">
-                <div class="appt-info">
-                    <div class="micro appt-label">Janji Berikutnya</div>
-                    <div class="appt-date">Minggu, 23 Maret</div>
-                    <div class="appt-meta">09:00 WIB &bull; Klinik Privat</div>
+    <main class="screen">
+        <section class="hero fade-in delay-1">
+            <div class="hero-grid">
+                <div class="hero-text">
+                    <div class="chip-label">Selamat Datang Kembali</div>
+                    <h1>Dian, rencana perawatan Anda hari ini sudah tertata.</h1>
+                    <p>Semua informasi penting kini tersusun lebih tenang: alur kunjungan, ringkasan kondisi, dokumen medis, dan akses konsultasi dokter dalam satu layar.</p>
                 </div>
-                <div class="appt-big-date">
-                    <div class="appt-big-num">23</div>
-                    <div class="micro appt-big-month">Mar</div>
+                <div class="vitals" aria-label="Ringkasan kondisi">
+                    <div class="vital">
+                        <div class="k">Usia Kandungan</div>
+                        <div class="v">31 Minggu</div>
+                    </div>
+                    <div class="vital">
+                        <div class="k">Tekanan</div>
+                        <div class="v">118/76</div>
+                    </div>
+                    <div class="vital">
+                        <div class="k">Vitamin</div>
+                        <div class="v">2/3</div>
+                    </div>
                 </div>
             </div>
-            <button class="btn-primary on-dark">
-                <i class="fa-solid fa-calendar-check"></i>
-                Konfirmasi Jadwal
-            </button>
-        </section>
 
-        <!-- ZONE B3: Health Snapshot Row -->
-        <section class="anim d3">
-            <div class="health-row">
-                <div class="health-chip">
-                    <div class="micro health-chip-label">Vitamin</div>
-                    <div class="health-chip-value">2 / 3 diminum</div>
-                </div>
-                <div class="health-chip green">
-                    <div class="micro health-chip-label">Berat Badan</div>
-                    <div class="health-chip-value">68 kg (+0.5)</div>
-                </div>
-                <div class="health-chip blue">
-                    <div class="micro health-chip-label">Dokumen Baru</div>
-                    <div class="health-chip-value">3 file</div>
-                </div>
+            <div class="quick-commands" aria-label="Aksi utama">
+                <button class="command-row" aria-label="Mulai check in kunjungan">
+                    <span class="command-icon"><i class="fa-solid fa-stethoscope"></i></span>
+                    <span>
+                        <span class="command-title">Mulai Kehadiran Kunjungan</span>
+                        <span class="command-desc">Konfirmasi kedatangan dengan alur yang lebih ringkas dan nyaman</span>
+                    </span>
+                    <i class="fa-solid fa-arrow-right go"></i>
+                </button>
+                <button class="command-row" aria-label="Buka dokumen medis">
+                    <span class="command-icon"><i class="fa-solid fa-folder-open"></i></span>
+                    <span>
+                        <span class="command-title">Lihat Arsip Medis</span>
+                        <span class="command-desc">USG, hasil lab, resume, dan ringkasan administrasi terbaru</span>
+                    </span>
+                    <i class="fa-solid fa-arrow-right go"></i>
+                </button>
+                <button class="command-row" aria-label="Chat dokter">
+                    <span class="command-icon"><i class="fa-solid fa-comments"></i></span>
+                    <span>
+                        <span class="command-title">Konsultasi Terarah</span>
+                        <span class="command-desc">Sampaikan pertanyaan dengan konteks perawatan yang sudah tersimpan</span>
+                    </span>
+                    <i class="fa-solid fa-arrow-right go"></i>
+                </button>
             </div>
         </section>
 
-        <!-- ZONE C: Activity Feed -->
-        <section class="feed-section">
-            <div class="label section-label anim d4">Aktivitas Terkini</div>
+        <div class="divider"></div>
 
-            <!-- C1: Doctor Message -->
-            <article class="feed-featured anim d5">
-                <div class="msg-header">
-                    <div class="msg-avatar">dr</div>
-                    <div class="label msg-sender">Dr. Dibya, SpOG</div>
-                    <div class="msg-time">2 jam lalu</div>
+        <section class="flow fade-in delay-2" aria-label="Alur perawatan hari ini">
+            <div class="flow-head">
+                <div>
+                    <div class="section-label">Care Flow</div>
+                    <h2>Perjalanan Hari Ini</h2>
                 </div>
-                <div class="msg-body collapsed" id="msgBody">
-                    Terima kasih telah mempercayakan kesehatan Anda dan buah hati kepada kami. Portal ini dirancang untuk memudahkan Anda memantau perkembangan kehamilan, melihat hasil pemeriksaan, dan berkomunikasi langsung dengan dokter.
-                    <br><br>
-                    Jangan ragu untuk menggunakan fitur Tanya Dokter jika ada pertanyaan di luar jam konsultasi. Kami selalu siap membantu Anda.
-                </div>
-                <button class="msg-toggle" onclick="toggleReadMore()" id="msgToggle">Baca selengkapnya</button>
-                <div class="msg-actions">
-                    <button class="btn-primary"><i class="fa-solid fa-pen"></i> Tanya Baru</button>
-                    <button class="btn-secondary"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</button>
-                </div>
+                <div class="today">Senin, 23 Mar</div>
+            </div>
+
+            <div class="timeline">
+                <article class="timeline-item">
+                    <div class="timeline-time">08.30 WIB</div>
+                    <h3 class="timeline-title">Registrasi Digital Selesai</h3>
+                    <p class="timeline-note">Data kunjungan sudah valid, estimasi masuk ruang pemeriksaan dalam 25 menit.</p>
+                    <span class="status-pill success"><i class="fa-solid fa-check"></i> Completed</span>
+                </article>
+                <article class="timeline-item">
+                    <div class="timeline-time">09.10 WIB</div>
+                    <h3 class="timeline-title">USG Trimester Ketiga</h3>
+                    <p class="timeline-note">Persiapkan kartu kontrol dan minum air putih. Hasil akan otomatis tersimpan ke dokumen medis.</p>
+                    <span class="status-pill info"><i class="fa-solid fa-circle-info"></i> Upcoming</span>
+                </article>
+                <article class="timeline-item">
+                    <div class="timeline-time">10.00 WIB</div>
+                    <h3 class="timeline-title">Review Resep dan Vitamin</h3>
+                    <p class="timeline-note">Sistem akan menampilkan jadwal minum terbaru sesuai hasil konsultasi hari ini.</p>
+                    <span class="status-pill info"><i class="fa-solid fa-clock"></i> Planned</span>
+                </article>
+            </div>
+        </section>
+
+        <section class="workspace fade-in delay-3" aria-label="Workspace informasi">
+            <article class="workspace-col">
+                <header class="workspace-head">
+                    <h3 class="workspace-title">Pembaruan Klinis</h3>
+                    <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
+                </header>
+                <ul class="workspace-list">
+                    <li class="workspace-item">
+                        <div class="meta">Alert Prioritas</div>
+                        <h4>Jadwal kontrol berpindah ke 09.10</h4>
+                        <p>Perubahan karena penyesuaian urutan pasien. Silakan hadir 15 menit sebelum waktu pemeriksaan.</p>
+                    </li>
+                    <li class="workspace-item">
+                        <div class="meta">Pengingat</div>
+                        <h4>Minum suplemen malam pukul 20.00</h4>
+                        <p>Notifikasi aktif. Anda bisa ubah jam minum dari halaman profil pengingat.</p>
+                    </li>
+                </ul>
             </article>
 
-            <!-- C2: Announcement -->
-            <div class="feed-row anim d6">
-                <div class="feed-row-icon">
-                    <i class="fa-solid fa-bullhorn"></i>
-                </div>
-                <div class="feed-row-content">
-                    <div class="micro feed-row-label">Pengumuman</div>
-                    <div class="feed-row-title">Pembaruan Portal - Maret 2026</div>
-                    <div class="feed-row-snippet">Tampilan baru yang lebih modern dan mudah digunakan</div>
-                </div>
-            </div>
-
-            <!-- C3: Document -->
-            <div class="feed-doc anim d7">
-                <div class="feed-doc-icon">
-                    <i class="fa-solid fa-file-lines"></i>
-                </div>
-                <div class="feed-doc-info">
-                    <div class="feed-doc-name">Hasil USG - 20 Maret 2026</div>
-                    <div class="feed-doc-meta">dokumen-usg-20032026.pdf &bull; 2.4 MB</div>
-                </div>
-                <div class="feed-doc-arrow">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </div>
-            </div>
-
-            <!-- C4: Education -->
-            <article class="feed-article anim d8">
-                <div class="feed-article-img">
-                    <img src="https://placehold.co/600x340/f2f2f2/141414?text=Persiapan+Persalinan" alt="Artikel Edukasi" loading="lazy">
-                    <div class="grad"></div>
-                </div>
-                <div class="feed-article-body">
-                    <div class="micro feed-article-tag">Edukasi</div>
-                    <h2 class="feed-article-title">Persiapan Persalinan Trimester Ketiga</h2>
-                    <div class="feed-article-meta">5 menit baca &bull; dr. Dibya</div>
-                </div>
+            <article class="workspace-col">
+                <header class="workspace-head">
+                    <h3 class="workspace-title">Ruang Dokumen</h3>
+                    <i class="fa-solid fa-file-circle-check" aria-hidden="true"></i>
+                </header>
+                <ul class="workspace-list">
+                    <li class="workspace-item">
+                        <div class="meta">USG Terbaru</div>
+                        <h4>USG 3D - 16 Maret 2026</h4>
+                        <p>Dokumen siap diunduh. Tambahkan ke album kenangan jika diperlukan.</p>
+                    </li>
+                    <li class="workspace-item">
+                        <div class="meta">Tagihan</div>
+                        <h4>Invoice kontrol: menunggu pembayaran</h4>
+                        <p>Total Rp450.000. Pembayaran online tersedia via halaman tagihan pasien.</p>
+                    </li>
+                    <li class="workspace-item">
+                        <div class="meta">Edukasi</div>
+                        <h4>Materi baru: tanda persalinan aktif</h4>
+                        <p>Konten edukasi terbaru sudah tersedia untuk minggu ke-31.</p>
+                    </li>
+                </ul>
             </article>
         </section>
 
-        <!-- ZONE D: Services Dock -->
-        <section class="services-section anim d9">
-            <div class="label services-label">Layanan</div>
-            <div class="services-list">
-                <div class="service-item">
-                    <div class="service-icon" style="background: var(--accent-soft); color: var(--accent);">
-                        <i class="fa-solid fa-file-lines"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Dokumen</div>
-                        <div class="service-sub">USG, Lab, Riwayat</div>
-                        <div class="service-sub-grid">USG, Lab, Riwayat</div>
-                    </div>
-                    <span class="service-badge">3</span>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
-                <div class="service-item">
-                    <div class="service-icon" style="background: var(--success-soft); color: var(--success);">
-                        <i class="fa-solid fa-calendar-days"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Jadwal</div>
-                        <div class="service-sub">Booking kontrol</div>
-                        <div class="service-sub-grid">Booking kontrol</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
-                <div class="service-item">
-                    <div class="service-icon" style="background: rgba(244,114,182,0.08); color: #ec4899;">
-                        <i class="fa-solid fa-heart-pulse"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Kesehatan Ibu</div>
-                        <div class="service-sub">Kick counter, tracker</div>
-                        <div class="service-sub-grid">Tracker</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
-                <div class="service-item">
-                    <div class="service-icon" style="background: var(--info-soft); color: var(--info);">
-                        <i class="fa-solid fa-book-open"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Edukasi</div>
-                        <div class="service-sub">Artikel kehamilan</div>
-                        <div class="service-sub-grid">Artikel</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
-                <div class="service-item">
-                    <div class="service-icon" style="background: rgba(167,139,250,0.08); color: #8b5cf6;">
-                        <i class="fa-solid fa-comments"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Tanya Dokter</div>
-                        <div class="service-sub">Chat konsultasi</div>
-                        <div class="service-sub-grid">Konsultasi</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
-                <div class="service-item">
-                    <div class="service-icon" style="background: rgba(251,191,36,0.08); color: #f59e0b;">
-                        <i class="fa-solid fa-credit-card"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Tagihan</div>
-                        <div class="service-sub">Invoice & bayar</div>
-                        <div class="service-sub-grid">Invoice</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
-                <div class="service-item">
-                    <div class="service-icon" style="background: rgba(0,0,0,0.04); color: var(--text-muted);">
-                        <i class="fa-solid fa-circle-question"></i>
-                    </div>
-                    <div class="service-text">
-                        <div class="service-title">Bantuan</div>
-                        <div class="service-sub">FAQ & kontak</div>
-                        <div class="service-sub-grid">FAQ</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right service-arrow"></i>
-                </div>
+        <section class="action-dock fade-in delay-4" aria-label="Aksi cepat akhir">
+            <div class="dock-copy">
+                <h3>Perlu arahan tambahan dari tim dokter?</h3>
+                <p>Kirim pertanyaan kapan saja. Tim akan merespons pada jam layanan dengan pendekatan yang terarah.</p>
             </div>
+            <button class="dock-btn">Mulai Konsultasi</button>
         </section>
-
     </main>
 
-    <!-- ===== ZONE E: BOTTOM NAV ===== -->
-    <nav class="bottom-nav">
-        <div class="bnav-inner">
-            <button class="bnav-item active" aria-label="Home">
-                <i class="fa-solid fa-house bi"></i>
-                <span class="bl">Home</span>
-            </button>
-            <button class="bnav-item" aria-label="Notifikasi">
-                <i class="fa-solid fa-bell bi"></i>
-                <span class="bl">Notifikasi</span>
-            </button>
-            <button class="bnav-item" aria-label="Profil">
-                <i class="fa-solid fa-user bi"></i>
-                <span class="bl">Profil</span>
-            </button>
+    <nav class="bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner">
+            <a href="#" class="nav-item active" aria-current="page">
+                <i class="fa-solid fa-house"></i>
+                <span>Beranda</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-file-medical"></i>
+                <span>Dokumen</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-bell"></i>
+                <span>Notifikasi</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-user"></i>
+                <span>Profil</span>
+            </a>
         </div>
     </nav>
-
-    <!-- Minimal JS -->
-    <script>
-        function toggleReadMore() {
-            var body = document.getElementById('msgBody');
-            var btn = document.getElementById('msgToggle');
-            if (body.classList.contains('collapsed')) {
-                body.classList.remove('collapsed');
-                btn.textContent = 'Tutup';
-            } else {
-                body.classList.add('collapsed');
-                btn.textContent = 'Baca selengkapnya';
-            }
-        }
-    </script>
-
 </body>
 </html>
