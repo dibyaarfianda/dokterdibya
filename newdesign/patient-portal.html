@@ -129,12 +129,16 @@
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
             border-bottom: 1px dashed var(--line-soft);
+            transition: transform 0.35s cubic-bezier(0.2, 0.75, 0.22, 1), border-color 0.3s ease;
             opacity: 0;
-            transform: translateY(-18px);
         }
 
         body.header-animated .topbar {
             animation: topbarIn 760ms cubic-bezier(0.2, 0.75, 0.22, 1) both;
+        }
+
+        .topbar.header-hidden {
+            transform: translateY(-100%);
         }
 
         .topbar.scrolled {
@@ -1754,7 +1758,6 @@
     <header class="topbar" id="topbar">
         <div class="topbar-inner">
             <div class="brand">
-                <div class="brand-mark">DB</div>
                 <div>
                     <div class="brand-title">dokter<span>DIBYA</span></div>
                     <div class="brand-sub">Portal Privat Kandungan Anda</div>
@@ -2263,17 +2266,42 @@
             }
         });
 
-        // ==================== SCROLL-RESPONSIVE NAVBAR ====================
-        window.addEventListener('scroll', function() {
-            const topbar = document.getElementById('topbar');
-            if (topbar) {
-                if (window.scrollY > 10) {
+        // ==================== SCROLL-RESPONSIVE NAVBAR (Anvil-style) ====================
+        // Scroll down = header hides, scroll up = header shows
+        (function() {
+            var lastScrollY = 0;
+            var topbar = document.getElementById('topbar');
+            var ticking = false;
+
+            function onScroll() {
+                if (!topbar) return;
+                var currentY = window.scrollY;
+
+                // Add/remove scrolled border
+                if (currentY > 10) {
                     topbar.classList.add('scrolled');
                 } else {
                     topbar.classList.remove('scrolled');
                 }
+
+                // Hide on scroll down, show on scroll up
+                if (currentY > lastScrollY && currentY > 80) {
+                    topbar.classList.add('header-hidden');
+                } else {
+                    topbar.classList.remove('header-hidden');
+                }
+
+                lastScrollY = currentY;
+                ticking = false;
             }
-        }, { passive: true });
+
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    requestAnimationFrame(onScroll);
+                    ticking = true;
+                }
+            }, { passive: true });
+        })();
 
         // ==================== HEADER ANIMATION ====================
         (function() {
