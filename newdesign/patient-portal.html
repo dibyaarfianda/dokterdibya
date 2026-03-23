@@ -131,17 +131,17 @@
             border-bottom: 1px dashed var(--line-soft);
             transform: translateY(-100%);
             opacity: 0;
+            transition: transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.5s ease, border-color 0.3s ease !important;
         }
 
         body.header-animated .topbar {
             opacity: 1;
             transform: translateY(0);
-            transition: transform 2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.5s ease, border-color 0.3s ease;
         }
 
         body.header-animated .topbar.header-hidden {
-            transform: translateY(-100%) !important;
-            opacity: 0 !important;
+            transform: translateY(-100%);
+            opacity: 0;
         }
 
         .topbar.scrolled {
@@ -1712,16 +1712,16 @@
 
         /* ========== REDUCED MOTION ========== */
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
+            *:not(.topbar), *:not(.topbar)::before, *:not(.topbar)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
         }
 
         /* ========== CAPACITOR / MOBILE: DISABLE ANIMATIONS ========== */
-        body.capacitor-app *,
-        body.capacitor-app *::before,
-        body.capacitor-app *::after {
+        body.capacitor-app *:not(.topbar),
+        body.capacitor-app *:not(.topbar)::before,
+        body.capacitor-app *:not(.topbar)::after {
             animation: none !important;
             animation-duration: 0s !important;
             transition: none !important;
