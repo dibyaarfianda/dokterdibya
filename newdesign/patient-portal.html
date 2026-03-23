@@ -1608,18 +1608,25 @@
             border-radius: 50%;
             opacity: 0;
             transform: scale(1);
+            transition: none !important;
         }
 
-        .green-light-glow.grow {
-            opacity: 0.3;
-            transform: scale(5);
-            transition: transform 0.5s ease-out, opacity 0.05s ease-out !important;
+        .green-light-glow.ping {
+            animation: glowPing 0.5s ease-out forwards !important;
         }
 
-        .green-light-glow.fade {
-            opacity: 0;
-            transform: scale(5);
-            transition: opacity 0.1s ease-out !important;
+        @keyframes glowPing {
+            0% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            80% {
+                opacity: 0;
+            }
+            100% {
+                transform: scale(5);
+                opacity: 0;
+            }
         }
 
         .hero-greeting {
@@ -2306,21 +2313,13 @@
                 });
             });
 
-            // Green light ping — grow then fade out
+            // Green light ping — single animation, 3.5s interval
             var glowEl = document.querySelector('.green-light-glow');
             if (glowEl) {
                 setInterval(function() {
-                    // Phase 1: grow from small to big
-                    glowEl.className = 'green-light-glow grow';
-                    // Phase 2: fade out at 80% of grow (0.48s into 0.6s)
-                    setTimeout(function() {
-                        glowEl.classList.remove('grow');
-                        glowEl.classList.add('fade');
-                    }, 400);
-                    // Phase 3: reset
-                    setTimeout(function() {
-                        glowEl.className = 'green-light-glow';
-                    }, 520);
+                    glowEl.classList.remove('ping');
+                    void glowEl.offsetWidth; // force reflow to restart animation
+                    glowEl.classList.add('ping');
                 }, 3500);
             }
 
