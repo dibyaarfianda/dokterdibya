@@ -1613,7 +1613,7 @@
         .green-light-glow.grow {
             opacity: 0.3;
             transform: scale(5);
-            transition: transform 0.25s ease-out, opacity 0.15s ease-in !important;
+            transition: transform 0.6s ease-out, opacity 0.48s ease-out !important;
         }
 
         .green-light-glow.fade {
@@ -2312,15 +2312,15 @@
                 setInterval(function() {
                     // Phase 1: grow from small to big
                     glowEl.className = 'green-light-glow grow';
-                    // Phase 2: fade out after grow completes
+                    // Phase 2: fade out at 80% of grow (0.48s into 0.6s)
                     setTimeout(function() {
                         glowEl.classList.remove('grow');
                         glowEl.classList.add('fade');
-                    }, 250);
+                    }, 480);
                     // Phase 3: reset
                     setTimeout(function() {
                         glowEl.className = 'green-light-glow';
-                    }, 500);
+                    }, 600);
                 }, 3500);
             }
 
