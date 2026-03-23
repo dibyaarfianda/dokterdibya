@@ -2268,26 +2268,40 @@
             }
         });
 
-        // ==================== SCROLL-RESPONSIVE NAVBAR (Anvil-style) ====================
-        // Scroll down = header hides, scroll up = header shows
-        document.addEventListener('DOMContentLoaded', function() {
+        // ==================== HEADER ANIMATION (runs immediately, DOM is ready) ====================
+        (function() {
+            // Trigger entrance animation
+            document.body.classList.remove('header-animated');
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    document.body.classList.add('header-animated');
+                });
+            });
+
+            // Re-trigger on back/forward navigation
+            window.addEventListener('pageshow', function() {
+                document.body.classList.remove('header-animated');
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        document.body.classList.add('header-animated');
+                    });
+                });
+            });
+
+            // Scroll-responsive navbar (Anvil-style: hide on scroll down, show on scroll up)
             var lastScrollY = window.scrollY;
             var topbar = document.getElementById('topbar');
             var ticking = false;
 
-            if (!topbar) return;
-
             function onScroll() {
                 var currentY = window.scrollY;
 
-                // Add/remove scrolled border
                 if (currentY > 10) {
                     topbar.classList.add('scrolled');
                 } else {
                     topbar.classList.remove('scrolled');
                 }
 
-                // Hide on scroll down, show on scroll up
                 if (currentY > lastScrollY && currentY > 80) {
                     topbar.classList.add('header-hidden');
                 } else {
@@ -2298,28 +2312,14 @@
                 ticking = false;
             }
 
-            window.addEventListener('scroll', function() {
-                if (!ticking) {
-                    requestAnimationFrame(onScroll);
-                    ticking = true;
-                }
-            }, { passive: true });
-        });
-
-        // ==================== HEADER ANIMATION ====================
-        (function() {
-            function triggerHeaderAnimation() {
-                document.body.classList.remove('header-animated');
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        document.body.classList.add('header-animated');
-                    });
-                });
+            if (topbar) {
+                window.addEventListener('scroll', function() {
+                    if (!ticking) {
+                        requestAnimationFrame(onScroll);
+                        ticking = true;
+                    }
+                }, { passive: true });
             }
-            document.addEventListener('DOMContentLoaded', triggerHeaderAnimation);
-            window.addEventListener('pageshow', function() {
-                triggerHeaderAnimation();
-            });
         })();
 
         // ==================== LOAD PROFILE ====================
