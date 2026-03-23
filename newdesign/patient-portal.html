@@ -1613,7 +1613,7 @@
         .green-light-glow.grow {
             opacity: 0.3;
             transform: scale(5);
-            transition: transform 0.6s ease-out, opacity 0.3s ease-out !important;
+            transition: transform 0.5s ease-out, opacity 0.1s ease-out !important;
         }
 
         .green-light-glow.fade {
@@ -2316,11 +2316,11 @@
                     setTimeout(function() {
                         glowEl.classList.remove('grow');
                         glowEl.classList.add('fade');
-                    }, 480);
+                    }, 400);
                     // Phase 3: reset
                     setTimeout(function() {
                         glowEl.className = 'green-light-glow';
-                    }, 600);
+                    }, 520);
                 }, 3500);
             }
 
