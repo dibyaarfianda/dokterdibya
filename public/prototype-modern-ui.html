@@ -3,47 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#f7f7f7">
+    <meta name="theme-color" content="#0c0c0c">
     <title>Prototype Modern UI - dokterDIBYA</title>
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         /* ========================================
-           CSS CUSTOM PROPERTIES — Martin Light Theme
+           CSS CUSTOM PROPERTIES — Franco Dark Theme
            ======================================== */
         :root {
-            --bg-primary: #f7f7f7;
-            --bg-card: #ffffff;
-            --bg-elevated: #ffffff;
+            --bg-primary: #0c0c0c;
+            --bg-secondary: #111111;
+            --bg-card: #141414;
+            --bg-card-elevated: #1a1a1a;
 
-            --border-subtle: #e6e6e6;
-            --border-line: #d9d9d9;
+            --text-primary: #f0ece4;
+            --text-secondary: #a6a6a6;
+            --text-muted: #7d7d7d;
 
-            --text-primary: #1a1a1a;
-            --text-heading: rgba(0, 0, 0, 0.8);
-            --text-secondary: rgba(114, 114, 114, 0.8);
-            --text-tertiary: #b3b3b3;
+            --accent-gold: #c9a96e;
+            --accent-gold-hover: #d8b980;
+            --accent-soft: rgba(201, 169, 110, 0.16);
 
-            --martin-yellow: #ffdd00;
-            --martin-yellow-hover: #ffe01a;
-            --martin-blue: #002bdc;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
 
-            --color-success: #34d399;
-            --color-danger: #ef4444;
+            --success: #44b678;
+            --danger: #e45858;
 
-            --radius-none: 0px;
-            --radius-xs: 2px;
-            --radius-sm: 4px;
-            --radius-pill: 30px;
-            --radius-circle: 50%;
-
-            --shadow-card: 0px 11px 40px -13px rgba(0, 0, 0, 0.14);
-            --shadow-card-active: 0px 11px 40px -13px rgba(0, 0, 0, 0.2);
-
-            --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.25);
         }
 
         /* ========================================
@@ -57,10 +48,10 @@
         }
 
         body {
-            font-family: 'Poppins', Arial, sans-serif;
+            font-family: 'DM Sans', Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            font-weight: 300;
+            font-weight: 400;
             font-size: 13px;
             line-height: 1.6;
             padding-left: env(safe-area-inset-left);
@@ -69,15 +60,15 @@
         }
 
         /* ========================================
-           ANIMATIONS — Martin Springy
+           ANIMATIONS
            ======================================== */
         @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(16px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .animate-in {
-            animation: fadeSlideUp 0.6s var(--spring) both;
+            animation: fadeSlideUp 0.5s ease both;
         }
         .delay-1 { animation-delay: 0.05s; }
         .delay-2 { animation-delay: 0.1s; }
@@ -104,11 +95,11 @@
             left: 0;
             right: 0;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(12, 12, 12, 0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--border-subtle);
-            padding: 10px 16px;
+            padding: 12px 16px;
         }
 
         .navbar-inner {
@@ -125,28 +116,23 @@
         }
 
         .navbar-brand-text {
-            font-size: 18px;
+            font-size: 20px;
+            font-weight: 700;
             line-height: 1.2;
+            color: var(--text-primary);
         }
 
-        .navbar-brand-text .brand-light {
-            font-weight: 300;
-            color: #000;
-        }
-
-        .navbar-brand-text .brand-bold {
-            font-weight: 900;
-            color: var(--martin-yellow);
-            letter-spacing: 1px;
+        .navbar-brand-text .brand-accent {
+            color: var(--accent-gold);
         }
 
         .navbar-subtitle {
             font-size: 9px;
-            font-weight: 500;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-tertiary);
-            margin-top: 1px;
+            letter-spacing: 0.22em;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
         .navbar-actions {
@@ -158,21 +144,21 @@
         .navbar-btn {
             width: 40px;
             height: 40px;
-            border-radius: var(--radius-circle);
-            border: 1px solid var(--border-subtle);
+            border-radius: 50%;
+            border: 1px solid var(--border-strong);
             background: var(--bg-card);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #000;
+            color: var(--text-primary);
             font-size: 16px;
             position: relative;
             cursor: pointer;
-            transition: transform 0.2s var(--spring);
+            transition: all 0.3s ease;
         }
 
         .navbar-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.92);
         }
 
         .navbar-btn .badge-dot {
@@ -181,28 +167,28 @@
             right: 8px;
             width: 8px;
             height: 8px;
-            background: var(--color-danger);
-            border-radius: var(--radius-circle);
+            background: var(--danger);
+            border-radius: 50%;
             border: 2px solid var(--bg-card);
         }
 
         .navbar-avatar {
             width: 36px;
             height: 36px;
-            border-radius: var(--radius-circle);
-            background: var(--martin-yellow);
+            border-radius: 50%;
+            background: var(--accent-gold);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
             font-weight: 700;
-            color: #000;
+            color: #0c0c0c;
             cursor: pointer;
-            transition: transform 0.2s var(--spring);
+            transition: all 0.3s ease;
         }
 
         .navbar-avatar:active {
-            transform: scale(0.9);
+            transform: scale(0.92);
         }
 
         /* ========================================
@@ -222,47 +208,47 @@
         }
 
         /* ========================================
-           2. WELCOME CARD (Hero — Martin Style)
+           2. WELCOME HERO CARD
            ======================================== */
         .welcome-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-xs);
+            background: var(--bg-card-elevated);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
             box-shadow: var(--shadow-card);
-            border-left: 4px solid var(--martin-yellow);
-            padding: 24px 20px;
+            padding: 22px 20px;
         }
 
         .welcome-tag {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            color: var(--text-tertiary);
-            margin-bottom: 6px;
+            letter-spacing: 0.22em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
         }
 
         .welcome-name {
-            font-size: 28px;
-            font-weight: 900;
-            color: #000;
-            letter-spacing: 0.5px;
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text-primary);
             line-height: 1.15;
             margin-bottom: 10px;
         }
 
         .welcome-bar {
-            width: 40px;
-            height: 4px;
-            background: var(--martin-yellow);
-            margin-bottom: 12px;
+            width: 36px;
+            height: 3px;
+            background: var(--accent-gold);
+            border-radius: 2px;
+            margin-bottom: 14px;
         }
 
         .welcome-tagline {
             font-size: 13px;
-            font-weight: 300;
+            font-weight: 400;
             color: var(--text-secondary);
-            line-height: 1.8;
-            margin-bottom: 14px;
+            line-height: 1.7;
+            margin-bottom: 16px;
         }
 
         .pregnancy-badge {
@@ -270,18 +256,18 @@
             align-items: center;
             gap: 6px;
             padding: 6px 14px;
-            border-radius: var(--radius-pill);
-            background: rgba(52, 211, 153, 0.1);
-            border: 1px solid rgba(52, 211, 153, 0.2);
+            border-radius: 999px;
+            background: rgba(68, 182, 120, 0.12);
+            border: 1px solid rgba(68, 182, 120, 0.2);
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #059669;
+            letter-spacing: 0.18em;
+            color: var(--success);
         }
 
         /* ========================================
-           3. QUICK STATUS ROW (Horizontal Scroll)
+           3. QUICK STATUS ROW
            ======================================== */
         .quick-status-row {
             display: flex;
@@ -306,15 +292,15 @@
             padding: 14px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xs);
+            border-radius: 12px;
             box-shadow: var(--shadow-card);
             flex-shrink: 0;
         }
 
         .chip-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: var(--radius-sm);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -322,14 +308,14 @@
             flex-shrink: 0;
         }
 
-        .chip-icon.yellow {
-            background: rgba(255, 221, 0, 0.15);
-            color: #000;
+        .chip-icon.gold {
+            background: var(--accent-soft);
+            color: var(--accent-gold);
         }
 
-        .chip-icon.pink {
-            background: rgba(244, 114, 182, 0.12);
-            color: #000;
+        .chip-icon.green {
+            background: rgba(68, 182, 120, 0.12);
+            color: var(--success);
         }
 
         .chip-text {
@@ -342,14 +328,14 @@
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #000;
+            letter-spacing: 0.18em;
+            color: var(--text-primary);
             margin-bottom: 2px;
         }
 
         .chip-subtitle {
             font-size: 12px;
-            font-weight: 300;
+            font-weight: 400;
             color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
@@ -357,13 +343,13 @@
         }
 
         /* ========================================
-           4. SELAMAT DATANG (Collapsible Card)
+           4. COLLAPSIBLE MESSAGE CARD
            ======================================== */
         .collapsible-card {
             background: var(--bg-card);
-            border-radius: var(--radius-xs);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
             box-shadow: var(--shadow-card);
-            border-left: 4px solid var(--martin-blue);
             overflow: hidden;
         }
 
@@ -377,33 +363,33 @@
             border: none;
             background: none;
             text-align: left;
-            font-family: 'Poppins', Arial, sans-serif;
-            transition: background 0.2s ease;
+            font-family: 'DM Sans', Arial, sans-serif;
+            transition: background 0.3s ease;
         }
 
         .collapsible-trigger:active {
-            background: rgba(0, 0, 0, 0.02);
+            background: rgba(255, 255, 255, 0.03);
         }
 
         .collapsible-trigger .trigger-icon {
-            font-size: 18px;
-            color: var(--martin-yellow);
+            font-size: 16px;
+            color: var(--accent-gold);
             flex-shrink: 0;
         }
 
         .collapsible-trigger .trigger-title {
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            color: #000;
+            letter-spacing: 0.22em;
+            color: var(--text-primary);
             flex: 1;
         }
 
         .collapsible-trigger .trigger-chevron {
-            font-size: 14px;
-            color: var(--text-tertiary);
-            transition: transform 0.3s var(--spring);
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: transform 0.3s ease;
             flex-shrink: 0;
         }
 
@@ -422,9 +408,9 @@
 
         .collapsible-body p {
             font-size: 13px;
-            font-weight: 300;
+            font-weight: 400;
             color: var(--text-secondary);
-            line-height: 1.8;
+            line-height: 1.75;
             margin-bottom: 12px;
         }
 
@@ -432,16 +418,17 @@
             text-align: right;
             font-size: 13px;
             font-weight: 600;
-            color: var(--martin-blue);
+            color: var(--accent-gold);
         }
 
         /* ========================================
-           5. BIRTH CONGRATULATIONS CARD (Featured)
+           5. BIRTH CONGRATULATIONS CARD
            ======================================== */
         .birth-card {
-            border-radius: var(--radius-sm);
+            border-radius: 12px;
             overflow: hidden;
             background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
             box-shadow: var(--shadow-card);
         }
 
@@ -449,7 +436,7 @@
             position: relative;
             aspect-ratio: 16 / 10;
             overflow: hidden;
-            background: #f0f0f0;
+            background: var(--bg-secondary);
         }
 
         .birth-image-wrap img {
@@ -464,8 +451,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
-            background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
+            height: 100px;
+            background: linear-gradient(to top, var(--bg-card) 0%, transparent 100%);
         }
 
         .birth-body {
@@ -476,42 +463,43 @@
         }
 
         .birth-tag {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 5px;
-            color: var(--martin-yellow);
-            margin-bottom: 6px;
+            letter-spacing: 0.28em;
+            color: var(--accent-gold);
+            margin-bottom: 8px;
         }
 
         .birth-title {
             font-size: 24px;
-            font-weight: 900;
-            color: #000;
+            font-weight: 700;
+            color: var(--text-primary);
             line-height: 1.2;
             margin-bottom: 8px;
         }
 
         .birth-bar {
-            width: 40px;
-            height: 4px;
-            background: var(--martin-yellow);
-            margin-bottom: 12px;
+            width: 36px;
+            height: 3px;
+            background: var(--accent-gold);
+            border-radius: 2px;
+            margin-bottom: 14px;
         }
 
         .birth-doctor {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-tertiary);
+            letter-spacing: 0.18em;
+            color: var(--text-muted);
             margin-bottom: 12px;
         }
 
         .birth-baby-name {
             font-size: 20px;
             font-weight: 700;
-            color: var(--martin-blue);
+            color: var(--accent-gold);
             margin-bottom: 16px;
         }
 
@@ -519,7 +507,8 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xs);
+            border-radius: 10px;
+            overflow: hidden;
         }
 
         .birth-stat {
@@ -534,8 +523,8 @@
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-tertiary);
+            letter-spacing: 0.18em;
+            color: var(--text-muted);
             margin-bottom: 4px;
         }
 
@@ -550,11 +539,12 @@
            ======================================== */
         .announcement-card {
             background: var(--bg-card);
-            border-radius: var(--radius-xs);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
             box-shadow: var(--shadow-card);
             padding: 20px;
             cursor: pointer;
-            transition: transform 0.2s var(--spring);
+            transition: transform 0.3s ease;
         }
 
         .announcement-card:active {
@@ -569,16 +559,15 @@
         }
 
         .announcement-icon {
-            font-size: 16px;
-            color: var(--martin-yellow);
-            flex-shrink: 0;
-        }
-
-        .announcement-separator {
-            width: 3px;
-            height: 30px;
-            background: var(--martin-yellow);
-            border-radius: 2px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--accent-gold);
             flex-shrink: 0;
         }
 
@@ -591,58 +580,50 @@
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--martin-yellow);
+            letter-spacing: 0.22em;
+            color: var(--accent-gold);
             margin-bottom: 2px;
         }
 
         .announcement-title {
             font-size: 15px;
             font-weight: 600;
-            color: #000;
+            color: var(--text-primary);
         }
 
         .announcement-body {
             font-size: 13px;
-            font-weight: 300;
+            font-weight: 400;
             color: var(--text-secondary);
-            line-height: 1.8;
+            line-height: 1.75;
         }
 
         /* ========================================
-           7. TANYA DOKTER CARD (Action Type)
+           7. TANYA DOKTER CARD
            ======================================== */
         .ask-doctor-card {
             background: var(--bg-card);
-            border-radius: var(--radius-xs);
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
             box-shadow: var(--shadow-card);
-            overflow: hidden;
-        }
-
-        .ask-doctor-topbar {
-            height: 4px;
-            background: var(--martin-yellow);
-        }
-
-        .ask-doctor-content {
-            padding: 20px;
+            padding: 22px 20px;
         }
 
         .ask-doctor-label {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            color: #000;
+            letter-spacing: 0.22em;
+            color: var(--text-primary);
             margin-bottom: 8px;
         }
 
         .ask-doctor-desc {
             font-size: 13px;
-            font-weight: 300;
+            font-weight: 400;
             color: var(--text-secondary);
-            line-height: 1.8;
-            margin-bottom: 16px;
+            line-height: 1.75;
+            margin-bottom: 18px;
         }
 
         .ask-doctor-grid {
@@ -657,22 +638,36 @@
             justify-content: center;
             gap: 8px;
             padding: 12px 16px;
-            background: var(--martin-yellow);
-            color: #000;
             border: none;
-            border-radius: var(--radius-xs);
-            font-family: 'Poppins', Arial, sans-serif;
-            font-size: 11px;
-            font-weight: 500;
+            border-radius: 10px;
+            font-family: 'DM Sans', Arial, sans-serif;
+            font-size: 12px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0.12em;
             cursor: pointer;
-            transition: all 0.2s var(--spring);
+            transition: all 0.3s ease;
             min-height: 44px;
         }
 
-        .ask-doctor-btn:active {
-            background: var(--martin-yellow-hover);
+        .ask-doctor-btn.primary {
+            background: var(--accent-gold);
+            color: #0c0c0c;
+        }
+
+        .ask-doctor-btn.primary:active {
+            background: var(--accent-gold-hover);
+            transform: scale(0.97);
+        }
+
+        .ask-doctor-btn.secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-strong);
+        }
+
+        .ask-doctor-btn.secondary:active {
+            background: rgba(255, 255, 255, 0.04);
             transform: scale(0.97);
         }
 
@@ -684,19 +679,12 @@
            8. MENU GRID
            ======================================== */
         .menu-section-label {
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 5px;
-            color: #000;
-            margin-bottom: 8px;
-        }
-
-        .menu-section-bar {
-            width: 40px;
-            height: 4px;
-            background: var(--martin-yellow);
-            margin-bottom: 16px;
+            letter-spacing: 0.28em;
+            color: var(--text-muted);
+            margin-bottom: 14px;
         }
 
         .menu-grid {
@@ -709,7 +697,7 @@
             position: relative;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-xs);
+            border-radius: 12px;
             box-shadow: var(--shadow-card);
             padding: 20px 12px 16px;
             display: flex;
@@ -717,18 +705,18 @@
             align-items: center;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s var(--spring);
+            transition: all 0.3s ease;
         }
 
         .menu-item:active {
-            transform: scale(0.95);
-            box-shadow: var(--shadow-card-active);
+            transform: scale(0.96);
+            background: var(--bg-card-elevated);
         }
 
         .menu-icon-wrap {
             width: 48px;
             height: 48px;
-            border-radius: var(--radius-circle);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -739,14 +727,14 @@
         .menu-item-title {
             font-size: 12px;
             font-weight: 600;
-            color: #000;
+            color: var(--text-primary);
             margin-bottom: 2px;
         }
 
         .menu-item-subtitle {
             font-size: 10px;
-            font-weight: 300;
-            color: var(--text-tertiary);
+            font-weight: 400;
+            color: var(--text-muted);
         }
 
         .menu-badge {
@@ -755,8 +743,8 @@
             right: 8px;
             width: 20px;
             height: 20px;
-            border-radius: var(--radius-circle);
-            background: var(--color-danger);
+            border-radius: 50%;
+            background: var(--danger);
             color: #fff;
             font-size: 10px;
             font-weight: 600;
@@ -774,9 +762,9 @@
             left: 0;
             right: 0;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(12, 12, 12, 0.92);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             border-top: 1px solid var(--border-subtle);
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
@@ -801,10 +789,10 @@
             min-width: 64px;
             min-height: 44px;
             justify-content: center;
-            transition: transform 0.2s var(--spring);
+            transition: all 0.3s ease;
             background: none;
             border: none;
-            font-family: 'Poppins', Arial, sans-serif;
+            font-family: 'DM Sans', Arial, sans-serif;
         }
 
         .bottom-nav-item:active {
@@ -813,25 +801,25 @@
 
         .bottom-nav-item .nav-icon {
             font-size: 20px;
-            color: var(--text-tertiary);
-            transition: color 0.2s ease;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
         }
 
         .bottom-nav-item .nav-label {
             font-size: 10px;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-tertiary);
-            transition: color 0.2s ease;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
         }
 
         .bottom-nav-item.active .nav-icon {
-            color: #000;
+            color: var(--accent-gold);
         }
 
         .bottom-nav-item.active .nav-label {
-            color: #000;
+            color: var(--accent-gold);
         }
 
         .bottom-nav-item.active::after {
@@ -841,9 +829,9 @@
             left: 50%;
             transform: translateX(-50%);
             width: 24px;
-            height: 4px;
-            background: var(--martin-yellow);
-            border-radius: 0 0 2px 2px;
+            height: 3px;
+            background: var(--accent-gold);
+            border-radius: 0 0 3px 3px;
         }
 
         /* ========================================
@@ -853,6 +841,10 @@
             .main-content {
                 padding-left: 24px;
                 padding-right: 24px;
+            }
+
+            .section-gap {
+                margin-bottom: 24px;
             }
 
             .menu-grid {
@@ -870,7 +862,7 @@
             }
 
             .welcome-name {
-                font-size: 34px;
+                font-size: 36px;
             }
 
             .birth-title {
@@ -911,9 +903,9 @@
         <div class="navbar-inner">
             <div class="navbar-brand">
                 <div class="navbar-brand-text">
-                    <span class="brand-light">dokter</span><span class="brand-bold">DIBYA</span>
+                    dokter<span class="brand-accent">DIBYA</span>
                 </div>
-                <div class="navbar-subtitle">Portal Privat Kandungan Anda</div>
+                <div class="navbar-subtitle">Portal Privat Kandungan</div>
             </div>
             <div class="navbar-actions">
                 <button class="navbar-btn" aria-label="Notifikasi">
@@ -930,7 +922,7 @@
          ============================================= -->
     <main class="main-content">
 
-        <!-- 2. WELCOME CARD -->
+        <!-- 2. WELCOME HERO CARD -->
         <section class="welcome-card section-gap animate-in delay-1">
             <div class="welcome-tag">Selamat Sore</div>
             <h1 class="welcome-name">Dian Permatasari</h1>
@@ -942,11 +934,11 @@
             </span>
         </section>
 
-        <!-- 3. QUICK STATUS ROW -->
+        <!-- 3. QUICK STATUS CHIPS -->
         <section class="section-gap animate-in delay-2">
             <div class="quick-status-row">
                 <div class="status-chip">
-                    <div class="chip-icon yellow">
+                    <div class="chip-icon gold">
                         <i class="fa-solid fa-calendar-check"></i>
                     </div>
                     <div class="chip-text">
@@ -955,7 +947,7 @@
                     </div>
                 </div>
                 <div class="status-chip">
-                    <div class="chip-icon pink">
+                    <div class="chip-icon green">
                         <i class="fa-solid fa-capsules"></i>
                     </div>
                     <div class="chip-text">
@@ -966,7 +958,7 @@
             </div>
         </section>
 
-        <!-- 4. SELAMAT DATANG (Collapsible) -->
+        <!-- 4. COLLAPSIBLE MESSAGE CARD -->
         <section class="collapsible-card section-gap animate-in delay-3">
             <button class="collapsible-trigger open" onclick="toggleCollapsible(this)" aria-expanded="true">
                 <i class="fa-solid fa-heart trigger-icon"></i>
@@ -983,7 +975,7 @@
         <!-- 5. BIRTH CONGRATULATIONS CARD -->
         <section class="birth-card section-gap animate-in delay-4">
             <div class="birth-image-wrap">
-                <img src="https://placehold.co/600x400/f7f7f7/002bdc?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
+                <img src="https://placehold.co/600x400/1a1a1a/c9a96e?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
                 <div class="gradient-overlay"></div>
             </div>
             <div class="birth-body">
@@ -1016,8 +1008,9 @@
         <!-- 6. ANNOUNCEMENT CARD -->
         <section class="announcement-card section-gap animate-in delay-5">
             <div class="announcement-header">
-                <i class="fa-solid fa-bullhorn announcement-icon"></i>
-                <div class="announcement-separator"></div>
+                <div class="announcement-icon">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
                 <div class="announcement-title-area">
                     <div class="announcement-label">Pengumuman</div>
                     <div class="announcement-title">Pembaruan Portal - Maret 2026</div>
@@ -1030,33 +1023,29 @@
 
         <!-- 7. TANYA DOKTER CARD -->
         <section class="ask-doctor-card section-gap animate-in delay-6">
-            <div class="ask-doctor-topbar"></div>
-            <div class="ask-doctor-content">
-                <div class="ask-doctor-label">Tanya Dokter</div>
-                <p class="ask-doctor-desc">Punya pertanyaan seputar kehamilan? Kirim pesan langsung ke dr. Dibya dan dapatkan jawaban dalam 24 jam.</p>
-                <div class="ask-doctor-grid">
-                    <button class="ask-doctor-btn">
-                        <i class="fa-solid fa-pen"></i>
-                        Tanya Baru
-                    </button>
-                    <button class="ask-doctor-btn">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                        Riwayat
-                    </button>
-                </div>
+            <div class="ask-doctor-label">Tanya Dokter</div>
+            <p class="ask-doctor-desc">Punya pertanyaan seputar kehamilan? Kirim pesan langsung ke dr. Dibya dan dapatkan jawaban dalam 24 jam.</p>
+            <div class="ask-doctor-grid">
+                <button class="ask-doctor-btn primary">
+                    <i class="fa-solid fa-pen"></i>
+                    Tanya Baru
+                </button>
+                <button class="ask-doctor-btn secondary">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Riwayat
+                </button>
             </div>
         </section>
 
         <!-- 8. MENU GRID -->
         <section class="section-gap animate-in delay-7">
             <div class="menu-section-label">Menu</div>
-            <div class="menu-section-bar"></div>
             <div class="menu-grid">
                 <!-- Dokumen -->
                 <div class="menu-item">
                     <span class="menu-badge">3</span>
-                    <div class="menu-icon-wrap" style="background: rgba(255,221,0,0.15);">
-                        <i class="fa-solid fa-file-lines" style="color: #000;"></i>
+                    <div class="menu-icon-wrap" style="background: var(--accent-soft);">
+                        <i class="fa-solid fa-file-lines" style="color: var(--accent-gold);"></i>
                     </div>
                     <div class="menu-item-title">Dokumen</div>
                     <div class="menu-item-subtitle">Hasil lab & USG</div>
@@ -1064,47 +1053,47 @@
                 <!-- Aplikasi -->
                 <div class="menu-item">
                     <div class="menu-icon-wrap" style="background: rgba(244,114,182,0.12);">
-                        <i class="fa-solid fa-heart-pulse" style="color: #000;"></i>
+                        <i class="fa-solid fa-heart-pulse" style="color: #f472b6;"></i>
                     </div>
                     <div class="menu-item-title">Aplikasi</div>
                     <div class="menu-item-subtitle">Kesehatan ibu</div>
                 </div>
                 <!-- Jadwal -->
                 <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(52,211,153,0.12);">
-                        <i class="fa-solid fa-calendar-days" style="color: #000;"></i>
+                    <div class="menu-icon-wrap" style="background: rgba(68,182,120,0.12);">
+                        <i class="fa-solid fa-calendar-days" style="color: var(--success);"></i>
                     </div>
                     <div class="menu-item-title">Jadwal</div>
                     <div class="menu-item-subtitle">Booking kontrol</div>
                 </div>
                 <!-- Edukasi -->
                 <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(255,221,0,0.15);">
-                        <i class="fa-solid fa-book-open" style="color: #000;"></i>
+                    <div class="menu-icon-wrap" style="background: rgba(96,165,250,0.12);">
+                        <i class="fa-solid fa-book-open" style="color: #60a5fa;"></i>
                     </div>
                     <div class="menu-item-title">Edukasi</div>
                     <div class="menu-item-subtitle">Artikel kehamilan</div>
                 </div>
                 <!-- Tanya Dokter -->
                 <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(0,43,220,0.08);">
-                        <i class="fa-solid fa-comments" style="color: #002bdc;"></i>
+                    <div class="menu-icon-wrap" style="background: var(--accent-soft);">
+                        <i class="fa-solid fa-comments" style="color: var(--accent-gold);"></i>
                     </div>
                     <div class="menu-item-title">Tanya Dokter</div>
                     <div class="menu-item-subtitle">Chat konsultasi</div>
                 </div>
                 <!-- Tagihan -->
                 <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(255,221,0,0.15);">
-                        <i class="fa-solid fa-credit-card" style="color: #000;"></i>
+                    <div class="menu-icon-wrap" style="background: rgba(167,139,250,0.12);">
+                        <i class="fa-solid fa-credit-card" style="color: #a78bfa;"></i>
                     </div>
                     <div class="menu-item-title">Tagihan</div>
                     <div class="menu-item-subtitle">Invoice & bayar</div>
                 </div>
                 <!-- Bantuan -->
                 <div class="menu-item">
-                    <div class="menu-icon-wrap" style="background: rgba(0,0,0,0.04);">
-                        <i class="fa-solid fa-circle-question" style="color: #999;"></i>
+                    <div class="menu-icon-wrap" style="background: rgba(255,255,255,0.06);">
+                        <i class="fa-solid fa-circle-question" style="color: var(--text-muted);"></i>
                     </div>
                     <div class="menu-item-title">Bantuan</div>
                     <div class="menu-item-subtitle">FAQ & kontak</div>
@@ -1134,7 +1123,7 @@
         </div>
     </nav>
 
-    <!-- Minimal JS: collapsible toggle only -->
+    <!-- Minimal JS: collapsible toggle -->
     <script>
         function toggleCollapsible(trigger) {
             trigger.classList.toggle('open');
