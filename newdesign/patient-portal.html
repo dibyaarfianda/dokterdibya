@@ -216,6 +216,7 @@
             cursor: pointer;
         }
 
+        .circle-btn:hover { background: #f0f0f0; }
         .circle-btn:active { transform: scale(0.92); }
 
         /* Notification badge (count) */
@@ -409,6 +410,12 @@
             margin-bottom: 14px;
             background: var(--bg-surface);
             box-shadow: var(--shadow-soft);
+            transition: background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .dash-card:hover {
+            background: #f6f6f6;
+            border-color: rgba(0, 0, 0, 0.18);
         }
 
         .dash-card-header {
@@ -712,11 +719,15 @@
             text-decoration: none;
             color: var(--text-body);
             font-size: 13px;
-            transition: background 0.2s;
+            transition: background 0.3s ease, border-color 0.3s ease;
             background: var(--bg-surface);
         }
 
-        .tanya-action-btn:hover,
+        .tanya-action-btn:hover {
+            background: #f6f6f6;
+            border-color: rgba(0, 0, 0, 0.25);
+        }
+
         .tanya-action-btn:active {
             background: var(--accent-soft);
         }
@@ -975,10 +986,15 @@
             padding: 20px 14px;
             text-align: center;
             cursor: pointer;
-            transition: transform 0.25s ease, background 0.2s;
+            transition: transform 0.25s ease, background 0.3s ease, border-color 0.3s ease;
             position: relative;
             background: var(--bg-surface);
             box-shadow: var(--shadow-soft);
+        }
+
+        .menu-card:hover {
+            background: #f6f6f6;
+            border-color: rgba(0, 0, 0, 0.18);
         }
 
         .menu-card:active {
@@ -1850,11 +1866,8 @@
                 <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> Patient Portal</div>
                 <h1 class="hero-greeting" id="hero-greeting">
                     <span class="tracked">Selamat datang kembali</span>
-                    <span id="hero-patient-name">Halo</span>
+                    <span id="hero-patient-name">...</span>
                 </h1>
-                <p class="hero-copy" id="hero-copy">
-                    Portal privat untuk memantau kehamilan, dokumen medis, dan jadwal konsultasi Anda.
-                </p>
             </section>
 
             <!-- Idul Fitri Greeting Card -->
@@ -2403,7 +2416,7 @@
 
                     // Update hero greeting
                     const firstName = (profile.fullname || 'Pasien').split(' ')[0];
-                    document.getElementById('hero-patient-name').textContent = 'Halo, ' + firstName;
+                    document.getElementById('hero-patient-name').textContent = firstName;
 
                     // Set avatar
                     if (profile.profile_picture) {
