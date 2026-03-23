@@ -45,6 +45,21 @@
             -webkit-font-smoothing: antialiased;
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 22px 22px;
+            -webkit-mask-image: radial-gradient(circle at 50% 34%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.28) 58%, transparent 88%);
+            mask-image: radial-gradient(circle at 50% 34%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.28) 58%, transparent 88%);
         }
 
         ::selection {
@@ -477,6 +492,7 @@
     </style>
 </head>
 <body>
+    <div class="grid-bg" aria-hidden="true"></div>
     <header class="topbar">
         <div class="topbar-inner">
             <div class="brand">
