@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0c0c0c">
+    <meta name="theme-color" content="#f7f7f7">
     <title>dokterDIBYA - New Portal Direction</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --bg-page: #0c0c0c;
-            --bg-secondary: #111111;
-            --bg-surface: #141414;
-            --bg-surface-2: #1a1a1a;
-            --line-soft: rgba(255,255,255,0.08);
-            --line-strong: rgba(255,255,255,0.14);
-            --text-primary: #ffffff;
-            --text-body: #cccccc;
-            --text-secondary: #a6a6a6;
-            --text-muted: #7d7d7d;
+            --bg-page: #f7f7f7;
+            --bg-secondary: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-surface-2: #f1f1f1;
+            --line-soft: rgba(0,0,0,0.08);
+            --line-strong: rgba(0,0,0,0.14);
+            --text-primary: #141414;
+            --text-body: #333333;
+            --text-secondary: #585858;
+            --text-muted: #7a7a7a;
             --accent: #d76a7d;
             --accent-hover: #e08094;
             --accent-soft: rgba(215, 106, 125, 0.16);
@@ -27,8 +27,8 @@
             --info: #7b9fc9;
             --info-soft: rgba(123,159,201,0.18);
             --font-main: 'Inter', Arial, sans-serif;
-            --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.25);
-            --shadow-hard: 0 14px 34px rgba(0, 0, 0, 0.34);
+            --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.08);
+            --shadow-hard: 0 14px 28px rgba(0, 0, 0, 0.12);
         }
 
         *, *::before, *::after {
@@ -42,8 +42,8 @@
             min-height: 100%;
             font-family: var(--font-main);
             background:
-                radial-gradient(600px 260px at 20% -10%, rgba(215,106,125,0.14), transparent 60%),
-                radial-gradient(520px 240px at 100% 15%, rgba(170,190,210,0.08), transparent 62%),
+                radial-gradient(600px 260px at 20% -10%, rgba(215,106,125,0.12), transparent 60%),
+                radial-gradient(520px 240px at 100% 15%, rgba(123,159,201,0.12), transparent 62%),
                 var(--bg-page);
             color: var(--text-primary);
             font-size: 14px;
@@ -91,7 +91,7 @@
             left: 0;
             right: 0;
             z-index: 30;
-            background: rgba(12, 12, 12, 0.88);
+            background: rgba(255, 255, 255, 0.9);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--line-soft);
@@ -123,7 +123,7 @@
             font-size: 13px;
             font-weight: 700;
             color: var(--accent);
-            background: rgba(255,255,255,0.02);
+            background: rgba(0,0,0,0.03);
         }
 
         .brand-title {
@@ -187,12 +187,12 @@
             height: 40px;
             border-radius: 50%;
             background: linear-gradient(145deg, var(--accent), #b85f72);
-            color: #fff;
+            color: #ffffff;
             font-size: 14px;
             font-weight: 700;
             display: grid;
             place-items: center;
-            border: 1px solid rgba(255,255,255,0.16);
+            border: 1px solid rgba(0,0,0,0.1);
         }
 
         .hero {
@@ -226,13 +226,13 @@
             padding: 12px;
             border: 1px solid var(--line-soft);
             border-radius: 14px;
-            background: rgba(255,255,255,0.02);
+            background: rgba(255,255,255,0.9);
             box-shadow: var(--shadow-soft);
         }
 
         .vital {
             padding: 8px;
-            border-right: 1px solid rgba(255,255,255,0.06);
+            border-right: 1px solid rgba(0,0,0,0.06);
         }
 
         .vital:last-child { border-right: 0; }
@@ -394,13 +394,13 @@
         }
 
         .status-pill.success {
-            color: #b9e5c8;
+            color: #3f7e58;
             background: var(--success-soft);
             border-color: rgba(94,167,122,0.35);
         }
 
         .status-pill.info {
-            color: #c0d6f0;
+            color: #4f6f99;
             background: var(--info-soft);
             border-color: rgba(123,159,201,0.34);
         }
@@ -442,7 +442,7 @@
 
         .workspace-item {
             padding: 12px 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
             display: grid;
             gap: 4px;
         }
@@ -473,7 +473,7 @@
             padding: 10px;
             border: 1px solid var(--line-strong);
             border-radius: 14px;
-            background: rgba(20,20,20,0.92);
+            background: rgba(255,255,255,0.95);
             display: grid;
             grid-template-columns: 1fr auto;
             align-items: center;
@@ -509,7 +509,7 @@
             text-transform: uppercase;
             font-weight: 700;
             background: var(--accent);
-            color: #fff;
+            color: #ffffff;
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(215,106,125,0.24);
             transition: transform 0.25s ease, background 0.25s ease;
@@ -526,7 +526,7 @@
             right: 0;
             bottom: 0;
             z-index: 25;
-            background: rgba(12,12,12,0.92);
+            background: rgba(255,255,255,0.95);
             -webkit-backdrop-filter: blur(24px);
             backdrop-filter: blur(24px);
             border-top: 1px solid var(--line-soft);
