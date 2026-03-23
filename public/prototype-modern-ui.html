@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dokter Dibya — Portal Pasien</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="theme-color" content="#f7f7f7">
+    <title>Prototype Modern UI - dokterDIBYA</title>
+
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
+        /* ========================================
+           CSS CUSTOM PROPERTIES — Martin Light Theme
+           ======================================== */
         :root {
             --bg-primary: #f7f7f7;
             --bg-card: #ffffff;
@@ -26,17 +31,24 @@
             --martin-yellow-hover: #ffe01a;
             --martin-blue: #002bdc;
 
-            --color-success: #059669;
+            --color-success: #34d399;
             --color-danger: #ef4444;
 
+            --radius-none: 0px;
             --radius-xs: 2px;
             --radius-sm: 4px;
             --radius-pill: 30px;
             --radius-circle: 50%;
 
             --shadow-card: 0px 11px 40px -13px rgba(0, 0, 0, 0.14);
+            --shadow-card-active: 0px 11px 40px -13px rgba(0, 0, 0, 0.2);
+
+            --spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
+        /* ========================================
+           RESET & BASE
+           ======================================== */
         *, *::before, *::after {
             margin: 0;
             padding: 0;
@@ -48,18 +60,25 @@
             font-family: 'Poppins', Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100%;
-            overflow-x: hidden;
+            font-weight: 300;
+            font-size: 13px;
+            line-height: 1.6;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Animations (Martin springy) ── */
+        /* ========================================
+           ANIMATIONS — Martin Springy
+           ======================================== */
         @keyframes fadeSlideUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-in { animation: fadeSlideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+        .animate-in {
+            animation: fadeSlideUp 0.6s var(--spring) both;
+        }
         .delay-1 { animation-delay: 0.05s; }
         .delay-2 { animation-delay: 0.1s; }
         .delay-3 { animation-delay: 0.15s; }
@@ -76,50 +95,58 @@
             }
         }
 
-        /* ══════════════════════════════════════
-           1. NAVBAR
-           ══════════════════════════════════════ */
+        /* ========================================
+           1. NAVBAR (Fixed Top)
+           ======================================== */
         .navbar {
             position: fixed;
-            top: 0;
             top: env(safe-area-inset-top, 0px);
             left: 0;
             right: 0;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 16px;
+            z-index: 1000;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-subtle);
+            padding: 10px 16px;
+        }
+
+        .navbar-inner {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .navbar-brand {
             display: flex;
             flex-direction: column;
-            gap: 2px;
         }
 
-        .navbar-brand-title {
-            font-size: 20px;
-            line-height: 1.1;
+        .navbar-brand-text {
+            font-size: 18px;
+            line-height: 1.2;
         }
 
-        .navbar-brand-title .light { font-weight: 300; color: #000; }
-        .navbar-brand-title .bold {
+        .navbar-brand-text .brand-light {
+            font-weight: 300;
+            color: #000;
+        }
+
+        .navbar-brand-text .brand-bold {
             font-weight: 900;
             color: var(--martin-yellow);
             letter-spacing: 1px;
         }
 
-        .navbar-brand-sub {
+        .navbar-subtitle {
             font-size: 9px;
             font-weight: 500;
-            color: var(--text-tertiary);
             text-transform: uppercase;
             letter-spacing: 2px;
+            color: var(--text-tertiary);
+            margin-top: 1px;
         }
 
         .navbar-actions {
@@ -128,42 +155,38 @@
             gap: 10px;
         }
 
-        .btn-bell {
-            position: relative;
+        .navbar-btn {
             width: 40px;
             height: 40px;
             border-radius: var(--radius-circle);
             border: 1px solid var(--border-subtle);
-            background: transparent;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #000;
             font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s var(--spring);
         }
 
-        .btn-bell:active { transform: scale(0.9); }
+        .navbar-btn:active {
+            transform: scale(0.9);
+        }
 
-        .btn-bell .badge-dot {
+        .navbar-btn .badge-dot {
             position: absolute;
-            top: 5px;
-            right: 4px;
-            width: 18px;
-            height: 18px;
-            border-radius: var(--radius-circle);
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
             background: var(--color-danger);
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #fff;
+            border-radius: var(--radius-circle);
+            border: 2px solid var(--bg-card);
         }
 
-        .avatar-circle {
+        .navbar-avatar {
             width: 36px;
             height: 36px;
             border-radius: var(--radius-circle);
@@ -174,11 +197,17 @@
             font-size: 14px;
             font-weight: 700;
             color: #000;
+            cursor: pointer;
+            transition: transform 0.2s var(--spring);
         }
 
-        /* ══════════════════════════════════════
+        .navbar-avatar:active {
+            transform: scale(0.9);
+        }
+
+        /* ========================================
            MAIN CONTENT
-           ══════════════════════════════════════ */
+           ======================================== */
         .main-content {
             padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
             padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px);
@@ -186,45 +215,45 @@
             padding-right: 16px;
             max-width: 600px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
         }
 
-        /* ══════════════════════════════════════
-           2. WELCOME CARD
-           ══════════════════════════════════════ */
+        .section-gap {
+            margin-bottom: 16px;
+        }
+
+        /* ========================================
+           2. WELCOME CARD (Hero — Martin Style)
+           ======================================== */
         .welcome-card {
             background: var(--bg-card);
-            border-left: 4px solid var(--martin-yellow);
             border-radius: var(--radius-xs);
-            padding: 24px 20px;
             box-shadow: var(--shadow-card);
+            border-left: 4px solid var(--martin-yellow);
+            padding: 24px 20px;
         }
 
         .welcome-tag {
             font-size: 11px;
             font-weight: 600;
-            letter-spacing: 4px;
             text-transform: uppercase;
+            letter-spacing: 4px;
             color: var(--text-tertiary);
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .welcome-name {
             font-size: 28px;
             font-weight: 900;
+            color: #000;
             letter-spacing: 0.5px;
             line-height: 1.15;
-            color: #000;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
         .welcome-bar {
             width: 40px;
             height: 4px;
             background: var(--martin-yellow);
-            border-radius: 2px;
             margin-bottom: 12px;
         }
 
@@ -233,30 +262,28 @@
             font-weight: 300;
             color: var(--text-secondary);
             line-height: 1.8;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
-        .week-badge {
+        .pregnancy-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
             background: rgba(52, 211, 153, 0.1);
             border: 1px solid rgba(52, 211, 153, 0.2);
-            border-radius: var(--radius-pill);
-            padding: 6px 14px;
             font-size: 10px;
             font-weight: 600;
-            color: var(--color-success);
             text-transform: uppercase;
             letter-spacing: 2px;
+            color: #059669;
         }
 
-        .week-badge i { font-size: 11px; }
-
-        /* ══════════════════════════════════════
-           3. QUICK STATUS ROW
-           ══════════════════════════════════════ */
-        .status-row {
+        /* ========================================
+           3. QUICK STATUS ROW (Horizontal Scroll)
+           ======================================== */
+        .quick-status-row {
             display: flex;
             gap: 10px;
             overflow-x: auto;
@@ -266,33 +293,32 @@
             padding: 2px 0;
         }
 
-        .status-row::-webkit-scrollbar { display: none; }
+        .quick-status-row::-webkit-scrollbar {
+            display: none;
+        }
 
         .status-chip {
             min-width: 200px;
-            flex-shrink: 0;
             scroll-snap-align: start;
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 14px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
-            padding: 14px;
             box-shadow: var(--shadow-card);
-            transition: transform 0.2s ease;
+            flex-shrink: 0;
         }
-
-        .status-chip:active { transform: scale(0.97); }
 
         .chip-icon {
             width: 38px;
             height: 38px;
-            border-radius: var(--radius-circle);
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 15px;
+            font-size: 16px;
             flex-shrink: 0;
         }
 
@@ -306,68 +332,79 @@
             color: #000;
         }
 
-        .chip-text { display: flex; flex-direction: column; gap: 4px; }
+        .chip-text {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
 
-        .chip-title {
+        .chip-label {
             font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #000;
+            margin-bottom: 2px;
         }
 
-        .chip-sub {
+        .chip-subtitle {
             font-size: 12px;
             font-weight: 300;
             color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* ══════════════════════════════════════
-           4. SELAMAT DATANG (Collapsible)
-           ══════════════════════════════════════ */
+        /* ========================================
+           4. SELAMAT DATANG (Collapsible Card)
+           ======================================== */
         .collapsible-card {
             background: var(--bg-card);
-            border-left: 4px solid var(--martin-blue);
             border-radius: var(--radius-xs);
-            overflow: hidden;
             box-shadow: var(--shadow-card);
+            border-left: 4px solid var(--martin-blue);
+            overflow: hidden;
         }
 
         .collapsible-trigger {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 16px 20px;
+            padding: 18px 20px;
             cursor: pointer;
             width: 100%;
             border: none;
             background: none;
-            color: var(--text-primary);
-            font-family: inherit;
             text-align: left;
+            font-family: 'Poppins', Arial, sans-serif;
+            transition: background 0.2s ease;
         }
 
-        .collapsible-trigger:active { background: rgba(0, 0, 0, 0.02); }
+        .collapsible-trigger:active {
+            background: rgba(0, 0, 0, 0.02);
+        }
 
         .collapsible-trigger .trigger-icon {
-            font-size: 16px;
+            font-size: 18px;
             color: var(--martin-yellow);
             flex-shrink: 0;
         }
 
         .collapsible-trigger .trigger-title {
-            flex: 1;
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 3px;
             color: #000;
+            flex: 1;
         }
 
         .collapsible-trigger .trigger-chevron {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--text-tertiary);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.3s var(--spring);
+            flex-shrink: 0;
         }
 
         .collapsible-trigger.open .trigger-chevron {
@@ -375,87 +412,74 @@
         }
 
         .collapsible-body {
+            padding: 0 20px 20px;
             display: none;
-            padding: 0 20px 24px;
         }
 
-        .collapsible-body.show { display: block; }
+        .collapsible-body.show {
+            display: block;
+        }
 
         .collapsible-body p {
             font-size: 13px;
             font-weight: 300;
-            line-height: 1.8;
             color: var(--text-secondary);
-            margin-bottom: 16px;
+            line-height: 1.8;
+            margin-bottom: 12px;
         }
 
         .collapsible-signature {
             text-align: right;
-        }
-
-        .collapsible-signature .name {
             font-size: 13px;
             font-weight: 600;
             color: var(--martin-blue);
         }
 
-        .collapsible-signature .title {
-            font-size: 10px;
-            font-weight: 400;
-            color: var(--text-tertiary);
-            margin-top: 2px;
-        }
-
-        /* ══════════════════════════════════════
-           5. BIRTH CARD
-           ══════════════════════════════════════ */
+        /* ========================================
+           5. BIRTH CONGRATULATIONS CARD (Featured)
+           ======================================== */
         .birth-card {
             border-radius: var(--radius-sm);
             overflow: hidden;
+            background: var(--bg-card);
+            box-shadow: var(--shadow-card);
         }
 
-        .birth-image {
+        .birth-image-wrap {
             position: relative;
-            width: 100%;
             aspect-ratio: 16 / 10;
             overflow: hidden;
+            background: #f0f0f0;
         }
 
-        .birth-image img {
+        .birth-image-wrap img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        .birth-image::after {
-            content: '';
+        .birth-image-wrap .gradient-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 100px;
-            background: linear-gradient(to top, var(--bg-primary), transparent);
+            height: 80px;
+            background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
         }
 
         .birth-body {
             padding: 0 20px 24px;
             margin-top: -40px;
             position: relative;
-            z-index: 2;
-            background: var(--bg-card);
-            margin-left: 12px;
-            margin-right: 12px;
-            border-radius: var(--radius-xs);
-            padding-top: 24px;
-            box-shadow: var(--shadow-card);
+            z-index: 1;
         }
 
         .birth-tag {
             font-size: 11px;
             font-weight: 600;
-            letter-spacing: 5px;
             text-transform: uppercase;
+            letter-spacing: 5px;
             color: var(--martin-yellow);
             margin-bottom: 6px;
         }
@@ -463,16 +487,15 @@
         .birth-title {
             font-size: 24px;
             font-weight: 900;
-            line-height: 1.2;
             color: #000;
-            margin-bottom: 10px;
+            line-height: 1.2;
+            margin-bottom: 8px;
         }
 
         .birth-bar {
             width: 40px;
             height: 4px;
             background: var(--martin-yellow);
-            border-radius: 2px;
             margin-bottom: 12px;
         }
 
@@ -482,7 +505,7 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--text-tertiary);
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .birth-baby-name {
@@ -497,25 +520,19 @@
             grid-template-columns: 1fr 1fr;
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
-            overflow: hidden;
         }
 
         .birth-stat {
-            padding: 14px 12px;
-            border-bottom: 1px solid var(--border-subtle);
+            padding: 14px 16px;
         }
 
-        .birth-stat:nth-child(odd) {
-            border-right: 1px solid var(--border-subtle);
-        }
-
-        .birth-stat:nth-child(n+3) {
-            border-bottom: none;
-        }
+        .birth-stat:nth-child(1) { border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+        .birth-stat:nth-child(2) { border-bottom: 1px solid var(--border-subtle); }
+        .birth-stat:nth-child(3) { border-right: 1px solid var(--border-subtle); }
 
         .birth-stat-label {
             font-size: 10px;
-            font-weight: 500;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: var(--text-tertiary);
@@ -525,26 +542,29 @@
         .birth-stat-value {
             font-size: 15px;
             font-weight: 600;
-            color: #000;
+            color: var(--text-primary);
         }
 
-        /* ══════════════════════════════════════
+        /* ========================================
            6. ANNOUNCEMENT CARD
-           ══════════════════════════════════════ */
+           ======================================== */
         .announcement-card {
             background: var(--bg-card);
             border-radius: var(--radius-xs);
-            padding: 20px;
             box-shadow: var(--shadow-card);
-            transition: transform 0.15s ease;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.2s var(--spring);
         }
 
-        .announcement-card:active { transform: scale(0.98); }
+        .announcement-card:active {
+            transform: scale(0.98);
+        }
 
         .announcement-header {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             margin-bottom: 12px;
         }
 
@@ -562,7 +582,10 @@
             flex-shrink: 0;
         }
 
-        .announcement-meta { display: flex; flex-direction: column; gap: 4px; }
+        .announcement-title-area {
+            flex: 1;
+            min-width: 0;
+        }
 
         .announcement-label {
             font-size: 10px;
@@ -570,6 +593,7 @@
             text-transform: uppercase;
             letter-spacing: 3px;
             color: var(--martin-yellow);
+            margin-bottom: 2px;
         }
 
         .announcement-title {
@@ -585,26 +609,26 @@
             line-height: 1.8;
         }
 
-        /* ══════════════════════════════════════
-           7. TANYA DOKTER CARD
-           ══════════════════════════════════════ */
-        .tanya-card {
+        /* ========================================
+           7. TANYA DOKTER CARD (Action Type)
+           ======================================== */
+        .ask-doctor-card {
             background: var(--bg-card);
             border-radius: var(--radius-xs);
-            overflow: hidden;
             box-shadow: var(--shadow-card);
+            overflow: hidden;
         }
 
-        .tanya-top-bar {
+        .ask-doctor-topbar {
             height: 4px;
             background: var(--martin-yellow);
         }
 
-        .tanya-inner {
+        .ask-doctor-content {
             padding: 20px;
         }
 
-        .tanya-label {
+        .ask-doctor-label {
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
@@ -613,70 +637,66 @@
             margin-bottom: 8px;
         }
 
-        .tanya-desc {
+        .ask-doctor-desc {
             font-size: 13px;
             font-weight: 300;
             color: var(--text-secondary);
             line-height: 1.8;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
-        .tanya-actions {
+        .ask-doctor-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
 
-        .tanya-btn {
+        .ask-doctor-btn {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            padding: 12px 16px;
             background: var(--martin-yellow);
             color: #000;
             border: none;
             border-radius: var(--radius-xs);
-            padding: 14px 8px;
-            cursor: pointer;
-            font-family: inherit;
+            font-family: 'Poppins', Arial, sans-serif;
             font-size: 11px;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 2px;
-            transition: transform 0.15s ease;
+            cursor: pointer;
+            transition: all 0.2s var(--spring);
+            min-height: 44px;
         }
 
-        .tanya-btn:active {
-            transform: scale(0.97);
+        .ask-doctor-btn:active {
             background: var(--martin-yellow-hover);
+            transform: scale(0.97);
         }
 
-        .tanya-btn i { font-size: 14px; }
+        .ask-doctor-btn i {
+            font-size: 14px;
+        }
 
-        /* ══════════════════════════════════════
+        /* ========================================
            8. MENU GRID
-           ══════════════════════════════════════ */
-        .menu-section-header {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .menu-section-title {
+           ======================================== */
+        .menu-section-label {
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 5px;
             color: #000;
+            margin-bottom: 8px;
         }
 
-        .yellow-bar {
-            display: block;
+        .menu-section-bar {
             width: 40px;
             height: 4px;
             background: var(--martin-yellow);
-            border-radius: 2px;
+            margin-bottom: 16px;
         }
 
         .menu-grid {
@@ -687,27 +707,25 @@
 
         .menu-item {
             position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            padding: 20px 12px 16px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-xs);
-            cursor: pointer;
-            text-align: center;
             box-shadow: var(--shadow-card);
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                        box-shadow 0.2s ease;
+            padding: 20px 12px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s var(--spring);
         }
 
         .menu-item:active {
             transform: scale(0.95);
-            box-shadow: 0px 11px 40px -13px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-card-active);
         }
 
-        .icon-wrap {
+        .menu-icon-wrap {
             width: 48px;
             height: 48px;
             border-radius: var(--radius-circle);
@@ -715,54 +733,47 @@
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            position: relative;
+            margin-bottom: 10px;
         }
 
-        .icon-wrap.yellow  { background: rgba(255, 221, 0, 0.15); color: #000; }
-        .icon-wrap.pink    { background: rgba(244, 114, 182, 0.12); color: #000; }
-        .icon-wrap.green   { background: rgba(52, 211, 153, 0.12); color: #000; }
-        .icon-wrap.blue    { background: rgba(0, 43, 220, 0.08); color: var(--martin-blue); }
-        .icon-wrap.muted   { background: rgba(0, 0, 0, 0.04); color: #999; }
+        .menu-item-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 2px;
+        }
+
+        .menu-item-subtitle {
+            font-size: 10px;
+            font-weight: 300;
+            color: var(--text-tertiary);
+        }
 
         .menu-badge {
             position: absolute;
-            top: -4px;
-            right: -4px;
+            top: 8px;
+            right: 8px;
             width: 20px;
             height: 20px;
             border-radius: var(--radius-circle);
             background: var(--color-danger);
             color: #fff;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid var(--bg-card);
         }
 
-        .menu-item h3 {
-            font-size: 12px;
-            font-weight: 600;
-            color: #000;
-        }
-
-        .menu-item .menu-sub {
-            font-size: 10px;
-            font-weight: 300;
-            color: var(--text-tertiary);
-            margin-top: -4px;
-        }
-
-        /* ══════════════════════════════════════
-           9. BOTTOM NAV
-           ══════════════════════════════════════ */
+        /* ========================================
+           9. BOTTOM NAV (Fixed Bottom)
+           ======================================== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            z-index: 100;
+            z-index: 1000;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
@@ -771,49 +782,59 @@
         }
 
         .bottom-nav-inner {
+            max-width: 600px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: space-around;
-            max-width: 600px;
-            margin: 0 auto;
             padding: 8px 0 6px;
         }
 
-        .nav-item {
+        .bottom-nav-item {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 3px;
             padding: 4px 16px;
             cursor: pointer;
-            border: none;
-            background: none;
-            min-width: 56px;
-            min-height: 40px;
-            font-family: inherit;
             position: relative;
-            transition: transform 0.15s ease;
+            min-width: 64px;
+            min-height: 44px;
+            justify-content: center;
+            transition: transform 0.2s var(--spring);
+            background: none;
+            border: none;
+            font-family: 'Poppins', Arial, sans-serif;
         }
 
-        .nav-item:active { transform: scale(0.9); }
+        .bottom-nav-item:active {
+            transform: scale(0.9);
+        }
 
-        .nav-item i {
+        .bottom-nav-item .nav-icon {
             font-size: 20px;
             color: var(--text-tertiary);
+            transition: color 0.2s ease;
         }
 
-        .nav-item span {
+        .bottom-nav-item .nav-label {
             font-size: 10px;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-tertiary);
+            transition: color 0.2s ease;
         }
 
-        .nav-item.active i { color: #000; }
-        .nav-item.active span { color: #000; font-weight: 600; }
+        .bottom-nav-item.active .nav-icon {
+            color: #000;
+        }
 
-        .nav-item.active::after {
+        .bottom-nav-item.active .nav-label {
+            color: #000;
+        }
+
+        .bottom-nav-item.active::after {
             content: '';
             position: absolute;
             top: 0;
@@ -825,9 +846,9 @@
             border-radius: 0 0 2px 2px;
         }
 
-        /* ══════════════════════════════════════
+        /* ========================================
            RESPONSIVE — Tablet (600px)
-           ══════════════════════════════════════ */
+           ======================================== */
         @media (min-width: 600px) {
             .main-content {
                 padding-left: 24px;
@@ -838,37 +859,32 @@
                 grid-template-columns: repeat(3, 1fr);
             }
 
-            .icon-wrap {
+            .menu-icon-wrap {
                 width: 56px;
                 height: 56px;
                 font-size: 24px;
             }
 
-            .menu-item h3 { font-size: 13px; }
-
-            .welcome-name { font-size: 34px; }
-
-            .birth-title { font-size: 28px; }
-
-            .welcome-card,
-            .collapsible-trigger,
-            .announcement-card,
-            .tanya-inner {
-                padding-left: 24px;
-                padding-right: 24px;
+            .menu-item-title {
+                font-size: 13px;
             }
 
-            .collapsible-body {
-                padding-left: 24px;
-                padding-right: 24px;
+            .welcome-name {
+                font-size: 34px;
+            }
+
+            .birth-title {
+                font-size: 28px;
             }
         }
 
-        /* ══════════════════════════════════════
+        /* ========================================
            RESPONSIVE — Desktop (768px)
-           ══════════════════════════════════════ */
+           ======================================== */
         @media (min-width: 768px) {
-            .navbar { padding: 14px 32px; }
+            .navbar {
+                padding: 14px 32px;
+            }
 
             .main-content {
                 max-width: 640px;
@@ -880,230 +896,253 @@
                 grid-template-columns: repeat(4, 1fr);
             }
 
-            .welcome-name { font-size: 40px; }
+            .welcome-name {
+                font-size: 40px;
+            }
         }
     </style>
 </head>
 <body>
 
-<!-- ══ 1. NAVBAR ══ -->
-<nav class="navbar">
-    <div class="navbar-brand">
-        <div class="navbar-brand-title">
-            <span class="light">dokter</span><span class="bold">DIBYA</span>
-        </div>
-        <div class="navbar-brand-sub">Portal Privat Kandungan Anda</div>
-    </div>
-    <div class="navbar-actions">
-        <button class="btn-bell" type="button">
-            <i class="fa-solid fa-bell"></i>
-            <span class="badge-dot">2</span>
-        </button>
-        <div class="avatar-circle">D</div>
-    </div>
-</nav>
-
-<!-- ══ MAIN CONTENT ══ -->
-<main class="main-content">
-
-    <!-- ══ 2. WELCOME CARD ══ -->
-    <section class="welcome-card animate-in delay-1">
-        <div class="welcome-tag">Selamat Sore</div>
-        <div class="welcome-name">Dian Permatasari</div>
-        <div class="welcome-bar"></div>
-        <div class="welcome-tagline">Pasien privat dr. Dibya Arfianda, Sp.OG — semua data kehamilan Anda tersimpan aman di sini.</div>
-        <div class="week-badge">
-            <i class="fa-solid fa-baby"></i>
-            Minggu ke-32
-        </div>
-    </section>
-
-    <!-- ══ 3. QUICK STATUS ROW ══ -->
-    <section class="status-row animate-in delay-2">
-        <div class="status-chip">
-            <div class="chip-icon yellow">
-                <i class="fa-solid fa-calendar-check"></i>
-            </div>
-            <div class="chip-text">
-                <div class="chip-title">Booking Aktif</div>
-                <div class="chip-sub">Minggu, 23 Mar &bull; 09:00</div>
-            </div>
-        </div>
-        <div class="status-chip">
-            <div class="chip-icon pink">
-                <i class="fa-solid fa-capsules"></i>
-            </div>
-            <div class="chip-text">
-                <div class="chip-title">Vitamin Hari Ini</div>
-                <div class="chip-sub">2 dari 3 diminum</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ══ 4. SELAMAT DATANG (Collapsible) ══ -->
-    <section class="collapsible-card animate-in delay-3">
-        <button class="collapsible-trigger" onclick="this.classList.toggle('open'); this.nextElementSibling.classList.toggle('show');" type="button">
-            <i class="fa-solid fa-heart trigger-icon"></i>
-            <span class="trigger-title">Selamat Datang</span>
-            <i class="fa-solid fa-chevron-down trigger-chevron"></i>
-        </button>
-        <div class="collapsible-body">
-            <p>Terima kasih telah mempercayakan kesehatan kandungan Anda kepada kami. Portal ini dirancang khusus agar Anda bisa memantau perkembangan kehamilan, melihat hasil USG, dan berkonsultasi langsung dengan saya kapan saja.</p>
-            <p>Jangan ragu untuk menggunakan fitur Tanya Dokter jika ada keluhan atau pertanyaan di luar jam praktik.</p>
-            <div class="collapsible-signature">
-                <div class="name">dr. Dibya Arfianda, Sp.OG</div>
-                <div class="title">Dokter Spesialis Obstetri & Ginekologi</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- ══ 5. BIRTH CONGRATULATIONS CARD ══ -->
-    <section class="birth-card animate-in delay-4">
-        <div class="birth-image">
-            <img src="https://placehold.co/600x400/f7f7f7/002bdc?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
-        </div>
-        <div class="birth-body">
-            <div class="birth-tag">Selamat</div>
-            <div class="birth-title">Kelahiran Buah Hati!</div>
-            <div class="birth-bar"></div>
-            <div class="birth-doctor">dr. Dibya Arfianda, Sp.OG &bull; Klinik Privat</div>
-            <div class="birth-baby-name">Putra Nanda</div>
-            <div class="birth-stats">
-                <div class="birth-stat">
-                    <div class="birth-stat-label">Tanggal Lahir</div>
-                    <div class="birth-stat-value">15 Mar 2026</div>
+    <!-- =============================================
+         1. NAVBAR
+         ============================================= -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <div class="navbar-brand">
+                <div class="navbar-brand-text">
+                    <span class="brand-light">dokter</span><span class="brand-bold">DIBYA</span>
                 </div>
-                <div class="birth-stat">
-                    <div class="birth-stat-label">Jam</div>
-                    <div class="birth-stat-value">08:32 WIB</div>
-                </div>
-                <div class="birth-stat">
-                    <div class="birth-stat-label">Berat Badan</div>
-                    <div class="birth-stat-value">3.250 gram</div>
-                </div>
-                <div class="birth-stat">
-                    <div class="birth-stat-label">Panjang Badan</div>
-                    <div class="birth-stat-value">49 cm</div>
-                </div>
+                <div class="navbar-subtitle">Portal Privat Kandungan Anda</div>
             </div>
-        </div>
-    </section>
-
-    <!-- ══ 6. ANNOUNCEMENT CARD ══ -->
-    <section class="announcement-card animate-in delay-5">
-        <div class="announcement-header">
-            <div class="announcement-icon">
-                <i class="fa-solid fa-bullhorn"></i>
-            </div>
-            <div class="announcement-separator"></div>
-            <div class="announcement-meta">
-                <div class="announcement-label">Pengumuman</div>
-                <div class="announcement-title">Pembaruan Portal — Maret 2026</div>
-            </div>
-        </div>
-        <div class="announcement-body">
-            Fitur Album USG dan Riwayat Resep telah diperbarui. Kini Anda bisa melihat semua foto USG dan riwayat obat langsung dari portal ini.
-        </div>
-    </section>
-
-    <!-- ══ 7. TANYA DOKTER CARD ══ -->
-    <section class="tanya-card animate-in delay-6">
-        <div class="tanya-top-bar"></div>
-        <div class="tanya-inner">
-            <div class="tanya-label">Tanya Dokter</div>
-            <div class="tanya-desc">Konsultasikan keluhan atau pertanyaan Anda langsung kepada dr. Dibya, kapan saja.</div>
-            <div class="tanya-actions">
-                <button class="tanya-btn" type="button">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    Tanya Baru
+            <div class="navbar-actions">
+                <button class="navbar-btn" aria-label="Notifikasi">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="badge-dot"></span>
                 </button>
-                <button class="tanya-btn" type="button">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    Riwayat
-                </button>
+                <div class="navbar-avatar">D</div>
             </div>
         </div>
-    </section>
+    </nav>
 
-    <!-- ══ 8. MENU GRID ══ -->
-    <section class="animate-in delay-7">
-        <div class="menu-section-header">
-            <div class="menu-section-title">Menu</div>
-            <span class="yellow-bar"></span>
+    <!-- =============================================
+         MAIN CONTENT
+         ============================================= -->
+    <main class="main-content">
+
+        <!-- 2. WELCOME CARD -->
+        <section class="welcome-card section-gap animate-in delay-1">
+            <div class="welcome-tag">Selamat Sore</div>
+            <h1 class="welcome-name">Dian Permatasari</h1>
+            <div class="welcome-bar"></div>
+            <p class="welcome-tagline">Semoga hari Anda menyenangkan. Berikut ringkasan kesehatan ibu dan janin terkini.</p>
+            <span class="pregnancy-badge">
+                <i class="fa-solid fa-heart"></i>
+                Trimester 3 &bull; 32 Minggu
+            </span>
+        </section>
+
+        <!-- 3. QUICK STATUS ROW -->
+        <section class="section-gap animate-in delay-2">
+            <div class="quick-status-row">
+                <div class="status-chip">
+                    <div class="chip-icon yellow">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div class="chip-text">
+                        <span class="chip-label">Booking Aktif</span>
+                        <span class="chip-subtitle">Minggu, 23 Mar &bull; 09:00</span>
+                    </div>
+                </div>
+                <div class="status-chip">
+                    <div class="chip-icon pink">
+                        <i class="fa-solid fa-capsules"></i>
+                    </div>
+                    <div class="chip-text">
+                        <span class="chip-label">Vitamin Hari Ini</span>
+                        <span class="chip-subtitle">2 dari 3 diminum</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. SELAMAT DATANG (Collapsible) -->
+        <section class="collapsible-card section-gap animate-in delay-3">
+            <button class="collapsible-trigger open" onclick="toggleCollapsible(this)" aria-expanded="true">
+                <i class="fa-solid fa-heart trigger-icon"></i>
+                <span class="trigger-title">Selamat Datang</span>
+                <i class="fa-solid fa-chevron-down trigger-chevron"></i>
+            </button>
+            <div class="collapsible-body show">
+                <p>Terima kasih telah mempercayakan kesehatan Anda dan buah hati kepada kami. Portal ini dirancang untuk memudahkan Anda memantau perkembangan kehamilan, melihat hasil pemeriksaan, dan berkomunikasi langsung dengan dokter.</p>
+                <p>Jangan ragu untuk menggunakan fitur Tanya Dokter jika ada pertanyaan di luar jam konsultasi.</p>
+                <div class="collapsible-signature">&mdash; dr. Dibya</div>
+            </div>
+        </section>
+
+        <!-- 5. BIRTH CONGRATULATIONS CARD -->
+        <section class="birth-card section-gap animate-in delay-4">
+            <div class="birth-image-wrap">
+                <img src="https://placehold.co/600x400/f7f7f7/002bdc?text=Foto+Kelahiran" alt="Foto Kelahiran" loading="lazy">
+                <div class="gradient-overlay"></div>
+            </div>
+            <div class="birth-body">
+                <div class="birth-tag">Selamat</div>
+                <h2 class="birth-title">Kelahiran Buah Hati!</h2>
+                <div class="birth-bar"></div>
+                <div class="birth-doctor">Dipersembahkan oleh dr. Dibya, SpOG</div>
+                <div class="birth-baby-name">Putra Nanda</div>
+                <div class="birth-stats">
+                    <div class="birth-stat">
+                        <div class="birth-stat-label">Tanggal</div>
+                        <div class="birth-stat-value">15 Mar 2026</div>
+                    </div>
+                    <div class="birth-stat">
+                        <div class="birth-stat-label">Waktu</div>
+                        <div class="birth-stat-value">08:30 WIB</div>
+                    </div>
+                    <div class="birth-stat">
+                        <div class="birth-stat-label">Berat</div>
+                        <div class="birth-stat-value">3.200 gr</div>
+                    </div>
+                    <div class="birth-stat">
+                        <div class="birth-stat-label">Panjang</div>
+                        <div class="birth-stat-value">49 cm</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. ANNOUNCEMENT CARD -->
+        <section class="announcement-card section-gap animate-in delay-5">
+            <div class="announcement-header">
+                <i class="fa-solid fa-bullhorn announcement-icon"></i>
+                <div class="announcement-separator"></div>
+                <div class="announcement-title-area">
+                    <div class="announcement-label">Pengumuman</div>
+                    <div class="announcement-title">Pembaruan Portal - Maret 2026</div>
+                </div>
+            </div>
+            <div class="announcement-body">
+                Portal pasien telah diperbarui dengan tampilan baru yang lebih modern dan mudah digunakan. Fitur Tanya Dokter kini mendukung pengiriman foto untuk konsultasi jarak jauh.
+            </div>
+        </section>
+
+        <!-- 7. TANYA DOKTER CARD -->
+        <section class="ask-doctor-card section-gap animate-in delay-6">
+            <div class="ask-doctor-topbar"></div>
+            <div class="ask-doctor-content">
+                <div class="ask-doctor-label">Tanya Dokter</div>
+                <p class="ask-doctor-desc">Punya pertanyaan seputar kehamilan? Kirim pesan langsung ke dr. Dibya dan dapatkan jawaban dalam 24 jam.</p>
+                <div class="ask-doctor-grid">
+                    <button class="ask-doctor-btn">
+                        <i class="fa-solid fa-pen"></i>
+                        Tanya Baru
+                    </button>
+                    <button class="ask-doctor-btn">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        Riwayat
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. MENU GRID -->
+        <section class="section-gap animate-in delay-7">
+            <div class="menu-section-label">Menu</div>
+            <div class="menu-section-bar"></div>
+            <div class="menu-grid">
+                <!-- Dokumen -->
+                <div class="menu-item">
+                    <span class="menu-badge">3</span>
+                    <div class="menu-icon-wrap" style="background: rgba(255,221,0,0.15);">
+                        <i class="fa-solid fa-file-lines" style="color: #000;"></i>
+                    </div>
+                    <div class="menu-item-title">Dokumen</div>
+                    <div class="menu-item-subtitle">Hasil lab & USG</div>
+                </div>
+                <!-- Aplikasi -->
+                <div class="menu-item">
+                    <div class="menu-icon-wrap" style="background: rgba(244,114,182,0.12);">
+                        <i class="fa-solid fa-heart-pulse" style="color: #000;"></i>
+                    </div>
+                    <div class="menu-item-title">Aplikasi</div>
+                    <div class="menu-item-subtitle">Kesehatan ibu</div>
+                </div>
+                <!-- Jadwal -->
+                <div class="menu-item">
+                    <div class="menu-icon-wrap" style="background: rgba(52,211,153,0.12);">
+                        <i class="fa-solid fa-calendar-days" style="color: #000;"></i>
+                    </div>
+                    <div class="menu-item-title">Jadwal</div>
+                    <div class="menu-item-subtitle">Booking kontrol</div>
+                </div>
+                <!-- Edukasi -->
+                <div class="menu-item">
+                    <div class="menu-icon-wrap" style="background: rgba(255,221,0,0.15);">
+                        <i class="fa-solid fa-book-open" style="color: #000;"></i>
+                    </div>
+                    <div class="menu-item-title">Edukasi</div>
+                    <div class="menu-item-subtitle">Artikel kehamilan</div>
+                </div>
+                <!-- Tanya Dokter -->
+                <div class="menu-item">
+                    <div class="menu-icon-wrap" style="background: rgba(0,43,220,0.08);">
+                        <i class="fa-solid fa-comments" style="color: #002bdc;"></i>
+                    </div>
+                    <div class="menu-item-title">Tanya Dokter</div>
+                    <div class="menu-item-subtitle">Chat konsultasi</div>
+                </div>
+                <!-- Tagihan -->
+                <div class="menu-item">
+                    <div class="menu-icon-wrap" style="background: rgba(255,221,0,0.15);">
+                        <i class="fa-solid fa-credit-card" style="color: #000;"></i>
+                    </div>
+                    <div class="menu-item-title">Tagihan</div>
+                    <div class="menu-item-subtitle">Invoice & bayar</div>
+                </div>
+                <!-- Bantuan -->
+                <div class="menu-item">
+                    <div class="menu-icon-wrap" style="background: rgba(0,0,0,0.04);">
+                        <i class="fa-solid fa-circle-question" style="color: #999;"></i>
+                    </div>
+                    <div class="menu-item-title">Bantuan</div>
+                    <div class="menu-item-subtitle">FAQ & kontak</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- =============================================
+         9. BOTTOM NAV
+         ============================================= -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-inner">
+            <button class="bottom-nav-item active" aria-label="Home">
+                <i class="fa-solid fa-house nav-icon"></i>
+                <span class="nav-label">Home</span>
+            </button>
+            <button class="bottom-nav-item" aria-label="Notifikasi">
+                <i class="fa-solid fa-bell nav-icon"></i>
+                <span class="nav-label">Notifikasi</span>
+            </button>
+            <button class="bottom-nav-item" aria-label="Profil">
+                <i class="fa-solid fa-user nav-icon"></i>
+                <span class="nav-label">Profil</span>
+            </button>
         </div>
-        <div class="menu-grid">
-            <div class="menu-item">
-                <div class="icon-wrap yellow">
-                    <i class="fa-solid fa-file-lines"></i>
-                    <span class="menu-badge">7</span>
-                </div>
-                <h3>Dokumen</h3>
-                <div class="menu-sub">Hasil USG & lab</div>
-            </div>
-            <div class="menu-item">
-                <div class="icon-wrap pink">
-                    <i class="fa-solid fa-heart-pulse"></i>
-                </div>
-                <h3>Aplikasi</h3>
-                <div class="menu-sub">Vitamin & pengingat</div>
-            </div>
-            <div class="menu-item">
-                <div class="icon-wrap green">
-                    <i class="fa-solid fa-calendar-days"></i>
-                </div>
-                <h3>Jadwal</h3>
-                <div class="menu-sub">Booking praktik</div>
-            </div>
-            <div class="menu-item">
-                <div class="icon-wrap yellow">
-                    <i class="fa-solid fa-book-open"></i>
-                </div>
-                <h3>Edukasi</h3>
-                <div class="menu-sub">Artikel kesehatan</div>
-            </div>
-            <div class="menu-item">
-                <div class="icon-wrap blue">
-                    <i class="fa-solid fa-comments"></i>
-                </div>
-                <h3>Tanya Dokter</h3>
-                <div class="menu-sub">Konsultasi online</div>
-            </div>
-            <div class="menu-item">
-                <div class="icon-wrap yellow">
-                    <i class="fa-solid fa-credit-card"></i>
-                </div>
-                <h3>Tagihan</h3>
-                <div class="menu-sub">Riwayat pembayaran</div>
-            </div>
-            <div class="menu-item">
-                <div class="icon-wrap muted">
-                    <i class="fa-solid fa-circle-question"></i>
-                </div>
-                <h3>Bantuan</h3>
-                <div class="menu-sub">FAQ & kontak</div>
-            </div>
-        </div>
-    </section>
+    </nav>
 
-</main>
-
-<!-- ══ 9. BOTTOM NAV ══ -->
-<nav class="bottom-nav">
-    <div class="bottom-nav-inner">
-        <button class="nav-item active" type="button">
-            <i class="fa-solid fa-house"></i>
-            <span>Home</span>
-        </button>
-        <button class="nav-item" type="button">
-            <i class="fa-solid fa-bell"></i>
-            <span>Notifikasi</span>
-        </button>
-        <button class="nav-item" type="button">
-            <i class="fa-solid fa-user"></i>
-            <span>Profil</span>
-        </button>
-    </div>
-</nav>
+    <!-- Minimal JS: collapsible toggle only -->
+    <script>
+        function toggleCollapsible(trigger) {
+            trigger.classList.toggle('open');
+            var body = trigger.nextElementSibling;
+            body.classList.toggle('show');
+            trigger.setAttribute('aria-expanded', body.classList.contains('show'));
+        }
+    </script>
 
 </body>
 </html>
