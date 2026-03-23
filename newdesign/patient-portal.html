@@ -1608,12 +1608,18 @@
             border-radius: 50%;
             opacity: 0;
             transform: scale(1);
-            transition: transform 0.8s ease-out, opacity 0.8s ease-out !important;
         }
 
-        .green-light-glow.ping {
-            opacity: 0.7;
+        .green-light-glow.grow {
+            opacity: 0.6;
             transform: scale(2.2);
+            transition: transform 1s ease-out, opacity 0.3s ease-in !important;
+        }
+
+        .green-light-glow.fade {
+            opacity: 0;
+            transform: scale(2.2);
+            transition: opacity 0.8s ease-out !important;
         }
 
         .hero-greeting {
@@ -2300,14 +2306,21 @@
                 });
             });
 
-            // Green light ping — JS controlled with 3s interval
+            // Green light ping — grow then fade out
             var glowEl = document.querySelector('.green-light-glow');
             if (glowEl) {
                 setInterval(function() {
-                    glowEl.classList.add('ping');
+                    // Phase 1: grow from small to big
+                    glowEl.className = 'green-light-glow grow';
+                    // Phase 2: fade out after grow completes
                     setTimeout(function() {
-                        glowEl.classList.remove('ping');
-                    }, 800);
+                        glowEl.classList.remove('grow');
+                        glowEl.classList.add('fade');
+                    }, 1000);
+                    // Phase 3: reset
+                    setTimeout(function() {
+                        glowEl.className = 'green-light-glow';
+                    }, 1800);
                 }, 3500);
             }
 
