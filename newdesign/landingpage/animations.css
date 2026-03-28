@@ -1,0 +1,248 @@
+/* ============================================
+   ANIMATIONS & TRANSITIONS - womenob.net
+   Complete catalog of all animation effects
+   ============================================ */
+
+/* ------------------------------------------
+   1. BUCKET HOVER OVERLAY
+   Color overlay slides from top (odd buckets)
+   or bottom (even buckets) on hover.
+   Duration: 0.35s ease-in-out with 0.2s delay
+   ------------------------------------------ */
+.bg-accent-hover {
+    position: relative;
+}
+
+.bg-accent-hover::before {
+    content: "";
+    position: absolute;
+    z-index: 10;
+    right: 0;
+    left: 0;
+    background: rgba(163, 179, 184, 0.8); /* #a3b3b8 at 80% */
+    transition: ease-in-out top 0.35s, ease-in-out bottom 0.35s;
+    transition-delay: 0.2s;
+}
+
+/* Odd buckets: overlay slides DOWN from top */
+.bucket-odd::before {
+    top: 0;
+    bottom: 100%; /* Hidden above */
+}
+
+/* Even buckets: overlay slides UP from bottom */
+.bucket-even::before {
+    top: 100%; /* Hidden below */
+    bottom: 0;
+}
+
+/* On hover: overlay covers full area */
+.bg-accent-hover:hover::before,
+.bg-accent-hover.active::before {
+    top: 0;
+    bottom: 0;
+    transition-delay: 0s;
+}
+
+@media (max-width: 991px) {
+    .bg-accent-hover::before {
+        background: rgba(163, 179, 184, 0.6); /* Lighter on mobile */
+    }
+}
+
+
+/* ------------------------------------------
+   2. BUCKET CONTENT FADE-IN
+   Content text fades in on hover.
+   Duration: 0.2s with 0.2s delay
+   ------------------------------------------ */
+.bucket-content {
+    opacity: 0;
+    transition: ease-in-out opacity 0.2s;
+    transition-delay: 0s;
+}
+
+.bucket:hover .bucket-content,
+.bucket.active .bucket-content {
+    opacity: 1;
+    transition-delay: 0.2s;
+}
+
+
+/* ------------------------------------------
+   3. BUTTON TRANSITIONS
+   Background and color smooth change on hover.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+.btn {
+    transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+}
+
+.btn-default {
+    color: #fff;
+    border-color: #fff;
+}
+
+.btn-default:hover {
+    color: #206e93;
+    background: #fff;
+    border-color: #fff;
+}
+
+.btn-dark:hover {
+    color: #fff;
+    background: #a3b3b8;
+    border-color: #a3b3b8;
+}
+
+
+/* ------------------------------------------
+   4. BACKGROUND TRANSITIONS (general)
+   All bg-* classes transition smoothly.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+[class*="bg-"],
+[class*="bg-"]::before {
+    transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+}
+
+
+/* ------------------------------------------
+   5. SIDE NAV HOVER
+   Background color transition on nav items.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+.side-nav li a {
+    transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+}
+
+.side-nav li a:hover,
+.side-nav .current_page_item > a {
+    color: #fff;
+    background: #3a7fa0;
+}
+
+.side-nav li a:hover {
+    background: rgba(58, 127, 160, 0.9);
+}
+
+
+/* ------------------------------------------
+   6. SOCIAL LINKS HOVER
+   Color transition on social media icons.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+.social-links a {
+    transition: ease-in-out color 0.2s;
+}
+
+.social-links a:hover {
+    color: #206e93;
+    text-decoration: none;
+}
+
+
+/* ------------------------------------------
+   7. FOOTER EXPAND
+   Footer height expands to show more info.
+   Duration: 0.4s ease-in-out
+   ------------------------------------------ */
+.footer-wrap {
+    height: 90px;
+    transition: ease-in-out height 0.4s, ease-in-out padding-top 0.4s;
+}
+
+.footer-info-active .footer-wrap {
+    height: 100%;
+}
+
+
+/* ------------------------------------------
+   8. CONTACT PANEL SLIDE
+   Contact form slides in from top.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+#contact-info {
+    top: 100%;
+    transition: ease-in-out top 0.2s, ease-in-out padding 0.4s;
+}
+
+.show-contact #contact-info {
+    top: 0;
+    height: 100%;
+}
+
+
+/* ------------------------------------------
+   9. SCROLL BOX DIRECTION (arrows)
+   Opacity transition on scroll arrows.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+.scroll-box-direction {
+    opacity: 0.6;
+    transition: ease-in-out opacity 0.2s, ease-in-out color 0.2s;
+}
+
+.scroll-box-direction.active:hover {
+    color: #a3b3b8;
+    opacity: 0.9;
+    cursor: pointer;
+}
+
+
+/* ------------------------------------------
+   10. CONTENT TRANSITION BAR
+   Decorative bar at bottom of content area.
+   Uses border-top color from accent.
+   ------------------------------------------ */
+#content-transition {
+    top: 100%;
+    border-top-color: #a3b3b8;
+    background: rgba(197, 197, 197, 0.3);
+}
+
+
+/* ------------------------------------------
+   11. IMAGE BORDER HOVER
+   Image border color changes on hover.
+   ------------------------------------------ */
+.ht-image img {
+    border: 15px solid #222;
+}
+
+.ht-image a:hover img {
+    border-color: #a3b3b8;
+}
+
+
+/* ------------------------------------------
+   12. FOOTER INFO ICON HOVER
+   Info circle icon gets highlight on hover.
+   Duration: 0.2s ease-in-out
+   ------------------------------------------ */
+#show-footer-info {
+    border-radius: 99px;
+    transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+}
+
+#show-footer-info:hover {
+    color: #fff;
+    cursor: pointer;
+}
+
+
+/* ------------------------------------------
+   13. HEADER SHADOW
+   Left panel has box-shadow for depth.
+   ------------------------------------------ */
+.header-wrap {
+    -webkit-box-shadow: -8px 0 16px #000;
+    box-shadow: -8px 0 16px #000;
+}
+
+@media (max-width: 767px) {
+    .header-wrap.top-left {
+        -webkit-box-shadow: none;
+        box-shadow: none;
+    }
+}
