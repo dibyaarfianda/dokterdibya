@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en" id="html" class="normal">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+    <title>womenob.net - Landing Page Analysis</title>
+
+    <!-- Google Fonts - Inter (same as patient portal) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome 4.7 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        /* ============================================
+           RESET & BASE (from theme.min.css)
+           ============================================ */
+        html { font-size: 62.5%; }
+        body, html { height: 100%; margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
+        body {
+            color: #333;
+            font-family: 'Inter', Arial, sans-serif;
+            font-size: 1.8rem;
+        }
+        a { color: #a3b3b8; text-decoration: none; }
+        a:hover { color: #a3b3b8; }
+        p { text-align: justify; }
+
+        .h1, h1 { font-size: 3rem; font-weight: 400; }
+        .h2, h2 { font-size: 2.4rem; font-weight: 400; }
+        .h3, h3 { font-size: 2rem; font-weight: 400; }
+        .h4, h4 { font-size: 1.6rem; font-weight: 400; }
+        .h5, h5 { font-size: 1.4rem; font-weight: 400; }
+        .clearfix::after { content: ""; display: table; clear: both; }
+        .text-center { text-align: center; }
+        .text-upper { text-transform: uppercase; }
+        .pull-left { float: left; }
+        .pull-right { float: right; }
+        .relative { position: relative; }
+        .fixed { position: fixed; }
+        .fill-height { height: 100%; }
+        .fill-width { width: 100%; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+        .layer2 { z-index: 2; position: relative; }
+        .layer3 { z-index: 3; position: relative; }
+        .layer7 { z-index: 7; }
+        .layer8 { z-index: 8; }
+        .layer9 { z-index: 9; }
+        .layer10 { z-index: 10; }
+
+        .margin-vert-none { margin-top: 0; margin-bottom: 0; }
+        .margin-bottom-half { margin-bottom: 8px; }
+        .padding-vert-more { padding-top: 30px; padding-bottom: 30px; }
+        .padding-vert-half { padding-top: 8px; padding-bottom: 8px; }
+        .padding-vert { padding-top: 15px; padding-bottom: 15px; }
+        .padding-horz-half { padding-left: 8px; padding-right: 8px; }
+        .padding-half { padding: 8px; }
+        .padding-none { padding: 0; }
+
+        /* ============================================
+           IMAGE PLACEHOLDER STYLE
+           Black box with white number
+           ============================================ */
+        .img-placeholder {
+            background: #111;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: 700;
+            border: 2px dashed #555;
+            position: relative;
+        }
+        .img-placeholder::after {
+            content: attr(data-label);
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #888;
+            font-weight: 400;
+        }
+
+        /* ============================================
+           BACKGROUNDS & UTILITIES
+           ============================================ */
+        .bg-dark { background-color: #333; color: #fff; }
+        .text-light { color: #797979; }
+
+        [class*="bg-"],
+        [class*="bg-"]::before {
+            transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            font-size: 2.6rem;
+            text-align: left;
+            text-transform: uppercase;
+            text-decoration: none;
+            border: 1px solid;
+            border-radius: 0;
+            cursor: pointer;
+            transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+        }
+        .btn-default { color: #fff; border-color: #fff; background: transparent; }
+        .btn-default:hover { color: #206e93; background: #fff; border-color: #fff; }
+        .btn-outline { background: transparent; }
+        .btn-with-fa { position: relative; padding-right: 50px; }
+        .btn-with-fa .fa {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            margin-top: -13px;
+        }
+
+        /* ============================================
+           SIDE PANEL / HEADER
+           ============================================ */
+        .header-wrap {
+            width: 320px;
+            float: left;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: -8px 0 16px #000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 10;
+        }
+        .header-wrap .scroll-vert {
+            width: 334px;
+            overflow-y: auto;
+            height: 100%;
+            -ms-overflow-style: none;
+        }
+        .header-wrap .scroll-vert::-webkit-scrollbar { width: 0; }
+        .header-wrap i { color: #dbdbdb; }
+
+        #client-logo img { width: 100%; height: auto; max-width: 100%; }
+        #practice { margin-bottom: 0; color: #333; }
+
+        /* ============================================
+           NAVIGATION
+           ============================================ */
+        .main-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .main-menu li { border-bottom: 1px solid #f0f0f0; }
+        .main-menu li a {
+            display: block;
+            padding: 12px 20px;
+            color: #989898;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 1.4rem;
+            transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+        }
+        .main-menu li a:hover {
+            background: rgba(58, 127, 160, 0.9);
+            color: #fff;
+        }
+        .main-menu .current_page_item > a {
+            background: #3a7fa0;
+            color: #fff;
+        }
+
+        /* ============================================
+           SOCIAL LINKS
+           ============================================ */
+        .social-links { font-size: 2rem; color: #dbdbdb; }
+        .social-links a {
+            padding: 0 8px;
+            color: #dbdbdb;
+            transition: ease-in-out color 0.2s;
+        }
+        .social-links a:hover { color: #206e93; text-decoration: none; }
+
+        /* ============================================
+           MAIN CONTENT AREA
+           ============================================ */
+        .side-panel-offset { margin-left: 320px; }
+        .footer-offset { padding-bottom: 76px; }
+
+        /* ============================================
+           HORIZONTAL SCROLL
+           ============================================ */
+        #scroll-box-horz {
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 100%;
+            -ms-overflow-style: none;
+            white-space: nowrap;
+        }
+        #scroll-box-horz::-webkit-scrollbar { height: 0; }
+
+        .bucket-wrap { height: 100%; white-space: nowrap; }
+
+        /* ============================================
+           SCROLL ARROWS
+           ============================================ */
+        .scroll-arrows {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 3;
+            display: flex;
+            gap: 5px;
+        }
+        .scroll-box-direction {
+            opacity: 0.6;
+            cursor: pointer;
+            transition: ease-in-out opacity 0.2s, ease-in-out color 0.2s;
+            font-size: 4rem;
+            color: #333;
+        }
+        .scroll-box-direction:hover {
+            opacity: 0.9;
+            color: #a3b3b8;
+        }
+
+        /* ============================================
+           BUCKETS (Featured Cards)
+           Animation: Hover overlay + content fade-in
+           ============================================ */
+        .bucket {
+            width: 400px;
+            display: inline-block;
+            vertical-align: top;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            background-position: center 90px;
+            background-size: auto 100%;
+            background-repeat: no-repeat;
+        }
+
+        /* === ANIMATION 1: Overlay slide === */
+        .bucket::before {
+            content: "";
+            position: absolute;
+            z-index: 1;
+            right: 0;
+            left: 0;
+            background: rgba(163, 179, 184, 0.8);
+            transition: ease-out top 0.5s, ease-out bottom 0.5s;
+            transition-delay: 0s;
+        }
+
+        /* Odd: slides down from top */
+        .bucket-odd::before {
+            top: 0;
+            bottom: 100%;
+        }
+
+        /* Even: slides up from bottom */
+        .bucket-even::before {
+            top: 100%;
+            bottom: 0;
+        }
+
+        .bucket:hover::before {
+            top: 0;
+            bottom: 0;
+            transition: linear top 0.3s, linear bottom 0.3s;
+            transition-delay: 0s;
+        }
+
+        /* === ANIMATION 2: Content fade-in === */
+        .bucket-content {
+            padding: 45px 60px;
+            color: #fff;
+            opacity: 0;
+            position: relative;
+            z-index: 2;
+            transition: ease-in-out opacity 0.5s;
+            transition-delay: 0s;
+            white-space: normal;
+        }
+        .bucket:hover .bucket-content {
+            opacity: 1;
+            transition-delay: 0.4s;
+        }
+
+        .bucket-title {
+            margin: 0;
+            padding: 15px 60px;
+            font-size: 3rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 0;
+            white-space: normal;
+        }
+        .bucket-text { margin-bottom: 15px; white-space: normal; }
+        .bucket-text p { color: #fff; }
+        .bucket-link {
+            margin: 15px 0 0;
+            width: 100%;
+            display: block;
+            font-size: 2rem;
+        }
+
+        /* ============================================
+           FOOTER
+           Animation: Height expansion
+           ============================================ */
+        .footer-wrap {
+            position: fixed;
+            bottom: 0;
+            left: 320px;
+            right: 0;
+            height: 90px;
+            padding-top: 0;
+            border-top: 2px solid #666;
+            z-index: 9;
+            overflow: hidden;
+            transition: ease-in-out height 0.4s, ease-in-out padding-top 0.4s;
+        }
+        .footer-wrap.expanded { height: 250px; }
+        .footer-wrap > .footer-inner { padding: 20px; }
+
+        .menu-legal, .pbhs-copyright {
+            color: #989898;
+            font-size: 1.4rem;
+            line-height: 52px;
+            text-transform: uppercase;
+        }
+        .menu-legal { float: left; margin-left: 20px; }
+        .menu-legal ul { list-style: none; padding: 0; margin: 0; }
+        .menu-legal li { display: inline-block; margin: 0 8px; }
+        .menu-legal a { color: #989898; }
+        .menu-legal a:hover { color: #fff; }
+        .pbhs-copyright { float: right; margin-bottom: 0; }
+        .pbhs-copyright a { color: #989898; }
+
+        .list-inline > li { display: inline-block; padding: 0 5px; }
+
+        #show-footer-info {
+            cursor: pointer;
+            border-radius: 99px;
+            transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
+        }
+        #show-footer-info:hover { color: #fff; }
+
+        .show-on-active {
+            display: none;
+            padding-top: 20px;
+            clear: both;
+        }
+        .footer-wrap.expanded .show-on-active { display: block; }
+        .show-on-active p { text-align: center; color: #989898; font-size: 1.4rem; }
+
+        .nearby-cities-text { text-align: center; }
+
+        /* ============================================
+           CONTACT INFO PANEL
+           Animation: Slide in from right
+           ============================================ */
+        #contact-info {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100%;
+            background: #fff;
+            z-index: 20;
+            transition: ease-in-out right 0.3s;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        #contact-info.visible { right: 0; }
+        #contact-info-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 2rem;
+            color: #333;
+        }
+
+        /* ============================================
+           SCROLL TO TOP
+           ============================================ */
+        .scrollup {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 15;
+            display: none;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            background: #333;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 2rem;
+        }
+
+        /* ============================================
+           ACCESSIBILITY WHEEL
+           ============================================ */
+        .wheel-button-wrap {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 25;
+        }
+        .wheel-button {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            background: #333;
+            color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 2rem;
+        }
+        .wheel-button svg { fill: currentColor; height: 1em; width: auto; }
+        .wheel {
+            display: none;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .wheel-button-wrap.open .wheel { display: flex; gap: 5px; margin-top: 8px; }
+        .wheel .item button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid;
+            cursor: pointer;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ============================================
+           MOBILE MENU BAR
+           ============================================ */
+        .nav-mobile-wrap {
+            display: none;
+            background: #333;
+            color: #fff;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            height: 44px;
+            align-items: center;
+        }
+        .nav-mobile-wrap .menu-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            color: #fff;
+            font-size: 2rem;
+            border-right: 1px solid #555;
+        }
+        .nav-mobile-wrap .mobile-search {
+            flex: 1;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            border-right: 1px solid #555;
+        }
+        .nav-mobile-wrap .mobile-search input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.4rem;
+            outline: none;
+        }
+        .nav-mobile-wrap .mobile-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            color: #fff;
+            font-size: 1.8rem;
+            border-right: 1px solid #555;
+            text-decoration: none;
+        }
+        .nav-mobile-wrap .mobile-icon:last-child { border-right: none; }
+
+        /* ============================================
+           MOBILE SLIDE-IN NAV PANEL
+           ============================================ */
+        .mobile-nav-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: -70%;
+            width: 70%;
+            height: 100%;
+            background: #333;
+            z-index: 30;
+            transition: left 0.3s ease-in-out;
+            overflow-y: auto;
+        }
+        .mobile-nav-panel.open { left: 0; }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 29;
+        }
+        .mobile-nav-overlay.open { display: block; }
+        .mobile-nav-panel .mobile-nav-search {
+            padding: 10px 12px;
+            border-bottom: 1px solid #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mobile-nav-panel .mobile-nav-search input {
+            flex: 1;
+            background: transparent;
+            border: 1px solid #666;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 1.4rem;
+            outline: none;
+        }
+        .mobile-nav-panel .mobile-nav-search button {
+            background: transparent;
+            border: none;
+            color: #dbdbdb;
+            font-size: 1.6rem;
+            cursor: pointer;
+        }
+        .mobile-nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .mobile-nav-list li {
+            border-bottom: 1px solid #444;
+        }
+        .mobile-nav-list li a {
+            display: block;
+            padding: 14px 16px;
+            color: #ccc;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 1.3rem;
+            letter-spacing: 0.05em;
+        }
+        .mobile-nav-list li a:hover,
+        .mobile-nav-list li.active a {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+
+        @media (max-width: 767px) {
+            .mobile-nav-panel { display: block; }
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 991px) {
+            .bucket {
+                width: 100%;
+                display: block;
+                height: auto;
+                min-height: 400px;
+            }
+            .bucket::before { top: 0; bottom: 0; }
+            .bucket-content { opacity: 1; }
+            #scroll-box-horz { overflow: visible; white-space: normal; }
+            .bucket-wrap { white-space: normal; }
+            .scroll-arrows { display: none; }
+        }
+
+        @media (max-width: 767px) {
+            /* Show mobile menu bar */
+            .nav-mobile-wrap { display: flex; }
+
+            /* Header becomes static, centered */
+            .header-wrap {
+                position: static;
+                width: auto;
+                float: none;
+                box-shadow: none;
+                padding-top: 44px; /* space for fixed mobile bar */
+            }
+            .header-wrap .scroll-vert {
+                width: auto;
+                overflow: visible;
+                height: auto;
+            }
+
+            /* Hide address & phone in header (shown in top bar) */
+            .header-wrap #location,
+            .header-wrap #phone,
+            .header-wrap .fa-map-marker-wrap {
+                display: none;
+            }
+
+            /* Logo smaller on mobile */
+            #client-logo .img-placeholder {
+                height: 80px !important;
+            }
+
+            /* Practice name smaller */
+            #practice { font-size: 2rem; }
+
+            /* Social links */
+            .social-links { font-size: 2.4rem; padding-bottom: 10px; }
+
+            /* Content area */
+            .side-panel-offset { margin-left: 0; }
+
+            /* Scroll box becomes normal flow */
+            #scroll-box-horz {
+                position: static !important;
+                overflow: visible;
+                white-space: normal;
+            }
+
+            /* Buckets stack vertically */
+            .bucket {
+                width: 100%;
+                display: block;
+                height: auto;
+                min-height: 300px;
+            }
+
+            /* Title: separate gray bar, full width */
+            .bucket-title {
+                padding: 15px 20px;
+                font-size: 2.2rem;
+                min-height: auto !important;
+            }
+            .bucket-title .layer2 { color: #a3b3b8; }
+
+            /* Overlay always visible on mobile */
+            .bucket::before {
+                top: 0;
+                bottom: 0;
+                background: rgba(163, 179, 184, 0.6);
+            }
+
+            /* Content always visible */
+            .bucket-content {
+                opacity: 1;
+                padding: 20px;
+            }
+            .bucket-link { font-size: 1.6rem; }
+
+            /* Image placeholder smaller */
+            .bucket .img-placeholder {
+                min-height: 250px;
+            }
+
+            /* Footer static */
+            .footer-wrap {
+                position: static;
+                left: 0;
+                height: auto;
+            }
+            .footer-offset { padding-bottom: 0; }
+
+            /* Accessibility wheel */
+            .wheel-button-wrap { left: 20px; bottom: 20px; }
+        }
+
+        /* ============================================
+           CONTENT TRANSITION BAR
+           ============================================ */
+        #content-transition {
+            position: fixed;
+            bottom: 90px;
+            left: 320px;
+            right: 0;
+            height: 3px;
+            border-top: 2px solid #a3b3b8;
+            background: rgba(197, 197, 197, 0.3);
+            z-index: 7;
+        }
+        @media (max-width: 767px) {
+            #content-transition { display: none; }
+        }
+    </style>
+</head>
+
+<body id="home" class="home">
+
+    <!-- ==========================================
+         1. MOBILE MENU (hidden on desktop)
+         ========================================== -->
+    <div class="nav-mobile-wrap">
+        <a href="#" class="menu-control" title="Menu" onclick="toggleMobileNav(); return false;"><i class="fa fa-bars"></i></a>
+        <div class="mobile-search"><input type="text" placeholder="" aria-label="Search"></div>
+        <a href="#" class="mobile-icon"><i class="fa fa-map-marker"></i></a>
+        <a href="tel:16153404655" class="mobile-icon"><i class="fa fa-phone"></i></a>
+    </div>
+
+    <!-- Mobile slide-in navigation panel -->
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="toggleMobileNav()"></div>
+    <div class="mobile-nav-panel" id="mobile-nav-panel">
+        <div class="mobile-nav-search">
+            <input type="text" placeholder="" aria-label="Search">
+            <button><i class="fa fa-search"></i></button>
+        </div>
+        <ul class="mobile-nav-list">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="#">About Our Practice</a></li>
+            <li><a href="#">Meet Us</a></li>
+            <li><a href="#">Midwifery at Women</a></li>
+            <li><a href="#">Gynecology</a></li>
+            <li><a href="#">Pregnancy</a></li>
+            <li><a href="#">Patient Information</a></li>
+            <li><a href="#">Online Scheduling</a></li>
+            <li><a href="#">Educational Links</a></li>
+            <li><a href="#">Contact Us</a></li>
+        </ul>
+    </div>
+
+    <!-- ==========================================
+         2. CONTACT INFO PANEL (hidden, slides in)
+         Animation: slide from right
+         ========================================== -->
+    <div id="contact-info">
+        <div id="contact-info-close" onclick="document.getElementById('contact-info').classList.remove('visible')">
+            <i class="fa fa-times fa-2x"></i>
+        </div>
+        <h3 style="color:#a3b3b8; text-transform:uppercase; margin-top:20px;">Contact Us</h3>
+        <p style="color:#333; margin-top:15px;">
+            <strong>Phone:</strong> 615-340-4655<br>
+            <strong>Fax:</strong> 615-340-4596<br><br>
+            <strong>Main Office:</strong><br>
+            300 20th Avenue North, Suite 505<br>
+            Nashville, TN 37203<br><br>
+            <strong>Nashville Office:</strong><br>
+            2201 Murphy Avenue, Suite 207<br>
+            Nashville, TN 37203
+        </p>
+        <p style="margin-top:20px; color:#999; font-size:1.4rem;">
+            [Gravity Form contact form would appear here]
+        </p>
+    </div>
+
+    <!-- ==========================================
+         3. SIDE PANEL / HEADER (left, 320px fixed)
+         ========================================== -->
+    <div class="header-wrap">
+        <header id="header" class="scroll-vert text-center text-upper" style="padding: 20px;">
+
+            <!-- [IMG 1] Logo -->
+            <div id="client-logo" style="margin-bottom: 10px;">
+                <div class="img-placeholder" style="width:100%; height:130px;" data-label="WOMEN-logo-black-1.jpg (1024x415)">1</div>
+            </div>
+
+            <!-- Practice Name -->
+            <div id="practice" class="h1" style="margin-bottom: 20px;">WOMEN Obstetrics &amp; Gynecology</div>
+
+            <!-- Navigation -->
+            <nav>
+                <ul class="main-menu">
+                    <li class="current_page_item"><a href="#">Home</a></li>
+                    <li><a href="#">About Our Practice</a></li>
+                    <li><a href="#">Meet Us</a></li>
+                    <li><a href="#">Midwifery at Women</a></li>
+                    <li><a href="#">Gynecology</a></li>
+                    <li><a href="#">Pregnancy</a></li>
+                    <li><a href="#">Patient Information</a></li>
+                    <li><a href="#">Online Scheduling</a></li>
+                    <li><a href="#">Educational Links</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                </ul>
+            </nav>
+
+            <!-- Address & Phone (hidden on mobile) -->
+            <div class="header-contact-info" style="padding: 20px 8px; color: #797979;">
+                <span class="fa-map-marker-wrap" style="font-size: 2.4rem;"><i class="fa fa-map-marker" style="color:#dbdbdb;"></i></span>
+                <div id="location" class="h5" style="margin: 8px 0; color: #797979;">
+                    300 20th Avenue North, Suite 505<br>Nashville, TN 37203
+                </div>
+                <div id="phone">
+                    <a href="tel:16153404655" style="color:#797979;">
+                        <i class="fa fa-phone" style="color:#dbdbdb;"></i> 615-340-4655
+                    </a>
+                </div>
+            </div>
+
+            <!-- Social Links -->
+            <p class="social-links">
+                <a href="#"><i class="fa fa-instagram"></i></a>
+            </p>
+
+        </header>
+    </div>
+
+    <!-- ==========================================
+         4. MAIN CONTENT AREA
+         Horizontal scroll with 6 buckets
+         ========================================== -->
+    <div class="side-panel-offset footer-offset fill-height relative" style="position:relative;">
+
+        <!-- Scroll Arrows -->
+        <div class="scroll-arrows">
+            <span class="scroll-box-direction" onclick="document.getElementById('scroll-box-horz').scrollBy({left:-400,behavior:'smooth'})" title="Scroll Left">
+                <i class="fa fa-circle" style="color:#333; font-size:4rem; position:relative;"></i>
+            </span>
+            <span class="scroll-box-direction" onclick="document.getElementById('scroll-box-horz').scrollBy({left:400,behavior:'smooth'})" title="Scroll Right">
+                <i class="fa fa-circle" style="color:#333; font-size:4rem;"></i>
+            </span>
+        </div>
+
+        <!-- Horizontal Scroll Container -->
+        <div id="scroll-box-horz" style="position:fixed; top:0; left:320px; right:0; bottom:90px;">
+            <div class="bucket-wrap">
+
+                <!-- ===== BUCKET 1 [IMG 2] - About Our Practice ===== -->
+                <!-- Animation: Odd bucket - overlay slides DOWN from top -->
+                <div id="bucket1" class="bucket bucket-odd">
+                    <div class="img-placeholder" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:0;" data-label="featuredImage1.jpg">2</div>
+                    <h2 class="bucket-title bg-dark">
+                        <span class="layer2">About Our Practice</span>
+                    </h2>
+                    <div class="bucket-content">
+                        <div class="bucket-text"><p></p></div>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#">
+                            Learn More <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                            Contact Us <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ===== BUCKET 2 [IMG 3] - Meet Us ===== -->
+                <!-- Animation: Even bucket - overlay slides UP from bottom -->
+                <div id="bucket2" class="bucket bucket-even">
+                    <div class="img-placeholder" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:0;" data-label="shutterstock_1267912011-1068x1068.jpg">3</div>
+                    <h2 class="bucket-title bg-dark">
+                        <span class="layer2">Meet Us</span>
+                    </h2>
+                    <div class="bucket-content">
+                        <div class="bucket-text"><p>We are an all female-provider practice committed to compassionate, personalized patient care.</p></div>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#">
+                            Learn More <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                            Contact Us <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ===== BUCKET 3 [IMG 4] - Gynecology ===== -->
+                <!-- Animation: Odd bucket - overlay slides DOWN from top -->
+                <div id="bucket3" class="bucket bucket-odd">
+                    <div class="img-placeholder" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:0;" data-label="featuredImage3.jpg">4</div>
+                    <h2 class="bucket-title bg-dark">
+                        <span class="layer2">Gynecology</span>
+                    </h2>
+                    <div class="bucket-content">
+                        <div class="bucket-text"><p></p></div>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#">
+                            Learn More <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                            Contact Us <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ===== BUCKET 4 [IMG 5] - Pregnancy ===== -->
+                <!-- Animation: Even bucket - overlay slides UP from bottom -->
+                <div id="bucket4" class="bucket bucket-even">
+                    <div class="img-placeholder" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:0;" data-label="shutterstock_1259869-1068x1068.jpg">5</div>
+                    <h2 class="bucket-title bg-dark">
+                        <span class="layer2">Pregnancy</span>
+                    </h2>
+                    <div class="bucket-content">
+                        <div class="bucket-text"><p></p></div>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#">
+                            Learn More <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                            Contact Us <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ===== BUCKET 5 [IMG 6] - Contraception ===== -->
+                <!-- Animation: Odd bucket - overlay slides DOWN from top -->
+                <div id="bucket5" class="bucket bucket-odd">
+                    <div class="img-placeholder" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:0;" data-label="featuredImage5.jpg">6</div>
+                    <h2 class="bucket-title bg-dark">
+                        <span class="layer2">Contraception</span>
+                    </h2>
+                    <div class="bucket-content">
+                        <div class="bucket-text"><p>Choosing a method of birth control is a highly personal decision, based on individual preferences, medical history, lifestyle, and other factors.</p></div>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#">
+                            Learn More <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                            Contact Us <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ===== BUCKET 6 [IMG 7] - When To Call the Doctor ===== -->
+                <!-- Animation: Even bucket - overlay slides UP from bottom -->
+                <div id="bucket6" class="bucket bucket-even">
+                    <div class="img-placeholder" style="position:absolute; top:0; left:0; right:0; bottom:0; z-index:0;" data-label="featuredImage6.jpg">7</div>
+                    <h2 class="bucket-title bg-dark">
+                        <span class="layer2">When To Call the Doctor</span>
+                    </h2>
+                    <div class="bucket-content">
+                        <div class="bucket-text"><p>CONTRACTIONS (IF YOU ARE GREATER THAN 37 WEEKS PREGNANT): A. If you think that you may be in labor, monitor your contractions. B....</p></div>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#">
+                            Learn More <i class="fa fa-arrow-right"></i>
+                        </a>
+                        <a class="bucket-link btn btn-default btn-outline btn-with-fa" href="#" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                            Contact Us <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         5. FOOTER (fixed bottom)
+         Animation: Expand on info click
+         ========================================== -->
+    <div class="footer-wrap bg-dark" id="footer-wrap">
+        <div class="footer-inner" style="padding: 20px;">
+            <a href="#" class="btn btn-default btn-outline btn-with-fa pull-left" style="font-size:1.6rem; line-height:1;" onclick="document.getElementById('contact-info').classList.add('visible'); return false;">
+                Contact Us <i class="fa fa-arrow-up"></i>
+            </a>
+
+            <nav class="menu-legal">
+                <ul class="list-inline">
+                    <li><i id="show-footer-info" class="fa fa-info-circle fa-2x" onclick="document.getElementById('footer-wrap').classList.toggle('expanded')"></i></li>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Sitemap</a></li>
+                    <li><a href="#">Disclaimer</a></li>
+                </ul>
+            </nav>
+
+            <p class="pbhs-copyright">
+                <a href="#">Medical Website Design</a> by PBHS &copy; 2026
+            </p>
+
+            <div class="show-on-active" style="clear:both;">
+                <p class="nearby-cities-text">
+                    Nashville TN &bull; Franklin TN &bull; Brentwood TN &bull; Hendersonville TN &bull; Gallatin TN<br>
+                    Hermitage TN &bull; Murfreesboro TN
+                </p>
+                <p>
+                    <strong>Main Office:</strong> 300 20th Avenue North, Suite 505, Nashville, TN 37203 &bull;
+                    <strong>Phone:</strong> 615-340-4655 &bull; <strong>Fax:</strong> 615-340-4596
+                </p>
+                <p>
+                    <strong>Nashville Office:</strong> 2201 Murphy Avenue, Suite 207, Nashville, TN 37203 &bull;
+                    <strong>Phone:</strong> 615-340-4655 &bull; <strong>Fax:</strong> 615-340-4596
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         6. CONTENT TRANSITION BAR
+         ========================================== -->
+    <div id="content-transition"></div>
+
+    <!-- ==========================================
+         7. SCROLL TO TOP
+         ========================================== -->
+    <a href="#" class="scrollup" id="scrollup" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">
+        <i class="fa fa-arrow-up"></i>
+    </a>
+
+    <!-- ==========================================
+         8. ACCESSIBILITY WHEEL
+         ========================================== -->
+    <div class="wheel-button-wrap" id="accessibility-wrap">
+        <a href="#" class="wheel-button" onclick="document.getElementById('accessibility-wrap').classList.toggle('open'); return false;" title="Accessibility Options">
+            <i class="fa fa-universal-access"></i>
+        </a>
+        <ul class="wheel">
+            <li class="item"><button style="color:#FFF;background:#000;border-color:#FFF" title="White on Black">A</button></li>
+            <li class="item"><button style="color:#000;background:#FFF;border-color:#000" title="Black on White">A</button></li>
+            <li class="item"><button style="color:#333;background:#eee;border-color:#333" title="Increase Font">+</button></li>
+            <li class="item"><button style="color:#333;background:#eee;border-color:#333" title="Decrease Font">-</button></li>
+            <li class="item"><button style="color:#333;background:#eee;border-color:#333" title="Reset"><i class="fa fa-refresh"></i></button></li>
+        </ul>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT
+         ========================================== -->
+    <script>
+        // Mobile nav toggle
+        function toggleMobileNav() {
+            document.getElementById('mobile-nav-panel').classList.toggle('open');
+            document.getElementById('mobile-nav-overlay').classList.toggle('open');
+        }
+
+        // Scroll to top button visibility
+        window.addEventListener('scroll', function() {
+            var btn = document.getElementById('scrollup');
+            if (window.scrollY > 200) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        });
+
+        // Keyboard arrow scroll for horizontal scroll
+        document.addEventListener('keydown', function(e) {
+            var scrollBox = document.getElementById('scroll-box-horz');
+            if (e.key === 'ArrowRight') {
+                scrollBox.scrollBy({ left: 400, behavior: 'smooth' });
+            } else if (e.key === 'ArrowLeft') {
+                scrollBox.scrollBy({ left: -400, behavior: 'smooth' });
+            }
+        });
+
+        // Mouse wheel horizontal scroll
+        document.getElementById('scroll-box-horz').addEventListener('wheel', function(e) {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                e.preventDefault();
+                this.scrollBy({ left: e.deltaY, behavior: 'auto' });
+            }
+        }, { passive: false });
+
+        // Equalize bucket title heights so gray background aligns
+        // Bottom edge follows the tallest title (most lines of text)
+        function equalizeTitles() {
+            var titles = document.querySelectorAll('.bucket-title');
+            var maxHeight = 0;
+            // Reset first
+            titles.forEach(function(t) { t.style.minHeight = ''; });
+            // Find tallest
+            titles.forEach(function(t) {
+                if (t.offsetHeight > maxHeight) maxHeight = t.offsetHeight;
+            });
+            // Apply to all
+            titles.forEach(function(t) {
+                t.style.minHeight = maxHeight + 'px';
+            });
+        }
+        // Run on load and resize
+        window.addEventListener('DOMContentLoaded', equalizeTitles);
+        window.addEventListener('load', equalizeTitles);
+        window.addEventListener('resize', equalizeTitles);
+    </script>
+
+</body>
+</html>

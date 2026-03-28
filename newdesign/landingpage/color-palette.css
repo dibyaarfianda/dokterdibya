@@ -1,0 +1,77 @@
+/* ============================================
+   COLOR PALETTE - womenob.net
+   All colors extracted from the website
+   ============================================ */
+
+:root {
+    /* === Primary Accent Colors === */
+    --accent-primary: #a3b3b8;       /* Custom accent - links, hover states, headings */
+    --accent-secondary: #c5c5c5;     /* Secondary - side nav hover bg */
+    --accent-theme: #206e93;         /* Theme accent - button hovers, headings, scroll icons */
+    --accent-theme-light: #3a7fa0;   /* Lighter theme - side nav active/hover */
+
+    /* === Overlay Colors === */
+    --overlay-accent: rgba(163, 179, 184, 0.8);  /* Bucket hover overlay */
+    --overlay-accent-mobile: rgba(163, 179, 184, 0.6); /* Mobile overlay (lighter) */
+    --overlay-theme: rgba(32, 110, 147, 0.8);    /* Original theme overlay */
+    --overlay-secondary: rgba(197, 197, 197, 0.3); /* Content transition bg */
+    --overlay-nav-hover: rgba(58, 127, 160, 0.9); /* Side nav hover */
+
+    /* === Background Colors === */
+    --bg-dark: #333333;              /* Dark backgrounds, body text */
+    --bg-darker: #222222;            /* Darker areas, image borders */
+    --bg-dark-40: rgba(51, 51, 51, 0.4); /* Semi-transparent dark */
+    --bg-white: #ffffff;             /* Header panel background */
+    --bg-light: #f3f3f3;            /* Side wrap background */
+    --bg-lighter: #fefefe;          /* Content area bg */
+    --bg-light-border: #f5f5f5;     /* Content border */
+
+    /* === Text Colors === */
+    --text-body: #333333;            /* Body text */
+    --text-light: #797979;           /* Muted text (.text-light) */
+    --text-nav: #989898;             /* Side nav items, footer text */
+    --text-white: #ffffff;           /* White text on dark backgrounds */
+    --text-icons: #dbdbdb;           /* Header icons, social links default */
+
+    /* === Border Colors === */
+    --border-footer: #666666;        /* Footer top border */
+    --border-dark: #333333;          /* Dark button borders */
+    --border-image: #222222;         /* Image frame borders */
+
+    /* === Transposh/Language Selector === */
+    --lang-bg: rgba(0, 0, 0, 0.7);
+    --lang-border: #000000;
+    --lang-hover: rgba(0, 0, 0, 0.5);
+    --lang-active: #000000;
+    --lang-text: #ffffff;
+}
+
+/* === Usage Guide ===
+
+LINKS:
+  Default: var(--accent-primary)  → #a3b3b8
+  Hover:   var(--accent-primary)  → #a3b3b8
+
+BUTTONS:
+  .btn-default:     white text/border on dark bg
+  .btn-default:hover  → var(--accent-theme) text, white bg
+  .btn-dark:hover     → var(--accent-primary) bg
+
+HEADINGS (h1, h2 in content):
+  Color: var(--accent-primary)  → #a3b3b8
+
+SIDE PANEL:
+  Background: var(--bg-white)
+  Nav items:  var(--text-nav)
+  Active:     var(--accent-theme-light) bg, white text
+
+BUCKETS (Homepage cards):
+  Overlay: var(--overlay-accent)
+  Text:    var(--text-white)
+  Title bg: var(--bg-dark)
+
+FOOTER:
+  Background: var(--bg-dark)
+  Border-top: var(--border-footer)
+  Text:       var(--text-nav)
+*/
