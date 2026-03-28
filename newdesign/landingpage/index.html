@@ -165,7 +165,7 @@
             color: #989898;
             text-decoration: none;
             text-transform: uppercase;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             transition: ease-in-out background 0.2s, ease-in-out color 0.2s;
         }
         .main-menu li a:hover {
@@ -434,15 +434,62 @@
             border-radius: 50%;
             cursor: pointer;
             font-size: 2rem;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.2s ease;
+        }
+        .wheel-button-wrap.open .wheel-button {
+            transform: rotate(45deg);
         }
         .wheel-button svg { fill: currentColor; height: 1em; width: auto; }
         .wheel {
-            display: none;
             list-style: none;
             padding: 0;
             margin: 0;
+            position: absolute;
+            bottom: 0;
+            left: 0;
         }
-        .wheel-button-wrap.open .wheel { display: flex; gap: 5px; margin-top: 8px; }
+        /* Each item positioned in NE arc from button */
+        .wheel .item {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.25s ease-out;
+        }
+        /* Fly positions: NE arc (up and right) */
+        .wheel .item:nth-child(1) { /* top-most */ }
+        .wheel .item:nth-child(2) { }
+        .wheel .item:nth-child(3) { }
+        .wheel .item:nth-child(4) { }
+        .wheel .item:nth-child(5) { }
+
+        .wheel-button-wrap.open .wheel .item {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .wheel-button-wrap.open .wheel .item:nth-child(1) {
+            bottom: 50px; left: 5px;
+            transition-delay: 0s;
+        }
+        .wheel-button-wrap.open .wheel .item:nth-child(2) {
+            bottom: 85px; left: 30px;
+            transition-delay: 0.04s;
+        }
+        .wheel-button-wrap.open .wheel .item:nth-child(3) {
+            bottom: 100px; left: 70px;
+            transition-delay: 0.08s;
+        }
+        .wheel-button-wrap.open .wheel .item:nth-child(4) {
+            bottom: 90px; left: 112px;
+            transition-delay: 0.12s;
+        }
+        .wheel-button-wrap.open .wheel .item:nth-child(5) {
+            bottom: 58px; left: 140px;
+            transition-delay: 0.16s;
+        }
         .wheel .item button {
             width: 36px;
             height: 36px;
@@ -453,6 +500,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.15s ease;
+        }
+        .wheel .item button:hover {
+            transform: scale(1.15);
         }
 
         /* ============================================
@@ -757,10 +808,10 @@
         <h3 style="color:#a3b3b8; text-transform:uppercase; margin-top:20px;">Contact Us</h3>
         <p style="color:#333; margin-top:15px;">
             <strong>Phone:</strong> 615-340-4655<br>
-            <strong>Fax:</strong> 615-340-4596<br><br>
+            <strong>Whatsapp:</strong> 615-340-4596<br><br>
             <strong>Main Office:</strong><br>
-            300 20th Avenue North, Suite 505<br>
-            Nashville, TN 37203<br><br>
+            Balowerti 2 No. 59<br>
+            Kediri, 64129<br><br>
             <strong>Nashville Office:</strong><br>
             2201 Murphy Avenue, Suite 207<br>
             Nashville, TN 37203
