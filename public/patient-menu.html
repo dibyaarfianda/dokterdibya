@@ -1552,74 +1552,8 @@
         <div id="content-wrapper" style="display: none;">
             <div class="content-container">
 
-                <!-- Idul Fitri Greeting Card -->
-                <div class="dashboard-card" id="eid-greeting-card" style="display: none; margin-bottom: 20px; padding: 0; overflow: hidden; border: 1px solid rgba(218, 165, 32, 0.4); border-radius: 16px; position: relative;">
-                    <!-- Close button -->
-                    <button onclick="dismissEidGreeting()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">&times;</button>
-
-                    <!-- Background with gradient -->
-                    <div style="background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 30%, #1a3a2a 60%, #0d2818 100%); padding: 28px 24px; position: relative; overflow: hidden;">
-
-                        <!-- Decorative stars -->
-                        <div style="position: absolute; top: 15px; left: 20px; color: rgba(218,165,32,0.3); font-size: 8px;">&#9733;</div>
-                        <div style="position: absolute; top: 40px; left: 60px; color: rgba(218,165,32,0.2); font-size: 6px;">&#9733;</div>
-                        <div style="position: absolute; top: 20px; right: 55px; color: rgba(218,165,32,0.25); font-size: 10px;">&#9733;</div>
-                        <div style="position: absolute; top: 55px; right: 90px; color: rgba(218,165,32,0.15); font-size: 7px;">&#9733;</div>
-                        <div style="position: absolute; bottom: 60px; left: 40px; color: rgba(218,165,32,0.2); font-size: 6px;">&#9733;</div>
-                        <div style="position: absolute; bottom: 40px; right: 40px; color: rgba(218,165,32,0.15); font-size: 8px;">&#9733;</div>
-
-                        <!-- Crescent Moon & Mosque SVG -->
-                        <div style="text-align: center; margin-bottom: 16px;">
-                            <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <!-- Crescent Moon -->
-                                <circle cx="60" cy="32" r="22" fill="#DAA520"/>
-                                <circle cx="70" cy="28" r="18" fill="#0d1b2a"/>
-                                <!-- Star -->
-                                <polygon points="50,18 52,24 58,24 53,28 55,34 50,30 45,34 47,28 42,24 48,24" fill="#DAA520" opacity="0.9"/>
-                                <!-- Mosque Silhouette -->
-                                <rect x="25" y="68" width="70" height="30" rx="2" fill="rgba(218,165,32,0.15)"/>
-                                <!-- Main dome -->
-                                <ellipse cx="60" cy="68" rx="20" ry="14" fill="rgba(218,165,32,0.2)"/>
-                                <!-- Left minaret -->
-                                <rect x="28" y="52" width="6" height="46" rx="1" fill="rgba(218,165,32,0.18)"/>
-                                <ellipse cx="31" cy="52" rx="5" ry="4" fill="rgba(218,165,32,0.2)"/>
-                                <rect x="30" y="45" width="2" height="8" fill="rgba(218,165,32,0.25)"/>
-                                <!-- Right minaret -->
-                                <rect x="86" y="52" width="6" height="46" rx="1" fill="rgba(218,165,32,0.18)"/>
-                                <ellipse cx="89" cy="52" rx="5" ry="4" fill="rgba(218,165,32,0.2)"/>
-                                <rect x="88" y="45" width="2" height="8" fill="rgba(218,165,32,0.25)"/>
-                                <!-- Small dome left -->
-                                <ellipse cx="42" cy="72" rx="8" ry="6" fill="rgba(218,165,32,0.15)"/>
-                                <!-- Small dome right -->
-                                <ellipse cx="78" cy="72" rx="8" ry="6" fill="rgba(218,165,32,0.15)"/>
-                                <!-- Door -->
-                                <rect x="55" y="82" width="10" height="16" rx="5" fill="rgba(218,165,32,0.25)"/>
-                            </svg>
-                        </div>
-
-                        <!-- Greeting Text -->
-                        <div style="text-align: center;">
-                            <p style="font-size: 11px; color: rgba(218,165,32,0.7); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; font-weight: 400;">Selamat Hari Raya</p>
-                            <h2 style="font-size: 28px; font-weight: 700; color: #DAA520; margin-bottom: 4px; line-height: 1.2; text-shadow: 0 2px 12px rgba(218,165,32,0.3);">Idul Fitri</h2>
-                            <p style="font-size: 15px; color: rgba(218,165,32,0.8); margin-bottom: 18px; font-weight: 500;">1 Syawal 1447 H</p>
-
-                            <div style="width: 40px; height: 1px; background: linear-gradient(90deg, transparent, rgba(218,165,32,0.5), transparent); margin: 0 auto 16px;"></div>
-
-                            <p style="font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.7; max-width: 320px; margin: 0 auto 16px; font-weight: 300;">
-                                Taqabbalallahu minna wa minkum.<br>
-                                Mohon maaf lahir dan batin atas segala khilaf selama ini.
-                                Semoga Allah SWT senantiasa melimpahkan keberkahan dan kesehatan bagi Anda sekeluarga.
-                            </p>
-
-                            <div style="width: 40px; height: 1px; background: linear-gradient(90deg, transparent, rgba(218,165,32,0.5), transparent); margin: 0 auto 14px;"></div>
-
-                            <p style="color: rgba(218,165,32,0.8); font-weight: 500; font-size: 13px;">
-                                salam hangat,<br>
-                                <span style="font-size: 15px; font-weight: 600;">dr. Dibya & Tim</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <!-- Dynamic Greeting Card (loaded from API) -->
+                <div class="dashboard-card" id="greeting-card" style="display: none; margin-bottom: 20px; padding: 0; overflow: hidden; border-radius: 16px; position: relative;"></div>
 
                 <!-- Welcome Message -->
                 <div class="dashboard-card" id="welcome-section" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(40, 167, 233, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid rgba(40, 167, 233, 0.6); box-shadow: 0 0 8px rgba(40, 167, 233, 0.15);">
@@ -2022,7 +1956,7 @@
             // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
             loadBirthData();
-            showEidGreeting();
+            loadGreetingCard();
 
             // Show download banner only on web browser (not Capacitor)
             const isCapacitorApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
@@ -2299,41 +2233,92 @@
             }
         }
 
-        // ==================== IDUL FITRI GREETING ====================
-        function showEidGreeting() {
-            // Show Eid greeting from March 21 to April 5, 2026
-            const now = new Date();
-            const start = new Date(2026, 2, 21); // March 21, 2026
-            const end = new Date(2026, 3, 6);    // April 6, 2026 (exclusive)
+        // ==================== DYNAMIC GREETING CARD ====================
+        const GREETING_THEMES = {
+            gold:   { bg: 'linear-gradient(135deg, #0d1b2a 0%, #1b2838 30%, #1a3a2a 60%, #0d2818 100%)', accent: '#DAA520', border: 'rgba(218,165,32,0.4)' },
+            green:  { bg: 'linear-gradient(135deg, #0d1b2a 0%, #0f2d1f 40%, #1a3a2a 100%)', accent: '#22c55e', border: 'rgba(34,197,94,0.4)' },
+            blue:   { bg: 'linear-gradient(135deg, #0d1b2a 0%, #1a2d4a 40%, #1e3a5c 100%)', accent: '#28a7e9', border: 'rgba(40,167,233,0.4)' },
+            red:    { bg: 'linear-gradient(135deg, #1b0a0a 0%, #2d1515 40%, #3a1a1a 100%)', accent: '#ef4444', border: 'rgba(239,68,68,0.4)' },
+            purple: { bg: 'linear-gradient(135deg, #0d0b1b 0%, #1e1538 40%, #2d1f4a 100%)', accent: '#8b5cf6', border: 'rgba(139,92,246,0.4)' },
+        };
 
-            if (now < start || now >= end) return;
+        const GREETING_ICONS = {
+            mosque: `<svg width="100" height="80" viewBox="0 0 120 100" fill="none"><circle cx="60" cy="32" r="22" fill="ACCENT"/><circle cx="70" cy="28" r="18" fill="#0d1b2a"/><polygon points="50,18 52,24 58,24 53,28 55,34 50,30 45,34 47,28 42,24 48,24" fill="ACCENT" opacity="0.9"/><rect x="25" y="68" width="70" height="30" rx="2" fill="ACCENT_15"/><ellipse cx="60" cy="68" rx="20" ry="14" fill="ACCENT_20"/><rect x="28" y="52" width="6" height="46" rx="1" fill="ACCENT_18"/><ellipse cx="31" cy="52" rx="5" ry="4" fill="ACCENT_20"/><rect x="86" y="52" width="6" height="46" rx="1" fill="ACCENT_18"/><ellipse cx="89" cy="52" rx="5" ry="4" fill="ACCENT_20"/><rect x="55" y="82" width="10" height="16" rx="5" fill="ACCENT_25"/></svg>`,
+            tree: `<svg width="100" height="80" viewBox="0 0 100 80" fill="none"><polygon points="50,8 20,55 80,55" fill="ACCENT_20" stroke="ACCENT" stroke-width="1"/><polygon points="50,20 28,58 72,58" fill="ACCENT_15"/><rect x="45" y="55" width="10" height="15" rx="2" fill="ACCENT_25"/><circle cx="50" cy="10" r="4" fill="ACCENT"/></svg>`,
+            heart: `<svg width="80" height="80" viewBox="0 0 100 100" fill="none"><path d="M50 88 C25 65, 5 45, 15 28 C22 16, 38 14, 50 28 C62 14, 78 16, 85 28 C95 45, 75 65, 50 88Z" fill="ACCENT_20" stroke="ACCENT" stroke-width="1.5"/></svg>`,
+            star: `<svg width="80" height="80" viewBox="0 0 100 100" fill="none"><polygon points="50,8 61,38 93,38 67,56 76,88 50,70 24,88 33,56 7,38 39,38" fill="ACCENT_20" stroke="ACCENT" stroke-width="1.5"/></svg>`,
+            gift: `<svg width="80" height="80" viewBox="0 0 100 100" fill="none"><rect x="15" y="40" width="70" height="50" rx="4" fill="ACCENT_20" stroke="ACCENT" stroke-width="1.5"/><rect x="10" y="30" width="80" height="15" rx="3" fill="ACCENT_25" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="30" x2="50" y2="90" stroke="ACCENT" stroke-width="1.5"/><path d="M50 30 C50 20, 35 10, 25 20" stroke="ACCENT" stroke-width="2" fill="none"/><path d="M50 30 C50 20, 65 10, 75 20" stroke="ACCENT" stroke-width="2" fill="none"/></svg>`,
+            firework: `<svg width="80" height="80" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="40" r="4" fill="ACCENT"/><line x1="50" y1="40" x2="50" y2="10" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="40" x2="80" y2="25" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="40" x2="20" y2="25" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="40" x2="85" y2="50" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="40" x2="15" y2="50" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="40" x2="70" y2="70" stroke="ACCENT" stroke-width="1.5"/><line x1="50" y1="40" x2="30" y2="70" stroke="ACCENT" stroke-width="1.5"/><circle cx="50" cy="10" r="2" fill="ACCENT"/><circle cx="80" cy="25" r="2" fill="ACCENT"/><circle cx="20" cy="25" r="2" fill="ACCENT"/><circle cx="85" cy="50" r="2" fill="ACCENT"/><circle cx="15" cy="50" r="2" fill="ACCENT"/><circle cx="70" cy="70" r="2" fill="ACCENT"/><circle cx="30" cy="70" r="2" fill="ACCENT"/></svg>`,
+        };
 
-            // Check if user dismissed it today
-            const dismissKey = 'eid_greeting_dismissed_2026';
-            const dismissed = localStorage.getItem(dismissKey);
-            if (dismissed) {
-                const dismissedDate = new Date(dismissed);
-                // Allow showing again after 24 hours
-                if (now - dismissedDate < 24 * 60 * 60 * 1000) return;
-            }
+        function renderGreetingIcon(type, accent) {
+            const svg = GREETING_ICONS[type] || GREETING_ICONS.star;
+            return svg
+                .replace(/ACCENT_25/g, accent.replace(')', ',0.25)').replace('rgb', 'rgba'))
+                .replace(/ACCENT_20/g, accent.replace(')', ',0.20)').replace('rgb', 'rgba'))
+                .replace(/ACCENT_18/g, accent.replace(')', ',0.18)').replace('rgb', 'rgba'))
+                .replace(/ACCENT_15/g, accent.replace(')', ',0.15)').replace('rgb', 'rgba'))
+                .replace(/ACCENT/g, accent);
+        }
 
-            const card = document.getElementById('eid-greeting-card');
-            if (card) {
-                card.style.display = 'block';
-                card.style.animation = 'fadeIn 0.6s ease-out';
+        async function loadGreetingCard() {
+            try {
+                const res = await fetch('/api/greeting-cards/active?_t=' + Date.now());
+                const data = await res.json();
+                if (!data.success || !data.card) return;
+
+                const card = data.card;
+                const dismissKey = 'greeting_dismissed_' + card.id;
+                const dismissed = localStorage.getItem(dismissKey);
+                if (dismissed) {
+                    const hrs = (Date.now() - parseInt(dismissed, 10)) / (1000 * 60 * 60);
+                    if (hrs < (card.dismiss_hours || 24)) return;
+                }
+
+                const theme = GREETING_THEMES[card.theme] || GREETING_THEMES.gold;
+                const accent = theme.accent;
+                const iconSvg = renderGreetingIcon(card.icon_type, accent);
+                const msgHtml = card.message.replace(/\n/g, '<br>');
+
+                const container = document.getElementById('greeting-card');
+                if (!container) return;
+
+                container.style.border = '1px solid ' + theme.border;
+                container.innerHTML = `
+                    <button onclick="dismissGreetingCard(${card.id})" style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.4);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:16px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">&times;</button>
+                    <div style="background:${theme.bg};padding:28px 24px;position:relative;overflow:hidden;">
+                        <div style="position:absolute;top:15px;left:20px;color:${accent}33;font-size:8px;">&#9733;</div>
+                        <div style="position:absolute;top:40px;left:60px;color:${accent}22;font-size:6px;">&#9733;</div>
+                        <div style="position:absolute;top:20px;right:55px;color:${accent}28;font-size:10px;">&#9733;</div>
+                        <div style="position:absolute;bottom:40px;right:40px;color:${accent}20;font-size:8px;">&#9733;</div>
+                        <div style="text-align:center;margin-bottom:16px;">${iconSvg}</div>
+                        <div style="text-align:center;">
+                            <p style="font-size:11px;color:${accent}b3;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;font-weight:400;">${card.title}</p>
+                            ${card.subtitle ? `<h2 style="font-size:28px;font-weight:700;color:${accent};margin-bottom:4px;line-height:1.2;text-shadow:0 2px 12px ${accent}4d;">${card.subtitle}</h2>` : ''}
+                            ${card.subtitle2 ? `<p style="font-size:15px;color:${accent}cc;margin-bottom:18px;font-weight:500;">${card.subtitle2}</p>` : ''}
+                            <div style="width:40px;height:1px;background:linear-gradient(90deg,transparent,${accent}80,transparent);margin:0 auto 16px;"></div>
+                            <p style="font-size:13px;color:rgba(255,255,255,0.8);line-height:1.7;max-width:320px;margin:0 auto 16px;font-weight:300;">${msgHtml}</p>
+                            <div style="width:40px;height:1px;background:linear-gradient(90deg,transparent,${accent}80,transparent);margin:0 auto 14px;"></div>
+                            <p style="color:${accent}cc;font-weight:500;font-size:13px;">salam hangat,<br><span style="font-size:15px;font-weight:600;">${card.sender}</span></p>
+                        </div>
+                    </div>`;
+                container.style.display = 'block';
+                container.style.animation = 'fadeIn 0.6s ease-out';
+            } catch (e) {
+                console.log('Greeting card not available:', e.message);
             }
         }
 
-        function dismissEidGreeting() {
-            const card = document.getElementById('eid-greeting-card');
-            if (card) {
-                card.style.transition = 'opacity 0.3s, transform 0.3s';
-                card.style.opacity = '0';
-                card.style.transform = 'scale(0.95)';
-                setTimeout(() => { card.style.display = 'none'; }, 300);
+        window.dismissGreetingCard = function(cardId) {
+            const el = document.getElementById('greeting-card');
+            if (el) {
+                el.style.transition = 'opacity 0.3s, transform 0.3s';
+                el.style.opacity = '0';
+                el.style.transform = 'scale(0.95)';
+                setTimeout(() => { el.style.display = 'none'; }, 300);
             }
-            localStorage.setItem('eid_greeting_dismissed_2026', new Date().toISOString());
-        }
+            localStorage.setItem('greeting_dismissed_' + cardId, String(Date.now()));
+        };
 
         // ==================== BIRTH CONGRATULATIONS ====================
         async function loadBirthData() {

@@ -186,6 +186,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/articles',           // Public articles
     '/api/patient-notifications', // Patient notifications
     '/api/announcements',      // Public announcements
+    '/api/greeting-cards/active', // Greeting cards (active only)
     '/api/fertility-calendar', // Fertility cycle tracking
     '/api/app',                // Mobile app version check
     '/api/app-version',        // App version check for updates
@@ -343,6 +344,10 @@ app.use('/api/billings', billingsRoutes);
 // Patient billing & payment routes
 const patientBillingRoutes = require('./routes/patient-billing');
 app.use('/api/patient-billing', patientBillingRoutes);
+
+// Greeting cards routes
+const greetingCardsRoutes = require('./routes/greeting-cards');
+app.use('/api/greeting-cards', greetingCardsRoutes);
 
 // Announcements routes
 const announcementsRoutes = require('./routes/announcements');
