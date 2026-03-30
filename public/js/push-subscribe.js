@@ -78,13 +78,30 @@
         });
     }
 
-    // Show notification permission banner
+    // Show notification permission prompt (modal or banner)
     function showNotifBanner() {
-        // Wait for DOM ready
         function tryShow() {
-            var banner = document.getElementById('notif-permission-banner');
-            if (banner) {
-                banner.style.display = 'block';
+            // Check if user dismissed modal recently (skip for 7 days)
+            var dismissed = localStorage.getItem('notif_modal_dismissed');
+            if (dismissed) {
+                var dismissedDate = parseInt(dismissed, 10);
+                var daysSince = (Date.now() - dismissedDate) / (1000 * 60 * 60 * 24);
+                if (daysSince < 7) {
+                    // Show inline banner instead of modal
+                    var banner = document.getElementById('notif-permission-banner');
+                    if (banner) banner.style.display = 'block';
+                    return;
+                }
+            }
+
+            // Show modal popup
+            var modal = document.getElementById('notif-permission-modal');
+            if (modal) {
+                modal.style.display = 'block';
+            } else {
+                // Fallback to inline banner if modal doesn't exist
+                var banner = document.getElementById('notif-permission-banner');
+                if (banner) banner.style.display = 'block';
             }
         }
         if (document.readyState === 'loading') {
@@ -94,17 +111,31 @@
         }
     }
 
-    // Request notification permission (called from banner button)
+    // Dismiss modal (user tapped "Nanti saja")
+    window.dismissNotifModal = function() {
+        var modal = document.getElementById('notif-permission-modal');
+        if (modal) modal.style.display = 'none';
+        localStorage.setItem('notif_modal_dismissed', String(Date.now()));
+        // Show inline banner as a subtle reminder
+        var banner = document.getElementById('notif-permission-banner');
+        if (banner) banner.style.display = 'block';
+    };
+
+    // Request notification permission (called from banner or modal button)
     window.requestNotifPermission = function() {
         Notification.requestPermission().then(function(permission) {
             var banner = document.getElementById('notif-permission-banner');
+            var modal = document.getElementById('notif-permission-modal');
             if (permission === 'granted') {
                 console.log(LOG_PREFIX, 'Permission granted by user');
                 if (banner) banner.style.display = 'none';
+                if (modal) modal.style.display = 'none';
+                localStorage.removeItem('notif_modal_dismissed');
                 var token = getToken();
                 if (token) doSubscribe(token);
             } else if (permission === 'denied') {
                 console.log(LOG_PREFIX, 'Permission denied by user');
+                if (modal) modal.style.display = 'none';
                 if (banner) {
                     banner.innerHTML = '<div style="padding:14px 18px;color:#ff6b6b;font-size:13px;">' +
                         '<i class="fa fa-times-circle"></i> Notifikasi diblokir. Buka pengaturan browser untuk mengaktifkan.' +

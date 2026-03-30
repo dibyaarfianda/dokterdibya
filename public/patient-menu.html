@@ -1834,7 +1834,7 @@
                     </div>
                 </div>
 
-                <!-- Notification Permission Banner -->
+                <!-- Notification Permission Banner (inline, kept as fallback) -->
                 <div id="notif-permission-banner" style="display:none; background:linear-gradient(135deg, #1a3a5c, #1e5799); border-radius:12px; padding:16px 18px; margin-bottom:12px; border:1px solid rgba(40,167,233,0.3);">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <div style="width:42px; height:42px; border-radius:50%; background:rgba(40,167,233,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
@@ -1849,6 +1849,50 @@
                         <i class="fa fa-check-circle"></i> Izinkan Notifikasi
                     </button>
                 </div>
+
+                <!-- Notification Permission Modal Popup -->
+                <div id="notif-permission-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">
+                    <div style="position:absolute; bottom:0; left:0; right:0; background:linear-gradient(135deg, #0f1f33, #162d4a); border-radius:20px 20px 0 0; padding:28px 24px 32px; max-width:480px; margin:0 auto; animation:notifSlideUp 0.35s ease-out;">
+                        <div style="width:40px; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin:0 auto 20px;"></div>
+                        <div style="text-align:center; margin-bottom:20px;">
+                            <div style="width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg, #28a7e9, #1e88e5); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; box-shadow:0 4px 20px rgba(40,167,233,0.4);">
+                                <i class="fa fa-bell" style="color:#fff; font-size:28px;"></i>
+                            </div>
+                            <h3 style="color:#fff; font-size:18px; font-weight:700; margin:0 0 8px;">Jangan Lewatkan Info Penting!</h3>
+                            <p style="color:rgba(255,255,255,0.7); font-size:13px; line-height:1.5; margin:0;">Aktifkan notifikasi agar Anda langsung tahu saat:</p>
+                        </div>
+                        <div style="margin-bottom:22px;">
+                            <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                                <i class="fa fa-image" style="color:#8b5cf6; font-size:16px; width:20px; text-align:center;"></i>
+                                <span style="color:rgba(255,255,255,0.85); font-size:13px;">Foto USG tersedia di portal</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                                <i class="fa fa-file-text-o" style="color:#10b981; font-size:16px; width:20px; text-align:center;"></i>
+                                <span style="color:rgba(255,255,255,0.85); font-size:13px;">Resume medis & hasil lab siap dilihat</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                                <i class="fa fa-calendar-check-o" style="color:#f59e0b; font-size:16px; width:20px; text-align:center;"></i>
+                                <span style="color:rgba(255,255,255,0.85); font-size:13px;">Pengingat jadwal kunjungan</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px; padding:10px 0;">
+                                <i class="fa fa-bullhorn" style="color:#ef4444; font-size:16px; width:20px; text-align:center;"></i>
+                                <span style="color:rgba(255,255,255,0.85); font-size:13px;">Pengumuman penting dari klinik</span>
+                            </div>
+                        </div>
+                        <button onclick="requestNotifPermission()" style="width:100%; padding:14px; border:none; border-radius:12px; background:linear-gradient(135deg, #28a7e9, #1e88e5); color:#fff; font-weight:700; font-size:15px; cursor:pointer; font-family:inherit; box-shadow:0 4px 15px rgba(40,167,233,0.4); margin-bottom:10px;">
+                            <i class="fa fa-bell"></i>&nbsp; Aktifkan Notifikasi
+                        </button>
+                        <button onclick="dismissNotifModal()" style="width:100%; padding:12px; border:none; border-radius:12px; background:transparent; color:rgba(255,255,255,0.5); font-size:13px; cursor:pointer; font-family:inherit;">
+                            Nanti saja
+                        </button>
+                    </div>
+                </div>
+                <style>
+                    @keyframes notifSlideUp {
+                        from { transform: translateY(100%); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                </style>
 
                 <!-- Download App Banner (only visible on web browser) -->
                 <div class="download-app-banner" id="download-banner">
