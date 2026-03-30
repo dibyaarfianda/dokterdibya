@@ -86,7 +86,7 @@
             if (dismissed) {
                 var dismissedDate = parseInt(dismissed, 10);
                 var daysSince = (Date.now() - dismissedDate) / (1000 * 60 * 60 * 24);
-                if (daysSince < 7) {
+                if (daysSince < 1) {
                     // Show inline banner instead of modal
                     var banner = document.getElementById('notif-permission-banner');
                     if (banner) banner.style.display = 'block';
