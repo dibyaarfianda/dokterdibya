@@ -1494,7 +1494,7 @@
             margin: 0 auto;
             padding: 8px 12px 10px;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 2px;
         }
 
@@ -1514,9 +1514,9 @@
         .nav-item i { font-size: 18px; }
 
         .nav-item span {
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.08em;
             font-weight: 600;
         }
 
@@ -2067,24 +2067,33 @@
                 <div class="section-title" style="margin-bottom: 12px;">Layanan</div>
                 <div class="menu-grid">
                     <!-- Card 1: Dokumen -->
-                    <div class="menu-card" onclick="navigateTo('rekam-medis')">
+                    <div class="menu-card" onclick="navigateTo('dokumen')">
                         <div class="menu-icon">
-                            <i class="fa-solid fa-file-lines"></i>
+                            <i class="fa-solid fa-folder-open"></i>
                         </div>
                         <h3>Dokumen</h3>
-                        <p>USG, Lab, Riwayat</p>
+                        <p>USG, Lab, Resume</p>
                     </div>
 
                     <!-- Card 2: Aplikasi -->
-                    <div class="menu-card" onclick="navigateTo('kesehatan')">
+                    <div class="menu-card" onclick="navigateTo('aplikasi')">
                         <div class="menu-icon">
-                            <i class="fa-solid fa-heart-pulse"></i>
+                            <i class="fa-solid fa-th-large"></i>
                         </div>
                         <h3>Aplikasi</h3>
-                        <p>Kick Counter, Tracker, Kalender</p>
+                        <p>Tanya Dokter, Monitoring</p>
                     </div>
 
-                    <!-- Card 3: Jadwal -->
+                    <!-- Card 3: Edukasi -->
+                    <div class="menu-card" onclick="navigateTo('edukasi')">
+                        <div class="menu-icon">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <h3>Edukasi</h3>
+                        <p>Perjalanan Ibu, Membaca</p>
+                    </div>
+
+                    <!-- Card 4: Jadwal -->
                     <div class="menu-card" onclick="navigateTo('jadwal')">
                         <div class="menu-icon">
                             <i class="fa-solid fa-calendar-days"></i>
@@ -2093,34 +2102,7 @@
                         <p>Booking, Jadwal RS</p>
                     </div>
 
-                    <!-- Card 4: Edukasi -->
-                    <div class="menu-card" onclick="navigateTo('edukasi')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-book-open"></i>
-                        </div>
-                        <h3>Edukasi</h3>
-                        <p>Ruang Membaca, Perjalanan Ibu</p>
-                    </div>
-
-                    <!-- Card 5: Tanya Dokter -->
-                    <div class="menu-card" onclick="navigateTo('tanya-dokter')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-comments"></i>
-                        </div>
-                        <h3>Tanya Dokter</h3>
-                        <p>Tanya Jawab Privat</p>
-                    </div>
-
-                    <!-- Card 6: Bantuan -->
-                    <div class="menu-card" onclick="navigateTo('bantuan')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-circle-question"></i>
-                        </div>
-                        <h3>Bantuan</h3>
-                        <p>FAQ, Kontak</p>
-                    </div>
-
-                    <!-- Card 7: Tagihan (Trial - hidden by default) -->
+                    <!-- Card 5: Tagihan (Trial - hidden by default) -->
                     <div class="menu-card" id="menu-tagihan" onclick="window.location.href='/patient-billing.html'" style="display:none;">
                         <div class="menu-icon">
                             <i class="fa-solid fa-credit-card"></i>
@@ -2223,15 +2205,18 @@
                 <i class="fa-solid fa-house"></i>
                 <span>Beranda</span>
             </a>
-            <a class="nav-item" onclick="navigateTo('rekam-medis')">
-                <i class="fa-solid fa-file-medical"></i>
+            <a class="nav-item" onclick="navigateTo('dokumen')">
+                <i class="fa-solid fa-folder-open"></i>
                 <span>Dokumen</span>
                 <span class="nav-badge" id="doc-nav-badge">0</span>
             </a>
-            <a href="/notifikasi.html" class="nav-item">
-                <i class="fa-solid fa-bell"></i>
-                <span>Notifikasi</span>
-                <span class="nav-badge" id="notif-nav-badge">0</span>
+            <a class="nav-item" onclick="navigateTo('aplikasi')">
+                <i class="fa-solid fa-th-large"></i>
+                <span>Aplikasi</span>
+            </a>
+            <a class="nav-item" onclick="navigateTo('edukasi')">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Edukasi</span>
             </a>
             <a class="nav-item" onclick="navigateTo('jadwal')">
                 <i class="fa-solid fa-calendar-check"></i>
@@ -2847,59 +2832,41 @@
         // ==================== BOTTOM SHEET MENU DATA ====================
         // FA6 icon mapping applied to all menu items
         const menuData = {
-            'rekam-medis': {
+            'dokumen': {
                 title: 'Dokumen',
-                icon: 'fa-solid fa-file-lines',
+                icon: 'fa-solid fa-folder-open',
                 items: [
                     { icon: 'fa-solid fa-image', label: 'Album USG', href: '/album-usg.html' },
                     { icon: 'fa-solid fa-flask', label: 'Hasil Lab', href: '/hasil-lab.html' },
-                    { icon: 'fa-solid fa-folder-open', label: 'Resume Medis Saya', href: '/dokumen-medis.html' },
-                    { icon: 'fa-solid fa-clock-rotate-left', label: 'Riwayat Medis', href: '/riwayat-medis.html' }
+                    { icon: 'fa-solid fa-file-medical', label: 'Resume Medis Saya', href: '/dokumen-medis.html' }
                 ]
             },
-            'kesehatan': {
+            'aplikasi': {
                 title: 'Aplikasi',
-                icon: 'fa-solid fa-heart-pulse',
+                icon: 'fa-solid fa-th-large',
                 items: [
-                    { icon: 'fa-solid fa-hand', label: 'Kick Counter', href: '/kick-counter.html', badge: 'NEW' },
-                    { icon: 'fa-solid fa-chart-line', label: 'Pregnancy Tracker', href: '/pregnancy-tracker.html' },
+                    { icon: 'fa-solid fa-comments', label: 'Tanya Dokter', href: '/tanya-dokter.html' },
+                    { icon: 'fa-solid fa-hand', label: 'Gerakan Bayi', href: '/kick-counter.html' },
+                    { icon: 'fa-solid fa-chart-line', label: 'Monitoring Kehamilan', href: '/pregnancy-tracker.html' },
                     { icon: 'fa-solid fa-calendar-days', label: 'Kalender Kesuburan', href: '/fertility-calendar.html' },
                     { icon: 'fa-solid fa-kit-medical', label: 'Jadwal Vitamin', href: '/jadwal-vitamin.html' }
-                ]
-            },
-            'jadwal': {
-                title: 'Jadwal',
-                icon: 'fa-solid fa-calendar-days',
-                items: [
-                    { icon: 'fa-solid fa-calendar-check', label: 'Booking Klinik', href: '/booking-klinik.html' },
-                    { icon: 'fa-solid fa-hospital', label: 'Jadwal RS', href: '/jadwal-rs.html' },
-                    { icon: 'fa-solid fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan.html' }
                 ]
             },
             'edukasi': {
                 title: 'Edukasi',
                 icon: 'fa-solid fa-book-open',
                 items: [
-                    { icon: 'fa-solid fa-book-open', label: 'Ruang Membaca', href: '/artikel.html' },
-                    { icon: 'fa-solid fa-heart', label: 'Perjalanan Ibu', href: '/perjalanan-ibu.html' }
+                    { icon: 'fa-solid fa-heart', label: 'Perjalanan Ibu', href: '/perjalanan-ibu.html' },
+                    { icon: 'fa-solid fa-book-open', label: 'Ruang Membaca', href: '/artikel.html' }
                 ]
             },
-            'tanya-dokter': {
-                title: 'Tanya Dokter',
-                icon: 'fa-solid fa-comments',
+            'jadwal': {
+                title: 'Jadwal',
+                icon: 'fa-solid fa-calendar-check',
                 items: [
-                    { icon: 'fa-solid fa-circle-question', label: 'Ajukan Pertanyaan', href: '/tanya-dokter.html#ask' },
-                    { icon: 'fa-solid fa-clock-rotate-left', label: 'Riwayat Tanya Jawab', href: '/tanya-dokter.html#history' },
-                    { icon: 'fa-solid fa-star', label: 'Upgrade Premium', href: '#', comingSoon: true }
-                ]
-            },
-            'bantuan': {
-                title: 'Bantuan',
-                icon: 'fa-solid fa-circle-question',
-                items: [
-                    { icon: 'fa-solid fa-circle-question', label: 'FAQ', href: '/bantuan.html' },
-                    { icon: 'fa-brands fa-whatsapp', label: 'Hubungi Kami', href: 'https://wa.me/62895320726801' },
-                    { icon: 'fa-solid fa-rotate', label: 'Cek Pembaruan', href: '#', onclick: 'checkForAppUpdates()' }
+                    { icon: 'fa-solid fa-calendar-check', label: 'Booking Klinik Minggu', href: '/booking-klinik.html' },
+                    { icon: 'fa-solid fa-hospital', label: 'Jadwal Rumah Sakit', href: '/jadwal-rs.html' },
+                    { icon: 'fa-solid fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan.html' }
                 ]
             }
         };
