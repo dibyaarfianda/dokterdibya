@@ -2115,15 +2115,6 @@
             }
         }
 
-        /* ========== CAPACITOR / MOBILE: DISABLE HEAVY ANIMATIONS ========== */
-        /* Whitelist: .menu-card, .menu-icon, .cta-btn keep their transitions */
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc),
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc)::before,
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc)::after {
-            animation: none !important;
-            animation-duration: 0s !important;
-            transition: none !important;
-        }
     </style>
 
     <!-- Socket.io for real-time announcements -->
@@ -2133,12 +2124,6 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 </head>
 <body>
-    <!-- Detect Capacitor/Mobile and disable animations -->
-    <script>
-        if (window.Capacitor || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            document.body.classList.add('capacitor-app');
-        }
-    </script>
 
     <!-- Grid Background -->
     <div class="grid-bg" aria-hidden="true"></div>
@@ -3536,7 +3521,7 @@
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
             var STICKY_OFFSET = 90;
-            var PAD_MIN_PX = 14; // collapsed padding
+            var PAD_MIN_PX = 30; // collapsed padding
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
@@ -3575,7 +3560,8 @@
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
             var SEGMENT = 200;   // px of scroll budget per row
             var PAD_MAX = 20;
-            var PAD_MIN = 14;
+            var PAD_MIN = 30;
+            var WIPE_HOLD_PX = 20;
             var ticking = false;
             var metricsReady = false;
 
@@ -3637,10 +3623,14 @@
                         // Before section trigger: all expanded
                         activeIndex = -1;
                         localP = 0;
-                    } else if (scrollY > sd.endY) {
-                        // Past section end: all collapsible rows collapsed
+                    } else if (scrollY > sd.endY + WIPE_HOLD_PX) {
+                        // Past section end + hold: all collapsible rows collapsed
                         activeIndex = count;
                         localP = 0;
+                    } else if (scrollY > sd.endY) {
+                        // Hold zone: freeze at last row fully collapsed
+                        activeIndex = count - 1;
+                        localP = 1;
                     } else {
                         // Active window: sequential collapse
                         activeIndex = Math.min(count - 1, Math.floor(total / SEGMENT));
