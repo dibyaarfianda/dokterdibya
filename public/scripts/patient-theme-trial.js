@@ -1,136 +1,123 @@
+/**
+ * Patient Portal — Trial Theme Router
+ *
+ * Parallel route set: every old page can have a -trial.html counterpart.
+ * Only pages listed in TRIAL_ROUTES get redirected; the rest stay on the
+ * old page (with optional lightweight CSS override).
+ *
+ * Activate:   ?theme=newdesign   (sticky per tab via sessionStorage)
+ * Deactivate: ?theme=off | ?theme=old | ?theme=default
+ */
 (function () {
-    var KEY = 'patient_portal_theme_mode';
-    var MODE_NEW = 'newdesign';
-    var currentUrl = new URL(window.location.href);
-    var modeFromUrl = currentUrl.searchParams.get('theme');
-    var activeMode = null;
+    'use strict';
 
-    function safeSetMode(value) {
-        try {
-            if (value) {
-                sessionStorage.setItem(KEY, value);
-            } else {
-                sessionStorage.removeItem(KEY);
-            }
-        } catch (e) {
-            // Ignore storage errors in private/incognito contexts.
-        }
+    var KEY  = 'patient_portal_theme_mode';
+    var MODE = 'newdesign';
+
+    // ---- Centralized route map (old ↔ trial) ----
+    // Add entries here as new trial pages are created.
+    var TRIAL_ROUTES = {
+        '/patient-menu.html':   '/patient-menu-trial.html',
+        '/profil.html':         '/profil-trial.html',
+        '/notifikasi.html':     '/notifikasi-trial.html',
+        '/album-usg.html':      '/album-usg-trial.html',
+        '/dokumen-medis.html':  '/dokumen-medis-trial.html',
+        '/booking-klinik.html': '/booking-klinik-trial.html'
+    };
+
+    // Build reverse map (trial → old)
+    var REVERSE = {};
+    for (var old in TRIAL_ROUTES) {
+        REVERSE[TRIAL_ROUTES[old]] = old;
     }
 
-    function safeGetMode() {
-        try {
-            return sessionStorage.getItem(KEY);
-        } catch (e) {
-            return null;
-        }
-    }
+    // ---- Helpers ----
+    function set(v) { try { v ? sessionStorage.setItem(KEY, v) : sessionStorage.removeItem(KEY); } catch(e){} }
+    function get()  { try { return sessionStorage.getItem(KEY); } catch(e){ return null; } }
 
-    // Explicit URL controls for switching modes during QA.
-    if (modeFromUrl === MODE_NEW) {
-        safeSetMode(MODE_NEW);
-    } else if (modeFromUrl === 'default' || modeFromUrl === 'old' || modeFromUrl === 'off') {
-        safeSetMode(null);
-    }
+    // ---- Read / write mode from URL ----
+    var params    = new URLSearchParams(window.location.search);
+    var fromUrl   = params.get('theme');
 
-    activeMode = safeGetMode();
+    if (fromUrl === MODE)                                         set(MODE);
+    else if (fromUrl === 'off' || fromUrl === 'old' || fromUrl === 'default') set(null);
 
-    // ---- Dashboard redirect: patient-menu.html <-> patient-menu-trial.html ----
+    var active   = get() === MODE;
     var pathname = window.location.pathname;
-    var isOldDashboard = pathname === '/patient-menu.html' || pathname === '/patient-menu';
-    var isTrialDashboard = pathname === '/patient-menu-trial.html' || pathname === '/patient-menu-trial';
 
-    // On old dashboard with trial active -> redirect to trial dashboard
-    if (isOldDashboard && activeMode === MODE_NEW) {
-        // Preserve any non-theme query params (like token)
-        var params = new URLSearchParams(window.location.search);
-        params.delete('theme');
-        var qs = params.toString();
-        window.location.replace('/patient-menu-trial.html' + (qs ? '?' + qs : '') + window.location.hash);
+    // ---- Redirect logic ----
+    // Strip theme param, keep the rest (token, etc.)
+    function buildQS() {
+        var p = new URLSearchParams(window.location.search);
+        p.delete('theme');
+        var s = p.toString();
+        return s ? '?' + s : '';
+    }
+
+    // On an OLD page that has a trial counterpart → redirect to trial
+    if (active && TRIAL_ROUTES[pathname]) {
+        window.location.replace(TRIAL_ROUTES[pathname] + buildQS() + window.location.hash);
+        return;                                // stop further execution
+    }
+
+    // On a TRIAL page while trial is OFF → redirect to old counterpart
+    if (!active && REVERSE[pathname]) {
+        window.location.replace(REVERSE[pathname] + buildQS() + window.location.hash);
         return;
     }
 
-    // On trial dashboard with trial OFF -> redirect to old dashboard
-    if (isTrialDashboard && activeMode !== MODE_NEW) {
-        window.location.replace('/patient-menu.html');
-        return;
-    }
+    // Trial is OFF and we're on a normal page → nothing to do
+    if (!active) return;
 
-    // If trial is not active, stop here (no CSS injection, no link rewriting)
-    if (activeMode !== MODE_NEW) {
-        return;
-    }
+    // ---- We are in trial mode on a page (trial or old-without-counterpart) ----
+    var isTrialPage = !!REVERSE[pathname];
 
-    // ---- For non-dashboard pages: apply lightweight CSS override ----
-    if (!isTrialDashboard) {
+    // For old pages that have NO trial counterpart: apply lightweight CSS
+    if (!isTrialPage) {
         document.documentElement.classList.add('trial-newdesign-theme');
+        function applyBody() { if (document.body) document.body.classList.add('trial-newdesign-theme'); }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyBody, { once: true });
+        else applyBody();
 
-        function applyThemeClass() {
-            if (document.body) {
-                document.body.classList.add('trial-newdesign-theme');
-            }
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', applyThemeClass, { once: true });
-        } else {
-            applyThemeClass();
-        }
-
-        // Inject trial stylesheet for non-dashboard pages
         if (!document.getElementById('patient-theme-trial-css')) {
             var css = document.createElement('link');
-            css.id = 'patient-theme-trial-css';
+            css.id  = 'patient-theme-trial-css';
             css.rel = 'stylesheet';
             css.href = '/styles/patient-portal-newdesign-trial.css';
             document.head.appendChild(css);
         }
-
-        // Inject Inter font
         if (!document.getElementById('patient-theme-trial-font')) {
             var font = document.createElement('link');
-            font.id = 'patient-theme-trial-font';
+            font.id  = 'patient-theme-trial-font';
             font.rel = 'stylesheet';
             font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
             document.head.appendChild(font);
         }
     }
 
-    // ---- Keep the mode sticky when navigating via anchor links ----
-    document.addEventListener('click', function (event) {
-        var target = event.target;
-        if (!target) {
-            return;
-        }
-
-        var link = target.closest ? target.closest('a[href]') : null;
-        if (!link) {
-            return;
-        }
+    // ---- Link rewriter: keep navigation inside trial route set ----
+    document.addEventListener('click', function (e) {
+        var link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!link) return;
 
         var href = link.getAttribute('href');
-        if (!href || href.startsWith('javascript:') || href.startsWith('#')) {
-            return;
-        }
+        if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
 
         try {
-            var parsed = new URL(link.href, window.location.origin);
-            if (parsed.origin !== window.location.origin) {
+            var u = new URL(link.href, window.location.origin);
+            if (u.origin !== window.location.origin) return;
+
+            // If the link points to an old page that has a trial counterpart → rewrite
+            if (TRIAL_ROUTES[u.pathname]) {
+                link.href = TRIAL_ROUTES[u.pathname] + u.search + u.hash;
                 return;
             }
 
-            // Redirect patient-menu.html links to trial version
-            if (parsed.pathname === '/patient-menu.html') {
-                link.href = '/patient-menu-trial.html' + parsed.search + parsed.hash;
-                return;
+            // Otherwise append theme param so the target page stays in trial
+            if (u.pathname.endsWith('.html') && !REVERSE[u.pathname]) {
+                u.searchParams.set('theme', MODE);
+                link.href = u.pathname + u.search + u.hash;
             }
-
-            // For other .html pages, append theme param for session continuity
-            if (parsed.pathname.endsWith('.html')) {
-                parsed.searchParams.set('theme', MODE_NEW);
-                link.href = parsed.pathname + parsed.search + parsed.hash;
-            }
-        } catch (e) {
-            // Ignore malformed URLs to avoid breaking navigation.
-        }
+        } catch (ex) { /* ignore malformed */ }
     }, true);
 })();
