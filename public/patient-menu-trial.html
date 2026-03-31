@@ -1276,6 +1276,7 @@
             margin: 0;
             overflow: hidden;
             grid-column: 2;
+            transition: opacity 180ms linear, max-height 180ms linear;
         }
 
         @media (max-width: 600px) {
@@ -2106,9 +2107,9 @@
         /* ========== REDUCED MOTION ========== */
         /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card = interactive cards exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
@@ -2116,9 +2117,9 @@
 
         /* ========== CAPACITOR / MOBILE: DISABLE HEAVY ANIMATIONS ========== */
         /* Whitelist: .menu-card, .menu-icon, .cta-btn keep their transitions */
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row),
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::before,
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::after {
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc),
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc)::before,
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc)::after {
             animation: none !important;
             animation-duration: 0s !important;
             transition: none !important;
@@ -3535,7 +3536,7 @@
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
             var STICKY_OFFSET = 90;
-            var PAD_MIN_PX = 8; // collapsed padding
+            var PAD_MIN_PX = 14; // collapsed padding
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
@@ -3574,7 +3575,7 @@
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
             var SEGMENT = 200;   // px of scroll budget per row
             var PAD_MAX = 20;
-            var PAD_MIN = 8;
+            var PAD_MIN = 14;
             var ticking = false;
             var metricsReady = false;
 
@@ -3653,8 +3654,8 @@
                         else if (i === activeIndex)    p = localP; // animating
                         else                           p = 0; // untouched
 
-                        // Desc fade: accelerated — finishes at p=0.7
-                        var fadeP = Math.max(0, Math.min(1, p / 0.7));
+                        // Desc fade: gradual — starts at p=0.05, finishes at p=0.9
+                        var fadeP = Math.max(0, Math.min(1, (p - 0.05) / 0.85));
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
