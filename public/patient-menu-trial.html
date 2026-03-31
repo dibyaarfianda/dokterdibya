@@ -371,7 +371,7 @@
         }
 
         .section-title {
-            padding-top: 50px;
+            padding-top: 70px;
             padding-bottom: 12px;
             font-size: 11px;
             font-weight: 600;
@@ -577,8 +577,8 @@
             background: var(--accent);
             border-radius: 0;
             padding: 32px 24px;
-            margin-top: 50px;
-            margin-bottom: 50px;
+            margin-top: 70px;
+            margin-bottom: 70px;
             text-align: center;
             cursor: pointer;
         }
@@ -1039,7 +1039,7 @@
         /* ========== MENU GRID ========== */
         /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
         .doc-section {
-            padding-top: 50px;
+            padding-top: 70px;
             text-align: center;
         }
 
@@ -1203,7 +1203,7 @@
 
         /* ========== JADWAL SECTION (Flair PROCES layout) ========== */
         .proces-section {
-            padding-top: 50px;
+            padding-top: 70px;
         }
 
         .proces-header {
@@ -3531,44 +3531,58 @@
         })();
 
         // ==================== SCROLL COLLAPSE — Flair PROCES ====================
+        // Rows that scroll past viewport center collapse: desc+step fade out,
+        // row height shrinks to title-only. Middle rows collapse to 0 entirely.
         (function() {
-            var rows = Array.from(document.querySelectorAll('.proces-row'));
-            if (!rows.length) return;
-
-            // Store original heights
-            var data = rows.map(function(row) {
-                var desc = row.querySelector('.proces-desc');
-                var step = row.querySelector('.proces-step');
-                return { row: row, desc: desc, step: step, fullPad: 32, collapsedPad: 12 };
-            });
+            var sections = document.querySelectorAll('.proces-section');
+            if (!sections.length) return;
 
             var ticking = false;
 
             function onScroll() {
                 var viewH = window.innerHeight;
-                var trigger = viewH * 0.35; // row starts collapsing when top hits 35% from top
+                var centerY = viewH * 0.45;
 
-                data.forEach(function(d) {
-                    var rect = d.row.getBoundingClientRect();
+                sections.forEach(function(section) {
+                    var rows = Array.from(section.querySelectorAll('.proces-row'));
+                    var dividers = Array.from(section.querySelectorAll('.proces-divider'));
 
-                    // How far the row top has scrolled above the trigger line
-                    // 0 = at trigger, 1 = fully past (collapsed)
-                    var progress = Math.max(0, Math.min(1, (trigger - rect.top) / (viewH * 0.25)));
+                    rows.forEach(function(row, i) {
+                        var rect = row.getBoundingClientRect();
+                        var desc = row.querySelector('.proces-desc');
+                        var step = row.querySelector('.proces-step');
+                        var nextDivider = dividers[i + 1]; // divider after this row
 
-                    // Interpolate padding
-                    var pad = d.fullPad - (d.fullPad - d.collapsedPad) * progress;
-                    d.row.style.paddingTop = pad + 'px';
-                    d.row.style.paddingBottom = pad + 'px';
+                        // Progress: 0 = row at/below center, 1 = row fully above center
+                        var p = Math.max(0, Math.min(1, (centerY - rect.top) / (viewH * 0.3)));
 
-                    // Fade out description and step label
-                    if (d.desc) d.desc.style.opacity = 1 - progress;
-                    if (d.step) d.step.style.opacity = 1 - progress;
+                        // Description: fade + collapse
+                        if (desc) {
+                            desc.style.opacity = 1 - p;
+                            desc.style.maxHeight = ((1 - p) * 80) + 'px';
+                            desc.style.marginTop = ((1 - p) * 4) + 'px';
+                            desc.style.overflow = 'hidden';
+                        }
 
-                    // Collapse description height
-                    if (d.desc) {
-                        d.desc.style.maxHeight = (1 - progress) * 80 + 'px';
-                        d.desc.style.overflow = 'hidden';
-                    }
+                        // Step label: fade
+                        if (step) {
+                            step.style.opacity = 1 - p;
+                        }
+
+                        // Row padding: 32 → 8
+                        var pad = 32 - (24 * p);
+                        row.style.paddingTop = pad + 'px';
+                        row.style.paddingBottom = pad + 'px';
+
+                        // Grid: collapse from 3-col to title-only
+                        if (p > 0.8) {
+                            row.style.gridTemplateColumns = '1fr';
+                            row.style.gap = '0px';
+                        } else {
+                            row.style.gridTemplateColumns = '';
+                            row.style.gap = '';
+                        }
+                    });
                 });
 
                 ticking = false;
@@ -3581,7 +3595,6 @@
                 }
             }, { passive: true });
 
-            // Initial call
             onScroll();
         })();
 
