@@ -1224,9 +1224,9 @@
 
         .proces-row {
             display: grid;
-            grid-template-columns: 50px 1fr 1fr;
-            gap: 16px;
-            align-items: start;
+            grid-template-columns: 50px 1fr 1.2fr;
+            gap: 20px;
+            align-items: center;
             padding: 28px 0;
             text-decoration: none;
             color: inherit;
@@ -1240,7 +1240,6 @@
         .proces-row:hover { opacity: 0.7; }
         .proces-row:active { opacity: 0.5; }
 
-        /* Last row: NOT sticky, wipes everything above */
         .proces-row.proces-wiper {
             position: relative;
             z-index: 5;
@@ -1252,7 +1251,7 @@
             font-weight: 600;
             color: var(--text-muted);
             white-space: nowrap;
-            padding-top: 6px;
+            margin: 0;
         }
 
         .proces-title {
@@ -1262,21 +1261,22 @@
             text-transform: uppercase;
             letter-spacing: -0.01em;
             line-height: 1.2;
+            margin: 0;
         }
 
         .proces-desc {
             font-size: 13px;
             color: var(--text-secondary);
             line-height: 1.6;
-            max-width: 300px;
+            margin: 0;
             overflow: hidden;
         }
 
         @media (max-width: 600px) {
             .proces-row {
                 grid-template-columns: 40px 1fr;
-                gap: 10px;
-                padding: 20px 0;
+                gap: 12px;
+                padding: 22px 0;
             }
             .proces-desc { grid-column: 1 / -1; }
             .proces-title { font-size: 18px; }
