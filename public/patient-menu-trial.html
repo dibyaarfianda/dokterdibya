@@ -1265,34 +1265,14 @@
             max-width: 300px;
         }
 
-        /* Scroll animation — Flair PROCES: reveal + highlight active row */
-        .proces-reveal {
-            opacity: 0.001;
-            transform: translateY(-20px);
-            transition: opacity 0.4s cubic-bezier(0.44, 0, 0.56, 1),
-                        transform 0.4s cubic-bezier(0.44, 0, 0.56, 1);
+        /* Scroll-driven collapse — Flair PROCES style */
+        .proces-row {
+            overflow: hidden;
         }
 
-        .proces-reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Passed rows: description fades out */
-        .proces-reveal.passed .proces-desc {
-            opacity: 0.25;
-            transition: opacity 0.5s ease;
-        }
-
-        .proces-reveal.passed .proces-step {
-            opacity: 0.4;
-            transition: opacity 0.5s ease;
-        }
-
-        /* Active row: everything full */
-        .proces-reveal .proces-desc,
-        .proces-reveal .proces-step {
-            transition: opacity 0.5s ease;
+        .proces-desc,
+        .proces-step {
+            transition: opacity 0.3s ease;
         }
 
 
@@ -2514,21 +2494,21 @@
                     <div class="proces-header">JADWAL</div>
                     <div class="proces-divider"></div>
 
-                    <a href="/booking-klinik-trial.html" class="proces-row proces-reveal">
+                    <a href="/booking-klinik-trial.html" class="proces-row">
                         <span class="proces-step">Langkah 1</span>
                         <h3 class="proces-title">BOOKING KLINIK MINGGU</h3>
                         <p class="proces-desc">Pesan slot konsultasi dengan dr. Dibya setiap hari Minggu. Pilih waktu, konfirmasi, dan datang sesuai jadwal.</p>
                     </a>
                     <div class="proces-divider"></div>
 
-                    <a href="/jadwal-rs.html" class="proces-row proces-reveal">
+                    <a href="/jadwal-rs.html" class="proces-row">
                         <span class="proces-step">Langkah 2</span>
                         <h3 class="proces-title">JADWAL RUMAH SAKIT</h3>
                         <p class="proces-desc">Lihat jadwal praktik dr. Dibya di berbagai rumah sakit. Rencanakan kunjungan Anda dengan mudah.</p>
                     </a>
                     <div class="proces-divider"></div>
 
-                    <a href="/riwayat-kunjungan.html" class="proces-row proces-reveal">
+                    <a href="/riwayat-kunjungan.html" class="proces-row">
                         <span class="proces-step">Langkah 3</span>
                         <h3 class="proces-title">RIWAYAT KUNJUNGAN</h3>
                         <p class="proces-desc">Rekam jejak setiap kunjungan Anda — tanggal, lokasi, dan catatan medis tersimpan rapi.</p>
@@ -3534,42 +3514,59 @@
             }
         })();
 
-        // ==================== SCROLL ANIMATION — Flair PROCES ====================
+        // ==================== SCROLL COLLAPSE — Flair PROCES ====================
         (function() {
-            var rows = Array.from(document.querySelectorAll('.proces-reveal'));
+            var rows = Array.from(document.querySelectorAll('.proces-row'));
             if (!rows.length) return;
 
-            // Phase 1: Initial reveal with stagger
-            var staggerIdx = 0;
-            var revealObserver = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.style.transitionDelay = (staggerIdx * 0.1) + 's';
-                        entry.target.classList.add('visible');
-                        revealObserver.unobserve(entry.target);
-                        staggerIdx++;
-                    }
-                });
-            }, { threshold: 0.15 });
-            rows.forEach(function(r) { revealObserver.observe(r); });
+            // Store original heights
+            var data = rows.map(function(row) {
+                var desc = row.querySelector('.proces-desc');
+                var step = row.querySelector('.proces-step');
+                return { row: row, desc: desc, step: step, fullPad: 32, collapsedPad: 12 };
+            });
 
-            // Phase 2: Active highlight — track which row is in center viewport
-            var activeObserver = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        // Mark this as active, everything above as passed
-                        var thisIdx = rows.indexOf(entry.target);
-                        rows.forEach(function(r, i) {
-                            if (i < thisIdx) {
-                                r.classList.add('passed');
-                            } else {
-                                r.classList.remove('passed');
-                            }
-                        });
+            var ticking = false;
+
+            function onScroll() {
+                var viewH = window.innerHeight;
+                var trigger = viewH * 0.35; // row starts collapsing when top hits 35% from top
+
+                data.forEach(function(d) {
+                    var rect = d.row.getBoundingClientRect();
+
+                    // How far the row top has scrolled above the trigger line
+                    // 0 = at trigger, 1 = fully past (collapsed)
+                    var progress = Math.max(0, Math.min(1, (trigger - rect.top) / (viewH * 0.25)));
+
+                    // Interpolate padding
+                    var pad = d.fullPad - (d.fullPad - d.collapsedPad) * progress;
+                    d.row.style.paddingTop = pad + 'px';
+                    d.row.style.paddingBottom = pad + 'px';
+
+                    // Fade out description and step label
+                    if (d.desc) d.desc.style.opacity = 1 - progress;
+                    if (d.step) d.step.style.opacity = 1 - progress;
+
+                    // Collapse description height
+                    if (d.desc) {
+                        d.desc.style.maxHeight = (1 - progress) * 80 + 'px';
+                        d.desc.style.overflow = 'hidden';
                     }
                 });
-            }, { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' });
-            rows.forEach(function(r) { activeObserver.observe(r); });
+
+                ticking = false;
+            }
+
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    requestAnimationFrame(onScroll);
+                    ticking = true;
+                }
+            }, { passive: true });
+
+            // Initial call
+            onScroll();
         })();
 
         // ==================== PULL TO REFRESH ====================
