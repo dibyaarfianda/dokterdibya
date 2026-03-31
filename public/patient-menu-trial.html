@@ -3550,23 +3550,32 @@
                 });
             });
 
-            // Scroll handler: sequential collapse — row N waits for row N-1 to finish
+            // Scroll handler: sequential collapse based on section scroll offset.
+            // Each row gets 150px of scroll travel to collapse. Row N starts only
+            // after row N-1 finishes its 150px.
+            var TRAVEL = 150; // px of scroll per row collapse
             var ticking = false;
+
+            // Record each section's trigger point (top of section reaches sticky offset)
+            var sectionData = [];
+            sections.forEach(function(section) {
+                var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
+                sectionData.push({ el: section, rows: rows });
+            });
+
             function onScroll() {
-                sections.forEach(function(section) {
-                    var rows = Array.from(section.querySelectorAll('.proces-row'));
-                    var prevDone = true; // first row can always start
+                var scrollY = window.scrollY;
 
-                    rows.forEach(function(row, i) {
-                        if (row.classList.contains('proces-wiper')) return;
+                sectionData.forEach(function(sd) {
+                    // Section top in document coordinates
+                    var sectionTop = sd.el.getBoundingClientRect().top + scrollY;
+                    // Scroll past the section start (accounting for sticky offset + header)
+                    var scrollIntoSection = scrollY - sectionTop + window.innerHeight * 0.5;
 
-                        var rect = row.getBoundingClientRect();
-                        var stickyTop = parseFloat(row.style.top) || 0;
-                        var distFromStuck = rect.top - stickyTop;
-                        var rawP = Math.max(0, Math.min(1, 1 - (distFromStuck / 120)));
-
-                        // Only allow collapse if previous row is fully collapsed
-                        var p = prevDone ? rawP : 0;
+                    sd.rows.forEach(function(row, i) {
+                        // This row's collapse zone: starts at i*TRAVEL, ends at (i+1)*TRAVEL
+                        var rowStart = i * TRAVEL;
+                        var p = Math.max(0, Math.min(1, (scrollIntoSection - rowStart) / TRAVEL));
 
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
@@ -3577,9 +3586,6 @@
                         var pad = 28 - (20 * p);
                         row.style.paddingTop = pad + 'px';
                         row.style.paddingBottom = pad + 'px';
-
-                        // This row is "done" when fully collapsed
-                        prevDone = (p >= 1);
                     });
                 });
                 ticking = false;
