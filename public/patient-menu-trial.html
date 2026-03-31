@@ -1037,6 +1037,164 @@
         }
 
         /* ========== MENU GRID ========== */
+        /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
+        .doc-section {
+            padding-top: 50px;
+            text-align: center;
+        }
+
+        .doc-heading {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .doc-sub {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            max-width: 360px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .doc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 24px;
+            text-align: left;
+        }
+
+        .doc-card {
+            border: 1px solid var(--line-soft);
+            border-radius: var(--radius);
+            background: var(--bg-surface);
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        box-shadow 0.25s ease,
+                        border-color 0.25s ease;
+            will-change: transform;
+        }
+
+        .doc-card:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            border-color: var(--line-strong);
+            z-index: 10;
+        }
+
+        .doc-card:active {
+            transform: scale(0.97);
+            transition: transform 0.1s ease;
+        }
+
+        /* Main card (Album USG) — tall, fills left column */
+        .doc-card-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .doc-card-thumb {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background: var(--bg-elevated);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .doc-card-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .doc-card-previews {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+        }
+
+        .doc-preview-slot {
+            flex: 1;
+            aspect-ratio: 16 / 10;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .doc-preview-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .doc-card-label {
+            padding: 10px 12px 14px;
+        }
+
+        .doc-card-label h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .doc-card-label p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Side cards (Hasil Lab, Resume Medis) — stacked right */
+        .doc-col-right {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .doc-card-side {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+        }
+
+        .doc-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-elevated);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+
+        .doc-card-side .doc-card-label {
+            padding: 0;
+        }
+
+        @media (max-width: 420px) {
+            .doc-grid {
+                grid-template-columns: 1fr;
+            }
+            .doc-heading {
+                font-size: 22px;
+            }
+        }
+
         .menu-container {
             padding: 0 0 16px;
         }
@@ -2153,19 +2311,41 @@
             <div class="menu-container">
 
                 <!-- DOKUMEN -->
-                <div class="section-title">Dokumen</div>
-                <div class="menu-grid">
-                    <div class="menu-card" onclick="window.location.href='/album-usg-trial.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-image"></i></div>
-                        <h3>Album USG</h3>
-                    </div>
-                    <div class="menu-card" onclick="window.location.href='/hasil-lab.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-flask"></i></div>
-                        <h3>Hasil Lab</h3>
-                    </div>
-                    <div class="menu-card" onclick="window.location.href='/dokumen-medis-trial.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-file-medical"></i></div>
-                        <h3>Resume Medis</h3>
+                <div class="doc-section">
+                    <h2 class="doc-heading">Arsip Penting Milik Anda</h2>
+                    <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis — tersimpan aman, bisa diakses kapan saja.</p>
+                    <div class="doc-grid">
+                        <!-- Kolom kiri: Album USG besar -->
+                        <div class="doc-card doc-card-main" onclick="window.location.href='/album-usg-trial.html'">
+                            <div class="doc-card-thumb" id="usg-thumb-main">
+                                <i class="fa-solid fa-image" style="font-size:48px;color:var(--text-muted);"></i>
+                            </div>
+                            <div class="doc-card-previews" id="usg-thumb-previews">
+                                <div class="doc-preview-slot"><i class="fa-solid fa-image" style="font-size:14px;color:var(--text-muted);"></i></div>
+                                <div class="doc-preview-slot"><i class="fa-solid fa-image" style="font-size:14px;color:var(--text-muted);"></i></div>
+                            </div>
+                            <div class="doc-card-label">
+                                <h3>Album USG</h3>
+                                <p>Foto USG kehamilan Anda</p>
+                            </div>
+                        </div>
+                        <!-- Kolom kanan: 2 baris -->
+                        <div class="doc-col-right">
+                            <div class="doc-card doc-card-side" onclick="window.location.href='/hasil-lab.html'">
+                                <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
+                                <div class="doc-card-label">
+                                    <h3>Hasil Lab</h3>
+                                    <p>Laporan laboratorium</p>
+                                </div>
+                            </div>
+                            <div class="doc-card doc-card-side" onclick="window.location.href='/dokumen-medis-trial.html'">
+                                <div class="doc-card-icon"><i class="fa-solid fa-file-medical"></i></div>
+                                <div class="doc-card-label">
+                                    <h3>Resume Medis</h3>
+                                    <p>Catatan medis Anda</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3147,6 +3327,48 @@
                 toast.style.opacity = '0';
             }, 2000);
         }
+
+        // ==================== USG THUMBNAIL PREVIEW ====================
+        (function() {
+            var token = getToken();
+            if (!token) return;
+            fetch('/api/patient-documents/my-documents?_t=' + Date.now(), {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.success || !data.documents) return;
+                var usg = data.documents.filter(function(d) { return d.type === 'usg'; });
+                if (usg.length === 0) return;
+
+                // Main thumbnail
+                var main = document.getElementById('usg-thumb-main');
+                if (main && usg[0] && usg[0].thumbnail_url) {
+                    var img = document.createElement('img');
+                    img.src = usg[0].thumbnail_url;
+                    img.alt = 'USG';
+                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                    main.innerHTML = '';
+                    main.appendChild(img);
+                }
+
+                // Preview slots
+                var previews = document.getElementById('usg-thumb-previews');
+                if (previews) {
+                    var slots = previews.querySelectorAll('.doc-preview-slot');
+                    for (var i = 0; i < slots.length && i + 1 < usg.length; i++) {
+                        if (usg[i + 1] && usg[i + 1].thumbnail_url) {
+                            var pimg = document.createElement('img');
+                            pimg.src = usg[i + 1].thumbnail_url;
+                            pimg.alt = 'USG';
+                            slots[i].innerHTML = '';
+                            slots[i].appendChild(pimg);
+                        }
+                    }
+                }
+            })
+            .catch(function() {});
+        })();
 
         // ==================== MENU CARD NEIGHBOR EFFECT ====================
         (function() {
