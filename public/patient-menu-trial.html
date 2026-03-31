@@ -3646,7 +3646,7 @@
                         else                           p = 0; // untouched
 
                         // Desc fade: gradual — starts at p=0.05, finishes at p=0.9
-                        var fadeP = Math.max(0, Math.min(1, (p - 0.05) / 0.85));
+                        var fadeP = Math.max(0, Math.min(1, p / 0.65));
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
