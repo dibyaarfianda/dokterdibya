@@ -602,40 +602,26 @@
         .cta-btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             padding: 12px 28px;
             background: #ffffff;
             color: var(--accent);
             font-size: 13px;
             font-weight: 700;
-            border-radius: 50px;
+            border-radius: 10px;
             border: none;
             cursor: pointer;
             font-family: var(--font-main);
             letter-spacing: 0.02em;
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        box-shadow 0.3s ease,
-                        background 0.2s ease;
-        }
-
-        .cta-btn::after {
-            content: '→';
-            display: inline-block;
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .cta-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
-        }
-
-        .cta-btn:hover::after {
-            transform: translateX(4px);
+            background: #e5e5e5;
         }
 
         .cta-btn:active {
-            transform: scale(0.98);
-            box-shadow: none;
+            transform: scale(0.95);
         }
 
         /* ========== WELCOME SECTION ========== */
