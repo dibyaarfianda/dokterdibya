@@ -1074,6 +1074,10 @@
             transition: transform 0.1s ease;
         }
 
+        .menu-card.neighbor {
+            transform: scale(1.03);
+        }
+
         .menu-icon {
             width: 48px;
             height: 48px;
@@ -3119,6 +3123,39 @@
                 toast.style.opacity = '0';
             }, 2000);
         }
+
+        // ==================== MENU CARD NEIGHBOR EFFECT ====================
+        (function() {
+            var grid = document.querySelector('.menu-grid');
+            if (!grid) return;
+            var cards = Array.from(grid.querySelectorAll('.menu-card'));
+            var cols = 2; // 2-column grid
+
+            function clearNeighbors() {
+                cards.forEach(function(c) { c.classList.remove('neighbor'); });
+            }
+
+            cards.forEach(function(card, i) {
+                card.addEventListener('mouseenter', function() {
+                    clearNeighbors();
+                    var row = Math.floor(i / cols);
+                    var col = i % cols;
+                    // right neighbor (same row)
+                    if (col + 1 < cols && cards[i + 1]) cards[i + 1].classList.add('neighbor');
+                    // left neighbor (same row)
+                    if (col - 1 >= 0 && cards[i - 1]) cards[i - 1].classList.add('neighbor');
+                    // below
+                    if (cards[i + cols]) cards[i + cols].classList.add('neighbor');
+                    // above
+                    if (cards[i - cols]) cards[i - cols].classList.add('neighbor');
+                });
+                card.addEventListener('mouseleave', function() {
+                    clearNeighbors();
+                });
+            });
+
+            grid.addEventListener('mouseleave', clearNeighbors);
+        })();
 
         // ==================== PULL TO REFRESH ====================
         let touchStartY = 0;
