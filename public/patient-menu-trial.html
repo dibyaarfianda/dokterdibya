@@ -3551,50 +3551,94 @@
             });
 
             // Strict sequential collapse — segmented scroll timeline.
-            // Only ONE row animates at a time. Row N must reach p=1 before Row N+1 starts.
+            // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
             var SEGMENT = 200;   // px of scroll budget per row
             var PAD_MAX = 28;
             var PAD_MIN = 8;
             var ticking = false;
+            var metricsReady = false;
 
             var sectionData = [];
             sections.forEach(function(section) {
                 var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
-                // Cache section offset (document-relative)
-                var rect = section.getBoundingClientRect();
-                var startY = rect.top + window.scrollY + rect.height * 0.3; // trigger point
-                sectionData.push({ rows: rows, startY: startY });
+                sectionData.push({ el: section, rows: rows, startY: 0 });
             });
 
+            // Recompute startY after layout is stable (content visible, fonts loaded)
+            function rebuildMetrics() {
+                var scrollY = window.scrollY;
+                sectionData.forEach(function(sd) {
+                    // startY = top of first row in document coords, minus STICKY_OFFSET
+                    if (sd.rows.length > 0) {
+                        var firstRect = sd.rows[0].getBoundingClientRect();
+                        sd.startY = firstRect.top + scrollY - STICKY_OFFSET;
+                    }
+                });
+                metricsReady = true;
+                console.log('[PROCES] metrics rebuilt:', sectionData.map(function(sd) {
+                    return { startY: Math.round(sd.startY), rowCount: sd.rows.length };
+                }));
+            }
+
+            // Rebuild after content-wrapper is shown (profile loaded) + on resize
+            var rebuildTimer = null;
+            function scheduleRebuild() {
+                clearTimeout(rebuildTimer);
+                rebuildTimer = setTimeout(rebuildMetrics, 100);
+            }
+            new MutationObserver(function() { scheduleRebuild(); })
+                .observe(document.getElementById('content-wrapper'), { attributes: true });
+            window.addEventListener('resize', scheduleRebuild);
+            // Also rebuild once now in case content is already visible
+            setTimeout(rebuildMetrics, 500);
+
             function onScroll() {
+                if (!metricsReady) { ticking = false; return; }
                 var scrollY = window.scrollY;
 
                 sectionData.forEach(function(sd) {
-                    var total = scrollY - sd.startY; // how far past section trigger
+                    var total = scrollY - sd.startY;
                     var count = sd.rows.length;
+                    if (count === 0) return;
 
-                    // activeIndex = which row is currently animating
-                    var activeIndex = Math.floor(total / SEGMENT);
+                    // Clamp activeIndex to valid range
+                    var rawIndex = total / SEGMENT;
+                    var activeIndex = Math.max(0, Math.min(count - 1, Math.floor(rawIndex)));
                     var localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
+
+                    // If total < 0, nothing animates
+                    if (total < 0) { activeIndex = -1; localP = 0; }
 
                     sd.rows.forEach(function(row, i) {
                         var p;
-                        if (i < activeIndex)      p = 1;       // fully collapsed
-                        else if (i === activeIndex) p = localP; // animating now
-                        else                       p = 0;       // untouched
-
-                        // Clamp: don't collapse the last sticky row (wiper handles it)
-                        p = Math.max(0, Math.min(1, p));
+                        if (activeIndex < 0)           p = 0; // section not reached
+                        else if (i < activeIndex)      p = 1; // fully collapsed
+                        else if (i === activeIndex)    p = localP; // animating
+                        else                           p = 0; // untouched
 
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
-                            desc.style.opacity = 1 - p;
-                            desc.style.maxHeight = ((1 - p) * 80) + 'px';
+                            desc.style.opacity = (1 - p).toFixed(3);
+                            desc.style.maxHeight = ((1 - p) * 80).toFixed(1) + 'px';
                         }
 
-                        row.style.paddingTop = (PAD_MAX - (PAD_MAX - PAD_MIN) * p) + 'px';
-                        row.style.paddingBottom = (PAD_MAX - (PAD_MAX - PAD_MIN) * p) + 'px';
+                        var pad = PAD_MAX - (PAD_MAX - PAD_MIN) * p;
+                        row.style.paddingTop = pad.toFixed(1) + 'px';
+                        row.style.paddingBottom = pad.toFixed(1) + 'px';
                     });
+
+                    // Debug: log 1 in every 30 frames
+                    if (!sd._dbg) sd._dbg = 0;
+                    if (sd._dbg++ % 30 === 0) {
+                        console.log('[PROCES]', {
+                            scrollY: Math.round(scrollY),
+                            startY: Math.round(sd.startY),
+                            total: Math.round(total),
+                            activeIndex: activeIndex,
+                            localP: +localP.toFixed(3),
+                            rowCount: count
+                        });
+                    }
                 });
                 ticking = false;
             }
