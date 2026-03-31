@@ -1076,21 +1076,27 @@
             cursor: pointer;
             overflow: hidden;
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        box-shadow 0.25s ease,
-                        border-color 0.25s ease;
+                        background-color 0.25s ease,
+                        border-color 0.25s ease,
+                        box-shadow 0.25s ease;
             will-change: transform;
         }
 
         .doc-card:hover {
-            transform: scale(1.04);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transform: scale(1.08) translateY(-2px);
+            background: var(--bg-secondary);
             border-color: var(--line-strong);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
             z-index: 10;
         }
 
         .doc-card:active {
-            transform: scale(0.97);
+            transform: scale(0.97) translateY(0);
             transition: transform 0.1s ease;
+        }
+
+        .doc-card.neighbor {
+            transform: scale(1.03);
         }
 
         /* Main card (Album USG) — tall, fills left column */
@@ -2331,18 +2337,18 @@
                         </div>
                         <!-- Kolom kanan: 2 baris -->
                         <div class="doc-col-right">
-                            <div class="doc-card doc-card-side" onclick="window.location.href='/hasil-lab.html'">
-                                <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
-                                <div class="doc-card-label">
-                                    <h3>Hasil Lab</h3>
-                                    <p>Laporan laboratorium</p>
-                                </div>
-                            </div>
                             <div class="doc-card doc-card-side" onclick="window.location.href='/dokumen-medis-trial.html'">
                                 <div class="doc-card-icon"><i class="fa-solid fa-file-medical"></i></div>
                                 <div class="doc-card-label">
                                     <h3>Resume Medis</h3>
                                     <p>Catatan medis Anda</p>
+                                </div>
+                            </div>
+                            <div class="doc-card doc-card-side" onclick="window.location.href='/hasil-lab.html'">
+                                <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
+                                <div class="doc-card-label">
+                                    <h3>Hasil Lab</h3>
+                                    <p>Laporan laboratorium</p>
                                 </div>
                             </div>
                         </div>
@@ -3338,7 +3344,8 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.success || !data.documents) return;
-                var usg = data.documents.filter(function(d) { return d.type === 'usg'; });
+                var usg = data.documents.filter(function(d) { return d.type === 'usg'; })
+                    .sort(function(a, b) { return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at); });
                 if (usg.length === 0) return;
 
                 // Main thumbnail
@@ -3370,32 +3377,44 @@
             .catch(function() {});
         })();
 
-        // ==================== MENU CARD NEIGHBOR EFFECT ====================
+        // ==================== CARD NEIGHBOR EFFECT (menu-grid + doc-grid) ====================
         (function() {
-            var grids = document.querySelectorAll('.menu-grid');
-            grids.forEach(function(grid) {
-                var cards = Array.from(grid.querySelectorAll('.menu-card'));
-                var cols = 3;
-
-                function clearNeighbors() {
-                    cards.forEach(function(c) { c.classList.remove('neighbor'); });
-                }
-
+            function setupNeighbors(container, selector, cols) {
+                var cards = Array.from(container.querySelectorAll(selector));
+                function clear() { cards.forEach(function(c) { c.classList.remove('neighbor'); }); }
                 cards.forEach(function(card, i) {
                     card.addEventListener('mouseenter', function() {
-                        clearNeighbors();
-                        var row = Math.floor(i / cols);
+                        clear();
                         var col = i % cols;
                         if (col + 1 < cols && cards[i + 1]) cards[i + 1].classList.add('neighbor');
                         if (col - 1 >= 0 && cards[i - 1]) cards[i - 1].classList.add('neighbor');
                         if (cards[i + cols]) cards[i + cols].classList.add('neighbor');
                         if (cards[i - cols]) cards[i - cols].classList.add('neighbor');
                     });
-                    card.addEventListener('mouseleave', clearNeighbors);
+                    card.addEventListener('mouseleave', clear);
                 });
+                container.addEventListener('mouseleave', clear);
+            }
 
-                grid.addEventListener('mouseleave', clearNeighbors);
+            // Menu grids (3 cols)
+            document.querySelectorAll('.menu-grid').forEach(function(g) {
+                setupNeighbors(g, '.menu-card', 3);
             });
+
+            // Doc grid (2 cols: main card + col-right as 1 unit)
+            var docGrid = document.querySelector('.doc-grid');
+            if (docGrid) {
+                var docCards = Array.from(docGrid.querySelectorAll('.doc-card'));
+                function clearDoc() { docCards.forEach(function(c) { c.classList.remove('neighbor'); }); }
+                docCards.forEach(function(card) {
+                    card.addEventListener('mouseenter', function() {
+                        clearDoc();
+                        docCards.forEach(function(c) { if (c !== card) c.classList.add('neighbor'); });
+                    });
+                    card.addEventListener('mouseleave', clearDoc);
+                });
+                docGrid.addEventListener('mouseleave', clearDoc);
+            }
         })();
 
         // ==================== PULL TO REFRESH ====================
