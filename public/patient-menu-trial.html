@@ -3645,13 +3645,16 @@
                         else if (i === activeIndex)    p = localP;
                         else                           p = 0;
 
-                        // Desc gone by 10% of collapse
-                        var fadeP = Math.max(0, Math.min(1, p / 0.10));
+                        // Phase 1: opacity fades 0%→10%, Phase 2: height collapses 10%→30%
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
+                            // Opacity: fully gone by p=0.10
+                            var fadeP = Math.min(1, p / 0.10);
                             desc.style.opacity = (1 - fadeP).toFixed(3);
-                            desc.style.maxHeight = (descH * (1 - fadeP)).toFixed(1) + 'px';
+                            // Height: stays full until p=0.10, then collapses 0.10→0.30
+                            var heightP = p <= 0.10 ? 0 : Math.min(1, (p - 0.10) / 0.20);
+                            desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
                         }
 
                         var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
