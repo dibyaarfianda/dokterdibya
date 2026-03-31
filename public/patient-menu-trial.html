@@ -3531,6 +3531,7 @@
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
             var COLLAPSED_H = 48; // collapsed row height (title only)
+            var STICKY_OFFSET = 50; // margin from top of viewport
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
@@ -3545,7 +3546,7 @@
                 // Assign sticky top: each row stacks below previous collapsed rows
                 rows.forEach(function(row, i) {
                     if (row === last) return; // wiper is position:relative
-                    row.style.top = (i * COLLAPSED_H) + 'px';
+                    row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
                     row.style.zIndex = 2 + i; // higher = on top
                 });
             });
