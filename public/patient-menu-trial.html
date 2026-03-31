@@ -3581,18 +3581,22 @@
             var sectionData = [];
             sections.forEach(function(section) {
                 var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
-                sectionData.push({ el: section, rows: rows, startY: 0 });
+                sectionData.push({ el: section, rows: rows, startY: 0, endY: 0 });
             });
 
-            // Recompute startY after layout is stable (content visible, fonts loaded)
             function rebuildMetrics() {
-                assignStickyTops(); // recompute COLLAPSED_H + sticky positions
+                assignStickyTops();
                 var scrollY = window.scrollY;
                 sectionData.forEach(function(sd) {
-                    if (sd.rows.length > 0) {
-                        var firstRect = sd.rows[0].getBoundingClientRect();
-                        sd.startY = firstRect.top + scrollY - STICKY_OFFSET;
-                    }
+                    // Use SECTION element top (not sticky row top) as stable baseline
+                    var sectionRect = sd.el.getBoundingClientRect();
+                    var sectionDocTop = sectionRect.top + scrollY;
+                    // Collapse starts when section top scrolls to STICKY_OFFSET from viewport top
+                    // That means: scrollY = sectionDocTop - STICKY_OFFSET  → but we want desc
+                    // visible first, so add the full section visible height before collapsing starts
+                    sd.startY = sectionDocTop + sectionRect.height - window.innerHeight * 0.3;
+                    sd.endY = sd.startY + (sd.rows.length * SEGMENT);
+
                     sd.descHeights = sd.rows.map(function(row) {
                         var desc = row.querySelector('.proces-desc');
                         return desc ? Math.min(desc.scrollHeight, 120) : 80;
@@ -3600,7 +3604,7 @@
                 });
                 metricsReady = true;
                 console.log('[PROCES] metrics rebuilt:', { COLLAPSED_H: COLLAPSED_H }, sectionData.map(function(sd) {
-                    return { startY: Math.round(sd.startY), rowCount: sd.rows.length };
+                    return { startY: Math.round(sd.startY), endY: Math.round(sd.endY), rowCount: sd.rows.length };
                 }));
             }
 
@@ -3621,17 +3625,26 @@
                 var scrollY = window.scrollY;
 
                 sectionData.forEach(function(sd) {
-                    var total = scrollY - sd.startY;
                     var count = sd.rows.length;
                     if (count === 0) return;
 
-                    // Clamp activeIndex to valid range
-                    var rawIndex = total / SEGMENT;
-                    var activeIndex = Math.max(0, Math.min(count - 1, Math.floor(rawIndex)));
-                    var localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
+                    // Clamp total to valid range: 0 .. count*SEGMENT
+                    var total = Math.max(0, Math.min(count * SEGMENT, scrollY - sd.startY));
 
-                    // If total < 0, nothing animates
-                    if (total < 0) { activeIndex = -1; localP = 0; }
+                    var activeIndex, localP;
+                    if (scrollY < sd.startY) {
+                        // Before section trigger: all expanded
+                        activeIndex = -1;
+                        localP = 0;
+                    } else if (scrollY > sd.endY) {
+                        // Past section end: all collapsible rows collapsed
+                        activeIndex = count;
+                        localP = 0;
+                    } else {
+                        // Active window: sequential collapse
+                        activeIndex = Math.min(count - 1, Math.floor(total / SEGMENT));
+                        localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
+                    }
 
                     sd.rows.forEach(function(row, i) {
                         var p;
@@ -3660,6 +3673,7 @@
                         console.log('[PROCES]', {
                             scrollY: Math.round(scrollY),
                             startY: Math.round(sd.startY),
+                            endY: Math.round(sd.endY),
                             total: Math.round(total),
                             activeIndex: activeIndex,
                             localP: +localP.toFixed(3),
