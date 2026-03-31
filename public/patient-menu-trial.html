@@ -3630,10 +3630,10 @@
                 var row = sd.rows[i];
                 if (!row) return;
 
-                // Keep the active row above following rows so fade remains visible.
+                // Keep any transitioning row (0<p<1) on top so its fade is not hidden by the next sticky row.
                 var layer;
-                if (sd.activeIndex >= 0 && i === sd.activeIndex) layer = 1000 + sd.rows.length;
-                else if (i < sd.activeIndex) layer = 900 - i;
+                if (p > 0 && p < 1) layer = 1200 + (sd.rows.length - i);
+                else if (p >= 1) layer = 900 - i;
                 else layer = 800 - i;
                 row.style.zIndex = String(layer);
 
