@@ -3677,8 +3677,11 @@
                     sd.rows.forEach(function(_, i) {
                         var target = sd.targetP[i] || 0;
                         var current = sd.renderP[i] || 0;
-                        var next = current + (target - current) * 0.35;
-                        if (Math.abs(target - next) < 0.001) {
+                        var delta = target - current;
+                        var maxStep = 0.018; // keep 10% fade window visible across multiple frames
+                        var step = Math.max(-maxStep, Math.min(maxStep, delta));
+                        var next = current + step;
+                        if (Math.abs(delta) <= maxStep) {
                             next = target;
                         } else {
                             needsMore = true;
