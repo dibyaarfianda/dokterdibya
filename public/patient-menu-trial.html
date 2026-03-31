@@ -2018,10 +2018,11 @@
         }
 
         /* ========== REDUCED MOTION ========== */
+        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card = interactive cards exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
@@ -2029,9 +2030,9 @@
 
         /* ========== CAPACITOR / MOBILE: DISABLE HEAVY ANIMATIONS ========== */
         /* Whitelist: .menu-card, .menu-icon, .cta-btn keep their transitions */
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn),
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn)::before,
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn)::after {
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card),
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::before,
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::after {
             animation: none !important;
             animation-duration: 0s !important;
             transition: none !important;
