@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Profil - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Trial theme sticky navigation -->
+    <script src="/scripts/patient-theme-trial.js"></script>
+
+    <style>
+        /* ========== CSS VARIABLES (Monochrome Design System) ========== */
+        :root {
+            --bg-page: #ffffff;
+            --bg-secondary: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-elevated: #ebebeb;
+            --text-primary: #111111;
+            --text-body: #2b2b2b;
+            --text-secondary: #606060;
+            --text-muted: #686868;
+            --accent: #111111;
+            --accent-hover: #2a2a2a;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --success-soft: rgba(0, 0, 0, 0.08);
+            --line-soft: rgba(0, 0, 0, 0.1);
+            --line-strong: rgba(0, 0, 0, 0.18);
+            --font-main: 'Inter', Arial, sans-serif;
+            --shadow-soft: none;
+            --shadow-hard: none;
+        }
+
+        /* ========== RESET ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            background: var(--bg-page);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: transparent;
+            min-height: 100%;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: #e8e8e8;
+            color: #141414;
+        }
+
+        /* ========== GRID BACKGROUND ========== */
+        .grid-bg {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            height: 600px;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(to right, #f2f2f2 1px, transparent 1px),
+                linear-gradient(to bottom, #f2f2f2 1px, transparent 1px);
+            background-size: 16px 16px;
+            -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25) 55%, transparent 85%);
+            mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25) 55%, transparent 85%);
+        }
+
+        /* ========== SAFE AREA BARS ========== */
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        /* ========== APP WRAPPER ========== */
+        .app-wrapper {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 100%;
+            background: var(--bg-page);
+        }
+
+        /* ========== TOPBAR ========== */
+        .topbar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-bottom: 1.5px dashed rgba(0, 0, 0, 0.12);
+        }
+
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .topbar-back {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-strong);
+            background: transparent;
+            color: var(--text-primary);
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .topbar-back:hover {
+            background: var(--accent-soft);
+        }
+
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 80px 16px 100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========== LOADING ========== */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* ========== PROFILE HEADER ========== */
+        .profile-header {
+            text-align: center;
+            padding: 28px 20px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            background: var(--bg-surface);
+        }
+
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 14px;
+        }
+
+        .avatar-large {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text-primary);
+            overflow: hidden;
+            border: 1.8px dashed var(--line-strong);
+        }
+
+        .avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .edit-avatar-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg-page);
+            color: #ffffff;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .edit-avatar-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .vip-badge {
+            display: none;
+            background: var(--accent);
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .vip-badge.show {
+            display: inline-block;
+        }
+
+        .profile-id {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ========== INFO CARD ========== */
+        .info-card {
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 4px 16px;
+            margin-bottom: 20px;
+            background: var(--bg-surface);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 13px 0;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        /* ========== MENU SECTIONS ========== */
+        .menu-section {
+            margin-bottom: 20px;
+        }
+
+        .menu-section-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+            padding: 10px 0;
+            margin-bottom: 4px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .menu-item:hover {
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
+        }
+
+        .menu-item:active {
+            transform: scale(0.98);
+        }
+
+        .menu-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            background: var(--accent-soft);
+            color: var(--text-primary);
+        }
+
+        .menu-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .menu-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .menu-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .menu-arrow {
+            color: var(--text-muted);
+            font-size: 12px;
+            opacity: 0.5;
+        }
+
+        /* ========== LOGOUT BUTTON ========== */
+        .logout-btn {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1.8px dashed rgba(0, 0, 0, 0.2);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.2s, border-color 0.2s;
+            margin-top: 20px;
+        }
+
+        .logout-btn:hover {
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
+        }
+
+        /* ========== VERSION FOOTER ========== */
+        .version-footer {
+            text-align: center;
+            padding: 28px 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            letter-spacing: 0.03em;
+        }
+
+        /* ========== BOTTOM NAV ========== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-top: 1.5px dashed rgba(0, 0, 0, 0.12);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .bottom-nav-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            transition: color 0.2s;
+            padding: 4px 12px;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+        }
+
+        /* ========== EDIT MODAL ========== */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-page);
+            z-index: 9999;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .edit-modal.active {
+            display: flex;
+        }
+
+        .edit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: calc(15px + env(safe-area-inset-top, 0px));
+            border-bottom: 1.5px dashed var(--line-soft);
+        }
+
+        .edit-modal-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .edit-modal-close,
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .edit-modal-close:hover,
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .edit-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            max-width: 760px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: var(--font-main);
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            border-style: solid;
+        }
+
+        .edit-modal-footer {
+            padding: 15px 20px;
+            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+            border-top: 1.5px dashed var(--line-soft);
+        }
+
+        .save-btn {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-main);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .save-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .save-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ========== NOTIFICATION SETTINGS MODAL OVERRIDES ========== */
+        .notif-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 13px 16px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+        }
+
+        .notif-option span {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .notif-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+
+        .notif-divider {
+            border-top: 1px dashed var(--line-soft);
+            margin: 10px 0;
+        }
+
+        .sound-section {
+            padding: 13px 16px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+        }
+
+        .sound-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sound-header span {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .sound-test-btn {
+            background: var(--accent-soft);
+            border: none;
+            color: var(--text-primary);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--font-main);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sound-test-btn:hover {
+            background: var(--line-soft);
+        }
+
+        .sound-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: var(--font-main);
+        }
+
+        .sound-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            border-style: solid;
+        }
+
+        /* ========== TOAST ========== */
+        #toast-container {
+            position: fixed;
+            top: calc(20px + env(safe-area-inset-top, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--accent);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            pointer-events: auto;
+            animation: toastIn 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .toast.error {
+            background: #333333;
+        }
+
+        .toast.info {
+            background: #555555;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Safe Area Overlays -->
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <!-- Grid Background -->
+    <div class="grid-bg"></div>
+
+    <div class="app-wrapper">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-inner">
+                <button class="topbar-back" onclick="window.location.href='/patient-menu-trial.html'">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="topbar-title">Profil</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading State -->
+            <div class="loading" id="loading-state">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>Memuat profil...</span>
+            </div>
+
+            <!-- Content (hidden until loaded) -->
+            <div id="content-wrapper" style="display: none;">
+                <!-- Profile Header -->
+                <div class="profile-header">
+                    <div class="avatar-container">
+                        <div class="avatar-large" id="avatar">
+                            <span id="avatar-initials">--</span>
+                            <img id="avatar-img" src="" style="display: none;">
+                        </div>
+                        <button class="edit-avatar-btn" onclick="editAvatar()">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                    </div>
+                    <div class="profile-name" id="profile-name">
+                        <span id="profile-name-text">-</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </div>
+                    <div class="profile-id" id="profile-id">ID: -</div>
+                </div>
+
+                <!-- Basic Info -->
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="info-email">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">No. HP</span>
+                        <span class="info-value" id="info-phone">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Tanggal Lahir</span>
+                        <span class="info-value" id="info-birthdate">-</span>
+                    </div>
+                </div>
+
+                <!-- Menu Sections -->
+                <div class="menu-section">
+                    <div class="menu-section-title">Akun</div>
+
+                    <a class="menu-item" onclick="openEditModal()">
+                        <div class="menu-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Edit Profil</div>
+                            <div class="menu-subtitle">Ubah nama, email, nomor HP</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+
+                    <a class="menu-item" href="/patient-intake.html">
+                        <div class="menu-icon"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Identitas Pribadi</div>
+                            <div class="menu-subtitle">Data lengkap identitas</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+
+                    <a class="menu-item" onclick="changePassword()">
+                        <div class="menu-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Ubah Password</div>
+                            <div class="menu-subtitle">Ganti password akun</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="menu-section" id="settings">
+                    <div class="menu-section-title">Pengaturan</div>
+
+                    <a class="menu-item" onclick="toggleNotifications()">
+                        <div class="menu-icon"><i class="fa-solid fa-bell"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Notifikasi</div>
+                            <div class="menu-subtitle" id="notif-status">Aktif</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-section-title">Lainnya</div>
+
+                    <a class="menu-item" href="/bantuan.html">
+                        <div class="menu-icon"><i class="fa-solid fa-circle-question"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Bantuan</div>
+                            <div class="menu-subtitle">FAQ & Hubungi kami</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+
+                    <a class="menu-item" onclick="showAbout()">
+                        <div class="menu-icon"><i class="fa-solid fa-circle-info"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Tentang Aplikasi</div>
+                            <div class="menu-subtitle">Versi & Info</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- Logout Button -->
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                </button>
+
+                <!-- Version -->
+                <div class="version-footer">
+                    dokterDIBYA Patient Portal v2.0
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <div class="bottom-nav-inner">
+                <a href="/patient-menu-trial.html" class="nav-item">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Home</span>
+                </a>
+                <a href="/notifikasi-trial.html" class="nav-item">
+                    <i class="fa-solid fa-bell"></i>
+                    <span>Notifikasi</span>
+                </a>
+                <a href="/profil-trial.html" class="nav-item active">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Profil</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="edit-modal" id="edit-modal">
+        <div class="edit-modal-header">
+            <h3>Edit Profil</h3>
+            <button class="edit-modal-close" onclick="closeEditModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="edit-modal-body">
+            <form id="edit-form" onsubmit="saveProfile(event)">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="edit-name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="edit-email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>No. HP</label>
+                    <input type="tel" id="edit-phone" class="form-control">
+                </div>
+            </form>
+        </div>
+        <div class="edit-modal-footer">
+            <button class="save-btn" onclick="saveProfile(event)">
+                <i class="fa-solid fa-check"></i> Simpan Perubahan
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Change Password Modal -->
+    <div class="edit-modal" id="password-modal" style="display: none;">
+        <div class="edit-modal-header">
+            <h3>Ubah Password</h3>
+            <button class="close-btn" onclick="closePasswordModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="edit-modal-body">
+            <form id="password-form" onsubmit="submitPasswordChange(event)">
+                <div class="form-group">
+                    <label>Password Lama</label>
+                    <input type="password" id="old-password" class="form-control" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Password Baru</label>
+                    <input type="password" id="new-password" class="form-control" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Konfirmasi Password Baru</label>
+                    <input type="password" id="confirm-password" class="form-control" required minlength="6">
+                </div>
+            </form>
+        </div>
+        <div class="edit-modal-footer">
+            <button class="save-btn" onclick="submitPasswordChange(event)">
+                <i class="fa-solid fa-check"></i> Simpan Password
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div class="edit-modal" id="notif-modal" style="display: none;">
+        <div class="edit-modal-header">
+            <h3>Pengaturan Notifikasi</h3>
+            <button class="close-btn" onclick="closeNotifModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="edit-modal-body">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="notif-option">
+                    <span>Jadwal Kontrol</span>
+                    <input type="checkbox" id="notif-jadwal">
+                </div>
+                <div class="notif-option">
+                    <span>Pengumuman</span>
+                    <input type="checkbox" id="notif-pengumuman">
+                </div>
+                <div class="notif-option">
+                    <span>Pesan Dokter</span>
+                    <input type="checkbox" id="notif-pesan">
+                </div>
+                <div class="notif-option">
+                    <span>Jadwal Minum Obat</span>
+                    <input type="checkbox" id="notif-obat">
+                </div>
+
+                <div class="notif-divider"></div>
+
+                <div class="sound-section">
+                    <div class="sound-header">
+                        <span>Suara Notifikasi</span>
+                        <button type="button" onclick="playNotifSound()" class="sound-test-btn">
+                            <i class="fa-solid fa-volume-high"></i> Test
+                        </button>
+                    </div>
+                    <select id="notif-sound" class="sound-select">
+                        <option value="default">Default</option>
+                        <option value="chime">Chime</option>
+                        <option value="bell">Bell</option>
+                        <option value="soft">Soft</option>
+                        <option value="none">Tanpa Suara</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="edit-modal-footer">
+            <button class="save-btn" onclick="saveNotifSettings()">
+                <i class="fa-solid fa-check"></i> Simpan
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden file input for avatar -->
+    <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+
+    <script>
+        // Trial theme switch — redirect to old page if theme is off
+        (function() {
+            var p = new URLSearchParams(window.location.search);
+            var t = p.get('theme');
+            if (t === 'off' || t === 'old' || t === 'default') {
+                try { sessionStorage.removeItem('patient_portal_theme_mode'); } catch(e) {}
+                window.location.replace('/profil.html');
+                return;
+            }
+            try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch(e) {}
+        })();
+    </script>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatDate, logout as utilLogout, escapeHtml } from '/scripts/patient-utils.js';
+
+        // State
+        let profileData = null;
+
+        // Make functions globally available
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.saveProfile = saveProfile;
+        window.editAvatar = editAvatar;
+        window.changePassword = changePassword;
+        window.closePasswordModal = closePasswordModal;
+        window.submitPasswordChange = submitPasswordChange;
+        window.toggleNotifications = toggleNotifications;
+        window.closeNotifModal = closeNotifModal;
+        window.saveNotifSettings = saveNotifSettings;
+        window.playNotifSound = playNotifSound;
+        window.showAbout = showAbout;
+        window.logout = logout;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            // Handle hash
+            if (window.location.hash === '#settings') {
+                setTimeout(() => {
+                    document.getElementById('settings').scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            }
+
+            await loadProfile();
+
+            // Setup avatar upload
+            document.getElementById('avatar-input').addEventListener('change', handleAvatarUpload);
+
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+        });
+
+        // Load Profile
+        async function loadProfile() {
+            try {
+                const data = await apiRequest('/api/patients/profile');
+                console.log('[PROFIL] API response:', data);
+
+                // Handle response - API returns { user: {...} } without success field
+                if (data && data.user) {
+                    profileData = data.user;
+                    console.log('[PROFIL] Profile loaded:', profileData.fullname || profileData.full_name);
+                    renderProfile();
+                } else if (data && data.success === false) {
+                    console.error('[PROFIL] API error:', data.message);
+                    showToast(data.message || 'Gagal memuat profil', 'error');
+                } else {
+                    console.error('[PROFIL] No user data in response');
+                    showToast('Profil tidak ditemukan', 'error');
+                }
+            } catch (error) {
+                console.error('[PROFIL] Exception:', error);
+                showToast('Gagal memuat profil', 'error');
+            }
+        }
+
+        // Render profile
+        function renderProfile() {
+            if (!profileData) return;
+
+            const name = profileData.fullname || profileData.full_name || '-';
+
+            // Name & ID
+            document.getElementById('profile-name-text').textContent = name;
+            document.getElementById('profile-id').textContent = `ID: ${profileData.patient_id || profileData.id || '-'}`;
+
+            // Avatar
+            if (profileData.profile_picture || profileData.photo_url) {
+                const avatarImg = document.getElementById('avatar-img');
+                avatarImg.src = profileData.profile_picture || profileData.photo_url;
+                avatarImg.style.display = 'block';
+                document.getElementById('avatar-initials').style.display = 'none';
+            } else {
+                document.getElementById('avatar-initials').textContent = getInitials(name);
+            }
+
+            // Info
+            document.getElementById('info-email').textContent = profileData.email || '-';
+            document.getElementById('info-phone').textContent = profileData.phone || '-';
+
+            if (profileData.birth_date) {
+                const bd = new Date(profileData.birth_date);
+                document.getElementById('info-birthdate').textContent = bd.toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+            }
+
+            // Check VIP subscription for badge
+            checkVipSubscription();
+        }
+
+        // Check if patient has VIP subscription
+        async function checkVipSubscription() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const response = await fetch('/api/patient-questions/can-ask', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.tier === 'vip') {
+                        const badge = document.getElementById('vip-badge');
+                        if (badge) badge.classList.add('show');
+                    }
+                }
+            } catch (error) {
+                // Silently fail - VIP badge is optional
+            }
+        }
+
+        // Get initials
+        function getInitials(name) {
+            if (!name) return '--';
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+
+        // Open edit modal
+        function openEditModal() {
+            if (!profileData) return;
+
+            document.getElementById('edit-name').value = profileData.fullname || '';
+            document.getElementById('edit-email').value = profileData.email || '';
+            document.getElementById('edit-phone').value = profileData.phone || '';
+
+            document.getElementById('edit-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Save profile
+        async function saveProfile(event) {
+            if (event) event.preventDefault();
+
+            const name = document.getElementById('edit-name').value.trim();
+            const email = document.getElementById('edit-email').value.trim();
+            const phone = document.getElementById('edit-phone').value.trim();
+
+            if (!name || !email) {
+                showToast('Nama dan email wajib diisi', 'error');
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/patients/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify({ fullname: name, email, phone })
+                });
+
+                if (data && data.success) {
+                    showToast('Profil berhasil diperbarui', 'success');
+                    closeEditModal();
+                    await loadProfile();
+                } else {
+                    showToast(data?.message || 'Gagal menyimpan', 'error');
+                }
+            } catch (e) {
+                console.error('Error saving:', e);
+                showToast('Gagal menyimpan', 'error');
+            }
+        }
+
+        // Edit avatar
+        function editAvatar() {
+            document.getElementById('avatar-input').click();
+        }
+
+        // Handle avatar upload
+        async function handleAvatarUpload(e) {
+            if (!e.target.files || !e.target.files[0]) return;
+
+            const file = e.target.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Ukuran file maksimal 2MB', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('photo', file);
+
+            try {
+                const token = getToken();
+                const response = await fetch('/api/patients/upload-photo', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Foto profil berhasil diperbarui', 'success');
+                    await loadProfile();
+                } else {
+                    showToast(data.message || 'Gagal upload foto', 'error');
+                }
+            } catch (e) {
+                console.error('Error uploading:', e);
+                showToast('Gagal upload foto', 'error');
+            }
+        }
+
+        // Change password
+        function changePassword() {
+            // Check if user has password (Google-only users may not have one)
+            if (profileData && !profileData.has_password) {
+                showToast('Akun ini menggunakan Google Sign-In. Fitur ubah password tidak tersedia.', 'info');
+                return;
+            }
+            document.getElementById('password-modal').style.display = 'block';
+            document.getElementById('old-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+        }
+
+        async function submitPasswordChange(e) {
+            if (e) e.preventDefault();
+
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showToast('Semua field harus diisi', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('Password baru dan konfirmasi tidak cocok', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('Password minimal 6 karakter', 'error');
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/patients/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        old_password: oldPassword,
+                        new_password: newPassword,
+                        confirm_password: confirmPassword
+                    })
+                });
+
+                if (data && data.success) {
+                    showToast('Password berhasil diubah', 'success');
+                    closePasswordModal();
+                } else {
+                    showToast(data?.message || 'Gagal mengubah password', 'error');
+                }
+            } catch (e) {
+                console.error('Error changing password:', e);
+                showToast('Gagal mengubah password', 'error');
+            }
+        }
+
+        // Toggle notifications
+        function toggleNotifications() {
+            // Load saved settings from localStorage
+            const settings = JSON.parse(localStorage.getItem('notif_settings') || '{"jadwal":true,"pengumuman":true,"pesan":true,"obat":true,"sound":"default"}');
+            document.getElementById('notif-jadwal').checked = settings.jadwal !== false;
+            document.getElementById('notif-pengumuman').checked = settings.pengumuman !== false;
+            document.getElementById('notif-pesan').checked = settings.pesan !== false;
+            document.getElementById('notif-obat').checked = settings.obat !== false;
+            document.getElementById('notif-sound').value = settings.sound || 'default';
+            document.getElementById('notif-modal').style.display = 'block';
+        }
+
+        function closeNotifModal() {
+            document.getElementById('notif-modal').style.display = 'none';
+        }
+
+        function saveNotifSettings() {
+            const settings = {
+                jadwal: document.getElementById('notif-jadwal').checked,
+                pengumuman: document.getElementById('notif-pengumuman').checked,
+                pesan: document.getElementById('notif-pesan').checked,
+                obat: document.getElementById('notif-obat').checked,
+                sound: document.getElementById('notif-sound').value
+            };
+            localStorage.setItem('notif_settings', JSON.stringify(settings));
+            showToast('Pengaturan notifikasi disimpan', 'success');
+            closeNotifModal();
+        }
+
+        // Play notification sound preview
+        function playNotifSound() {
+            const soundType = document.getElementById('notif-sound').value;
+            if (soundType === 'none') {
+                showToast('Suara notifikasi dinonaktifkan', 'info');
+                return;
+            }
+
+            // Create audio context for preview
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // Different sounds based on selection
+                switch(soundType) {
+                    case 'chime':
+                        oscillator.frequency.value = 880;
+                        oscillator.type = 'sine';
+                        break;
+                    case 'bell':
+                        oscillator.frequency.value = 660;
+                        oscillator.type = 'triangle';
+                        break;
+                    case 'soft':
+                        oscillator.frequency.value = 440;
+                        oscillator.type = 'sine';
+                        break;
+                    default:
+                        oscillator.frequency.value = 520;
+                        oscillator.type = 'square';
+                }
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch(e) {
+                console.log('Audio preview not supported');
+            }
+        }
+
+        // Show about
+        function showAbout() {
+            alert('dokterDIBYA Patient Portal\nVersi 2.0\n\nPortal Privat Kandungan Anda');
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('Apakah Anda yakin ingin keluar?')) {
+                localStorage.removeItem('vps_auth_token');
+                sessionStorage.removeItem('vps_auth_token');
+                localStorage.removeItem('patient_token');
+                localStorage.removeItem('patient_user');
+
+                const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+                if (isCapacitor) {
+                    window.location.href = 'dokterdibya://logout';
+                } else {
+                    window.location.href = '/patient-login.html';
+                }
+            }
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('edit-modal').classList.contains('active')) {
+                closeEditModal();
+            }
+        });
+    </script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+</body>
+</html>
