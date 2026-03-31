@@ -3550,32 +3550,35 @@
                 });
             });
 
-            // Scroll handler: sequential collapse based on section scroll offset.
-            // Each row gets 150px of scroll travel to collapse. Row N starts only
-            // after row N-1 finishes its 150px.
-            var TRAVEL = 150; // px of scroll per row collapse
+            // Scroll handler: each row starts collapsing when its top reaches
+            // TRIGGER_Y (70px from viewport top). Collapse takes TRAVEL px of
+            // scroll. Sequential: row N waits for row N-1 to fully finish.
+            var TRIGGER_Y = 70;  // px from top of viewport to start collapse
+            var TRAVEL = 150;    // px of scroll to fully collapse one row
             var ticking = false;
 
-            // Record each section's trigger point (top of section reaches sticky offset)
             var sectionData = [];
             sections.forEach(function(section) {
                 var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
-                sectionData.push({ el: section, rows: rows });
+                sectionData.push({ rows: rows });
             });
 
             function onScroll() {
-                var scrollY = window.scrollY;
-
                 sectionData.forEach(function(sd) {
-                    // Section top in document coordinates
-                    var sectionTop = sd.el.getBoundingClientRect().top + scrollY;
-                    // Scroll past the section start (accounting for sticky offset + header)
-                    var scrollIntoSection = scrollY - sectionTop + window.innerHeight * 0.5;
+                    var prevDone = true;
 
-                    sd.rows.forEach(function(row, i) {
-                        // This row's collapse zone: starts at i*TRAVEL, ends at (i+1)*TRAVEL
-                        var rowStart = i * TRAVEL;
-                        var p = Math.max(0, Math.min(1, (scrollIntoSection - rowStart) / TRAVEL));
+                    sd.rows.forEach(function(row) {
+                        var rect = row.getBoundingClientRect();
+
+                        // How far has the row's top gone above the trigger line?
+                        // Negative = still below trigger, Positive = past trigger
+                        var pastTrigger = TRIGGER_Y - rect.top;
+
+                        // Progress: 0 = at/below trigger, 1 = fully collapsed
+                        var rawP = Math.max(0, Math.min(1, pastTrigger / TRAVEL));
+
+                        // Sequential gate: only collapse if previous row is done
+                        var p = prevDone ? rawP : 0;
 
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
@@ -3586,6 +3589,8 @@
                         var pad = 28 - (20 * p);
                         row.style.paddingTop = pad + 'px';
                         row.style.paddingBottom = pad + 'px';
+
+                        prevDone = (p >= 1);
                     });
                 });
                 ticking = false;
