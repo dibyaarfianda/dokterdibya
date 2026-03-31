@@ -1269,13 +1269,13 @@
         .proces-reveal {
             opacity: 0.001;
             transform: translateY(-20px);
+            transition: opacity 0.4s cubic-bezier(0.44, 0, 0.56, 1),
+                        transform 0.4s cubic-bezier(0.44, 0, 0.56, 1);
         }
 
         .proces-reveal.visible {
             opacity: 1;
             transform: translateY(0);
-            transition: opacity 0.4s cubic-bezier(0.44, 0, 0.56, 1),
-                        transform 0.4s cubic-bezier(0.44, 0, 0.56, 1);
         }
 
 
