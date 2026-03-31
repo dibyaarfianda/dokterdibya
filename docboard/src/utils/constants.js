@@ -79,6 +79,11 @@ export const ROLE_PERMISSIONS = {
     canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
     canChangeStatus: false, canEditClinical: false, canEditAnesthesia: true,
     canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+  },
+  docboard_viewer: {
+    canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
+    canChangeStatus: false, canEditClinical: false, canEditAnesthesia: false,
+    canEditOutcome: false, canViewORBoard: true, canEditChecklist: false
   }
 };
 
