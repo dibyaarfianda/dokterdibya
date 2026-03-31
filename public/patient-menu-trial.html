@@ -3645,36 +3645,13 @@
                         else if (i === activeIndex)    p = localP;
                         else                           p = 0;
 
-                        // Progress-based fade
-                        var progressFadeP = Math.max(0, Math.min(1, p / 0.65));
-
-                        // Geometry-based fade: how much does the next row's border overlap this desc?
-                        var overlapP = 0;
-                        var desc = row.querySelector('.proces-desc');
-                        var nextRow = sd.rows[i + 1] || null;
-                        // Also check wiper row
-                        if (!nextRow) {
-                            var allRows = Array.from(row.parentElement.querySelectorAll('.proces-row'));
-                            var myIdx = allRows.indexOf(row);
-                            if (myIdx >= 0 && allRows[myIdx + 1]) nextRow = allRows[myIdx + 1];
-                        }
-                        if (desc && nextRow) {
-                            var descRect = desc.getBoundingClientRect();
-                            var lineY = nextRow.getBoundingClientRect().top;
-                            var descH_actual = descRect.bottom - descRect.top;
-                            if (descH_actual > 1) {
-                                overlapP = Math.max(0, Math.min(1, (descRect.bottom - lineY) / descH_actual));
-                            }
-                        }
-
-                        var finalFadeP = Math.max(progressFadeP, overlapP);
-
+                        // Desc gone by 10% of collapse
+                        var fadeP = Math.max(0, Math.min(1, p / 0.10));
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
+                        var desc = row.querySelector('.proces-desc');
                         if (desc) {
-                            desc.style.opacity = (1 - finalFadeP).toFixed(3);
-                            // max-height only shrinks after fade is past 55%
-                            var heightP = finalFadeP > 0.55 ? Math.max(0, Math.min(1, (finalFadeP - 0.55) / 0.45)) : 0;
-                            desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
+                            desc.style.opacity = (1 - fadeP).toFixed(3);
+                            desc.style.maxHeight = (descH * (1 - fadeP)).toFixed(1) + 'px';
                         }
 
                         var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
