@@ -1201,6 +1201,94 @@
             }
         }
 
+        /* ========== JADWAL SECTION (Flair PROCES layout) ========== */
+        .proces-section {
+            padding-top: 50px;
+        }
+
+        .proces-header {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .proces-divider {
+            height: 1px;
+            background: var(--text-primary);
+            opacity: 0.15;
+        }
+
+        .proces-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr;
+            gap: 20px;
+            align-items: center;
+            padding: 32px 0;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        .proces-row:hover {
+            opacity: 0.7;
+        }
+
+        .proces-row:active {
+            opacity: 0.5;
+        }
+
+        .proces-step {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .proces-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .proces-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 300px;
+        }
+
+        /* Scroll reveal animation */
+        .proces-reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.7s cubic-bezier(0.25, 0.1, 0.25, 1),
+                        transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        .proces-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            .proces-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 24px 0;
+            }
+            .proces-title {
+                font-size: 18px;
+            }
+        }
+
         .menu-container {
             padding: 0 0 16px;
         }
@@ -2020,9 +2108,9 @@
         /* ========== REDUCED MOTION ========== */
         /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card = interactive cards exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
@@ -2030,9 +2118,9 @@
 
         /* ========== CAPACITOR / MOBILE: DISABLE HEAVY ANIMATIONS ========== */
         /* Whitelist: .menu-card, .menu-icon, .cta-btn keep their transitions */
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card),
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::before,
-        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card)::after {
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row),
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::before,
+        body.capacitor-app *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row)::after {
             animation: none !important;
             animation-duration: 0s !important;
             transition: none !important;
@@ -2356,6 +2444,15 @@
                     </div>
                 </div>
 
+                <!-- Booking CTA Card -->
+                <div class="cta-card" onclick="window.location.href='/booking-klinik-trial.html'">
+                    <h2 class="cta-heading">Booking Klinik Minggu</h2>
+                    <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
+                    <button class="cta-btn" onclick="event.stopPropagation(); window.location.href='/booking-klinik-trial.html'">
+                        Booking Sekarang
+                    </button>
+                </div>
+
                 <!-- APLIKASI -->
                 <div class="section-title">Aplikasi</div>
                 <div class="menu-grid">
@@ -2394,21 +2491,31 @@
                     </div>
                 </div>
 
-                <!-- JADWAL -->
-                <div class="section-title">Jadwal</div>
-                <div class="menu-grid">
-                    <div class="menu-card" onclick="window.location.href='/booking-klinik-trial.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-calendar-check"></i></div>
-                        <h3>Booking Klinik</h3>
-                    </div>
-                    <div class="menu-card" onclick="window.location.href='/jadwal-rs.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-hospital"></i></div>
-                        <h3>Jadwal RS</h3>
-                    </div>
-                    <div class="menu-card" onclick="window.location.href='/riwayat-kunjungan.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-stethoscope"></i></div>
-                        <h3>Riwayat Kunjungan</h3>
-                    </div>
+                <!-- JADWAL (Flair PROCES layout) -->
+                <div class="proces-section">
+                    <div class="proces-header">JADWAL</div>
+                    <div class="proces-divider"></div>
+
+                    <a href="/booking-klinik-trial.html" class="proces-row proces-reveal">
+                        <span class="proces-step">Langkah 1</span>
+                        <h3 class="proces-title">BOOKING KLINIK MINGGU</h3>
+                        <p class="proces-desc">Pesan slot konsultasi dengan dr. Dibya setiap hari Minggu. Pilih waktu, konfirmasi, dan datang sesuai jadwal.</p>
+                    </a>
+                    <div class="proces-divider"></div>
+
+                    <a href="/jadwal-rs.html" class="proces-row proces-reveal">
+                        <span class="proces-step">Langkah 2</span>
+                        <h3 class="proces-title">JADWAL RUMAH SAKIT</h3>
+                        <p class="proces-desc">Lihat jadwal praktik dr. Dibya di berbagai rumah sakit. Rencanakan kunjungan Anda dengan mudah.</p>
+                    </a>
+                    <div class="proces-divider"></div>
+
+                    <a href="/riwayat-kunjungan.html" class="proces-row proces-reveal">
+                        <span class="proces-step">Langkah 3</span>
+                        <h3 class="proces-title">RIWAYAT KUNJUNGAN</h3>
+                        <p class="proces-desc">Rekam jejak setiap kunjungan Anda — tanggal, lokasi, dan catatan medis tersimpan rapi.</p>
+                    </a>
+                    <div class="proces-divider"></div>
                 </div>
 
                 <!-- TAGIHAN (hidden by default) -->
@@ -2422,15 +2529,6 @@
                     </div>
                 </div>
 
-            </div>
-
-            <!-- Booking CTA Card -->
-            <div class="cta-card" onclick="window.location.href='/booking-klinik-trial.html'">
-                <h2 class="cta-heading">Booking Klinik Minggu</h2>
-                <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
-                <button class="cta-btn" onclick="event.stopPropagation(); window.location.href='/booking-klinik-trial.html'">
-                    Booking Sekarang
-                </button>
             </div>
 
             <!-- Notification Permission Banner -->
@@ -3416,6 +3514,21 @@
                 });
                 docGrid.addEventListener('mouseleave', clearDoc);
             }
+        })();
+
+        // ==================== SCROLL REVEAL (PROCES rows) ====================
+        (function() {
+            var rows = document.querySelectorAll('.proces-reveal');
+            if (!rows.length) return;
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            rows.forEach(function(r) { observer.observe(r); });
         })();
 
         // ==================== PULL TO REFRESH ====================
