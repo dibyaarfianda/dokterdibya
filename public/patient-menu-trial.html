@@ -1253,8 +1253,9 @@
             white-space: nowrap;
             margin: 0;
             grid-row: 1 / 3;
-            align-self: start;
-            padding-top: 6px;
+            display: flex;
+            align-items: center;
+            line-height: 1;
         }
 
         .proces-title {
@@ -1281,7 +1282,7 @@
             .proces-row {
                 grid-template-columns: 40px 1fr;
                 gap: 4px 12px;
-                padding: 18px 0;
+                padding: 20px 0;
             }
             .proces-title { font-size: 18px; }
         }
@@ -3533,26 +3534,41 @@
         // Each row is sticky. As you scroll, its desc collapses and it becomes
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
-            var COLLAPSED_H = 48; // collapsed row height (title only)
-            var STICKY_OFFSET = 90; // margin from top of viewport
+            var STICKY_OFFSET = 90;
+            var PAD_MIN_PX = 8; // collapsed padding
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
-            sections.forEach(function(section) {
-                var rows = Array.from(section.querySelectorAll('.proces-row'));
-                if (!rows.length) return;
+            // Compute COLLAPSED_H dynamically: PAD_MIN top + title lineHeight + PAD_MIN bottom
+            function getCollapsedH() {
+                var sample = document.querySelector('.proces-title');
+                if (!sample) return 48;
+                var titleH = sample.getBoundingClientRect().height;
+                return Math.round(PAD_MIN_PX + titleH + PAD_MIN_PX);
+            }
 
-                // Last row = wiper (not sticky, scrolls normally and pushes stack up)
-                var last = rows[rows.length - 1];
-                last.classList.add('proces-wiper');
+            var COLLAPSED_H = getCollapsedH();
 
-                // Assign sticky top: each row stacks below previous collapsed rows
-                rows.forEach(function(row, i) {
-                    if (row === last) return; // wiper is position:relative
-                    row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
-                    row.style.zIndex = 2 + i; // higher = on top
+            function assignStickyTops() {
+                COLLAPSED_H = getCollapsedH();
+                sections.forEach(function(section) {
+                    var rows = Array.from(section.querySelectorAll('.proces-row'));
+                    if (!rows.length) return;
+
+                    var last = rows[rows.length - 1];
+                    last.classList.add('proces-wiper');
+
+                    rows.forEach(function(row, i) {
+                        if (row === last) return;
+                        row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
+                        row.style.zIndex = 2 + i;
+                    });
                 });
-            });
+                console.log('[PROCES] COLLAPSED_H =', COLLAPSED_H);
+            }
+
+            assignStickyTops();
+            window.addEventListener('resize', function() { assignStickyTops(); });
 
             // Strict sequential collapse — segmented scroll timeline.
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
@@ -3570,21 +3586,21 @@
 
             // Recompute startY after layout is stable (content visible, fonts loaded)
             function rebuildMetrics() {
+                assignStickyTops(); // recompute COLLAPSED_H + sticky positions
                 var scrollY = window.scrollY;
                 sectionData.forEach(function(sd) {
                     if (sd.rows.length > 0) {
                         var firstRect = sd.rows[0].getBoundingClientRect();
                         sd.startY = firstRect.top + scrollY - STICKY_OFFSET;
                     }
-                    // Cache desc base heights
                     sd.descHeights = sd.rows.map(function(row) {
                         var desc = row.querySelector('.proces-desc');
                         return desc ? Math.min(desc.scrollHeight, 120) : 80;
                     });
                 });
                 metricsReady = true;
-                console.log('[PROCES] metrics rebuilt:', sectionData.map(function(sd) {
-                    return { startY: Math.round(sd.startY), rowCount: sd.rows.length, descH: sd.descHeights };
+                console.log('[PROCES] metrics rebuilt:', { COLLAPSED_H: COLLAPSED_H }, sectionData.map(function(sd) {
+                    return { startY: Math.round(sd.startY), rowCount: sd.rows.length };
                 }));
             }
 
