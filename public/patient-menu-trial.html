@@ -1265,7 +1265,7 @@
             max-width: 300px;
         }
 
-        /* Scroll reveal — Flair/Framer appear animation */
+        /* Scroll animation — Flair PROCES: reveal + highlight active row */
         .proces-reveal {
             opacity: 0.001;
             transform: translateY(-20px);
@@ -1276,6 +1276,23 @@
         .proces-reveal.visible {
             opacity: 1;
             transform: translateY(0);
+        }
+
+        /* Passed rows: description fades out */
+        .proces-reveal.passed .proces-desc {
+            opacity: 0.25;
+            transition: opacity 0.5s ease;
+        }
+
+        .proces-reveal.passed .proces-step {
+            opacity: 0.4;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Active row: everything full */
+        .proces-reveal .proces-desc,
+        .proces-reveal .proces-step {
+            transition: opacity 0.5s ease;
         }
 
 
@@ -3517,23 +3534,42 @@
             }
         })();
 
-        // ==================== SCROLL REVEAL — Flair stagger (PROCES rows) ====================
+        // ==================== SCROLL ANIMATION — Flair PROCES ====================
         (function() {
-            var rows = document.querySelectorAll('.proces-reveal');
+            var rows = Array.from(document.querySelectorAll('.proces-reveal'));
             if (!rows.length) return;
-            var idx = 0;
-            var observer = new IntersectionObserver(function(entries) {
+
+            // Phase 1: Initial reveal with stagger
+            var staggerIdx = 0;
+            var revealObserver = new IntersectionObserver(function(entries) {
                 entries.forEach(function(entry) {
                     if (entry.isIntersecting) {
-                        var delay = idx * 0.1; // 0s, 0.1s, 0.2s stagger
-                        entry.target.style.transitionDelay = delay + 's';
+                        entry.target.style.transitionDelay = (staggerIdx * 0.1) + 's';
                         entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
-                        idx++;
+                        revealObserver.unobserve(entry.target);
+                        staggerIdx++;
                     }
                 });
             }, { threshold: 0.15 });
-            rows.forEach(function(r) { observer.observe(r); });
+            rows.forEach(function(r) { revealObserver.observe(r); });
+
+            // Phase 2: Active highlight — track which row is in center viewport
+            var activeObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        // Mark this as active, everything above as passed
+                        var thisIdx = rows.indexOf(entry.target);
+                        rows.forEach(function(r, i) {
+                            if (i < thisIdx) {
+                                r.classList.add('passed');
+                            } else {
+                                r.classList.remove('passed');
+                            }
+                        });
+                    }
+                });
+            }, { threshold: 0.5, rootMargin: '-20% 0px -20% 0px' });
+            rows.forEach(function(r) { activeObserver.observe(r); });
         })();
 
         // ==================== PULL TO REFRESH ====================
