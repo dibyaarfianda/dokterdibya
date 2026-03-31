@@ -33,43 +33,69 @@
     }
 
     activeMode = safeGetMode();
+
+    // ---- Dashboard redirect: patient-menu.html <-> patient-menu-trial.html ----
+    var pathname = window.location.pathname;
+    var isOldDashboard = pathname === '/patient-menu.html' || pathname === '/patient-menu';
+    var isTrialDashboard = pathname === '/patient-menu-trial.html' || pathname === '/patient-menu-trial';
+
+    // On old dashboard with trial active -> redirect to trial dashboard
+    if (isOldDashboard && activeMode === MODE_NEW) {
+        // Preserve any non-theme query params (like token)
+        var params = new URLSearchParams(window.location.search);
+        params.delete('theme');
+        var qs = params.toString();
+        window.location.replace('/patient-menu-trial.html' + (qs ? '?' + qs : '') + window.location.hash);
+        return;
+    }
+
+    // On trial dashboard with trial OFF -> redirect to old dashboard
+    if (isTrialDashboard && activeMode !== MODE_NEW) {
+        window.location.replace('/patient-menu.html');
+        return;
+    }
+
+    // If trial is not active, stop here (no CSS injection, no link rewriting)
     if (activeMode !== MODE_NEW) {
         return;
     }
 
-    document.documentElement.classList.add('trial-newdesign-theme');
+    // ---- For non-dashboard pages: apply lightweight CSS override ----
+    if (!isTrialDashboard) {
+        document.documentElement.classList.add('trial-newdesign-theme');
 
-    function applyThemeClass() {
-        if (document.body) {
-            document.body.classList.add('trial-newdesign-theme');
+        function applyThemeClass() {
+            if (document.body) {
+                document.body.classList.add('trial-newdesign-theme');
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyThemeClass, { once: true });
+        } else {
+            applyThemeClass();
+        }
+
+        // Inject trial stylesheet for non-dashboard pages
+        if (!document.getElementById('patient-theme-trial-css')) {
+            var css = document.createElement('link');
+            css.id = 'patient-theme-trial-css';
+            css.rel = 'stylesheet';
+            css.href = '/styles/patient-portal-newdesign-trial.css';
+            document.head.appendChild(css);
+        }
+
+        // Inject Inter font
+        if (!document.getElementById('patient-theme-trial-font')) {
+            var font = document.createElement('link');
+            font.id = 'patient-theme-trial-font';
+            font.rel = 'stylesheet';
+            font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+            document.head.appendChild(font);
         }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applyThemeClass, { once: true });
-    } else {
-        applyThemeClass();
-    }
-
-    // Inject trial stylesheet only when mode is active.
-    if (!document.getElementById('patient-theme-trial-css')) {
-        var css = document.createElement('link');
-        css.id = 'patient-theme-trial-css';
-        css.rel = 'stylesheet';
-        css.href = '/styles/patient-portal-newdesign-trial.css';
-        document.head.appendChild(css);
-    }
-
-    // Match the prototype typography when not already present.
-    if (!document.getElementById('patient-theme-trial-font')) {
-        var font = document.createElement('link');
-        font.id = 'patient-theme-trial-font';
-        font.rel = 'stylesheet';
-        font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
-        document.head.appendChild(font);
-    }
-
-    // Keep the mode sticky when navigating via anchor links.
+    // ---- Keep the mode sticky when navigating via anchor links ----
     document.addEventListener('click', function (event) {
         var target = event.target;
         if (!target) {
@@ -92,6 +118,13 @@
                 return;
             }
 
+            // Redirect patient-menu.html links to trial version
+            if (parsed.pathname === '/patient-menu.html') {
+                link.href = '/patient-menu-trial.html' + parsed.search + parsed.hash;
+                return;
+            }
+
+            // For other .html pages, append theme param for session continuity
             if (parsed.pathname.endsWith('.html')) {
                 parsed.searchParams.set('theme', MODE_NEW);
                 link.href = parsed.pathname + parsed.search + parsed.hash;
