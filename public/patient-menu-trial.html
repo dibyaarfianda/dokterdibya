@@ -1265,18 +1265,19 @@
             max-width: 300px;
         }
 
-        /* Scroll reveal animation */
+        /* Scroll reveal — Flair/Framer appear animation */
         .proces-reveal {
-            opacity: 0;
-            transform: translateY(24px);
-            transition: opacity 0.7s cubic-bezier(0.25, 0.1, 0.25, 1),
-                        transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1);
+            opacity: 0.001;
+            transform: translateY(-20px);
         }
 
         .proces-reveal.visible {
             opacity: 1;
             transform: translateY(0);
+            transition: opacity 0.4s cubic-bezier(0.44, 0, 0.56, 1),
+                        transform 0.4s cubic-bezier(0.44, 0, 0.56, 1);
         }
+
 
         @media (max-width: 600px) {
             .proces-row {
@@ -3516,15 +3517,19 @@
             }
         })();
 
-        // ==================== SCROLL REVEAL (PROCES rows) ====================
+        // ==================== SCROLL REVEAL — Flair stagger (PROCES rows) ====================
         (function() {
             var rows = document.querySelectorAll('.proces-reveal');
             if (!rows.length) return;
+            var idx = 0;
             var observer = new IntersectionObserver(function(entries) {
                 entries.forEach(function(entry) {
                     if (entry.isIntersecting) {
+                        var delay = idx * 0.1; // 0s, 0.1s, 0.2s stagger
+                        entry.target.style.transitionDelay = delay + 's';
                         entry.target.classList.add('visible');
                         observer.unobserve(entry.target);
+                        idx++;
                     }
                 });
             }, { threshold: 0.15 });
