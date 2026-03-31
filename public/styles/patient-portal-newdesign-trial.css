@@ -255,17 +255,22 @@ body.trial-newdesign-theme .menu-card {
     background: var(--trial-bg-surface) !important;
     box-shadow: none !important;
     padding: 20px 14px !important;
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+                background-color 0.25s ease,
+                border-color 0.25s ease,
+                box-shadow 0.25s ease;
+    will-change: transform;
 }
 
 body.trial-newdesign-theme .menu-card:hover {
     background: var(--trial-bg-elevated) !important;
     border-color: var(--trial-line-strong) !important;
-    transform: none !important;
-    box-shadow: none !important;
+    transform: scale(1.03) translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 body.trial-newdesign-theme .menu-card:active {
-    transform: scale(0.97) !important;
+    transform: scale(0.97);
     background: var(--trial-accent-soft) !important;
 }
 
