@@ -1252,9 +1252,11 @@
             color: var(--text-muted);
             white-space: nowrap;
             margin: 0;
-            grid-row: 1 / 3;
+            grid-column: 1;
+            grid-row: 1;
             display: flex;
             align-items: center;
+            align-self: center;
             line-height: 1;
         }
 
@@ -1267,6 +1269,7 @@
             line-height: 1.2;
             margin: 0;
             grid-column: 2;
+            grid-row: 1;
         }
 
         .proces-desc {
@@ -1276,7 +1279,8 @@
             margin: 0;
             overflow: hidden;
             grid-column: 2;
-            transition: opacity 180ms linear, max-height 180ms linear;
+            grid-row: 2;
+            will-change: opacity, max-height;
         }
 
         @media (max-width: 600px) {
@@ -3521,15 +3525,19 @@
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
             var STICKY_OFFSET = 90;
+            var PAD_TOP_MAX = 20;
+            var PAD_TOP_MIN = 20;
+            var PAD_BOT_MAX = 70;
+            var PAD_BOT_MIN = 30;
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
-            // Compute COLLAPSED_H: collapsed top pad + title height + collapsed bottom pad
+            // Compute COLLAPSED_H from the actual collapsed title block.
             function getCollapsedH() {
                 var sample = document.querySelector('.proces-title');
-                if (!sample) return 50;
+                if (!sample) return 76;
                 var titleH = sample.getBoundingClientRect().height;
-                return Math.round(10 + titleH + 10); // PAD_TOP_MIN + title + PAD_BOT_MIN
+                return Math.round(PAD_TOP_MIN + titleH + PAD_BOT_MIN);
             }
 
             var COLLAPSED_H = getCollapsedH();
@@ -3546,7 +3554,7 @@
                     rows.forEach(function(row, i) {
                         if (row === last) return;
                         row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
-                        row.style.zIndex = 2 + i;
+                        row.style.zIndex = 100 - i; // earlier rows on top
                     });
                 });
                 console.log('[PROCES] COLLAPSED_H =', COLLAPSED_H);
@@ -3558,10 +3566,6 @@
             // Strict sequential collapse — segmented scroll timeline.
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
             var SEGMENT = 200;       // px of scroll budget per row
-            var PAD_TOP_MAX = 20;    // top padding expanded
-            var PAD_TOP_MIN = 10;    // top padding collapsed
-            var PAD_BOT_MAX = 70;    // bottom padding expanded (gap)
-            var PAD_BOT_MIN = 10;    // bottom padding collapsed
             var WIPE_HOLD_PX = 20;
             var ticking = false;
             var metricsReady = false;
@@ -3645,14 +3649,20 @@
                         else if (i === activeIndex)    p = localP;
                         else                           p = 0;
 
-                        // Phase 1: opacity fades 0%→10%, Phase 2: height collapses 10%→30%
+                        // Keep the active row above following rows so the fade remains visible.
+                        var layer;
+                        if (activeIndex >= 0 && i === activeIndex) layer = 1000 + count;
+                        else if (i < activeIndex) layer = 900 - i;
+                        else layer = 800 - i;
+                        row.style.zIndex = String(layer);
+
+                        // Fade first, then collapse the desc area after the text is already gone.
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
-                            // Opacity: fully gone by p=0.10
                             var fadeP = Math.min(1, p / 0.10);
                             desc.style.opacity = (1 - fadeP).toFixed(3);
-                            // Height: stays full until p=0.10, then collapses 0.10→0.30
+
                             var heightP = p <= 0.10 ? 0 : Math.min(1, (p - 0.10) / 0.20);
                             desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
                         }
