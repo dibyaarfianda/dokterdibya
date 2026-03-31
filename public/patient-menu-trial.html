@@ -1232,7 +1232,7 @@
             color: inherit;
             cursor: pointer;
             background: var(--bg-page);
-            border-bottom: 1px solid rgba(0,0,0,0.12);
+            border-top: 1px solid rgba(0,0,0,0.12);
             position: sticky;
             z-index: 2;
         }
@@ -3565,20 +3565,20 @@
 
             function onScroll() {
                 sectionData.forEach(function(sd) {
-                    var prevDone = true;
+                    sd.rows.forEach(function(row, i) {
+                        // Collapse is driven by the NEXT row pushing from below.
+                        // When next row's top reaches this row's sticky bottom,
+                        // this row starts collapsing.
+                        var nextRow = sd.rows[i + 1];
+                        if (!nextRow) return; // last sticky row: no collapse (wiper handles it)
 
-                    sd.rows.forEach(function(row) {
-                        var rect = row.getBoundingClientRect();
+                        var stickyBottom = (parseFloat(row.style.top) || 0) + COLLAPSED_H;
+                        var nextTop = nextRow.getBoundingClientRect().top;
 
-                        // How far has the row's top gone above the trigger line?
-                        // Negative = still below trigger, Positive = past trigger
-                        var pastTrigger = TRIGGER_Y - rect.top;
-
-                        // Progress: 0 = at/below trigger, 1 = fully collapsed
-                        var rawP = Math.max(0, Math.min(1, pastTrigger / TRAVEL));
-
-                        // Sequential gate: only collapse if previous row is done
-                        var p = prevDone ? rawP : 0;
+                        // Distance from next row to this row's collapse zone
+                        // When nextTop = stickyBottom + TRAVEL → p = 0 (expanded)
+                        // When nextTop = stickyBottom → p = 1 (fully collapsed)
+                        var p = Math.max(0, Math.min(1, 1 - (nextTop - stickyBottom) / TRAVEL));
 
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
@@ -3589,8 +3589,6 @@
                         var pad = 28 - (20 * p);
                         row.style.paddingTop = pad + 'px';
                         row.style.paddingBottom = pad + 'px';
-
-                        prevDone = (p >= 1);
                     });
                 });
                 ticking = false;
