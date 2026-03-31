@@ -613,18 +613,18 @@
             cursor: pointer;
             font-family: var(--font-main);
             letter-spacing: 0.02em;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                        background 0.3s ease;
         }
 
         .cta-btn:hover {
-            transform: scale(1.15);
+            transform: scale(1.08);
             background: #f0f0f0;
-            z-index: 10;
         }
 
         .cta-btn:active {
             transform: scale(0.95);
-            background: #e0e0e0;
+            transition: transform 0.15s ease;
         }
 
         /* ========== WELCOME SECTION ========== */
@@ -1050,7 +1050,9 @@
             padding: 22px 16px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                        background 0.3s ease,
+                        border-color 0.3s ease;
             position: relative;
             background: var(--bg-surface);
             box-shadow: var(--shadow-soft);
@@ -1060,12 +1062,13 @@
             background: #fafafa;
             border-color: #93c5fd;
             border-style: solid;
-            transform: scale(1.15);
+            transform: scale(1.06);
             z-index: 10;
         }
 
         .menu-card:active {
             transform: scale(0.95);
+            transition: transform 0.15s ease;
         }
 
         .menu-icon {
