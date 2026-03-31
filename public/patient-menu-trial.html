@@ -3551,20 +3551,23 @@
                 });
             });
 
-            // Scroll handler: fade desc when row is stuck (at its sticky top)
+            // Scroll handler: sequential collapse — row N waits for row N-1 to finish
             var ticking = false;
             function onScroll() {
                 sections.forEach(function(section) {
                     var rows = Array.from(section.querySelectorAll('.proces-row'));
-                    rows.forEach(function(row) {
+                    var prevDone = true; // first row can always start
+
+                    rows.forEach(function(row, i) {
                         if (row.classList.contains('proces-wiper')) return;
 
                         var rect = row.getBoundingClientRect();
                         var stickyTop = parseFloat(row.style.top) || 0;
-                        // How close is the row to its sticky position?
-                        // 0 = far below (expanded), 1 = stuck at top (collapsed)
                         var distFromStuck = rect.top - stickyTop;
-                        var p = Math.max(0, Math.min(1, 1 - (distFromStuck / 120)));
+                        var rawP = Math.max(0, Math.min(1, 1 - (distFromStuck / 120)));
+
+                        // Only allow collapse if previous row is fully collapsed
+                        var p = prevDone ? rawP : 0;
 
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
@@ -3572,10 +3575,12 @@
                             desc.style.maxHeight = ((1 - p) * 80) + 'px';
                         }
 
-                        // Collapse padding: 28 → 8
                         var pad = 28 - (20 * p);
                         row.style.paddingTop = pad + 'px';
                         row.style.paddingBottom = pad + 'px';
+
+                        // This row is "done" when fully collapsed
+                        prevDone = (p >= 0.95);
                     });
                 });
                 ticking = false;
