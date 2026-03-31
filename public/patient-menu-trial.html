@@ -3565,7 +3565,7 @@
 
             // Strict sequential collapse — segmented scroll timeline.
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
-            var SEGMENT = 200;       // px of scroll budget per row
+            var SEGMENT = 420;       // px of scroll budget per row (10% fade window = 42px)
             var WIPE_HOLD_PX = 20;
             var ticking = false;
             var metricsReady = false;
@@ -3656,14 +3656,21 @@
                         else layer = 800 - i;
                         row.style.zIndex = String(layer);
 
-                        // Fade first, then collapse the desc area after the text is already gone.
+                        // Fade in the first 10% of collapse, then reduce height between 10%-30%.
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
-                            var fadeP = Math.min(1, p / 0.10);
+                            var collapsePx = p * SEGMENT;
+                            var fadeCutoffPx = SEGMENT * 0.10;
+                            var heightStartPx = SEGMENT * 0.10;
+                            var heightEndPx = SEGMENT * 0.30;
+
+                            var fadeP = Math.min(1, collapsePx / fadeCutoffPx);
                             desc.style.opacity = (1 - fadeP).toFixed(3);
 
-                            var heightP = p <= 0.10 ? 0 : Math.min(1, (p - 0.10) / 0.20);
+                            var heightP = collapsePx <= heightStartPx
+                                ? 0
+                                : Math.min(1, (collapsePx - heightStartPx) / (heightEndPx - heightStartPx));
                             desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
                         }
 
