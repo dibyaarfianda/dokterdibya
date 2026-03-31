@@ -371,12 +371,17 @@
         }
 
         .section-title {
-            margin-top: 8px;
+            margin-top: 28px;
+            margin-bottom: 12px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.18em;
             color: var(--text-secondary);
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
         }
 
         /* ========== LOADING STATE ========== */
@@ -1041,7 +1046,7 @@
 
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
         }
 
@@ -1840,7 +1845,6 @@
         @media (min-width: 600px) {
             .screen { padding-left: 24px; padding-right: 24px; }
             .topbar-inner { padding-left: 24px; padding-right: 24px; }
-            .menu-grid { grid-template-columns: repeat(3, 1fr); }
             .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
             .hero-greeting { font-size: 42px; }
             .tanya-actions { flex-wrap: nowrap; }
@@ -2148,55 +2152,92 @@
                 </div>
             </div>
 
-            <!-- Menu Grid -->
+            <!-- Menu Sections (all sub-menus exposed) -->
             <div class="menu-container">
-                <div class="section-title" style="margin-bottom: 12px;">Layanan</div>
+
+                <!-- DOKUMEN -->
+                <div class="section-title">Dokumen</div>
                 <div class="menu-grid">
-                    <!-- Card 1: Dokumen -->
-                    <div class="menu-card" onclick="navigateTo('dokumen')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-folder-open"></i>
-                        </div>
-                        <h3>Dokumen</h3>
-                        <p>USG, Lab, Resume</p>
+                    <div class="menu-card" onclick="window.location.href='/album-usg-trial.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-image"></i></div>
+                        <h3>Album USG</h3>
                     </div>
-
-                    <!-- Card 2: Aplikasi -->
-                    <div class="menu-card" onclick="navigateTo('aplikasi')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-th-large"></i>
-                        </div>
-                        <h3>Aplikasi</h3>
-                        <p>Tanya Dokter, Monitoring</p>
+                    <div class="menu-card" onclick="window.location.href='/hasil-lab.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-flask"></i></div>
+                        <h3>Hasil Lab</h3>
                     </div>
-
-                    <!-- Card 3: Edukasi -->
-                    <div class="menu-card" onclick="navigateTo('edukasi')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-book-open"></i>
-                        </div>
-                        <h3>Edukasi</h3>
-                        <p>Perjalanan Ibu, Membaca</p>
-                    </div>
-
-                    <!-- Card 4: Jadwal -->
-                    <div class="menu-card" onclick="navigateTo('jadwal')">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-calendar-days"></i>
-                        </div>
-                        <h3>Jadwal</h3>
-                        <p>Booking, Jadwal RS</p>
-                    </div>
-
-                    <!-- Card 5: Tagihan (Trial - hidden by default) -->
-                    <div class="menu-card" id="menu-tagihan" onclick="window.location.href='/patient-billing.html'" style="display:none;">
-                        <div class="menu-icon">
-                            <i class="fa-solid fa-credit-card"></i>
-                        </div>
-                        <h3>Tagihan</h3>
-                        <p>Bayar Online</p>
+                    <div class="menu-card" onclick="window.location.href='/dokumen-medis-trial.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-file-medical"></i></div>
+                        <h3>Resume Medis</h3>
                     </div>
                 </div>
+
+                <!-- APLIKASI -->
+                <div class="section-title">Aplikasi</div>
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="window.location.href='/tanya-dokter.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-comments"></i></div>
+                        <h3>Tanya Dokter</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/kick-counter.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-hand"></i></div>
+                        <h3>Gerakan Bayi</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/pregnancy-tracker.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-chart-line"></i></div>
+                        <h3>Monitoring</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/fertility-calendar.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                        <h3>Kesuburan</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/jadwal-vitamin.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-kit-medical"></i></div>
+                        <h3>Jadwal Vitamin</h3>
+                    </div>
+                </div>
+
+                <!-- EDUKASI -->
+                <div class="section-title">Edukasi</div>
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="window.location.href='/perjalanan-ibu.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-heart"></i></div>
+                        <h3>Perjalanan Ibu</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/artikel.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-book-open"></i></div>
+                        <h3>Ruang Membaca</h3>
+                    </div>
+                </div>
+
+                <!-- JADWAL -->
+                <div class="section-title">Jadwal</div>
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="window.location.href='/booking-klinik-trial.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                        <h3>Booking Klinik</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/jadwal-rs.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-hospital"></i></div>
+                        <h3>Jadwal RS</h3>
+                    </div>
+                    <div class="menu-card" onclick="window.location.href='/riwayat-kunjungan.html'">
+                        <div class="menu-icon"><i class="fa-solid fa-stethoscope"></i></div>
+                        <h3>Riwayat Kunjungan</h3>
+                    </div>
+                </div>
+
+                <!-- TAGIHAN (hidden by default) -->
+                <div id="menu-tagihan" style="display:none;">
+                    <div class="section-title">Tagihan</div>
+                    <div class="menu-grid">
+                        <div class="menu-card" onclick="window.location.href='/patient-billing.html'">
+                            <div class="menu-icon"><i class="fa-solid fa-credit-card"></i></div>
+                            <h3>Bayar Online</h3>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Booking CTA Card -->
@@ -2706,22 +2747,7 @@
                     window._unreadDocCounts = data.counts;
                 }
 
-                // Update main Dokumen card badge with total count
-                const dokumenCard = document.querySelector('.menu-card:first-child');
-                const total = window._unreadDocCounts.total || 0;
-                if (total > 0 && dokumenCard) {
-                    let badge = dokumenCard.querySelector('.menu-badge');
-                    if (!badge) {
-                        badge = document.createElement('span');
-                        badge.className = 'menu-badge';
-                        dokumenCard.appendChild(badge);
-                    }
-                    badge.textContent = total;
-                    badge.style.display = 'flex';
-                } else if (dokumenCard) {
-                    const badge = dokumenCard.querySelector('.menu-badge');
-                    if (badge) badge.style.display = 'none';
-                }
+                // Unread doc counts available via window._unreadDocCounts for sub-menus
 
                 // Update bottom nav Dokumen badge
                 const docNavBadge = document.getElementById('doc-nav-badge');
@@ -3127,35 +3153,30 @@
 
         // ==================== MENU CARD NEIGHBOR EFFECT ====================
         (function() {
-            var grid = document.querySelector('.menu-grid');
-            if (!grid) return;
-            var cards = Array.from(grid.querySelectorAll('.menu-card'));
-            var cols = 2; // 2-column grid
+            var grids = document.querySelectorAll('.menu-grid');
+            grids.forEach(function(grid) {
+                var cards = Array.from(grid.querySelectorAll('.menu-card'));
+                var cols = 3;
 
-            function clearNeighbors() {
-                cards.forEach(function(c) { c.classList.remove('neighbor'); });
-            }
+                function clearNeighbors() {
+                    cards.forEach(function(c) { c.classList.remove('neighbor'); });
+                }
 
-            cards.forEach(function(card, i) {
-                card.addEventListener('mouseenter', function() {
-                    clearNeighbors();
-                    var row = Math.floor(i / cols);
-                    var col = i % cols;
-                    // right neighbor (same row)
-                    if (col + 1 < cols && cards[i + 1]) cards[i + 1].classList.add('neighbor');
-                    // left neighbor (same row)
-                    if (col - 1 >= 0 && cards[i - 1]) cards[i - 1].classList.add('neighbor');
-                    // below
-                    if (cards[i + cols]) cards[i + cols].classList.add('neighbor');
-                    // above
-                    if (cards[i - cols]) cards[i - cols].classList.add('neighbor');
+                cards.forEach(function(card, i) {
+                    card.addEventListener('mouseenter', function() {
+                        clearNeighbors();
+                        var row = Math.floor(i / cols);
+                        var col = i % cols;
+                        if (col + 1 < cols && cards[i + 1]) cards[i + 1].classList.add('neighbor');
+                        if (col - 1 >= 0 && cards[i - 1]) cards[i - 1].classList.add('neighbor');
+                        if (cards[i + cols]) cards[i + cols].classList.add('neighbor');
+                        if (cards[i - cols]) cards[i - cols].classList.add('neighbor');
+                    });
+                    card.addEventListener('mouseleave', clearNeighbors);
                 });
-                card.addEventListener('mouseleave', function() {
-                    clearNeighbors();
-                });
+
+                grid.addEventListener('mouseleave', clearNeighbors);
             });
-
-            grid.addEventListener('mouseleave', clearNeighbors);
         })();
 
         // ==================== PULL TO REFRESH ====================
