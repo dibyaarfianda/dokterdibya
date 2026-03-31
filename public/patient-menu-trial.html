@@ -3568,12 +3568,21 @@
             var SEGMENT = 420;       // px of scroll budget per row (10% fade window = 42px)
             var WIPE_HOLD_PX = 20;
             var ticking = false;
+            var animating = false;
             var metricsReady = false;
 
             var sectionData = [];
             sections.forEach(function(section) {
                 var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
-                sectionData.push({ el: section, rows: rows, startY: 0, endY: 0 });
+                sectionData.push({
+                    el: section,
+                    rows: rows,
+                    startY: 0,
+                    endY: 0,
+                    activeIndex: -1,
+                    targetP: rows.map(function() { return 0; }),
+                    renderP: rows.map(function() { return 0; })
+                });
             });
 
             function rebuildMetrics() {
@@ -3593,11 +3602,16 @@
                         var desc = row.querySelector('.proces-desc');
                         return desc ? Math.min(desc.scrollHeight, 120) : 80;
                     });
+
+                    sd.targetP = sd.rows.map(function(_, i) { return sd.targetP[i] || 0; });
+                    sd.renderP = sd.rows.map(function(_, i) { return sd.renderP[i] || 0; });
                 });
                 metricsReady = true;
                 console.log('[PROCES] metrics rebuilt:', { COLLAPSED_H: COLLAPSED_H }, sectionData.map(function(sd) {
                     return { startY: Math.round(sd.startY), endY: Math.round(sd.endY), rowCount: sd.rows.length };
                 }));
+
+                onScroll();
             }
 
             // Rebuild after content-wrapper is shown (profile loaded) + on resize
@@ -3611,6 +3625,75 @@
             window.addEventListener('resize', scheduleRebuild);
             // Also rebuild once now in case content is already visible
             setTimeout(rebuildMetrics, 500);
+
+            function applyRowState(sd, i, p) {
+                var row = sd.rows[i];
+                if (!row) return;
+
+                // Keep the active row above following rows so fade remains visible.
+                var layer;
+                if (sd.activeIndex >= 0 && i === sd.activeIndex) layer = 1000 + sd.rows.length;
+                else if (i < sd.activeIndex) layer = 900 - i;
+                else layer = 800 - i;
+                row.style.zIndex = String(layer);
+
+                // Two-phase fade in first 10%: visible but brief, then fully gone before height collapse.
+                var descH = (sd.descHeights && sd.descHeights[i]) || 80;
+                var desc = row.querySelector('.proces-desc');
+                if (desc) {
+                    var collapsePx = p * SEGMENT;
+                    var fadeCutoffPx = SEGMENT * 0.10;
+                    var heightStartPx = SEGMENT * 0.10;
+                    var heightEndPx = SEGMENT * 0.30;
+
+                    var fadeP = Math.min(1, collapsePx / fadeCutoffPx);
+                    var opacity;
+                    if (fadeP <= 0.60) {
+                        // 0-6%: clear fade from 1 -> 0.35
+                        opacity = 1 - (fadeP / 0.60) * 0.65;
+                    } else {
+                        // 6-10%: fast finish 0.35 -> 0
+                        opacity = 0.35 * (1 - ((fadeP - 0.60) / 0.40));
+                    }
+                    desc.style.opacity = Math.max(0, opacity).toFixed(3);
+
+                    var heightP = collapsePx <= heightStartPx
+                        ? 0
+                        : Math.min(1, (collapsePx - heightStartPx) / (heightEndPx - heightStartPx));
+                    desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
+                }
+
+                var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
+                var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * p;
+                row.style.paddingTop = padTop.toFixed(1) + 'px';
+                row.style.paddingBottom = padBot.toFixed(1) + 'px';
+            }
+
+            function renderAnimatedFrame() {
+                if (!metricsReady) { animating = false; return; }
+
+                var needsMore = false;
+                sectionData.forEach(function(sd) {
+                    sd.rows.forEach(function(_, i) {
+                        var target = sd.targetP[i] || 0;
+                        var current = sd.renderP[i] || 0;
+                        var next = current + (target - current) * 0.35;
+                        if (Math.abs(target - next) < 0.001) {
+                            next = target;
+                        } else {
+                            needsMore = true;
+                        }
+                        sd.renderP[i] = next;
+                        applyRowState(sd, i, next);
+                    });
+                });
+
+                if (needsMore) {
+                    requestAnimationFrame(renderAnimatedFrame);
+                } else {
+                    animating = false;
+                }
+            }
 
             function onScroll() {
                 if (!metricsReady) { ticking = false; return; }
@@ -3642,50 +3725,16 @@
                         localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
                     }
 
-                    sd.rows.forEach(function(row, i) {
+                    sd.activeIndex = activeIndex;
+
+                    sd.rows.forEach(function(_, i) {
                         var p;
                         if (activeIndex < 0)           p = 0;
                         else if (i < activeIndex)      p = 1;
                         else if (i === activeIndex)    p = localP;
                         else                           p = 0;
-
-                        // Keep the active row above following rows so the fade remains visible.
-                        var layer;
-                        if (activeIndex >= 0 && i === activeIndex) layer = 1000 + count;
-                        else if (i < activeIndex) layer = 900 - i;
-                        else layer = 800 - i;
-                        row.style.zIndex = String(layer);
-
-                        // Two-phase fade in first 10%: visible but brief, then fully gone before height collapse.
-                        var descH = (sd.descHeights && sd.descHeights[i]) || 80;
-                        var desc = row.querySelector('.proces-desc');
-                        if (desc) {
-                            var collapsePx = p * SEGMENT;
-                            var fadeCutoffPx = SEGMENT * 0.10;
-                            var heightStartPx = SEGMENT * 0.10;
-                            var heightEndPx = SEGMENT * 0.30;
-
-                            var fadeP = Math.min(1, collapsePx / fadeCutoffPx);
-                            var opacity;
-                            if (fadeP <= 0.60) {
-                                // 0-6%: clear fade from 1 -> 0.35
-                                opacity = 1 - (fadeP / 0.60) * 0.65;
-                            } else {
-                                // 6-10%: fast finish 0.35 -> 0
-                                opacity = 0.35 * (1 - ((fadeP - 0.60) / 0.40));
-                            }
-                            desc.style.opacity = Math.max(0, opacity).toFixed(3);
-
-                            var heightP = collapsePx <= heightStartPx
-                                ? 0
-                                : Math.min(1, (collapsePx - heightStartPx) / (heightEndPx - heightStartPx));
-                            desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
-                        }
-
-                        var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
-                        var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * p;
-                        row.style.paddingTop = padTop.toFixed(1) + 'px';
-                        row.style.paddingBottom = padBot.toFixed(1) + 'px';
+                        sd.targetP[i] = p;
+                        if (typeof sd.renderP[i] !== 'number') sd.renderP[i] = p;
                     });
 
                     // Debug: log 1 in every 30 frames
@@ -3702,6 +3751,12 @@
                         });
                     }
                 });
+
+                if (!animating) {
+                    animating = true;
+                    requestAnimationFrame(renderAnimatedFrame);
+                }
+
                 ticking = false;
             }
 
