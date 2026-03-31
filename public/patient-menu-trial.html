@@ -3550,35 +3550,41 @@
                 });
             });
 
-            // Scroll handler: each row starts collapsing when its top reaches
-            // TRIGGER_Y (70px from viewport top). Collapse takes TRAVEL px of
-            // scroll. Sequential: row N waits for row N-1 to fully finish.
-            var TRIGGER_Y = 70;  // px from top of viewport to start collapse
-            var TRAVEL = 150;    // px of scroll to fully collapse one row
+            // Strict sequential collapse — segmented scroll timeline.
+            // Only ONE row animates at a time. Row N must reach p=1 before Row N+1 starts.
+            var SEGMENT = 200;   // px of scroll budget per row
+            var PAD_MAX = 28;
+            var PAD_MIN = 8;
             var ticking = false;
 
             var sectionData = [];
             sections.forEach(function(section) {
                 var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
-                sectionData.push({ rows: rows });
+                // Cache section offset (document-relative)
+                var rect = section.getBoundingClientRect();
+                var startY = rect.top + window.scrollY + rect.height * 0.3; // trigger point
+                sectionData.push({ rows: rows, startY: startY });
             });
 
             function onScroll() {
+                var scrollY = window.scrollY;
+
                 sectionData.forEach(function(sd) {
+                    var total = scrollY - sd.startY; // how far past section trigger
+                    var count = sd.rows.length;
+
+                    // activeIndex = which row is currently animating
+                    var activeIndex = Math.floor(total / SEGMENT);
+                    var localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
+
                     sd.rows.forEach(function(row, i) {
-                        // Collapse is driven by the NEXT row pushing from below.
-                        // When next row's top reaches this row's sticky bottom,
-                        // this row starts collapsing.
-                        var nextRow = sd.rows[i + 1];
-                        if (!nextRow) return; // last sticky row: no collapse (wiper handles it)
+                        var p;
+                        if (i < activeIndex)      p = 1;       // fully collapsed
+                        else if (i === activeIndex) p = localP; // animating now
+                        else                       p = 0;       // untouched
 
-                        var stickyBottom = (parseFloat(row.style.top) || 0) + COLLAPSED_H;
-                        var nextTop = nextRow.getBoundingClientRect().top;
-
-                        // Distance from next row to this row's collapse zone
-                        // When nextTop = stickyBottom + TRAVEL → p = 0 (expanded)
-                        // When nextTop = stickyBottom → p = 1 (fully collapsed)
-                        var p = Math.max(0, Math.min(1, 1 - (nextTop - stickyBottom) / TRAVEL));
+                        // Clamp: don't collapse the last sticky row (wiper handles it)
+                        p = Math.max(0, Math.min(1, p));
 
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
@@ -3586,9 +3592,8 @@
                             desc.style.maxHeight = ((1 - p) * 80) + 'px';
                         }
 
-                        var pad = 28 - (20 * p);
-                        row.style.paddingTop = pad + 'px';
-                        row.style.paddingBottom = pad + 'px';
+                        row.style.paddingTop = (PAD_MAX - (PAD_MAX - PAD_MIN) * p) + 'px';
+                        row.style.paddingBottom = (PAD_MAX - (PAD_MAX - PAD_MIN) * p) + 'px';
                     });
                 });
                 ticking = false;
