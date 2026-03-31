@@ -2386,6 +2386,31 @@
             }
         })();
 
+        // ==================== HERO ANIMATION HELPER ====================
+        function triggerHeroAnimations() {
+            document.body.classList.remove('header-animated');
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    document.body.classList.add('header-animated');
+                });
+            });
+
+            // Safety net: force visible after 3s if animation didn't run
+            setTimeout(function() {
+                var kicker = document.getElementById('hero-kicker');
+                var greeting = document.getElementById('hero-greeting');
+                if (kicker && getComputedStyle(kicker).opacity === '0') {
+                    kicker.style.opacity = '1';
+                    kicker.style.transform = 'none';
+                }
+                if (greeting && getComputedStyle(greeting).opacity === '0') {
+                    greeting.style.opacity = '1';
+                    greeting.style.transform = 'none';
+                    greeting.style.filter = 'none';
+                }
+            }, 3000);
+        }
+
         // ==================== LOAD PROFILE ====================
         async function loadProfile() {
             const token = getToken();
@@ -2453,6 +2478,9 @@
                     // Show content
                     document.getElementById('loading-state').style.display = 'none';
                     document.getElementById('content-wrapper').style.display = 'block';
+
+                    // Re-trigger hero animations now that content is visible
+                    triggerHeroAnimations();
                 } else {
                     throw new Error('Failed to load profile');
                 }
@@ -2462,6 +2490,9 @@
                 document.getElementById('user-avatar-initials').textContent = '--';
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-wrapper').style.display = 'block';
+
+                // Re-trigger hero animations now that content is visible
+                triggerHeroAnimations();
             }
         }
 
