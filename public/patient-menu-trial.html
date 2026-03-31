@@ -3656,7 +3656,7 @@
                         else layer = 800 - i;
                         row.style.zIndex = String(layer);
 
-                        // Fade quickly in the first 10% (avoid long translucent ghost), then reduce height 10%-30%.
+                        // Two-phase fade in first 10%: visible but brief, then fully gone before height collapse.
                         var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
@@ -3666,9 +3666,15 @@
                             var heightEndPx = SEGMENT * 0.30;
 
                             var fadeP = Math.min(1, collapsePx / fadeCutoffPx);
-                            var easedFade = 1 - Math.pow(fadeP, 0.35);
-                            desc.style.opacity = Math.max(0, easedFade).toFixed(3);
-                            desc.style.visibility = fadeP >= 0.70 ? 'hidden' : 'visible';
+                            var opacity;
+                            if (fadeP <= 0.60) {
+                                // 0-6%: clear fade from 1 -> 0.35
+                                opacity = 1 - (fadeP / 0.60) * 0.65;
+                            } else {
+                                // 6-10%: fast finish 0.35 -> 0
+                                opacity = 0.35 * (1 - ((fadeP - 0.60) / 0.40));
+                            }
+                            desc.style.opacity = Math.max(0, opacity).toFixed(3);
 
                             var heightP = collapsePx <= heightStartPx
                                 ? 0
