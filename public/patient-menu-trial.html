@@ -1050,23 +1050,20 @@
             padding: 22px 16px;
             text-align: center;
             cursor: pointer;
-            transition: all 3s cubic-bezier(0.25, 0.1, 0.25, 1);
+            transform: scale(1);
+            transition: transform 3s ease-in-out !important;
             position: relative;
             background: var(--bg-surface);
             box-shadow: var(--shadow-soft);
         }
 
         .menu-card:hover {
-            background: #fafafa;
-            border-color: #93c5fd;
-            border-style: solid;
-            transform: scale(1.5);
-            z-index: 10;
+            transform: scale(1.2) !important;
         }
 
         .menu-card:active {
-            transform: scale(0.95);
-            transition: transform 0.15s ease;
+            transform: scale(0.95) !important;
+            transition: transform 0.15s ease !important;
         }
 
         .menu-icon {
