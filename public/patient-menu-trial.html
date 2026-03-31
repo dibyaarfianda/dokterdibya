@@ -3568,15 +3568,19 @@
             function rebuildMetrics() {
                 var scrollY = window.scrollY;
                 sectionData.forEach(function(sd) {
-                    // startY = top of first row in document coords, minus STICKY_OFFSET
                     if (sd.rows.length > 0) {
                         var firstRect = sd.rows[0].getBoundingClientRect();
                         sd.startY = firstRect.top + scrollY - STICKY_OFFSET;
                     }
+                    // Cache desc base heights
+                    sd.descHeights = sd.rows.map(function(row) {
+                        var desc = row.querySelector('.proces-desc');
+                        return desc ? Math.min(desc.scrollHeight, 120) : 80;
+                    });
                 });
                 metricsReady = true;
                 console.log('[PROCES] metrics rebuilt:', sectionData.map(function(sd) {
-                    return { startY: Math.round(sd.startY), rowCount: sd.rows.length };
+                    return { startY: Math.round(sd.startY), rowCount: sd.rows.length, descH: sd.descHeights };
                 }));
             }
 
@@ -3616,10 +3620,13 @@
                         else if (i === activeIndex)    p = localP; // animating
                         else                           p = 0; // untouched
 
+                        // Desc fade: accelerated — finishes at p=0.7
+                        var fadeP = Math.max(0, Math.min(1, p / 0.7));
+                        var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                         var desc = row.querySelector('.proces-desc');
                         if (desc) {
-                            desc.style.opacity = (1 - p).toFixed(3);
-                            desc.style.maxHeight = ((1 - p) * 80).toFixed(1) + 'px';
+                            desc.style.opacity = (1 - fadeP).toFixed(3);
+                            desc.style.maxHeight = (descH * (1 - fadeP)).toFixed(1) + 'px';
                         }
 
                         var pad = PAD_MAX - (PAD_MAX - PAD_MIN) * p;
