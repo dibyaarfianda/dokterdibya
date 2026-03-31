@@ -1,0 +1,1041 @@
+/* ============================================================
+   Trial theme — mirrors newdesign/patient-portal.html
+   Activated by patient-theme-trial.js when ?theme=newdesign
+   ============================================================ */
+
+/* ---------- Design Tokens ---------- */
+.trial-newdesign-theme {
+    --trial-bg-page: #ffffff;
+    --trial-bg-surface: #ffffff;
+    --trial-bg-elevated: #f6f6f6;
+    --trial-text-primary: #111111;
+    --trial-text-body: #2b2b2b;
+    --trial-text-secondary: #565656;
+    --trial-text-muted: #767676;
+    --trial-line-soft: rgba(0, 0, 0, 0.12);
+    --trial-line-strong: rgba(0, 0, 0, 0.2);
+    --trial-accent: #111111;
+    --trial-accent-hover: #2a2a2a;
+    --trial-accent-soft: rgba(0, 0, 0, 0.08);
+    --trial-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --trial-radius: 12px;
+    --trial-border: 1.8px dashed var(--trial-line-soft);
+    --trial-border-strong: 1.8px dashed var(--trial-line-strong);
+}
+
+/* ---------- Global ---------- */
+html.trial-newdesign-theme,
+body.trial-newdesign-theme {
+    background: var(--trial-bg-page) !important;
+    color: var(--trial-text-primary) !important;
+    font-family: var(--trial-font) !important;
+    -webkit-font-smoothing: antialiased !important;
+}
+
+body.trial-newdesign-theme *:not(i):not(.fa):not([class*="fa-"]) {
+    font-family: var(--trial-font) !important;
+}
+
+body.trial-newdesign-theme .app-wrapper,
+body.trial-newdesign-theme .content,
+body.trial-newdesign-theme .content-full,
+body.trial-newdesign-theme .content-container,
+body.trial-newdesign-theme main {
+    background: transparent !important;
+}
+
+/* ---------- Grid Background (decorative) ---------- */
+body.trial-newdesign-theme::before {
+    content: '';
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    height: 600px;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(to right, #f2f2f2 1px, transparent 1px),
+        linear-gradient(to bottom, #f2f2f2 1px, transparent 1px);
+    background-size: 16px 16px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0,0,0,0.9), rgba(0,0,0,0.25) 55%, transparent 85%);
+    mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0,0,0,0.9), rgba(0,0,0,0.25) 55%, transparent 85%);
+}
+
+/* ---------- Topbar / Navbar ---------- */
+body.trial-newdesign-theme .nav-bar,
+body.trial-newdesign-theme .topbar,
+body.trial-newdesign-theme nav {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1.5px dashed var(--trial-line-soft) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    backdrop-filter: blur(24px) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .nav-container,
+body.trial-newdesign-theme .topbar-inner {
+    max-width: 760px !important;
+    margin: 0 auto !important;
+}
+
+body.trial-newdesign-theme .welcome-text,
+body.trial-newdesign-theme .brand {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .welcome-title,
+body.trial-newdesign-theme .brand-title {
+    color: var(--trial-text-primary) !important;
+    font-weight: 700 !important;
+    font-size: 19px !important;
+    letter-spacing: -0.01em !important;
+}
+
+body.trial-newdesign-theme .welcome-subtitle,
+body.trial-newdesign-theme .brand-sub {
+    color: var(--trial-text-muted) !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2em !important;
+}
+
+body.trial-newdesign-theme .nav-bar a,
+body.trial-newdesign-theme .user-info-nav .user-name {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .user-info-nav .user-role {
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Notification Bell ---------- */
+body.trial-newdesign-theme .notification-bell,
+body.trial-newdesign-theme .circle-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background: var(--trial-bg-surface) !important;
+    color: var(--trial-text-primary) !important;
+    border: none !important;
+    display: grid !important;
+    place-items: center !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .notification-bell:hover,
+body.trial-newdesign-theme .circle-btn:hover {
+    background: #f0f0f0 !important;
+}
+
+/* ---------- Avatar ---------- */
+body.trial-newdesign-theme .avatar-circle,
+body.trial-newdesign-theme .user-avatar,
+body.trial-newdesign-theme .avatar,
+body.trial-newdesign-theme .avatar-large,
+body.trial-newdesign-theme .user-avatar-nav .avatar-circle {
+    background: #e9e9e9 !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .avatar-circle span,
+body.trial-newdesign-theme .user-avatar span,
+body.trial-newdesign-theme .avatar span {
+    color: var(--trial-text-primary) !important;
+}
+
+/* ---------- VIP Badge ---------- */
+body.trial-newdesign-theme .vip-badge {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    font-size: 7px !important;
+    font-weight: 700 !important;
+    padding: 1px 4px !important;
+    border-radius: 6px !important;
+    border: 2px solid var(--trial-bg-surface) !important;
+}
+
+/* ---------- Dropdown Menu ---------- */
+body.trial-newdesign-theme .dropdown-menu-custom {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .dropdown-menu-custom a {
+    color: var(--trial-text-primary) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+body.trial-newdesign-theme .dropdown-menu-custom a:hover,
+body.trial-newdesign-theme .dropdown-menu-custom a:active {
+    background: var(--trial-accent-soft) !important;
+}
+
+body.trial-newdesign-theme .dropdown-menu-custom a i {
+    color: var(--trial-text-secondary) !important;
+}
+
+body.trial-newdesign-theme .dropdown-menu-custom a.logout {
+    border-top: var(--trial-border) !important;
+}
+
+/* ---------- Dashboard Cards ---------- */
+body.trial-newdesign-theme .dashboard-card,
+body.trial-newdesign-theme .dash-card {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .dashboard-card:hover,
+body.trial-newdesign-theme .dash-card:hover {
+    background: var(--trial-bg-elevated) !important;
+    border-color: var(--trial-line-strong) !important;
+}
+
+body.trial-newdesign-theme .collapsible-header,
+body.trial-newdesign-theme .dash-card-header {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .collapsible-header h3,
+body.trial-newdesign-theme .dash-card-header h3 {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .collapsible-header i,
+body.trial-newdesign-theme .dash-card-header i {
+    color: var(--trial-text-secondary) !important;
+}
+
+body.trial-newdesign-theme .toggle-icon {
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Welcome Section ---------- */
+body.trial-newdesign-theme #welcome-section {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .welcome-content,
+body.trial-newdesign-theme .welcome-body {
+    color: var(--trial-text-body) !important;
+}
+
+body.trial-newdesign-theme .welcome-content p,
+body.trial-newdesign-theme .welcome-body p {
+    color: var(--trial-text-body) !important;
+}
+
+/* ---------- Menu Grid & Cards ---------- */
+body.trial-newdesign-theme .menu-container {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+body.trial-newdesign-theme .menu-grid {
+    gap: 10px !important;
+}
+
+body.trial-newdesign-theme .menu-card {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+    padding: 20px 14px !important;
+}
+
+body.trial-newdesign-theme .menu-card:hover {
+    background: var(--trial-bg-elevated) !important;
+    border-color: var(--trial-line-strong) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .menu-card:active {
+    transform: scale(0.97) !important;
+    background: var(--trial-accent-soft) !important;
+}
+
+body.trial-newdesign-theme .menu-card h3 {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .menu-card p {
+    font-size: 10px !important;
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Menu Icons ---------- */
+body.trial-newdesign-theme .menu-icon {
+    background: var(--trial-accent-soft) !important;
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    color: var(--trial-text-primary) !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+
+body.trial-newdesign-theme .menu-icon i {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .menu-badge {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Quick Status Card ---------- */
+body.trial-newdesign-theme .quick-status {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+body.trial-newdesign-theme .status-card {
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .status-card .status-icon {
+    background: var(--trial-accent-soft) !important;
+    border: var(--trial-border) !important;
+    border-radius: 10px !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .status-card .status-icon i {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .status-card .status-info h4 {
+    color: var(--trial-text-primary) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+body.trial-newdesign-theme .status-card .status-info p {
+    color: var(--trial-text-muted) !important;
+    font-size: 11px !important;
+}
+
+/* ---------- Birth Congratulations Card ---------- */
+body.trial-newdesign-theme .birth-congrats-card {
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .birth-corner-accent {
+    border-color: var(--trial-accent) !important;
+    border-style: dashed !important;
+    border-width: 1.8px !important;
+}
+
+body.trial-newdesign-theme .birth-header h2 {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .birth-photo {
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .birth-details h3 {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .birth-subtitle {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .birth-detail-box {
+    background: var(--trial-accent-soft) !important;
+    border: var(--trial-border) !important;
+    border-radius: 10px !important;
+}
+
+body.trial-newdesign-theme .birth-detail-label {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .birth-detail-value {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .birth-message-container {
+    background: var(--trial-accent-soft) !important;
+    border-left: 3px dashed var(--trial-accent) !important;
+}
+
+body.trial-newdesign-theme .birth-message-label {
+    color: var(--trial-text-secondary) !important;
+}
+
+body.trial-newdesign-theme .birth-message {
+    color: var(--trial-text-body) !important;
+}
+
+/* ---------- Bottom Sheet ---------- */
+body.trial-newdesign-theme .bottom-sheet-overlay,
+body.trial-newdesign-theme #sheet-overlay {
+    background: rgba(0, 0, 0, 0.35) !important;
+}
+
+body.trial-newdesign-theme .bottom-sheet,
+body.trial-newdesign-theme #bottom-sheet {
+    background: var(--trial-bg-surface) !important;
+    border-top: var(--trial-border-strong) !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .bottom-sheet-handle {
+    background: var(--trial-line-soft) !important;
+}
+
+body.trial-newdesign-theme .bottom-sheet-header,
+body.trial-newdesign-theme .sheet-header {
+    border-bottom: var(--trial-border) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .bottom-sheet-header h3,
+body.trial-newdesign-theme .sheet-header h3,
+body.trial-newdesign-theme #sheet-title {
+    color: var(--trial-text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+}
+
+body.trial-newdesign-theme .sheet-icon,
+body.trial-newdesign-theme #sheet-icon {
+    border: var(--trial-border-strong) !important;
+    border-radius: 10px !important;
+    background: var(--trial-accent-soft) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .sheet-icon i,
+body.trial-newdesign-theme #sheet-icon i {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .sheet-menu-item {
+    color: var(--trial-text-primary) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+body.trial-newdesign-theme .sheet-menu-item:hover,
+body.trial-newdesign-theme .sheet-menu-item:active {
+    background: var(--trial-accent-soft) !important;
+}
+
+body.trial-newdesign-theme .sheet-menu-item i.menu-icon,
+body.trial-newdesign-theme .sheet-menu-item .fa {
+    color: var(--trial-text-secondary) !important;
+}
+
+body.trial-newdesign-theme .sheet-menu-item .arrow {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .item-badge {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+}
+
+body.trial-newdesign-theme .unread-badge {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Download App Banner ---------- */
+body.trial-newdesign-theme .download-app-banner {
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .download-app-banner h4 {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .download-app-banner p {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .download-btn {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+}
+
+body.trial-newdesign-theme .download-btn.appstore,
+body.trial-newdesign-theme .download-btn.ios {
+    background: var(--trial-text-muted) !important;
+}
+
+/* ---------- iOS Install Prompt ---------- */
+body.trial-newdesign-theme .ios-install-prompt {
+    background: var(--trial-bg-surface) !important;
+    border-top: var(--trial-border-strong) !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+}
+
+body.trial-newdesign-theme .ios-install-prompt-handle {
+    background: var(--trial-line-soft) !important;
+}
+
+body.trial-newdesign-theme .ios-install-prompt-header h4 {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .ios-install-prompt-close {
+    background: var(--trial-accent-soft) !important;
+    border: var(--trial-border) !important;
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .ios-install-steps li {
+    border-bottom: var(--trial-border) !important;
+    color: var(--trial-text-body) !important;
+}
+
+body.trial-newdesign-theme .ios-step-number {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+}
+
+body.trial-newdesign-theme .ios-step-icon {
+    background: var(--trial-accent-soft) !important;
+}
+
+/* ---------- Notification Permission Banner ---------- */
+body.trial-newdesign-theme .notif-perm-banner,
+body.trial-newdesign-theme #notification-banner {
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .notif-perm-banner .banner-icon,
+body.trial-newdesign-theme #notification-banner .banner-icon {
+    border: var(--trial-border) !important;
+    background: var(--trial-accent-soft) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .notif-perm-banner h4,
+body.trial-newdesign-theme #notification-banner h4,
+body.trial-newdesign-theme #notification-banner div[style*="font-weight"] {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .notif-perm-banner button,
+body.trial-newdesign-theme #notification-banner button {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+/* ---------- Pull to Refresh ---------- */
+body.trial-newdesign-theme .pull-indicator {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Bottom Navigation ---------- */
+body.trial-newdesign-theme .bottom-nav {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-top: var(--trial-border) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    backdrop-filter: blur(24px) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .bottom-nav .nav-item,
+body.trial-newdesign-theme .bottom-nav a {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .bottom-nav .nav-item.active,
+body.trial-newdesign-theme .bottom-nav .nav-item[aria-current='page'],
+body.trial-newdesign-theme .bottom-nav a.active {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .bottom-nav .nav-item.active i,
+body.trial-newdesign-theme .bottom-nav .nav-item.active span {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .bottom-nav .nav-item span,
+body.trial-newdesign-theme .bottom-nav a span {
+    font-size: 9px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    font-weight: 600 !important;
+}
+
+/* ---------- Generic Cards (all pages) ---------- */
+body.trial-newdesign-theme .card,
+body.trial-newdesign-theme .feature-card,
+body.trial-newdesign-theme .quick-action,
+body.trial-newdesign-theme .menu-item,
+body.trial-newdesign-theme .profile-header,
+body.trial-newdesign-theme .profile-card,
+body.trial-newdesign-theme .timeline-card,
+body.trial-newdesign-theme .document-card,
+body.trial-newdesign-theme .notification-item,
+body.trial-newdesign-theme .chat-card,
+body.trial-newdesign-theme .faq-item,
+body.trial-newdesign-theme .info-box,
+body.trial-newdesign-theme .section-card,
+body.trial-newdesign-theme .article-card,
+body.trial-newdesign-theme .booking-card,
+body.trial-newdesign-theme .schedule-card,
+body.trial-newdesign-theme .result-card,
+body.trial-newdesign-theme .lab-card,
+body.trial-newdesign-theme .usg-card,
+body.trial-newdesign-theme .vitamin-card,
+body.trial-newdesign-theme .history-card,
+body.trial-newdesign-theme .visit-card,
+body.trial-newdesign-theme .question-card,
+body.trial-newdesign-theme .answer-card {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .card:hover,
+body.trial-newdesign-theme .feature-card:hover,
+body.trial-newdesign-theme .menu-item:hover,
+body.trial-newdesign-theme .quick-action:hover {
+    background: var(--trial-bg-elevated) !important;
+    border-color: var(--trial-line-strong) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Typography ---------- */
+body.trial-newdesign-theme .card-title,
+body.trial-newdesign-theme .menu-title,
+body.trial-newdesign-theme .page-title,
+body.trial-newdesign-theme h1,
+body.trial-newdesign-theme h2,
+body.trial-newdesign-theme h3,
+body.trial-newdesign-theme h4,
+body.trial-newdesign-theme h5,
+body.trial-newdesign-theme h6 {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .card-subtitle,
+body.trial-newdesign-theme .menu-subtitle,
+body.trial-newdesign-theme .meta,
+body.trial-newdesign-theme .muted,
+body.trial-newdesign-theme .text-muted {
+    color: var(--trial-text-secondary) !important;
+}
+
+body.trial-newdesign-theme p,
+body.trial-newdesign-theme small,
+body.trial-newdesign-theme .subtitle {
+    color: var(--trial-text-body) !important;
+}
+
+/* ---------- Buttons ---------- */
+body.trial-newdesign-theme .btn-primary,
+body.trial-newdesign-theme .primary-btn,
+body.trial-newdesign-theme .action-btn {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--trial-accent) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+}
+
+body.trial-newdesign-theme .btn-primary:hover,
+body.trial-newdesign-theme .primary-btn:hover {
+    background: var(--trial-accent-hover) !important;
+}
+
+body.trial-newdesign-theme .btn-secondary,
+body.trial-newdesign-theme .outline-btn,
+body.trial-newdesign-theme .secondary-btn {
+    background: #ffffff !important;
+    color: var(--trial-text-primary) !important;
+    border: 1px solid var(--trial-line-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme button[type='submit'] {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--trial-accent) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Badges ---------- */
+body.trial-newdesign-theme .badge,
+body.trial-newdesign-theme .notification-badge,
+body.trial-newdesign-theme .notif-badge,
+body.trial-newdesign-theme .new-badge,
+body.trial-newdesign-theme .status-badge {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border: 2px solid var(--trial-bg-surface) !important;
+}
+
+/* ---------- Form Elements ---------- */
+body.trial-newdesign-theme input,
+body.trial-newdesign-theme textarea,
+body.trial-newdesign-theme select {
+    background: #ffffff !important;
+    border: 1px solid var(--trial-line-soft) !important;
+    color: var(--trial-text-primary) !important;
+    border-radius: 8px !important;
+}
+
+body.trial-newdesign-theme input:focus,
+body.trial-newdesign-theme textarea:focus,
+body.trial-newdesign-theme select:focus {
+    border-color: var(--trial-accent) !important;
+    box-shadow: 0 0 0 2px var(--trial-accent-soft) !important;
+    outline: none !important;
+}
+
+body.trial-newdesign-theme input::placeholder,
+body.trial-newdesign-theme textarea::placeholder {
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Tanya Dokter (Ask Doctor) ---------- */
+body.trial-newdesign-theme .chat-bubble,
+body.trial-newdesign-theme .message-bubble {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+}
+
+body.trial-newdesign-theme .chat-bubble.doctor,
+body.trial-newdesign-theme .message-bubble.doctor {
+    background: var(--trial-accent-soft) !important;
+    border-color: var(--trial-line-strong) !important;
+}
+
+/* ---------- Tabs / Segmented Control ---------- */
+body.trial-newdesign-theme .tab-bar,
+body.trial-newdesign-theme .tabs,
+body.trial-newdesign-theme .tab-nav {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+}
+
+body.trial-newdesign-theme .tab-item,
+body.trial-newdesign-theme .tab-btn {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .tab-item.active,
+body.trial-newdesign-theme .tab-btn.active {
+    color: var(--trial-text-primary) !important;
+    background: var(--trial-accent-soft) !important;
+    border-color: var(--trial-line-strong) !important;
+}
+
+/* ---------- Empty States ---------- */
+body.trial-newdesign-theme .empty-state,
+body.trial-newdesign-theme .no-data {
+    color: var(--trial-text-muted) !important;
+}
+
+body.trial-newdesign-theme .empty-state i,
+body.trial-newdesign-theme .no-data i {
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Loading ---------- */
+body.trial-newdesign-theme .loading i,
+body.trial-newdesign-theme .loading-state i {
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Safe Areas ---------- */
+body.trial-newdesign-theme .safe-area-top,
+body.trial-newdesign-theme .safe-area-bottom {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* ---------- Scrollbar ---------- */
+body.trial-newdesign-theme ::-webkit-scrollbar {
+    width: 4px;
+}
+
+body.trial-newdesign-theme ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body.trial-newdesign-theme ::-webkit-scrollbar-thumb {
+    background: var(--trial-line-soft);
+    border-radius: 4px;
+}
+
+/* ---------- Page-specific: patient-portal.css pages ---------- */
+/* Album USG, Hasil Lab, Dokumen Medis, Notifikasi, Profil, Tanya Dokter, Bantuan */
+
+body.trial-newdesign-theme .page-header {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1.5px dashed var(--trial-line-soft) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    backdrop-filter: blur(24px) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .page-header h1,
+body.trial-newdesign-theme .page-header .back-btn {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .list-item,
+body.trial-newdesign-theme .notification-card,
+body.trial-newdesign-theme .article-item,
+body.trial-newdesign-theme .document-item,
+body.trial-newdesign-theme .lab-item,
+body.trial-newdesign-theme .usg-item,
+body.trial-newdesign-theme .history-item,
+body.trial-newdesign-theme .schedule-item {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .list-item:hover,
+body.trial-newdesign-theme .notification-card:hover,
+body.trial-newdesign-theme .article-item:hover {
+    background: var(--trial-bg-elevated) !important;
+    border-color: var(--trial-line-strong) !important;
+}
+
+/* ---------- Profil page ---------- */
+body.trial-newdesign-theme .profile-avatar-section {
+    background: var(--trial-bg-surface) !important;
+}
+
+body.trial-newdesign-theme .profile-menu-item,
+body.trial-newdesign-theme .menu-row {
+    border-bottom: var(--trial-border) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .profile-menu-item i,
+body.trial-newdesign-theme .menu-row i {
+    color: var(--trial-text-secondary) !important;
+}
+
+body.trial-newdesign-theme .menu-icon.green,
+body.trial-newdesign-theme .menu-icon.blue,
+body.trial-newdesign-theme .menu-icon.orange,
+body.trial-newdesign-theme .menu-icon.red,
+body.trial-newdesign-theme .menu-icon.purple {
+    background: var(--trial-accent-soft) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+/* ---------- Booking page ---------- */
+body.trial-newdesign-theme .time-slot,
+body.trial-newdesign-theme .slot-btn {
+    border: var(--trial-border) !important;
+    border-radius: 8px !important;
+    background: var(--trial-bg-surface) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .time-slot.selected,
+body.trial-newdesign-theme .slot-btn.selected,
+body.trial-newdesign-theme .time-slot.active,
+body.trial-newdesign-theme .slot-btn.active {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border-color: var(--trial-accent) !important;
+}
+
+/* ---------- Calendar ---------- */
+body.trial-newdesign-theme .calendar-header {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .calendar-day.today {
+    background: var(--trial-accent-soft) !important;
+    border: var(--trial-border-strong) !important;
+}
+
+body.trial-newdesign-theme .calendar-day.selected {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Subscription page ---------- */
+body.trial-newdesign-theme .plan-card,
+body.trial-newdesign-theme .pricing-card {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .plan-card.recommended,
+body.trial-newdesign-theme .pricing-card.highlighted {
+    border: var(--trial-border-strong) !important;
+}
+
+/* ---------- Auth pages (login, register, etc.) ---------- */
+body.trial-newdesign-theme .auth-container,
+body.trial-newdesign-theme .login-container,
+body.trial-newdesign-theme .register-container,
+body.trial-newdesign-theme .form-container {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .auth-header,
+body.trial-newdesign-theme .login-header {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .auth-logo,
+body.trial-newdesign-theme .login-logo {
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .google-btn,
+body.trial-newdesign-theme .social-btn {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    color: var(--trial-text-primary) !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .divider,
+body.trial-newdesign-theme .separator {
+    border-color: var(--trial-line-soft) !important;
+    color: var(--trial-text-muted) !important;
+}
+
+/* ---------- Kick Counter ---------- */
+body.trial-newdesign-theme .kick-btn,
+body.trial-newdesign-theme .counter-btn {
+    background: var(--trial-accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Pregnancy Tracker ---------- */
+body.trial-newdesign-theme .tracker-card,
+body.trial-newdesign-theme .week-card {
+    border: var(--trial-border) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Artikel / Edukasi ---------- */
+body.trial-newdesign-theme .article-header,
+body.trial-newdesign-theme .article-content {
+    color: var(--trial-text-body) !important;
+}
+
+body.trial-newdesign-theme .article-tag,
+body.trial-newdesign-theme .category-tag {
+    background: var(--trial-accent-soft) !important;
+    color: var(--trial-text-primary) !important;
+    border: var(--trial-border) !important;
+}
+
+/* ---------- Toast / Alert ---------- */
+body.trial-newdesign-theme .toast,
+body.trial-newdesign-theme .alert-box {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    box-shadow: none !important;
+    color: var(--trial-text-primary) !important;
+}
+
+/* ---------- Modal ---------- */
+body.trial-newdesign-theme .modal-content,
+body.trial-newdesign-theme .modal-dialog .modal-content {
+    background: var(--trial-bg-surface) !important;
+    border: var(--trial-border-strong) !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+}
+
+body.trial-newdesign-theme .modal-header {
+    border-bottom: var(--trial-border) !important;
+    color: var(--trial-text-primary) !important;
+}
+
+body.trial-newdesign-theme .modal-footer {
+    border-top: var(--trial-border) !important;
+}
+
+/* ---------- Links ---------- */
+body.trial-newdesign-theme a:not(.btn):not(.nav-item):not(.sheet-menu-item):not(.dropdown-menu-custom a) {
+    color: var(--trial-text-primary) !important;
+}
+
+/* ---------- Dividers / HR ---------- */
+body.trial-newdesign-theme hr {
+    border-color: var(--trial-line-soft) !important;
+    border-style: dashed !important;
+}
+
+/* ---------- Tanya Dokter upgrade banner ---------- */
+body.trial-newdesign-theme .upgrade-banner,
+body.trial-newdesign-theme .premium-banner {
+    border: var(--trial-border-strong) !important;
+    border-radius: var(--trial-radius) !important;
+    background: var(--trial-bg-surface) !important;
+    box-shadow: none !important;
+}
