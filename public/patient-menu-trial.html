@@ -1269,7 +1269,6 @@
             color: var(--text-secondary);
             line-height: 1.6;
             max-width: 300px;
-            transition: opacity 0.3s ease, max-height 0.3s ease;
             overflow: hidden;
         }
 
@@ -3580,7 +3579,7 @@
                         row.style.paddingBottom = pad + 'px';
 
                         // This row is "done" when fully collapsed
-                        prevDone = (p >= 0.95);
+                        prevDone = (p >= 1);
                     });
                 });
                 ticking = false;
