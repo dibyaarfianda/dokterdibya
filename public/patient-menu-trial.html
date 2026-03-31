@@ -1201,7 +1201,7 @@
             }
         }
 
-        /* ========== JADWAL SECTION (Flair PROCES layout) ========== */
+        /* ========== PROCES SECTION (Flair sticky-stack) ========== */
         .proces-section {
             padding-top: 70px;
         }
@@ -1224,29 +1224,35 @@
 
         .proces-row {
             display: grid;
-            grid-template-columns: 80px 1fr 1fr;
-            gap: 20px;
-            align-items: center;
-            padding: 32px 0;
+            grid-template-columns: 50px 1fr 1fr;
+            gap: 16px;
+            align-items: start;
+            padding: 28px 0;
             text-decoration: none;
             color: inherit;
             cursor: pointer;
-            transition: opacity 0.3s ease;
+            background: var(--bg-page);
+            border-bottom: 1px solid rgba(0,0,0,0.12);
+            position: sticky;
+            z-index: 2;
         }
 
-        .proces-row:hover {
-            opacity: 0.7;
-        }
+        .proces-row:hover { opacity: 0.7; }
+        .proces-row:active { opacity: 0.5; }
 
-        .proces-row:active {
-            opacity: 0.5;
+        /* Last row: NOT sticky, wipes everything above */
+        .proces-row.proces-wiper {
+            position: relative;
+            z-index: 5;
+            background: var(--bg-page);
         }
 
         .proces-step {
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-muted);
             white-space: nowrap;
+            padding-top: 6px;
         }
 
         .proces-title {
@@ -1263,28 +1269,18 @@
             color: var(--text-secondary);
             line-height: 1.6;
             max-width: 300px;
-        }
-
-        /* Scroll-driven collapse — Flair PROCES style */
-        .proces-row {
+            transition: opacity 0.3s ease, max-height 0.3s ease;
             overflow: hidden;
         }
 
-        .proces-desc,
-        .proces-step {
-            transition: opacity 0.3s ease;
-        }
-
-
         @media (max-width: 600px) {
             .proces-row {
-                grid-template-columns: 1fr;
-                gap: 8px;
-                padding: 24px 0;
+                grid-template-columns: 40px 1fr;
+                gap: 10px;
+                padding: 20px 0;
             }
-            .proces-title {
-                font-size: 18px;
-            }
+            .proces-desc { grid-column: 1 / -1; }
+            .proces-title { font-size: 18px; }
         }
 
         .menu-container {
@@ -2454,42 +2450,42 @@
                 <!-- APLIKASI (Flair PROCES layout) -->
                 <div class="proces-section">
                     <div class="proces-header">APLIKASI</div>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/tanya-dokter.html" class="proces-row">
                         <span class="proces-step">01</span>
                         <h3 class="proces-title">TANYA DOKTER</h3>
                         <p class="proces-desc">Ajukan pertanyaan seputar kehamilan atau kandungan secara privat langsung ke dr. Dibya.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/kick-counter.html" class="proces-row">
                         <span class="proces-step">02</span>
                         <h3 class="proces-title">GERAKAN BAYI</h3>
                         <p class="proces-desc">Hitung dan pantau gerakan bayi Anda. Catat setiap tendangan untuk memastikan kesehatan janin.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/pregnancy-tracker.html" class="proces-row">
                         <span class="proces-step">03</span>
                         <h3 class="proces-title">MONITORING KEHAMILAN</h3>
                         <p class="proces-desc">Pantau perkembangan kehamilan minggu demi minggu — berat janin, ukuran, dan milestone penting.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/fertility-calendar.html" class="proces-row">
                         <span class="proces-step">04</span>
                         <h3 class="proces-title">KALENDER KESUBURAN</h3>
                         <p class="proces-desc">Prediksi masa subur dan ovulasi Anda berdasarkan siklus menstruasi untuk perencanaan kehamilan.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/jadwal-vitamin.html" class="proces-row">
                         <span class="proces-step">05</span>
                         <h3 class="proces-title">JADWAL VITAMIN</h3>
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter Anda.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
                 </div>
 
                 <!-- EDUKASI -->
@@ -2508,28 +2504,28 @@
                 <!-- JADWAL (Flair PROCES layout) -->
                 <div class="proces-section">
                     <div class="proces-header">JADWAL</div>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/booking-klinik-trial.html" class="proces-row">
                         <span class="proces-step">Langkah 1</span>
                         <h3 class="proces-title">BOOKING KLINIK MINGGU</h3>
                         <p class="proces-desc">Pesan slot konsultasi dengan dr. Dibya setiap hari Minggu. Pilih waktu, konfirmasi, dan datang sesuai jadwal.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/jadwal-rs.html" class="proces-row">
                         <span class="proces-step">Langkah 2</span>
                         <h3 class="proces-title">JADWAL RUMAH SAKIT</h3>
                         <p class="proces-desc">Lihat jadwal praktik dr. Dibya di berbagai rumah sakit. Rencanakan kunjungan Anda dengan mudah.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
 
                     <a href="/riwayat-kunjungan.html" class="proces-row">
                         <span class="proces-step">Langkah 3</span>
                         <h3 class="proces-title">RIWAYAT KUNJUNGAN</h3>
                         <p class="proces-desc">Rekam jejak setiap kunjungan Anda — tanggal, lokasi, dan catatan medis tersimpan rapi.</p>
                     </a>
-                    <div class="proces-divider"></div>
+
                 </div>
 
                 <!-- TAGIHAN (hidden by default) -->
@@ -3530,61 +3526,57 @@
             }
         })();
 
-        // ==================== SCROLL COLLAPSE — Flair PROCES ====================
-        // Rows that scroll past viewport center collapse: desc+step fade out,
-        // row height shrinks to title-only. Middle rows collapse to 0 entirely.
+        // ==================== STICKY STACK — Flair PROCES ====================
+        // Each row is sticky. As you scroll, its desc collapses and it becomes
+        // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
+            var COLLAPSED_H = 48; // collapsed row height (title only)
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
+            sections.forEach(function(section) {
+                var rows = Array.from(section.querySelectorAll('.proces-row'));
+                if (!rows.length) return;
+
+                // Last row = wiper (not sticky, scrolls normally and pushes stack up)
+                var last = rows[rows.length - 1];
+                last.classList.add('proces-wiper');
+
+                // Assign sticky top: each row stacks below previous collapsed rows
+                rows.forEach(function(row, i) {
+                    if (row === last) return; // wiper is position:relative
+                    row.style.top = (i * COLLAPSED_H) + 'px';
+                    row.style.zIndex = 2 + i; // higher = on top
+                });
+            });
+
+            // Scroll handler: fade desc when row is stuck (at its sticky top)
             var ticking = false;
-
             function onScroll() {
-                var viewH = window.innerHeight;
-                var centerY = viewH * 0.45;
-
                 sections.forEach(function(section) {
                     var rows = Array.from(section.querySelectorAll('.proces-row'));
-                    var dividers = Array.from(section.querySelectorAll('.proces-divider'));
+                    rows.forEach(function(row) {
+                        if (row.classList.contains('proces-wiper')) return;
 
-                    rows.forEach(function(row, i) {
                         var rect = row.getBoundingClientRect();
+                        var stickyTop = parseFloat(row.style.top) || 0;
+                        // How close is the row to its sticky position?
+                        // 0 = far below (expanded), 1 = stuck at top (collapsed)
+                        var distFromStuck = rect.top - stickyTop;
+                        var p = Math.max(0, Math.min(1, 1 - (distFromStuck / 120)));
+
                         var desc = row.querySelector('.proces-desc');
-                        var step = row.querySelector('.proces-step');
-                        var nextDivider = dividers[i + 1]; // divider after this row
-
-                        // Progress: 0 = row at/below center, 1 = row fully above center
-                        var p = Math.max(0, Math.min(1, (centerY - rect.top) / (viewH * 0.3)));
-
-                        // Description: fade + collapse
                         if (desc) {
                             desc.style.opacity = 1 - p;
                             desc.style.maxHeight = ((1 - p) * 80) + 'px';
-                            desc.style.marginTop = ((1 - p) * 4) + 'px';
-                            desc.style.overflow = 'hidden';
                         }
 
-                        // Step label: fade
-                        if (step) {
-                            step.style.opacity = 1 - p;
-                        }
-
-                        // Row padding: 32 → 8
-                        var pad = 32 - (24 * p);
+                        // Collapse padding: 28 → 8
+                        var pad = 28 - (20 * p);
                         row.style.paddingTop = pad + 'px';
                         row.style.paddingBottom = pad + 'px';
-
-                        // Grid: collapse from 3-col to title-only
-                        if (p > 0.8) {
-                            row.style.gridTemplateColumns = '1fr';
-                            row.style.gap = '0px';
-                        } else {
-                            row.style.gridTemplateColumns = '';
-                            row.style.gap = '';
-                        }
                     });
                 });
-
                 ticking = false;
             }
 
