@@ -570,6 +570,69 @@
             color: var(--text-primary);
         }
 
+        /* ========== CTA CARD (Anvil-style) ========== */
+        .cta-card {
+            background: var(--accent);
+            border-radius: var(--radius);
+            padding: 32px 24px;
+            margin-bottom: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .cta-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .cta-card:active {
+            transform: scale(0.98);
+        }
+
+        .cta-heading {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .cta-sub {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            max-width: 340px;
+            margin: 0 auto 20px;
+            font-weight: 400;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 28px;
+            background: #ffffff;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-main);
+            letter-spacing: 0.02em;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+
+        .cta-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .cta-btn:active {
+            transform: scale(0.96);
+        }
+
         /* ========== WELCOME SECTION ========== */
         .welcome-body {
             line-height: 1.9;
@@ -2126,6 +2189,15 @@
                         <p>Bayar Online</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Booking CTA Card -->
+            <div class="cta-card" onclick="window.location.href='/booking-klinik-trial.html'">
+                <h2 class="cta-heading">Booking Klinik Minggu</h2>
+                <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
+                <button class="cta-btn" onclick="event.stopPropagation(); window.location.href='/booking-klinik-trial.html'">
+                    Booking Sekarang
+                </button>
             </div>
 
             <!-- Notification Permission Banner -->
