@@ -2108,16 +2108,20 @@
         .hero-copy::before {
             content: '\201C';
             position: absolute;
-            top: 0;
+            top: -10px;
             left: 50%;
             transform: translateX(-50%);
             font-family: Georgia, 'Times New Roman', serif;
             font-size: 64px;
             font-style: normal;
             font-weight: 400;
-            color: var(--text-primary);
+            color: #000000;
             line-height: 1;
-            opacity: 0.4;
+            opacity: 0.35;
+            z-index: 9999;
+            pointer-events: none;
+            display: block !important;
+            visibility: visible !important;
             opacity: 0;
             transform: translateY(16px);
         }
