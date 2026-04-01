@@ -2058,14 +2058,6 @@
             filter: blur(5px);
         }
 
-        .hero-greeting .hero-time {
-            display: block;
-            font-size: 20px;
-            font-weight: 500;
-            letter-spacing: 0;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
 
         body.header-animated .hero-greeting {
             animation: titleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 300ms forwards;
@@ -2261,9 +2253,8 @@
 
             <!-- Hero Welcome Section -->
             <section class="hero-welcome">
-                <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> dr. Dibya untuk Anda</div>
+                <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> <span id="hero-kicker-text">Selamat Pagi</span></div>
                 <h1 class="hero-greeting" id="hero-greeting">
-                    <span class="hero-time" id="hero-time-greeting">Selamat Pagi,</span>
                     <span id="hero-patient-name">...</span>
                 </h1>
                 <p class="hero-copy" id="hero-copy">Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
@@ -2940,10 +2931,10 @@
                     const firstName = (profile.fullname || 'Pasien').split(' ')[0];
                     document.getElementById('hero-patient-name').textContent = firstName + '.';
                     var hour = new Date().getHours();
-                    var timeGreet = hour >= 5 && hour < 11 ? 'Selamat Pagi,' :
-                                    hour >= 11 && hour < 15 ? 'Selamat Siang,' :
-                                    hour >= 15 && hour < 18 ? 'Selamat Sore,' : 'Selamat Malam,';
-                    document.getElementById('hero-time-greeting').textContent = timeGreet;
+                    var timeGreet = hour >= 5 && hour < 11 ? 'Selamat Pagi' :
+                                    hour >= 11 && hour < 15 ? 'Selamat Siang' :
+                                    hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+                    document.getElementById('hero-kicker-text').textContent = timeGreet;
 
                     // Set avatar
                     if (profile.profile_picture) {
