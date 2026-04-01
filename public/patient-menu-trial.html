@@ -1721,24 +1721,24 @@
 
         .bottom-sheet {
             position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            left: 50%;
+            bottom: 70px;
+            transform: translateX(-50%) translateY(calc(100% + 70px));
+            width: 92%;
+            max-width: 400px;
             background: var(--bg-surface);
-            border-top: 1px solid var(--line-soft);
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
-            padding: 0 0 env(safe-area-inset-bottom);
+            border: 1px solid var(--line-soft);
+            border-radius: 16px;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+            padding: 0;
             z-index: 1001;
-            transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 500px;
+            max-height: 60vh;
             overflow-y: auto;
         }
 
         .bottom-sheet.active {
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
         }
 
         /* Blur main content when bottom sheet is open */
