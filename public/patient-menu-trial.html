@@ -1987,9 +1987,10 @@
             justify-content: center;
             gap: 7px;
             text-transform: none;
-            letter-spacing: 0;
-            font-size: 16px;
-            font-weight: 400;
+            letter-spacing: 0.04em;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
             opacity: 0;
             transform: translateY(14px);
         }
@@ -2043,18 +2044,27 @@
         }
 
         .hero-greeting {
-            margin-top: 10px;
+            margin-top: 16px;
             margin-left: auto;
             margin-right: auto;
-            font-size: 36px;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
+            font-size: 44px;
+            line-height: 1.05;
+            letter-spacing: -0.025em;
             font-weight: 400;
-            color: #111;
+            color: var(--text-primary);
             max-width: 20ch;
             opacity: 0;
             transform: translateY(20px);
             filter: blur(5px);
+        }
+
+        .hero-greeting .hero-time {
+            display: block;
+            font-size: 20px;
+            font-weight: 500;
+            letter-spacing: 0;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
         }
 
         body.header-animated .hero-greeting {
@@ -2079,11 +2089,11 @@
         }
 
         .hero-copy {
-            margin-top: 10px;
-            color: var(--text-secondary);
-            max-width: 48ch;
-            line-height: 1.75;
-            font-size: 13px;
+            margin-top: 20px;
+            color: var(--text-muted);
+            max-width: 36ch;
+            line-height: 1.6;
+            font-size: 14px;
             opacity: 0;
             transform: translateY(16px);
         }
@@ -2149,14 +2159,14 @@
             .screen { padding-left: 24px; padding-right: 24px; }
             .topbar-inner { padding-left: 24px; padding-right: 24px; }
             .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
-            .hero-greeting { font-size: 42px; }
+            .hero-greeting { font-size: 48px; }
             .tanya-actions { flex-wrap: nowrap; }
         }
 
         @media (min-width: 768px) {
             .screen { max-width: 820px; padding-left: 28px; padding-right: 28px; }
             .topbar-inner { max-width: 820px; padding-left: 28px; padding-right: 28px; }
-            .hero-greeting { font-size: 48px; max-width: 18ch; }
+            .hero-greeting { font-size: 56px; max-width: 18ch; }
         }
 
         /* ========== REDUCED MOTION ========== */
@@ -2251,11 +2261,12 @@
 
             <!-- Hero Welcome Section -->
             <section class="hero-welcome">
-                <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> Online</div>
+                <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> dr. Dibya untuk Anda</div>
                 <h1 class="hero-greeting" id="hero-greeting">
+                    <span class="hero-time" id="hero-time-greeting">Selamat Pagi,</span>
                     <span id="hero-patient-name">...</span>
                 </h1>
-                <p style="margin-top: 20px; color: #999 !important; font-size: 18px; font-weight: 400; letter-spacing: 0; line-height: 1.6;">Selamat datang kembali</p>
+                <p class="hero-copy" id="hero-copy">Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
             </section>
 
             <!-- Idul Fitri Greeting Card -->
@@ -2925,9 +2936,14 @@
                     // Set global profile for announcements-dashboard.js
                     window.currentProfile = profile;
 
-                    // Update hero greeting
+                    // Update hero greeting with time-aware salutation
                     const firstName = (profile.fullname || 'Pasien').split(' ')[0];
-                    document.getElementById('hero-patient-name').textContent = firstName;
+                    document.getElementById('hero-patient-name').textContent = firstName + '.';
+                    var hour = new Date().getHours();
+                    var timeGreet = hour >= 5 && hour < 11 ? 'Selamat Pagi,' :
+                                    hour >= 11 && hour < 15 ? 'Selamat Siang,' :
+                                    hour >= 15 && hour < 18 ? 'Selamat Sore,' : 'Selamat Malam,';
+                    document.getElementById('hero-time-greeting').textContent = timeGreet;
 
                     // Set avatar
                     if (profile.profile_picture) {
@@ -2978,7 +2994,7 @@
                 }
             } catch (error) {
                 console.error('Error loading profile:', error);
-                document.getElementById('hero-patient-name').textContent = 'Halo';
+                document.getElementById('hero-patient-name').textContent = 'Halo.';
                 document.getElementById('user-avatar-initials').textContent = '--';
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-wrapper').style.display = 'block';
