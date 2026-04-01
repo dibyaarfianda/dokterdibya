@@ -3459,17 +3459,12 @@
             document.getElementById('sheet-overlay').classList.add('active');
             sheet.classList.add('active');
             document.body.classList.add('sheet-open');
-            var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
-            document.body.style.overflow = 'hidden';
-            document.body.style.paddingRight = scrollbarW + 'px';
         }
 
         function closeBottomSheet() {
             document.getElementById('sheet-overlay').classList.remove('active');
             document.getElementById('bottom-sheet').classList.remove('active');
             document.body.classList.remove('sheet-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
         }
 
         // ==================== NAVIGATION ====================
