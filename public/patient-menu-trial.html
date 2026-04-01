@@ -3630,11 +3630,12 @@
                 var row = sd.rows[i];
                 if (!row) return;
 
-                // Keep any transitioning row (0<p<1) on top so its fade is not hidden by the next sticky row.
+                // Three-tier z-index: collapsed > transitioning > expanded.
+                // Earlier rows (lower i) always on top within each tier.
                 var layer;
-                if (p > 0 && p < 1) layer = 1200 + (sd.rows.length - i);
-                else if (p >= 1) layer = 900 - i;
-                else layer = 800 - i;
+                if (p >= 1) layer = 1000 - i;       // collapsed: highest tier
+                else if (p > 0) layer = 900 - i;    // transitioning: middle tier
+                else layer = 800 - i;                // expanded: lowest tier
                 row.style.zIndex = String(layer);
 
                 // Two-phase fade in first 10%: visible but brief, then fully gone before height collapse.
