@@ -2391,7 +2391,7 @@ router.get('/birth-record', verifyToken, async (req, res) => {
 
 // ==================== DAILY EMPOWERING QUOTE ====================
 // Single quote per day, same for ALL patients, cached globally
-router.get('/api/patient/daily-quote', verifyToken, async (req, res) => {
+router.get('/daily-quote', verifyToken, async (req, res) => {
     try {
         const today = new Date();
         const dateKey = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
