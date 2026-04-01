@@ -2095,25 +2095,29 @@
         }
 
         .hero-copy {
-            margin-top: 20px;
+            margin-top: 24px;
             color: var(--text-muted);
-            max-width: 48ch;
-            line-height: 1.6;
+            max-width: 60ch;
+            line-height: 1.7;
             font-size: 14px;
             font-style: italic;
             position: relative;
+            padding-top: 32px;
         }
 
         .hero-copy::before {
             content: '\201C';
-            display: block;
-            font-size: 48px;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 56px;
             font-style: normal;
-            font-weight: 300;
-            color: var(--line-strong);
-            line-height: 0.6;
-            margin-bottom: 8px;
-            opacity: 0.3;
+            font-weight: 400;
+            color: var(--text-primary);
+            line-height: 1;
+            opacity: 0.15;
             opacity: 0;
             transform: translateY(16px);
         }
