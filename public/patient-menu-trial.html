@@ -2103,10 +2103,14 @@
             font-style: italic;
         }
 
-        .pull-quote-mark {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-style: normal;
-            font-weight: 400;
+        .hero-copy::before {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 1.5px;
+            background: var(--text-primary);
+            opacity: 0.25;
+            margin: 0 auto 20px;
         }
 
         body.header-animated .hero-copy {
@@ -2276,7 +2280,7 @@
                 <h1 class="hero-greeting" id="hero-greeting">
                     <span id="hero-patient-name">...</span>
                 </h1>
-                <p class="hero-copy" id="hero-copy"><span class="pull-quote-mark">&ldquo;</span>Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.<span class="pull-quote-mark">&rdquo;</span></p>
+                <p class="hero-copy" id="hero-copy">Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
                 <script>
                 (function() {
                     function loadQuote() {
@@ -2289,7 +2293,7 @@
                         .then(function(d) {
                             if (d.success && d.data && d.data.quote) {
                                 var el = document.getElementById('hero-copy');
-                                el.innerHTML = '<span class="pull-quote-mark">&ldquo;</span>' + d.data.quote + '<span class="pull-quote-mark">&rdquo;</span>';
+                                el.textContent = d.data.quote;
                             }
                         })
                         .catch(function() {});
