@@ -3630,12 +3630,12 @@
                 var row = sd.rows[i];
                 if (!row) return;
 
-                // Three-tier z-index: collapsed > transitioning > expanded.
-                // Earlier rows (lower i) always on top within each tier.
+                // Later rows stack on top of earlier rows (card-deck effect).
+                // Expanded (incoming from below) > transitioning > collapsed.
                 var layer;
-                if (p >= 1) layer = 1000 - i;       // collapsed: highest tier
-                else if (p > 0) layer = 900 - i;    // transitioning: middle tier
-                else layer = 800 - i;                // expanded: lowest tier
+                if (p >= 1) layer = 800 + i;        // collapsed: lowest tier
+                else if (p > 0) layer = 900 + i;    // transitioning: middle tier
+                else layer = 1000 + i;               // expanded: highest (covers rows above)
                 row.style.zIndex = String(layer);
 
                 // Two-phase fade in first 10%: visible but brief, then fully gone before height collapse.
