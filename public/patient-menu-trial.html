@@ -1240,10 +1240,8 @@
         .proces-row:hover { opacity: 1; }
         .proces-row:active { opacity: 1; }
 
-        .proces-row.proces-wiper {
-            position: relative;
-            z-index: 5;
-            background: var(--bg-page);
+        .proces-spacer {
+            height: 200px;
         }
 
         .proces-step {
@@ -2480,6 +2478,7 @@
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
                     </a>
 
+                    <div class="proces-spacer"></div>
                 </div>
 
                 <!-- EDUKASI -->
@@ -2520,6 +2519,7 @@
                         <p class="proces-desc">Rekam jejak setiap kunjungan Anda tersimpan rapi — tanggal, lokasi rumah sakit, dan catatan medis bisa diakses kapan saja dari portal ini.</p>
                     </a>
 
+                    <div class="proces-spacer"></div>
                 </div>
 
                 <!-- TAGIHAN (hidden by default) -->
@@ -3548,13 +3548,9 @@
                     var rows = Array.from(section.querySelectorAll('.proces-row'));
                     if (!rows.length) return;
 
-                    var last = rows[rows.length - 1];
-                    last.classList.add('proces-wiper');
-
                     rows.forEach(function(row, i) {
-                        if (row === last) return;
                         row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
-                        row.style.zIndex = 100 - i; // earlier rows on top
+                        row.style.zIndex = 100 + i; // later rows on top (card-deck)
                     });
                 });
                 console.log('[PROCES] COLLAPSED_H =', COLLAPSED_H);
@@ -3566,6 +3562,7 @@
             // Strict sequential collapse — segmented scroll timeline.
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
             var SEGMENT = 420;       // px of scroll budget per row (10% fade window = 42px)
+            var DELAY_BEFORE_LAST = 200; // px of extra scroll pause before last row collapses
             var WIPE_HOLD_PX = 20;
             var ticking = false;
             var animating = false;
@@ -3573,7 +3570,7 @@
 
             var sectionData = [];
             sections.forEach(function(section) {
-                var rows = Array.from(section.querySelectorAll('.proces-row:not(.proces-wiper)'));
+                var rows = Array.from(section.querySelectorAll('.proces-row'));
                 sectionData.push({
                     el: section,
                     rows: rows,
@@ -3596,7 +3593,7 @@
                     // That means: scrollY = sectionDocTop - STICKY_OFFSET  → but we want desc
                     // visible first, so add the full section visible height before collapsing starts
                     sd.startY = sectionDocTop + sectionRect.height - window.innerHeight * 0.3;
-                    sd.endY = sd.startY + (sd.rows.length * SEGMENT);
+                    sd.endY = sd.startY + (sd.rows.length * SEGMENT) + (sd.rows.length > 1 ? DELAY_BEFORE_LAST : 0);
 
                     sd.descHeights = sd.rows.map(function(row) {
                         var desc = row.querySelector('.proces-desc');
@@ -3707,8 +3704,10 @@
                     var count = sd.rows.length;
                     if (count === 0) return;
 
-                    // Clamp total to valid range: 0 .. count*SEGMENT
-                    var total = Math.max(0, Math.min(count * SEGMENT, scrollY - sd.startY));
+                    // Clamp total to valid range including delay before last row
+                    var hasDelay = count > 1;
+                    var totalBudget = count * SEGMENT + (hasDelay ? DELAY_BEFORE_LAST : 0);
+                    var total = Math.max(0, Math.min(totalBudget, scrollY - sd.startY));
 
                     var activeIndex, localP;
                     if (scrollY < sd.startY) {
@@ -3716,7 +3715,7 @@
                         activeIndex = -1;
                         localP = 0;
                     } else if (scrollY > sd.endY + WIPE_HOLD_PX) {
-                        // Past section end + hold: all collapsible rows collapsed
+                        // Past section end + hold: all rows collapsed
                         activeIndex = count;
                         localP = 0;
                     } else if (scrollY > sd.endY) {
@@ -3724,9 +3723,21 @@
                         activeIndex = count - 1;
                         localP = 1;
                     } else {
-                        // Active window: sequential collapse
-                        activeIndex = Math.min(count - 1, Math.floor(total / SEGMENT));
-                        localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
+                        // Active window: sequential collapse with delay before last row
+                        var normalEnd = (count - 1) * SEGMENT;
+                        var delayEnd = normalEnd + (hasDelay ? DELAY_BEFORE_LAST : 0);
+                        if (!hasDelay || total <= normalEnd) {
+                            activeIndex = Math.min(count - 1, Math.floor(total / SEGMENT));
+                            localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
+                        } else if (total <= delayEnd) {
+                            // Delay pause: previous rows collapsed, last row holds expanded
+                            activeIndex = count - 2;
+                            localP = 1;
+                        } else {
+                            // Last row collapses after delay
+                            activeIndex = count - 1;
+                            localP = Math.max(0, Math.min(1, (total - delayEnd) / SEGMENT));
+                        }
                     }
 
                     sd.activeIndex = activeIndex;
