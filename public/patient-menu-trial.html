@@ -3458,6 +3458,15 @@
                 }
             }
 
+            // If sheet already open, instant close then reopen with transition
+            if (sheet.classList.contains('active')) {
+                sheet.style.transition = 'none';
+                sheet.classList.remove('active');
+                // Force reflow to apply instant hide
+                void sheet.offsetHeight;
+                sheet.style.transition = '';
+            }
+
             // Show sheet + blur main content
             document.getElementById('sheet-overlay').classList.add('active');
             sheet.classList.add('active');
