@@ -3457,10 +3457,12 @@
                 }
             }
 
-            // Show sheet + blur main content
+            // Show sheet + blur main content + retract header
             document.getElementById('sheet-overlay').classList.add('active');
             sheet.classList.add('active');
             document.body.classList.add('sheet-open');
+            var topbar = document.getElementById('topbar');
+            if (topbar) topbar.classList.add('header-hidden');
         }
 
         function openBottomSheet(category, navBtn) {
@@ -3484,6 +3486,8 @@
             document.getElementById('sheet-overlay').classList.remove('active');
             document.getElementById('bottom-sheet').classList.remove('active');
             document.body.classList.remove('sheet-open');
+            var topbar = document.getElementById('topbar');
+            if (topbar) topbar.classList.remove('header-hidden');
         }
 
         // ==================== NAVIGATION ====================
