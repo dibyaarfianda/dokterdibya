@@ -3375,7 +3375,7 @@
             'jadwal': 'right'
         };
 
-        function openBottomSheet(category, navBtn) {
+        function _showSheet(category, navBtn) {
             const data = menuData[category];
             if (!data) return;
 
@@ -3450,7 +3450,6 @@
                     sheet.style.right = (window.innerWidth - btnRect.right) + 'px';
                     sheet.style.left = 'auto';
                 } else {
-                    // center on screen
                     var sw = Math.min(280, window.innerWidth * 0.92);
                     sheet.style.left = ((window.innerWidth - sw) / 2) + 'px';
                     sheet.style.right = 'auto';
@@ -3458,19 +3457,27 @@
                 }
             }
 
-            // If sheet already open, instant close then reopen with transition
-            if (sheet.classList.contains('active')) {
-                sheet.style.transition = 'none';
-                sheet.classList.remove('active');
-                // Force reflow to apply instant hide
-                void sheet.offsetHeight;
-                sheet.style.transition = '';
-            }
-
             // Show sheet + blur main content
             document.getElementById('sheet-overlay').classList.add('active');
             sheet.classList.add('active');
             document.body.classList.add('sheet-open');
+        }
+
+        function openBottomSheet(category, navBtn) {
+            var sheet = document.getElementById('bottom-sheet');
+
+            // If sheet already open: instant hide, then reopen with transition in next frame
+            if (sheet.classList.contains('active')) {
+                sheet.style.transition = 'none';
+                sheet.classList.remove('active');
+                void sheet.offsetHeight;
+                sheet.style.transition = '';
+                requestAnimationFrame(function() {
+                    _showSheet(category, navBtn);
+                });
+            } else {
+                _showSheet(category, navBtn);
+            }
         }
 
         function closeBottomSheet() {
