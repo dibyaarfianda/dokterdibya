@@ -57,6 +57,8 @@
 
         html {
             background: var(--bg-page);
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
         }
 
         body {
@@ -3641,6 +3643,33 @@
                     card.addEventListener('mouseleave', clearDoc);
                 });
                 docGrid.addEventListener('mouseleave', clearDoc);
+            }
+        })();
+
+        // ==================== HEAVY SCROLL (momentum damping) ====================
+        (function() {
+            var targetY = window.scrollY;
+            var currentY = window.scrollY;
+            var damping = 0.08;
+            var rafId = null;
+
+            window.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                targetY += e.deltaY;
+                targetY = Math.max(0, Math.min(targetY, document.documentElement.scrollHeight - window.innerHeight));
+                if (!rafId) tick();
+            }, { passive: false });
+
+            function tick() {
+                currentY += (targetY - currentY) * damping;
+                if (Math.abs(targetY - currentY) < 0.5) {
+                    currentY = targetY;
+                    window.scrollTo(0, currentY);
+                    rafId = null;
+                    return;
+                }
+                window.scrollTo(0, currentY);
+                rafId = requestAnimationFrame(tick);
             }
         })();
 
