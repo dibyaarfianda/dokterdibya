@@ -2271,7 +2271,7 @@
                     function loadQuote() {
                         var token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
                         if (!token) return;
-                        fetch('/api/patient/daily-quote?_t=' + Date.now(), {
+                        fetch('/api/patients/daily-quote?_t=' + Date.now(), {
                             headers: { 'Authorization': 'Bearer ' + token }
                         })
                         .then(function(r) { return r.json(); })
