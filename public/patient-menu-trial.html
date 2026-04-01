@@ -3420,6 +3420,14 @@
 
         // ==================== NAVIGATION ====================
         function navigateTo(section) {
+            // Set active state on tapped nav item
+            var navItems = document.querySelectorAll('.bottom-nav .nav-item');
+            var tapped = event && event.currentTarget;
+            if (tapped) {
+                navItems.forEach(function(item) { item.classList.remove('active'); item.removeAttribute('aria-current'); });
+                tapped.classList.add('active');
+            }
+
             if (section === 'notifikasi') {
                 window.location.href = '/notifikasi-trial.html';
             } else {
