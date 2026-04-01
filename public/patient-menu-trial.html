@@ -1868,6 +1868,12 @@
             backdrop-filter: blur(24px);
             border-top: 1px solid var(--line-soft);
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            transform: translateY(100%);
+            transition: transform 0.7s cubic-bezier(0.25, 1, 0.5, 1) !important;
+        }
+
+        .bottom-nav.nav-visible {
+            transform: translateY(0);
         }
 
         .bottom-inner {
@@ -3673,6 +3679,20 @@
                 });
                 docGrid.addEventListener('mouseleave', clearDoc);
             }
+        })();
+
+        // ==================== BOTTOM NAV SHOW/HIDE ON SCROLL ====================
+        (function() {
+            var nav = document.querySelector('.bottom-nav');
+            if (!nav) return;
+            var threshold = 50;
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > threshold) {
+                    nav.classList.add('nav-visible');
+                } else {
+                    nav.classList.remove('nav-visible');
+                }
+            }, { passive: true });
         })();
 
         // ==================== HEAVY SCROLL (momentum damping) ====================
