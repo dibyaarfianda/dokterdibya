@@ -1721,24 +1721,28 @@
 
         .bottom-sheet {
             position: fixed;
-            left: 50%;
             bottom: 70px;
-            transform: translateX(-50%) translateY(calc(100% + 70px));
-            width: 92%;
-            max-width: 400px;
+            width: auto;
+            min-width: 200px;
+            max-width: 280px;
             background: var(--bg-surface);
             border: 1px solid var(--line-soft);
-            border-radius: 16px;
+            border-radius: 14px;
             box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
-            padding: 0;
+            padding: 6px 0;
             z-index: 1001;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
             max-height: 60vh;
             overflow-y: auto;
         }
 
         .bottom-sheet.active {
-            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
         }
 
         /* Blur main content when bottom sheet is open */
@@ -2631,11 +2635,6 @@
 
     <!-- Bottom Sheet -->
     <div class="bottom-sheet" id="bottom-sheet">
-        <div class="bottom-sheet-handle"></div>
-        <div class="bottom-sheet-header">
-            <div class="sheet-icon" id="sheet-icon"></div>
-            <h3 id="sheet-title">Menu</h3>
-        </div>
         <div class="bottom-sheet-menu" id="sheet-menu">
             <!-- Menu items injected by JS -->
         </div>
@@ -3350,13 +3349,17 @@
         };
 
         // ==================== BOTTOM SHEET FUNCTIONS ====================
-        function openBottomSheet(category) {
+        // Alignment per category: left-align to button, center, or right-align to button
+        var sheetAlign = {
+            'dokumen': 'left',
+            'aplikasi': 'center',
+            'edukasi': 'right',
+            'jadwal': 'right'
+        };
+
+        function openBottomSheet(category, navBtn) {
             const data = menuData[category];
             if (!data) return;
-
-            // Set header (monochrome style - icon inside dashed border circle)
-            document.getElementById('sheet-icon').innerHTML = '<i class="' + data.icon + '"></i>';
-            document.getElementById('sheet-title').textContent = data.title;
 
             // Map sub-menu labels to unread count keys (for Dokumen category)
             const unreadKeyMap = {
@@ -3370,7 +3373,6 @@
             data.items.forEach(function(item) {
                 let badgeHtml = item.badge ? '<span class="item-badge">' + item.badge + '</span>' : '';
 
-                // Add unread count badge for Dokumen sub-menus
                 const unreadKey = unreadKeyMap[item.label];
                 const unreadCount = unreadKey ? (window._unreadDocCounts[unreadKey] || 0) : 0;
                 const unreadBadgeHtml = unreadCount > 0 ? '<span class="unread-badge">' + unreadCount + '</span>' : '';
@@ -3401,9 +3403,32 @@
 
             document.getElementById('sheet-menu').innerHTML = menuHtml;
 
+            // Position sheet relative to tapped nav button
+            var sheet = document.getElementById('bottom-sheet');
+            var align = sheetAlign[category] || 'center';
+            sheet.style.left = '';
+            sheet.style.right = '';
+
+            if (navBtn) {
+                var btnRect = navBtn.getBoundingClientRect();
+                if (align === 'left') {
+                    sheet.style.left = btnRect.left + 'px';
+                    sheet.style.right = 'auto';
+                } else if (align === 'right') {
+                    sheet.style.right = (window.innerWidth - btnRect.right) + 'px';
+                    sheet.style.left = 'auto';
+                } else {
+                    // center on screen
+                    var sw = Math.min(280, window.innerWidth * 0.92);
+                    sheet.style.left = ((window.innerWidth - sw) / 2) + 'px';
+                    sheet.style.right = 'auto';
+                    sheet.style.width = sw + 'px';
+                }
+            }
+
             // Show sheet + blur main content
             document.getElementById('sheet-overlay').classList.add('active');
-            document.getElementById('bottom-sheet').classList.add('active');
+            sheet.classList.add('active');
             document.body.classList.add('sheet-open');
             var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
             document.body.style.overflow = 'hidden';
@@ -3431,7 +3456,7 @@
             if (section === 'notifikasi') {
                 window.location.href = '/notifikasi-trial.html';
             } else {
-                openBottomSheet(section);
+                openBottomSheet(section, tapped);
             }
         }
 
