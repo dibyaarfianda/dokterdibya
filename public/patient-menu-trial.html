@@ -2101,27 +2101,18 @@
             line-height: 1.7;
             font-size: 14px;
             font-style: italic;
-            position: relative;
-            padding-top: 32px;
         }
 
-        .hero-copy::before {
-            content: '\201C';
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
+        .pull-quote-mark {
+            display: block;
             font-family: Georgia, 'Times New Roman', serif;
             font-size: 64px;
             font-style: normal;
             font-weight: 400;
             color: #000000;
-            line-height: 1;
-            opacity: 0.35;
-            z-index: 9999;
-            pointer-events: none;
-            display: block !important;
-            visibility: visible !important;
+            line-height: 0.5;
+            opacity: 0.3;
+            margin-bottom: 12px;
             opacity: 0;
             transform: translateY(16px);
         }
@@ -2293,7 +2284,7 @@
                 <h1 class="hero-greeting" id="hero-greeting">
                     <span id="hero-patient-name">...</span>
                 </h1>
-                <p class="hero-copy" id="hero-copy">Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
+                <p class="hero-copy" id="hero-copy"><span class="pull-quote-mark">&ldquo;</span>Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
                 <script>
                 (function() {
                     function loadQuote() {
@@ -2305,7 +2296,8 @@
                         .then(function(r) { return r.json(); })
                         .then(function(d) {
                             if (d.success && d.data && d.data.quote) {
-                                document.getElementById('hero-copy').textContent = d.data.quote;
+                                var el = document.getElementById('hero-copy');
+                                el.innerHTML = '<span class="pull-quote-mark">&ldquo;</span>' + d.data.quote;
                             }
                         })
                         .catch(function() {});
