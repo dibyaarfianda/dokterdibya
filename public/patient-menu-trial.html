@@ -2280,29 +2280,29 @@
                 <h1 class="hero-greeting" id="hero-greeting">
                     <span id="hero-patient-name">...</span>
                 </h1>
-                <p class="hero-copy" id="hero-copy">Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
+                <p class="hero-copy" id="hero-copy">&nbsp;</p>
                 <script>
                 (function() {
+                    var fallback = 'Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.';
                     function loadQuote() {
                         var token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
-                        if (!token) return;
+                        if (!token) {
+                            document.getElementById('hero-copy').textContent = fallback;
+                            return;
+                        }
                         fetch('/api/patients/daily-quote?_t=' + Date.now(), {
                             headers: { 'Authorization': 'Bearer ' + token }
                         })
                         .then(function(r) { return r.json(); })
                         .then(function(d) {
-                            if (d.success && d.data && d.data.quote) {
-                                var el = document.getElementById('hero-copy');
-                                el.textContent = d.data.quote;
-                            }
+                            var el = document.getElementById('hero-copy');
+                            el.textContent = (d.success && d.data && d.data.quote) ? d.data.quote : fallback;
                         })
-                        .catch(function() {});
+                        .catch(function() {
+                            document.getElementById('hero-copy').textContent = fallback;
+                        });
                     }
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', function() { setTimeout(loadQuote, 800); });
-                    } else {
-                        setTimeout(loadQuote, 800);
-                    }
+                    loadQuote();
                 })();
                 </script>
             </section>
