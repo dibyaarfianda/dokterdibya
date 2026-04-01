@@ -1800,12 +1800,25 @@
             padding: 14px 20px;
             color: var(--text-primary);
             text-decoration: none;
-            transition: background 0.2s;
+            transform: scale(1);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        background-color 0.25s ease;
+            will-change: transform;
         }
 
-        .sheet-menu-item:hover,
-        .sheet-menu-item:active {
+        .sheet-menu-item:hover {
+            transform: scale(1.05);
             background: var(--accent-soft);
+            z-index: 2;
+        }
+
+        .sheet-menu-item:active {
+            transform: scale(0.97);
+            transition: transform 0.1s ease;
+        }
+
+        .sheet-menu-item.neighbor {
+            transform: scale(1.02);
         }
 
         .sheet-menu-item i.menu-item-icon {
@@ -3402,6 +3415,20 @@
             });
 
             document.getElementById('sheet-menu').innerHTML = menuHtml;
+
+            // Magnifying neighbor effect on sheet menu items (vertical list = 1 col)
+            (function() {
+                var items = Array.from(document.querySelectorAll('#sheet-menu .sheet-menu-item'));
+                function clear() { items.forEach(function(c) { c.classList.remove('neighbor'); }); }
+                items.forEach(function(item, i) {
+                    item.addEventListener('mouseenter', function() {
+                        clear();
+                        if (items[i - 1]) items[i - 1].classList.add('neighbor');
+                        if (items[i + 1]) items[i + 1].classList.add('neighbor');
+                    });
+                    item.addEventListener('mouseleave', clear);
+                });
+            })();
 
             // Position sheet relative to tapped nav button
             var sheet = document.getElementById('bottom-sheet');
