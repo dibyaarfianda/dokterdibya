@@ -2266,6 +2266,29 @@
                     <span id="hero-patient-name">...</span>
                 </h1>
                 <p class="hero-copy" id="hero-copy">Portal privat kandungan Anda — konsultasi, jadwal, dan dokumen medis.</p>
+                <script>
+                (function() {
+                    function loadQuote() {
+                        var token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+                        if (!token) return;
+                        fetch('/api/patient/daily-quote?_t=' + Date.now(), {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            if (d.success && d.data && d.data.quote) {
+                                document.getElementById('hero-copy').textContent = d.data.quote;
+                            }
+                        })
+                        .catch(function() {});
+                    }
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', function() { setTimeout(loadQuote, 800); });
+                    } else {
+                        setTimeout(loadQuote, 800);
+                    }
+                })();
+                </script>
             </section>
 
             <!-- Idul Fitri Greeting Card -->

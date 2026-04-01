@@ -2389,4 +2389,34 @@ router.get('/birth-record', verifyToken, async (req, res) => {
     }
 });
 
+// ==================== DAILY EMPOWERING QUOTE ====================
+// Single quote per day, same for ALL patients, cached globally
+router.get('/api/patient/daily-quote', verifyToken, async (req, res) => {
+    try {
+        const today = new Date();
+        const dateKey = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+
+        if (!global.patientQuoteCache) global.patientQuoteCache = {};
+
+        if (global.patientQuoteCache.date === dateKey) {
+            return res.json({ success: true, data: global.patientQuoteCache.data, cached: true });
+        }
+
+        const aiService = require('../services/aiService');
+        const result = await aiService.generatePatientDailyQuote();
+
+        if (result.success) {
+            global.patientQuoteCache = { date: dateKey, data: result.data };
+        }
+
+        res.json({ success: true, data: result.data });
+    } catch (error) {
+        console.error('Daily quote error:', error);
+        res.json({
+            success: true,
+            data: { quote: 'Setiap langkah yang kau ambil hari ini adalah hadiah untuk masa depan keluargamu.' }
+        });
+    }
+});
+
 module.exports = router;

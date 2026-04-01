@@ -852,6 +852,75 @@ Balas HANYA dengan ucapannya saja.`;
     }
 }
 
+/**
+ * Generate a single daily empowering quote for ALL patients
+ * Cached globally per day (same quote for everyone)
+ * Theme: empowering women, motherhood, family
+ */
+async function generatePatientDailyQuote() {
+    try {
+        const now = new Date();
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const dayName = days[now.getDay()];
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+        const prompt = `Buatkan SATU kutipan inspiratif untuk hari ini (${dayName}, ${dateStr}).
+
+Tema: kekuatan seorang wanita, keibuan, keluarga, kehamilan, atau perjalanan menjadi ibu.
+Nuansa: empowering, motivational, hangat, penuh harapan.
+
+Kriteria:
+1. Maksimal 2 kalimat pendek
+2. Bahasa Indonesia yang puitis tapi mudah dipahami
+3. TANPA emoji atau icon
+4. TANPA tanda kutip di awal/akhir
+5. Bisa berupa quote original atau terinspirasi tokoh (tanpa menyebut nama tokoh)
+6. Harus membangkitkan semangat dan rasa percaya diri
+
+Contoh gaya:
+- "Dalam setiap detak jantung yang kau jaga, tersimpan kekuatan yang tak terukur."
+- "Menjadi ibu bukan tentang kesempurnaan, melainkan tentang cinta yang tak pernah berhenti bertumbuh."
+
+Balas HANYA dengan kutipannya saja.`;
+
+        const response = await openai.chat.completions.create({
+            model: AI_MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: 'Kamu adalah penulis kutipan inspiratif bertema keibuan dan kekuatan wanita. Balas hanya dengan kutipan saja, tanpa tanda kutip.'
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: 100,
+            temperature: 0.9
+        });
+
+        const quote = response.choices[0]?.message?.content?.trim()
+            ?.replace(/^["'""]+|["'""]+$/g, '') // strip wrapping quotes
+            || 'Setiap langkah yang kau ambil hari ini adalah hadiah untuk masa depan keluargamu.';
+
+        return {
+            success: true,
+            data: { quote, day: dayName, date: dateStr },
+            tokensUsed: response.usage?.total_tokens || 0
+        };
+    } catch (error) {
+        console.error('AI Patient Daily Quote Error:', error);
+        return {
+            success: true,
+            data: {
+                quote: 'Setiap langkah yang kau ambil hari ini adalah hadiah untuk masa depan keluargamu.',
+                fallback: true
+            },
+            tokensUsed: 0
+        };
+    }
+}
+
 module.exports = {
     detectVisitCategory,
     generateMedicalSummary,
@@ -859,5 +928,6 @@ module.exports = {
     chatbotResponse,
     generateInterviewQuestions,
     processInterviewAnswers,
-    generateDailyGreeting
+    generateDailyGreeting,
+    generatePatientDailyQuote
 };
