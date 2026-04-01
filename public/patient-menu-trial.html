@@ -1741,6 +1741,15 @@
             transform: translateY(0);
         }
 
+        /* Blur main content when bottom sheet is open */
+        body.sheet-open main {
+            filter: blur(6px);
+            transition: filter 0.3s ease;
+        }
+        body.sheet-open .bottom-nav {
+            filter: blur(0);
+        }
+
         .bottom-sheet-handle {
             width: 40px;
             height: 4px;
@@ -1872,6 +1881,11 @@
         }
 
         .nav-item:active { transform: scale(0.9); }
+
+        /* Separator between nav items */
+        .nav-item + .nav-item {
+            border-left: 1px solid var(--line-soft);
+        }
 
         /* Bottom nav badge */
         .nav-badge {
@@ -3380,9 +3394,10 @@
 
             document.getElementById('sheet-menu').innerHTML = menuHtml;
 
-            // Show sheet
+            // Show sheet + blur main content
             document.getElementById('sheet-overlay').classList.add('active');
             document.getElementById('bottom-sheet').classList.add('active');
+            document.body.classList.add('sheet-open');
             var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
             document.body.style.overflow = 'hidden';
             document.body.style.paddingRight = scrollbarW + 'px';
@@ -3391,6 +3406,7 @@
         function closeBottomSheet() {
             document.getElementById('sheet-overlay').classList.remove('active');
             document.getElementById('bottom-sheet').classList.remove('active');
+            document.body.classList.remove('sheet-open');
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
         }
