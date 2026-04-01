@@ -1854,8 +1854,15 @@
             gap: 3px;
             color: var(--text-muted);
             text-decoration: none;
-            transition: transform 0.25s ease, color 0.25s ease;
+            transition: transform 0.25s ease, color 0.25s ease, background 0.3s ease;
             cursor: pointer;
+            border-radius: 10px;
+            margin: 0 2px;
+        }
+
+        .nav-item:hover {
+            background: rgba(59, 130, 246, 0.06);
+            color: rgba(59, 130, 246, 0.7);
         }
 
         .nav-item i { font-size: 18px; }
