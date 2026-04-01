@@ -2100,6 +2100,20 @@
             max-width: 48ch;
             line-height: 1.6;
             font-size: 14px;
+            font-style: italic;
+            position: relative;
+        }
+
+        .hero-copy::before {
+            content: '\201C';
+            display: block;
+            font-size: 48px;
+            font-style: normal;
+            font-weight: 300;
+            color: var(--line-strong);
+            line-height: 0.6;
+            margin-bottom: 8px;
+            opacity: 0.3;
             opacity: 0;
             transform: translateY(16px);
         }
