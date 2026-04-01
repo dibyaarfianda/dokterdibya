@@ -1732,8 +1732,9 @@
             padding: 6px 0;
             z-index: 1001;
             opacity: 0;
-            transform: translateY(8px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transform: translateY(30px);
+            transition: opacity 1.3s cubic-bezier(0.25, 1, 0.5, 1),
+                        transform 1.3s cubic-bezier(0.25, 1, 0.5, 1);
             pointer-events: none;
             max-height: 60vh;
             overflow-y: auto;
@@ -1746,9 +1747,11 @@
         }
 
         /* Blur main content when bottom sheet is open */
+        main {
+            transition: filter 1.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
         body.sheet-open main {
             filter: blur(6px);
-            transition: filter 0.3s ease;
         }
         body.sheet-open .bottom-nav {
             filter: blur(0);
