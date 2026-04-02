@@ -1964,24 +1964,30 @@
             right: 0;
             bottom: 0;
             z-index: 1002;
-            background: transparent;
             border-top: none;
             box-shadow: none;
             padding-bottom: env(safe-area-inset-bottom, 0px);
             transform: translateY(100%);
             transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1) !important;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* ClearPath progressive blur - 8 layers with exact same values */
-        .nav-blur-container {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
+        /* ClearPath progressive blur - 8 layers, exact same values */
+        /* Fade zone sits just above nav bar for smooth content blur transition */
+        .nav-blur-fade {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 56px; /* sits above the nav bar */
+            height: 80px;
+            z-index: 1001;
             pointer-events: none;
+            transform: translateY(100%);
+            transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1) !important;
         }
-        .nav-blur-container > div {
+        .nav-blur-fade.nav-visible {
+            transform: translateY(0);
+        }
+        .nav-blur-fade > div {
             opacity: 1;
             position: absolute;
             inset: 0;
@@ -1996,6 +2002,14 @@
         .nav-blur-6 { z-index:6; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
         .nav-blur-7 { z-index:7; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
         .nav-blur-8 { z-index:8; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
+        /* White tint overlay on top of blur - makes blur visible on white bg */
+        .nav-blur-tint {
+            position: absolute;
+            inset: 0;
+            z-index: 9;
+            background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,1) 100%);
+            pointer-events: none;
+        }
 
         .bottom-nav.nav-visible {
             transform: translateY(0);
@@ -2849,20 +2863,22 @@
         </div>
     </div>
 
+    <!-- ClearPath Progressive Blur Fade Zone (above nav) -->
+    <div class="nav-blur-fade" id="nav-blur-fade">
+        <div class="nav-blur-1"></div>
+        <div class="nav-blur-2"></div>
+        <div class="nav-blur-3"></div>
+        <div class="nav-blur-4"></div>
+        <div class="nav-blur-5"></div>
+        <div class="nav-blur-6"></div>
+        <div class="nav-blur-7"></div>
+        <div class="nav-blur-8"></div>
+        <div class="nav-blur-tint"></div>
+    </div>
+
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav" aria-label="Navigasi bawah" style="height: 120px;">
-        <!-- ClearPath Progressive Blur: 8 layers, exact same values -->
-        <div class="nav-blur-container">
-            <div class="nav-blur-1"></div>
-            <div class="nav-blur-2"></div>
-            <div class="nav-blur-3"></div>
-            <div class="nav-blur-4"></div>
-            <div class="nav-blur-5"></div>
-            <div class="nav-blur-6"></div>
-            <div class="nav-blur-7"></div>
-            <div class="nav-blur-8"></div>
-        </div>
-        <div class="bottom-inner" style="position: relative; z-index: 10; margin-top: auto;">
+    <nav class="bottom-nav" aria-label="Navigasi bawah" style="background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+        <div class="bottom-inner">
             <a href="/patient-menu-trial.html" class="nav-item active" aria-current="page">
                 <i class="fa-solid fa-house"></i>
                 <span>Beranda</span>
@@ -3879,13 +3895,16 @@
         // ==================== BOTTOM NAV SHOW/HIDE ON SCROLL ====================
         (function() {
             var nav = document.querySelector('.bottom-nav');
+            var blurFade = document.getElementById('nav-blur-fade');
             if (!nav) return;
             var threshold = 50;
             window.addEventListener('scroll', function() {
                 if (window.scrollY > threshold) {
                     nav.classList.add('nav-visible');
+                    if (blurFade) blurFade.classList.add('nav-visible');
                 } else {
                     nav.classList.remove('nav-visible');
+                    if (blurFade) blurFade.classList.remove('nav-visible');
                 }
             }, { passive: true });
         })();
