@@ -1222,6 +1222,35 @@
             border-radius: 0;
         }
 
+        .welcome-skip {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 2;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: background 0.2s, color 0.2s, opacity 0.3s;
+        }
+
+        .welcome-skip:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .welcome-skip.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .welcome-pinned-content {
             text-align: center;
             padding: 60px 32px;
@@ -2364,6 +2393,9 @@
             <!-- Welcome Pinned Window -->
             <div class="welcome-pinned" id="welcome-pinned">
                 <div class="welcome-pinned-inner">
+                    <button class="welcome-skip" id="welcome-skip" onclick="skipWelcomeWindow()" aria-label="Lewati">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
                     <div class="welcome-pinned-content" id="welcome-pinned-content">
                         <h2>Selamat Datang</h2>
                         <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color:#fff">rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
@@ -3744,10 +3776,20 @@
             }
         })();
 
+        // ==================== WELCOME SKIP BUTTON ====================
+        function skipWelcomeWindow() {
+            var container = document.getElementById('welcome-pinned');
+            if (!container) return;
+            var targetY = container.offsetTop + container.offsetHeight - window.innerHeight;
+            window.scrollTo({ top: targetY, behavior: 'smooth' });
+        }
+        window.skipWelcomeWindow = skipWelcomeWindow;
+
         // ==================== WELCOME PINNED WINDOW SCROLL ====================
         (function() {
             var container = document.getElementById('welcome-pinned');
             var content = document.getElementById('welcome-pinned-content');
+            var skipBtn = document.getElementById('welcome-skip');
             if (!container || !content) return;
 
             window.addEventListener('scroll', function() {
@@ -3765,6 +3807,15 @@
                 // At progress=0: shift down to reveal top. At progress=1: shift up to reveal bottom.
                 var shift = overflow * (0.5 - progress);
                 content.style.transform = 'translateY(' + shift + 'px)';
+
+                // Hide skip button when near end
+                if (skipBtn) {
+                    if (progress > 0.85) {
+                        skipBtn.classList.add('hidden');
+                    } else {
+                        skipBtn.classList.remove('hidden');
+                    }
+                }
             }, { passive: true });
         })();
 
