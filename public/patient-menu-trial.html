@@ -1217,7 +1217,7 @@
             color: #ffffff;
             overflow: hidden;
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: center;
         }
 
@@ -1226,8 +1226,6 @@
             padding: 60px 32px;
             max-width: 640px;
             will-change: transform;
-            margin-top: auto;
-            margin-bottom: auto;
         }
 
         .welcome-pinned-content h2 {
@@ -3758,7 +3756,10 @@
 
                 // How far the sticky inner has been scrolled within the container
                 var progress = Math.max(0, Math.min(1, -rect.top / (containerH - viewH)));
-                content.style.transform = 'translateY(' + (-progress * overflow) + 'px)';
+                // Content is CSS-centered, so top is clipped by overflow/2.
+                // At progress=0: shift down to reveal top. At progress=1: shift up to reveal bottom.
+                var shift = overflow * (0.5 - progress);
+                content.style.transform = 'translateY(' + shift + 'px)';
             }, { passive: true });
         })();
 
