@@ -1202,6 +1202,60 @@
             }
         }
 
+        /* ========== WELCOME PINNED SCROLL ========== */
+        .welcome-pinned {
+            position: relative;
+            height: 1800px;
+            margin: 0 -16px;
+        }
+
+        .welcome-pinned-inner {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+        }
+
+        .welcome-pinned-content {
+            text-align: center;
+            padding: 60px 32px;
+            max-width: 640px;
+            will-change: transform;
+        }
+
+        .welcome-pinned-content h2 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 32px;
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-pinned-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0 0 24px;
+        }
+
+        .welcome-pinned-content .welcome-sign {
+            margin-top: 40px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .welcome-pinned-content .welcome-sign strong {
+            display: block;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            margin-top: 4px;
+        }
+
         /* ========== PROCES SECTION (Flair sticky-stack) ========== */
         .proces-section {
             padding-top: 70px;
@@ -2307,6 +2361,23 @@
                 </script>
             </section>
 
+            <!-- Welcome Pinned Window -->
+            <div class="welcome-pinned" id="welcome-pinned">
+                <div class="welcome-pinned-inner">
+                    <div class="welcome-pinned-content" id="welcome-pinned-content">
+                        <h2>Selamat Datang</h2>
+                        <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color:#fff">rahasia</strong>.</p>
+                        <p>Adanya Portal <strong style="color:#fff">dokterDIBYA</strong> berawal dari keinginan sederhana saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu.</p>
+                        <p>Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati!</p>
+                        <p>Terima kasih telah menjadi bagian dari <strong style="color:#fff">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+                        <div class="welcome-sign">
+                            salam hangat,
+                            <strong>dr. Dibya</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Idul Fitri Greeting Card -->
             <div class="eid-card" id="eid-greeting-card" style="display: none;">
                 <button class="eid-close" onclick="dismissEidGreeting()">&times;</button>
@@ -2353,28 +2424,6 @@
                         salam hangat,<br>
                         <strong>dr. Dibya & Tim</strong>
                     </p>
-                </div>
-            </div>
-
-            <!-- Welcome Message (Collapsible) -->
-            <div class="dash-card" id="welcome-section" style="margin-bottom: 14px;">
-                <div class="dash-card-header" onclick="toggleWelcomeSection()">
-                    <h3><i class="fa-solid fa-heart"></i> Selamat Datang</h3>
-                    <i class="fa-solid fa-chevron-up toggle-icon" id="welcome-toggle-icon"></i>
-                </div>
-                <div id="welcome-content" class="welcome-body" style="display: none;">
-                    <p>Halaman ini adalah ruang khusus bagi Anda -- tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
-
-                    <p>Adanya Portal <strong>dokterDIBYA</strong> berawal dari keinginan <em>sederhana</em> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu. Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati!</p>
-
-                    <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
-
-                    <p>Terima kasih telah menjadi bagian dari <strong>"modern therapy without boundary"</strong> -- pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
-
-                    <div class="welcome-sign">
-                        <strong style="font-weight: 500;">salam hangat,</strong><br>
-                        <strong style="font-size: 15px;">dr. Dibya</strong>
-                    </div>
                 </div>
             </div>
 
@@ -3689,6 +3738,27 @@
                 });
                 docGrid.addEventListener('mouseleave', clearDoc);
             }
+        })();
+
+        // ==================== WELCOME PINNED WINDOW SCROLL ====================
+        (function() {
+            var container = document.getElementById('welcome-pinned');
+            var content = document.getElementById('welcome-pinned-content');
+            if (!container || !content) return;
+
+            window.addEventListener('scroll', function() {
+                var rect = container.getBoundingClientRect();
+                var containerH = container.offsetHeight;
+                var viewH = window.innerHeight;
+                var contentH = content.scrollHeight;
+                var overflow = contentH - viewH;
+
+                if (overflow <= 0) return;
+
+                // How far the sticky inner has been scrolled within the container
+                var progress = Math.max(0, Math.min(1, -rect.top / (containerH - viewH)));
+                content.style.transform = 'translateY(' + (-progress * overflow) + 'px)';
+            }, { passive: true });
         })();
 
         // ==================== BOTTOM NAV SHOW/HIDE ON SCROLL ====================
