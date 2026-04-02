@@ -1215,10 +1215,9 @@
             height: 100vh;
             background: #0a0a0a;
             color: #ffffff;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
             display: flex;
-            align-items: safe center;
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -1227,6 +1226,8 @@
             padding: 60px 32px;
             max-width: 640px;
             will-change: transform;
+            margin-top: auto;
+            margin-bottom: auto;
         }
 
         .welcome-pinned-content h2 {
