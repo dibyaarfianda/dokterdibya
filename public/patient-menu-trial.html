@@ -1211,14 +1211,15 @@
 
         .welcome-pinned-inner {
             position: sticky;
-            top: 0;
-            height: 100vh;
+            top: 10vh;
+            height: 80vh;
             background: #0a0a0a;
             color: #ffffff;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 20px;
         }
 
         .welcome-pinned-content {
@@ -3748,7 +3749,7 @@
             window.addEventListener('scroll', function() {
                 var rect = container.getBoundingClientRect();
                 var containerH = container.offsetHeight;
-                var viewH = window.innerHeight;
+                var viewH = window.innerHeight * 0.8;
                 var contentH = content.scrollHeight;
                 var overflow = contentH - viewH;
 
