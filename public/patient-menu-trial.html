@@ -1205,7 +1205,7 @@
         /* ========== WELCOME PINNED SCROLL ========== */
         .welcome-pinned {
             position: relative;
-            height: calc(1800px + 25vh);
+            height: 1800px;
             margin: 0 calc(-50vw + 50%);
             z-index: 2;
             background: var(--bg-page);
@@ -1213,15 +1213,24 @@
 
         .welcome-pinned-inner {
             position: sticky;
-            top: 10vh;
-            height: 70vh;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 10vh;
+            padding-bottom: 20vh;
+            box-sizing: border-box;
+        }
+
+        .welcome-window {
+            flex: 1;
+            position: relative;
             background: #0a0a0a;
             color: #ffffff;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0;
         }
 
         .welcome-skip {
@@ -2400,18 +2409,20 @@
             <!-- Welcome Pinned Window -->
             <div class="welcome-pinned" id="welcome-pinned">
                 <div class="welcome-pinned-inner">
-                    <button class="welcome-skip" id="welcome-skip" onclick="skipWelcomeWindow()" aria-label="Lewati">
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </button>
-                    <div class="welcome-pinned-content" id="welcome-pinned-content">
-                        <h2>Selamat Datang</h2>
-                        <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color:#fff">rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
-                        <p>Adanya Portal <strong style="color:#fff">dokterDIBYA</strong> berawal dari keinginan <em>sederhana</em> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu. Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati!</p>
-                        <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
-                        <p>Terima kasih telah menjadi bagian dari <strong style="color:#fff">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
-                        <div class="welcome-sign">
-                            salam hangat,
-                            <strong>dr. Dibya</strong>
+                    <div class="welcome-window">
+                        <button class="welcome-skip" id="welcome-skip" onclick="skipWelcomeWindow()" aria-label="Lewati">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="welcome-pinned-content" id="welcome-pinned-content">
+                            <h2>Selamat Datang</h2>
+                            <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color:#fff">rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+                            <p>Adanya Portal <strong style="color:#fff">dokterDIBYA</strong> berawal dari keinginan <em>sederhana</em> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu. Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati!</p>
+                            <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+                            <p>Terima kasih telah menjadi bagian dari <strong style="color:#fff">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+                            <div class="welcome-sign">
+                                salam hangat,
+                                <strong>dr. Dibya</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
