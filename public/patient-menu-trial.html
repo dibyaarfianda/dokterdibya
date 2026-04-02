@@ -1972,13 +1972,13 @@
         }
 
         /* ClearPath progressive blur - 8 layers, exact same values */
-        /* Fade zone sits just above nav bar for smooth content blur transition */
+        /* Covers nav + fade zone above: total 140px from bottom */
         .nav-blur-fade {
             position: fixed;
             left: 0;
             right: 0;
-            bottom: 56px; /* sits above the nav bar */
-            height: 80px;
+            bottom: 0;
+            height: 140px;
             z-index: 1001;
             pointer-events: none;
             transform: translateY(100%);
@@ -1991,7 +1991,6 @@
             opacity: 1;
             position: absolute;
             inset: 0;
-            border-radius: 0px;
             pointer-events: none;
         }
         .nav-blur-1 { z-index:1; backdrop-filter:blur(0.15625px); -webkit-backdrop-filter:blur(0.15625px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
@@ -2002,14 +2001,6 @@
         .nav-blur-6 { z-index:6; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
         .nav-blur-7 { z-index:7; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
         .nav-blur-8 { z-index:8; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
-        /* White tint overlay on top of blur - makes blur visible on white bg */
-        .nav-blur-tint {
-            position: absolute;
-            inset: 0;
-            z-index: 9;
-            background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,1) 100%);
-            pointer-events: none;
-        }
 
         .bottom-nav.nav-visible {
             transform: translateY(0);
@@ -2873,11 +2864,10 @@
         <div class="nav-blur-6"></div>
         <div class="nav-blur-7"></div>
         <div class="nav-blur-8"></div>
-        <div class="nav-blur-tint"></div>
     </div>
 
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav" aria-label="Navigasi bawah" style="background: rgba(255,255,255,0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+    <nav class="bottom-nav" aria-label="Navigasi bawah">
         <div class="bottom-inner">
             <a href="/patient-menu-trial.html" class="nav-item active" aria-current="page">
                 <i class="fa-solid fa-house"></i>
