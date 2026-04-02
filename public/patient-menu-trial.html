@@ -2900,6 +2900,10 @@
             }
         });
 
+        // ==================== SCROLL TO TOP ON LOAD ====================
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        window.scrollTo(0, 0);
+
         // ==================== HEADER ANIMATION (runs immediately, DOM is ready) ====================
         (function() {
             // Trigger entrance animation
