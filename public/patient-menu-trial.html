@@ -1212,7 +1212,7 @@
         .welcome-pinned-inner {
             position: sticky;
             top: 10vh;
-            height: 80vh;
+            height: 70vh;
             background: #0a0a0a;
             color: #ffffff;
             overflow: hidden;
@@ -1238,9 +1238,9 @@
 
         .welcome-pinned-content p {
             font-size: 15px;
-            line-height: 1.8;
+            line-height: 2;
             color: rgba(255, 255, 255, 0.7);
-            margin: 0 0 24px;
+            margin: 0 0 32px;
         }
 
         .welcome-pinned-content .welcome-sign {
@@ -3749,7 +3749,7 @@
             window.addEventListener('scroll', function() {
                 var rect = container.getBoundingClientRect();
                 var containerH = container.offsetHeight;
-                var viewH = window.innerHeight * 0.8;
+                var viewH = window.innerHeight * 0.7;
                 var contentH = content.scrollHeight;
                 var overflow = contentH - viewH;
 
