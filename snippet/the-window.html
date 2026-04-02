@@ -1,0 +1,227 @@
+<!--
+  ============================================================
+  THE WINDOW — Sticky Pinned Scroll Window
+  ============================================================
+  A full-width "window" panel that sticks while the user scrolls.
+  Shows 10% page background at the top and 20% at the bottom,
+  creating a floating dark window effect with rounded corners.
+
+  Content that is taller than the window is automatically
+  scroll-animated: the text rolls from top to bottom as the
+  user scrolls through the section.
+
+  No external dependencies — pure HTML + CSS + vanilla JS.
+  ============================================================
+-->
+
+<!-- ======================== CSS ======================== -->
+<style>
+/* ---------- Outer wrapper ----------
+   height controls how long the window stays pinned while scrolling.
+   margin breaks out of a centered container to span full viewport width. */
+.welcome-pinned {
+    position: relative;
+    height: 1800px;                        /* scroll distance */
+    margin: 0 calc(-50vw + 50%);           /* break out to full width */
+}
+
+/* ---------- Sticky inner (the "window") ----------
+   top: 10vh   → 10% gap at the top
+   height: 70vh → window height (leaves 20% gap at the bottom)
+   border-radius gives it the floating window look. */
+.welcome-pinned-inner {
+    position: sticky;
+    top: 10vh;
+    height: 70vh;
+    background: #0a0a0a;
+    color: #ffffff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+/* ---------- Content ---------- */
+.welcome-pinned-content {
+    text-align: center;
+    padding: 60px 32px;
+    max-width: 640px;
+    will-change: transform;
+}
+
+.welcome-pinned-content h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 32px;
+    letter-spacing: -0.02em;
+}
+
+.welcome-pinned-content p {
+    font-size: 15px;
+    line-height: 2;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 32px;
+}
+
+.welcome-pinned-content .welcome-sign {
+    margin-top: 40px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.welcome-pinned-content .welcome-sign strong {
+    display: block;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 16px;
+    margin-top: 4px;
+}
+</style>
+
+
+<!-- ======================== HTML ======================== -->
+<div class="welcome-pinned" id="welcome-pinned">
+    <div class="welcome-pinned-inner">
+        <div class="welcome-pinned-content" id="welcome-pinned-content">
+            <h2>Selamat Datang</h2>
+
+            <p>
+                Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu
+                Anda, memantau kehamilan atau kesehatan kandungan Anda secara
+                berkala dan privat. Semua catatan dan informasi di sini bersifat
+                <strong style="color:#fff">rahasia</strong>. Mohon untuk tidak
+                membagikan portal Anda kepada orang selain keluarga inti/
+                keluarga yang dipercaya. Karena itulah keamanan sistem ini
+                menjadi prioritas saya dengan menerapkan proteksi berlapis dan
+                enkripsi untuk mencegah peretasan.
+            </p>
+
+            <p>
+                Adanya Portal <strong style="color:#fff">dokterDIBYA</strong>
+                berawal dari keinginan <em>sederhana</em> saya, yaitu agar
+                setiap pasien bisa tetap terhubung dengan dokter pilihannya
+                tanpa batasan tempat dan waktu. Update selalu dengan perubahan
+                jadwal, reminding jadwal minum vitamin, booking slot dengan mudah
+                dan bahkan nantinya konsultasi secara online dengan jadwal yang
+                disepakati!
+            </p>
+
+            <p>
+                Walaupun demikian saya paham, banyak tantangan dan kesulitan
+                dalam memulai hal baru. Tapi saya percaya, langkah kecil ini
+                bisa membawa perubahan besar menuju pelayanan berkesinambungan.
+                Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi
+                dan riwayat medis, data kehamilan, masalah kandungan, riwayat
+                KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga
+                dapat menjadi modalitas bagi saya dalam pemilihan terapi dan
+                layanan terbaik untuk Anda.
+            </p>
+
+            <p>
+                Terima kasih telah menjadi bagian dari
+                <strong style="color:#fff">"modern therapy without boundary"</strong>
+                — pendampingan dan terapi berkelanjutan, di mana pun dan kapan
+                pun Anda membutuhkannya.
+            </p>
+
+            <div class="welcome-sign">
+                salam hangat,
+                <strong>dr. Dibya</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ======================== JavaScript ======================== -->
+<script>
+// ---------- Scroll to top on load ----------
+// Prevents browser from restoring previous scroll position.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
+// ---------- Pinned window scroll animation ----------
+// When the content is taller than the 70vh window, this script
+// smoothly translates the content from top to bottom as the
+// user scrolls through the 1800px outer container.
+//
+// How it works:
+//   - CSS `align-items: center` places content centered in the window.
+//   - If content overflows, the centered position clips both top and bottom.
+//   - We calculate `overflow = contentH - windowH`.
+//   - At progress 0 (start): translateY(+overflow/2) → reveals top
+//   - At progress 1 (end):   translateY(-overflow/2) → reveals bottom
+//   - Formula: translateY = overflow * (0.5 - progress)
+//
+// progress is derived from how far the outer container has scrolled
+// past the viewport top: progress = -rect.top / (containerH - viewportH)
+
+(function() {
+    var container = document.getElementById('welcome-pinned');
+    var content   = document.getElementById('welcome-pinned-content');
+    if (!container || !content) return;
+
+    window.addEventListener('scroll', function() {
+        var rect       = container.getBoundingClientRect();
+        var containerH = container.offsetHeight;           // 1800px
+        var viewH      = window.innerHeight * 0.7;         // matches CSS 70vh
+        var contentH   = content.scrollHeight;
+        var overflow   = contentH - viewH;
+
+        if (overflow <= 0) return; // content fits — no animation needed
+
+        // How far the sticky inner has been scrolled within the container
+        var progress = Math.max(0, Math.min(1, -rect.top / (containerH - viewH)));
+
+        // Content is CSS-centered, so top is clipped by overflow/2.
+        // At progress=0: shift down to reveal top.
+        // At progress=1: shift up to reveal bottom.
+        var shift = overflow * (0.5 - progress);
+        content.style.transform = 'translateY(' + shift + 'px)';
+    }, { passive: true });
+})();
+</script>
+
+
+<!--
+  ============================================================
+  CONFIGURATION NOTES
+  ============================================================
+
+  Adjust these values to customize the window:
+
+  CSS Variables:
+  ┌───────────────────────────┬──────────┬──────────────────────────────┐
+  │ Property                  │ Default  │ Effect                       │
+  ├───────────────────────────┼──────────┼──────────────────────────────┤
+  │ .welcome-pinned height    │ 1800px   │ How long window stays pinned │
+  │ .welcome-pinned-inner top │ 10vh     │ Gap at top (% of viewport)   │
+  │ .welcome-pinned-inner     │ 70vh     │ Window height                │
+  │   height                  │          │ (100 - top - bottom gap)     │
+  │ border-radius             │ 20px     │ Corner roundness             │
+  │ padding                   │ 60px 32px│ Inner content spacing        │
+  │ line-height (p)           │ 2        │ Text vertical spacing        │
+  │ margin-bottom (p)         │ 32px     │ Paragraph gap                │
+  └───────────────────────────┴──────────┴──────────────────────────────┘
+
+  JS Variables:
+  ┌───────────────────────────┬──────────┬──────────────────────────────┐
+  │ Variable                  │ Default  │ Must match CSS               │
+  ├───────────────────────────┼──────────┼──────────────────────────────┤
+  │ viewH multiplier          │ 0.7      │ Must match CSS height (70vh) │
+  └───────────────────────────┴──────────┴──────────────────────────────┘
+
+  Layout breakdown (viewport = 100vh):
+  ┌─────────────────────────────────┐
+  │         10vh — page bg          │
+  ├─────────────────────────────────┤
+  │                                 │
+  │    70vh — dark window           │
+  │    (border-radius: 20px)        │
+  │                                 │
+  ├─────────────────────────────────┤
+  │         20vh — page bg          │
+  └─────────────────────────────────┘
+
+  ============================================================
+-->
