@@ -2110,7 +2110,8 @@
             background: rgb(15, 23, 42);
         }
 
-        .nav-item:hover {
+        .nav-item:hover,
+        .nav-item.prox-hover {
             color: #ffffff !important;
             background-color: #ffffff !important;
             animation: none !important;
@@ -2120,11 +2121,14 @@
         }
 
         .nav-item:hover i,
-        .nav-item:hover span {
+        .nav-item:hover span,
+        .nav-item.prox-hover i,
+        .nav-item.prox-hover span {
             color: rgb(15, 23, 42) !important;
         }
 
-        .nav-item:hover i {
+        .nav-item:hover i,
+        .nav-item.prox-hover i {
             animation: none !important;
             transform: scale(1.22);
         }
@@ -2171,7 +2175,8 @@
         }
 
         /* Only the specifically hovered item gets white background */
-        .bottom-inner:hover .nav-item:hover {
+        .bottom-inner:hover .nav-item:hover,
+        .bottom-inner:hover .nav-item.prox-hover {
             color: rgb(15, 23, 42) !important;
             transition: color 0.3s ease-in, background-color 0.3s ease-in, transform 0.3s ease-in !important;
         }
@@ -4022,7 +4027,10 @@
         (function() {
             var items = Array.from(document.querySelectorAll('.bottom-inner .nav-item'));
             if (!items.length) return;
+            var nav = document.querySelector('.bottom-inner');
+            if (!nav) return;
             var cleanupTimers = new WeakMap();
+            var activeIndex = -1;
 
             function clearCleanup(item) {
                 var timer = cleanupTimers.get(item);
@@ -4068,20 +4076,51 @@
                 });
             }
 
-            items.forEach(function(item, i) {
-                item.addEventListener('mouseenter', function() {
-                    clearCleanup(item);
-                    item.classList.remove('neighbor-enter', 'neighbor-exit');
-                    var prev = items[i - 1];
-                    var next = items[i + 1];
-                    var targets = [item, prev, next].filter(Boolean);
-                    clear(targets);
-                    [prev, next].filter(Boolean).forEach(setNeighborEnter);
+            function applyCenterByIndex(i) {
+                if (i < 0 || i >= items.length) return;
+                if (i === activeIndex) return;
+
+                activeIndex = i;
+                items.forEach(function(item, idx) {
+                    if (idx === i) {
+                        clearCleanup(item);
+                        item.classList.remove('neighbor-enter', 'neighbor-exit');
+                        item.classList.add('prox-hover');
+                    } else {
+                        item.classList.remove('prox-hover');
+                    }
                 });
+
+                var center = items[i];
+                var prev = items[i - 1];
+                var next = items[i + 1];
+                var targets = [center, prev, next].filter(Boolean);
+                clear(targets);
+                [prev, next].filter(Boolean).forEach(setNeighborEnter);
+            }
+
+            function updateFromPointer(clientX) {
+                var rect = nav.getBoundingClientRect();
+                if (!rect.width) return;
+                var x = Math.max(0, Math.min(rect.width - 1, clientX - rect.left));
+                var slotWidth = rect.width / items.length;
+                var idx = Math.floor(x / slotWidth);
+                applyCenterByIndex(idx);
+            }
+
+            nav.addEventListener('mousemove', function(e) {
+                updateFromPointer(e.clientX);
             });
 
-            var nav = document.querySelector('.bottom-inner');
-            if (nav) nav.addEventListener('mouseleave', function() { clear(); });
+            nav.addEventListener('mouseenter', function(e) {
+                updateFromPointer(e.clientX);
+            });
+
+            nav.addEventListener('mouseleave', function() {
+                activeIndex = -1;
+                items.forEach(function(item) { item.classList.remove('prox-hover'); });
+                clear();
+            });
         })();
 
         // ==================== BOTTOM NAV SHOW/HIDE ON SCROLL ====================
