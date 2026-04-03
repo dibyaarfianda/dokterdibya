@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260403ad'; // 2026-04-03 - fix neighbor timing consistency via JS + whitelist-safe refresh
+const CACHE_VERSION = '20260403ae'; // 2026-04-03 - fix neighbor transition: remove !important override, add CSS timing
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
