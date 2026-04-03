@@ -4045,11 +4045,7 @@
                 if (!item) return;
                 clearCleanup(item);
                 item.classList.remove('neighbor-exit');
-                if (!item.classList.contains('neighbor-enter')) {
-                    requestAnimationFrame(function() {
-                        item.classList.add('neighbor-enter');
-                    });
-                }
+                item.classList.add('neighbor-enter');
             }
 
             function setNeighborExit(item) {
