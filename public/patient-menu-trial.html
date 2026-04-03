@@ -2844,16 +2844,6 @@
         </p>
     </div>
 
-    <!-- Bottom Sheet Overlay -->
-    <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeBottomSheet()"></div>
-
-    <!-- Bottom Sheet -->
-    <div class="bottom-sheet" id="bottom-sheet">
-        <div class="bottom-sheet-menu" id="sheet-menu">
-            <!-- Menu items injected by JS -->
-        </div>
-    </div>
-
     <!-- ClearPath Progressive Blur Fade Zone (above nav) -->
     <div class="nav-blur-fade" id="nav-blur-fade">
         <div style="position:absolute;inset:0;overflow:hidden">
@@ -2870,6 +2860,16 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav" aria-label="Navigasi bawah">
+        <!-- Bottom Sheet Overlay (child of nav, not affected by blur) -->
+        <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeBottomSheet()"></div>
+
+        <!-- Bottom Sheet (child of nav, not affected by blur) -->
+        <div class="bottom-sheet" id="bottom-sheet">
+            <div class="bottom-sheet-menu" id="sheet-menu">
+                <!-- Menu items injected by JS -->
+            </div>
+        </div>
+
         <div class="bottom-inner">
             <a href="/patient-menu-trial.html" class="nav-item active" aria-current="page">
                 <i class="fa-solid fa-house"></i>
