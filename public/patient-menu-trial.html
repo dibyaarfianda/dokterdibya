@@ -2062,6 +2062,18 @@
         /* Separator between nav items */
         .nav-item + .nav-item {
             border-left: 1px solid var(--line-soft);
+            transition: border-color 0.3s ease;
+        }
+
+        /* Hover on nav: all icons and separators glow blue */
+        .bottom-nav:hover .nav-item {
+            color: rgba(59, 130, 246, 0.7);
+        }
+        .bottom-nav:hover .nav-item.active {
+            color: rgb(59, 130, 246);
+        }
+        .bottom-nav:hover .nav-item + .nav-item {
+            border-left-color: rgba(59, 130, 246, 0.3);
         }
 
         /* Bottom nav badge */
