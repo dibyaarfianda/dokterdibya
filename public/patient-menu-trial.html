@@ -2024,8 +2024,8 @@
             gap: 3px;
             color: rgb(100, 116, 139);
             text-decoration: none;
-            transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out,
+            transition: color 3s ease-out,
+                        background-color 3s ease-out,
                         transform 0.25s ease !important;
             cursor: pointer;
             border-radius: 10px;
@@ -2060,10 +2060,11 @@
         .nav-item:hover {
             color: rgb(59, 130, 246) !important;
             background-color: rgba(59, 130, 246, 0.1) !important;
+            transition: color 0.1s, background-color 0.1s !important;
         }
 
-        .nav-item:active {
-            transform: scale(0.9);
+        .nav-item {
+            transition: color 3s ease-out, background-color 3s ease-out, transform 0.25s ease !important;
         }
 
         /* Separator between nav items */
