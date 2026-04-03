@@ -2134,12 +2134,10 @@
 
         .nav-item.neighbor {
             transform: scale(1.26) translateY(-1px);
-            transition: transform 0.2s ease-in !important;
         }
 
         .nav-item.neighbor i {
             transform: scale(1.12);
-            transition: transform 0.2s ease-in, color 0.5s ease-out;
         }
 
         /* Separator between nav items */
@@ -3985,28 +3983,6 @@
 
                 // Progress based on full viewport (inner is 100vh)
                 var scrollRange = containerH - window.innerHeight;
-
-        // ==================== BOTTOM NAV MAGNIFY EFFECT ====================
-        (function() {
-            var items = Array.from(document.querySelectorAll('.bottom-inner .nav-item'));
-            if (!items.length) return;
-
-            function clear() {
-                items.forEach(function(item) { item.classList.remove('neighbor'); });
-            }
-
-            items.forEach(function(item, i) {
-                item.addEventListener('mouseenter', function() {
-                    clear();
-                    if (items[i - 1]) items[i - 1].classList.add('neighbor');
-                    if (items[i + 1]) items[i + 1].classList.add('neighbor');
-                });
-                item.addEventListener('mouseleave', clear);
-            });
-
-            var nav = document.querySelector('.bottom-inner');
-            if (nav) nav.addEventListener('mouseleave', clear);
-        })();
                 var progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
                 // Content is CSS-centered, so top is clipped by overflow/2.
                 // At progress=0: shift down to reveal top. At progress=1: shift up to reveal bottom.
@@ -4022,6 +3998,56 @@
                     }
                 }
             }, { passive: true });
+        })();
+
+        // ==================== BOTTOM NAV MAGNIFY EFFECT ====================
+        (function() {
+            var items = Array.from(document.querySelectorAll('.bottom-inner .nav-item'));
+            if (!items.length) return;
+
+            function iconOf(item) {
+                return item ? item.querySelector('i') : null;
+            }
+
+            function setNeighborEnter(item) {
+                if (!item) return;
+                item.style.transition = 'transform 0.2s ease-in, color 0.5s ease-out, background-color 0.5s ease-out';
+                var icon = iconOf(item);
+                if (icon) icon.style.transition = 'transform 0.2s ease-in, color 0.5s ease-out';
+            }
+
+            function setNeighborExit(item) {
+                if (!item) return;
+                item.style.transition = 'transform 0.5s ease-out, color 0.5s ease-out, background-color 0.5s ease-out';
+                var icon = iconOf(item);
+                if (icon) icon.style.transition = 'transform 0.5s ease-out, color 0.5s ease-out';
+            }
+
+            function clear() {
+                items.forEach(function(item) {
+                    if (item.classList.contains('neighbor')) setNeighborExit(item);
+                    item.classList.remove('neighbor');
+                });
+            }
+
+            items.forEach(function(item, i) {
+                item.addEventListener('mouseenter', function() {
+                    clear();
+                    var prev = items[i - 1];
+                    var next = items[i + 1];
+                    if (prev) {
+                        setNeighborEnter(prev);
+                        prev.classList.add('neighbor');
+                    }
+                    if (next) {
+                        setNeighborEnter(next);
+                        next.classList.add('neighbor');
+                    }
+                });
+            });
+
+            var nav = document.querySelector('.bottom-inner');
+            if (nav) nav.addEventListener('mouseleave', clear);
         })();
 
         // ==================== BOTTOM NAV SHOW/HIDE ON SCROLL ====================
