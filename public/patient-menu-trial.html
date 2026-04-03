@@ -2121,19 +2121,19 @@
             transition: border-color 0.7s ease-in-out;
         }
 
-        /* Hover on nav: keep neutral white label/icon */
+        /* Hover on nav area: do not paint all items white */
         .bottom-inner:hover .nav-item {
             color: #ffffff !important;
-            background-color: #ffffff !important;
-            transition: color 0.1s ease-in, background-color 0.1s ease-in !important;
+            background-color: transparent !important;
+            transition: color 0.4s ease-out, background-color 0.4s ease-out !important;
         }
 
         .bottom-inner:hover .nav-item i,
         .bottom-inner:hover .nav-item span {
-            color: rgb(15, 23, 42) !important;
+            color: inherit !important;
         }
 
-        /* Hovered item remains neutral white */
+        /* Only the specifically hovered item gets white background */
         .bottom-inner:hover .nav-item:hover {
             color: rgb(15, 23, 42) !important;
             transition: color 0.1s ease-in, background-color 0.1s ease-in !important;
