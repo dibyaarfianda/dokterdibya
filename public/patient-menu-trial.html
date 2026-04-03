@@ -2068,6 +2068,18 @@
             color: #ffffff;
         }
 
+        .nav-item.active i,
+        .nav-item.active span {
+            color: rgb(59, 130, 246) !important;
+            text-shadow: 0 0 12px rgba(59, 130, 246, 0.75);
+            filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.55));
+        }
+
+        .bottom-nav.nav-on-light .nav-item.active i,
+        .bottom-nav.nav-on-light .nav-item.active span {
+            color: rgb(59, 130, 246) !important;
+        }
+
         .nav-item.active::before {
             content: '';
             position: absolute;
@@ -2102,6 +2114,20 @@
         .bottom-inner:hover .nav-item:hover {
             color: #ffffff !important;
             transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
+        }
+
+        /* Selected nav submenu state: blue + glow */
+        body.sheet-open .sheet-menu-item,
+        body.sheet-open .sheet-menu-item i.menu-item-icon,
+        body.sheet-open .sheet-menu-item span,
+        body.sheet-open .sheet-menu-item .arrow {
+            color: rgb(59, 130, 246) !important;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
+        }
+
+        body.sheet-open .sheet-menu-item:hover {
+            text-shadow: 0 0 14px rgba(59, 130, 246, 0.9);
+            filter: drop-shadow(0 0 7px rgba(59, 130, 246, 0.6));
         }
 
         /* Specific icon out timing: 0.5s when leaving focused icon while nav is still hovered */
