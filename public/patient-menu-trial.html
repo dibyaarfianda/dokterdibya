@@ -376,8 +376,8 @@
             padding-bottom: 12px;
             font-size: 11px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
+                        background-color 0.8s ease-out,
+                        color 0.8s ease-out;
             color: var(--text-secondary);
         }
 
@@ -386,9 +386,9 @@
         .loading-state {
             display: flex;
             align-items: center;
-            justify-content: center;
-            min-height: 300px;
-            flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease-in, color 0.3s ease-in;
+            z-index: 10;
+        }
             gap: 12px;
         }
 
@@ -397,7 +397,7 @@
             color: var(--text-muted);
             animation: spin 1s linear infinite;
         }
-
+            transform: scale(0.97) translateY(0);
         .loading-state span {
             font-size: 12px;
             color: var(--text-muted);
@@ -1919,8 +1919,8 @@
             text-decoration: none;
             transform: scale(1) translateY(0);
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        background-color 0.4s ease-out,
-                        color 0.4s ease-out;
+                        background-color 0.8s ease-out,
+                        color 0.8s ease-out;
             will-change: transform;
             border-radius: 10px;
         }
@@ -1929,9 +1929,9 @@
             transform: scale(1.12) translateY(-1px);
             background: #ffffff;
             color: rgb(15, 23, 42) !important;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.1s ease-in, color 0.1s ease-in;
-                        background-color 0.8s ease-out,
-                        color 0.8s ease-out;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease-in, color 0.3s ease-in;
+            z-index: 10;
+        }
 
         .sheet-menu-item:hover i.menu-item-icon,
         .sheet-menu-item:hover span,
@@ -1940,7 +1940,7 @@
         }
 
         .sheet-menu-item:active {
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease-in, color 0.3s ease-in;
+            transform: scale(0.97) translateY(0);
             transition: transform 0.1s ease;
         }
 
