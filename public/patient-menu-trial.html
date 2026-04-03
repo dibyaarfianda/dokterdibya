@@ -2030,10 +2030,7 @@
             margin: 0 2px;
         }
 
-        .nav-item:hover {
-            background: rgba(59, 130, 246, 0.06);
-            color: rgba(59, 130, 246, 0.7);
-        }
+        /* Individual hover removed - handled by .nav-hovered on parent */
 
         .nav-item i { font-size: 18px; }
 
@@ -2044,10 +2041,7 @@
             font-weight: 600;
         }
 
-        .nav-item.active {
-            color: var(--text-primary);
-            transition: transform 0.25s ease, color 0.7s ease-in-out, background 0.7s ease-in-out;
-        }
+        .nav-item.active { color: var(--text-primary); }
 
         .nav-item.active::before {
             content: '';
