@@ -2042,14 +2042,12 @@
             gap: 3px;
             color: #ffffff;
             text-decoration: none;
-            transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out,
-                        transform 0.4s ease-out;
+            transition: background-color 0.4s ease-out,
+                        color 0.4s ease-out;
             cursor: pointer;
             border-radius: 10px;
             margin: 0 2px;
             background-color: transparent;
-            transform: scale(1) translateY(0);
             z-index: 1;
         }
 
@@ -2126,8 +2124,8 @@
             color: rgb(59, 130, 246) !important;
         }
 
-        .nav-item:active {
-            transform: scale(1.04) translateY(0) !important;
+        .nav-item:active i {
+            transform: scale(0.9) !important;
             transition: transform 0.1s ease !important;
         }
 
@@ -3981,10 +3979,8 @@
             var nav = document.querySelector('.bottom-inner');
             if (!nav) return;
             var activeIndex = -1;
-            var EASE_IN = 'transform 0.3s ease, background-color 0.3s ease, color 0.3s ease';
-            var EASE_OUT = 'transform 0.7s ease-out, background-color 0.4s ease-out, color 0.4s ease-out';
-            var ICON_IN = 'transform 0.3s ease, color 0.3s ease';
-            var ICON_OUT = 'transform 0.7s ease-out, color 0.4s ease-out';
+            var ICON_IN = 'transform 0.3s ease';
+            var ICON_OUT = 'transform 0.7s ease-out';
 
             function applyMagnify(centerIndex) {
                 if (centerIndex === activeIndex) return;
@@ -3992,22 +3988,15 @@
                 items.forEach(function(item, idx) {
                     var icon = item.querySelector('i');
                     var diff = Math.abs(idx - centerIndex);
-                    item.style.transition = EASE_IN;
                     if (icon) icon.style.transition = ICON_IN;
 
                     if (diff === 0) {
-                        item.style.transform = 'scale(1.18) translateY(-2px)';
-                        item.style.zIndex = '10';
                         item.classList.add('prox-hover');
-                        if (icon) icon.style.transform = 'scale(1.22)';
+                        if (icon) icon.style.transform = 'scale(1.35) translateY(-3px)';
                     } else if (diff === 1) {
-                        item.style.transform = 'scale(1.08) translateY(-1px)';
-                        item.style.zIndex = '5';
                         item.classList.remove('prox-hover');
-                        if (icon) icon.style.transform = 'scale(1.06)';
+                        if (icon) icon.style.transform = 'scale(1.15) translateY(-1px)';
                     } else {
-                        item.style.transform = '';
-                        item.style.zIndex = '';
                         item.classList.remove('prox-hover');
                         if (icon) icon.style.transform = '';
                     }
@@ -4035,9 +4024,6 @@
                 activeIndex = -1;
                 items.forEach(function(item) {
                     item.classList.remove('prox-hover');
-                    item.style.transition = EASE_OUT;
-                    item.style.transform = '';
-                    item.style.zIndex = '';
                     var icon = item.querySelector('i');
                     if (icon) {
                         icon.style.transition = ICON_OUT;
