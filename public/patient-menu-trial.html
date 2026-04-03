@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Trial theme sticky navigation (keeps theme when navigating to other pages) -->
@@ -41,6 +41,7 @@
             --line-soft: rgba(0, 0, 0, 0.06);
             --line-strong: rgba(0, 0, 0, 0.12);
             --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
             --shadow-hard: 0 4px 16px rgba(0, 0, 0, 0.08);
             --radius: 14px;
@@ -1241,17 +1242,24 @@
         .welcome-window-left {
             background: #ffffff;
             border-right: 1px solid rgba(15, 23, 42, 0.12);
-            padding: 24px 22px;
+            padding: 24px 10px 24px 14px;
             display: flex;
             align-items: center;
+            justify-content: flex-end;
+        }
+
+        .welcome-window-left-inner {
+            width: 100%;
         }
 
         .welcome-window-left-inner h2 {
             margin: 0;
-            font-size: 58px;
-            line-height: 0.95;
-            letter-spacing: -0.02em;
-            font-weight: 700;
+            font-family: var(--font-display);
+            text-align: right;
+            font-size: 64px;
+            line-height: 0.92;
+            letter-spacing: -0.03em;
+            font-weight: 800;
             color: rgb(15, 23, 42);
         }
 
@@ -1353,11 +1361,11 @@
             .welcome-window-left {
                 border-right: none;
                 border-bottom: 1px solid rgba(15, 23, 42, 0.12);
-                padding: 10px 8px 16px;
+                padding: 10px 6px 16px;
             }
 
             .welcome-window-left-inner h2 {
-                font-size: 44px;
+                font-size: 46px;
             }
 
             .welcome-window-scroll {

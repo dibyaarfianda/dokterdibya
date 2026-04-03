@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404r'; // 2026-04-04 - remove The Window and Starting over title lines
+const CACHE_VERSION = '20260404s'; // 2026-04-04 - welcome heading display font and right alignment tweak
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
