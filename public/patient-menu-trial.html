@@ -2042,9 +2042,9 @@
             gap: 3px;
             color: #ffffff;
             text-decoration: none;
-            transition: color 0.5s ease-out,
-                        background-color 0.5s ease-out,
-                        transform 0.5s ease-out;
+            transition: color 0.4s ease-out,
+                        background-color 0.4s ease-out,
+                        transform 0.4s ease-out;
             cursor: pointer;
             border-radius: 10px;
             margin: 0 2px;
@@ -2055,7 +2055,7 @@
 
         .nav-item i {
             font-size: 18px;
-            transition: transform 0.5s ease-out, color 0.5s ease-out;
+            transition: transform 0.4s ease-out, color 0.4s ease-out;
             transform: scale(1);
         }
 
@@ -2115,7 +2115,7 @@
             background-color: #ffffff !important;
             animation: none !important;
             transform: scale(1.8) translateY(-2px) !important;
-            transition: color 0.2s ease-in, background-color 0.2s ease-in, transform 0.2s ease-in !important;
+            transition: color 0.3s ease-in, background-color 0.3s ease-in, transform 0.3s ease-in !important;
             z-index: 10;
         }
 
@@ -2135,25 +2135,25 @@
         }
 
         .nav-item.neighbor-enter {
-            transition: color 0.5s ease-out,
-                        background-color 0.5s ease-out;
-            animation: navNeighborEnter 0.2s ease-in forwards;
+            transition: color 0.4s ease-out,
+                        background-color 0.4s ease-out;
+            animation: navNeighborEnter 0.3s ease-in forwards;
         }
 
         .nav-item.neighbor-enter i {
-            transition: color 0.5s ease-out;
-            animation: navNeighborIconEnter 0.2s ease-in forwards;
+            transition: color 0.4s ease-out;
+            animation: navNeighborIconEnter 0.3s ease-in forwards;
         }
 
         .nav-item.neighbor-exit {
-            transition: color 0.5s ease-out,
-                        background-color 0.5s ease-out;
-            animation: navNeighborExit 0.5s ease-out forwards;
+            transition: color 0.4s ease-out,
+                        background-color 0.4s ease-out;
+            animation: navNeighborExit 0.4s ease-out forwards;
         }
 
         .nav-item.neighbor-exit i {
-            transition: color 0.5s ease-out;
-            animation: navNeighborIconExit 0.5s ease-out forwards;
+            transition: color 0.4s ease-out;
+            animation: navNeighborIconExit 0.4s ease-out forwards;
         }
 
         @keyframes navNeighborEnter {
@@ -2201,13 +2201,13 @@
         /* Hover on nav area: do not paint all items white */
         .bottom-inner:hover .nav-item {
             background-color: transparent !important;
-            transition: background-color 0.5s ease-out !important;
+            transition: background-color 0.4s ease-out !important;
         }
 
         /* Only the specifically hovered item gets white background */
         .bottom-inner:hover .nav-item:hover {
             color: rgb(15, 23, 42) !important;
-            transition: color 0.2s ease-in, background-color 0.2s ease-in, transform 0.2s ease-in !important;
+            transition: color 0.3s ease-in, background-color 0.3s ease-in, transform 0.3s ease-in !important;
         }
 
         .bottom-inner:hover .nav-item.active i,
@@ -4071,7 +4071,7 @@
                 var timer = setTimeout(function() {
                     item.classList.remove('neighbor-exit');
                     cleanupTimers.delete(item);
-                }, 520);
+                }, 430);
                 cleanupTimers.set(item, timer);
             }
 

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404a'; // 2026-04-04 - fix hovered item instant after neighbor animation
+const CACHE_VERSION = '20260404b'; // 2026-04-04 - nav timing ease-in 0.3 / ease-out 0.4
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
