@@ -2141,25 +2141,25 @@
         .nav-item.neighbor-enter {
             transition: color 0.4s ease-out,
                         background-color 0.4s ease-out,
-                        transform 0.3s ease-in;
-            transform: scale(1.26) translateY(-1px);
+                        transform 0.3s ease-in !important;
+            transform: scale(1.08) translateY(-1px) !important;
         }
 
         .nav-item.neighbor-enter i {
-            transition: color 0.4s ease-out, transform 0.3s ease-in;
-            transform: scale(1.12);
+            transition: color 0.4s ease-out, transform 0.3s ease-in !important;
+            transform: scale(1.06) !important;
         }
 
         .nav-item.neighbor-exit {
             transition: color 0.4s ease-out,
                         background-color 0.4s ease-out,
-                        transform 0.7s ease-out;
-            transform: scale(1) translateY(0);
+                        transform 0.7s ease-out !important;
+            transform: scale(1) translateY(0) !important;
         }
 
         .nav-item.neighbor-exit i {
-            transition: color 0.4s ease-out, transform 0.7s ease-out;
-            transform: scale(1);
+            transition: color 0.4s ease-out, transform 0.7s ease-out !important;
+            transform: scale(1) !important;
         }
 
         /* Separator between nav items */
@@ -2171,7 +2171,9 @@
         /* Hover on nav area: do not paint all items white */
         .bottom-inner:hover .nav-item {
             background-color: transparent !important;
-            transition: background-color 0.4s ease-out !important;
+            transition: color 0.4s ease-out,
+                        background-color 0.4s ease-out,
+                        transform 0.4s ease-out !important;
         }
 
         /* Only the specifically hovered item gets white background */
