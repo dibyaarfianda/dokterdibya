@@ -2136,60 +2136,26 @@
 
         .nav-item.neighbor-enter {
             transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out;
-            animation: navNeighborEnter 0.3s ease-in forwards;
+                        background-color 0.4s ease-out,
+                        transform 0.3s ease-in;
+            transform: scale(1.26) translateY(-1px);
         }
 
         .nav-item.neighbor-enter i {
-            transition: color 0.4s ease-out;
-            animation: navNeighborIconEnter 0.3s ease-in forwards;
+            transition: color 0.4s ease-out, transform 0.3s ease-in;
+            transform: scale(1.12);
         }
 
         .nav-item.neighbor-exit {
             transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out;
-            animation: navNeighborExit 0.4s ease-out forwards;
+                        background-color 0.4s ease-out,
+                        transform 0.7s ease-out;
+            transform: scale(1) translateY(0);
         }
 
         .nav-item.neighbor-exit i {
-            transition: color 0.4s ease-out;
-            animation: navNeighborIconExit 0.4s ease-out forwards;
-        }
-
-        @keyframes navNeighborEnter {
-            from {
-                transform: scale(1) translateY(0);
-            }
-            to {
-                transform: scale(1.26) translateY(-1px);
-            }
-        }
-
-        @keyframes navNeighborExit {
-            from {
-                transform: scale(1.26) translateY(-1px);
-            }
-            to {
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        @keyframes navNeighborIconEnter {
-            from {
-                transform: scale(1);
-            }
-            to {
-                transform: scale(1.12);
-            }
-        }
-
-        @keyframes navNeighborIconExit {
-            from {
-                transform: scale(1.12);
-            }
-            to {
-                transform: scale(1);
-            }
+            transition: color 0.4s ease-out, transform 0.7s ease-out;
+            transform: scale(1);
         }
 
         /* Separator between nav items */
@@ -4071,7 +4037,7 @@
                 var timer = setTimeout(function() {
                     item.classList.remove('neighbor-exit');
                     cleanupTimers.delete(item);
-                }, 430);
+                }, 730);
                 cleanupTimers.set(item, timer);
             }
 
@@ -4079,11 +4045,11 @@
                 if (!item) return;
                 clearCleanup(item);
                 item.classList.remove('neighbor-exit');
-                item.classList.remove('neighbor-enter');
-                void item.offsetWidth;
-                requestAnimationFrame(function() {
-                    item.classList.add('neighbor-enter');
-                });
+                if (!item.classList.contains('neighbor-enter')) {
+                    requestAnimationFrame(function() {
+                        item.classList.add('neighbor-enter');
+                    });
+                }
             }
 
             function setNeighborExit(item) {
@@ -4094,7 +4060,6 @@
                     return;
                 }
                 item.classList.remove('neighbor-enter');
-                void item.offsetWidth;
                 item.classList.add('neighbor-exit');
                 scheduleCleanup(item);
             }
