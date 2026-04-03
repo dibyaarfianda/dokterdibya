@@ -2063,14 +2063,14 @@
         }
 
         /* Hover on nav: all icons and separators glow blue */
-        .bottom-nav.nav-hovered .nav-item {
-            color: rgba(59, 130, 246, 0.7);
+        .bottom-inner:hover .nav-item {
+            color: rgba(59, 130, 246, 0.7) !important;
         }
-        .bottom-nav.nav-hovered .nav-item.active {
-            color: rgb(59, 130, 246);
+        .bottom-inner:hover .nav-item.active {
+            color: rgb(59, 130, 246) !important;
         }
-        .bottom-nav.nav-hovered .nav-item + .nav-item {
-            border-left-color: rgba(59, 130, 246, 0.3);
+        .bottom-inner:hover .nav-item + .nav-item {
+            border-left-color: rgba(59, 130, 246, 0.3) !important;
         }
 
         /* Bottom nav badge */
@@ -3899,19 +3899,6 @@
                         skipBtn.classList.remove('visible');
                     }
                 }
-            }, { passive: true });
-        })();
-
-        // ==================== BOTTOM NAV HOVER GLOW ====================
-        (function() {
-            var nav = document.querySelector('.bottom-nav');
-            if (!nav) return;
-            nav.addEventListener('mouseenter', function() { nav.classList.add('nav-hovered'); });
-            nav.addEventListener('mouseleave', function() { nav.classList.remove('nav-hovered'); });
-            // Touch support: tap anywhere on nav area glows, tap outside removes
-            nav.addEventListener('touchstart', function() { nav.classList.add('nav-hovered'); }, { passive: true });
-            document.addEventListener('touchstart', function(e) {
-                if (!nav.contains(e.target)) nav.classList.remove('nav-hovered');
             }, { passive: true });
         })();
 
