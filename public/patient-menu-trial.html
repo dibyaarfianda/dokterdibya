@@ -2110,7 +2110,18 @@
             transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
         }
 
-        /* Submenu items keep neutral contrast; no active color override */
+        /* Submenu items glow when sheet is open (without forcing active color) */
+        body.sheet-open .sheet-menu-item,
+        body.sheet-open .sheet-menu-item i.menu-item-icon,
+        body.sheet-open .sheet-menu-item span,
+        body.sheet-open .sheet-menu-item .arrow {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+        }
+
+        body.sheet-open .sheet-menu-item:hover {
+            text-shadow: 0 0 14px rgba(255, 255, 255, 1);
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.85));
+        }
 
         /* Specific icon out timing: 0.5s when leaving focused icon while nav is still hovered */
         .bottom-inner:hover .nav-item.hover-specific-out {

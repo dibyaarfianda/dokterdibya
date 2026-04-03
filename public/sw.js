@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260403q'; // 2026-04-03 - neutral nav colors, glow only on submenu-opening nav
+const CACHE_VERSION = '20260403r'; // 2026-04-03 - add submenu white glow
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
