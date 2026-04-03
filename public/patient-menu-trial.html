@@ -1896,7 +1896,7 @@
             font-size: 18px;
             color: var(--text-primary);
             border: none;
-            background: rgba(255, 255, 255, 0.24);
+            background: transparent;
         }
 
         .bottom-sheet-header h3 {
@@ -1915,7 +1915,7 @@
             display: flex;
             align-items: center;
             padding: 14px 20px;
-            color: var(--text-primary);
+            color: #ffffff;
             text-decoration: none;
             transform: scale(1) translateY(0);
             transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -1926,7 +1926,7 @@
 
         .sheet-menu-item:hover {
             transform: scale(1.12) translateY(-1px);
-            background: rgba(255, 255, 255, 0.24);
+            background: transparent;
             z-index: 10;
         }
 
@@ -1942,7 +1942,7 @@
         .sheet-menu-item i.menu-item-icon {
             width: 24px;
             font-size: 15px;
-            color: var(--text-secondary);
+            color: #ffffff;
             margin-right: 14px;
         }
 
@@ -1953,15 +1953,16 @@
         }
 
         .sheet-menu-item .arrow {
-            color: var(--text-muted);
+            color: #ffffff;
             font-size: 11px;
         }
 
-        /* Auto contrast for submenu icons/arrows */
-        .sheet-menu-item i.menu-item-icon,
-        .sheet-menu-item .arrow {
-            color: #ffffff !important;
-            mix-blend-mode: difference;
+        /* Submenu follows same contrast mode as nav */
+        .bottom-nav.nav-on-light .sheet-menu-item,
+        .bottom-nav.nav-on-light .sheet-menu-item i.menu-item-icon,
+        .bottom-nav.nav-on-light .sheet-menu-item span,
+        .bottom-nav.nav-on-light .sheet-menu-item .arrow {
+            color: rgb(15, 23, 42) !important;
         }
 
         /* ========== BOTTOM NAVIGATION ========== */
@@ -2080,7 +2081,7 @@
 
         .nav-item:hover {
             color: #ffffff !important;
-            background-color: rgba(255, 255, 255, 0.24) !important;
+            background-color: transparent !important;
             transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
         }
 
@@ -2093,7 +2094,7 @@
         /* Hover on nav: keep neutral white label/icon */
         .bottom-inner:hover .nav-item {
             color: #ffffff !important;
-            background-color: rgba(255, 255, 255, 0.14) !important;
+            background-color: transparent !important;
             transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
         }
 
