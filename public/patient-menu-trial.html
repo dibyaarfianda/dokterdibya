@@ -2113,6 +2113,7 @@
         .nav-item:hover {
             color: #ffffff !important;
             background-color: #ffffff !important;
+            animation: none !important;
             transform: scale(1.8) translateY(-2px) !important;
             transition: color 0.2s ease-in, background-color 0.2s ease-in, transform 0.2s ease-in !important;
             z-index: 10;
@@ -2124,6 +2125,7 @@
         }
 
         .nav-item:hover i {
+            animation: none !important;
             transform: scale(1.22);
         }
 
@@ -4107,11 +4109,13 @@
 
             items.forEach(function(item, i) {
                 item.addEventListener('mouseenter', function() {
+                    clearCleanup(item);
+                    item.classList.remove('neighbor-enter', 'neighbor-exit');
                     var prev = items[i - 1];
                     var next = items[i + 1];
-                    var targets = [prev, next].filter(Boolean);
+                    var targets = [item, prev, next].filter(Boolean);
                     clear(targets);
-                    targets.forEach(setNeighborEnter);
+                    [prev, next].filter(Boolean).forEach(setNeighborEnter);
                 });
             });
 
