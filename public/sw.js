@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260403z'; // 2026-04-03 - nav hover timing 0.3 in / 0.8 out
+const CACHE_VERSION = '20260403aa'; // 2026-04-03 - fix submenu timing deploy after hover timing update
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
