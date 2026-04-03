@@ -1021,3 +1021,28 @@ const CACHE_NAME = `dokterdibya-patient-${CACHE_VERSION}`;
 - Old cache is automatically deleted by service worker
 - No hard-reset needed for patients
 - Transparent update process
+
+### 32. Trial URL Appears Unchanged After CSS Fix
+
+**Problem:** Changes to `public/patient-menu-trial.html` were deployed, but hover behavior looked unchanged in production.
+
+**Root Cause:** Trial router logic in `public/scripts/patient-theme-trial.js` could redirect trial pages to old pages when session mode was not active, so users sometimes saw old page styles despite opening `/patient-menu-trial.html`.
+
+**Fix:**
+1. In `patient-theme-trial.js`, only redirect trial → old when user explicitly requests old mode via query (`?theme=off|old|default`).
+2. Keep trial URL on trial page by default.
+3. Bump `CACHE_VERSION` in `public/sw.js` after frontend changes.
+
+**Verification Steps:**
+```bash
+# On server
+cd /var/www/dokterdibya
+git pull origin main
+pm2 restart all
+
+# Verify deployed files
+grep -n "CACHE_VERSION" public/sw.js
+sed -n '2018,2032p' public/patient-menu-trial.html
+```
+
+**Lesson:** If UI seems unchanged after valid CSS edits, check route/mode redirect scripts first (not only CSS and cache). URL can be correct visually but content source can still be switched by JS logic.
