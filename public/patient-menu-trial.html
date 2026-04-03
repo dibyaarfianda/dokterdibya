@@ -1227,14 +1227,14 @@
         .welcome-window {
             flex: 1;
             position: relative;
-            background: #0a0a0a;
+            background: transparent;
             color: #ffffff;
             overflow: hidden;
             display: grid;
             grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.45fr);
-            gap: 20px;
+            gap: 0;
             align-items: stretch;
-            padding: 22px;
+            padding: 0;
             box-sizing: border-box;
         }
 
@@ -1247,28 +1247,22 @@
         }
 
         .welcome-window-left-inner h2 {
-            margin: 0 0 14px;
-            font-size: 38px;
-            line-height: 1.06;
+            margin: 0;
+            font-size: 58px;
+            line-height: 0.95;
             letter-spacing: -0.02em;
             font-weight: 700;
             color: rgb(15, 23, 42);
         }
 
-        .welcome-window-left-inner p {
-            margin: 0;
-            font-size: 14px;
-            line-height: 1.75;
-            color: rgba(15, 23, 42, 0.78);
-        }
-
         .welcome-window-scroll {
             position: relative;
+            background: #0a0a0a;
             overflow: hidden;
             display: flex;
             align-items: center;
             min-height: 0;
-            padding: 0 6px;
+            padding: 0 18px;
         }
 
         .welcome-skip {
@@ -1353,17 +1347,17 @@
             .welcome-window {
                 grid-template-columns: 1fr;
                 gap: 0;
-                padding: 16px;
+                padding: 0;
             }
 
             .welcome-window-left {
                 border-right: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+                border-bottom: 1px solid rgba(15, 23, 42, 0.12);
                 padding: 10px 8px 16px;
             }
 
             .welcome-window-left-inner h2 {
-                font-size: 30px;
+                font-size: 44px;
             }
 
             .welcome-window-scroll {
@@ -2610,8 +2604,7 @@
                         </button>
                         <div class="welcome-window-left">
                             <div class="welcome-window-left-inner">
-                                <h2>Selamat Datang</h2>
-                                <p>Ruang ini adalah pendamping privat untuk perjalanan kesehatan kandungan Anda, agar komunikasi, jadwal, dan dokumen tetap terhubung dalam satu tempat.</p>
+                                <h2>Selamat<br>Datang</h2>
                             </div>
                         </div>
                         <div class="welcome-window-scroll">
