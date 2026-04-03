@@ -2024,8 +2024,8 @@
             gap: 3px;
             color: rgb(100, 116, 139);
             text-decoration: none;
-            transition: color 3s ease-out,
-                        background-color 3s ease-out,
+            transition: color 3s linear,
+                        background-color 3s linear,
                         transform 0.25s ease !important;
             cursor: pointer;
             border-radius: 10px;
@@ -2060,7 +2060,6 @@
         .nav-item:hover {
             color: rgb(59, 130, 246) !important;
             background-color: rgba(59, 130, 246, 0.1) !important;
-            transition: color 3s ease-out, background-color 3s ease-out !important;
         }
 
         /* Separator between nav items */
@@ -2069,16 +2068,14 @@
             transition: border-color 0.7s ease-in-out;
         }
 
-        /* Hover on nav: all icons glow blue (less bright) - 0.1s transition */
+        /* Hover on nav: all icons glow blue (less bright) */
         .bottom-inner:hover .nav-item {
             color: rgba(59, 130, 246, 0.3) !important;
-            transition: color 3s ease-out !important;
         }
 
-        /* Hovered item more bright - 0.1s transition */
+        /* Hovered item more bright */
         .bottom-inner:hover .nav-item:hover {
             color: rgb(59, 130, 246) !important;
-            transition: color 3s ease-out !important;
         }
 
         /* Bottom nav badge */
