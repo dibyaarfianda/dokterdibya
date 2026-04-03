@@ -1230,9 +1230,44 @@
             background: #0a0a0a;
             color: #ffffff;
             overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.45fr);
+            gap: 20px;
+            align-items: stretch;
+            padding: 22px;
+            box-sizing: border-box;
+        }
+
+        .welcome-window-left {
+            border-right: 1px solid rgba(255, 255, 255, 0.16);
+            padding: 24px 22px;
             display: flex;
             align-items: center;
-            justify-content: center;
+        }
+
+        .welcome-window-left-inner h2 {
+            margin: 0 0 14px;
+            font-size: 38px;
+            line-height: 1.06;
+            letter-spacing: -0.02em;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .welcome-window-left-inner p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.75;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .welcome-window-scroll {
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            min-height: 0;
+            padding: 0 6px;
         }
 
         .welcome-skip {
@@ -1270,16 +1305,16 @@
         }
 
         .welcome-pinned-content {
-            text-align: center;
-            padding: 100px 32px;
-            max-width: 640px;
+            text-align: left;
+            padding: 58px 18px;
+            max-width: 680px;
             will-change: transform;
         }
 
         .welcome-pinned-content h2 {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: 700;
-            margin: 0 0 32px;
+            margin: 0 0 18px;
             letter-spacing: -0.02em;
         }
 
@@ -1301,6 +1336,42 @@
             color: rgba(255, 255, 255, 0.8);
             font-size: 16px;
             margin-top: 4px;
+        }
+
+        .welcome-window-kicker {
+            display: inline-block;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.55);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .welcome-window {
+                grid-template-columns: 1fr;
+                gap: 0;
+                padding: 16px;
+            }
+
+            .welcome-window-left {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+                padding: 10px 8px 16px;
+            }
+
+            .welcome-window-left-inner h2 {
+                font-size: 30px;
+            }
+
+            .welcome-window-scroll {
+                padding: 0;
+            }
+
+            .welcome-pinned-content {
+                padding: 34px 8px 12px;
+            }
         }
 
         /* ========== PROCES SECTION (Flair sticky-stack) ========== */
@@ -2536,15 +2607,24 @@
                         <button class="welcome-skip" id="welcome-skip" onclick="skipWelcomeWindow()" aria-label="Lewati">
                             <i class="fa-solid fa-chevron-down"></i>
                         </button>
-                        <div class="welcome-pinned-content" id="welcome-pinned-content">
-                            <h2>Selamat Datang</h2>
-                            <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color:#fff">rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
-                            <p>Adanya Portal <strong style="color:#fff">dokterDIBYA</strong> berawal dari keinginan <em>sederhana</em> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu. Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati!</p>
-                            <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
-                            <p>Terima kasih telah menjadi bagian dari <strong style="color:#fff">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
-                            <div class="welcome-sign" style="margin-bottom: 50px;">
-                                salam hangat,
-                                <strong>dr. Dibya</strong>
+                        <div class="welcome-window-left">
+                            <div class="welcome-window-left-inner">
+                                <h2>Selamat Datang</h2>
+                                <p>Ruang ini adalah pendamping privat untuk perjalanan kesehatan kandungan Anda, agar komunikasi, jadwal, dan dokumen tetap terhubung dalam satu tempat.</p>
+                            </div>
+                        </div>
+                        <div class="welcome-window-scroll">
+                            <div class="welcome-pinned-content" id="welcome-pinned-content">
+                                <span class="welcome-window-kicker">The Window</span>
+                                <h2>Starting over and finding herself in the process.</h2>
+                                <p>Halaman ini adalah ruang khusus bagi Anda - tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color:#fff">rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+                                <p>Adanya Portal <strong style="color:#fff">dokterDIBYA</strong> berawal dari keinginan <em>sederhana</em> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu. Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati.</p>
+                                <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+                                <p>Terima kasih telah menjadi bagian dari <strong style="color:#fff">"modern therapy without boundary"</strong> - pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+                                <div class="welcome-sign" style="margin-bottom: 50px;">
+                                    salam hangat,
+                                    <strong>dr. Dibya</strong>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3958,7 +4038,7 @@
         (function() {
             var container = document.getElementById('welcome-pinned');
             var content = document.getElementById('welcome-pinned-content');
-            var windowEl = container ? container.querySelector('.welcome-window') : null;
+            var windowEl = container ? container.querySelector('.welcome-window-scroll') : null;
             var skipBtn = document.getElementById('welcome-skip');
             if (!container || !content || !windowEl) return;
 
