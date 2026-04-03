@@ -38,9 +38,10 @@
     // ---- Read / write mode from URL ----
     var params    = new URLSearchParams(window.location.search);
     var fromUrl   = params.get('theme');
+    var forceOld  = fromUrl === 'off' || fromUrl === 'old' || fromUrl === 'default';
 
     if (fromUrl === MODE)                                         set(MODE);
-    else if (fromUrl === 'off' || fromUrl === 'old' || fromUrl === 'default') set(null);
+    else if (forceOld) set(null);
 
     var active   = get() === MODE;
     var pathname = window.location.pathname;
@@ -60,8 +61,8 @@
         return;                                // stop further execution
     }
 
-    // On a TRIAL page while trial is OFF → redirect to old counterpart
-    if (!active && REVERSE[pathname]) {
+    // On a TRIAL page, only redirect to old counterpart if user explicitly requests old mode.
+    if (forceOld && REVERSE[pathname]) {
         window.location.replace(REVERSE[pathname] + buildQS() + window.location.hash);
         return;
     }
