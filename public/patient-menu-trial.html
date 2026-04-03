@@ -2043,11 +2043,17 @@
 
         .nav-item i { font-size: 18px; }
 
-        /* Auto contrast so nav icon/label stays readable above varying translucent layers */
+        /* Bottom nav default (dark section): white icon/label */
         .nav-item i,
         .nav-item span {
             color: #ffffff !important;
-            mix-blend-mode: difference;
+            mix-blend-mode: normal;
+        }
+
+        /* Bottom nav on light section: switch icon/label to dark for readability */
+        .bottom-nav.nav-on-light .nav-item i,
+        .bottom-nav.nav-on-light .nav-item span {
+            color: rgb(15, 23, 42) !important;
         }
 
         .nav-item span {
@@ -3957,6 +3963,48 @@
             var blurFade = document.getElementById('nav-blur-fade');
             if (!nav) return;
             var threshold = 50;
+
+            function parseRgb(color) {
+                if (!color) return null;
+                var m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/i);
+                if (!m) return null;
+                return {
+                    r: parseInt(m[1], 10),
+                    g: parseInt(m[2], 10),
+                    b: parseInt(m[3], 10),
+                    a: m[4] !== undefined ? parseFloat(m[4]) : 1
+                };
+            }
+
+            function findBackgroundColor(el) {
+                var node = el;
+                while (node && node !== document.documentElement) {
+                    var bg = parseRgb(getComputedStyle(node).backgroundColor);
+                    if (bg && bg.a > 0.05) return bg;
+                    node = node.parentElement;
+                }
+                return { r: 255, g: 255, b: 255, a: 1 };
+            }
+
+            function isLight(bg) {
+                var luminance = (0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b) / 255;
+                return luminance > 0.62;
+            }
+
+            function updateNavContrast() {
+                var sampleX = Math.floor(window.innerWidth / 2);
+                var sampleY = Math.max(0, Math.floor(window.innerHeight - nav.offsetHeight - 12));
+                var el = document.elementFromPoint(sampleX, sampleY);
+                if (!el) return;
+
+                var bg = findBackgroundColor(el);
+                if (isLight(bg)) {
+                    nav.classList.add('nav-on-light');
+                } else {
+                    nav.classList.remove('nav-on-light');
+                }
+            }
+
             window.addEventListener('scroll', function() {
                 if (window.scrollY > threshold) {
                     nav.classList.add('nav-visible');
@@ -3965,7 +4013,12 @@
                     nav.classList.remove('nav-visible');
                     if (blurFade) blurFade.classList.remove('nav-visible');
                 }
+
+                updateNavContrast();
             }, { passive: true });
+
+            window.addEventListener('resize', updateNavContrast, { passive: true });
+            updateNavContrast();
         })();
 
         // ==================== HEAVY SCROLL (momentum damping) ====================
