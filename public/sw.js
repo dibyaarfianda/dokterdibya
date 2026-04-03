@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404l'; // 2026-04-04 - fix direction-aware transition (in vs out)
+const CACHE_VERSION = '20260404m'; // 2026-04-04 - revert smooth container scale + ::after counter-scale bg
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

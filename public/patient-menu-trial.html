@@ -2042,12 +2042,13 @@
             gap: 3px;
             color: #ffffff;
             text-decoration: none;
-            transition: background-color 0.4s ease-out,
-                        color 0.4s ease-out;
+            transition: color 0.4s ease-out,
+                        transform 0.4s ease-out;
             cursor: pointer;
             border-radius: 10px;
             margin: 0 2px;
             background-color: transparent;
+            transform: scale(1) translateY(0);
             z-index: 1;
         }
 
@@ -2055,6 +2056,18 @@
             font-size: 18px;
             transition: transform 0.4s ease-out, color 0.4s ease-out;
             transform: scale(1);
+        }
+
+        /* White bg as pseudo - counter-scales so it stays fixed size */
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 10px;
+            background: transparent;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            transform: scale(1);
+            z-index: -1;
         }
 
         /* Bottom nav default (dark section): white icon/label */
@@ -2110,8 +2123,12 @@
 
         /* Hover visual: JS sets prox-hover class, transform handled by JS inline */
         .nav-item.prox-hover {
-            background-color: #ffffff !important;
             z-index: 10;
+        }
+
+        .nav-item.prox-hover::after {
+            background: #ffffff;
+            transform: scale(0.85);
         }
 
         .nav-item.prox-hover i,
@@ -2124,8 +2141,8 @@
             color: rgb(59, 130, 246) !important;
         }
 
-        .nav-item:active i {
-            transform: scale(0.9) !important;
+        .nav-item:active {
+            transform: scale(1.04) translateY(0) !important;
             transition: transform 0.1s ease !important;
         }
 
@@ -3979,42 +3996,35 @@
             var nav = document.querySelector('.bottom-inner');
             if (!nav) return;
             var activeIndex = -1;
-            var ICON_IN = 'transform 0.3s ease';
-            var ICON_OUT = 'transform 0.7s ease-out';
-            var prevCenter = -1;
-            var prevNeighbors = [];
+            var EASE_IN = 'transform 0.3s ease, color 0.3s ease';
+            var EASE_OUT = 'transform 0.7s ease-out, color 0.4s ease-out';
 
             function applyMagnify(centerIndex) {
                 if (centerIndex === activeIndex) return;
                 activeIndex = centerIndex;
-                var newNeighbors = [];
-                if (centerIndex > 0) newNeighbors.push(centerIndex - 1);
-                if (centerIndex < items.length - 1) newNeighbors.push(centerIndex + 1);
-
                 items.forEach(function(item, idx) {
                     var icon = item.querySelector('i');
                     var diff = Math.abs(idx - centerIndex);
+                    item.style.transition = EASE_IN;
+                    if (icon) icon.style.transition = EASE_IN;
 
                     if (diff === 0) {
-                        // Entering center
-                        if (icon) icon.style.transition = ICON_IN;
+                        item.style.transform = 'scale(1.18) translateY(-2px)';
+                        item.style.zIndex = '10';
                         item.classList.add('prox-hover');
-                        if (icon) icon.style.transform = 'scale(1.35) translateY(-3px)';
+                        if (icon) icon.style.transform = 'scale(1.22)';
                     } else if (diff === 1) {
-                        // Entering neighbor - was it previously bigger (center) or smaller?
-                        var wasCenter = (idx === prevCenter);
-                        if (icon) icon.style.transition = wasCenter ? ICON_OUT : ICON_IN;
+                        item.style.transform = 'scale(1.08) translateY(-1px)';
+                        item.style.zIndex = '5';
                         item.classList.remove('prox-hover');
-                        if (icon) icon.style.transform = 'scale(1.15) translateY(-1px)';
+                        if (icon) icon.style.transform = 'scale(1.06)';
                     } else {
-                        // Leaving all magnification
-                        if (icon) icon.style.transition = ICON_OUT;
+                        item.style.transform = '';
+                        item.style.zIndex = '';
                         item.classList.remove('prox-hover');
                         if (icon) icon.style.transform = '';
                     }
                 });
-                prevCenter = centerIndex;
-                prevNeighbors = newNeighbors;
             }
 
             function updateFromPointer(clientX) {
@@ -4038,9 +4048,12 @@
                 activeIndex = -1;
                 items.forEach(function(item) {
                     item.classList.remove('prox-hover');
+                    item.style.transition = EASE_OUT;
+                    item.style.transform = '';
+                    item.style.zIndex = '';
                     var icon = item.querySelector('i');
                     if (icon) {
-                        icon.style.transition = ICON_OUT;
+                        icon.style.transition = EASE_OUT;
                         icon.style.transform = '';
                     }
                 });
