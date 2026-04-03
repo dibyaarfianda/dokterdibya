@@ -2860,11 +2860,11 @@
         </div>
     </div>
 
+    <!-- Bottom Sheet Overlay (outside nav so position:fixed works fullscreen) -->
+    <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeBottomSheet()"></div>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav" aria-label="Navigasi bawah">
-        <!-- Bottom Sheet Overlay (child of nav, not affected by blur) -->
-        <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeBottomSheet()"></div>
-
         <!-- Bottom Sheet (child of nav, not affected by blur) -->
         <div class="bottom-sheet" id="bottom-sheet">
             <div class="bottom-sheet-menu" id="sheet-menu">
@@ -3708,6 +3708,15 @@
             document.getElementById('bottom-sheet').classList.remove('active');
             document.body.classList.remove('sheet-open');
         }
+
+        // Close bottom sheet when clicking anywhere outside
+        document.addEventListener('click', function(e) {
+            var sheet = document.getElementById('bottom-sheet');
+            if (!sheet || !sheet.classList.contains('active')) return;
+            // Don't close if clicking inside the sheet or on a nav-item
+            if (sheet.contains(e.target) || e.target.closest('.nav-item')) return;
+            closeBottomSheet();
+        });
 
         // ==================== NAVIGATION ====================
         function navigateTo(section) {
