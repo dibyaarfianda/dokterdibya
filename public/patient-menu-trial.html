@@ -1838,10 +1838,12 @@
             width: auto;
             min-width: 200px;
             max-width: 280px;
-            background: var(--bg-surface);
-            border: 1px solid var(--line-soft);
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 14px;
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.12);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.08);
             padding: 6px 0;
             z-index: 1001;
             opacity: 0;
