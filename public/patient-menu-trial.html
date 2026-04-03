@@ -1957,6 +1957,13 @@
             font-size: 11px;
         }
 
+        /* Auto contrast for submenu icons/arrows */
+        .sheet-menu-item i.menu-item-icon,
+        .sheet-menu-item .arrow {
+            color: #ffffff !important;
+            mix-blend-mode: difference;
+        }
+
         /* ========== BOTTOM NAVIGATION ========== */
         .bottom-nav {
             position: fixed;
@@ -2013,6 +2020,7 @@
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 2px;
+            isolation: isolate;
         }
 
         .nav-item {
@@ -2034,6 +2042,13 @@
         }
 
         .nav-item i { font-size: 18px; }
+
+        /* Auto contrast so nav icon/label stays readable above varying translucent layers */
+        .nav-item i,
+        .nav-item span {
+            color: #ffffff !important;
+            mix-blend-mode: difference;
+        }
 
         .nav-item span {
             font-size: 9px;
