@@ -3981,26 +3981,40 @@
             var activeIndex = -1;
             var ICON_IN = 'transform 0.3s ease';
             var ICON_OUT = 'transform 0.7s ease-out';
+            var prevCenter = -1;
+            var prevNeighbors = [];
 
             function applyMagnify(centerIndex) {
                 if (centerIndex === activeIndex) return;
                 activeIndex = centerIndex;
+                var newNeighbors = [];
+                if (centerIndex > 0) newNeighbors.push(centerIndex - 1);
+                if (centerIndex < items.length - 1) newNeighbors.push(centerIndex + 1);
+
                 items.forEach(function(item, idx) {
                     var icon = item.querySelector('i');
                     var diff = Math.abs(idx - centerIndex);
-                    if (icon) icon.style.transition = ICON_IN;
 
                     if (diff === 0) {
+                        // Entering center
+                        if (icon) icon.style.transition = ICON_IN;
                         item.classList.add('prox-hover');
                         if (icon) icon.style.transform = 'scale(1.35) translateY(-3px)';
                     } else if (diff === 1) {
+                        // Entering neighbor - was it previously bigger (center) or smaller?
+                        var wasCenter = (idx === prevCenter);
+                        if (icon) icon.style.transition = wasCenter ? ICON_OUT : ICON_IN;
                         item.classList.remove('prox-hover');
                         if (icon) icon.style.transform = 'scale(1.15) translateY(-1px)';
                     } else {
+                        // Leaving all magnification
+                        if (icon) icon.style.transition = ICON_OUT;
                         item.classList.remove('prox-hover');
                         if (icon) icon.style.transform = '';
                     }
                 });
+                prevCenter = centerIndex;
+                prevNeighbors = newNeighbors;
             }
 
             function updateFromPointer(clientX) {
