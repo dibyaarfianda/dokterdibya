@@ -2022,15 +2022,16 @@
             place-items: center;
             align-content: center;
             gap: 3px;
-            color: var(--text-muted);
+            color: rgb(100, 116, 139);
             text-decoration: none;
-            transition: transform 0.25s ease, color 0.7s ease-in-out, background 0.7s ease-in-out;
+            transition: color 0.7s cubic-bezier(0.76, 0, 0.24, 1),
+                        background-color 0.7s cubic-bezier(0.76, 0, 0.24, 1),
+                        transform 0.25s ease !important;
             cursor: pointer;
             border-radius: 10px;
             margin: 0 2px;
+            background-color: transparent;
         }
-
-        /* Individual hover removed - handled by .nav-hovered on parent */
 
         .nav-item i { font-size: 18px; }
 
@@ -2041,7 +2042,9 @@
             font-weight: 600;
         }
 
-        .nav-item.active { color: var(--text-primary); }
+        .nav-item.active {
+            color: rgb(15, 23, 42);
+        }
 
         .nav-item.active::before {
             content: '';
@@ -2055,31 +2058,18 @@
         }
 
         .nav-item:hover {
-            color: rgba(59, 130, 246, 0.7);
-            background: rgba(59, 130, 246, 0.1);
+            color: rgb(59, 130, 246) !important;
+            background-color: rgba(59, 130, 246, 0.1) !important;
         }
 
-        .nav-item.active:hover {
-            color: rgb(59, 130, 246);
+        .nav-item:active {
+            transform: scale(0.9);
         }
-
-        .nav-item:active { transform: scale(0.9); }
 
         /* Separator between nav items */
         .nav-item + .nav-item {
             border-left: 1px solid var(--line-soft);
             transition: border-color 0.7s ease-in-out;
-        }
-
-        /* Hover on nav: all icons and separators glow blue */
-        .bottom-inner:hover .nav-item {
-            color: rgba(59, 130, 246, 0.7) !important;
-        }
-        .bottom-inner:hover .nav-item.active {
-            color: rgb(59, 130, 246) !important;
-        }
-        .bottom-inner:hover .nav-item + .nav-item {
-            border-left-color: rgba(59, 130, 246, 0.3) !important;
         }
 
         /* Bottom nav badge */
