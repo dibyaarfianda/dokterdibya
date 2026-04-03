@@ -2024,8 +2024,8 @@
             gap: 3px;
             color: rgb(100, 116, 139);
             text-decoration: none;
-            transition: color 3s linear,
-                        background-color 3s linear,
+            transition: color 0.2s ease-out,
+                        background-color 0.2s ease-out,
                         transform 0.25s ease !important;
             cursor: pointer;
             border-radius: 10px;
@@ -2060,6 +2060,7 @@
         .nav-item:hover {
             color: rgb(59, 130, 246) !important;
             background-color: rgba(59, 130, 246, 0.1) !important;
+            transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
         }
 
         /* Separator between nav items */
@@ -2071,11 +2072,18 @@
         /* Hover on nav: all icons glow blue (less bright) */
         .bottom-inner:hover .nav-item {
             color: rgba(59, 130, 246, 0.3) !important;
+            transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
         }
 
         /* Hovered item more bright */
         .bottom-inner:hover .nav-item:hover {
             color: rgb(59, 130, 246) !important;
+            transition: color 0.1s ease-out, background-color 0.1s ease-out !important;
+        }
+
+        /* Specific icon out timing: 0.5s when leaving focused icon while nav is still hovered */
+        .bottom-inner:hover .nav-item.hover-specific-out {
+            transition: color 0.5s ease-out, background-color 0.5s ease-out !important;
         }
 
         /* Bottom nav badge */
@@ -3746,6 +3754,26 @@
                 openBottomSheet(section, tapped);
             }
         }
+
+        // ==================== NAV HOVER TIMING CONTROL ====================
+        (function() {
+            var navItems = document.querySelectorAll('.bottom-nav .nav-item');
+            navItems.forEach(function(item) {
+                item.addEventListener('mouseenter', function() {
+                    item.classList.remove('hover-specific-out');
+                });
+
+                item.addEventListener('mouseleave', function() {
+                    var bottomInner = item.closest('.bottom-inner');
+                    if (!bottomInner || !bottomInner.matches(':hover')) return;
+
+                    item.classList.add('hover-specific-out');
+                    setTimeout(function() {
+                        item.classList.remove('hover-specific-out');
+                    }, 520);
+                });
+            });
+        })();
 
         // ==================== LOGOUT ====================
         function logout(event) {
