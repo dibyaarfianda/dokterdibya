@@ -2072,14 +2072,16 @@
             transition: border-color 0.7s ease-in-out;
         }
 
-        /* Hover on nav: all icons glow blue (semi-bright) */
+        /* Hover on nav: all icons glow blue (semi-bright) - 0.4s transition */
         .bottom-inner:hover .nav-item {
             color: rgba(59, 130, 246, 0.5) !important;
+            transition: color 0.4s cubic-bezier(0.76, 0, 0.24, 1) !important;
         }
 
-        /* Hovered item more bright */
+        /* Hovered item more bright - 0.7s transition */
         .bottom-inner:hover .nav-item:hover {
             color: rgb(59, 130, 246) !important;
+            transition: color 0.7s cubic-bezier(0.76, 0, 0.24, 1) !important;
         }
 
         /* Bottom nav badge */
