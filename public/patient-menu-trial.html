@@ -1217,8 +1217,8 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            padding-top: 10vh;
-            padding-bottom: 10vh;
+            padding-top: 40vh;
+            padding-bottom: 40vh;
             padding-left: 16px;
             padding-right: 16px;
             box-sizing: border-box;
@@ -2049,9 +2049,15 @@
             border-radius: 10px;
             margin: 0 2px;
             background-color: transparent;
+            transform: scale(1) translateY(0);
+            z-index: 1;
         }
 
-        .nav-item i { font-size: 18px; }
+        .nav-item i {
+            font-size: 18px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.4s ease-out;
+            transform: scale(1);
+        }
 
         /* Bottom nav default (dark section): white icon/label */
         .nav-item i,
@@ -2107,12 +2113,31 @@
         .nav-item:hover {
             color: #ffffff !important;
             background-color: #ffffff !important;
+            transform: scale(1.12) translateY(-2px) !important;
             transition: color 0.1s ease-in, background-color 0.1s ease-in !important;
+            z-index: 10;
         }
 
         .nav-item:hover i,
         .nav-item:hover span {
             color: rgb(15, 23, 42) !important;
+        }
+
+        .nav-item:hover i {
+            transform: scale(1.1);
+        }
+
+        .nav-item:active {
+            transform: scale(1.04) translateY(0) !important;
+            transition: transform 0.1s ease !important;
+        }
+
+        .nav-item.neighbor {
+            transform: scale(1.05) translateY(-1px);
+        }
+
+        .nav-item.neighbor i {
+            transform: scale(1.04);
         }
 
         /* Separator between nav items */
@@ -3943,13 +3968,14 @@
         (function() {
             var container = document.getElementById('welcome-pinned');
             var content = document.getElementById('welcome-pinned-content');
+            var windowEl = container ? container.querySelector('.welcome-window') : null;
             var skipBtn = document.getElementById('welcome-skip');
-            if (!container || !content) return;
+            if (!container || !content || !windowEl) return;
 
             window.addEventListener('scroll', function() {
                 var rect = container.getBoundingClientRect();
                 var containerH = container.offsetHeight;
-                var windowH = window.innerHeight * 0.7;
+                var windowH = windowEl.clientHeight;
                 var contentH = content.scrollHeight;
                 var overflow = contentH - windowH;
 
@@ -3957,6 +3983,28 @@
 
                 // Progress based on full viewport (inner is 100vh)
                 var scrollRange = containerH - window.innerHeight;
+
+        // ==================== BOTTOM NAV MAGNIFY EFFECT ====================
+        (function() {
+            var items = Array.from(document.querySelectorAll('.bottom-inner .nav-item'));
+            if (!items.length) return;
+
+            function clear() {
+                items.forEach(function(item) { item.classList.remove('neighbor'); });
+            }
+
+            items.forEach(function(item, i) {
+                item.addEventListener('mouseenter', function() {
+                    clear();
+                    if (items[i - 1]) items[i - 1].classList.add('neighbor');
+                    if (items[i + 1]) items[i + 1].classList.add('neighbor');
+                });
+                item.addEventListener('mouseleave', clear);
+            });
+
+            var nav = document.querySelector('.bottom-inner');
+            if (nav) nav.addEventListener('mouseleave', clear);
+        })();
                 var progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
                 // Content is CSS-centered, so top is clipped by overflow/2.
                 // At progress=0: shift down to reveal top. At progress=1: shift up to reveal bottom.
