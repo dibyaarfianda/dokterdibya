@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260403af'; // 2026-04-03 - explicit neighbor enter/exit state transitions
+const CACHE_VERSION = '20260403ag'; // 2026-04-03 - keyframe-based neighbor enter/exit with forced reflow
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
