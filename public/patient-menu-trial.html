@@ -2132,16 +2132,28 @@
             transition: transform 0.1s ease !important;
         }
 
-        .nav-item.neighbor {
+        .nav-item.neighbor-enter {
             transform: scale(1.26) translateY(-1px);
             transition: color 0.5s ease-out,
                         background-color 0.5s ease-out,
                         transform 0.2s ease-in;
         }
 
-        .nav-item.neighbor i {
+        .nav-item.neighbor-enter i {
             transform: scale(1.12);
             transition: transform 0.2s ease-in, color 0.5s ease-out;
+        }
+
+        .nav-item.neighbor-exit {
+            transform: scale(1) translateY(0);
+            transition: color 0.5s ease-out,
+                        background-color 0.5s ease-out,
+                        transform 0.5s ease-out;
+        }
+
+        .nav-item.neighbor-exit i {
+            transform: scale(1);
+            transition: transform 0.5s ease-out, color 0.5s ease-out;
         }
 
         /* Separator between nav items */
@@ -4008,50 +4020,66 @@
         (function() {
             var items = Array.from(document.querySelectorAll('.bottom-inner .nav-item'));
             if (!items.length) return;
+            var cleanupTimers = new WeakMap();
 
-            function iconOf(item) {
-                return item ? item.querySelector('i') : null;
+            function clearCleanup(item) {
+                var timer = cleanupTimers.get(item);
+                if (timer) {
+                    clearTimeout(timer);
+                    cleanupTimers.delete(item);
+                }
+            }
+
+            function scheduleCleanup(item) {
+                clearCleanup(item);
+                var timer = setTimeout(function() {
+                    item.classList.remove('neighbor-exit');
+                    cleanupTimers.delete(item);
+                }, 520);
+                cleanupTimers.set(item, timer);
             }
 
             function setNeighborEnter(item) {
                 if (!item) return;
-                item.style.transition = 'transform 0.2s ease-in, color 0.5s ease-out, background-color 0.5s ease-out';
-                var icon = iconOf(item);
-                if (icon) icon.style.transition = 'transform 0.2s ease-in, color 0.5s ease-out';
+                clearCleanup(item);
+                item.classList.remove('neighbor-exit');
+                requestAnimationFrame(function() {
+                    item.classList.add('neighbor-enter');
+                });
             }
 
             function setNeighborExit(item) {
                 if (!item) return;
-                item.style.transition = 'transform 0.5s ease-out, color 0.5s ease-out, background-color 0.5s ease-out';
-                var icon = iconOf(item);
-                if (icon) icon.style.transition = 'transform 0.5s ease-out, color 0.5s ease-out';
+                clearCleanup(item);
+                if (!item.classList.contains('neighbor-enter')) {
+                    item.classList.remove('neighbor-exit');
+                    return;
+                }
+                item.classList.remove('neighbor-enter');
+                item.classList.add('neighbor-exit');
+                scheduleCleanup(item);
             }
 
-            function clear() {
+            function clear(exceptions) {
+                var keep = exceptions || [];
                 items.forEach(function(item) {
-                    if (item.classList.contains('neighbor')) setNeighborExit(item);
-                    item.classList.remove('neighbor');
+                    if (keep.indexOf(item) !== -1) return;
+                    setNeighborExit(item);
                 });
             }
 
             items.forEach(function(item, i) {
                 item.addEventListener('mouseenter', function() {
-                    clear();
                     var prev = items[i - 1];
                     var next = items[i + 1];
-                    if (prev) {
-                        setNeighborEnter(prev);
-                        prev.classList.add('neighbor');
-                    }
-                    if (next) {
-                        setNeighborEnter(next);
-                        next.classList.add('neighbor');
-                    }
+                    var targets = [prev, next].filter(Boolean);
+                    clear(targets);
+                    targets.forEach(setNeighborEnter);
                 });
             });
 
             var nav = document.querySelector('.bottom-inner');
-            if (nav) nav.addEventListener('mouseleave', clear);
+            if (nav) nav.addEventListener('mouseleave', function() { clear(); });
         })();
 
         // ==================== BOTTOM NAV SHOW/HIDE ON SCROLL ====================
