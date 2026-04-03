@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404i'; // 2026-04-04 - fix neighbor scale & transition
+const CACHE_VERSION = '20260404j'; // 2026-04-04 - rewrite magnify: inline transform, no jitter
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

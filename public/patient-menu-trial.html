@@ -2110,27 +2110,20 @@
             background: rgb(15, 23, 42);
         }
 
-        .nav-item:hover,
+        /* Hover visual: JS sets prox-hover class, transform handled by JS inline */
         .nav-item.prox-hover {
-            color: #ffffff !important;
             background-color: #ffffff !important;
-            animation: none !important;
-            transform: scale(1.18) translateY(-2px) !important;
-            transition: color 0.3s ease-in, background-color 0.3s ease-in, transform 0.3s ease-in !important;
             z-index: 10;
         }
 
-        .nav-item:hover i,
-        .nav-item:hover span,
         .nav-item.prox-hover i,
         .nav-item.prox-hover span {
             color: rgb(15, 23, 42) !important;
         }
 
-        .nav-item:hover i,
-        .nav-item.prox-hover i {
-            animation: none !important;
-            transform: scale(1.22);
+        .nav-item.prox-hover.active i,
+        .nav-item.prox-hover.active span {
+            color: rgb(59, 130, 246) !important;
         }
 
         .nav-item:active {
@@ -2138,55 +2131,10 @@
             transition: transform 0.1s ease !important;
         }
 
-        .nav-item.neighbor-enter {
-            transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out,
-                        transform 0.3s ease-in !important;
-            transform: scale(1.08) translateY(-1px) !important;
-        }
-
-        .nav-item.neighbor-enter i {
-            transition: color 0.4s ease-out, transform 0.3s ease-in !important;
-            transform: scale(1.06) !important;
-        }
-
-        .nav-item.neighbor-exit {
-            transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out,
-                        transform 0.7s ease-out !important;
-            transform: scale(1) translateY(0) !important;
-        }
-
-        .nav-item.neighbor-exit i {
-            transition: color 0.4s ease-out, transform 0.7s ease-out !important;
-            transform: scale(1) !important;
-        }
-
         /* Separator between nav items */
         .nav-item + .nav-item {
             border-left: 1px solid var(--line-soft);
             transition: border-color 0.7s ease-in-out;
-        }
-
-        /* Hover on nav area: do not paint all items white */
-        .bottom-inner:hover .nav-item {
-            background-color: transparent !important;
-            transition: color 0.4s ease-out,
-                        background-color 0.4s ease-out,
-                        transform 0.4s ease-out !important;
-        }
-
-        /* Only the specifically hovered item gets white background */
-        .bottom-inner:hover .nav-item:hover,
-        .bottom-inner:hover .nav-item.prox-hover {
-            color: rgb(15, 23, 42) !important;
-            background-color: #ffffff !important;
-            transition: color 0.3s ease-in, background-color 0.3s ease-in, transform 0.3s ease-in !important;
-        }
-
-        .bottom-inner:hover .nav-item.active i,
-        .bottom-inner:hover .nav-item.active span {
-            color: rgb(59, 130, 246) !important;
         }
 
         /* No glow for nav/submenu */
@@ -4032,74 +3980,38 @@
             if (!items.length) return;
             var nav = document.querySelector('.bottom-inner');
             if (!nav) return;
-            var cleanupTimers = new WeakMap();
             var activeIndex = -1;
+            var EASE_IN = 'transform 0.3s ease, background-color 0.3s ease, color 0.3s ease';
+            var EASE_OUT = 'transform 0.7s ease-out, background-color 0.4s ease-out, color 0.4s ease-out';
+            var ICON_IN = 'transform 0.3s ease, color 0.3s ease';
+            var ICON_OUT = 'transform 0.7s ease-out, color 0.4s ease-out';
 
-            function clearCleanup(item) {
-                var timer = cleanupTimers.get(item);
-                if (timer) {
-                    clearTimeout(timer);
-                    cleanupTimers.delete(item);
-                }
-            }
-
-            function scheduleCleanup(item) {
-                clearCleanup(item);
-                var timer = setTimeout(function() {
-                    item.classList.remove('neighbor-exit');
-                    cleanupTimers.delete(item);
-                }, 730);
-                cleanupTimers.set(item, timer);
-            }
-
-            function setNeighborEnter(item) {
-                if (!item) return;
-                clearCleanup(item);
-                item.classList.remove('neighbor-exit');
-                item.classList.add('neighbor-enter');
-            }
-
-            function setNeighborExit(item) {
-                if (!item) return;
-                clearCleanup(item);
-                if (!item.classList.contains('neighbor-enter')) {
-                    item.classList.remove('neighbor-exit');
-                    return;
-                }
-                item.classList.remove('neighbor-enter');
-                item.classList.add('neighbor-exit');
-                scheduleCleanup(item);
-            }
-
-            function clear(exceptions) {
-                var keep = exceptions || [];
-                items.forEach(function(item) {
-                    if (keep.indexOf(item) !== -1) return;
-                    setNeighborExit(item);
-                });
-            }
-
-            function applyCenterByIndex(i) {
-                if (i < 0 || i >= items.length) return;
-                if (i === activeIndex) return;
-
-                activeIndex = i;
+            function applyMagnify(centerIndex) {
+                if (centerIndex === activeIndex) return;
+                activeIndex = centerIndex;
                 items.forEach(function(item, idx) {
-                    if (idx === i) {
-                        clearCleanup(item);
-                        item.classList.remove('neighbor-enter', 'neighbor-exit');
+                    var icon = item.querySelector('i');
+                    var diff = Math.abs(idx - centerIndex);
+                    item.style.transition = EASE_IN;
+                    if (icon) icon.style.transition = ICON_IN;
+
+                    if (diff === 0) {
+                        item.style.transform = 'scale(1.18) translateY(-2px)';
+                        item.style.zIndex = '10';
                         item.classList.add('prox-hover');
-                    } else {
+                        if (icon) icon.style.transform = 'scale(1.22)';
+                    } else if (diff === 1) {
+                        item.style.transform = 'scale(1.08) translateY(-1px)';
+                        item.style.zIndex = '5';
                         item.classList.remove('prox-hover');
+                        if (icon) icon.style.transform = 'scale(1.06)';
+                    } else {
+                        item.style.transform = '';
+                        item.style.zIndex = '';
+                        item.classList.remove('prox-hover');
+                        if (icon) icon.style.transform = '';
                     }
                 });
-
-                var center = items[i];
-                var prev = items[i - 1];
-                var next = items[i + 1];
-                var targets = [center, prev, next].filter(Boolean);
-                clear(targets);
-                [prev, next].filter(Boolean).forEach(setNeighborEnter);
             }
 
             function updateFromPointer(clientX) {
@@ -4108,7 +4020,7 @@
                 var x = Math.max(0, Math.min(rect.width - 1, clientX - rect.left));
                 var slotWidth = rect.width / items.length;
                 var idx = Math.floor(x / slotWidth);
-                applyCenterByIndex(idx);
+                applyMagnify(idx);
             }
 
             nav.addEventListener('mousemove', function(e) {
@@ -4121,8 +4033,17 @@
 
             nav.addEventListener('mouseleave', function() {
                 activeIndex = -1;
-                items.forEach(function(item) { item.classList.remove('prox-hover'); });
-                clear();
+                items.forEach(function(item) {
+                    item.classList.remove('prox-hover');
+                    item.style.transition = EASE_OUT;
+                    item.style.transform = '';
+                    item.style.zIndex = '';
+                    var icon = item.querySelector('i');
+                    if (icon) {
+                        icon.style.transition = ICON_OUT;
+                        icon.style.transform = '';
+                    }
+                });
             });
         })();
 
