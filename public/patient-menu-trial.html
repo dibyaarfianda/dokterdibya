@@ -2044,7 +2044,7 @@
             text-decoration: none;
             transition: color 0.5s ease-out,
                         background-color 0.5s ease-out,
-                        transform 0.5s ease-out !important;
+                        transform 0.5s ease-out;
             cursor: pointer;
             border-radius: 10px;
             margin: 0 2px;
@@ -2134,10 +2134,14 @@
 
         .nav-item.neighbor {
             transform: scale(1.26) translateY(-1px);
+            transition: color 0.5s ease-out,
+                        background-color 0.5s ease-out,
+                        transform 0.2s ease-in;
         }
 
         .nav-item.neighbor i {
             transform: scale(1.12);
+            transition: transform 0.2s ease-in, color 0.5s ease-out;
         }
 
         /* Separator between nav items */
