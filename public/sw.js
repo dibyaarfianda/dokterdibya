@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404ab'; // 2026-04-04 - ClearPath-style INFO TERBARU redesign
+const CACHE_VERSION = '20260404ac'; // 2026-04-04 - ClearPath animated showcase INFO TERBARU
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

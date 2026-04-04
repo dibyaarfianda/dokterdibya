@@ -238,6 +238,9 @@ function isInfoTerbaruLayout() {
     return !!container && container.dataset.layout === 'info-terbaru';
 }
 
+let infoTerbaruCurrentIndex = 0;
+let infoTerbaruAutoTimer = null;
+
 function displayInfoTerbaruAnnouncements(announcements) {
     const container = document.getElementById('announcements-container');
     if (!container) return;
@@ -259,23 +262,32 @@ function displayInfoTerbaruAnnouncements(announcements) {
     });
 
     infoTerbaruAllAnnouncements = sorted;
-    const visible = infoTerbaruExpanded ? sorted : sorted.slice(0, 3);
+    const items = sorted.slice(0, 3); // Max 3 items for showcase
+    const first = items[0];
+    const firstTitle = truncateText(stripEmoji(first.title || 'Info terbaru'), 80);
+    const firstDate = formatDate(first.published_at || first.created_at);
 
     container.innerHTML = `
-        <div class="info-terbaru-layout">
-            <div class="info-terbaru-left" id="info-terbaru-left">
-                ${visible.map((item, index) => renderInfoTerbaruThumbnailCard(item, index)).join('')}
-                <button type="button" class="info-terbaru-card info-terbaru-cta" onclick="toggleInfoTerbaruExpanded()">
-                    ${infoTerbaruExpanded ? 'Tampilkan Ringkas' : 'Lihat Semua Berita Terbaru'}
-                </button>
+        <div class="info-terbaru-showcase">
+            <div class="info-terbaru-number">
+                <span class="info-terbaru-num-fixed">0</span>
+                <span class="info-terbaru-num-slot">
+                    <span class="info-terbaru-num-digit">1</span>
+                </span>
             </div>
-            <div class="info-terbaru-right" id="info-terbaru-right">
-                ${visible.map((_, index) => `<div class="info-terbaru-index${index === 0 ? ' active' : ''}" data-info-index="${index}">${String(index + 1).padStart(2, '0')}</div>`).join('')}
+            <div class="info-terbaru-content" id="info-terbaru-content" data-current-index="0">
+                <p class="info-terbaru-date">${escapeHtml(firstDate)}</p>
+                <h4>${escapeHtml(firstTitle)}</h4>
+                <button type="button" class="info-terbaru-read-more" onclick="openInfoTerbaruModal(infoTerbaruCurrentIndex)">baca selengkapnya &rarr;</button>
+            </div>
+            <div class="info-terbaru-dots" id="info-terbaru-dots">
+                ${items.map((_, i) => `<span class="info-terbaru-dot${i === 0 ? ' active' : ''}" onclick="goToInfoTerbaru(${i})"></span>`).join('')}
             </div>
         </div>
     `;
 
-    setupInfoTerbaruObserver();
+    infoTerbaruCurrentIndex = 0;
+    startInfoTerbaruAutoRotate(items.length);
 }
 
 function stripEmoji(text) {
@@ -287,61 +299,80 @@ function truncateText(text, maxLen) {
     return text.substring(0, maxLen).replace(/\s+\S*$/, '') + '...';
 }
 
-function renderInfoTerbaruThumbnailCard(announcement, index) {
-    const rawTitle = announcement.title || 'Info terbaru';
-    const title = escapeHtml(truncateText(stripEmoji(rawTitle), 60));
-    const dateLabel = formatDate(announcement.published_at || announcement.created_at);
-    const num = String(index + 1).padStart(2, '0');
+function animateInfoTerbaruDigit(newDigit) {
+    const slot = document.querySelector('.info-terbaru-num-slot');
+    if (!slot) return;
+    const oldEl = slot.querySelector('.info-terbaru-num-digit');
+    if (!oldEl) return;
 
-    return `
-        <button type="button" class="info-terbaru-card" data-info-index="${index}" onclick="openInfoTerbaruModal(${index})">
-            <span class="info-terbaru-bg-num">${num}</span>
-            <div class="info-terbaru-card-content">
-                <p class="info-terbaru-date">${escapeHtml(dateLabel)}</p>
-                <h4>${title}</h4>
-            </div>
-        </button>
-    `;
+    // Slide old digit out
+    oldEl.style.animation = 'infoSlideOut 0.35s ease forwards';
+
+    setTimeout(() => {
+        slot.innerHTML = '';
+        const newEl = document.createElement('span');
+        newEl.className = 'info-terbaru-num-digit';
+        newEl.textContent = newDigit;
+        newEl.style.animation = 'infoSlideUp 0.35s ease forwards';
+        slot.appendChild(newEl);
+    }, 300);
 }
 
-function setupInfoTerbaruObserver() {
-    const left = document.getElementById('info-terbaru-left');
-    const indicators = Array.from(document.querySelectorAll('.info-terbaru-index'));
-    const cards = Array.from(left?.querySelectorAll('.info-terbaru-card[data-info-index]') || []);
+function transitionInfoTerbaruContent(index) {
+    const content = document.getElementById('info-terbaru-content');
+    if (!content) return;
+    const item = infoTerbaruAllAnnouncements[index];
+    if (!item) return;
 
-    if (!left || indicators.length === 0 || cards.length === 0) return;
+    // Fade out
+    content.style.opacity = '0';
+    content.style.transform = 'translateY(8px)';
 
-    if (infoTerbaruObserver) {
-        infoTerbaruObserver.disconnect();
-        infoTerbaruObserver = null;
-    }
+    setTimeout(() => {
+        const dateEl = content.querySelector('.info-terbaru-date');
+        const titleEl = content.querySelector('h4');
+        if (dateEl) dateEl.textContent = formatDate(item.published_at || item.created_at);
+        if (titleEl) titleEl.textContent = truncateText(stripEmoji(item.title || 'Info terbaru'), 80);
+        content.setAttribute('data-current-index', index);
 
-    const setActive = (index) => {
-        indicators.forEach((el) => {
-            el.classList.toggle('active', Number(el.dataset.infoIndex) === index);
-        });
-    };
+        // Fade in
+        content.style.opacity = '1';
+        content.style.transform = 'translateY(0)';
+    }, 300);
 
-    setActive(0);
+    // Update dots
+    const dots = document.querySelectorAll('.info-terbaru-dot');
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
 
-    infoTerbaruObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if (!entry.isIntersecting) return;
-            const index = Number(entry.target.dataset.infoIndex);
-            if (!Number.isNaN(index)) setActive(index);
-        });
-    }, {
-        root: left,
-        threshold: 0.65
-    });
+    // Animate digit
+    animateInfoTerbaruDigit(String(index + 1));
 
-    cards.forEach((card) => infoTerbaruObserver.observe(card));
+    infoTerbaruCurrentIndex = index;
 }
 
-function toggleInfoTerbaruExpanded() {
-    infoTerbaruExpanded = !infoTerbaruExpanded;
-    displayInfoTerbaruAnnouncements(infoTerbaruAllAnnouncements);
+function goToInfoTerbaru(index) {
+    if (index === infoTerbaruCurrentIndex) return;
+    transitionInfoTerbaruContent(index);
+
+    // Reset auto-rotate timer
+    const maxItems = Math.min(infoTerbaruAllAnnouncements.length, 3);
+    if (infoTerbaruAutoTimer) clearInterval(infoTerbaruAutoTimer);
+    startInfoTerbaruAutoRotate(maxItems);
 }
+
+function startInfoTerbaruAutoRotate(maxItems) {
+    if (infoTerbaruAutoTimer) clearInterval(infoTerbaruAutoTimer);
+    if (maxItems <= 1) return;
+
+    infoTerbaruAutoTimer = setInterval(() => {
+        const next = (infoTerbaruCurrentIndex + 1) % maxItems;
+        transitionInfoTerbaruContent(next);
+    }, 5000);
+}
+
+// Keep for backwards compat — no-op now
+function toggleInfoTerbaruExpanded() {}
+function setupInfoTerbaruObserver() {}
 
 function openInfoTerbaruModal(index) {
     const announcement = infoTerbaruAllAnnouncements[index];
@@ -652,3 +683,4 @@ window.loadAnnouncements = loadAnnouncements;
 window.openInfoTerbaruModal = openInfoTerbaruModal;
 window.closeInfoTerbaruModal = closeInfoTerbaruModal;
 window.toggleInfoTerbaruExpanded = toggleInfoTerbaruExpanded;
+window.goToInfoTerbaru = goToInfoTerbaru;
