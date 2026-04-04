@@ -318,26 +318,36 @@ function truncateText(text, maxLen) {
     return text.substring(0, maxLen).replace(/\s+\S*$/, '') + '...';
 }
 
+var _infoDigitAnimating = false;
 function animateInfoTerbaruDigit(index) {
     var digit = document.getElementById('info-terbaru-digit');
-    if (!digit) return;
+    if (!digit || _infoDigitAnimating) return;
     var newValue = String(index + 1);
     if (digit.textContent === newValue) return;
 
-    // Slide old digit out (up)
-    digit.classList.remove('slide-in');
-    digit.classList.add('slide-out');
+    _infoDigitAnimating = true;
+
+    // Slide out: move UP + fade out
+    digit.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    digit.style.transform = 'translateY(-100%)';
+    digit.style.opacity = '0';
 
     setTimeout(function() {
-        // Change text and slide new digit in (from below)
+        // Jump to below position instantly (no transition)
+        digit.style.transition = 'none';
+        digit.style.transform = 'translateY(100%)';
         digit.textContent = newValue;
-        digit.classList.remove('slide-out');
-        digit.classList.add('slide-in');
 
-        setTimeout(function() {
-            digit.classList.remove('slide-in');
-        }, 350);
-    }, 300);
+        // Force browser reflow so position resets before animation
+        void digit.offsetHeight;
+
+        // Slide in: move UP to center + fade in
+        digit.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        digit.style.transform = 'translateY(0)';
+        digit.style.opacity = '1';
+
+        setTimeout(function() { _infoDigitAnimating = false; }, 350);
+    }, 320);
 }
 
 function setupInfoTerbaruScroll() {
