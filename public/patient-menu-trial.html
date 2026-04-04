@@ -726,6 +726,196 @@
             font-family: var(--font-main) !important;
         }
 
+        .info-terbaru-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 72px;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .info-terbaru-left {
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .info-terbaru-card {
+            width: 100%;
+            border: 1px solid var(--line-soft);
+            background: var(--bg-surface);
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+            text-align: left;
+        }
+
+        .info-terbaru-card:hover {
+            border-color: var(--line-strong);
+            background: var(--bg-elevated);
+            transform: translateY(-1px);
+        }
+
+        .info-terbaru-thumb {
+            width: 64px;
+            height: 64px;
+            border-radius: 8px;
+            border: 1px solid var(--line-soft);
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+        }
+
+        .info-terbaru-meta h4 {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 600;
+            line-height: 1.35;
+        }
+
+        .info-terbaru-meta p {
+            margin: 4px 0 0;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .info-terbaru-cta {
+            border: 1px dashed var(--line-strong);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            justify-content: center;
+        }
+
+        .info-terbaru-right {
+            position: sticky;
+            top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .info-terbaru-index {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 1px solid var(--line-strong);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 16px;
+            background: var(--bg-surface);
+            transition: all 0.25s ease;
+        }
+
+        .info-terbaru-index.active {
+            background: var(--text-primary);
+            color: #ffffff;
+            border-color: var(--text-primary);
+            transform: scale(1.04);
+        }
+
+        .info-terbaru-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.42);
+            z-index: 12000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .info-terbaru-modal.active {
+            display: flex;
+        }
+
+        .info-terbaru-modal-card {
+            width: min(700px, 100%);
+            max-height: 86vh;
+            overflow-y: auto;
+            border-radius: 14px;
+            border: 1px solid var(--line-soft);
+            background: var(--bg-surface);
+            padding: 14px;
+        }
+
+        .info-terbaru-modal-close {
+            border: 1px solid var(--line-soft);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            float: right;
+            cursor: pointer;
+        }
+
+        .info-terbaru-modal h3 {
+            margin: 6px 0 8px;
+            font-size: 17px;
+            color: var(--text-primary);
+        }
+
+        .info-terbaru-modal .meta {
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .info-terbaru-modal .body {
+            color: var(--text-body);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .info-terbaru-modal .hero {
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 1px solid var(--line-soft);
+            margin: 8px 0 12px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .info-terbaru-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .info-terbaru-right {
+                position: static;
+                flex-direction: row;
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+
+            .info-terbaru-index {
+                width: 42px;
+                height: 42px;
+                font-size: 13px;
+                flex: 0 0 auto;
+            }
+
+            .info-terbaru-left {
+                max-height: 340px;
+            }
+        }
+
         /* Override toggle button (Lihat X Pengumuman Lainnya / Lihat Lebih Sedikit) */
         #toggle-announcements-btn {
             background: var(--bg-surface) !important;
@@ -2737,24 +2927,34 @@
                 <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
             </div>
 
-            <!-- Pengumuman (Collapsible) -->
+            <!-- INFO TERBARU (Collapsible) -->
             <div class="dash-card" id="announcements-section" style="margin-bottom: 14px;">
                 <div class="dash-card-header" onclick="toggleAnnouncementsSection()">
-                    <h3><i class="fa-solid fa-bullhorn"></i> PENGUMUMAN</h3>
+                    <h3><i class="fa-solid fa-bullhorn"></i> INFO TERBARU</h3>
                     <i class="fa-solid fa-chevron-down toggle-icon" id="announcements-toggle-icon"></i>
                 </div>
                 <div id="announcements-content" style="display: block;">
-                    <div id="announcements-container" style="margin-top: 14px;">
+                    <div id="announcements-container" data-layout="info-terbaru" style="margin-top: 14px;">
                         <div style="text-align: center; padding: 20px; color: var(--text-muted);">
                             <i class="fa-solid fa-spinner fa-spin" style="font-size: 20px;"></i>
-                            <p style="margin-top: 8px; font-size: 12px;">Memuat pengumuman...</p>
+                            <p style="margin-top: 8px; font-size: 12px;">Memuat info terbaru...</p>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <div class="info-terbaru-modal" id="info-terbaru-modal" onclick="closeInfoTerbaruModal(event)">
+                <div class="info-terbaru-modal-card" onclick="event.stopPropagation()">
+                    <button type="button" class="info-terbaru-modal-close" onclick="closeInfoTerbaruModal()">&times;</button>
+                    <h3 id="info-terbaru-modal-title"></h3>
+                    <div class="meta" id="info-terbaru-modal-meta"></div>
+                    <img class="hero" id="info-terbaru-modal-image" alt="Gambar info terbaru">
+                    <div class="body" id="info-terbaru-modal-body"></div>
+                </div>
+            </div>
+
             <!-- Tanya Dokter (Collapsible) -->
-            <div class="dash-card" id="tanya-dokter-section" style="margin-bottom: 14px;">
+            <div class="dash-card" id="tanya-dokter-section" style="display: none; margin-bottom: 14px;">
                 <div class="dash-card-header" onclick="toggleTanyaDokterSection()">
                     <h3><i class="fa-solid fa-comments"></i> Tanya Dokter</h3>
                     <i class="fa-solid fa-chevron-up toggle-icon" id="tanya-dokter-toggle-icon"></i>
