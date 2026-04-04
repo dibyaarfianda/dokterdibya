@@ -1,0 +1,5 @@
+﻿source	ref_id	ref_no	tx_time	patient_name	obat_name	expected_qty	deducted_qty	gap_qty
+obat_sales	379	OS-20260404-008	2026-04-04 13:53:51	Meri Fatika	Ossoral 200	30	0	30
+sunday_clinic_billing	333	DRD0540	2026-03-29 13:24:21	Arik Dwi Susanti	Rinofer Chew	15	0	15
+sunday_clinic_billing	325	DRD0532	2026-03-15 12:07:02	Helna Chusniatul Lutfiana	Trogystatin ovula	3	0	3
+sunday_clinic_billing	313	DRD0520	2026-03-15 10:51:11	Ayu Prestiya Ningrum	Trogystatin ovula	6	0	6
