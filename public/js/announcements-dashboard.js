@@ -402,7 +402,7 @@ function setupInfoTerbaruScroll() {
             if (progress >= lastSegmentStart) {
                 var wipeProgress = (progress - lastSegmentStart) / segmentSize;
                 numberEl.style.opacity = 1 - wipeProgress;
-                numberEl.style.transform = 'translateY(' + (-50 - wipeProgress * 30) + '%)';
+                numberEl.style.transform = 'translateY(' + (-50 - wipeProgress * 80) + '%)';
             } else {
                 numberEl.style.opacity = 1;
                 numberEl.style.transform = 'translateY(-50%)';
