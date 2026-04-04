@@ -726,75 +726,105 @@
             font-family: var(--font-main) !important;
         }
 
+        /* ClearPath-inspired INFO TERBARU */
         .info-terbaru-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 72px;
+            grid-template-columns: minmax(0, 1fr) 64px;
             gap: 12px;
             align-items: start;
         }
 
         .info-terbaru-left {
-            max-height: 360px;
-            overflow-y: auto;
-            padding-right: 4px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 0;
         }
 
         .info-terbaru-card {
             width: 100%;
-            border: 1px solid var(--line-soft);
-            background: var(--bg-surface);
-            border-radius: 10px;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            border: none;
+            border-bottom: 1px solid var(--line-soft);
+            background: transparent;
+            padding: 22px 0;
+            display: block;
             cursor: pointer;
-            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+            transition: background 0.2s ease;
             text-align: left;
+            font-family: inherit;
         }
 
         .info-terbaru-card:hover {
-            border-color: var(--line-strong);
-            background: var(--bg-elevated);
-            transform: translateY(-1px);
+            background: var(--accent-soft);
         }
 
-        .info-terbaru-thumb {
-            width: 64px;
-            height: 64px;
-            border-radius: 8px;
-            border: 1px solid var(--line-soft);
-            object-fit: cover;
-            flex-shrink: 0;
-            background: var(--bg-secondary);
+        .info-terbaru-card:last-of-type:not(.info-terbaru-cta) {
+            border-bottom: none;
         }
 
-        .info-terbaru-meta h4 {
-            margin: 0;
-            font-size: 13px;
+        /* Large decorative background number */
+        .info-terbaru-bg-num {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 800;
+            line-height: 1;
             color: var(--text-primary);
-            font-weight: 600;
-            line-height: 1.35;
+            opacity: 0.05;
+            pointer-events: none;
+            user-select: none;
+            z-index: 0;
         }
 
-        .info-terbaru-meta p {
-            margin: 4px 0 0;
+        /* Content layer above the number */
+        .info-terbaru-card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .info-terbaru-date {
+            margin: 0 0 4px;
             font-size: 11px;
+            font-family: var(--font-main);
             color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 500;
+        }
+
+        .info-terbaru-card-content h4 {
+            margin: 0;
+            font-size: 15px;
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            font-weight: 700;
+            line-height: 1.4;
+            font-style: italic;
         }
 
         .info-terbaru-cta {
-            border: 1px dashed var(--line-strong);
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-size: 12px;
+            border: none;
+            border-top: 1px dashed var(--line-soft);
+            border-bottom: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 11px;
             font-weight: 600;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            justify-content: center;
+            text-align: center;
+            padding: 14px 0;
+            transition: color 0.2s ease;
+        }
+
+        .info-terbaru-cta:hover {
+            color: var(--text-primary);
+            background: transparent;
+            transform: none;
         }
 
         .info-terbaru-right {
@@ -802,22 +832,23 @@
             top: 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
+            align-items: center;
         }
 
         .info-terbaru-index {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            border: 1px solid var(--line-strong);
-            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--line-soft);
+            color: var(--text-muted);
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 16px;
-            background: var(--bg-surface);
+            font-size: 13px;
+            background: transparent;
             transition: all 0.25s ease;
         }
 
@@ -825,7 +856,7 @@
             background: var(--text-primary);
             color: #ffffff;
             border-color: var(--text-primary);
-            transform: scale(1.04);
+            transform: scale(1.05);
         }
 
         .info-terbaru-modal {
@@ -905,14 +936,23 @@
             }
 
             .info-terbaru-index {
-                width: 42px;
-                height: 42px;
-                font-size: 13px;
+                width: 36px;
+                height: 36px;
+                font-size: 12px;
                 flex: 0 0 auto;
             }
 
-            .info-terbaru-left {
-                max-height: 340px;
+            .info-terbaru-bg-num {
+                font-size: 3.5rem;
+                right: 4px;
+            }
+
+            .info-terbaru-card {
+                padding: 16px 0;
+            }
+
+            .info-terbaru-card-content h4 {
+                font-size: 14px;
             }
         }
 
@@ -2928,7 +2968,7 @@
             </div>
 
             <!-- INFO TERBARU (Collapsible) -->
-            <div class="dash-card" id="announcements-section" style="margin-bottom: 14px;">
+            <div class="dash-card" id="announcements-section" style="margin-bottom: 14px; background-image: url('/images/bg/clearpath-curves.svg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
                 <div class="dash-card-header" onclick="toggleAnnouncementsSection()">
                     <h3><i class="fa-solid fa-bullhorn"></i> INFO TERBARU</h3>
                     <i class="fa-solid fa-chevron-down toggle-icon" id="announcements-toggle-icon"></i>

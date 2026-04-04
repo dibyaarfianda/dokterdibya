@@ -278,19 +278,27 @@ function displayInfoTerbaruAnnouncements(announcements) {
     setupInfoTerbaruObserver();
 }
 
+function stripEmoji(text) {
+    return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function truncateText(text, maxLen) {
+    if (text.length <= maxLen) return text;
+    return text.substring(0, maxLen).replace(/\s+\S*$/, '') + '...';
+}
+
 function renderInfoTerbaruThumbnailCard(announcement, index) {
-    const title = escapeHtml(announcement.title || 'Info terbaru');
+    const rawTitle = announcement.title || 'Info terbaru';
+    const title = escapeHtml(truncateText(stripEmoji(rawTitle), 60));
     const dateLabel = formatDate(announcement.published_at || announcement.created_at);
-    const thumb = announcement.image_url
-        ? `<img class="info-terbaru-thumb" src="${escapeHtml(announcement.image_url)}" alt="${title}" onerror="this.style.display='none'">`
-        : `<div class="info-terbaru-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);"><i class="fa fa-image"></i></div>`;
+    const num = String(index + 1).padStart(2, '0');
 
     return `
         <button type="button" class="info-terbaru-card" data-info-index="${index}" onclick="openInfoTerbaruModal(${index})">
-            ${thumb}
-            <div class="info-terbaru-meta">
+            <span class="info-terbaru-bg-num">${num}</span>
+            <div class="info-terbaru-card-content">
+                <p class="info-terbaru-date">${escapeHtml(dateLabel)}</p>
                 <h4>${title}</h4>
-                <p>${escapeHtml(dateLabel)}</p>
             </div>
         </button>
     `;
