@@ -326,10 +326,11 @@ function truncateText(text, maxLen) {
 }
 
 function animateInfoTerbaruDigit(index) {
-    // Odometer-style: shift the strip UP by index positions
+    // Odometer-style: shift strip UP by measured pixel height
     const strip = document.getElementById('info-terbaru-num-strip');
-    if (!strip) return;
-    strip.style.transform = 'translateY(' + (-index) + 'em)';
+    if (!strip || !strip.children.length) return;
+    const digitHeight = strip.children[0].offsetHeight;
+    strip.style.transform = 'translateY(-' + (index * digitHeight) + 'px)';
 }
 
 function setupInfoTerbaruScroll() {
