@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404ao'; // 2026-04-04 - Fix wipe slide up (80% travel, no CSS transition)
+const CACHE_VERSION = '20260404ap'; // 2026-04-04 - Fix digit font-size inherit for animation
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
