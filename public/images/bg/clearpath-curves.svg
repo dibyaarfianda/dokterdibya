@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <!-- ClearPath-inspired decorative curves -->
+
+  <!-- Large elliptical arc - top right -->
+  <ellipse cx="650" cy="80" rx="280" ry="280"
+    stroke="#0a0a0a" stroke-width="1.2" opacity="0.12" fill="none"/>
+
+  <!-- Medium circle - center left (blue accent) -->
+  <circle cx="120" cy="320" r="200"
+    stroke="#3b82f6" stroke-width="1" opacity="0.10" fill="none"/>
+
+  <!-- Flowing S-curve across the section (blue accent) -->
+  <path d="M -50 400 Q 200 200, 400 280 T 850 120"
+    stroke="#3b82f6" stroke-width="1.4" opacity="0.10" fill="none"/>
+
+  <!-- Secondary flowing curve -->
+  <path d="M -30 450 Q 180 250, 380 320 T 830 160"
+    stroke="#0a0a0a" stroke-width="0.8" opacity="0.08" fill="none"/>
+
+  <!-- Small accent circle - bottom right (blue accent) -->
+  <circle cx="700" cy="420" r="80"
+    stroke="#3b82f6" stroke-width="1" opacity="0.08" fill="none"/>
+
+  <!-- Subtle arc - top left -->
+  <path d="M 0 0 Q 150 100, 100 250"
+    stroke="#0a0a0a" stroke-width="1" opacity="0.10" fill="none"/>
+
+  <!-- Long sweeping curve -->
+  <path d="M 50 500 Q 300 350, 500 380 Q 700 410, 800 300"
+    stroke="#0a0a0a" stroke-width="0.8" opacity="0.07" fill="none"/>
+</svg>
