@@ -293,6 +293,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
     ).join('');
 
     container.innerHTML = `
+        <div class="info-terbaru-bg" id="info-terbaru-bg"></div>
         <div class="info-terbaru-pinned" id="info-terbaru-pinned" style="height: ${containerHeight}vh;">
             <div class="info-terbaru-inner">
                 <div class="info-terbaru-number">
@@ -334,6 +335,7 @@ function animateInfoTerbaruDigit(index) {
 function setupInfoTerbaruScroll() {
     const pinned = document.getElementById('info-terbaru-pinned');
     const scrollContent = document.getElementById('info-terbaru-scroll-content');
+    const bgEl = document.getElementById('info-terbaru-bg');
     if (!pinned || !scrollContent) return;
 
     const items = scrollContent.querySelectorAll('.info-terbaru-item');
@@ -361,9 +363,30 @@ function setupInfoTerbaruScroll() {
             scrollContent.style.transform = 'translateY(' + (-shift) + 'px)';
         }
 
+        // Background fade: 0→fade in by item 2, full during middle, fade out at end
+        if (bgEl) {
+            var bgOpacity = 0;
+            var segment = 1 / totalItems;
+            // Fade in: progress 0 → segment*1.5 (reaches full by item 2)
+            var fadeInEnd = segment * 1.5;
+            // Fade out: starts at progress (1 - segment) → 1
+            var fadeOutStart = 1 - segment;
+
+            if (progress <= 0) {
+                bgOpacity = 0;
+            } else if (progress < fadeInEnd) {
+                bgOpacity = progress / fadeInEnd;
+            } else if (progress < fadeOutStart) {
+                bgOpacity = 1;
+            } else {
+                bgOpacity = 1 - (progress - fadeOutStart) / segment;
+            }
+            bgEl.style.opacity = Math.max(0, Math.min(1, bgOpacity));
+        }
+
         // Determine current item index
-        const segment = 1 / totalItems;
-        const currentIndex = Math.min(Math.floor(progress / segment), totalItems - 1);
+        var segmentSize = 1 / totalItems;
+        const currentIndex = Math.min(Math.floor(progress / segmentSize), totalItems - 1);
 
         // Animate digit on index change — shift strip upward
         if (currentIndex !== prevIndex) {

@@ -741,10 +741,23 @@
             height: 100vh;
             overflow: hidden;
             padding: 0 20px 0 30px;
+        }
+
+        /* Background — fixed, fade in/out driven by scroll */
+        .info-terbaru-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             background-image: url('/images/bg/clearpath-curves.svg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.15s ease;
         }
 
         /* Sage green number — RIGHT side, ClearPath exact (70% viewport height) */
