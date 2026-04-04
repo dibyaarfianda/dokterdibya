@@ -239,7 +239,7 @@ function isInfoTerbaruLayout() {
 }
 
 let infoTerbaruCurrentIndex = 0;
-let infoTerbaruAutoTimer = null;
+let infoTerbaruScrollHandler = null;
 
 function displayInfoTerbaruAnnouncements(announcements) {
     const container = document.getElementById('announcements-container');
@@ -262,35 +262,50 @@ function displayInfoTerbaruAnnouncements(announcements) {
     });
 
     infoTerbaruAllAnnouncements = sorted;
-    const items = sorted.slice(0, 3); // Max 3 items for showcase
-    const first = items[0];
-    const firstTitle = truncateText(stripEmoji(first.title || 'Info terbaru'), 80);
-    const firstDate = formatDate(first.published_at || first.created_at);
+    const items = sorted.slice(0, 3);
 
-    const firstDesc = truncateText(stripEmoji(first.message || ''), 120);
+    // Build item HTML
+    const itemsHtml = items.map((item, i) => {
+        const title = escapeHtml(truncateText(stripEmoji(item.title || 'Info terbaru'), 80));
+        const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
+        return `
+            <div class="info-terbaru-item" data-index="${i}" onclick="openInfoTerbaruModal(${i})">
+                <h4>${title}</h4>
+                <p>${desc}</p>
+            </div>
+        `;
+    }).join('');
+
+    // CTA as last item
+    const ctaHtml = `
+        <div class="info-terbaru-item info-terbaru-item-cta" data-index="${items.length}">
+            <h4>Lihat Info Lainnya</h4>
+            <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
+        </div>
+    `;
+
+    const totalSlides = items.length + 1; // items + CTA
+    const containerHeight = 100 * (totalSlides + 1); // vh units
 
     container.innerHTML = `
-        <div class="info-terbaru-showcase">
-            <div class="info-terbaru-number">
-                <span class="info-terbaru-num-fixed">0</span>
-                <span class="info-terbaru-num-slot">
-                    <span class="info-terbaru-num-digit">1</span>
-                </span>
-            </div>
-            <div class="info-terbaru-content" id="info-terbaru-content" data-current-index="0">
-                <p class="info-terbaru-date">${escapeHtml(firstDate)}</p>
-                <h4>${escapeHtml(firstTitle)}</h4>
-                <p class="info-terbaru-desc">${escapeHtml(firstDesc)}</p>
-                <button type="button" class="info-terbaru-read-more" onclick="openInfoTerbaruModal(infoTerbaruCurrentIndex)">baca selengkapnya &rarr;</button>
-            </div>
-            <div class="info-terbaru-dots" id="info-terbaru-dots">
-                ${items.map((_, i) => `<span class="info-terbaru-dot${i === 0 ? ' active' : ''}" onclick="goToInfoTerbaru(${i})"></span>`).join('')}
+        <div class="info-terbaru-pinned" id="info-terbaru-pinned" style="height: ${containerHeight}vh;">
+            <div class="info-terbaru-inner">
+                <div class="info-terbaru-number">
+                    <span class="info-terbaru-num-fixed">0</span>
+                    <span class="info-terbaru-num-slot" id="info-terbaru-num-slot">
+                        <span class="info-terbaru-num-digit">1</span>
+                    </span>
+                </div>
+                <div class="info-terbaru-scroll-content" id="info-terbaru-scroll-content">
+                    ${itemsHtml}
+                    ${ctaHtml}
+                </div>
             </div>
         </div>
     `;
 
     infoTerbaruCurrentIndex = 0;
-    startInfoTerbaruAutoRotate(items.length);
+    setupInfoTerbaruScroll();
 }
 
 function stripEmoji(text) {
@@ -303,12 +318,11 @@ function truncateText(text, maxLen) {
 }
 
 function animateInfoTerbaruDigit(newDigit) {
-    const slot = document.querySelector('.info-terbaru-num-slot');
+    const slot = document.getElementById('info-terbaru-num-slot');
     if (!slot) return;
     const oldEl = slot.querySelector('.info-terbaru-num-digit');
     if (!oldEl) return;
 
-    // Slide old digit out
     oldEl.style.animation = 'infoSlideOut 0.4s ease forwards';
 
     setTimeout(() => {
@@ -321,61 +335,52 @@ function animateInfoTerbaruDigit(newDigit) {
     }, 350);
 }
 
-function transitionInfoTerbaruContent(index) {
-    const content = document.getElementById('info-terbaru-content');
-    if (!content) return;
-    const item = infoTerbaruAllAnnouncements[index];
-    if (!item) return;
+function setupInfoTerbaruScroll() {
+    const pinned = document.getElementById('info-terbaru-pinned');
+    const scrollContent = document.getElementById('info-terbaru-scroll-content');
+    if (!pinned || !scrollContent) return;
 
-    // Fade out
-    content.style.opacity = '0';
-    content.style.transform = 'translateY(8px)';
+    const items = scrollContent.querySelectorAll('.info-terbaru-item');
+    const totalItems = items.length;
+    let prevIndex = 0;
 
-    setTimeout(() => {
-        const dateEl = content.querySelector('.info-terbaru-date');
-        const titleEl = content.querySelector('h4');
-        const descEl = content.querySelector('.info-terbaru-desc');
-        if (dateEl) dateEl.textContent = formatDate(item.published_at || item.created_at);
-        if (titleEl) titleEl.textContent = truncateText(stripEmoji(item.title || 'Info terbaru'), 80);
-        if (descEl) descEl.textContent = truncateText(stripEmoji(item.message || ''), 120);
-        content.setAttribute('data-current-index', index);
+    // Remove old handler if exists
+    if (infoTerbaruScrollHandler) {
+        window.removeEventListener('scroll', infoTerbaruScrollHandler);
+    }
 
-        // Fade in
-        content.style.opacity = '1';
-        content.style.transform = 'translateY(0)';
-    }, 400);
+    infoTerbaruScrollHandler = function() {
+        const rect = pinned.getBoundingClientRect();
+        const scrollRange = pinned.offsetHeight - window.innerHeight;
+        if (scrollRange <= 0) return;
 
-    // Update dots
-    const dots = document.querySelectorAll('.info-terbaru-dot');
-    dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+        const progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
 
-    // Animate digit
-    animateInfoTerbaruDigit(String(index + 1));
+        // Move content up as user scrolls
+        const contentH = scrollContent.scrollHeight;
+        const viewH = window.innerHeight;
+        const maxShift = contentH - viewH;
+        if (maxShift > 0) {
+            const shift = progress * maxShift;
+            scrollContent.style.transform = 'translateY(' + (-shift) + 'px)';
+        }
 
-    infoTerbaruCurrentIndex = index;
+        // Determine current item index
+        const segment = 1 / totalItems;
+        const currentIndex = Math.min(Math.floor(progress / segment), totalItems - 1);
+
+        // Animate digit on index change
+        if (currentIndex !== prevIndex) {
+            animateInfoTerbaruDigit(String(currentIndex + 1));
+            prevIndex = currentIndex;
+            infoTerbaruCurrentIndex = currentIndex;
+        }
+    };
+
+    window.addEventListener('scroll', infoTerbaruScrollHandler, { passive: true });
 }
 
-function goToInfoTerbaru(index) {
-    if (index === infoTerbaruCurrentIndex) return;
-    transitionInfoTerbaruContent(index);
-
-    // Reset auto-rotate timer
-    const maxItems = Math.min(infoTerbaruAllAnnouncements.length, 3);
-    if (infoTerbaruAutoTimer) clearInterval(infoTerbaruAutoTimer);
-    startInfoTerbaruAutoRotate(maxItems);
-}
-
-function startInfoTerbaruAutoRotate(maxItems) {
-    if (infoTerbaruAutoTimer) clearInterval(infoTerbaruAutoTimer);
-    if (maxItems <= 1) return;
-
-    infoTerbaruAutoTimer = setInterval(() => {
-        const next = (infoTerbaruCurrentIndex + 1) % maxItems;
-        transitionInfoTerbaruContent(next);
-    }, 5000);
-}
-
-// Keep for backwards compat — no-op now
+// Backwards compat stubs
 function toggleInfoTerbaruExpanded() {}
 function setupInfoTerbaruObserver() {}
 
@@ -688,4 +693,3 @@ window.loadAnnouncements = loadAnnouncements;
 window.openInfoTerbaruModal = openInfoTerbaruModal;
 window.closeInfoTerbaruModal = closeInfoTerbaruModal;
 window.toggleInfoTerbaruExpanded = toggleInfoTerbaruExpanded;
-window.goToInfoTerbaru = goToInfoTerbaru;
