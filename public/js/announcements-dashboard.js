@@ -267,6 +267,8 @@ function displayInfoTerbaruAnnouncements(announcements) {
     const firstTitle = truncateText(stripEmoji(first.title || 'Info terbaru'), 80);
     const firstDate = formatDate(first.published_at || first.created_at);
 
+    const firstDesc = truncateText(stripEmoji(first.message || ''), 120);
+
     container.innerHTML = `
         <div class="info-terbaru-showcase">
             <div class="info-terbaru-number">
@@ -278,6 +280,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
             <div class="info-terbaru-content" id="info-terbaru-content" data-current-index="0">
                 <p class="info-terbaru-date">${escapeHtml(firstDate)}</p>
                 <h4>${escapeHtml(firstTitle)}</h4>
+                <p class="info-terbaru-desc">${escapeHtml(firstDesc)}</p>
                 <button type="button" class="info-terbaru-read-more" onclick="openInfoTerbaruModal(infoTerbaruCurrentIndex)">baca selengkapnya &rarr;</button>
             </div>
             <div class="info-terbaru-dots" id="info-terbaru-dots">
@@ -306,16 +309,16 @@ function animateInfoTerbaruDigit(newDigit) {
     if (!oldEl) return;
 
     // Slide old digit out
-    oldEl.style.animation = 'infoSlideOut 0.35s ease forwards';
+    oldEl.style.animation = 'infoSlideOut 0.4s ease forwards';
 
     setTimeout(() => {
         slot.innerHTML = '';
         const newEl = document.createElement('span');
         newEl.className = 'info-terbaru-num-digit';
         newEl.textContent = newDigit;
-        newEl.style.animation = 'infoSlideUp 0.35s ease forwards';
+        newEl.style.animation = 'infoSlideUp 0.4s ease forwards';
         slot.appendChild(newEl);
-    }, 300);
+    }, 350);
 }
 
 function transitionInfoTerbaruContent(index) {
@@ -331,14 +334,16 @@ function transitionInfoTerbaruContent(index) {
     setTimeout(() => {
         const dateEl = content.querySelector('.info-terbaru-date');
         const titleEl = content.querySelector('h4');
+        const descEl = content.querySelector('.info-terbaru-desc');
         if (dateEl) dateEl.textContent = formatDate(item.published_at || item.created_at);
         if (titleEl) titleEl.textContent = truncateText(stripEmoji(item.title || 'Info terbaru'), 80);
+        if (descEl) descEl.textContent = truncateText(stripEmoji(item.message || ''), 120);
         content.setAttribute('data-current-index', index);
 
         // Fade in
         content.style.opacity = '1';
         content.style.transform = 'translateY(0)';
-    }, 300);
+    }, 400);
 
     // Update dots
     const dots = document.querySelectorAll('.info-terbaru-dot');
