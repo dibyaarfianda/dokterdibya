@@ -1784,7 +1784,94 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
             });
         }
 
-        // Update status to paid
+        const InventoryService = require('../services/InventoryService');
+
+        // Get all obat items from billing and validate mapping first.
+        // If mapping or stock is invalid, do not allow billing to be marked paid.
+        const [obatItemsRaw] = await db.query(
+            `SELECT bi.item_code, bi.item_name, bi.quantity,
+                    CAST(JSON_EXTRACT(bi.item_data, '$.obatId') AS UNSIGNED) as obat_id
+             FROM sunday_clinic_billing_items bi
+             WHERE bi.billing_id = ? AND bi.item_type = 'obat'`,
+            [billing.id]
+        );
+
+        const invalidObatItems = obatItemsRaw.filter(item => !item.obat_id);
+        if (invalidObatItems.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Data obat tidak valid: ${invalidObatItems.map(i => i.item_name).join(', ')}. Simpan ulang item obat sebelum menandai lunas.`
+            });
+        }
+
+        // Aggregate required qty per obat and pre-check stock availability.
+        const requiredByObatId = new Map();
+        for (const item of obatItemsRaw) {
+            const obatId = Number(item.obat_id);
+            const qty = parseInt(item.quantity, 10) || 0;
+            requiredByObatId.set(obatId, (requiredByObatId.get(obatId) || 0) + qty);
+        }
+
+        if (requiredByObatId.size > 0) {
+            const obatIds = Array.from(requiredByObatId.keys());
+            const placeholders = obatIds.map(() => '?').join(',');
+            const [stocks] = await db.query(
+                `SELECT id, name, stock FROM obat WHERE id IN (${placeholders})`,
+                obatIds
+            );
+
+            const stockMap = new Map(stocks.map(row => [Number(row.id), row]));
+            const insufficient = [];
+
+            for (const obatId of obatIds) {
+                const requiredQty = requiredByObatId.get(obatId) || 0;
+                const row = stockMap.get(obatId);
+                const available = row ? Number(row.stock) : 0;
+                if (!row || available < requiredQty) {
+                    insufficient.push({
+                        obatId,
+                        name: row?.name || `Obat ID ${obatId}`,
+                        required: requiredQty,
+                        available
+                    });
+                }
+            }
+
+            if (insufficient.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Stok tidak cukup untuk: ${insufficient.map(i => `${i.name} (butuh ${i.required}, tersedia ${i.available})`).join('; ')}`,
+                    insufficient
+                });
+            }
+        }
+
+        // Deduct stock for each obat using FIFO.
+        // If any deduction fails, abort and keep billing in confirmed status.
+        for (const item of obatItemsRaw) {
+            try {
+                await InventoryService.deductStockFIFO(
+                    Number(item.obat_id),
+                    parseInt(item.quantity, 10),
+                    'sunday_clinic_billing',
+                    billing.id,
+                    req.user?.name || 'system'
+                );
+                logger.info(`Stock deducted for ${item.item_name}: ${item.quantity} units`);
+            } catch (stockError) {
+                logger.error(`Stock deduction failed for obat ${item.obat_id} (${item.item_name})`, {
+                    mrId: normalizedMrId,
+                    billingId: billing.id,
+                    error: stockError.message
+                });
+                return res.status(500).json({
+                    success: false,
+                    message: `Gagal mengurangi stok untuk ${item.item_name}: ${stockError.message}`
+                });
+            }
+        }
+
+        // Update status to paid only after stock deduction succeeds.
         await db.query(
             `UPDATE sunday_clinic_billings
              SET status = 'paid',
@@ -1793,40 +1880,6 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
              WHERE mr_id = ?`,
             [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
-
-        // Deduct stock for obat items using FIFO (only when marking as paid)
-        try {
-            const InventoryService = require('../services/InventoryService');
-
-            // Get obat items from billing (extract obatId from item_data JSON)
-            const [obatItems] = await db.query(
-                `SELECT bi.item_code, bi.item_name, bi.quantity,
-                        CAST(JSON_EXTRACT(bi.item_data, '$.obatId') AS UNSIGNED) as obat_id
-                 FROM sunday_clinic_billing_items bi
-                 WHERE bi.billing_id = ? AND bi.item_type = 'obat'
-                   AND JSON_EXTRACT(bi.item_data, '$.obatId') IS NOT NULL`,
-                [billing.id]
-            );
-
-            // Deduct stock for each obat using FIFO
-            for (const item of obatItems) {
-                try {
-                    await InventoryService.deductStockFIFO(
-                        item.obat_id,
-                        parseInt(item.quantity),
-                        'sunday_clinic_billing',
-                        billing.id,
-                        req.user?.name || 'system'
-                    );
-                    logger.info(`Stock deducted for ${item.item_name}: ${item.quantity} units`);
-                } catch (stockError) {
-                    logger.warn(`Stock deduction warning for obat ${item.obat_id} (${item.item_name}):`, stockError.message);
-                }
-            }
-        } catch (inventoryError) {
-            logger.error('Inventory deduction error:', inventoryError);
-            // Don't fail the payment, just log the error
-        }
 
         // Auto-finalize the medical record when billing is paid
         try {
@@ -1873,7 +1926,7 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
 
         res.json({
             success: true,
-            message: 'Pembayaran berhasil dicatat. Stok obat telah dikurangi.',
+            message: 'Pembayaran berhasil dicatat.',
             patientName
         });
     } catch (error) {
