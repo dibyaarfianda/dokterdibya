@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404y'; // 2026-04-04 - fix portal USG thumbnail fields/types
+const CACHE_VERSION = '20260404z'; // 2026-04-04 - show PENGUMUMAN section expanded by default
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
