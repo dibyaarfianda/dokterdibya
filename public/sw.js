@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404af'; // 2026-04-04 - Fix SW: network-first for JS/CSS files
+const CACHE_VERSION = '20260404ag'; // 2026-04-04 - ClearPath exact: 70vh numbers, serif title, odometer digits
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
