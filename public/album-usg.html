@@ -452,7 +452,7 @@
             try {
                 // Single API call for all USG types with cache-bust parameter
                 const cacheBust = Math.floor(Date.now() / 60000); // Change every minute
-                const response = await apiRequest(`/api/patient-documents/my-documents?type=usg_photo,usg_2d,usg_4d&t=${cacheBust}`);
+                const response = await apiRequest(`/api/patient-documents/my-documents?type=usg_photo,usg_2d,usg_4d,patient_usg&t=${cacheBust}`);
 
                 window.allImages = [];
 
