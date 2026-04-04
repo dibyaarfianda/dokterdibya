@@ -264,39 +264,41 @@ function displayInfoTerbaruAnnouncements(announcements) {
     infoTerbaruAllAnnouncements = sorted;
     const items = sorted.slice(0, 3);
 
-    // Build item HTML
+    // Build item HTML — each item has its own number
     const itemsHtml = items.map((item, i) => {
         const title = escapeHtml(truncateText(stripEmoji(item.title || 'Info terbaru'), 80));
         const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
+        const num = String(i + 1).padStart(2, '0');
         return `
             <div class="info-terbaru-item" data-index="${i}" onclick="openInfoTerbaruModal(${i})">
-                <h4>${title}</h4>
-                <p>${desc}</p>
+                <div class="info-terbaru-item-text">
+                    <h4>${title}</h4>
+                    <p>${desc}</p>
+                </div>
+                <span class="info-terbaru-item-num">${num}</span>
             </div>
         `;
     }).join('');
 
     // CTA as last item
+    const lastNum = String(items.length + 1).padStart(2, '0');
     const ctaHtml = `
         <div class="info-terbaru-item info-terbaru-item-cta" data-index="${items.length}">
-            <h4>Lihat Info Lainnya</h4>
-            <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
+            <div class="info-terbaru-item-text">
+                <h4>Lihat Info Lainnya</h4>
+                <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
+            </div>
+            <span class="info-terbaru-item-num">${lastNum}</span>
         </div>
     `;
 
-    const totalSlides = items.length + 1; // items + CTA
-    const containerHeight = 60 * totalSlides + 100; // vh units (60vh per item + 100vh base)
+    const totalSlides = items.length + 1;
+    const containerHeight = 100 * totalSlides + 100; // 100vh per item + 100vh buffer
 
     container.innerHTML = `
         <div class="info-terbaru-bg" id="info-terbaru-bg"></div>
         <div class="info-terbaru-pinned" id="info-terbaru-pinned" style="height: ${containerHeight}vh;">
             <div class="info-terbaru-inner">
-                <div class="info-terbaru-number">
-                    <span class="info-terbaru-num-fixed">0</span>
-                    <span class="info-terbaru-num-slot">
-                        <span class="info-terbaru-num-digit" id="info-terbaru-digit">1</span>
-                    </span>
-                </div>
                 <div class="info-terbaru-scroll-content" id="info-terbaru-scroll-content">
                     ${itemsHtml}
                     ${ctaHtml}
@@ -316,28 +318,6 @@ function stripEmoji(text) {
 function truncateText(text, maxLen) {
     if (text.length <= maxLen) return text;
     return text.substring(0, maxLen).replace(/\s+\S*$/, '') + '...';
-}
-
-function animateInfoTerbaruDigit(index) {
-    var digit = document.getElementById('info-terbaru-digit');
-    if (!digit) return;
-    var newValue = String(index + 1);
-    if (digit.textContent === newValue) return;
-
-    // Slide old digit out (up)
-    digit.classList.remove('slide-in');
-    digit.classList.add('slide-out');
-
-    setTimeout(function() {
-        // Change text and slide new digit in (from below)
-        digit.textContent = newValue;
-        digit.classList.remove('slide-out');
-        digit.classList.add('slide-in');
-
-        setTimeout(function() {
-            digit.classList.remove('slide-in');
-        }, 350);
-    }, 300);
 }
 
 function setupInfoTerbaruScroll() {
@@ -392,30 +372,9 @@ function setupInfoTerbaruScroll() {
             bgEl.style.opacity = Math.max(0, Math.min(1, bgOpacity));
         }
 
-        // Determine current item index
+        // Track current index for modal
         var segmentSize = 1 / totalItems;
-        const currentIndex = Math.min(Math.floor(progress / segmentSize), totalItems - 1);
-
-        // Animate digit on index change — shift strip upward
-        if (currentIndex !== prevIndex) {
-            animateInfoTerbaruDigit(currentIndex);
-            prevIndex = currentIndex;
-            infoTerbaruCurrentIndex = currentIndex;
-        }
-
-        // Number wipe: at last item, slide up and fade out
-        var numberEl = pinned.querySelector('.info-terbaru-number');
-        if (numberEl) {
-            var lastSegmentStart = 1 - segmentSize;
-            if (progress >= lastSegmentStart) {
-                var wipeProgress = (progress - lastSegmentStart) / segmentSize;
-                numberEl.style.opacity = 1 - wipeProgress;
-                numberEl.style.transform = 'translateY(' + (-50 - wipeProgress * 80) + '%)';
-            } else {
-                numberEl.style.opacity = 1;
-                numberEl.style.transform = 'translateY(-50%)';
-            }
-        }
+        infoTerbaruCurrentIndex = Math.min(Math.floor(progress / segmentSize), totalItems - 1);
     };
 
     window.addEventListener('scroll', infoTerbaruScrollHandler, { passive: true });

@@ -729,7 +729,6 @@
         /* === ClearPath Scroll-Driven INFO TERBARU === */
         .info-terbaru-pinned {
             position: relative;
-            /* height set by JS: 100vh * (items + 1) */
             margin: 0 calc(-50vw + 50%);
             z-index: 2;
             background: var(--bg-page);
@@ -760,74 +759,30 @@
             transition: opacity 0.15s ease;
         }
 
-        /* Sage green number — RIGHT side, ClearPath exact (70% viewport height) */
-        .info-terbaru-number {
-            position: absolute;
-            right: 50px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-family: var(--font-display);
-            font-size: clamp(10rem, 50vh, 35rem);
-            font-weight: 800;
-            line-height: 0.85;
-            color: #9BB5A5;
-            letter-spacing: -0.04em;
-            pointer-events: none;
-            user-select: none;
-            display: flex;
-            align-items: baseline;
-            will-change: transform, opacity;
-        }
-
-        .info-terbaru-num-fixed {
-            display: inline-block;
-        }
-
-        .info-terbaru-num-slot {
-            display: inline-block;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .info-terbaru-num-digit {
-            display: block;
-        }
-
-        .info-terbaru-num-digit.slide-out {
-            animation: digitOut 0.35s ease forwards;
-        }
-
-        .info-terbaru-num-digit.slide-in {
-            animation: digitIn 0.35s ease forwards;
-        }
-
-        @keyframes digitOut {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(-80%); opacity: 0; }
-        }
-
-        @keyframes digitIn {
-            from { transform: translateY(60%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Content scroll area — LEFT side */
+        /* Scroll content — full width, shifted by JS */
         .info-terbaru-scroll-content {
             position: relative;
             z-index: 1;
-            max-width: 55%;
+            width: 100%;
             will-change: transform;
         }
 
-        /* Each item block — full viewport height */
+        /* Each item — full viewport, two-column: text left, number right */
         .info-terbaru-item {
-            min-height: 60vh;
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 30px 0;
+            align-items: center;
+            justify-content: space-between;
+            padding: 40px 0;
             box-sizing: border-box;
             cursor: pointer;
+            position: relative;
+        }
+
+        .info-terbaru-item-text {
+            max-width: 50%;
+            position: relative;
+            z-index: 1;
         }
 
         .info-terbaru-item h4 {
@@ -849,13 +804,24 @@
             max-width: 480px;
         }
 
+        /* Number per item — sits on the right */
+        .info-terbaru-item-num {
+            font-family: var(--font-display);
+            font-size: clamp(10rem, 50vh, 35rem);
+            font-weight: 800;
+            line-height: 0.85;
+            color: #9BB5A5;
+            letter-spacing: -0.04em;
+            pointer-events: none;
+            user-select: none;
+            margin-right: 20px;
+        }
+
         /* Last item CTA */
         .info-terbaru-item-cta h4 {
             font-style: italic;
             font-size: 30px;
         }
-
-        /* No keyframes needed — digit strip uses CSS transition translateY */
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -863,13 +829,12 @@
                 padding: 0 16px;
             }
 
-            .info-terbaru-number {
+            .info-terbaru-item-num {
                 font-size: clamp(7rem, 40vh, 25rem);
-                right: 8px;
             }
 
-            .info-terbaru-scroll-content {
-                max-width: 58%;
+            .info-terbaru-item-text {
+                max-width: 55%;
             }
 
             .info-terbaru-item h4 {
