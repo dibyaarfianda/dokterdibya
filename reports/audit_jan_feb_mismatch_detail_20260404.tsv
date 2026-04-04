@@ -1,0 +1,8 @@
+﻿period	source	ref_id	ref_no	tx_time	patient_name	obat_name	expected_qty	deducted_qty	gap_qty
+2026-01	obat_sales	69	OS-20260103-005	2026-01-03 22:31:31	tes	Amoxsan	1	0	1
+2026-02	sunday_clinic_billing	247	DRD0451	2026-02-22 09:00:11	Nurul Nur Hidayah	Formical B	15	30	-15
+2026-02	sunday_clinic_billing	247	DRD0451	2026-02-22 09:00:11	Nurul Nur Hidayah	Prolacta for mother	15	30	-15
+2026-02	sunday_clinic_billing	247	DRD0451	2026-02-22 09:00:11	Nurul Nur Hidayah	Rinofer Chew	10	20	-10
+2026-02	sunday_clinic_billing	242	DRD0444	2026-02-15 12:59:07	Novanda Anastasia	Folamil Genio	1	2	-1
+2026-02	sunday_clinic_billing	180	DRD0373	2026-02-01 08:46:14	Lely Putri Permatasari	Formical B	15	30	-15
+2026-02	sunday_clinic_billing	180	DRD0373	2026-02-01 08:46:14	Lely Putri Permatasari	Prolacta for mother	15	30	-15

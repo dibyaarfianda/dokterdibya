@@ -1,0 +1,17 @@
+﻿source	issue_type	obat_id	obat_name	affected_lines	expected_qty	deducted_qty	gap_qty
+obat_sales	kurang_deduksi	75	Ossoral 200	1	30	0	30
+sunday_clinic_billing	kelebihan_deduksi	75	Ossoral 200	1	30	60	-30
+sunday_clinic_billing	kelebihan_deduksi	73	Prolacta for mother	1	30	60	-30
+sunday_clinic_billing	kelebihan_deduksi	64	Nairet Tab	2	15	30	-15
+sunday_clinic_billing	kelebihan_deduksi	68	Domavit Kaps	1	15	30	-15
+sunday_clinic_billing	kelebihan_deduksi	27	Dopamet	1	15	30	-15
+sunday_clinic_billing	kelebihan_deduksi	25	Lansoprazole	1	14	28	-14
+sunday_clinic_billing	kelebihan_deduksi	12	Norelut	1	14	28	-14
+sunday_clinic_billing	kelebihan_deduksi	22	Tradosik	1	10	20	-10
+sunday_clinic_billing	kelebihan_deduksi	28	Nifedipin	1	10	20	-10
+sunday_clinic_billing	kelebihan_deduksi	80	BM Pregnancy & BFG (60)	4	4	11	-7
+sunday_clinic_billing	kelebihan_deduksi	67	Astina 12	1	5	10	-5
+sunday_clinic_billing	kelebihan_deduksi	81	BM I-Folic (60)	2	2	4	-2
+sunday_clinic_billing	kelebihan_deduksi	82	BM Calcimag Multi (30)	1	1	2	-1
+sunday_clinic_billing	kurang_deduksi	3	Rinofer Chew	1	15	0	15
+sunday_clinic_billing	kurang_deduksi	65	Trogystatin ovula	2	9	0	9
