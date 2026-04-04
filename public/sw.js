@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404an'; // 2026-04-04 - Smaller numbers, wipe up + fade out
+const CACHE_VERSION = '20260404ao'; // 2026-04-04 - Fix wipe slide up (80% travel, no CSS transition)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
