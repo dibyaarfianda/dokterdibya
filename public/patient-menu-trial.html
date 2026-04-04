@@ -3953,15 +3953,26 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!data.success || !data.documents) return;
-                var usg = data.documents.filter(function(d) { return d.type === 'usg'; })
+                var usgTypes = {
+                    usg_photo: true,
+                    usg_2d: true,
+                    usg_4d: true,
+                    patient_usg: true,
+                    usg: true
+                };
+                var usg = data.documents.filter(function(d) {
+                    var docType = d.document_type || d.type;
+                    return !!usgTypes[docType];
+                })
                     .sort(function(a, b) { return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at); });
                 if (usg.length === 0) return;
 
                 // Main thumbnail
                 var main = document.getElementById('usg-thumb-main');
-                if (main && usg[0] && usg[0].thumbnail_url) {
+                var firstImageUrl = usg[0] && (usg[0].file_url || usg[0].thumbnail_url);
+                if (main && firstImageUrl) {
                     var img = document.createElement('img');
-                    img.src = usg[0].thumbnail_url;
+                    img.src = firstImageUrl;
                     img.alt = 'USG';
                     img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
                     main.innerHTML = '';
@@ -3973,9 +3984,10 @@
                 if (previews) {
                     var slots = previews.querySelectorAll('.doc-preview-slot');
                     for (var i = 0; i < slots.length && i + 1 < usg.length; i++) {
-                        if (usg[i + 1] && usg[i + 1].thumbnail_url) {
+                        var previewUrl = usg[i + 1] && (usg[i + 1].file_url || usg[i + 1].thumbnail_url);
+                        if (previewUrl) {
                             var pimg = document.createElement('img');
-                            pimg.src = usg[i + 1].thumbnail_url;
+                            pimg.src = previewUrl;
                             pimg.alt = 'USG';
                             slots[i].innerHTML = '';
                             slots[i].appendChild(pimg);
