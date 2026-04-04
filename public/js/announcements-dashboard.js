@@ -287,13 +287,20 @@ function displayInfoTerbaruAnnouncements(announcements) {
     const totalSlides = items.length + 1; // items + CTA
     const containerHeight = 100 * (totalSlides + 1); // vh units
 
+    // Build digit strip: 1, 2, 3, ... N (one per slide including CTA)
+    const digitStripHtml = Array.from({length: totalSlides}, (_, i) =>
+        `<span>${i + 1}</span>`
+    ).join('');
+
     container.innerHTML = `
         <div class="info-terbaru-pinned" id="info-terbaru-pinned" style="height: ${containerHeight}vh;">
             <div class="info-terbaru-inner">
                 <div class="info-terbaru-number">
                     <span class="info-terbaru-num-fixed">0</span>
                     <span class="info-terbaru-num-slot" id="info-terbaru-num-slot">
-                        <span class="info-terbaru-num-digit">1</span>
+                        <span class="info-terbaru-num-strip" id="info-terbaru-num-strip">
+                            ${digitStripHtml}
+                        </span>
                     </span>
                 </div>
                 <div class="info-terbaru-scroll-content" id="info-terbaru-scroll-content">
@@ -317,22 +324,11 @@ function truncateText(text, maxLen) {
     return text.substring(0, maxLen).replace(/\s+\S*$/, '') + '...';
 }
 
-function animateInfoTerbaruDigit(newDigit) {
-    const slot = document.getElementById('info-terbaru-num-slot');
-    if (!slot) return;
-    const oldEl = slot.querySelector('.info-terbaru-num-digit');
-    if (!oldEl) return;
-
-    oldEl.style.animation = 'infoSlideOut 0.4s ease forwards';
-
-    setTimeout(() => {
-        slot.innerHTML = '';
-        const newEl = document.createElement('span');
-        newEl.className = 'info-terbaru-num-digit';
-        newEl.textContent = newDigit;
-        newEl.style.animation = 'infoSlideUp 0.4s ease forwards';
-        slot.appendChild(newEl);
-    }, 350);
+function animateInfoTerbaruDigit(index) {
+    // Odometer-style: shift the strip UP by index positions
+    const strip = document.getElementById('info-terbaru-num-strip');
+    if (!strip) return;
+    strip.style.transform = 'translateY(' + (-index) + 'em)';
 }
 
 function setupInfoTerbaruScroll() {
@@ -369,9 +365,9 @@ function setupInfoTerbaruScroll() {
         const segment = 1 / totalItems;
         const currentIndex = Math.min(Math.floor(progress / segment), totalItems - 1);
 
-        // Animate digit on index change
+        // Animate digit on index change — shift strip upward
         if (currentIndex !== prevIndex) {
-            animateInfoTerbaruDigit(String(currentIndex + 1));
+            animateInfoTerbaruDigit(currentIndex);
             prevIndex = currentIndex;
             infoTerbaruCurrentIndex = currentIndex;
         }

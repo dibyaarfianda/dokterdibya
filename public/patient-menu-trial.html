@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Trial theme sticky navigation (keeps theme when navigating to other pages) -->
@@ -740,8 +740,6 @@
             top: 0;
             height: 100vh;
             overflow: hidden;
-            display: flex;
-            align-items: center;
             padding: 0 20px;
             background-image: url('/images/bg/clearpath-curves.svg');
             background-size: cover;
@@ -749,14 +747,14 @@
             background-repeat: no-repeat;
         }
 
-        /* Sage green number — RIGHT side, ClearPath exact */
+        /* Sage green number — RIGHT side, ClearPath exact (70% viewport height) */
         .info-terbaru-number {
             position: absolute;
-            right: 16px;
+            right: 0;
             top: 50%;
             transform: translateY(-50%);
             font-family: var(--font-display);
-            font-size: 12rem;
+            font-size: clamp(12rem, 65vh, 45rem);
             font-weight: 800;
             line-height: 0.85;
             color: #9BB5A5;
@@ -780,9 +778,16 @@
             position: relative;
         }
 
-        .info-terbaru-num-digit {
+        .info-terbaru-num-strip {
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.5s ease;
+        }
+
+        .info-terbaru-num-strip span {
             display: block;
-            transition: transform 0.4s ease;
+            height: 1em;
+            line-height: 1em;
         }
 
         /* Content scroll area — LEFT side */
@@ -805,41 +810,31 @@
         }
 
         .info-terbaru-item h4 {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 36px;
+            font-weight: 400;
             font-style: italic;
-            font-family: var(--font-display);
-            color: var(--text-primary);
+            font-family: 'Playfair Display', Georgia, serif;
+            color: #9BB5A5;
             line-height: 1.2;
             letter-spacing: -0.01em;
-            margin: 0 0 14px;
+            margin: 0 0 20px;
         }
 
         .info-terbaru-item p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.6;
+            font-size: 15px;
+            color: var(--text-body);
+            line-height: 1.7;
             margin: 0;
+            max-width: 480px;
         }
 
         /* Last item CTA */
         .info-terbaru-item-cta h4 {
-            font-style: normal;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            font-size: 20px;
+            font-style: italic;
+            font-size: 30px;
         }
 
-        /* Animations */
-        @keyframes infoSlideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes infoSlideOut {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(-100%); opacity: 0; }
-        }
+        /* No keyframes needed — digit strip uses CSS transition translateY */
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -848,24 +843,24 @@
             }
 
             .info-terbaru-number {
-                font-size: 8rem;
-                right: 8px;
+                font-size: clamp(8rem, 50vh, 30rem);
+                right: -8px;
             }
 
             .info-terbaru-scroll-content {
-                max-width: 60%;
+                max-width: 58%;
             }
 
             .info-terbaru-item h4 {
-                font-size: 22px;
+                font-size: 26px;
             }
 
             .info-terbaru-item p {
-                font-size: 13px;
+                font-size: 14px;
             }
 
             .info-terbaru-item-cta h4 {
-                font-size: 17px;
+                font-size: 22px;
             }
         }
 
