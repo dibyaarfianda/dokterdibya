@@ -726,137 +726,148 @@
             font-family: var(--font-main) !important;
         }
 
-        /* ClearPath-inspired INFO TERBARU */
-        .info-terbaru-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 64px;
-            gap: 12px;
-            align-items: start;
-        }
-
-        .info-terbaru-left {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-
-        .info-terbaru-card {
-            width: 100%;
+        /* ClearPath Animated Showcase - INFO TERBARU */
+        .info-terbaru-showcase {
             position: relative;
+            min-height: 160px;
+            padding: 24px 0 16px;
             overflow: hidden;
-            border: none;
-            border-bottom: 1px solid var(--line-soft);
-            background: transparent;
-            padding: 22px 0;
-            display: block;
-            cursor: pointer;
-            transition: background 0.2s ease;
-            text-align: left;
-            font-family: inherit;
         }
 
-        .info-terbaru-card:hover {
-            background: var(--accent-soft);
-        }
-
-        .info-terbaru-card:last-of-type:not(.info-terbaru-cta) {
-            border-bottom: none;
-        }
-
-        /* Large decorative background number */
-        .info-terbaru-bg-num {
+        /* Large number area - right side */
+        .info-terbaru-number {
             position: absolute;
             right: 8px;
-            top: 50%;
+            top: 45%;
             transform: translateY(-50%);
             font-family: var(--font-display);
-            font-size: 5rem;
+            font-size: 7rem;
             font-weight: 800;
             line-height: 1;
             color: var(--text-primary);
-            opacity: 0.05;
+            opacity: 0.10;
             pointer-events: none;
             user-select: none;
-            z-index: 0;
+            display: flex;
+            align-items: baseline;
         }
 
-        /* Content layer above the number */
-        .info-terbaru-card-content {
+        .info-terbaru-num-fixed {
+            display: inline-block;
+        }
+
+        .info-terbaru-num-slot {
+            display: inline-block;
+            overflow: hidden;
+            height: 1.05em;
+            vertical-align: top;
+            position: relative;
+            width: 0.65em;
+        }
+
+        .info-terbaru-num-digit {
+            display: block;
+            animation: none;
+        }
+
+        /* Content area - left side */
+        .info-terbaru-content {
             position: relative;
             z-index: 1;
+            max-width: 68%;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .info-terbaru-date {
-            margin: 0 0 4px;
+            margin: 0 0 8px;
             font-size: 11px;
             font-family: var(--font-main);
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             font-weight: 500;
         }
 
-        .info-terbaru-card-content h4 {
-            margin: 0;
-            font-size: 15px;
+        .info-terbaru-content h4 {
+            margin: 0 0 14px;
+            font-size: 21px;
             color: var(--text-primary);
             font-family: var(--font-display);
             font-weight: 700;
-            line-height: 1.4;
+            line-height: 1.35;
             font-style: italic;
         }
 
-        .info-terbaru-cta {
-            border: none;
-            border-top: 1px dashed var(--line-soft);
-            border-bottom: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-size: 11px;
+        .info-terbaru-read-more {
+            display: inline-block;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            text-align: center;
-            padding: 14px 0;
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            letter-spacing: 0.04em;
             transition: color 0.2s ease;
+            border: none;
+            background: none;
+            padding: 0;
+            font-family: var(--font-main);
         }
 
-        .info-terbaru-cta:hover {
+        .info-terbaru-read-more:hover {
             color: var(--text-primary);
-            background: transparent;
-            transform: none;
         }
 
-        .info-terbaru-right {
-            position: sticky;
-            top: 14px;
+        /* Dot indicators */
+        .info-terbaru-dots {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            margin-top: 20px;
             align-items: center;
         }
 
-        .info-terbaru-index {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            border: 1px solid var(--line-soft);
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-display);
-            font-weight: 700;
-            font-size: 13px;
-            background: transparent;
-            transition: all 0.25s ease;
+        .info-terbaru-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--line-strong);
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .info-terbaru-index.active {
+        .info-terbaru-dot.active {
             background: var(--text-primary);
-            color: #ffffff;
-            border-color: var(--text-primary);
-            transform: scale(1.05);
+            transform: scale(1.25);
+        }
+
+        /* Animations */
+        @keyframes infoSlideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes infoSlideOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-100%); opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .info-terbaru-number {
+                font-size: 5rem;
+                right: 4px;
+            }
+
+            .info-terbaru-content {
+                max-width: 65%;
+            }
+
+            .info-terbaru-content h4 {
+                font-size: 18px;
+            }
+
+            .info-terbaru-showcase {
+                min-height: 140px;
+                padding: 18px 0 12px;
+            }
         }
 
         .info-terbaru-modal {
@@ -923,38 +934,7 @@
             display: none;
         }
 
-        @media (max-width: 768px) {
-            .info-terbaru-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .info-terbaru-right {
-                position: static;
-                flex-direction: row;
-                overflow-x: auto;
-                padding-bottom: 4px;
-            }
-
-            .info-terbaru-index {
-                width: 36px;
-                height: 36px;
-                font-size: 12px;
-                flex: 0 0 auto;
-            }
-
-            .info-terbaru-bg-num {
-                font-size: 3.5rem;
-                right: 4px;
-            }
-
-            .info-terbaru-card {
-                padding: 16px 0;
-            }
-
-            .info-terbaru-card-content h4 {
-                font-size: 14px;
-            }
-        }
+        /* old responsive block removed — new responsive is inline above */
 
         /* Override toggle button (Lihat X Pengumuman Lainnya / Lihat Lebih Sedikit) */
         #toggle-announcements-btn {
