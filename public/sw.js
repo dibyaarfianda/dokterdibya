@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404ae'; // 2026-04-04 - ClearPath scroll-driven sticky showcase
+const CACHE_VERSION = '20260404af'; // 2026-04-04 - Fix SW: network-first for JS/CSS files
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -108,12 +108,31 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For other assets (CSS, JS, images) - cache first, network fallback
+  // For JS/CSS files - network first (always get fresh code on deploy)
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // For other assets (images, fonts) - cache first, network fallback
   event.respondWith(
     caches.match(request)
       .then((cachedResponse) => {
         if (cachedResponse) {
-          // Return cached version, but also update cache in background
           fetch(request).then((response) => {
             if (response.ok) {
               caches.open(CACHE_NAME).then((cache) => {
@@ -124,7 +143,6 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
 
-        // Not in cache - fetch from network
         return fetch(request)
           .then((response) => {
             if (response.ok) {
