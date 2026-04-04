@@ -4,6 +4,9 @@ const API_URL = window.location.hostname === 'localhost'
     : 'https://dokterdibya.com/api';
 
 let socket = null;
+let infoTerbaruAllAnnouncements = [];
+let infoTerbaruExpanded = false;
+let infoTerbaruObserver = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -141,6 +144,15 @@ function renderContent(content, contentType = 'plain') {
 }
 
 function displayAnnouncements(announcements) {
+    if (isInfoTerbaruLayout()) {
+        displayInfoTerbaruAnnouncements(announcements);
+        return;
+    }
+
+    displayAnnouncementsLegacy(announcements);
+}
+
+function displayAnnouncementsLegacy(announcements) {
     const container = document.getElementById('announcements-container');
 
     if (announcements.length === 0) {
@@ -197,6 +209,11 @@ function displayAnnouncements(announcements) {
 }
 
 function toggleRemainingAnnouncements() {
+    if (isInfoTerbaruLayout()) {
+        toggleInfoTerbaruExpanded();
+        return;
+    }
+
     const remaining = document.getElementById('remaining-announcements');
     const btn = document.getElementById('toggle-announcements-btn');
 
@@ -214,6 +231,146 @@ function toggleRemainingAnnouncements() {
             <i class="fa fa-chevron-down"></i>
         `;
     }
+}
+
+function isInfoTerbaruLayout() {
+    const container = document.getElementById('announcements-container');
+    return !!container && container.dataset.layout === 'info-terbaru';
+}
+
+function displayInfoTerbaruAnnouncements(announcements) {
+    const container = document.getElementById('announcements-container');
+    if (!container) return;
+
+    if (!Array.isArray(announcements) || announcements.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 24px; color: var(--text-muted); border: 1px solid var(--line-soft); border-radius: 10px;">
+                <i class="fa fa-info-circle" style="font-size: 22px; margin-bottom: 8px;"></i>
+                <p style="margin: 0; font-size: 12px;">Belum ada info terbaru saat ini</p>
+            </div>
+        `;
+        return;
+    }
+
+    const sorted = [...announcements].sort((a, b) => {
+        const ad = new Date(a.published_at || a.created_at).getTime();
+        const bd = new Date(b.published_at || b.created_at).getTime();
+        return bd - ad;
+    });
+
+    infoTerbaruAllAnnouncements = sorted;
+    const visible = infoTerbaruExpanded ? sorted : sorted.slice(0, 3);
+
+    container.innerHTML = `
+        <div class="info-terbaru-layout">
+            <div class="info-terbaru-left" id="info-terbaru-left">
+                ${visible.map((item, index) => renderInfoTerbaruThumbnailCard(item, index)).join('')}
+                <button type="button" class="info-terbaru-card info-terbaru-cta" onclick="toggleInfoTerbaruExpanded()">
+                    ${infoTerbaruExpanded ? 'Tampilkan Ringkas' : 'Lihat Semua Berita Terbaru'}
+                </button>
+            </div>
+            <div class="info-terbaru-right" id="info-terbaru-right">
+                ${visible.map((_, index) => `<div class="info-terbaru-index${index === 0 ? ' active' : ''}" data-info-index="${index}">${String(index + 1).padStart(2, '0')}</div>`).join('')}
+            </div>
+        </div>
+    `;
+
+    setupInfoTerbaruObserver();
+}
+
+function renderInfoTerbaruThumbnailCard(announcement, index) {
+    const title = escapeHtml(announcement.title || 'Info terbaru');
+    const dateLabel = formatDate(announcement.published_at || announcement.created_at);
+    const thumb = announcement.image_url
+        ? `<img class="info-terbaru-thumb" src="${escapeHtml(announcement.image_url)}" alt="${title}" onerror="this.style.display='none'">`
+        : `<div class="info-terbaru-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);"><i class="fa fa-image"></i></div>`;
+
+    return `
+        <button type="button" class="info-terbaru-card" data-info-index="${index}" onclick="openInfoTerbaruModal(${index})">
+            ${thumb}
+            <div class="info-terbaru-meta">
+                <h4>${title}</h4>
+                <p>${escapeHtml(dateLabel)}</p>
+            </div>
+        </button>
+    `;
+}
+
+function setupInfoTerbaruObserver() {
+    const left = document.getElementById('info-terbaru-left');
+    const indicators = Array.from(document.querySelectorAll('.info-terbaru-index'));
+    const cards = Array.from(left?.querySelectorAll('.info-terbaru-card[data-info-index]') || []);
+
+    if (!left || indicators.length === 0 || cards.length === 0) return;
+
+    if (infoTerbaruObserver) {
+        infoTerbaruObserver.disconnect();
+        infoTerbaruObserver = null;
+    }
+
+    const setActive = (index) => {
+        indicators.forEach((el) => {
+            el.classList.toggle('active', Number(el.dataset.infoIndex) === index);
+        });
+    };
+
+    setActive(0);
+
+    infoTerbaruObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const index = Number(entry.target.dataset.infoIndex);
+            if (!Number.isNaN(index)) setActive(index);
+        });
+    }, {
+        root: left,
+        threshold: 0.65
+    });
+
+    cards.forEach((card) => infoTerbaruObserver.observe(card));
+}
+
+function toggleInfoTerbaruExpanded() {
+    infoTerbaruExpanded = !infoTerbaruExpanded;
+    displayInfoTerbaruAnnouncements(infoTerbaruAllAnnouncements);
+}
+
+function openInfoTerbaruModal(index) {
+    const announcement = infoTerbaruAllAnnouncements[index];
+    if (!announcement) return;
+
+    const modal = document.getElementById('info-terbaru-modal');
+    const titleEl = document.getElementById('info-terbaru-modal-title');
+    const metaEl = document.getElementById('info-terbaru-modal-meta');
+    const bodyEl = document.getElementById('info-terbaru-modal-body');
+    const imageEl = document.getElementById('info-terbaru-modal-image');
+    if (!modal || !titleEl || !metaEl || !bodyEl || !imageEl) return;
+
+    const contentHtml = announcement.formatted_content && announcement.content_type === 'markdown'
+        ? announcement.formatted_content
+        : renderContent(announcement.message, announcement.content_type || 'plain');
+
+    titleEl.textContent = announcement.title || 'Info terbaru';
+    metaEl.textContent = `${announcement.created_by_name || 'Admin'} • ${formatDate(announcement.published_at || announcement.created_at)}`;
+    bodyEl.innerHTML = contentHtml || '';
+
+    if (announcement.image_url) {
+        imageEl.src = announcement.image_url;
+        imageEl.style.display = 'block';
+    } else {
+        imageEl.style.display = 'none';
+    }
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeInfoTerbaruModal(event) {
+    if (event && event.target && event.target.id !== 'info-terbaru-modal') return;
+    const modal = document.getElementById('info-terbaru-modal');
+    if (!modal) return;
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 function renderAnnouncementCard(announcement) {
@@ -476,5 +633,14 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        closeInfoTerbaruModal();
+    }
+});
+
 // Export for pull-to-refresh
 window.loadAnnouncements = loadAnnouncements;
+window.openInfoTerbaruModal = openInfoTerbaruModal;
+window.closeInfoTerbaruModal = closeInfoTerbaruModal;
+window.toggleInfoTerbaruExpanded = toggleInfoTerbaruExpanded;
