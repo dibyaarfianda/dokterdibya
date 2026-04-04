@@ -394,6 +394,20 @@ function setupInfoTerbaruScroll() {
             prevIndex = currentIndex;
             infoTerbaruCurrentIndex = currentIndex;
         }
+
+        // Number wipe: at last item, slide up and fade out
+        var numberEl = pinned.querySelector('.info-terbaru-number');
+        if (numberEl) {
+            var lastSegmentStart = 1 - segmentSize;
+            if (progress >= lastSegmentStart) {
+                var wipeProgress = (progress - lastSegmentStart) / segmentSize;
+                numberEl.style.opacity = 1 - wipeProgress;
+                numberEl.style.transform = 'translateY(' + (-50 - wipeProgress * 30) + '%)';
+            } else {
+                numberEl.style.opacity = 1;
+                numberEl.style.transform = 'translateY(-50%)';
+            }
+        }
     };
 
     window.addEventListener('scroll', infoTerbaruScrollHandler, { passive: true });
