@@ -287,21 +287,14 @@ function displayInfoTerbaruAnnouncements(announcements) {
     const totalSlides = items.length + 1; // items + CTA
     const containerHeight = 60 * totalSlides + 100; // vh units (60vh per item + 100vh base)
 
-    // Build digit strip: 1, 2, 3, ... N (one per slide including CTA)
-    const digitStripHtml = Array.from({length: totalSlides}, (_, i) =>
-        `<span>${i + 1}</span>`
-    ).join('');
-
     container.innerHTML = `
         <div class="info-terbaru-bg" id="info-terbaru-bg"></div>
         <div class="info-terbaru-pinned" id="info-terbaru-pinned" style="height: ${containerHeight}vh;">
             <div class="info-terbaru-inner">
                 <div class="info-terbaru-number">
                     <span class="info-terbaru-num-fixed">0</span>
-                    <span class="info-terbaru-num-slot" id="info-terbaru-num-slot">
-                        <span class="info-terbaru-num-strip" id="info-terbaru-num-strip">
-                            ${digitStripHtml}
-                        </span>
+                    <span class="info-terbaru-num-slot">
+                        <span class="info-terbaru-num-digit" id="info-terbaru-digit">1</span>
                     </span>
                 </div>
                 <div class="info-terbaru-scroll-content" id="info-terbaru-scroll-content">
@@ -326,11 +319,25 @@ function truncateText(text, maxLen) {
 }
 
 function animateInfoTerbaruDigit(index) {
-    // Odometer-style: shift strip UP by measured pixel height
-    const strip = document.getElementById('info-terbaru-num-strip');
-    if (!strip || !strip.children.length) return;
-    const digitHeight = strip.children[0].offsetHeight;
-    strip.style.transform = 'translateY(-' + (index * digitHeight) + 'px)';
+    var digit = document.getElementById('info-terbaru-digit');
+    if (!digit) return;
+    var newValue = String(index + 1);
+    if (digit.textContent === newValue) return;
+
+    // Slide old digit out (up)
+    digit.classList.remove('slide-in');
+    digit.classList.add('slide-out');
+
+    setTimeout(function() {
+        // Change text and slide new digit in (from below)
+        digit.textContent = newValue;
+        digit.classList.remove('slide-out');
+        digit.classList.add('slide-in');
+
+        setTimeout(function() {
+            digit.classList.remove('slide-in');
+        }, 350);
+    }, 300);
 }
 
 function setupInfoTerbaruScroll() {
