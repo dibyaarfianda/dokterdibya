@@ -285,7 +285,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
     `;
 
     const totalSlides = items.length + 1; // items + CTA
-    const containerHeight = 100 * (totalSlides + 1); // vh units
+    const containerHeight = 60 * totalSlides + 100; // vh units (60vh per item + 100vh base)
 
     // Build digit strip: 1, 2, 3, ... N (one per slide including CTA)
     const digitStripHtml = Array.from({length: totalSlides}, (_, i) =>
