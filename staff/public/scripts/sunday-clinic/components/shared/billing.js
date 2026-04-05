@@ -1344,7 +1344,8 @@ export default {
 
                     // 5. Mark as Paid button - deducts stock from inventory
                     const markPaidBtn = document.getElementById('btn-mark-paid');
-                    if (markPaidBtn) {
+                    if (markPaidBtn && markPaidBtn.dataset.bound !== '1') {
+                        markPaidBtn.dataset.bound = '1';
                         markPaidBtn.addEventListener('click', async function() {
 
                             try {
