@@ -1755,6 +1755,8 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
 router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
     const { payment_method, notes } = req.body;
+    let lockName = null;
+    let lockAcquired = false;
 
     try {
         // Get current billing
@@ -1770,17 +1772,41 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
             });
         }
 
-        if (billing.status !== 'confirmed') {
-            return res.status(400).json({
+        // Prevent concurrent duplicate processing for the same billing.
+        lockName = `sunday_mark_paid_${billing.id}`;
+        const [[lockRow]] = await db.query('SELECT GET_LOCK(?, 5) AS acquired', [lockName]);
+        lockAcquired = Number(lockRow?.acquired || 0) === 1;
+        if (!lockAcquired) {
+            return res.status(409).json({
                 success: false,
-                message: 'Billing harus dikonfirmasi terlebih dahulu sebelum pembayaran'
+                message: 'Billing sedang diproses oleh request lain. Silakan coba lagi.'
             });
         }
 
-        if (billing.status === 'paid') {
+        // Re-check billing after lock to avoid stale state race.
+        const [[billingLocked]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billingLocked) {
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan'
+            });
+        }
+
+        if (billingLocked.status === 'paid') {
             return res.status(400).json({
                 success: false,
                 message: 'Billing sudah dibayar'
+            });
+        }
+
+        if (billingLocked.status !== 'confirmed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing harus dikonfirmasi terlebih dahulu sebelum pembayaran'
             });
         }
 
@@ -1793,7 +1819,7 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
                     CAST(JSON_EXTRACT(bi.item_data, '$.obatId') AS UNSIGNED) as obat_id
              FROM sunday_clinic_billing_items bi
              WHERE bi.billing_id = ? AND bi.item_type = 'obat'`,
-            [billing.id]
+            [billingLocked.id]
         );
 
         const invalidObatItems = obatItemsRaw.filter(item => !item.obat_id);
@@ -1820,18 +1846,33 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
                 obatIds
             );
 
+            const [existingDeductionRows] = await db.query(
+                `SELECT obat_id, ABS(SUM(quantity)) AS deducted_qty
+                 FROM stock_movements
+                 WHERE reference_type = 'sunday_clinic_billing'
+                   AND reference_id = ?
+                   AND movement_type = 'sale'
+                   AND obat_id IN (${placeholders})
+                 GROUP BY obat_id`,
+                [billingLocked.id, ...obatIds]
+            );
+            const deductedMap = new Map(existingDeductionRows.map(row => [Number(row.obat_id), Number(row.deducted_qty || 0)]));
+
             const stockMap = new Map(stocks.map(row => [Number(row.id), row]));
             const insufficient = [];
 
             for (const obatId of obatIds) {
                 const requiredQty = requiredByObatId.get(obatId) || 0;
+                const alreadyDeducted = deductedMap.get(obatId) || 0;
+                const remainingRequired = Math.max(0, requiredQty - alreadyDeducted);
                 const row = stockMap.get(obatId);
                 const available = row ? Number(row.stock) : 0;
-                if (!row || available < requiredQty) {
+                if (!row || available < remainingRequired) {
                     insufficient.push({
                         obatId,
                         name: row?.name || `Obat ID ${obatId}`,
-                        required: requiredQty,
+                        required: remainingRequired,
+                        alreadyDeducted,
                         available
                     });
                 }
@@ -1850,18 +1891,44 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
         // If any deduction fails, abort and keep billing in confirmed status.
         for (const item of obatItemsRaw) {
             try {
+                const requiredQty = parseInt(item.quantity, 10) || 0;
+
+                const [[existingDeduction]] = await db.query(
+                    `SELECT ABS(COALESCE(SUM(quantity), 0)) AS deducted_qty
+                     FROM stock_movements
+                     WHERE reference_type = 'sunday_clinic_billing'
+                       AND reference_id = ?
+                       AND movement_type = 'sale'
+                       AND obat_id = ?`,
+                    [billingLocked.id, Number(item.obat_id)]
+                );
+
+                const alreadyDeducted = Number(existingDeduction?.deducted_qty || 0);
+                const remainingQty = Math.max(0, requiredQty - alreadyDeducted);
+
+                if (remainingQty <= 0) {
+                    logger.info(`Skip stock deduction for ${item.item_name} because it is already fully deducted`, {
+                        mrId: normalizedMrId,
+                        billingId: billingLocked.id,
+                        obatId: Number(item.obat_id),
+                        requiredQty,
+                        alreadyDeducted
+                    });
+                    continue;
+                }
+
                 await InventoryService.deductStockFIFO(
                     Number(item.obat_id),
-                    parseInt(item.quantity, 10),
+                    remainingQty,
                     'sunday_clinic_billing',
-                    billing.id,
+                    billingLocked.id,
                     req.user?.name || 'system'
                 );
-                logger.info(`Stock deducted for ${item.item_name}: ${item.quantity} units`);
+                logger.info(`Stock deducted for ${item.item_name}: ${remainingQty} units`);
             } catch (stockError) {
                 logger.error(`Stock deduction failed for obat ${item.obat_id} (${item.item_name})`, {
                     mrId: normalizedMrId,
-                    billingId: billing.id,
+                    billingId: billingLocked.id,
                     error: stockError.message
                 });
                 return res.status(500).json({
@@ -1922,7 +1989,7 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
 
         // Log activity
         await activityLogger.logFromRequest(req, activityLogger.ACTIONS.FINALIZE_VISIT,
-            `Marked billing paid for ${patientName} (MR: ${normalizedMrId}), Total: Rp ${billing.total}`);
+            `Marked billing paid for ${patientName} (MR: ${normalizedMrId}), Total: Rp ${billingLocked.total}`);
 
         res.json({
             success: true,
@@ -1932,6 +1999,18 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
     } catch (error) {
         logger.error('Failed to mark billing as paid', { error: error.message });
         next(error);
+    } finally {
+        if (lockAcquired && lockName) {
+            try {
+                await db.query('SELECT RELEASE_LOCK(?)', [lockName]);
+            } catch (releaseError) {
+                logger.error('Failed to release mark-paid lock', {
+                    mrId: normalizedMrId,
+                    lockName,
+                    error: releaseError.message
+                });
+            }
+        }
     }
 });
 
