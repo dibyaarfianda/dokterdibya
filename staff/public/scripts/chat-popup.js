@@ -73,6 +73,34 @@
     ? 'http://localhost:3001'
     : window.location.origin.replace(/\/$/, '');
 
+  async function getChatToken() {
+    try {
+      if (window.getIdToken && typeof window.getIdToken === 'function') {
+        const token = await window.getIdToken();
+        if (token) return token;
+      }
+    } catch (error) {
+      console.warn('[ChatPopup] getIdToken failed:', error?.message || error);
+    }
+
+    try {
+      if (window.getToken && typeof window.getToken === 'function') {
+        const token = await window.getToken();
+        if (token) return token;
+      }
+    } catch (error) {
+      console.warn('[ChatPopup] getToken failed:', error?.message || error);
+    }
+
+    return localStorage.getItem('vps_auth_token') ||
+           sessionStorage.getItem('vps_auth_token') ||
+           localStorage.getItem('token') ||
+           sessionStorage.getItem('token') ||
+           localStorage.getItem('idToken') ||
+           sessionStorage.getItem('idToken') ||
+           null;
+  }
+
   // ---------- HTML ----------
   const chatHTML = `
     <div id="chat-popup-container">
@@ -377,11 +405,15 @@
             console.log('[ChatPopup] User after wait:', user);
         }
 
-        // Check if user has chat permission (all roles have permission by default)
-        if (!user || !user.role) {
+        // Check if user exists. Role fallback is enough for chat features.
+        if (!user) {
             console.warn('[ChatPopup] Chat features limited: User not authenticated', user);
             // Chat toggle still works, but no real-time features
             return;
+        }
+
+        if (!user.role) {
+          user.role = 'staff';
         }
 
         // All users have chat access - enable full features
@@ -576,7 +608,10 @@
 
       // Send to backend
       try {
-        const token = await window.getIdToken();
+        const token = await getChatToken();
+        if (!token) {
+          throw new Error('Token auth tidak ditemukan');
+        }
         const payload = {
             message,
             user_id: curUser.id || curUser.uid,
@@ -609,7 +644,10 @@
     async function loadChatHistory() {
       isHistoryLoading = true;
             try {
-                const token = await window.getIdToken();
+                const token = await getChatToken();
+                if (!token) {
+                  throw new Error('Token auth tidak ditemukan');
+                }
                 const response = await fetch(`${API_ORIGIN}/api/chat/messages`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
