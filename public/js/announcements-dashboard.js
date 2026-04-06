@@ -359,9 +359,7 @@ function setupInfoTerbaruScroll() {
     const animOffsetPx = 120;
     const leaveDurationMs = 380;
     const enterDurationMs = 420;
-    const fallbackDurationMs = 460;
-    const leaveEasing = 'cubic-bezier(0.4, 0, 1, 1)';
-    const enterEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const transitionDurationMs = Math.max(leaveDurationMs, enterDurationMs) + 40;
     const stickyLineRatio = 0.34;
     const nextTitleTriggerOffsetPx = 90;
     let currentIndex = 0;
@@ -406,43 +404,13 @@ function setupInfoTerbaruScroll() {
         const leaveOffset = goingDown ? -animOffsetPx : animOffsetPx;
         const enterOffset = goingDown ? animOffsetPx : -animOffsetPx;
 
-        let transitionDone;
-
-        // Prefer WAAPI for deterministic animation; fallback to CSS classes.
-        if (typeof incoming.animate === 'function') {
-            incoming.style.transform = `translateY(${enterOffset}px)`;
-            incoming.style.opacity = '0';
-
-            const animations = [];
-            if (currentEl) {
-                animations.push(currentEl.animate(
-                    [
-                        { transform: 'translateY(0)', opacity: 1 },
-                        { transform: `translateY(${leaveOffset}px)`, opacity: 0 }
-                    ],
-                    { duration: leaveDurationMs, easing: leaveEasing, fill: 'forwards' }
-                ).finished);
-            }
-
-            animations.push(incoming.animate(
-                [
-                    { transform: `translateY(${enterOffset}px)`, opacity: 0 },
-                    { transform: 'translateY(0)', opacity: 1 }
-                ],
-                { duration: enterDurationMs, easing: enterEasing, fill: 'forwards' }
-            ).finished);
-
-            transitionDone = Promise.allSettled(animations);
-        } else {
-            if (currentEl) {
-                currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
-            }
-            incoming.classList.add(goingDown ? 'from-below' : 'from-above');
-            transitionDone = new Promise(resolve => setTimeout(resolve, fallbackDurationMs));
+        if (currentEl) {
+            currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
         }
+        incoming.classList.add(goingDown ? 'from-below' : 'from-above');
 
-        // Cleanup: promote incoming → current
-        transitionDone.finally(() => {
+        // Cleanup: promote incoming -> current using deterministic timeout.
+        setTimeout(() => {
             if (currentEl) currentEl.remove();
             incoming.className = 'digit-value-current';
             isAnimating = false;
@@ -456,7 +424,7 @@ function setupInfoTerbaruScroll() {
 
             pendingTarget = null;
             updateByViewport();
-        });
+        }, transitionDurationMs);
     }
 
     function getTargetIndexByViewport(lineY) {
