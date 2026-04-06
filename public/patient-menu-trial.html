@@ -1551,12 +1551,21 @@
         }
 
         /* ========== WELCOME PINNED SCROLL ========== */
+        #welcome-bg-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000000;
+            opacity: 0;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
         .welcome-pinned {
             position: relative;
             height: 1200px;
             margin: 0 calc(-50vw + 50%);
-            z-index: 2;
-            background: var(--bg-page);
+            z-index: 1001;
+            background: transparent;
         }
 
         .welcome-pinned-inner {
@@ -1570,24 +1579,7 @@
             padding-left: 100px;
             padding-right: 100px;
             box-sizing: border-box;
-            isolation: isolate;
             overflow: hidden;
-            background-color: rgba(0, 0, 0, 0);
-            transition: background-color 0.05s ease-out;
-        }
-
-        .welcome-pinned-inner::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            opacity: var(--welcome-bg-opacity, 0);
-            background:
-                radial-gradient(circle at 14% 22%, rgba(80, 80, 90, 0.28) 0%, rgba(80, 80, 90, 0) 48%),
-                radial-gradient(circle at 86% 78%, rgba(50, 50, 60, 0.22) 0%, rgba(50, 50, 60, 0) 52%),
-                linear-gradient(135deg, rgba(0, 0, 0, 0.92) 0%, rgba(20, 20, 25, 0.82) 45%, rgba(0, 0, 0, 0.94) 100%);
-            transition: opacity 0.05s ease-out;
         }
 
         .welcome-window {
@@ -2932,6 +2924,9 @@
 
     <!-- Main Content -->
     <main class="screen" id="main-content">
+
+        <!-- Full-screen black overlay for Welcome section scroll effect -->
+        <div id="welcome-bg-overlay" aria-hidden="true"></div>
 
         <!-- Grid Background -->
         <div class="grid-bg" aria-hidden="true"></div>
@@ -4698,7 +4693,7 @@
 
         // ==================== BACKGROUND FADE ON SCROLL (Hero → Selamat Datang → Fade Out) ====================
         (function() {
-            var welcomePinnedInner = document.querySelector('.welcome-pinned-inner');
+            var welcomePinnedInner = document.querySelector('.welcome-pinned-inner'); // kept for reference
             var heroWelcome = document.querySelector('.hero-welcome');
             var welcomePinned = document.getElementById('welcome-pinned');
             if (!welcomePinnedInner || !heroWelcome || !welcomePinned) return;
@@ -4730,9 +4725,9 @@
                     opacity = 0;
                 }
 
-                // Apply both tint and decorative special background during welcome block.
-                welcomePinnedInner.style.backgroundColor = 'rgba(0, 0, 0, ' + (opacity * 0.75) + ')';
-                welcomePinnedInner.style.setProperty('--welcome-bg-opacity', opacity.toFixed(3));
+                // Apply full-screen black overlay across entire viewport.
+                var overlay = document.getElementById('welcome-bg-overlay');
+                if (overlay) overlay.style.opacity = (opacity * 0.88).toFixed(3);
             }
 
             window.addEventListener('scroll', updateBackgroundOpacity, { passive: true });
