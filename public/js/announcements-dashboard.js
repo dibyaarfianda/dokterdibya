@@ -266,7 +266,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
 
     // Build item HTML
     const itemsHtml = items.map((item, i) => {
-        const title = escapeHtml(truncateText(stripEmoji(item.title || 'Info terbaru'), 80));
+        const title = escapeHtml(getFirstThreeWords(stripEmoji(item.title || 'Info terbaru')));
         const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
         return `
             <div class="info-terbaru-item" data-index="${i}" onclick="openInfoTerbaruModal(${i})">
@@ -311,6 +311,11 @@ function displayInfoTerbaruAnnouncements(announcements) {
 
 function stripEmoji(text) {
     return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function getFirstThreeWords(text) {
+    const words = text.trim().split(/\s+/);
+    return words.slice(0, 3).join(' ');
 }
 
 function truncateText(text, maxLen) {
