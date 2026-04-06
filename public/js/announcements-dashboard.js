@@ -360,6 +360,7 @@ function setupInfoTerbaruScroll() {
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
+    const firstAlignDownPx = 42; // fine tune: push 01 down to align with first title
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
     let currentIndex = 0;
     let isAnimating = false;
@@ -373,9 +374,9 @@ function setupInfoTerbaruScroll() {
         const firstTitle = allItems[0]?.querySelector('h4');
         if (firstTitle) {
             const firstTitleTopDoc = firstTitle.getBoundingClientRect().top + window.scrollY;
-            stickyTopPx = Math.max(0, Math.round(firstTitleTopDoc - wrapperTopDoc));
+            stickyTopPx = Math.max(0, Math.round(firstTitleTopDoc - wrapperTopDoc + firstAlignDownPx));
         } else {
-            stickyTopPx = Math.round(fallbackStickyTopPx);
+            stickyTopPx = Math.round(fallbackStickyTopPx + firstAlignDownPx);
         }
 
         const lastItem = allItems[allItems.length - 1];
