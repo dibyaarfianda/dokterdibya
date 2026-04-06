@@ -361,7 +361,7 @@ function setupInfoTerbaruScroll() {
     const fallbackDurationMs = 1120;
     const leaveEasing = 'cubic-bezier(0.12, 0.92, 0.2, 1)';
     const enterEasing = 'cubic-bezier(0.1, 0.86, 0.2, 1)';
-    const scrollDamping = 0.16; // lower = heavier/laggier, higher = snappier
+    const scrollDamping = 0.10; // lower = heavier/laggier, higher = snappier
     const triggerDelayPx = -200; // negative = trigger before midpoint reaches sticky line (earlier transition)
     const firstAlignDownPx = 100; // keep slight nudge only; avoid sticky number being too low
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
