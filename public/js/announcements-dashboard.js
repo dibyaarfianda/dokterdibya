@@ -355,7 +355,7 @@ function setupInfoTerbaruScroll() {
     if (!digitTrack) return;
 
     const stickyTopRatio = 0.30; // must match CSS top: 30vh
-    const animOffsetPx = 98;
+    const animOffsetPx = 188;
     const leaveDurationMs = 460;
     const enterDurationMs = 620;
     const fallbackDurationMs = 650;
