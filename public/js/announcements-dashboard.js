@@ -399,36 +399,24 @@ function setupInfoTerbaruScroll() {
         currentIndex = newIndex;
         isAnimating = true;
 
-        const vertPx = 30;
-
         // Build incoming digit — starts off-screen
         const incoming = document.createElement('span');
         incoming.className = 'digit-value-incoming';
         incoming.textContent = String(newIndex + 1);
-        incoming.style.cssText = `transform: translateY(${goingDown ? vertPx : -vertPx}px); opacity: 0;`;
         valueTrack.appendChild(incoming);
 
         // Slide-out current
         if (currentEl) {
-            currentEl.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
-            currentEl.style.transform  = `translateY(${goingDown ? -vertPx : vertPx}px)`;
-            currentEl.style.opacity    = '0';
+            currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
         }
 
-        // Slide-in incoming (double rAF so transition state is committed first)
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                incoming.style.transition = 'transform 0.5s ease-in, opacity 0.5s ease-in';
-                incoming.style.transform  = 'translateY(0)';
-                incoming.style.opacity    = '1';
-            });
-        });
+        // Slide-in incoming with ease-in from opposite direction
+        incoming.classList.add(goingDown ? 'from-below' : 'from-above');
 
         // Cleanup: promote incoming → current
         animTimer = setTimeout(() => {
             if (currentEl) currentEl.remove();
             incoming.className = 'digit-value-current';
-            incoming.style.cssText = '';
             animTimer = null;
             isAnimating = false;
 

@@ -833,6 +833,42 @@
             white-space: nowrap;
         }
 
+        .digit-value-current.is-leaving-up {
+            animation: digitLeaveUp 0.42s ease forwards;
+        }
+
+        .digit-value-current.is-leaving-down {
+            animation: digitLeaveDown 0.42s ease forwards;
+        }
+
+        .digit-value-incoming.from-below {
+            animation: digitEnterFromBelow 0.52s ease-in forwards;
+        }
+
+        .digit-value-incoming.from-above {
+            animation: digitEnterFromAbove 0.52s ease-in forwards;
+        }
+
+        @keyframes digitLeaveUp {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-30px); opacity: 0; }
+        }
+
+        @keyframes digitLeaveDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(30px); opacity: 0; }
+        }
+
+        @keyframes digitEnterFromBelow {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes digitEnterFromAbove {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         /* Final outro: make prefix 0 move together with the last digit */
         .digit-track.is-final-wipe .digit-prefix,
         .digit-track.is-final-wipe .digit-value-current,
