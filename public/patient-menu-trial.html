@@ -726,73 +726,34 @@
             font-family: var(--font-main) !important;
         }
 
-        /* === ClearPath Scroll-Driven INFO TERBARU === */
-        .info-terbaru-section {
-            position: relative;
-            background: var(--bg-page);
+        /* === INFO TERBARU — ClearPath sticky number per item === */
+        .info-terbaru-wrapper {
             display: flex;
-            align-items: stretch;
+            flex-direction: column;
         }
 
-        /* Left column: items scroll naturally in normal page flow */
-        .info-terbaru-items {
-            flex: 0 0 52%;
-            max-width: 52%;
-            padding-left: 72px;
-        }
-
-        /* Right column: full height so sticky has room to work */
-        .info-terbaru-number-col {
-            flex: 1;
-            position: relative;
-        }
-
-        /* The number sticks within right column */
-        .info-terbaru-number {
-            position: sticky;
-            top: 22vh;
-            font-family: 'Inter', sans-serif;
-            font-size: clamp(8rem, 15vw, 20rem);
-            font-weight: 500;
-            line-height: 1.1;
-            color: rgb(59, 130, 246);
-            letter-spacing: -0.04em;
-            pointer-events: none;
-            user-select: none;
-            display: flex;
-            align-items: baseline;
-        }
-
-        .info-terbaru-num-fixed {
-            display: inline-block;
-        }
-
-        .info-terbaru-num-slot {
-            display: inline-block;
-            overflow: hidden;
-            position: relative;
-            line-height: 1;
-        }
-
-        .info-terbaru-num-digit {
-            display: block;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
-        }
-
-        /* Each item block — full viewport height */
+        /* Each item is a flex ROW: content left, number right */
         .info-terbaru-item {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
             min-height: 100vh;
-            padding-top: 25vh;
-            padding-bottom: 0;
-            padding-right: 40px;
+            padding: 0 40px 0 72px;
             box-sizing: border-box;
+        }
+
+        /* LEFT: title + description scroll naturally */
+        .info-terbaru-content {
+            flex: 1;
+            padding-top: 30vh;
+            padding-right: 60px;
+            max-width: 520px;
             cursor: pointer;
         }
 
         .info-terbaru-item h4 {
             font-size: 44px;
             font-weight: 600;
-            font-style: normal;
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             color: #0a0a0a;
             line-height: 1.1;
@@ -805,37 +766,50 @@
             color: var(--text-body);
             line-height: 1.75;
             margin: 0;
-            max-width: 440px;
         }
 
-        /* Last item CTA */
+        /* RIGHT: number — sticky per item, stays in viewport during that item */
+        .info-terbaru-num {
+            position: sticky;
+            top: 28vh;
+            align-self: flex-start;  /* REQUIRED for sticky in flex */
+            height: fit-content;     /* REQUIRED for sticky in flex */
+            flex-shrink: 0;
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(8rem, 15vw, 18rem);
+            font-weight: 500;
+            line-height: 1;
+            color: rgb(59, 130, 246);
+            letter-spacing: -0.04em;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* CTA item */
+        .info-terbaru-item-cta .info-terbaru-content {
+            cursor: pointer;
+        }
+
         .info-terbaru-item-cta h4 {
             font-size: 36px;
         }
 
-        /* Responsive */
+        /* Mobile: hide number, stack vertically */
         @media (max-width: 768px) {
-            .info-terbaru-section {
+            .info-terbaru-item {
                 flex-direction: column;
+                min-height: auto;
+                padding: 48px 24px;
             }
 
-            .info-terbaru-items {
-                flex: unset;
-                max-width: 100%;
-                width: 100%;
-                padding-left: 24px;
-                padding-right: 0;
-            }
-
-            .info-terbaru-number-col {
+            .info-terbaru-num {
                 display: none;
             }
 
-            .info-terbaru-item {
-                min-height: auto;
-                padding-top: 40px;
-                padding-bottom: 48px;
-                padding-right: 24px;
+            .info-terbaru-content {
+                padding-top: 0;
+                padding-right: 0;
+                max-width: 100%;
             }
 
             .info-terbaru-item h4 {
