@@ -348,33 +348,56 @@ function setupInfoTerbaruScroll() {
     const wrapper = document.querySelector('.info-terbaru-wrapper');
     if (!wrapper) return;
 
-    // Numbered scroll steps only track real announcement rows, not CTA row.
-    const allItems = Array.from(wrapper.querySelectorAll('.info-terbaru-item[data-index]'));
+    const allItems = Array.from(wrapper.querySelectorAll('.info-terbaru-item'));
     if (allItems.length < 2) return;
 
     const digitTrack = wrapper.querySelector('.digit-track');
     const numSticky = wrapper.querySelector('.info-terbaru-num-sticky');
     if (!digitTrack || !numSticky) return;
 
-    const animOffsetPx = 120;
-    const leaveDurationMs = 380;
-    const enterDurationMs = 420;
-    const transitionDurationMs = Math.max(leaveDurationMs, enterDurationMs) + 40;
-    const stickyLineRatio = 0.34;
-    const nextTitleTriggerOffsetPx = 90;
+    const animOffsetPx = 388;
+    const leaveDurationMs = 980;
+    const enterDurationMs = 980;
+    const fallbackDurationMs = 1120;
+    const leaveEasing = 'cubic-bezier(0.12, 0.92, 0.2, 1)';
+    const enterEasing = 'cubic-bezier(0.1, 0.86, 0.2, 1)';
+    const scrollDamping = 0.10; // lower = heavier/laggier, higher = snappier
+    const triggerDelayPx = -200; // negative = trigger before midpoint reaches sticky line (earlier transition)
+    const firstAlignDownPx = 100; // keep slight nudge only; avoid sticky number being too low
+    const fallbackStickyTopPx = 0.30 * window.innerHeight;
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
-    let stickyTopPx = Math.round(window.innerHeight * stickyLineRatio);
-
-    function getLineY() {
-        return stickyTopPx;
-    }
+    let stickyTopPx = fallbackStickyTopPx;
+    let targetShiftPx = 0;
+    let smoothedShiftPx = 0;
 
     function recalcAlignmentMetrics() {
-        stickyTopPx = Math.round(window.innerHeight * stickyLineRatio);
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const wrapperTopDoc = wrapperRect.top + window.scrollY;
+
+        const firstTitle = allItems[0]?.querySelector('h4');
+        if (firstTitle) {
+            const firstTitleTopDoc = firstTitle.getBoundingClientRect().top + window.scrollY;
+            stickyTopPx = Math.max(0, Math.round(firstTitleTopDoc - wrapperTopDoc + firstAlignDownPx));
+        } else {
+            stickyTopPx = Math.round(fallbackStickyTopPx + firstAlignDownPx);
+        }
+
+        const lastItem = allItems[allItems.length - 1];
+        const lastTitle = lastItem?.querySelector('h4');
+        const lastDesc = lastItem?.querySelector('p');
+        const lastBottomDoc = lastDesc
+            ? (lastDesc.getBoundingClientRect().bottom + window.scrollY)
+            : (lastTitle
+                ? (lastTitle.getBoundingClientRect().bottom + window.scrollY)
+                : (wrapperTopDoc + wrapperRect.height));
 
         wrapper.style.setProperty('--info-num-top', `${stickyTopPx}px`);
+    }
+
+    function getStickyLineY() {
+        return stickyTopPx;
     }
 
     function animateDigit(newIndex) {
@@ -404,13 +427,43 @@ function setupInfoTerbaruScroll() {
         const leaveOffset = goingDown ? -animOffsetPx : animOffsetPx;
         const enterOffset = goingDown ? animOffsetPx : -animOffsetPx;
 
-        if (currentEl) {
-            currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
-        }
-        incoming.classList.add(goingDown ? 'from-below' : 'from-above');
+        let transitionDone;
 
-        // Cleanup: promote incoming -> current using deterministic timeout.
-        setTimeout(() => {
+        // Prefer WAAPI for deterministic animation; fallback to CSS classes.
+        if (typeof incoming.animate === 'function') {
+            incoming.style.transform = `translateY(${enterOffset}px)`;
+            incoming.style.opacity = '0';
+
+            const animations = [];
+            if (currentEl) {
+                animations.push(currentEl.animate(
+                    [
+                        { transform: 'translateY(0)', opacity: 1 },
+                        { transform: `translateY(${leaveOffset}px)`, opacity: 0 }
+                    ],
+                    { duration: leaveDurationMs, easing: leaveEasing, fill: 'forwards' }
+                ).finished);
+            }
+
+            animations.push(incoming.animate(
+                [
+                    { transform: `translateY(${enterOffset}px)`, opacity: 0 },
+                    { transform: 'translateY(0)', opacity: 1 }
+                ],
+                { duration: enterDurationMs, easing: enterEasing, fill: 'forwards' }
+            ).finished);
+
+            transitionDone = Promise.allSettled(animations);
+        } else {
+            if (currentEl) {
+                currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
+            }
+            incoming.classList.add(goingDown ? 'from-below' : 'from-above');
+            transitionDone = new Promise(resolve => setTimeout(resolve, fallbackDurationMs));
+        }
+
+        // Cleanup: promote incoming → current
+        transitionDone.finally(() => {
             if (currentEl) currentEl.remove();
             incoming.className = 'digit-value-current';
             isAnimating = false;
@@ -423,33 +476,48 @@ function setupInfoTerbaruScroll() {
             }
 
             pendingTarget = null;
+            // Re-sync to current scroll position after transition completes.
             updateByViewport();
-        }, transitionDurationMs);
+        });
     }
 
-    function getTargetIndexByViewport(lineY) {
+    function getTargetIndexByViewport(stickyLineY) {
         let target = 0;
-        for (let i = 1; i < allItems.length; i++) {
-            const nextTitle = allItems[i].querySelector('h4') || allItems[i];
-            const nextTitleY = nextTitle.getBoundingClientRect().top;
-
-            // Switch to next number a bit before title hits sticky line.
-            if (lineY >= (nextTitleY - nextTitleTriggerOffsetPx)) {
-                target = i;
-            }
+        for (let i = 0; i < allItems.length - 1; i++) {
+            const p1 = allItems[i].querySelector('p');
+            const h4_2 = allItems[i + 1].querySelector('h4');
+            if (!p1 || !h4_2) continue;
+            const midGapY = (p1.getBoundingClientRect().bottom + h4_2.getBoundingClientRect().top) / 2;
+            if (stickyLineY >= (midGapY + triggerDelayPx)) target = i + 1;
         }
         return target;
     }
 
     function updateByViewport() {
-        const target = getTargetIndexByViewport(getLineY());
-        if (target !== currentIndex) {
-            animateDigit(target);
+        const stickyLineY = getStickyLineY();
+        const target = getTargetIndexByViewport(stickyLineY);
+        if (target !== currentIndex) animateDigit(target);
+
+        const lastIndex = allItems.length - 1;
+        if (target === lastIndex) {
+            const lastItem = allItems[lastIndex];
+            const lastTitle = lastItem?.querySelector('h4');
+            const titleTopY = lastTitle
+                ? lastTitle.getBoundingClientRect().top
+                : lastItem.getBoundingClientRect().top;
+            // Track h4 of last item: number moves when h4 scrolls above sticky line
+            targetShiftPx = Math.min(0, Math.round(titleTopY - stickyTopPx));
+        } else {
+            targetShiftPx = 0;
         }
 
-        numSticky.style.transform = 'translateY(0)';
+        smoothedShiftPx += (targetShiftPx - smoothedShiftPx) * scrollDamping;
+        if (Math.abs(targetShiftPx - smoothedShiftPx) < 0.5) {
+            smoothedShiftPx = targetShiftPx;
+        }
+        numSticky.style.transform = `translateY(${Math.round(smoothedShiftPx)}px)`;
 
-        return 0;
+        return Math.abs(targetShiftPx - smoothedShiftPx);
     }
 
     let ticking = false;
