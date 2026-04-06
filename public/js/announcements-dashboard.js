@@ -360,7 +360,7 @@ function setupInfoTerbaruScroll() {
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
-    const firstAlignDownPx = 42; // fine tune: push 01 down to align with first title
+    const firstAlignDownPx = 132; // stronger nudge so 01 aligns with first title
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
     let currentIndex = 0;
     let isAnimating = false;
