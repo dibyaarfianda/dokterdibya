@@ -729,32 +729,30 @@
         /* === ClearPath Scroll-Driven INFO TERBARU === */
         .info-terbaru-section {
             position: relative;
-            margin: 0 calc(-50vw + 50%);
             background: var(--bg-page);
             display: flex;
-            align-items: flex-start;
+            align-items: stretch;
         }
 
-        /* Left column: items scroll normally */
+        /* Left column: items scroll naturally in normal page flow */
         .info-terbaru-items {
             flex: 0 0 52%;
             max-width: 52%;
             padding-left: 72px;
         }
 
-        /* Right column: sticky number */
+        /* Right column: full height so sticky has room to work */
         .info-terbaru-number-col {
-            flex: 0 0 48%;
-            max-width: 48%;
+            flex: 1;
             position: relative;
         }
 
-        /* The number itself sticks */
+        /* The number sticks within right column */
         .info-terbaru-number {
             position: sticky;
             top: 22vh;
             font-family: 'Inter', sans-serif;
-            font-size: clamp(10rem, 17vw, 22rem);
+            font-size: clamp(8rem, 15vw, 20rem);
             font-weight: 500;
             line-height: 1.1;
             color: rgb(59, 130, 246);
