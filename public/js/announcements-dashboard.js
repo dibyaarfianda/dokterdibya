@@ -352,20 +352,51 @@ function setupInfoTerbaruScroll() {
     if (allItems.length < 2) return;
 
     const digitTrack = wrapper.querySelector('.digit-track');
-    if (!digitTrack) return;
+    const numSticky = wrapper.querySelector('.info-terbaru-num-sticky');
+    if (!digitTrack || !numSticky) return;
 
     const animOffsetPx = 388;
     const leaveDurationMs = 560;
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
-    const stickyTopRatio = 0.30; // must match CSS top: 30vh
+    const fallbackStickyTopPx = 0.30 * window.innerHeight;
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
+    let stickyTopPx = fallbackStickyTopPx;
+    let endShiftPx = 0;
+    let endAlignActive = false;
+
+    function recalcAlignmentMetrics() {
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const wrapperTopDoc = wrapperRect.top + window.scrollY;
+
+        const firstTitle = allItems[0]?.querySelector('h4');
+        if (firstTitle) {
+            const firstTitleTopDoc = firstTitle.getBoundingClientRect().top + window.scrollY;
+            stickyTopPx = Math.max(0, Math.round(firstTitleTopDoc - wrapperTopDoc));
+        } else {
+            stickyTopPx = Math.round(fallbackStickyTopPx);
+        }
+
+        const lastItem = allItems[allItems.length - 1];
+        const lastTitle = lastItem?.querySelector('h4');
+        const lastDesc = lastItem?.querySelector('p');
+        const lastBottomDoc = lastDesc
+            ? (lastDesc.getBoundingClientRect().bottom + window.scrollY)
+            : (lastTitle
+                ? (lastTitle.getBoundingClientRect().bottom + window.scrollY)
+                : (wrapperTopDoc + wrapperRect.height));
+        const wrapperBottomDoc = wrapperTopDoc + wrapperRect.height;
+        endShiftPx = Math.round(lastBottomDoc - wrapperBottomDoc);
+
+        wrapper.style.setProperty('--info-num-top', `${stickyTopPx}px`);
+        wrapper.style.setProperty('--info-num-end-shift', `${endShiftPx}px`);
+    }
 
     function getStickyLineY() {
-        return window.innerHeight * stickyTopRatio;
+        return stickyTopPx;
     }
 
     function animateDigit(newIndex) {
@@ -465,6 +496,18 @@ function setupInfoTerbaruScroll() {
         const stickyLineY = getStickyLineY();
         const target = getTargetIndexByViewport(stickyLineY);
         if (target !== currentIndex) animateDigit(target);
+
+        const lastIndex = allItems.length - 1;
+        const wrapperBottomY = wrapper.getBoundingClientRect().bottom;
+        const stickyBottomY = stickyTopPx + digitTrack.getBoundingClientRect().height;
+
+        if (!endAlignActive && target === lastIndex && wrapperBottomY <= (stickyBottomY + 2)) {
+            endAlignActive = true;
+        } else if (endAlignActive && wrapperBottomY > (stickyBottomY + 18)) {
+            endAlignActive = false;
+        }
+
+        numSticky.classList.toggle('end-align', endAlignActive && target === lastIndex);
     }
 
     let ticking = false;
@@ -477,14 +520,20 @@ function setupInfoTerbaruScroll() {
         });
     }
 
+    function onResize() {
+        recalcAlignmentMetrics();
+        requestUpdate();
+    }
+
     const scrollTarget = window;
     scrollTarget.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+    recalcAlignmentMetrics();
     requestUpdate();
 
     infoTerbaruScrollCleanup = () => {
         scrollTarget.removeEventListener('scroll', requestUpdate);
-        window.removeEventListener('resize', requestUpdate);
+        window.removeEventListener('resize', onResize);
     };
 }
 
