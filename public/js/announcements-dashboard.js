@@ -421,6 +421,7 @@ function setupInfoTerbaruScroll() {
             var driftUp = progress * 28; // continuous upward drift across section
             var opacity = 1;
             var extraWipeUp = 0;
+            var baseShift = 0;
 
             // Start gentle fade before the final segment.
             var preFadeStart = Math.max(0, lastSegmentStart - segmentSize * 0.35);
@@ -436,7 +437,7 @@ function setupInfoTerbaruScroll() {
             }
 
             numberEl.style.opacity = String(Math.max(0, Math.min(1, opacity)));
-            numberEl.style.transform = 'translate3d(0, ' + (-50 - driftUp - extraWipeUp) + '%, 0)';
+            numberEl.style.transform = 'translate3d(0, ' + (baseShift - driftUp - extraWipeUp) + '%, 0)';
         }
     };
 

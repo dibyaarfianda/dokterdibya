@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260404au'; // 2026-04-04 - Add proper left/right padding
+const CACHE_VERSION = '20260406a'; // 2026-04-06 - Fresh HTML/JS/CSS fetch without hard reload
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -68,6 +68,8 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  const freshRequest = new Request(request, { cache: 'no-store' });
+
   // Skip non-GET requests
   if (request.method !== 'GET') {
     return;
@@ -86,7 +88,7 @@ self.addEventListener('fetch', (event) => {
   // For navigation requests (HTML pages)
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(freshRequest)
         .then((response) => {
           // Clone and cache successful responses
           if (response.ok) {
@@ -111,7 +113,7 @@ self.addEventListener('fetch', (event) => {
   // For JS/CSS files - network first (always get fresh code on deploy)
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(
-      fetch(request)
+      fetch(freshRequest)
         .then((response) => {
           if (response.ok) {
             const responseClone = response.clone();
@@ -197,4 +199,11 @@ self.addEventListener('notificationclick', (event) => {
         }
       })
   );
+});
+
+// Allow clients to trigger immediate activation of an updated SW.
+self.addEventListener('message', (event) => {
+  if (event && event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
