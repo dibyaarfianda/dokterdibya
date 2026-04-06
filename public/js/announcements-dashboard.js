@@ -356,7 +356,6 @@ function setupInfoTerbaruScroll() {
 
     const stickyTopRatio = 0.30; // must match CSS top: 30vh
     let currentIndex = 0;
-    let animTimer = null;
     let isAnimating = false;
     let pendingTarget = null;
 
@@ -403,19 +402,48 @@ function setupInfoTerbaruScroll() {
         incoming.textContent = String(newIndex + 1);
         valueTrack.appendChild(incoming);
 
-        // Slide-out current
-        if (currentEl) {
-            currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
+        const leaveOffset = goingDown ? -30 : 30;
+        const enterOffset = goingDown ? 30 : -30;
+
+        let transitionDone;
+
+        // Prefer WAAPI for deterministic animation; fallback to CSS classes.
+        if (typeof incoming.animate === 'function') {
+            incoming.style.transform = `translateY(${enterOffset}px)`;
+            incoming.style.opacity = '0';
+
+            const animations = [];
+            if (currentEl) {
+                animations.push(currentEl.animate(
+                    [
+                        { transform: 'translateY(0)', opacity: 1 },
+                        { transform: `translateY(${leaveOffset}px)`, opacity: 0 }
+                    ],
+                    { duration: 420, easing: 'ease', fill: 'forwards' }
+                ).finished);
+            }
+
+            animations.push(incoming.animate(
+                [
+                    { transform: `translateY(${enterOffset}px)`, opacity: 0 },
+                    { transform: 'translateY(0)', opacity: 1 }
+                ],
+                { duration: 520, easing: 'ease-in', fill: 'forwards' }
+            ).finished);
+
+            transitionDone = Promise.allSettled(animations);
+        } else {
+            if (currentEl) {
+                currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
+            }
+            incoming.classList.add(goingDown ? 'from-below' : 'from-above');
+            transitionDone = new Promise(resolve => setTimeout(resolve, 540));
         }
 
-        // Slide-in incoming with ease-in from opposite direction
-        incoming.classList.add(goingDown ? 'from-below' : 'from-above');
-
         // Cleanup: promote incoming → current
-        animTimer = setTimeout(() => {
+        transitionDone.finally(() => {
             if (currentEl) currentEl.remove();
             incoming.className = 'digit-value-current';
-            animTimer = null;
             isAnimating = false;
 
             if (pendingTarget !== null && pendingTarget !== currentIndex) {
@@ -428,7 +456,7 @@ function setupInfoTerbaruScroll() {
             pendingTarget = null;
             // Re-sync to current scroll position after transition completes.
             updateByViewport();
-        }, 540);
+        });
     }
 
     function getTargetIndexByViewport(stickyLineY) {
