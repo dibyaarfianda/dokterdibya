@@ -348,6 +348,8 @@ function setupInfoTerbaruScroll() {
     const stickyTopPx = 0.30 * window.innerHeight; // must match CSS top: 30vh
     let currentIndex = 0;
     let animTimer = null;
+    let isAnimating = false;
+    let pendingTarget = null;
 
     // Compute midpoints between end of item[i]'s paragraph and start of item[i+1]'s heading
     let midpoints = [];
@@ -366,20 +368,18 @@ function setupInfoTerbaruScroll() {
     window.addEventListener('resize', computeMidpoints, { passive: true });
 
     function animateDigit(newIndex) {
-        // Cancel any in-flight animation cleanly
-        if (animTimer !== null) {
-            clearTimeout(animTimer);
-            animTimer = null;
-            digitTrack.querySelectorAll('.digit-incoming').forEach(el => el.remove());
-            const curr = digitTrack.querySelector('.digit-current');
-            if (curr) { curr.style.transition = ''; curr.style.transform = ''; curr.style.opacity = ''; }
+        // Let current transition finish fully; do not interrupt with scroll updates.
+        if (isAnimating) {
+            pendingTarget = newIndex;
+            return;
         }
 
         const currentEl = digitTrack.querySelector('.digit-current');
         const goingDown = newIndex > currentIndex;
         currentIndex = newIndex;
+        isAnimating = true;
 
-        const vertPx = 72;
+        const vertPx = 30;
 
         // Build incoming digit — starts off-screen
         const incoming = document.createElement('span');
@@ -410,6 +410,18 @@ function setupInfoTerbaruScroll() {
             incoming.className = 'digit-current';
             incoming.style.cssText = '';
             animTimer = null;
+            isAnimating = false;
+
+            if (pendingTarget !== null && pendingTarget !== currentIndex) {
+                const nextTarget = pendingTarget;
+                pendingTarget = null;
+                animateDigit(nextTarget);
+                return;
+            }
+
+            pendingTarget = null;
+            // Re-sync to current scroll position after transition completes.
+            onScroll();
         }, 540);
     }
 
