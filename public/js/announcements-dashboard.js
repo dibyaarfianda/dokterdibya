@@ -7,6 +7,7 @@ let socket = null;
 let infoTerbaruAllAnnouncements = [];
 let infoTerbaruExpanded = false;
 let infoTerbaruObserver = null;
+let infoTerbaruScrollCleanup = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -339,6 +340,11 @@ function truncateText(text, maxLen) {
 // No scroll setup needed — sticky number is pure CSS per item
 // Single shared sticky digit with slide + fade animation between items
 function setupInfoTerbaruScroll() {
+    if (typeof infoTerbaruScrollCleanup === 'function') {
+        infoTerbaruScrollCleanup();
+        infoTerbaruScrollCleanup = null;
+    }
+
     const wrapper = document.querySelector('.info-terbaru-wrapper');
     if (!wrapper) return;
 
@@ -348,41 +354,33 @@ function setupInfoTerbaruScroll() {
     const digitTrack = wrapper.querySelector('.digit-track');
     if (!digitTrack) return;
 
-    const stickyTopPx = 0.30 * window.innerHeight; // must match CSS top: 30vh
+    const stickyTopRatio = 0.30; // must match CSS top: 30vh
     let currentIndex = 0;
     let animTimer = null;
     let isAnimating = false;
     let pendingTarget = null;
-    let finalWipeThreshold = Number.POSITIVE_INFINITY;
 
-    // Compute midpoints between end of item[i]'s paragraph and start of item[i+1]'s heading
-    let midpoints = [];
-    function computeMidpoints() {
-        midpoints = [];
-        for (let i = 0; i < allItems.length - 1; i++) {
-            const p1   = allItems[i].querySelector('p');
-            const h4_2 = allItems[i + 1].querySelector('h4');
-            if (!p1 || !h4_2) continue;
-            const pBottom = p1.getBoundingClientRect().bottom + window.scrollY;
-            const h4Top   = h4_2.getBoundingClientRect().top  + window.scrollY;
-            midpoints.push((pBottom + h4Top) / 2);
+    function getScrollHost(el) {
+        let cur = el.parentElement;
+        while (cur && cur !== document.body) {
+            const style = window.getComputedStyle(cur);
+            const y = style.overflowY;
+            const isScrollable = (y === 'auto' || y === 'scroll') && (cur.scrollHeight > cur.clientHeight);
+            if (isScrollable) return cur;
+            cur = cur.parentElement;
         }
-
-        const lastItem = allItems[allItems.length - 1];
-        if (lastItem) {
-            const lastTitle = lastItem.querySelector('h4');
-            const lastDesc = lastItem.querySelector('p');
-            const titleTop = lastTitle
-                ? (lastTitle.getBoundingClientRect().top + window.scrollY)
-                : (lastItem.getBoundingClientRect().top + window.scrollY);
-            const descBottom = lastDesc
-                ? (lastDesc.getBoundingClientRect().bottom + window.scrollY)
-                : (lastItem.getBoundingClientRect().bottom + window.scrollY);
-            finalWipeThreshold = (titleTop + descBottom) / 2;
-        }
+        return window;
     }
-    computeMidpoints();
-    window.addEventListener('resize', computeMidpoints, { passive: true });
+
+    const scrollHost = getScrollHost(wrapper);
+
+    function getStickyLineY() {
+        if (scrollHost === window) {
+            return window.innerHeight * stickyTopRatio;
+        }
+        const hostRect = scrollHost.getBoundingClientRect();
+        return hostRect.top + (scrollHost.clientHeight * stickyTopRatio);
+    }
 
     function animateDigit(newIndex) {
         // Let current transition finish fully; do not interrupt with scroll updates.
@@ -429,32 +427,66 @@ function setupInfoTerbaruScroll() {
 
             pendingTarget = null;
             // Re-sync to current scroll position after transition completes.
-            onScroll();
+            updateByViewport();
         }, 540);
     }
 
-    function getTargetIndexByScroll() {
-        if (!midpoints.length) return 0;
-        const stickyDocY = window.scrollY + stickyTopPx;
+    function getTargetIndexByViewport(stickyLineY) {
         let target = 0;
-        for (let i = 0; i < midpoints.length; i++) {
-            if (stickyDocY >= midpoints[i]) target = i + 1;
+        for (let i = 0; i < allItems.length - 1; i++) {
+            const p1 = allItems[i].querySelector('p');
+            const h4_2 = allItems[i + 1].querySelector('h4');
+            if (!p1 || !h4_2) continue;
+            const midGapY = (p1.getBoundingClientRect().bottom + h4_2.getBoundingClientRect().top) / 2;
+            if (stickyLineY >= midGapY) target = i + 1;
         }
         return target;
     }
 
-    function onScroll() {
-        const stickyDocY = window.scrollY + stickyTopPx;
-        const target = getTargetIndexByScroll();
+    function getLastItemWipeY() {
+        const lastItem = allItems[allItems.length - 1];
+        if (!lastItem) return Number.POSITIVE_INFINITY;
+
+        const lastTitle = lastItem.querySelector('h4');
+        const lastDesc = lastItem.querySelector('p');
+        const titleTop = lastTitle
+            ? lastTitle.getBoundingClientRect().top
+            : lastItem.getBoundingClientRect().top;
+        const descBottom = lastDesc
+            ? lastDesc.getBoundingClientRect().bottom
+            : lastItem.getBoundingClientRect().bottom;
+        return (titleTop + descBottom) / 2;
+    }
+
+    function updateByViewport() {
+        const stickyLineY = getStickyLineY();
+        const target = getTargetIndexByViewport(stickyLineY);
         if (target !== currentIndex) animateDigit(target);
 
         const lastIndex = allItems.length - 1;
-        const shouldFinalWipe = (target === lastIndex) && (stickyDocY >= finalWipeThreshold);
+        const shouldFinalWipe = (target === lastIndex) && (stickyLineY >= getLastItemWipeY());
         digitTrack.classList.toggle('is-final-wipe', shouldFinalWipe);
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    let ticking = false;
+    function requestUpdate() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            updateByViewport();
+        });
+    }
+
+    const scrollTarget = scrollHost === window ? window : scrollHost;
+    scrollTarget.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate, { passive: true });
+    requestUpdate();
+
+    infoTerbaruScrollCleanup = () => {
+        scrollTarget.removeEventListener('scroll', requestUpdate);
+        window.removeEventListener('resize', requestUpdate);
+    };
 }
 
 // Backwards compat stubs
