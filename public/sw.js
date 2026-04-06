@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260406h'; // 2026-04-06 - Refresh cache after hero section scale-up
+const CACHE_VERSION = '20260407'; // 2026-04-07 - Background fade + Info Terbaru font update
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
