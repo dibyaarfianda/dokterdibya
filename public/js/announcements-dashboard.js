@@ -359,7 +359,7 @@ function setupInfoTerbaruScroll() {
     const leaveDurationMs = 605;
     const enterDurationMs = 605;
     const fallbackDurationMs = 702;
-    const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
+    const triggerDelayPx = -120; // negative = trigger before midpoint reaches sticky line (earlier transition)
     const firstAlignDownPx = 16; // keep slight nudge only; avoid sticky number being too low
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
     let currentIndex = 0;
