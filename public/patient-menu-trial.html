@@ -1557,8 +1557,8 @@
             flex-direction: column;
             padding-top: 25vh;
             padding-bottom: 25vh;
-            padding-left: 16px;
-            padding-right: 16px;
+            padding-left: 100px;
+            padding-right: 100px;
             box-sizing: border-box;
         }
 
@@ -1592,12 +1592,12 @@
         .welcome-window-left-inner h2 {
             margin: 0;
             font-family: var(--font-display);
-            text-align: right;
-            font-size: 72px;
+            text-align: left;
+            font-size: 88px;
             line-height: 0.92;
             letter-spacing: -0.03em;
             font-weight: 600;
-            margin-right: 20px;
+            margin-right: 0;
             color: rgb(15, 23, 42);
         }
 
@@ -1690,6 +1690,11 @@
         }
 
         @media (max-width: 900px) {
+            .welcome-pinned-inner {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
             .welcome-window {
                 grid-template-columns: 1fr;
                 gap: 0;
@@ -1703,7 +1708,7 @@
             }
 
             .welcome-window-left-inner h2 {
-                font-size: 52px;
+                font-size: 58px;
             }
 
             .welcome-window-scroll {
