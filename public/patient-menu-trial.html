@@ -1568,7 +1568,7 @@
             padding-left: 100px;
             padding-right: 100px;
             box-sizing: border-box;
-            background-color: rgba(110, 72, 52, var(--bg-fade-opacity, 0));
+            background-color: rgba(110, 72, 52, 0);
             transition: background-color 0.05s ease-out;
         }
 
@@ -4711,10 +4711,12 @@
                     opacity = 0;
                 }
 
-                welcomePinnedInner.style.setProperty('--bg-fade-opacity', opacity);
+                // Set background color directly with rgba
+                welcomePinnedInner.style.backgroundColor = 'rgba(110, 72, 52, ' + opacity + ')';
             }
 
             window.addEventListener('scroll', updateBackgroundOpacity, { passive: true });
+            // Initial call
             updateBackgroundOpacity();
         })();
 
