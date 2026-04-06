@@ -355,6 +355,11 @@ function setupInfoTerbaruScroll() {
     if (!digitTrack) return;
 
     const stickyTopRatio = 0.30; // must match CSS top: 30vh
+    const animOffsetPx = 98;
+    const leaveDurationMs = 460;
+    const enterDurationMs = 620;
+    const fallbackDurationMs = 650;
+    const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
@@ -402,8 +407,8 @@ function setupInfoTerbaruScroll() {
         incoming.textContent = String(newIndex + 1);
         valueTrack.appendChild(incoming);
 
-        const leaveOffset = goingDown ? -30 : 30;
-        const enterOffset = goingDown ? 30 : -30;
+        const leaveOffset = goingDown ? -animOffsetPx : animOffsetPx;
+        const enterOffset = goingDown ? animOffsetPx : -animOffsetPx;
 
         let transitionDone;
 
@@ -419,7 +424,7 @@ function setupInfoTerbaruScroll() {
                         { transform: 'translateY(0)', opacity: 1 },
                         { transform: `translateY(${leaveOffset}px)`, opacity: 0 }
                     ],
-                    { duration: 420, easing: 'ease', fill: 'forwards' }
+                    { duration: leaveDurationMs, easing: 'ease', fill: 'forwards' }
                 ).finished);
             }
 
@@ -428,7 +433,7 @@ function setupInfoTerbaruScroll() {
                     { transform: `translateY(${enterOffset}px)`, opacity: 0 },
                     { transform: 'translateY(0)', opacity: 1 }
                 ],
-                { duration: 520, easing: 'ease-in', fill: 'forwards' }
+                { duration: enterDurationMs, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' }
             ).finished);
 
             transitionDone = Promise.allSettled(animations);
@@ -437,7 +442,7 @@ function setupInfoTerbaruScroll() {
                 currentEl.classList.add(goingDown ? 'is-leaving-up' : 'is-leaving-down');
             }
             incoming.classList.add(goingDown ? 'from-below' : 'from-above');
-            transitionDone = new Promise(resolve => setTimeout(resolve, 540));
+            transitionDone = new Promise(resolve => setTimeout(resolve, fallbackDurationMs));
         }
 
         // Cleanup: promote incoming → current
@@ -466,7 +471,7 @@ function setupInfoTerbaruScroll() {
             const h4_2 = allItems[i + 1].querySelector('h4');
             if (!p1 || !h4_2) continue;
             const midGapY = (p1.getBoundingClientRect().bottom + h4_2.getBoundingClientRect().top) / 2;
-            if (stickyLineY >= midGapY) target = i + 1;
+            if (stickyLineY >= (midGapY + triggerDelayPx)) target = i + 1;
         }
         return target;
     }
