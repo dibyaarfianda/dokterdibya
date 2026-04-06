@@ -356,9 +356,9 @@ function setupInfoTerbaruScroll() {
     if (!digitTrack || !numSticky) return;
 
     const animOffsetPx = 388;
-    const leaveDurationMs = 605;
-    const enterDurationMs = 605;
-    const fallbackDurationMs = 702;
+    const leaveDurationMs = 1089;
+    const enterDurationMs = 1089;
+    const fallbackDurationMs = 1264;
     const triggerDelayPx = -200; // negative = trigger before midpoint reaches sticky line (earlier transition)
     const firstAlignDownPx = 16; // keep slight nudge only; avoid sticky number being too low
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
