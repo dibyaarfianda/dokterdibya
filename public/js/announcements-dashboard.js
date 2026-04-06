@@ -291,6 +291,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
     `;
 
     container.innerHTML = `
+        <div class="info-terbaru-abstract-bg" aria-hidden="true"></div>
         <div class="info-terbaru-wrapper">
             <div class="info-terbaru-items">
                 ${itemsHtml}
@@ -347,6 +348,9 @@ function setupInfoTerbaruScroll() {
 
     const wrapper = document.querySelector('.info-terbaru-wrapper');
     if (!wrapper) return;
+
+    const sectionContainer = wrapper.closest('#announcements-container');
+    const abstractBg = sectionContainer?.querySelector('.info-terbaru-abstract-bg') || null;
 
     const allItems = Array.from(wrapper.querySelectorAll('.info-terbaru-item'));
     if (allItems.length < 2) return;
@@ -507,6 +511,25 @@ function setupInfoTerbaruScroll() {
             numSticky.style.transform = `translateY(${neededShift}px)`;
         } else {
             numSticky.style.transform = 'translateY(0px)';
+        }
+
+        if (abstractBg && sectionContainer) {
+            const sectionRect = sectionContainer.getBoundingClientRect();
+            const fadeInStartPx = 500; // 500px before section reaches viewport top
+            const fadeOutAfterPx = 300; // 300px after section passes viewport
+            let opacity = 1;
+
+            if (sectionRect.top >= fadeInStartPx) {
+                opacity = 0;
+            } else if (sectionRect.top > 0) {
+                opacity = 1 - (sectionRect.top / fadeInStartPx);
+            }
+
+            if (sectionRect.bottom < 0) {
+                opacity *= Math.max(0, Math.min(1, (sectionRect.bottom + fadeOutAfterPx) / fadeOutAfterPx));
+            }
+
+            abstractBg.style.opacity = String(Math.max(0, Math.min(1, opacity)));
         }
     }
 
