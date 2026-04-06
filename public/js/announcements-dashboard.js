@@ -359,10 +359,11 @@ function setupInfoTerbaruScroll() {
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
-    const stickyVisualOffsetPx = 88; // lower sticky resting position to match reference
+    const stickyVisualOffsetPx = 34; // lower resting position without drifting too far from title
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
+    let stickyTopPxValue = null;
 
     function getScrollHost(el) {
         let cur = el.parentElement;
@@ -391,14 +392,13 @@ function setupInfoTerbaruScroll() {
         return Math.max(0, firstTitleTop - hostRect.top + stickyVisualOffsetPx);
     }
 
-    function applyStickyTop() {
-        const topPx = getStickyTopPx();
-        wrapper.style.setProperty('--info-num-top', `${topPx}px`);
-        return topPx;
+    function refreshStickyTopAnchor() {
+        stickyTopPxValue = getStickyTopPx();
+        wrapper.style.setProperty('--info-num-top', `${stickyTopPxValue}px`);
     }
 
     function getStickyLineY() {
-        const topPx = applyStickyTop();
+        const topPx = stickyTopPxValue ?? getStickyTopPx();
         if (scrollHost === window) {
             return topPx;
         }
@@ -531,14 +531,20 @@ function setupInfoTerbaruScroll() {
         });
     }
 
+    function onResize() {
+        refreshStickyTopAnchor();
+        requestUpdate();
+    }
+
     const scrollTarget = scrollHost === window ? window : scrollHost;
     scrollTarget.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
+    refreshStickyTopAnchor();
     requestUpdate();
 
     infoTerbaruScrollCleanup = () => {
         scrollTarget.removeEventListener('scroll', requestUpdate);
-        window.removeEventListener('resize', requestUpdate);
+        window.removeEventListener('resize', onResize);
     };
 }
 
