@@ -361,6 +361,7 @@ function setupInfoTerbaruScroll() {
     const fallbackDurationMs = 1120;
     const leaveEasing = 'cubic-bezier(0.12, 0.92, 0.2, 1)';
     const enterEasing = 'cubic-bezier(0.1, 0.86, 0.2, 1)';
+    const scrollDamping = 0.16; // lower = heavier/laggier, higher = snappier
     const triggerDelayPx = -200; // negative = trigger before midpoint reaches sticky line (earlier transition)
     const firstAlignDownPx = 100; // keep slight nudge only; avoid sticky number being too low
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
@@ -368,6 +369,8 @@ function setupInfoTerbaruScroll() {
     let isAnimating = false;
     let pendingTarget = null;
     let stickyTopPx = fallbackStickyTopPx;
+    let targetShiftPx = 0;
+    let smoothedShiftPx = 0;
 
     function recalcAlignmentMetrics() {
         const wrapperRect = wrapper.getBoundingClientRect();
@@ -503,11 +506,18 @@ function setupInfoTerbaruScroll() {
                 ? lastTitle.getBoundingClientRect().top
                 : lastItem.getBoundingClientRect().top;
             // Track h4 of last item: number moves when h4 scrolls above sticky line
-            const neededShift = Math.min(0, Math.round(titleTopY - stickyTopPx));
-            numSticky.style.transform = `translateY(${neededShift}px)`;
+            targetShiftPx = Math.min(0, Math.round(titleTopY - stickyTopPx));
         } else {
-            numSticky.style.transform = 'translateY(0px)';
+            targetShiftPx = 0;
         }
+
+        smoothedShiftPx += (targetShiftPx - smoothedShiftPx) * scrollDamping;
+        if (Math.abs(targetShiftPx - smoothedShiftPx) < 0.5) {
+            smoothedShiftPx = targetShiftPx;
+        }
+        numSticky.style.transform = `translateY(${Math.round(smoothedShiftPx)}px)`;
+
+        return Math.abs(targetShiftPx - smoothedShiftPx);
     }
 
     let ticking = false;
@@ -516,7 +526,8 @@ function setupInfoTerbaruScroll() {
         ticking = true;
         requestAnimationFrame(() => {
             ticking = false;
-            updateByViewport();
+            const remaining = updateByViewport();
+            if (remaining > 0.5) requestUpdate();
         });
     }
 
