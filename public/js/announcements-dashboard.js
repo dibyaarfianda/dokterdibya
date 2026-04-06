@@ -359,51 +359,13 @@ function setupInfoTerbaruScroll() {
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
-    const stickyVisualOffsetPx = 34; // stable resting offset
+    const stickyTopRatio = 0.36; // must match CSS top: 36vh
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
-    let stickyTopPxValue = null;
-
-    function getScrollHost(el) {
-        let cur = el.parentElement;
-        while (cur && cur !== document.body) {
-            const style = window.getComputedStyle(cur);
-            const y = style.overflowY;
-            const isScrollable = (y === 'auto' || y === 'scroll') && (cur.scrollHeight > cur.clientHeight);
-            if (isScrollable) return cur;
-            cur = cur.parentElement;
-        }
-        return window;
-    }
-
-    const scrollHost = getScrollHost(wrapper);
-
-    function getStickyTopPx() {
-        const firstTitle = allItems[0]?.querySelector('h4');
-        if (!firstTitle) return (0.30 * window.innerHeight) + stickyVisualOffsetPx;
-
-        const firstTitleTop = firstTitle.getBoundingClientRect().top;
-        if (scrollHost === window) {
-            return Math.max(0, firstTitleTop + stickyVisualOffsetPx);
-        }
-
-        const hostRect = scrollHost.getBoundingClientRect();
-        return Math.max(0, firstTitleTop - hostRect.top + stickyVisualOffsetPx);
-    }
-
-    function refreshStickyTopAnchor() {
-        stickyTopPxValue = getStickyTopPx();
-        wrapper.style.setProperty('--info-num-top', `${stickyTopPxValue}px`);
-    }
 
     function getStickyLineY() {
-        const topPx = stickyTopPxValue ?? getStickyTopPx();
-        if (scrollHost === window) {
-            return topPx;
-        }
-        const hostRect = scrollHost.getBoundingClientRect();
-        return hostRect.top + topPx;
+        return window.innerHeight * stickyTopRatio;
     }
 
     function animateDigit(newIndex) {
@@ -531,20 +493,14 @@ function setupInfoTerbaruScroll() {
         });
     }
 
-    function onResize() {
-        refreshStickyTopAnchor();
-        requestUpdate();
-    }
-
-    const scrollTarget = scrollHost === window ? window : scrollHost;
+    const scrollTarget = window;
     scrollTarget.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', onResize, { passive: true });
-    refreshStickyTopAnchor();
+    window.addEventListener('resize', requestUpdate, { passive: true });
     requestUpdate();
 
     infoTerbaruScrollCleanup = () => {
         scrollTarget.removeEventListener('scroll', requestUpdate);
-        window.removeEventListener('resize', onResize);
+        window.removeEventListener('resize', requestUpdate);
     };
 }
 
