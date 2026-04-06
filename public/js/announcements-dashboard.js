@@ -264,7 +264,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
     infoTerbaruAllAnnouncements = sorted;
     const items = sorted.slice(0, 3);
 
-    // Build item HTML
+    // Build item HTML — each item is a normal full-height block
     const itemsHtml = items.map((item, i) => {
         const titleHtml = getFirstThreeWordsWithColors(stripEmoji(item.title || 'Info terbaru'));
         const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
@@ -284,22 +284,19 @@ function displayInfoTerbaruAnnouncements(announcements) {
         </div>
     `;
 
-    const totalSlides = items.length + 1; // items + CTA
-    const containerHeight = 60 * totalSlides + 100; // vh units (60vh per item + 100vh base)
-
+    // New structure: 2-column flex, content scrolls naturally, number is sticky
     container.innerHTML = `
-        <div class="info-terbaru-bg" id="info-terbaru-bg"></div>
-        <div class="info-terbaru-pinned" id="info-terbaru-pinned" style="height: ${containerHeight}vh;">
-            <div class="info-terbaru-inner">
-                <div class="info-terbaru-number">
+        <div class="info-terbaru-section" id="info-terbaru-section">
+            <div class="info-terbaru-items" id="info-terbaru-items">
+                ${itemsHtml}
+                ${ctaHtml}
+            </div>
+            <div class="info-terbaru-number-col">
+                <div class="info-terbaru-number" id="info-terbaru-number">
                     <span class="info-terbaru-num-fixed">0</span>
                     <span class="info-terbaru-num-slot">
                         <span class="info-terbaru-num-digit" id="info-terbaru-digit">1</span>
                     </span>
-                </div>
-                <div class="info-terbaru-scroll-content" id="info-terbaru-scroll-content">
-                    ${itemsHtml}
-                    ${ctaHtml}
                 </div>
             </div>
         </div>
@@ -336,136 +333,99 @@ function truncateText(text, maxLen) {
 var _infoDigitAnimating = false;
 function animateInfoTerbaruDigit(index) {
     var digit = document.getElementById('info-terbaru-digit');
-    if (!digit || _infoDigitAnimating) return;
+    if (!digit) return;
     var newValue = String(index + 1);
     if (digit.textContent === newValue) return;
+    if (_infoDigitAnimating) {
+        // Force immediate update if already animating
+        digit.style.transition = 'none';
+        digit.style.transform = 'translateY(0)';
+        digit.style.opacity = '1';
+        digit.textContent = newValue;
+        _infoDigitAnimating = false;
+        return;
+    }
 
     _infoDigitAnimating = true;
 
-    // Slide out: move UP + fade out
-    digit.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    // Slide out: current digit moves UP and fades
+    digit.style.transition = 'transform 0.35s ease, opacity 0.25s ease';
     digit.style.transform = 'translateY(-100%)';
     digit.style.opacity = '0';
 
     setTimeout(function() {
-        // Jump to below position instantly (no transition)
+        // Jump to below, no transition
         digit.style.transition = 'none';
-        digit.style.transform = 'translateY(100%)';
+        digit.style.transform = 'translateY(80%)';
         digit.textContent = newValue;
 
-        // Force browser reflow so position resets before animation
+        // Force reflow
         void digit.offsetHeight;
 
-        // Slide in: move UP to center + fade in
-        digit.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        // Slide in from below
+        digit.style.transition = 'transform 0.35s ease, opacity 0.25s ease';
         digit.style.transform = 'translateY(0)';
         digit.style.opacity = '1';
 
-        setTimeout(function() { _infoDigitAnimating = false; }, 350);
-    }, 320);
+        setTimeout(function() { _infoDigitAnimating = false; }, 370);
+    }, 300);
 }
 
 function setupInfoTerbaruScroll() {
-    const pinned = document.getElementById('info-terbaru-pinned');
-    const scrollContent = document.getElementById('info-terbaru-scroll-content');
-    const bgEl = document.getElementById('info-terbaru-bg');
-    if (!pinned || !scrollContent) return;
+    const itemsContainer = document.getElementById('info-terbaru-items');
+    if (!itemsContainer) return;
 
-    const items = scrollContent.querySelectorAll('.info-terbaru-item');
-    const totalItems = items.length;
-    let prevIndex = -1;
+    const items = itemsContainer.querySelectorAll('.info-terbaru-item');
+    if (!items.length) return;
 
     // Remove old handler if exists
     if (infoTerbaruScrollHandler) {
         window.removeEventListener('scroll', infoTerbaruScrollHandler);
         window.removeEventListener('resize', infoTerbaruScrollHandler);
+        infoTerbaruScrollHandler = null;
     }
 
-    infoTerbaruScrollHandler = function() {
-        const rect = pinned.getBoundingClientRect();
-        const scrollRange = pinned.offsetHeight - window.innerHeight;
-        if (scrollRange <= 0) return;
+    // Disconnect old observer if exists
+    if (window._infoTerbaruObserver) {
+        window._infoTerbaruObserver.disconnect();
+        window._infoTerbaruObserver = null;
+    }
 
-        const progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
-
-        // Move content up as user scrolls
-        const contentH = scrollContent.scrollHeight;
-        const viewH = window.innerHeight;
-        const maxShift = contentH - viewH;
-        if (maxShift > 0) {
-            const shift = progress * maxShift;
-            scrollContent.style.transform = 'translateY(' + (-shift) + 'px)';
-        }
-
-        // Background fade: 0→fade in by item 2, full during middle, fade out at end
-        if (bgEl) {
-            var bgOpacity = 0;
-            var segment = 1 / totalItems;
-            // Fade in: progress 0 → segment*1.5 (reaches full by item 2)
-            var fadeInEnd = segment * 1.5;
-            // Fade out: starts at progress (1 - segment) → 1
-            var fadeOutStart = 1 - segment;
-
-            if (progress <= 0) {
-                bgOpacity = 0;
-            } else if (progress < fadeInEnd) {
-                bgOpacity = progress / fadeInEnd;
-            } else if (progress < fadeOutStart) {
-                bgOpacity = 1;
-            } else {
-                bgOpacity = 1 - (progress - fadeOutStart) / segment;
+    // Use IntersectionObserver: fires when item's h4 crosses the MIDPOINT of viewport (-50% from both edges)
+    // rootMargin "-50% 0px -50% 0px" means only intersecting when it's right at the vertical center
+    var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var idx = parseInt(entry.target.getAttribute('data-index'), 10);
+                if (!isNaN(idx) && idx !== infoTerbaruCurrentIndex) {
+                    animateInfoTerbaruDigit(idx);
+                    infoTerbaruCurrentIndex = idx;
+                }
             }
-            bgEl.style.opacity = Math.max(0, Math.min(1, bgOpacity));
+        });
+    }, {
+        rootMargin: '-50% 0px -50% 0px',
+        threshold: 0
+    });
+
+    // Observe each item's h4 (title) — change digit when title hits viewport center
+    items.forEach(function(item) {
+        var h4 = item.querySelector('h4');
+        if (h4) {
+            observer.observe(h4);
         }
+    });
 
-        // Determine current item index based on gap midpoints
-        // Trigger digit change when progress reaches midpoint between items
-        var segmentSize = 1 / totalItems;
-        var currentIndex = 0;
-        
-        // Check if progress has reached each gap midpoint (0.5, 1.5, 2.5, etc segments)
-        for (var i = 0; i < totalItems - 1; i++) {
-            if (progress >= (i + 0.5) * segmentSize) {
-                currentIndex = i + 1;
-            }
-        }
-        currentIndex = Math.min(currentIndex, totalItems - 1);
+    window._infoTerbaruObserver = observer;
 
-        // Animate digit on index change — shift strip upward
-        if (currentIndex !== prevIndex) {
-            animateInfoTerbaruDigit(currentIndex);
-            prevIndex = currentIndex;
-            infoTerbaruCurrentIndex = currentIndex;
-        }
-
-        // Number styling: keep fixed position (no drift), fade in at start, fade out at end
-        var numberEl = pinned.querySelector('.info-terbaru-number');
-        if (numberEl) {
-            var segmentSize = 1 / totalItems;
-            var lastSegmentStart = 1 - segmentSize;
-            var opacity = 0;
-
-            // Fade in at start of section (progress 0 → 0.1)
-            var fadeInEnd = 0.1;
-            if (progress < fadeInEnd) {
-                opacity = progress / fadeInEnd;
-            } else if (progress < lastSegmentStart) {
-                // Full opacity during middle section
-                opacity = 1;
-            } else {
-                // Fade out in final segment
-                var wipeProgress = (progress - lastSegmentStart) / segmentSize;
-                opacity = Math.max(0, 1 - wipeProgress);
-            }
-
-            numberEl.style.opacity = String(Math.max(0, Math.min(1, opacity)));
-            // No transform — number stays fixed at top
-        }
-    };
-
-    window.addEventListener('scroll', infoTerbaruScrollHandler, { passive: true });
-    window.addEventListener('resize', infoTerbaruScrollHandler);
-    infoTerbaruScrollHandler();
+    // Set initial digit based on which item is currently at top
+    infoTerbaruCurrentIndex = 0;
+    var digit = document.getElementById('info-terbaru-digit');
+    if (digit) {
+        digit.textContent = '1';
+        digit.style.transform = 'translateY(0)';
+        digit.style.opacity = '1';
+    }
 }
 
 // Backwards compat stubs

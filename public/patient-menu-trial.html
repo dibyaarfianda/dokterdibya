@@ -727,56 +727,42 @@
         }
 
         /* === ClearPath Scroll-Driven INFO TERBARU === */
-        .info-terbaru-pinned {
+        .info-terbaru-section {
             position: relative;
-            /* height set by JS: 100vh * (items + 1) */
             margin: 0 calc(-50vw + 50%);
-            z-index: 2;
             background: var(--bg-page);
+            display: flex;
+            align-items: flex-start;
         }
 
-        .info-terbaru-inner {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow: hidden;
-            padding: 0 160px 0 72px;
+        /* Left column: items scroll normally */
+        .info-terbaru-items {
+            flex: 0 0 52%;
+            max-width: 52%;
+            padding-left: 72px;
         }
 
-        /* Background — fixed, fade in/out driven by scroll */
-        .info-terbaru-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image: url('/images/bg/clearpath-curves.svg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            opacity: 0;
-            pointer-events: none;
-            z-index: 1;
-            transition: opacity 0.15s ease;
+        /* Right column: sticky number */
+        .info-terbaru-number-col {
+            flex: 0 0 48%;
+            max-width: 48%;
+            position: relative;
         }
 
-        /* Light blue number — matches nav icon color, fixed position */
+        /* The number itself sticks */
         .info-terbaru-number {
-            position: fixed;
-            right: 160px;
+            position: sticky;
             top: 22vh;
             font-family: 'Inter', sans-serif;
-            font-size: clamp(10rem, 18rem, 22rem);
+            font-size: clamp(10rem, 17vw, 22rem);
             font-weight: 500;
-            line-height: 1.2;
+            line-height: 1.1;
             color: rgb(59, 130, 246);
             letter-spacing: -0.04em;
             pointer-events: none;
             user-select: none;
             display: flex;
             align-items: baseline;
-            will-change: opacity;
-            z-index: 100;
         }
 
         .info-terbaru-num-fixed {
@@ -787,96 +773,75 @@
             display: inline-block;
             overflow: hidden;
             position: relative;
+            line-height: 1;
         }
 
         .info-terbaru-num-digit {
             display: block;
-        }
-
-        .info-terbaru-num-digit.slide-out {
-            animation: digitOut 0.35s ease forwards;
-        }
-
-        .info-terbaru-num-digit.slide-in {
-            animation: digitIn 0.35s ease forwards;
-        }
-
-        @keyframes digitOut {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(-80%); opacity: 0; }
-        }
-
-        @keyframes digitIn {
-            from { transform: translateY(60%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        /* Content scroll area — LEFT side */
-        .info-terbaru-scroll-content {
-            position: relative;
-            z-index: 1;
-            max-width: 52%;
-            padding-top: 22vh;
-            will-change: transform;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease;
         }
 
         /* Each item block — full viewport height */
         .info-terbaru-item {
-            min-height: 60vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            padding: 0 0 30px;
+            min-height: 100vh;
+            padding-top: 25vh;
+            padding-bottom: 0;
+            padding-right: 40px;
             box-sizing: border-box;
             cursor: pointer;
         }
 
         .info-terbaru-item h4 {
-            font-size: 32px;
+            font-size: 44px;
             font-weight: 600;
             font-style: normal;
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             color: #0a0a0a;
-            line-height: 1.2;
-            letter-spacing: -0.01em;
-            margin: 0 0 20px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin: 0 0 24px;
         }
 
         .info-terbaru-item p {
             font-size: 15px;
             color: var(--text-body);
-            line-height: 1.7;
+            line-height: 1.75;
             margin: 0;
-            max-width: 480px;
+            max-width: 440px;
         }
 
         /* Last item CTA */
         .info-terbaru-item-cta h4 {
-            font-style: normal;
-            font-size: 28px;
+            font-size: 36px;
         }
-
-        /* No keyframes needed — digit strip uses CSS transition translateY */
 
         /* Responsive */
         @media (max-width: 768px) {
-            .info-terbaru-inner {
-                padding: 0 16px;
+            .info-terbaru-section {
+                flex-direction: column;
             }
 
-            .info-terbaru-number {
-                font-size: 9rem;
-                right: 12px;
-                top: 18vh;
+            .info-terbaru-items {
+                flex: unset;
+                max-width: 100%;
+                width: 100%;
+                padding-left: 24px;
+                padding-right: 0;
             }
 
-            .info-terbaru-scroll-content {
-                max-width: 58%;
-                padding-top: 18vh;
+            .info-terbaru-number-col {
+                display: none;
+            }
+
+            .info-terbaru-item {
+                min-height: auto;
+                padding-top: 40px;
+                padding-bottom: 48px;
+                padding-right: 24px;
             }
 
             .info-terbaru-item h4 {
-                font-size: 24px;
+                font-size: 28px;
             }
 
             .info-terbaru-item p {
@@ -884,7 +849,7 @@
             }
 
             .info-terbaru-item-cta h4 {
-                font-size: 22px;
+                font-size: 24px;
             }
         }
 
