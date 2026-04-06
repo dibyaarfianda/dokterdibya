@@ -266,11 +266,11 @@ function displayInfoTerbaruAnnouncements(announcements) {
 
     // Build item HTML
     const itemsHtml = items.map((item, i) => {
-        const title = escapeHtml(getFirstThreeWords(stripEmoji(item.title || 'Info terbaru')));
+        const titleHtml = getFirstThreeWordsWithColors(stripEmoji(item.title || 'Info terbaru'));
         const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
         return `
             <div class="info-terbaru-item" data-index="${i}" onclick="openInfoTerbaruModal(${i})">
-                <h4>${title}</h4>
+                <h4>${titleHtml}</h4>
                 <p>${desc}</p>
             </div>
         `;
@@ -316,6 +316,16 @@ function stripEmoji(text) {
 function getFirstThreeWords(text) {
     const words = text.trim().split(/\s+/);
     return words.slice(0, 3).join(' ');
+}
+
+function getFirstThreeWordsWithColors(text) {
+    const words = text.trim().split(/\s+/).slice(0, 3);
+    if (words.length <= 1) {
+        return `<span style="color: #0a0a0a;">${words[0]}</span>`;
+    }
+    const firstWord = words[0];
+    const lastTwoWords = words.slice(1).join(' ');
+    return `<span style="color: #0a0a0a;">${firstWord}</span> <span style="color: rgb(59, 130, 246);">${lastTwoWords}</span>`;
 }
 
 function truncateText(text, maxLen) {
