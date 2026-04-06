@@ -359,6 +359,8 @@ function setupInfoTerbaruScroll() {
     const leaveDurationMs = 847;
     const enterDurationMs = 847;
     const fallbackDurationMs = 983;
+    const leaveEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const enterEasing = 'cubic-bezier(0.16, 1, 0.3, 1)';
     const triggerDelayPx = -200; // negative = trigger before midpoint reaches sticky line (earlier transition)
     const firstAlignDownPx = 100; // keep slight nudge only; avoid sticky number being too low
     const fallbackStickyTopPx = 0.30 * window.innerHeight;
@@ -436,7 +438,7 @@ function setupInfoTerbaruScroll() {
                         { transform: 'translateY(0)', opacity: 1 },
                         { transform: `translateY(${leaveOffset}px)`, opacity: 0 }
                     ],
-                    { duration: leaveDurationMs, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' }
+                    { duration: leaveDurationMs, easing: leaveEasing, fill: 'forwards' }
                 ).finished);
             }
 
@@ -445,7 +447,7 @@ function setupInfoTerbaruScroll() {
                     { transform: `translateY(${enterOffset}px)`, opacity: 0 },
                     { transform: 'translateY(0)', opacity: 1 }
                 ],
-                { duration: enterDurationMs, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' }
+                { duration: enterDurationMs, easing: enterEasing, fill: 'forwards' }
             ).finished);
 
             transitionDone = Promise.allSettled(animations);
