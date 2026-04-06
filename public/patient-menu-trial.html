@@ -156,9 +156,9 @@
         }
 
         .topbar-inner {
-            max-width: 760px;
-            margin: 0 auto;
-            padding: 12px 16px;
+            max-width: none;
+            margin: 0;
+            padding: 12px 100px;
             display: grid;
             grid-template-columns: 1fr auto;
             align-items: center;
@@ -2810,8 +2810,8 @@
         /* ========== RESPONSIVE ========== */
         @media (min-width: 600px) {
             .screen { padding-left: 24px; padding-right: 24px; }
-            .topbar-inner { padding-left: 24px; padding-right: 24px; }
-            .welcome-pinned-inner { padding-top: 25vh; padding-bottom: 25vh; padding-left: 80px; padding-right: 80px; }
+            .topbar-inner { padding-left: 100px; padding-right: 100px; }
+            .welcome-pinned-inner { padding-top: 25vh; padding-bottom: 25vh; padding-left: 100px; padding-right: 100px; }
             .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
             .hero-greeting { font-size: 48px; }
             .tanya-actions { flex-wrap: nowrap; }
@@ -2819,7 +2819,7 @@
 
         @media (min-width: 768px) {
             .screen { max-width: 820px; padding-left: 28px; padding-right: 28px; }
-            .topbar-inner { max-width: 820px; padding-left: 28px; padding-right: 28px; }
+            .topbar-inner { max-width: none; padding-left: 100px; padding-right: 100px; }
             .hero-greeting { font-size: 56px; max-width: 18ch; }
         }
 
