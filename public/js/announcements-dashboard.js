@@ -348,56 +348,34 @@ function setupInfoTerbaruScroll() {
     const wrapper = document.querySelector('.info-terbaru-wrapper');
     if (!wrapper) return;
 
-    const allItems = Array.from(wrapper.querySelectorAll('.info-terbaru-item'));
+    // Numbered scroll steps only track real announcement rows, not CTA row.
+    const allItems = Array.from(wrapper.querySelectorAll('.info-terbaru-item[data-index]'));
     if (allItems.length < 2) return;
 
     const digitTrack = wrapper.querySelector('.digit-track');
     const numSticky = wrapper.querySelector('.info-terbaru-num-sticky');
     if (!digitTrack || !numSticky) return;
 
-    const animOffsetPx = 388;
-    const leaveDurationMs = 980;
-    const enterDurationMs = 980;
-    const fallbackDurationMs = 1120;
-    const leaveEasing = 'cubic-bezier(0.12, 0.92, 0.2, 1)';
-    const enterEasing = 'cubic-bezier(0.1, 0.86, 0.2, 1)';
-    const scrollDamping = 0.10; // lower = heavier/laggier, higher = snappier
-    const triggerDelayPx = -200; // negative = trigger before midpoint reaches sticky line (earlier transition)
-    const firstAlignDownPx = 100; // keep slight nudge only; avoid sticky number being too low
-    const fallbackStickyTopPx = 0.30 * window.innerHeight;
+    const animOffsetPx = 120;
+    const leaveDurationMs = 380;
+    const enterDurationMs = 420;
+    const fallbackDurationMs = 460;
+    const leaveEasing = 'cubic-bezier(0.4, 0, 1, 1)';
+    const enterEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const stickyLineRatio = 0.34;
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
-    let stickyTopPx = fallbackStickyTopPx;
-    let targetShiftPx = 0;
-    let smoothedShiftPx = 0;
+    let stickyTopPx = Math.round(window.innerHeight * stickyLineRatio);
 
-    function recalcAlignmentMetrics() {
-        const wrapperRect = wrapper.getBoundingClientRect();
-        const wrapperTopDoc = wrapperRect.top + window.scrollY;
-
-        const firstTitle = allItems[0]?.querySelector('h4');
-        if (firstTitle) {
-            const firstTitleTopDoc = firstTitle.getBoundingClientRect().top + window.scrollY;
-            stickyTopPx = Math.max(0, Math.round(firstTitleTopDoc - wrapperTopDoc + firstAlignDownPx));
-        } else {
-            stickyTopPx = Math.round(fallbackStickyTopPx + firstAlignDownPx);
-        }
-
-        const lastItem = allItems[allItems.length - 1];
-        const lastTitle = lastItem?.querySelector('h4');
-        const lastDesc = lastItem?.querySelector('p');
-        const lastBottomDoc = lastDesc
-            ? (lastDesc.getBoundingClientRect().bottom + window.scrollY)
-            : (lastTitle
-                ? (lastTitle.getBoundingClientRect().bottom + window.scrollY)
-                : (wrapperTopDoc + wrapperRect.height));
-
-        wrapper.style.setProperty('--info-num-top', `${stickyTopPx}px`);
+    function getLineY() {
+        return stickyTopPx;
     }
 
-    function getStickyLineY() {
-        return stickyTopPx;
+    function recalcAlignmentMetrics() {
+        stickyTopPx = Math.round(window.innerHeight * stickyLineRatio);
+
+        wrapper.style.setProperty('--info-num-top', `${stickyTopPx}px`);
     }
 
     function animateDigit(newIndex) {
@@ -476,48 +454,35 @@ function setupInfoTerbaruScroll() {
             }
 
             pendingTarget = null;
-            // Re-sync to current scroll position after transition completes.
             updateByViewport();
         });
     }
 
-    function getTargetIndexByViewport(stickyLineY) {
+    function getTargetIndexByViewport(lineY) {
         let target = 0;
         for (let i = 0; i < allItems.length - 1; i++) {
-            const p1 = allItems[i].querySelector('p');
-            const h4_2 = allItems[i + 1].querySelector('h4');
-            if (!p1 || !h4_2) continue;
-            const midGapY = (p1.getBoundingClientRect().bottom + h4_2.getBoundingClientRect().top) / 2;
-            if (stickyLineY >= (midGapY + triggerDelayPx)) target = i + 1;
+            const currentContent = allItems[i].querySelector('.info-terbaru-content') || allItems[i];
+            const nextContent = allItems[i + 1].querySelector('.info-terbaru-content') || allItems[i + 1];
+            const currentRect = currentContent.getBoundingClientRect();
+            const nextRect = nextContent.getBoundingClientRect();
+            const currentCenterY = currentRect.top + currentRect.height * 0.5;
+            const nextCenterY = nextRect.top + nextRect.height * 0.5;
+            const boundaryY = (currentCenterY + nextCenterY) * 0.5;
+
+            if (lineY >= boundaryY) target = i + 1;
         }
         return target;
     }
 
     function updateByViewport() {
-        const stickyLineY = getStickyLineY();
-        const target = getTargetIndexByViewport(stickyLineY);
-        if (target !== currentIndex) animateDigit(target);
-
-        const lastIndex = allItems.length - 1;
-        if (target === lastIndex) {
-            const lastItem = allItems[lastIndex];
-            const lastTitle = lastItem?.querySelector('h4');
-            const titleTopY = lastTitle
-                ? lastTitle.getBoundingClientRect().top
-                : lastItem.getBoundingClientRect().top;
-            // Track h4 of last item: number moves when h4 scrolls above sticky line
-            targetShiftPx = Math.min(0, Math.round(titleTopY - stickyTopPx));
-        } else {
-            targetShiftPx = 0;
+        const target = getTargetIndexByViewport(getLineY());
+        if (target !== currentIndex) {
+            animateDigit(target);
         }
 
-        smoothedShiftPx += (targetShiftPx - smoothedShiftPx) * scrollDamping;
-        if (Math.abs(targetShiftPx - smoothedShiftPx) < 0.5) {
-            smoothedShiftPx = targetShiftPx;
-        }
-        numSticky.style.transform = `translateY(${Math.round(smoothedShiftPx)}px)`;
+        numSticky.style.transform = 'translateY(0)';
 
-        return Math.abs(targetShiftPx - smoothedShiftPx);
+        return 0;
     }
 
     let ticking = false;
