@@ -264,46 +264,41 @@ function displayInfoTerbaruAnnouncements(announcements) {
     infoTerbaruAllAnnouncements = sorted;
     const items = sorted.slice(0, 3);
 
-    // Build item HTML — each item is a normal full-height block
+    // New structure: each item is a flex ROW with its own sticky number on the right
     const itemsHtml = items.map((item, i) => {
         const titleHtml = getFirstThreeWordsWithColors(stripEmoji(item.title || 'Info terbaru'));
         const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
+        const num = String(i + 1).padStart(2, '0');
         return `
-            <div class="info-terbaru-item" data-index="${i}" onclick="openInfoTerbaruModal(${i})">
-                <h4>${titleHtml}</h4>
-                <p>${desc}</p>
+            <div class="info-terbaru-item" data-index="${i}">
+                <div class="info-terbaru-content" onclick="openInfoTerbaruModal(${i})">
+                    <h4>${titleHtml}</h4>
+                    <p>${desc}</p>
+                </div>
+                <div class="info-terbaru-num">${num}</div>
             </div>
         `;
     }).join('');
 
     // CTA as last item
     const ctaHtml = `
-        <div class="info-terbaru-item info-terbaru-item-cta" data-index="${items.length}">
-            <h4>Lihat Info Lainnya</h4>
-            <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
+        <div class="info-terbaru-item info-terbaru-item-cta">
+            <div class="info-terbaru-content" onclick="window.location.href='/announcements.html'">
+                <h4>Lihat Info Lainnya</h4>
+                <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
+            </div>
+            <div class="info-terbaru-num" style="opacity:0.15">${String(items.length + 1).padStart(2, '0')}</div>
         </div>
     `;
 
-    // New structure: 2-column flex, content scrolls naturally, number is sticky
     container.innerHTML = `
-        <div class="info-terbaru-section" id="info-terbaru-section">
-            <div class="info-terbaru-items" id="info-terbaru-items">
-                ${itemsHtml}
-                ${ctaHtml}
-            </div>
-            <div class="info-terbaru-number-col">
-                <div class="info-terbaru-number" id="info-terbaru-number">
-                    <span class="info-terbaru-num-fixed">0</span>
-                    <span class="info-terbaru-num-slot">
-                        <span class="info-terbaru-num-digit" id="info-terbaru-digit">1</span>
-                    </span>
-                </div>
-            </div>
+        <div class="info-terbaru-wrapper">
+            ${itemsHtml}
+            ${ctaHtml}
         </div>
     `;
 
     infoTerbaruCurrentIndex = 0;
-    setupInfoTerbaruScroll();
 }
 
 function stripEmoji(text) {
@@ -330,103 +325,8 @@ function truncateText(text, maxLen) {
     return text.substring(0, maxLen).replace(/\s+\S*$/, '') + '...';
 }
 
-var _infoDigitAnimating = false;
-function animateInfoTerbaruDigit(index) {
-    var digit = document.getElementById('info-terbaru-digit');
-    if (!digit) return;
-    var newValue = String(index + 1);
-    if (digit.textContent === newValue) return;
-    if (_infoDigitAnimating) {
-        // Force immediate update if already animating
-        digit.style.transition = 'none';
-        digit.style.transform = 'translateY(0)';
-        digit.style.opacity = '1';
-        digit.textContent = newValue;
-        _infoDigitAnimating = false;
-        return;
-    }
-
-    _infoDigitAnimating = true;
-
-    // Slide out: current digit moves UP and fades
-    digit.style.transition = 'transform 0.35s ease, opacity 0.25s ease';
-    digit.style.transform = 'translateY(-100%)';
-    digit.style.opacity = '0';
-
-    setTimeout(function() {
-        // Jump to below, no transition
-        digit.style.transition = 'none';
-        digit.style.transform = 'translateY(80%)';
-        digit.textContent = newValue;
-
-        // Force reflow
-        void digit.offsetHeight;
-
-        // Slide in from below
-        digit.style.transition = 'transform 0.35s ease, opacity 0.25s ease';
-        digit.style.transform = 'translateY(0)';
-        digit.style.opacity = '1';
-
-        setTimeout(function() { _infoDigitAnimating = false; }, 370);
-    }, 300);
-}
-
-function setupInfoTerbaruScroll() {
-    const itemsContainer = document.getElementById('info-terbaru-items');
-    if (!itemsContainer) return;
-
-    const items = itemsContainer.querySelectorAll('.info-terbaru-item');
-    if (!items.length) return;
-
-    // Remove old handler if exists
-    if (infoTerbaruScrollHandler) {
-        window.removeEventListener('scroll', infoTerbaruScrollHandler);
-        window.removeEventListener('resize', infoTerbaruScrollHandler);
-        infoTerbaruScrollHandler = null;
-    }
-
-    // Disconnect old observer if exists
-    if (window._infoTerbaruObserver) {
-        window._infoTerbaruObserver.disconnect();
-        window._infoTerbaruObserver = null;
-    }
-
-    // Use IntersectionObserver: fires when item's h4 crosses the MIDPOINT of viewport (-50% from both edges)
-    // rootMargin "-50% 0px -50% 0px" means only intersecting when it's right at the vertical center
-    var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-            if (entry.isIntersecting) {
-                var idx = parseInt(entry.target.getAttribute('data-index'), 10);
-                if (!isNaN(idx) && idx !== infoTerbaruCurrentIndex) {
-                    animateInfoTerbaruDigit(idx);
-                    infoTerbaruCurrentIndex = idx;
-                }
-            }
-        });
-    }, {
-        rootMargin: '-50% 0px -50% 0px',
-        threshold: 0
-    });
-
-    // Observe each item's h4 (title) — change digit when title hits viewport center
-    items.forEach(function(item) {
-        var h4 = item.querySelector('h4');
-        if (h4) {
-            observer.observe(h4);
-        }
-    });
-
-    window._infoTerbaruObserver = observer;
-
-    // Set initial digit based on which item is currently at top
-    infoTerbaruCurrentIndex = 0;
-    var digit = document.getElementById('info-terbaru-digit');
-    if (digit) {
-        digit.textContent = '1';
-        digit.style.transform = 'translateY(0)';
-        digit.style.opacity = '1';
-    }
-}
+// No scroll setup needed — sticky number is pure CSS per item
+function setupInfoTerbaruScroll() {}
 
 // Backwards compat stubs
 function toggleInfoTerbaruExpanded() {}
