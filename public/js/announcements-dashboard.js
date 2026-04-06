@@ -354,12 +354,12 @@ function setupInfoTerbaruScroll() {
     const digitTrack = wrapper.querySelector('.digit-track');
     if (!digitTrack) return;
 
-    const animOffsetPx = 188;
+    const animOffsetPx = 388;
     const leaveDurationMs = 560;
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
-    const stickyTopRatio = 0.36; // must match CSS top: 36vh
+    const stickyTopRatio = 0.30; // must match CSS top: 30vh
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
@@ -462,6 +462,26 @@ function setupInfoTerbaruScroll() {
         const stickyLineY = getStickyLineY();
         const target = getTargetIndexByViewport(stickyLineY);
         if (target !== currentIndex) animateDigit(target);
+
+        // On the last item, keep 04 vertically aligned with the last content bottom edge.
+        const numSticky = wrapper.querySelector('.info-terbaru-num-sticky');
+        if (numSticky) {
+            const lastIndex = allItems.length - 1;
+            if (target === lastIndex) {
+                const lastItem = allItems[lastIndex];
+                const lastTitle = lastItem?.querySelector('h4');
+                const lastDesc = lastItem?.querySelector('p');
+                const contentBottomY = lastDesc
+                    ? lastDesc.getBoundingClientRect().bottom
+                    : (lastTitle ? lastTitle.getBoundingClientRect().bottom : lastItem.getBoundingClientRect().bottom);
+
+                const digitBottomY = digitTrack.getBoundingClientRect().bottom;
+                const deltaY = contentBottomY - digitBottomY;
+                numSticky.style.transform = `translateY(${deltaY}px)`;
+            } else {
+                numSticky.style.transform = 'translateY(0px)';
+            }
+        }
     }
 
     let ticking = false;
