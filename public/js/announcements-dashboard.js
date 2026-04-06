@@ -438,23 +438,24 @@ function setupInfoTerbaruScroll() {
             infoTerbaruCurrentIndex = currentIndex;
         }
 
-        // Number styling: keep fixed position (no drift), only opacity fade on exit
+        // Number styling: keep fixed position (no drift), fade in at start, fade out at end
         var numberEl = pinned.querySelector('.info-terbaru-number');
         if (numberEl) {
+            var segmentSize = 1 / totalItems;
             var lastSegmentStart = 1 - segmentSize;
-            var opacity = 1;
+            var opacity = 0;
 
-            // Start fade before the final segment
-            var preFadeStart = Math.max(0, lastSegmentStart - segmentSize * 0.35);
-            if (progress > preFadeStart) {
-                opacity = 1 - ((progress - preFadeStart) / (1 - preFadeStart));
-                opacity = Math.max(0, Math.min(1, opacity));
-            }
-
-            // Wipe out in final segment
-            if (progress >= lastSegmentStart) {
+            // Fade in at start of section (progress 0 → 0.1)
+            var fadeInEnd = 0.1;
+            if (progress < fadeInEnd) {
+                opacity = progress / fadeInEnd;
+            } else if (progress < lastSegmentStart) {
+                // Full opacity during middle section
+                opacity = 1;
+            } else {
+                // Fade out in final segment
                 var wipeProgress = (progress - lastSegmentStart) / segmentSize;
-                opacity = Math.min(opacity, 1 - wipeProgress);
+                opacity = Math.max(0, 1 - wipeProgress);
             }
 
             numberEl.style.opacity = String(Math.max(0, Math.min(1, opacity)));
