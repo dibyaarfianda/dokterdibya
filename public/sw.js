@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260406d'; // 2026-04-06 - Refresh cache after heavier ClearPath feel tuning
+const CACHE_VERSION = '20260406e'; // 2026-04-06 - Refresh cache after Info Terbaru abstract background rollout
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
