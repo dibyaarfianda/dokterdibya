@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260407d'; // 2026-04-07 - Welcome bg: full-screen fixed overlay, no boundary
+const CACHE_VERSION = '20260407e'; // 2026-04-07 - Info Terbaru curved ClearPath-style background
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
