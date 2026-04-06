@@ -780,9 +780,13 @@
 
         .info-terbaru-num-sticky {
             position: sticky;
-            top: 30vh;
+            top: var(--info-num-top, 30vh);
             height: fit-content;
             overflow: visible;
+        }
+
+        .info-terbaru-num-sticky.end-align {
+            transform: translateY(var(--info-num-end-shift, 0px));
         }
 
         /* Fixed-size box that digits slide in/out of */
