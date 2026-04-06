@@ -458,29 +458,10 @@ function setupInfoTerbaruScroll() {
         return target;
     }
 
-    function getLastItemWipeY() {
-        const lastItem = allItems[allItems.length - 1];
-        if (!lastItem) return Number.POSITIVE_INFINITY;
-
-        const lastTitle = lastItem.querySelector('h4');
-        const lastDesc = lastItem.querySelector('p');
-        const titleTop = lastTitle
-            ? lastTitle.getBoundingClientRect().top
-            : lastItem.getBoundingClientRect().top;
-        const descBottom = lastDesc
-            ? lastDesc.getBoundingClientRect().bottom
-            : lastItem.getBoundingClientRect().bottom;
-        return (titleTop + descBottom) / 2;
-    }
-
     function updateByViewport() {
         const stickyLineY = getStickyLineY();
         const target = getTargetIndexByViewport(stickyLineY);
         if (target !== currentIndex) animateDigit(target);
-
-        const lastIndex = allItems.length - 1;
-        const shouldFinalWipe = (target === lastIndex) && (stickyLineY >= getLastItemWipeY());
-        digitTrack.classList.toggle('is-final-wipe', shouldFinalWipe);
     }
 
     let ticking = false;
