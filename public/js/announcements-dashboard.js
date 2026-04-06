@@ -358,11 +358,12 @@ function setupInfoTerbaruScroll() {
 
     const items = scrollContent.querySelectorAll('.info-terbaru-item');
     const totalItems = items.length;
-    let prevIndex = 0;
+    let prevIndex = -1;
 
     // Remove old handler if exists
     if (infoTerbaruScrollHandler) {
         window.removeEventListener('scroll', infoTerbaruScrollHandler);
+        window.removeEventListener('resize', infoTerbaruScrollHandler);
     }
 
     infoTerbaruScrollHandler = function() {
@@ -413,22 +414,35 @@ function setupInfoTerbaruScroll() {
             infoTerbaruCurrentIndex = currentIndex;
         }
 
-        // Number wipe: at last item, slide up and fade out
+        // Number motion: drift upward during scroll, then wipe out in final segment
         var numberEl = pinned.querySelector('.info-terbaru-number');
         if (numberEl) {
             var lastSegmentStart = 1 - segmentSize;
+            var driftUp = progress * 28; // continuous upward drift across section
+            var opacity = 1;
+            var extraWipeUp = 0;
+
+            // Start gentle fade before the final segment.
+            var preFadeStart = Math.max(0, lastSegmentStart - segmentSize * 0.35);
+            if (progress > preFadeStart) {
+                opacity = 1 - ((progress - preFadeStart) / (1 - preFadeStart));
+                opacity = Math.max(0, Math.min(1, opacity));
+            }
+
             if (progress >= lastSegmentStart) {
                 var wipeProgress = (progress - lastSegmentStart) / segmentSize;
-                numberEl.style.opacity = 1 - wipeProgress;
-                numberEl.style.transform = 'translateY(' + (-50 - wipeProgress * 80) + '%)';
-            } else {
-                numberEl.style.opacity = 1;
-                numberEl.style.transform = 'translateY(-50%)';
+                extraWipeUp = wipeProgress * 80;
+                opacity = Math.min(opacity, 1 - wipeProgress);
             }
+
+            numberEl.style.opacity = String(Math.max(0, Math.min(1, opacity)));
+            numberEl.style.transform = 'translate3d(0, ' + (-50 - driftUp - extraWipeUp) + '%, 0)';
         }
     };
 
     window.addEventListener('scroll', infoTerbaruScrollHandler, { passive: true });
+    window.addEventListener('resize', infoTerbaruScrollHandler);
+    infoTerbaruScrollHandler();
 }
 
 // Backwards compat stubs
