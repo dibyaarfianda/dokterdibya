@@ -805,7 +805,7 @@
         .info-terbaru-item h4 {
               font-size: 48px;
               font-weight: 350;
-            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+                        font-family: 'Crimson Text', serif;
             color: #0a0a0a;
             line-height: 1.1;
             letter-spacing: -0.02em;
@@ -969,6 +969,8 @@
 
             .info-terbaru-item h4 {
                 font-size: 28px;
+                font-family: 'Crimson Text', serif;
+                font-weight: 400;
             }
 
             .info-terbaru-item p {
@@ -1568,8 +1570,24 @@
             padding-left: 100px;
             padding-right: 100px;
             box-sizing: border-box;
+            isolation: isolate;
+            overflow: hidden;
             background-color: rgba(110, 72, 52, 0);
             transition: background-color 0.05s ease-out;
+        }
+
+        .welcome-pinned-inner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: var(--welcome-bg-opacity, 0);
+            background:
+                radial-gradient(circle at 14% 22%, rgba(245, 177, 122, 0.32) 0%, rgba(245, 177, 122, 0) 48%),
+                radial-gradient(circle at 86% 78%, rgba(191, 116, 67, 0.26) 0%, rgba(191, 116, 67, 0) 52%),
+                linear-gradient(135deg, rgba(60, 35, 24, 0.9) 0%, rgba(86, 52, 37, 0.78) 45%, rgba(56, 33, 23, 0.92) 100%);
+            transition: opacity 0.05s ease-out;
         }
 
         .welcome-window {
@@ -4711,8 +4729,9 @@
                     opacity = 0;
                 }
 
-                // Set background color directly with rgba
-                welcomePinnedInner.style.backgroundColor = 'rgba(110, 72, 52, ' + opacity + ')';
+                // Apply both tint and decorative special background during welcome block.
+                welcomePinnedInner.style.backgroundColor = 'rgba(110, 72, 52, ' + (opacity * 0.75) + ')';
+                welcomePinnedInner.style.setProperty('--welcome-bg-opacity', opacity.toFixed(3));
             }
 
             window.addEventListener('scroll', updateBackgroundOpacity, { passive: true });
