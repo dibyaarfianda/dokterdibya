@@ -365,8 +365,6 @@ function setupInfoTerbaruScroll() {
     let isAnimating = false;
     let pendingTarget = null;
     let stickyTopPx = fallbackStickyTopPx;
-    let endShiftPx = 0;
-    let endAlignActive = false;
 
     function recalcAlignmentMetrics() {
         const wrapperRect = wrapper.getBoundingClientRect();
@@ -388,11 +386,8 @@ function setupInfoTerbaruScroll() {
             : (lastTitle
                 ? (lastTitle.getBoundingClientRect().bottom + window.scrollY)
                 : (wrapperTopDoc + wrapperRect.height));
-        const wrapperBottomDoc = wrapperTopDoc + wrapperRect.height;
-        endShiftPx = Math.round(lastBottomDoc - wrapperBottomDoc);
 
         wrapper.style.setProperty('--info-num-top', `${stickyTopPx}px`);
-        wrapper.style.setProperty('--info-num-end-shift', `${endShiftPx}px`);
     }
 
     function getStickyLineY() {
@@ -498,16 +493,22 @@ function setupInfoTerbaruScroll() {
         if (target !== currentIndex) animateDigit(target);
 
         const lastIndex = allItems.length - 1;
-        const wrapperBottomY = wrapper.getBoundingClientRect().bottom;
-        const stickyBottomY = stickyTopPx + digitTrack.getBoundingClientRect().height;
+        if (target === lastIndex) {
+            const lastItem = allItems[lastIndex];
+            const lastTitle = lastItem?.querySelector('h4');
+            const lastDesc = lastItem?.querySelector('p');
+            const contentBottomY = lastDesc
+                ? lastDesc.getBoundingClientRect().bottom
+                : (lastTitle
+                    ? lastTitle.getBoundingClientRect().bottom
+                    : lastItem.getBoundingClientRect().bottom);
 
-        if (!endAlignActive && target === lastIndex && wrapperBottomY <= (stickyBottomY + 2)) {
-            endAlignActive = true;
-        } else if (endAlignActive && wrapperBottomY > (stickyBottomY + 18)) {
-            endAlignActive = false;
+            const baseBottomY = stickyTopPx + digitTrack.getBoundingClientRect().height;
+            const neededShift = Math.min(0, Math.round(contentBottomY - baseBottomY));
+            numSticky.style.transform = `translateY(${neededShift}px)`;
+        } else {
+            numSticky.style.transform = 'translateY(0px)';
         }
-
-        numSticky.classList.toggle('end-align', endAlignActive && target === lastIndex);
     }
 
     let ticking = false;
