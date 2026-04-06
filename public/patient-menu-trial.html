@@ -740,7 +740,7 @@
             top: 0;
             height: 100vh;
             overflow: hidden;
-            padding: 0 110px 0 72px;
+            padding: 0 160px 0 72px;
         }
 
         /* Background — fixed, fade in/out driven by scroll */
@@ -760,14 +760,13 @@
             transition: opacity 0.15s ease;
         }
 
-        /* Light blue number — matches nav icon color */
+        /* Light blue number — matches nav icon color, fixed position */
         .info-terbaru-number {
-            position: absolute;
-            right: 86px;
+            position: fixed;
+            right: 160px;
             top: 22vh;
-            transform: translateY(0);
             font-family: 'Inter', sans-serif;
-            font-size: clamp(8rem, 14.2rem, 16rem);
+            font-size: clamp(10rem, 18rem, 22rem);
             font-weight: 500;
             line-height: 1.2;
             color: rgb(59, 130, 246);
@@ -776,7 +775,8 @@
             user-select: none;
             display: flex;
             align-items: baseline;
-            will-change: transform, opacity;
+            will-change: opacity;
+            z-index: 100;
         }
 
         .info-terbaru-num-fixed {
@@ -861,12 +861,12 @@
         /* Responsive */
         @media (max-width: 768px) {
             .info-terbaru-inner {
-                padding: 0 24px;
+                padding: 0 16px;
             }
 
             .info-terbaru-number {
-                font-size: 8rem;
-                right: 18px;
+                font-size: 9rem;
+                right: 12px;
                 top: 18vh;
             }
 

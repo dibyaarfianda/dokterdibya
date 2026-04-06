@@ -418,9 +418,18 @@ function setupInfoTerbaruScroll() {
             bgEl.style.opacity = Math.max(0, Math.min(1, bgOpacity));
         }
 
-        // Determine current item index
+        // Determine current item index based on gap midpoints
+        // Trigger digit change when progress reaches midpoint between items
         var segmentSize = 1 / totalItems;
-        const currentIndex = Math.min(Math.floor(progress / segmentSize), totalItems - 1);
+        var currentIndex = 0;
+        
+        // Check if progress has reached each gap midpoint (0.5, 1.5, 2.5, etc segments)
+        for (var i = 0; i < totalItems - 1; i++) {
+            if (progress >= (i + 0.5) * segmentSize) {
+                currentIndex = i + 1;
+            }
+        }
+        currentIndex = Math.min(currentIndex, totalItems - 1);
 
         // Animate digit on index change — shift strip upward
         if (currentIndex !== prevIndex) {
@@ -429,30 +438,27 @@ function setupInfoTerbaruScroll() {
             infoTerbaruCurrentIndex = currentIndex;
         }
 
-        // Number motion: drift upward during scroll, then wipe out in final segment
+        // Number styling: keep fixed position (no drift), only opacity fade on exit
         var numberEl = pinned.querySelector('.info-terbaru-number');
         if (numberEl) {
             var lastSegmentStart = 1 - segmentSize;
-            var driftUp = progress * 28; // continuous upward drift across section
             var opacity = 1;
-            var extraWipeUp = 0;
-            var baseShift = 0;
 
-            // Start gentle fade before the final segment.
+            // Start fade before the final segment
             var preFadeStart = Math.max(0, lastSegmentStart - segmentSize * 0.35);
             if (progress > preFadeStart) {
                 opacity = 1 - ((progress - preFadeStart) / (1 - preFadeStart));
                 opacity = Math.max(0, Math.min(1, opacity));
             }
 
+            // Wipe out in final segment
             if (progress >= lastSegmentStart) {
                 var wipeProgress = (progress - lastSegmentStart) / segmentSize;
-                extraWipeUp = wipeProgress * 80;
                 opacity = Math.min(opacity, 1 - wipeProgress);
             }
 
             numberEl.style.opacity = String(Math.max(0, Math.min(1, opacity)));
-            numberEl.style.transform = 'translate3d(0, ' + (baseShift - driftUp - extraWipeUp) + '%, 0)';
+            // No transform — number stays fixed at top
         }
     };
 
