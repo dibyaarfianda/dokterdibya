@@ -736,6 +736,21 @@
             left: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
+            background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 100%);
+            z-index: 1;
+        }
+
+        #announcements-container::after {
+            content: '';
+            position: absolute;
+            left: -8vw;
+            right: -8vw;
+            bottom: -120px;
+            height: 128px;
+            background: var(--bg-page);
+            border-top-left-radius: 58% 100%;
+            border-top-right-radius: 58% 100%;
+            z-index: -1;
         }
 
         .info-terbaru-block-header {
@@ -746,7 +761,22 @@
             margin-right: -50vw;
             margin-top: 200px;
             box-sizing: border-box;
-            padding: 0 100px 88px;
+            padding: 94px 100px 88px;
+            background: linear-gradient(180deg, #f7f9ff 0%, #eef4ff 100%);
+            z-index: 1;
+        }
+
+        .info-terbaru-block-header::before {
+            content: '';
+            position: absolute;
+            left: -8vw;
+            right: -8vw;
+            top: -120px;
+            height: 128px;
+            background: var(--bg-page);
+            border-bottom-left-radius: 58% 100%;
+            border-bottom-right-radius: 58% 100%;
+            z-index: -1;
         }
 
         @media (max-width: 1199px) {
@@ -933,7 +963,21 @@
         @media (max-width: 768px) {
             .info-terbaru-block-header {
                 margin-top: 180px;
-                padding: 0 24px 40px;
+                padding: 66px 24px 40px;
+            }
+
+            .info-terbaru-block-header::before {
+                left: -18vw;
+                right: -18vw;
+                top: -78px;
+                height: 88px;
+            }
+
+            #announcements-container::after {
+                left: -18vw;
+                right: -18vw;
+                bottom: -78px;
+                height: 88px;
             }
 
             .info-terbaru-block-title {
