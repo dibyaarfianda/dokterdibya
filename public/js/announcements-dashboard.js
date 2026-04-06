@@ -465,26 +465,6 @@ function setupInfoTerbaruScroll() {
         const stickyLineY = getStickyLineY();
         const target = getTargetIndexByViewport(stickyLineY);
         if (target !== currentIndex) animateDigit(target);
-
-        // On the last item, keep 04 vertically aligned with the last content bottom edge.
-        const numSticky = wrapper.querySelector('.info-terbaru-num-sticky');
-        if (numSticky) {
-            const lastIndex = allItems.length - 1;
-            if (target === lastIndex) {
-                const lastItem = allItems[lastIndex];
-                const lastTitle = lastItem?.querySelector('h4');
-                const lastDesc = lastItem?.querySelector('p');
-                const contentBottomY = lastDesc
-                    ? lastDesc.getBoundingClientRect().bottom
-                    : (lastTitle ? lastTitle.getBoundingClientRect().bottom : lastItem.getBoundingClientRect().bottom);
-
-                const digitBottomY = digitTrack.getBoundingClientRect().bottom;
-                const deltaY = contentBottomY - digitBottomY;
-                numSticky.style.transform = `translateY(${Math.round(deltaY)}px)`;
-            } else {
-                numSticky.style.transform = 'translateY(0px)';
-            }
-        }
     }
 
     let ticking = false;
