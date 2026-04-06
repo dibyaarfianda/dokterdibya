@@ -354,7 +354,6 @@ function setupInfoTerbaruScroll() {
     const digitTrack = wrapper.querySelector('.digit-track');
     if (!digitTrack) return;
 
-    const stickyTopRatio = 0.30; // must match CSS top: 30vh
     const animOffsetPx = 188;
     const leaveDurationMs = 460;
     const enterDurationMs = 620;
@@ -378,12 +377,32 @@ function setupInfoTerbaruScroll() {
 
     const scrollHost = getScrollHost(wrapper);
 
-    function getStickyLineY() {
+    function getStickyTopPx() {
+        const firstTitle = allItems[0]?.querySelector('h4');
+        if (!firstTitle) return 0.30 * window.innerHeight;
+
+        const firstTitleTop = firstTitle.getBoundingClientRect().top;
         if (scrollHost === window) {
-            return window.innerHeight * stickyTopRatio;
+            return Math.max(0, firstTitleTop);
+        }
+
+        const hostRect = scrollHost.getBoundingClientRect();
+        return Math.max(0, firstTitleTop - hostRect.top);
+    }
+
+    function applyStickyTop() {
+        const topPx = getStickyTopPx();
+        wrapper.style.setProperty('--info-num-top', `${topPx}px`);
+        return topPx;
+    }
+
+    function getStickyLineY() {
+        const topPx = applyStickyTop();
+        if (scrollHost === window) {
+            return topPx;
         }
         const hostRect = scrollHost.getBoundingClientRect();
-        return hostRect.top + (scrollHost.clientHeight * stickyTopRatio);
+        return hostRect.top + topPx;
     }
 
     function animateDigit(newIndex) {
