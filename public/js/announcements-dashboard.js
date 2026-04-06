@@ -363,6 +363,7 @@ function setupInfoTerbaruScroll() {
     const leaveEasing = 'cubic-bezier(0.4, 0, 1, 1)';
     const enterEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
     const stickyLineRatio = 0.34;
+    const nextTitleTriggerOffsetPx = 90;
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
@@ -460,16 +461,14 @@ function setupInfoTerbaruScroll() {
 
     function getTargetIndexByViewport(lineY) {
         let target = 0;
-        for (let i = 0; i < allItems.length - 1; i++) {
-            const currentContent = allItems[i].querySelector('.info-terbaru-content') || allItems[i];
-            const nextContent = allItems[i + 1].querySelector('.info-terbaru-content') || allItems[i + 1];
-            const currentRect = currentContent.getBoundingClientRect();
-            const nextRect = nextContent.getBoundingClientRect();
-            const currentCenterY = currentRect.top + currentRect.height * 0.5;
-            const nextCenterY = nextRect.top + nextRect.height * 0.5;
-            const boundaryY = (currentCenterY + nextCenterY) * 0.5;
+        for (let i = 1; i < allItems.length; i++) {
+            const nextTitle = allItems[i].querySelector('h4') || allItems[i];
+            const nextTitleY = nextTitle.getBoundingClientRect().top;
 
-            if (lineY >= boundaryY) target = i + 1;
+            // Switch to next number a bit before title hits sticky line.
+            if (lineY >= (nextTitleY - nextTitleTriggerOffsetPx)) {
+                target = i;
+            }
         }
         return target;
     }
