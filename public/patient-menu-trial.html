@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Trial theme sticky navigation (keeps theme when navigating to other pages) -->
@@ -744,8 +744,15 @@
             left: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
+            margin-top: 520px;
             box-sizing: border-box;
             padding: 0 100px 88px;
+        }
+
+        @media (max-width: 1199px) {
+            .info-terbaru-block-header {
+                margin-top: 320px;
+            }
         }
 
         .info-terbaru-block-title {
@@ -925,6 +932,7 @@
         /* Mobile: hide number, collapse to single column */
         @media (max-width: 768px) {
             .info-terbaru-block-header {
+                margin-top: 180px;
                 padding: 0 24px 40px;
             }
 
@@ -1560,6 +1568,8 @@
             padding-left: 100px;
             padding-right: 100px;
             box-sizing: border-box;
+            background-color: rgba(110, 72, 52, var(--bg-fade-opacity, 0));
+            transition: background-color 0.05s ease-out;
         }
 
         .welcome-window {
@@ -1591,12 +1601,12 @@
 
         .welcome-window-left-inner h2 {
             margin: 0;
-            font-family: var(--font-display);
+            font-family: 'Crimson Text', serif;
             text-align: left;
             font-size: 88px;
             line-height: 0.92;
             letter-spacing: -0.03em;
-            font-weight: 600;
+            font-weight: 400;
             margin-right: 0;
             color: rgb(15, 23, 42);
         }
@@ -1660,8 +1670,11 @@
         }
 
         .welcome-pinned-content p {
-            font-size: 15px;
-            line-height: 2;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.11em;
+            line-height: 140%;
             color: rgba(255, 255, 255, 0.7);
             margin: 0 0 32px;
         }
@@ -4628,18 +4641,31 @@
         (function() {
             var targetY = window.scrollY;
             var currentY = window.scrollY;
-            var damping = 0.14;
+            var defaultDamping = 0.14;
+            var welcomeDamping = 0.08;
+            var activeDamping = defaultDamping;
             var rafId = null;
+            var welcomePinned = document.getElementById('welcome-pinned');
+
+            function isInWelcomeRange(y) {
+                if (!welcomePinned) return false;
+                var top = welcomePinned.offsetTop;
+                var bottom = top + welcomePinned.offsetHeight;
+                return y >= top && y <= bottom;
+            }
 
             window.addEventListener('wheel', function(e) {
                 e.preventDefault();
                 targetY += e.deltaY;
                 targetY = Math.max(0, Math.min(targetY, document.documentElement.scrollHeight - window.innerHeight));
+                activeDamping = (isInWelcomeRange(window.scrollY) || isInWelcomeRange(targetY))
+                    ? welcomeDamping
+                    : defaultDamping;
                 if (!rafId) tick();
             }, { passive: false });
 
             function tick() {
-                currentY += (targetY - currentY) * damping;
+                currentY += (targetY - currentY) * activeDamping;
                 if (Math.abs(targetY - currentY) < 0.5) {
                     currentY = targetY;
                     window.scrollTo(0, currentY);
@@ -4649,6 +4675,47 @@
                 window.scrollTo(0, currentY);
                 rafId = requestAnimationFrame(tick);
             }
+        })();
+
+        // ==================== BACKGROUND FADE ON SCROLL (Hero → Selamat Datang → Fade Out) ====================
+        (function() {
+            var welcomePinnedInner = document.querySelector('.welcome-pinned-inner');
+            var heroWelcome = document.querySelector('.hero-welcome');
+            var welcomePinned = document.getElementById('welcome-pinned');
+            if (!welcomePinnedInner || !heroWelcome || !welcomePinned) return;
+
+            function updateBackgroundOpacity() {
+                var scrollY = window.scrollY;
+                var heroEnd = heroWelcome.offsetTop + heroWelcome.offsetHeight;
+                var welcomeStart = welcomePinned.offsetTop;
+                var welcomeEnd = welcomeStart + welcomePinned.offsetHeight;
+                var welcomeMid = welcomeStart + (welcomePinned.offsetHeight / 2);
+                var opacity = 0;
+
+                if (scrollY < heroEnd) {
+                    // Before hero section ends: 0%
+                    opacity = 0;
+                } else if (scrollY < welcomeStart) {
+                    // Fade in from hero end to welcome start
+                    var fadeInRange = welcomeStart - heroEnd;
+                    opacity = Math.max(0, Math.min(1, (scrollY - heroEnd) / fadeInRange));
+                } else if (scrollY < welcomeMid) {
+                    // Full opacity from welcome start to midpoint
+                    opacity = 1;
+                } else if (scrollY < welcomeEnd) {
+                    // Fade out from midpoint to end
+                    var fadeOutRange = welcomeEnd - welcomeMid;
+                    opacity = Math.max(0, Math.min(1, 1 - ((scrollY - welcomeMid) / fadeOutRange)));
+                } else {
+                    // After welcome ends: 0%
+                    opacity = 0;
+                }
+
+                welcomePinnedInner.style.setProperty('--bg-fade-opacity', opacity);
+            }
+
+            window.addEventListener('scroll', updateBackgroundOpacity, { passive: true });
+            updateBackgroundOpacity();
         })();
 
         // ==================== STICKY STACK — Flair PROCES ====================
