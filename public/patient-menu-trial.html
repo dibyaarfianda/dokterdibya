@@ -1580,7 +1580,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            z-index: -1;
+            z-index: 0;
             pointer-events: none;
             opacity: var(--welcome-bg-opacity, 0);
             background:
@@ -1593,6 +1593,7 @@
         .welcome-window {
             flex: 1;
             position: relative;
+            z-index: 1;
             background: transparent;
             color: #ffffff;
             overflow: hidden;
