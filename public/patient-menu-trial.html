@@ -780,7 +780,7 @@
 
         .info-terbaru-num-sticky {
             position: sticky;
-            top: 30vh; /* lock at viewport 30vh — matches padding-top */
+            top: var(--info-num-top, 30vh);
             height: fit-content;
             overflow: visible;
         }
