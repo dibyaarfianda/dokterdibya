@@ -738,8 +738,11 @@ router.post('/:mrId/create-3ds-auth', verifyToken, async (req, res) => {
  */
 async function handlePaymentSuccess(payment, webhookData) {
     const mrId = payment.mr_id;
+    const connection = await db.getConnection();
 
     try {
+        await connection.beginTransaction();
+
         // Convert paid_at to Date object (MySQL2 handles Date objects correctly)
         let paidAt = webhookData.paid_at || new Date();
         if (typeof paidAt === 'string') {
@@ -747,7 +750,7 @@ async function handlePaymentSuccess(payment, webhookData) {
         }
 
         // Update payment status
-        await db.query(`
+        await connection.query(`
             UPDATE tagihan_payments
             SET status = 'paid',
                 paid_at = ?,
@@ -760,56 +763,80 @@ async function handlePaymentSuccess(payment, webhookData) {
         ]);
 
         // Log the event
-        await db.query(`
+        await connection.query(`
             INSERT INTO tagihan_payment_logs (
                 payment_id, billing_id, mr_id, event_type, event_source,
                 status_before, status_after, response_data
             ) VALUES (?, ?, ?, 'payment.paid', 'webhook', 'pending', 'paid', ?)
         `, [payment.id, payment.billing_id, mrId, JSON.stringify(webhookData)]);
 
-        // Update billing status to paid
-        await db.query(`
-            UPDATE sunday_clinic_billings
-            SET status = 'paid'
-            WHERE id = ? AND status = 'confirmed'
-        `, [payment.billing_id]);
-
         // Get billing items for stock deduction
-        const [billingItems] = await db.query(`
-            SELECT item_code, item_name, quantity
+        const [billingItems] = await connection.query(`
+            SELECT item_code, item_name, quantity,
+                   CAST(JSON_EXTRACT(item_data, '$.obatId') AS UNSIGNED) as obat_id
             FROM sunday_clinic_billing_items
             WHERE billing_id = ? AND item_type = 'obat'
         `, [payment.billing_id]);
+
+        const invalidBillingItems = billingItems.filter(item => !item.obat_id);
+        if (invalidBillingItems.length > 0) {
+            throw new Error(`Data obat tidak valid: ${invalidBillingItems.map(i => i.item_name).join(', ')}`);
+        }
 
         // Deduct stock for each medication
         if (billingItems.length > 0) {
             const InventoryService = require('../services/InventoryService');
 
             for (const item of billingItems) {
-                try {
-                    await InventoryService.deductStock(
-                        item.item_code,
-                        item.quantity,
-                        'billing',
-                        payment.billing_id,
-                        'System (Xendit Payment)'
-                    );
-                } catch (stockError) {
-                    logger.warn('[BillingPayment] Stock deduction failed', {
-                        mrId,
-                        itemCode: item.item_code,
-                        error: stockError.message
-                    });
+                const requiredQty = parseInt(item.quantity, 10) || 0;
+                const obatId = Number(item.obat_id);
+
+                if (requiredQty <= 0) {
+                    continue;
                 }
+
+                const [[existingDeduction]] = await connection.query(
+                    `SELECT ABS(COALESCE(SUM(quantity), 0)) AS deducted_qty
+                     FROM stock_movements
+                     WHERE reference_type = 'sunday_clinic_billing'
+                       AND reference_id = ?
+                       AND movement_type = 'sale'
+                       AND obat_id = ?`,
+                    [payment.billing_id, obatId]
+                );
+
+                const alreadyDeducted = Number(existingDeduction?.deducted_qty || 0);
+                const remainingQty = Math.max(0, requiredQty - alreadyDeducted);
+
+                if (remainingQty <= 0) {
+                    continue;
+                }
+
+                await InventoryService.deductStockFIFO(
+                    obatId,
+                    remainingQty,
+                    'sunday_clinic_billing',
+                    payment.billing_id,
+                    'System (Xendit Payment)'
+                );
             }
         }
 
+        // Update billing status to paid only after stock deduction succeeds.
+        await connection.query(`
+            UPDATE sunday_clinic_billings
+            SET status = 'paid'
+            WHERE id = ? AND status = 'confirmed'
+        `, [payment.billing_id]);
+
         // Auto-finalize medical record
-        await db.query(`
+        await connection.query(`
             UPDATE sunday_clinic_records
             SET status = 'finalized'
             WHERE mr_id = ? AND status = 'draft'
         `, [mrId]);
+
+        await connection.commit();
 
         // Broadcast payment received event
         if (realtimeSync && realtimeSync.broadcast) {
@@ -830,6 +857,7 @@ async function handlePaymentSuccess(payment, webhookData) {
         });
 
     } catch (error) {
+        await connection.rollback();
         logger.error('[BillingPayment] Handle payment success failed', {
             mrId,
             paymentId: payment.id,
@@ -837,6 +865,8 @@ async function handlePaymentSuccess(payment, webhookData) {
             stack: error.stack
         });
         throw error;
+    } finally {
+        connection.release();
     }
 }
 

@@ -492,19 +492,16 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
                     cost: result.totalCost
                 });
             } catch (stockError) {
-                // Log warning but continue (allow confirmation even if stock insufficient)
-                logger.warn('Stock deduction failed', {
+                logger.error('Stock deduction failed, aborting confirmation', {
                     saleNumber: sale.sale_number,
                     obatId: item.obat_id,
                     error: stockError.message
                 });
-                deductionResults.push({
-                    obatId: item.obat_id,
-                    obatName: item.obat_name,
-                    quantity: item.quantity,
-                    success: false,
-                    error: stockError.message
-                });
+
+                const stockErrorMessage = `Gagal mengurangi stok untuk ${item.obat_name || `Obat ID ${item.obat_id}`}: ${stockError.message}`;
+                const err = new Error(stockErrorMessage);
+                err.statusCode = 400;
+                throw err;
             }
         }
 
@@ -563,6 +560,14 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
     } catch (error) {
         await connection.rollback();
         logger.error('Failed to confirm obat sale', { error: error.message });
+
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message
+            });
+        }
+
         next(error);
     } finally {
         connection.release();

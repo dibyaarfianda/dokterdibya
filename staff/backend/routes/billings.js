@@ -466,35 +466,58 @@ router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (r
 
     // Auto deduct stock when payment is complete (FIFO)
     if (payment_status === 'paid' && billing.payment_status !== 'paid') {
-      try {
-        const InventoryService = require('../services/InventoryService');
+      const InventoryService = require('../services/InventoryService');
 
-        // Get medication items from billing
-        const [medicationItems] = await connection.query(
-          `SELECT bi.item_code, bi.quantity, o.id as obat_id
-           FROM billing_items bi
-           LEFT JOIN obat o ON bi.item_code = o.code OR bi.item_code = o.id
-           WHERE bi.billing_id = ? AND bi.item_type = 'medication' AND o.id IS NOT NULL`,
-          [billing_id]
+      // Get medication items from billing and resolve obat_id strictly.
+      const [medicationItemsRaw] = await connection.query(
+        `SELECT bi.item_code, bi.item_name, bi.quantity,
+                COALESCE(o_code.id, o_id.id) AS obat_id
+         FROM billing_items bi
+         LEFT JOIN obat o_code ON bi.item_code = o_code.code
+         LEFT JOIN obat o_id ON (bi.item_code REGEXP '^[0-9]+$' AND CAST(bi.item_code AS UNSIGNED) = o_id.id)
+         WHERE bi.billing_id = ? AND bi.item_type = 'medication'`,
+        [billing_id]
+      );
+
+      const invalidMedicationItems = medicationItemsRaw.filter(item => !item.obat_id);
+      if (invalidMedicationItems.length > 0) {
+        throw new Error(
+          `Data obat tidak valid pada billing: ${invalidMedicationItems.map(i => i.item_name || i.item_code).join(', ')}`
+        );
+      }
+
+      // Deduct stock for each medication using FIFO (idempotent per reference+obat).
+      for (const item of medicationItemsRaw) {
+        const requiredQty = parseInt(item.quantity, 10) || 0;
+
+        if (requiredQty <= 0) {
+          continue;
+        }
+
+        const [[existingDeduction]] = await connection.query(
+          `SELECT ABS(COALESCE(SUM(quantity), 0)) AS deducted_qty
+           FROM stock_movements
+           WHERE reference_type = 'billing'
+             AND reference_id = ?
+             AND movement_type = 'sale'
+             AND obat_id = ?`,
+          [billing_id, Number(item.obat_id)]
         );
 
-        // Deduct stock for each medication using FIFO
-        for (const item of medicationItems) {
-          try {
-            await InventoryService.deductStockFIFO(
-              item.obat_id,
-              parseInt(item.quantity),
-              'billing',
-              billing_id,
-              req.user?.name || 'system'
-            );
-          } catch (stockError) {
-            console.warn(`Stock deduction warning for obat ${item.obat_id}:`, stockError.message);
-          }
+        const alreadyDeducted = Number(existingDeduction?.deducted_qty || 0);
+        const remainingQty = Math.max(0, requiredQty - alreadyDeducted);
+
+        if (remainingQty <= 0) {
+          continue;
         }
-      } catch (inventoryError) {
-        console.error('Inventory deduction error:', inventoryError);
-        // Don't fail the payment, just log the error
+
+        await InventoryService.deductStockFIFO(
+          Number(item.obat_id),
+          remainingQty,
+          'billing',
+          billing_id,
+          req.user?.name || 'system'
+        );
       }
 
       // Auto-complete appointment when payment is marked as paid
