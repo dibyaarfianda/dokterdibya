@@ -775,7 +775,7 @@
         .info-terbaru-num-col {
             align-self: stretch;
             flex-shrink: 0;
-            padding-top: 30vh; /* align digit with first title on entry */
+            padding-top: 0;
         }
 
         .info-terbaru-num-sticky {
@@ -788,13 +788,37 @@
         /* Fixed-size box that digits slide in/out of */
         .digit-track {
             position: relative;
+            display: flex;
+            align-items: flex-start;
             width: clamp(110px, 18vw, 260px);
             height: clamp(8rem, 15vw, 18rem);
             overflow: visible;
         }
 
-        .digit-current,
-        .digit-incoming {
+        .digit-prefix {
+            position: relative;
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(8rem, 15vw, 18rem);
+            font-weight: 500;
+            line-height: 1;
+            color: rgb(59, 130, 246);
+            letter-spacing: -0.04em;
+            user-select: none;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .digit-value-track {
+            position: absolute;
+            top: 0;
+            left: 0.56em;
+            width: 1ch;
+            height: 1em;
+            overflow: visible;
+        }
+
+        .digit-value-current,
+        .digit-value-incoming {
             position: absolute;
             top: 0;
             left: 0;
@@ -807,6 +831,15 @@
             user-select: none;
             pointer-events: none;
             white-space: nowrap;
+        }
+
+        /* Final outro: make prefix 0 move together with the last digit */
+        .digit-track.is-final-wipe .digit-prefix,
+        .digit-track.is-final-wipe .digit-value-current,
+        .digit-track.is-final-wipe .digit-value-incoming {
+            transform: translateY(-30px);
+            opacity: 0;
+            transition: transform 0.45s ease, opacity 0.45s ease;
         }
 
         /* CTA item */
