@@ -788,7 +788,7 @@
         /* Fixed-size box that digits slide in/out of */
         .digit-track {
             position: relative;
-            display: flex;
+            display: inline-flex;
             align-items: flex-start;
             width: clamp(110px, 18vw, 260px);
             height: clamp(8rem, 15vw, 18rem);
@@ -809,10 +809,10 @@
         }
 
         .digit-value-track {
-            position: absolute;
-            top: 0;
-            left: 0.56em;
-            width: 1ch;
+            position: relative;
+            display: inline-block;
+            margin-left: 0.02em;
+            width: 0.62em;
             height: 1em;
             overflow: visible;
         }
