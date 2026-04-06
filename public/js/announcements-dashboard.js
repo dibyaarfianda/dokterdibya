@@ -265,17 +265,16 @@ function displayInfoTerbaruAnnouncements(announcements) {
     const items = sorted.slice(0, 3);
 
     // New structure: each item is a flex ROW with its own sticky number on the right
+    // Items column: no individual numbers (shared animated number lives in num-col)
     const itemsHtml = items.map((item, i) => {
         const titleHtml = getFirstThreeWordsWithColors(stripEmoji(item.title || 'Info terbaru'));
         const desc = escapeHtml(truncateText(stripEmoji(item.message || ''), 120));
-        const num = String(i + 1).padStart(2, '0');
         return `
             <div class="info-terbaru-item" data-index="${i}">
                 <div class="info-terbaru-content" onclick="openInfoTerbaruModal(${i})">
                     <h4>${titleHtml}</h4>
                     <p>${desc}</p>
                 </div>
-                <div class="info-terbaru-num">${num}</div>
             </div>
         `;
     }).join('');
@@ -287,18 +286,27 @@ function displayInfoTerbaruAnnouncements(announcements) {
                 <h4>Lihat Info Lainnya</h4>
                 <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
             </div>
-            <div class="info-terbaru-num" style="opacity:0.15">${String(items.length + 1).padStart(2, '0')}</div>
         </div>
     `;
 
     container.innerHTML = `
         <div class="info-terbaru-wrapper">
-            ${itemsHtml}
-            ${ctaHtml}
+            <div class="info-terbaru-items">
+                ${itemsHtml}
+                ${ctaHtml}
+            </div>
+            <div class="info-terbaru-num-col">
+                <div class="info-terbaru-num-sticky">
+                    <div class="digit-track">
+                        <span class="digit-current">1</span>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
     infoTerbaruCurrentIndex = 0;
+    setupInfoTerbaruScroll();
 }
 
 function stripEmoji(text) {
@@ -326,7 +334,97 @@ function truncateText(text, maxLen) {
 }
 
 // No scroll setup needed — sticky number is pure CSS per item
-function setupInfoTerbaruScroll() {}
+// Single shared sticky digit with slide + fade animation between items
+function setupInfoTerbaruScroll() {
+    const wrapper = document.querySelector('.info-terbaru-wrapper');
+    if (!wrapper) return;
+
+    const allItems = Array.from(wrapper.querySelectorAll('.info-terbaru-item'));
+    if (allItems.length < 2) return;
+
+    const digitTrack = wrapper.querySelector('.digit-track');
+    if (!digitTrack) return;
+
+    const stickyTopPx = 0.30 * window.innerHeight; // must match CSS top: 30vh
+    let currentIndex = 0;
+    let animTimer = null;
+
+    // Compute midpoints between end of item[i]'s paragraph and start of item[i+1]'s heading
+    let midpoints = [];
+    function computeMidpoints() {
+        midpoints = [];
+        for (let i = 0; i < allItems.length - 1; i++) {
+            const p1   = allItems[i].querySelector('p');
+            const h4_2 = allItems[i + 1].querySelector('h4');
+            if (!p1 || !h4_2) continue;
+            const pBottom = p1.getBoundingClientRect().bottom + window.scrollY;
+            const h4Top   = h4_2.getBoundingClientRect().top  + window.scrollY;
+            midpoints.push((pBottom + h4Top) / 2);
+        }
+    }
+    computeMidpoints();
+    window.addEventListener('resize', computeMidpoints, { passive: true });
+
+    function animateDigit(newIndex) {
+        // Cancel any in-flight animation cleanly
+        if (animTimer !== null) {
+            clearTimeout(animTimer);
+            animTimer = null;
+            digitTrack.querySelectorAll('.digit-incoming').forEach(el => el.remove());
+            const curr = digitTrack.querySelector('.digit-current');
+            if (curr) { curr.style.transition = ''; curr.style.transform = ''; curr.style.opacity = ''; }
+        }
+
+        const currentEl = digitTrack.querySelector('.digit-current');
+        const goingDown = newIndex > currentIndex;
+        currentIndex = newIndex;
+
+        const vertPx = 72;
+
+        // Build incoming digit — starts off-screen
+        const incoming = document.createElement('span');
+        incoming.className = 'digit-incoming';
+        incoming.textContent = newIndex + 1; // 1-indexed, no leading zero
+        incoming.style.cssText = `transform: translateY(${goingDown ? vertPx : -vertPx}px); opacity: 0;`;
+        digitTrack.appendChild(incoming);
+
+        // Slide-out current
+        if (currentEl) {
+            currentEl.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+            currentEl.style.transform  = `translateY(${goingDown ? -vertPx : vertPx}px)`;
+            currentEl.style.opacity    = '0';
+        }
+
+        // Slide-in incoming (double rAF so transition state is committed first)
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                incoming.style.transition = 'transform 0.5s ease-in, opacity 0.5s ease-in';
+                incoming.style.transform  = 'translateY(0)';
+                incoming.style.opacity    = '1';
+            });
+        });
+
+        // Cleanup: promote incoming → current
+        animTimer = setTimeout(() => {
+            if (currentEl) currentEl.remove();
+            incoming.className = 'digit-current';
+            incoming.style.cssText = '';
+            animTimer = null;
+        }, 540);
+    }
+
+    function onScroll() {
+        if (!midpoints.length) return;
+        const stickyDocY = window.scrollY + stickyTopPx;
+        let target = 0;
+        for (let i = 0; i < midpoints.length; i++) {
+            if (stickyDocY >= midpoints[i]) target = i + 1;
+        }
+        if (target !== currentIndex) animateDigit(target);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+}
 
 // Backwards compat stubs
 function toggleInfoTerbaruExpanded() {}
