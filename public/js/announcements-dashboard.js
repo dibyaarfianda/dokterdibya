@@ -298,7 +298,7 @@ function displayInfoTerbaruAnnouncements(announcements) {
             <div class="info-terbaru-num-col">
                 <div class="info-terbaru-num-sticky">
                     <div class="digit-track">
-                        <span class="digit-current">1</span>
+                        <span class="digit-current">01</span>
                     </div>
                 </div>
             </div>
@@ -384,7 +384,7 @@ function setupInfoTerbaruScroll() {
         // Build incoming digit — starts off-screen
         const incoming = document.createElement('span');
         incoming.className = 'digit-incoming';
-        incoming.textContent = newIndex + 1; // 1-indexed, no leading zero
+        incoming.textContent = String(newIndex + 1).padStart(2, '0');
         incoming.style.cssText = `transform: translateY(${goingDown ? vertPx : -vertPx}px); opacity: 0;`;
         digitTrack.appendChild(incoming);
 
@@ -425,17 +425,23 @@ function setupInfoTerbaruScroll() {
         }, 540);
     }
 
-    function onScroll() {
-        if (!midpoints.length) return;
+    function getTargetIndexByScroll() {
+        if (!midpoints.length) return 0;
         const stickyDocY = window.scrollY + stickyTopPx;
         let target = 0;
         for (let i = 0; i < midpoints.length; i++) {
             if (stickyDocY >= midpoints[i]) target = i + 1;
         }
+        return target;
+    }
+
+    function onScroll() {
+        const target = getTargetIndexByScroll();
         if (target !== currentIndex) animateDigit(target);
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
 }
 
 // Backwards compat stubs
