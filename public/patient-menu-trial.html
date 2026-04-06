@@ -728,6 +728,15 @@
 
         /* === INFO TERBARU — ClearPath sticky number per item === */
         /* === INFO TERBARU — 2-column: items left, single animated sticky number right === */
+
+        /* Full-bleed: break out of .screen max-width container */
+        #announcements-container {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+        }
         .info-terbaru-wrapper {
             display: flex;
             flex-direction: row;
