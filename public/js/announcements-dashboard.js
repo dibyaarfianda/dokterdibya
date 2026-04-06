@@ -359,7 +359,7 @@ function setupInfoTerbaruScroll() {
     const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
-    const stickyVisualOffsetPx = 72; // lower resting position closer to ClearPath reference
+    const stickyVisualOffsetPx = 34; // stable resting offset
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
@@ -541,23 +541,6 @@ function setupInfoTerbaruScroll() {
     window.addEventListener('resize', onResize, { passive: true });
     refreshStickyTopAnchor();
     requestUpdate();
-
-    // Recalibrate after font/layout settle to avoid early wrong anchor measurement.
-    setTimeout(() => {
-        refreshStickyTopAnchor();
-        requestUpdate();
-    }, 250);
-    setTimeout(() => {
-        refreshStickyTopAnchor();
-        requestUpdate();
-    }, 700);
-
-    if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(() => {
-            refreshStickyTopAnchor();
-            requestUpdate();
-        }).catch(() => {});
-    }
 
     infoTerbaruScrollCleanup = () => {
         scrollTarget.removeEventListener('scroll', requestUpdate);
