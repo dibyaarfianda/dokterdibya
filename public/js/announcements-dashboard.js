@@ -355,10 +355,11 @@ function setupInfoTerbaruScroll() {
     if (!digitTrack) return;
 
     const animOffsetPx = 188;
-    const leaveDurationMs = 460;
-    const enterDurationMs = 620;
+    const leaveDurationMs = 560;
+    const enterDurationMs = 560;
     const fallbackDurationMs = 650;
     const triggerDelayPx = 8; // small delay after midpoint so change feels less jumpy
+    const stickyVisualOffsetPx = 88; // lower sticky resting position to match reference
     let currentIndex = 0;
     let isAnimating = false;
     let pendingTarget = null;
@@ -379,15 +380,15 @@ function setupInfoTerbaruScroll() {
 
     function getStickyTopPx() {
         const firstTitle = allItems[0]?.querySelector('h4');
-        if (!firstTitle) return 0.30 * window.innerHeight;
+        if (!firstTitle) return (0.30 * window.innerHeight) + stickyVisualOffsetPx;
 
         const firstTitleTop = firstTitle.getBoundingClientRect().top;
         if (scrollHost === window) {
-            return Math.max(0, firstTitleTop);
+            return Math.max(0, firstTitleTop + stickyVisualOffsetPx);
         }
 
         const hostRect = scrollHost.getBoundingClientRect();
-        return Math.max(0, firstTitleTop - hostRect.top);
+        return Math.max(0, firstTitleTop - hostRect.top + stickyVisualOffsetPx);
     }
 
     function applyStickyTop() {
@@ -443,7 +444,7 @@ function setupInfoTerbaruScroll() {
                         { transform: 'translateY(0)', opacity: 1 },
                         { transform: `translateY(${leaveOffset}px)`, opacity: 0 }
                     ],
-                    { duration: leaveDurationMs, easing: 'ease', fill: 'forwards' }
+                    { duration: leaveDurationMs, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)', fill: 'forwards' }
                 ).finished);
             }
 
