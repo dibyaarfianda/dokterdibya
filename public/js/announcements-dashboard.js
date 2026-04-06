@@ -378,6 +378,9 @@ function setupInfoTerbaruScroll() {
         const valueTrack = digitTrack.querySelector('.digit-value-track');
         if (!valueTrack) return;
 
+        // Defensive cleanup to avoid stacked glyphs after rapid scroll changes.
+        valueTrack.querySelectorAll('.digit-value-incoming').forEach((el) => el.remove());
+
         const currentEl = valueTrack.querySelector('.digit-value-current');
         const goingDown = newIndex > currentIndex;
         currentIndex = newIndex;
@@ -477,7 +480,7 @@ function setupInfoTerbaruScroll() {
 
                 const digitBottomY = digitTrack.getBoundingClientRect().bottom;
                 const deltaY = contentBottomY - digitBottomY;
-                numSticky.style.transform = `translateY(${deltaY}px)`;
+                numSticky.style.transform = `translateY(${Math.round(deltaY)}px)`;
             } else {
                 numSticky.style.transform = 'translateY(0px)';
             }
