@@ -298,7 +298,10 @@ function displayInfoTerbaruAnnouncements(announcements) {
             <div class="info-terbaru-num-col">
                 <div class="info-terbaru-num-sticky">
                     <div class="digit-track">
-                        <span class="digit-current">01</span>
+                        <span class="digit-prefix">0</span>
+                        <span class="digit-value-track">
+                            <span class="digit-value-current">1</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -350,6 +353,7 @@ function setupInfoTerbaruScroll() {
     let animTimer = null;
     let isAnimating = false;
     let pendingTarget = null;
+    let finalWipeThreshold = Number.POSITIVE_INFINITY;
 
     // Compute midpoints between end of item[i]'s paragraph and start of item[i+1]'s heading
     let midpoints = [];
@@ -363,6 +367,19 @@ function setupInfoTerbaruScroll() {
             const h4Top   = h4_2.getBoundingClientRect().top  + window.scrollY;
             midpoints.push((pBottom + h4Top) / 2);
         }
+
+        const lastItem = allItems[allItems.length - 1];
+        if (lastItem) {
+            const lastTitle = lastItem.querySelector('h4');
+            const lastDesc = lastItem.querySelector('p');
+            const titleTop = lastTitle
+                ? (lastTitle.getBoundingClientRect().top + window.scrollY)
+                : (lastItem.getBoundingClientRect().top + window.scrollY);
+            const descBottom = lastDesc
+                ? (lastDesc.getBoundingClientRect().bottom + window.scrollY)
+                : (lastItem.getBoundingClientRect().bottom + window.scrollY);
+            finalWipeThreshold = (titleTop + descBottom) / 2;
+        }
     }
     computeMidpoints();
     window.addEventListener('resize', computeMidpoints, { passive: true });
@@ -374,7 +391,10 @@ function setupInfoTerbaruScroll() {
             return;
         }
 
-        const currentEl = digitTrack.querySelector('.digit-current');
+        const valueTrack = digitTrack.querySelector('.digit-value-track');
+        if (!valueTrack) return;
+
+        const currentEl = valueTrack.querySelector('.digit-value-current');
         const goingDown = newIndex > currentIndex;
         currentIndex = newIndex;
         isAnimating = true;
@@ -383,10 +403,10 @@ function setupInfoTerbaruScroll() {
 
         // Build incoming digit — starts off-screen
         const incoming = document.createElement('span');
-        incoming.className = 'digit-incoming';
-        incoming.textContent = String(newIndex + 1).padStart(2, '0');
+        incoming.className = 'digit-value-incoming';
+        incoming.textContent = String(newIndex + 1);
         incoming.style.cssText = `transform: translateY(${goingDown ? vertPx : -vertPx}px); opacity: 0;`;
-        digitTrack.appendChild(incoming);
+        valueTrack.appendChild(incoming);
 
         // Slide-out current
         if (currentEl) {
@@ -407,7 +427,7 @@ function setupInfoTerbaruScroll() {
         // Cleanup: promote incoming → current
         animTimer = setTimeout(() => {
             if (currentEl) currentEl.remove();
-            incoming.className = 'digit-current';
+            incoming.className = 'digit-value-current';
             incoming.style.cssText = '';
             animTimer = null;
             isAnimating = false;
@@ -436,8 +456,13 @@ function setupInfoTerbaruScroll() {
     }
 
     function onScroll() {
+        const stickyDocY = window.scrollY + stickyTopPx;
         const target = getTargetIndexByScroll();
         if (target !== currentIndex) animateDigit(target);
+
+        const lastIndex = allItems.length - 1;
+        const shouldFinalWipe = (target === lastIndex) && (stickyDocY >= finalWipeThreshold);
+        digitTrack.classList.toggle('is-final-wipe', shouldFinalWipe);
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
