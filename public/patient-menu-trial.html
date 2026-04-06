@@ -1572,7 +1572,7 @@
             box-sizing: border-box;
             isolation: isolate;
             overflow: hidden;
-            background-color: rgba(110, 72, 52, 0);
+            background-color: rgba(0, 0, 0, 0);
             transition: background-color 0.05s ease-out;
         }
 
@@ -1584,9 +1584,9 @@
             pointer-events: none;
             opacity: var(--welcome-bg-opacity, 0);
             background:
-                radial-gradient(circle at 14% 22%, rgba(245, 177, 122, 0.32) 0%, rgba(245, 177, 122, 0) 48%),
-                radial-gradient(circle at 86% 78%, rgba(191, 116, 67, 0.26) 0%, rgba(191, 116, 67, 0) 52%),
-                linear-gradient(135deg, rgba(60, 35, 24, 0.9) 0%, rgba(86, 52, 37, 0.78) 45%, rgba(56, 33, 23, 0.92) 100%);
+                radial-gradient(circle at 14% 22%, rgba(80, 80, 90, 0.28) 0%, rgba(80, 80, 90, 0) 48%),
+                radial-gradient(circle at 86% 78%, rgba(50, 50, 60, 0.22) 0%, rgba(50, 50, 60, 0) 52%),
+                linear-gradient(135deg, rgba(0, 0, 0, 0.92) 0%, rgba(20, 20, 25, 0.82) 45%, rgba(0, 0, 0, 0.94) 100%);
             transition: opacity 0.05s ease-out;
         }
 
@@ -1606,8 +1606,8 @@
         }
 
         .welcome-window-left {
-            background: #ffffff;
-            border-right: 1px solid rgba(15, 23, 42, 0.12);
+            background: transparent;
+            border-right: 1px solid rgba(255, 255, 255, 0.12);
             padding: 24px 10px 24px 14px;
             display: flex;
             align-items: center;
@@ -1627,7 +1627,7 @@
             letter-spacing: -0.03em;
             font-weight: 400;
             margin-right: 0;
-            color: rgb(15, 23, 42);
+            color: rgba(255, 255, 255, 0.92);
         }
 
         .welcome-window-scroll {
@@ -1735,7 +1735,7 @@
 
             .welcome-window-left {
                 border-right: none;
-                border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
                 padding: 10px 6px 16px;
             }
 
@@ -4731,7 +4731,7 @@
                 }
 
                 // Apply both tint and decorative special background during welcome block.
-                welcomePinnedInner.style.backgroundColor = 'rgba(110, 72, 52, ' + (opacity * 0.75) + ')';
+                welcomePinnedInner.style.backgroundColor = 'rgba(0, 0, 0, ' + (opacity * 0.75) + ')';
                 welcomePinnedInner.style.setProperty('--welcome-bg-opacity', opacity.toFixed(3));
             }
 
