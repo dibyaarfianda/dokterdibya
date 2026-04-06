@@ -504,7 +504,7 @@ function setupInfoTerbaruScroll() {
                     ? lastTitle.getBoundingClientRect().bottom
                     : lastItem.getBoundingClientRect().bottom);
 
-            const baseBottomY = stickyTopPx + digitTrack.getBoundingClientRect().height;
+            const baseBottomY = stickyTopPx + digitTrack.getBoundingClientRect().height / 2;
             const neededShift = Math.min(0, Math.round(contentBottomY - baseBottomY));
             numSticky.style.transform = `translateY(${neededShift}px)`;
         } else {
