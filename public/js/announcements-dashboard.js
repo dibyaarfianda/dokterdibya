@@ -497,15 +497,11 @@ function setupInfoTerbaruScroll() {
         if (target === lastIndex) {
             const lastItem = allItems[lastIndex];
             const lastTitle = lastItem?.querySelector('h4');
-            const lastDesc = lastItem?.querySelector('p');
-            const contentBottomY = lastDesc
-                ? lastDesc.getBoundingClientRect().bottom
-                : (lastTitle
-                    ? lastTitle.getBoundingClientRect().bottom
-                    : lastItem.getBoundingClientRect().bottom);
-
-            const baseBottomY = stickyTopPx + digitTrack.getBoundingClientRect().height / 2;
-            const neededShift = Math.min(0, Math.round(contentBottomY - baseBottomY));
+            const titleTopY = lastTitle
+                ? lastTitle.getBoundingClientRect().top
+                : lastItem.getBoundingClientRect().top;
+            // Track h4 of last item: number moves when h4 scrolls above sticky line
+            const neededShift = Math.min(0, Math.round(titleTopY - stickyTopPx));
             numSticky.style.transform = `translateY(${neededShift}px)`;
         } else {
             numSticky.style.transform = 'translateY(0px)';
