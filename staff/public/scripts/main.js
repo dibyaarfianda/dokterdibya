@@ -2255,7 +2255,7 @@ async function editArticle(id) {
         document.getElementById('article-content').value = article.content || '';
         document.getElementById('article-category').value = article.category || 'Kehamilan';
         document.getElementById('article-source').value = article.source || '';
-        document.getElementById('article-icon').value = article.icon || 'fa-heartbeat';
+        document.getElementById('article-icon').value = typeof article.icon === 'string' ? article.icon : 'fa-heartbeat';
         document.getElementById('article-color').value = article.color || '#28a7e9';
         document.getElementById('article-published').checked = article.is_published === 1;
 

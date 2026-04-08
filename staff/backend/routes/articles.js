@@ -149,6 +149,8 @@ router.get('/admin/all', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (re
 router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
+        const normalizedIcon = typeof icon === 'string' ? icon.trim() : null;
+        const iconToSave = normalizedIcon === null ? 'fa-heartbeat' : normalizedIcon;
 
         if (!title) {
             return res.status(400).json({ success: false, message: 'Title is required' });
@@ -162,7 +164,7 @@ router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) 
             summary || null,
             content || null,
             category || 'Kehamilan',
-            icon || 'fa-heartbeat',
+            iconToSave,
             color || '#28a7e9',
             source || null,
             is_published ? 1 : 0,
@@ -189,6 +191,8 @@ router.put('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res
     try {
         const { id } = req.params;
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
+        const normalizedIcon = typeof icon === 'string' ? icon.trim() : null;
+        const iconToSave = normalizedIcon === null ? 'fa-heartbeat' : normalizedIcon;
 
         // Check if article exists
         const [existing] = await db.query(`SELECT id FROM health_articles WHERE id = ?`, [id]);
@@ -206,7 +210,7 @@ router.put('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res
             summary || null,
             content || null,
             category || 'Kehamilan',
-            icon || 'fa-heartbeat',
+            iconToSave,
             color || '#28a7e9',
             source || null,
             is_published ? 1 : 0,
