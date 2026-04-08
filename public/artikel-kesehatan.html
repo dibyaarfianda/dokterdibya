@@ -572,16 +572,15 @@
 
             grid.innerHTML = articles.map(article => {
                 const color = article.color || '#28a7e9';
-                const icon = article.icon || 'fa-book-reader';
+                const icon = (article.icon || '').trim();
+                const hasIcon = icon.length > 0;
                 const dateStr = formatDate(article.created_at);
                 const source = article.source || 'dokterDIBYA';
 
                 return `
                     <div class="article-card" onclick="openArticle(${article.id})">
                         <div class="article-header">
-                            <div class="article-icon" style="background: ${color}">
-                                <i class="fa ${icon}"></i>
-                            </div>
+                            ${hasIcon ? `<div class="article-icon" style="background: ${color}"><i class="fa ${icon}"></i></div>` : ''}
                             <div class="article-meta">
                                 <span class="article-category" style="background: ${color}">${escapeHtml(article.category || 'Kehamilan')}</span>
                                 <h3 class="article-title">${escapeHtml(article.title)}</h3>
@@ -634,12 +633,15 @@
 
                 const article = result.data;
                 const color = article.color || '#28a7e9';
-                const icon = article.icon || 'fa-book-reader';
+                const icon = (article.icon || '').trim();
+                const hasIcon = icon.length > 0;
                 const dateStr = formatDate(article.updated_at || article.created_at);
 
                 // Update modal content
                 document.getElementById('modal-header').style.background = color;
-                document.getElementById('modal-icon').innerHTML = `<i class="fa ${icon}"></i>`;
+                const modalIcon = document.getElementById('modal-icon');
+                modalIcon.style.display = hasIcon ? 'flex' : 'none';
+                modalIcon.innerHTML = hasIcon ? `<i class="fa ${icon}"></i>` : '';
                 document.getElementById('modal-category').textContent = article.category || 'Kehamilan';
                 document.getElementById('modal-title').textContent = article.title;
 

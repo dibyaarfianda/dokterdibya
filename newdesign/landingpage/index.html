@@ -98,6 +98,41 @@
         }
 
         /* ============================================
+           BROWN THEME OVERRIDE
+           ============================================ */
+        :root {
+            --brown-dark: #4a3427;
+            --brown-dark-2: #5a4030;
+            --brown-border: #6f523f;
+        }
+
+        .bg-dark,
+        .scrollup,
+        .wheel-button,
+        .nav-mobile-wrap,
+        .mobile-nav-panel,
+        .bucket-content,
+        .bucket-title {
+            background: var(--brown-dark) !important;
+            background-color: var(--brown-dark) !important;
+        }
+
+        .wheel-button-wrap.open .wheel .item button {
+            background: var(--brown-dark-2) !important;
+            border-color: var(--brown-border) !important;
+            color: #fff !important;
+        }
+
+        .nav-mobile-wrap .menu-control,
+        .nav-mobile-wrap .mobile-search,
+        .nav-mobile-wrap .mobile-icon,
+        .mobile-nav-panel .main-menu li,
+        .menu-legal li,
+        .footer-wrap {
+            border-color: var(--brown-border) !important;
+        }
+
+        /* ============================================
            BUTTONS
            ============================================ */
         .btn {
@@ -880,10 +915,10 @@
 
         <!-- Scroll Arrows -->
         <div class="scroll-arrows">
-            <span class="scroll-box-direction" onclick="document.getElementById('scroll-box-horz').scrollBy({left:-400,behavior:'smooth'})" title="Scroll Left">
+            <span class="scroll-box-direction" onclick="scrollByDamped(-260)" title="Scroll Left">
                 <i class="fa fa-circle" style="color:#333; font-size:4rem; position:relative;"></i>
             </span>
-            <span class="scroll-box-direction" onclick="document.getElementById('scroll-box-horz').scrollBy({left:400,behavior:'smooth'})" title="Scroll Right">
+            <span class="scroll-box-direction" onclick="scrollByDamped(260)" title="Scroll Right">
                 <i class="fa fa-circle" style="color:#333; font-size:4rem;"></i>
             </span>
         </div>
@@ -1094,13 +1129,76 @@
             }
         });
 
+        // ClearPath-like damping for horizontal scroll movement
+        var scrollDamping = {
+            current: 0,
+            target: 0,
+            rafId: null,
+            initialized: false,
+            factor: 0.14
+        };
+
+        function getScrollBox() {
+            return document.getElementById('scroll-box-horz');
+        }
+
+        function clampHorizontalTarget(box, value) {
+            var max = Math.max(0, box.scrollWidth - box.clientWidth);
+            if (value < 0) return 0;
+            if (value > max) return max;
+            return value;
+        }
+
+        function ensureDampingState() {
+            var box = getScrollBox();
+            if (!box) return null;
+            if (!scrollDamping.initialized) {
+                scrollDamping.current = box.scrollLeft;
+                scrollDamping.target = box.scrollLeft;
+                scrollDamping.initialized = true;
+            }
+            return box;
+        }
+
+        function stepDampedScroll() {
+            var box = ensureDampingState();
+            if (!box) return;
+
+            var diff = scrollDamping.target - scrollDamping.current;
+            scrollDamping.current += diff * scrollDamping.factor;
+
+            if (Math.abs(diff) < 0.5) {
+                scrollDamping.current = scrollDamping.target;
+                box.scrollLeft = scrollDamping.current;
+                scrollDamping.rafId = null;
+                return;
+            }
+
+            box.scrollLeft = scrollDamping.current;
+            scrollDamping.rafId = requestAnimationFrame(stepDampedScroll);
+        }
+
+        function pushDampedDelta(delta) {
+            var box = ensureDampingState();
+            if (!box) return;
+
+            scrollDamping.target = clampHorizontalTarget(box, scrollDamping.target + delta);
+
+            if (!scrollDamping.rafId) {
+                scrollDamping.rafId = requestAnimationFrame(stepDampedScroll);
+            }
+        }
+
+        function scrollByDamped(delta) {
+            pushDampedDelta(delta);
+        }
+
         // Keyboard arrow scroll for horizontal scroll
         document.addEventListener('keydown', function(e) {
-            var scrollBox = document.getElementById('scroll-box-horz');
             if (e.key === 'ArrowRight') {
-                scrollBox.scrollBy({ left: 400, behavior: 'smooth' });
+                scrollByDamped(260);
             } else if (e.key === 'ArrowLeft') {
-                scrollBox.scrollBy({ left: -400, behavior: 'smooth' });
+                scrollByDamped(-260);
             }
         });
 
@@ -1108,7 +1206,10 @@
         document.getElementById('scroll-box-horz').addEventListener('wheel', function(e) {
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
                 e.preventDefault();
-                this.scrollBy({ left: e.deltaY, behavior: 'auto' });
+                var wheelSpeed = e.deltaY * 0.4;
+                if (wheelSpeed > 100) wheelSpeed = 100;
+                if (wheelSpeed < -100) wheelSpeed = -100;
+                scrollByDamped(wheelSpeed);
             }
         }, { passive: false });
 
