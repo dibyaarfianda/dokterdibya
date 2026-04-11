@@ -4699,8 +4699,9 @@
         (function() {
             var targetY = window.scrollY;
             var currentY = window.scrollY;
-            var defaultDamping = 0.10;
-            var welcomeDamping = 0.05;
+            var defaultDamping = 0.07;
+            var welcomeDamping = 0.03;
+            var wheelForce = 0.75;
             var activeDamping = defaultDamping;
             var rafId = null;
             var welcomePinned = document.getElementById('welcome-pinned');
@@ -4714,7 +4715,7 @@
 
             window.addEventListener('wheel', function(e) {
                 e.preventDefault();
-                targetY += e.deltaY;
+                targetY += e.deltaY * wheelForce;
                 targetY = Math.max(0, Math.min(targetY, document.documentElement.scrollHeight - window.innerHeight));
                 activeDamping = (isInWelcomeRange(window.scrollY) || isInWelcomeRange(targetY))
                     ? welcomeDamping
