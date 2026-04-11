@@ -1614,13 +1614,14 @@
 
         .usg-layer {
             position: absolute;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.55);
-            background: var(--bg-elevated);
+            border-radius: 0;
+            overflow: visible;
+            border: none;
+            background: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
+            will-change: transform;
         }
 
         .usg-fallback-icon {
@@ -1629,9 +1630,12 @@
         }
 
         .usg-layer img {
+            display: block;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-radius: 16px;
+            transform: scale(1.02);
         }
 
         .usg-layer-back {
@@ -1641,7 +1645,7 @@
             bottom: 0;
             z-index: 1;
             transform: translateY(0);
-            box-shadow: 0 22px 56px rgba(0, 0, 0, 0.14);
+            box-shadow: none;
             opacity: 0.92;
         }
 
@@ -1652,7 +1656,15 @@
             bottom: 10%;
             z-index: 2;
             transform: translateY(0);
-            box-shadow: 0 26px 58px rgba(0, 0, 0, 0.2);
+            box-shadow: none;
+        }
+
+        .usg-layer-back img {
+            box-shadow: 0 26px 62px rgba(0, 0, 0, 0.18);
+        }
+
+        .usg-layer-front img {
+            box-shadow: 0 30px 66px rgba(0, 0, 0, 0.24);
         }
 
         .doc-card-meta {
@@ -3745,6 +3757,33 @@
                    localStorage.getItem('patient_token');
         }
 
+        function isTrialPreviewMode() {
+            try {
+                if (sessionStorage.getItem('trial_preview_mode') === '1') return true;
+            } catch (e) {}
+
+            var params = new URLSearchParams(window.location.search);
+            var previewParam = params.get('preview') || params.get('trial_preview') || params.get('skipLogin');
+            return previewParam === '1' || previewParam === 'true';
+        }
+
+        function activateTrialPreviewMode() {
+            var loading = document.getElementById('loading-state');
+            var wrapper = document.getElementById('content-wrapper');
+            var heroName = document.getElementById('hero-patient-name');
+            var heroKicker = document.getElementById('hero-kicker-text');
+            var avatarInitials = document.getElementById('user-avatar-initials');
+
+            if (heroName) heroName.textContent = 'Halo.';
+            if (heroKicker) heroKicker.textContent = 'Preview Trial';
+            if (avatarInitials) avatarInitials.textContent = 'TR';
+
+            if (loading) loading.style.display = 'none';
+            if (wrapper) wrapper.style.display = 'block';
+
+            triggerHeroAnimations();
+        }
+
         // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
             const LIVE_UPDATE_KEY = 'trial_sw_updated_at';
@@ -3777,6 +3816,21 @@
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
             const urlUser = urlParams.get('user');
+            const previewParam = urlParams.get('preview') || urlParams.get('trial_preview') || urlParams.get('skipLogin');
+            const previewRequested = previewParam === '1' || previewParam === 'true';
+
+            if (previewRequested) {
+                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try {
+                    urlParams.delete('preview');
+                    urlParams.delete('trial_preview');
+                    urlParams.delete('skipLogin');
+                    const qs = urlParams.toString();
+                    const cleanedUrl = qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanedUrl);
+                } catch (e) {}
+            }
+
             if (urlToken) {
                 localStorage.setItem('vps_auth_token', urlToken);
                 if (urlUser) {
@@ -3793,8 +3847,10 @@
 
             const token = getToken();
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+            const trialPreviewMode = isTrialPreviewMode();
+            const isAuthenticated = !!(token && user.id);
 
-            if (!token || !user.id) {
+            if (!isAuthenticated && !trialPreviewMode) {
                 // Not authenticated, redirect to login
                 const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
                 const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
@@ -3805,6 +3861,11 @@
                 } else {
                     window.location.href = '/patient-login.html';
                 }
+                return;
+            }
+
+            if (!isAuthenticated && trialPreviewMode) {
+                activateTrialPreviewMode();
                 return;
             }
 
@@ -4803,8 +4864,8 @@
                     var centerDelta = ((vh * 0.5) - (rect.top + rect.height * 0.5)) / vh;
                     centerDelta = Math.max(-1.1, Math.min(1.1, centerDelta));
 
-                    var frontY = centerDelta * 90;
-                    var backY  = centerDelta * -130;
+                    var frontY = centerDelta * 70;
+                    var backY  = centerDelta * -170;
 
                     front.style.transform = 'translateY(' + frontY + 'px)';
                     back.style.transform  = 'translateY(' + backY + 'px)';
