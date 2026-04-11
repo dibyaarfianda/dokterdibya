@@ -762,6 +762,25 @@
             content: none;
         }
 
+        .info-terbaru-block-header::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/bg/clearpath-curves.svg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .info-terbaru-block-title,
+        .info-terbaru-block-desc {
+            position: relative;
+            z-index: 1;
+        }
+
         @media (max-width: 1199px) {
             .info-terbaru-block-header {
                 margin-top: 120px;
