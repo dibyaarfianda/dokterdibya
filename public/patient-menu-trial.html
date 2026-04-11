@@ -1475,19 +1475,26 @@
         .doc-section .doc-col-right { transition-delay: 0.34s; }
 
         .doc-heading {
-            font-size: 26px;
-            font-weight: 700;
+            font-family: 'Crimson Text', serif;
+            font-size: clamp(38px, 7.2vw, 64px);
+            font-weight: 400;
             color: var(--text-primary);
-            letter-spacing: -0.02em;
-            line-height: 1.2;
+            letter-spacing: -0.03em;
+            line-height: 0.84;
+            max-width: 10ch;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .doc-sub {
-            margin-top: 10px;
-            font-size: 13px;
+            margin-top: 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(16px, 2.4vw, 22px);
+            font-weight: 500;
             color: var(--text-muted);
-            line-height: 1.6;
-            max-width: 360px;
+            letter-spacing: -0.03em;
+            line-height: 1.4;
+            max-width: 34ch;
             margin-left: auto;
             margin-right: auto;
         }
@@ -1679,7 +1686,11 @@
                 grid-template-columns: 1fr;
             }
             .doc-heading {
-                font-size: 22px;
+                line-height: 0.92;
+            }
+
+            .doc-sub {
+                line-height: 1.5;
             }
         }
 
@@ -3331,8 +3342,8 @@
 
                 <!-- DOKUMEN -->
                 <div class="doc-section">
-                    <h2 class="doc-heading">Arsip Penting Milik Anda</h2>
-                    <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis — tersimpan aman, bisa diakses kapan saja.</p>
+                    <h2 class="doc-heading">Perjalanan Anda, Tersimpan Rapi.</h2>
+                    <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda, mudah dibuka kapan saja saat Anda membutuhkannya.</p>
                     <div class="doc-grid">
                         <!-- Kolom kiri: Album USG besar -->
                         <div class="doc-card doc-card-main" onclick="window.location.href='/album-usg-trial.html'">
