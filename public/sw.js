@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411m'; // 2026-04-11 - Match Info Terbaru typography to ClearPath values
+const CACHE_VERSION = '20260411n'; // 2026-04-11 - Increase Info Terbaru desktop title size after visual feedback
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
