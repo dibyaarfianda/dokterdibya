@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260412i'; // 2026-04-12 - Arsip tighter left alignment + stronger centered parallax
+const CACHE_VERSION = '20260412j'; // 2026-04-12 - Arsip desktop-first full-bleed and stronger image composition
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

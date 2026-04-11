@@ -1760,34 +1760,48 @@
 
         @media (min-width: 1024px) {
             .doc-section {
-                width: calc(100vw - 24px);
-                margin-left: calc(50% - 50vw + 8px);
-                margin-right: calc(50% - 50vw + 8px);
+                width: 100vw;
+                margin-left: calc(50% - 50vw);
+                margin-right: calc(50% - 50vw);
+                padding-left: clamp(20px, 4.5vw, 64px);
+                padding-right: clamp(20px, 4.5vw, 64px);
             }
 
             .doc-hero {
                 flex-wrap: nowrap;
-                align-items: flex-end;
+                align-items: center;
+                gap: clamp(44px, 6vw, 92px);
+                max-width: 1500px;
+                margin: 0 auto;
             }
 
             .doc-text-col {
-                flex: 0 0 46%;
-                max-width: 46%;
+                flex: 0 0 42%;
+                max-width: 42%;
             }
 
             .doc-img-col {
-                flex: 0 0 54%;
-                max-width: 54%;
+                flex: 0 0 58%;
+                max-width: 58%;
+                height: 620px;
             }
 
-            .doc-img-col {
-                height: 560px;
-            }
             .usg-layer-back {
-                width: 72%;
+                top: 0;
+                bottom: 4%;
+                width: 78%;
             }
+
             .usg-layer-front {
-                width: 58%;
+                top: 18%;
+                right: 4%;
+                bottom: 0;
+                width: 60%;
+            }
+
+            .doc-links-row {
+                max-width: 980px;
+                margin-top: 36px;
             }
         }
 
