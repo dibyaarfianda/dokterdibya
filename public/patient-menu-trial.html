@@ -1448,6 +1448,8 @@
         /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
         .doc-section {
             padding-top: 70px;
+            margin-left: -8px;
+            margin-right: -8px;
         }
 
         .doc-hero {
@@ -1763,6 +1765,21 @@
                 margin-right: calc(50% - 50vw + 8px);
             }
 
+            .doc-hero {
+                flex-wrap: nowrap;
+                align-items: flex-end;
+            }
+
+            .doc-text-col {
+                flex: 0 0 46%;
+                max-width: 46%;
+            }
+
+            .doc-img-col {
+                flex: 0 0 54%;
+                max-width: 54%;
+            }
+
             .doc-img-col {
                 height: 560px;
             }
@@ -1781,6 +1798,13 @@
             .doc-section .doc-links-row {
                 transform: none !important;
                 transition: opacity 0.2s linear !important;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .doc-section {
+                margin-left: -10px;
+                margin-right: -10px;
             }
         }
 
@@ -4762,12 +4786,11 @@
                 requestAnimationFrame(function() {
                     var rect = thumb.getBoundingClientRect();
                     var vh   = window.innerHeight;
-                    // progress: 0 when bottom of element enters viewport, 1 when top leaves
-                    var progress = 1 - (rect.bottom / (vh + rect.height));
-                    progress = Math.max(-0.2, Math.min(1.2, progress));
+                    var centerDelta = ((vh * 0.5) - (rect.top + rect.height * 0.5)) / vh;
+                    centerDelta = Math.max(-1.1, Math.min(1.1, centerDelta));
 
-                    var frontY = (progress - 0.5) * -96; // shifts -48px…+48px
-                    var backY  = (progress - 0.5) *  140; // shifts -70px…+70px (opposite)
+                    var frontY = centerDelta * 90;
+                    var backY  = centerDelta * -130;
 
                     front.style.transform = 'translateY(' + frontY + 'px)';
                     back.style.transform  = 'translateY(' + backY + 'px)';
