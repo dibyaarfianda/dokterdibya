@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411c'; // 2026-04-11 - Extra-heavy scroll inertia tuning on patient-menu-trial
+const CACHE_VERSION = '20260411d'; // 2026-04-11 - Info Terbaru abstract curve background switched to SVG
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
