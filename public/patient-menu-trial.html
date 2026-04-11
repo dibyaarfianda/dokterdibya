@@ -4802,15 +4802,20 @@
                 var containerTop = infoContainer.offsetTop;
                 var containerBottom = containerTop + infoContainer.offsetHeight;
 
-                // Fade in before entering Info Terbaru.
-                var fadeInStart = headerTop - (vh * 0.85);
-                var fadeInEnd = headerTop - (vh * 0.15);
+                // Keep hidden on initial load/top area; start fade closer to Info Terbaru.
+                var fadeInStart = headerTop - (vh * 0.35);
+                var fadeInEnd = headerTop - (vh * 0.08);
 
                 // Hold full opacity while counter section is active.
                 var fadeOutStart = containerTop + (infoContainer.offsetHeight * 0.62);
                 var fadeOutEnd = containerBottom + (vh * 0.15);
 
                 var opacityFactor = 0;
+
+                if (y <= 10) {
+                    fixedBg.style.opacity = '0';
+                    return;
+                }
 
                 if (y < fadeInStart) {
                     opacityFactor = 0;

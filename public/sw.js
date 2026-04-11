@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411o'; // 2026-04-11 - Increase Info Terbaru curve background opacity strength
+const CACHE_VERSION = '20260411p'; // 2026-04-11 - Keep Info Terbaru curves hidden on initial load; fade starts later
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
