@@ -737,7 +737,7 @@
             margin-left: -50vw;
             margin-right: -50vw;
             background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 100%);
-            z-index: 1;
+            z-index: 4;
         }
 
         #announcements-container::after {
@@ -754,8 +754,9 @@
             box-sizing: border-box;
             padding: 94px 100px 88px;
             background: linear-gradient(180deg, #f7f9ff 0%, #eef4ff 100%);
-            z-index: 1;
+            z-index: 6;
             overflow: visible;
+            isolation: isolate;
         }
 
         .info-terbaru-block-header::before {
@@ -768,7 +769,7 @@
             width: 100%;
             height: 170px;
             pointer-events: none;
-            z-index: 0;
+            z-index: 5;
         }
 
         .info-terbaru-bg-curves svg {
@@ -788,7 +789,7 @@
         .info-terbaru-block-title,
         .info-terbaru-block-desc {
             position: relative;
-            z-index: 1;
+            z-index: 7;
         }
 
         @media (max-width: 1199px) {
