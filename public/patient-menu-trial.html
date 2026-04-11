@@ -1623,8 +1623,8 @@
 
         .usg-layer {
             position: absolute;
-            border-radius: 0;
-            overflow: visible;
+            border-radius: 16px;
+            overflow: hidden;
             border: none;
             background: transparent;
             display: flex;
@@ -1641,10 +1641,12 @@
         .usg-layer img {
             display: block;
             width: 100%;
-            height: 100%;
+            height: 148%;
             object-fit: cover;
-            border-radius: 16px;
-            transform: scale(1.02);
+            object-position: center center;
+            border-radius: 0;
+            transform: translate3d(0, 0, 0) scale(1.18);
+            will-change: transform;
         }
 
         .usg-layer-back {
@@ -4890,6 +4892,8 @@
         (function() {
             var front = document.getElementById('usg-thumb-main');
             var back  = document.getElementById('usg-thumb-back');
+            var frontImg = front ? front.querySelector('img') : null;
+            var backImg = back ? back.querySelector('img') : null;
             var thumb = front ? front.closest('.doc-img-col') : null;
             var section = thumb ? thumb.closest('.doc-section') : null;
             if (!front || !back || !thumb) return;
@@ -4920,8 +4924,20 @@
                 currentFrontY += (targetFrontY - currentFrontY) * 0.22;
                 currentBackY += (targetBackY - currentBackY) * 0.22;
 
-                front.style.transform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0)';
-                back.style.transform  = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0)';
+                var frontTransform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0) scale(1.16)';
+                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.24)';
+
+                if (frontImg) {
+                    frontImg.style.transform = frontTransform;
+                } else {
+                    front.style.transform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0)';
+                }
+
+                if (backImg) {
+                    backImg.style.transform = backTransform;
+                } else {
+                    back.style.transform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0)';
+                }
                 requestAnimationFrame(animate);
             }
 

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260412o'; // 2026-04-12 - ClearPath-like stronger parallax and CTA style
+const CACHE_VERSION = '20260412p'; // 2026-04-12 - Zoomed-image parallax (inner image movement)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
