@@ -4763,13 +4763,14 @@
 
             // Start dark fade slightly before hero section fully ends.
             var FADE_IN_EARLY_START_PX = 180;
+            var FADE_OUT_START_RATIO = 0.72;
 
             function updateBackgroundOpacity() {
                 var scrollY = window.scrollY;
                 var heroEnd = heroWelcome.offsetTop + heroWelcome.offsetHeight;
                 var welcomeStart = welcomePinned.offsetTop;
                 var welcomeEnd = welcomeStart + welcomePinned.offsetHeight;
-                var welcomeMid = welcomeStart + (welcomePinned.offsetHeight / 2);
+                var fadeOutStart = welcomeStart + (welcomePinned.offsetHeight * FADE_OUT_START_RATIO);
                 var fadeInStart = Math.max(0, heroEnd - FADE_IN_EARLY_START_PX);
                 var opacity = 0;
 
@@ -4780,13 +4781,13 @@
                     // Fade in from early-start point to welcome start
                     var fadeInRange = Math.max(1, welcomeStart - fadeInStart);
                     opacity = Math.max(0, Math.min(1, (scrollY - fadeInStart) / fadeInRange));
-                } else if (scrollY < welcomeMid) {
-                    // Full opacity from welcome start to midpoint
+                } else if (scrollY < fadeOutStart) {
+                    // Full opacity from welcome start to fade-out start point
                     opacity = 1;
                 } else if (scrollY < welcomeEnd) {
-                    // Fade out from midpoint to end
-                    var fadeOutRange = welcomeEnd - welcomeMid;
-                    opacity = Math.max(0, Math.min(1, 1 - ((scrollY - welcomeMid) / fadeOutRange)));
+                    // Faster fade out in the final stretch of the welcome section
+                    var fadeOutRange = Math.max(1, welcomeEnd - fadeOutStart);
+                    opacity = Math.max(0, Math.min(1, 1 - ((scrollY - fadeOutStart) / fadeOutRange)));
                 } else {
                     // After welcome ends: 0%
                     opacity = 0;
