@@ -1479,18 +1479,24 @@
             gap: 6px;
             margin-top: 28px;
             font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-            letter-spacing: -0.01em;
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             text-decoration: none;
-            border-bottom: 1.5px solid currentColor;
-            padding-bottom: 2px;
-            opacity: 0.75;
-            transition: opacity 0.2s ease;
+            background: #7ea89f;
+            border: none;
+            border-radius: 999px;
+            padding: 11px 20px;
+            box-shadow: 0 2px 10px rgba(126, 168, 159, 0.28);
+            transition: transform 0.2s ease, filter 0.2s ease;
         }
 
-        .doc-cta-link:hover { opacity: 1; }
+        .doc-cta-link:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.03);
+        }
 
         .doc-links-row {
             display: flex;
@@ -1820,6 +1826,10 @@
             .doc-links-row {
                 max-width: 980px;
                 margin-top: 36px;
+            }
+
+            .doc-sub {
+                max-width: 30ch;
             }
         }
 
@@ -4884,34 +4894,41 @@
             var section = thumb ? thumb.closest('.doc-section') : null;
             if (!front || !back || !thumb) return;
 
-            var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (prefersReduced) return;
-
-            var ticking = false;
-            function onScroll() {
-                if (ticking) return;
-                ticking = true;
-                requestAnimationFrame(function() {
-                    var rect = (section || thumb).getBoundingClientRect();
-                    var vh   = window.innerHeight;
-                    var start = vh;
-                    var end = -rect.height;
-                    var progress = (start - rect.top) / (start - end);
-                    progress = Math.max(-0.2, Math.min(1.2, progress));
-                    var swing = (progress - 0.5) * 2;
-
-                    var frontY = swing * 220;
-                    var backY  = swing * -380;
-
-                    front.style.transform = 'translate3d(0,' + frontY + 'px,0)';
-                    back.style.transform  = 'translate3d(0,' + backY + 'px,0)';
-                    ticking = false;
-                });
+            function clamp(v, min, max) {
+                return Math.max(min, Math.min(max, v));
             }
 
-            window.addEventListener('scroll', onScroll, { passive: true });
-            window.addEventListener('resize', onScroll);
-            onScroll();
+            var currentFrontY = -40;
+            var currentBackY = 70;
+            var targetFrontY = -40;
+            var targetBackY = 70;
+
+            function recalcTargets() {
+                var rect = (section || thumb).getBoundingClientRect();
+                var vh = window.innerHeight;
+
+                // 0 when section just enters, 1 when section leaves viewport top.
+                var progress = (vh - rect.top) / (vh + rect.height);
+                progress = clamp(progress, 0, 1);
+
+                // Strong opposite movement like ClearPath section motion.
+                targetFrontY = -80 + (progress * 230); // -80 -> 150
+                targetBackY  = 120 - (progress * 340); // 120 -> -220
+            }
+
+            function animate() {
+                currentFrontY += (targetFrontY - currentFrontY) * 0.22;
+                currentBackY += (targetBackY - currentBackY) * 0.22;
+
+                front.style.transform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0)';
+                back.style.transform  = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0)';
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('scroll', recalcTargets, { passive: true });
+            window.addEventListener('resize', recalcTargets);
+            recalcTargets();
+            animate();
         })();
 
         // ==================== WELCOME SKIP BUTTON ====================
