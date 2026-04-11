@@ -1448,8 +1448,8 @@
         /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
         .doc-section {
             padding-top: 70px;
-            margin-left: -8px;
-            margin-right: -8px;
+            margin-left: 0;
+            margin-right: 0;
         }
 
         .doc-hero {
@@ -1497,10 +1497,13 @@
             gap: 10px;
             margin-top: 32px;
             flex-wrap: wrap;
+            justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .doc-links-row .doc-card-side {
-            flex: 1 1 120px;
+            flex: 0 1 280px;
         }
 
         .doc-section .doc-heading,
@@ -1772,11 +1775,11 @@
 
         @media (min-width: 1024px) {
             .doc-section {
-                width: 100vw;
-                margin-left: calc(50% - 50vw);
-                margin-right: calc(50% - 50vw);
-                padding-left: clamp(20px, 3.8vw, 56px);
-                padding-right: clamp(56px, 8vw, 140px);
+                width: auto;
+                margin-left: 0;
+                margin-right: 0;
+                padding-left: 0;
+                padding-right: 0;
             }
 
             .doc-hero {
@@ -1829,8 +1832,8 @@
 
         @media (max-width: 600px) {
             .doc-section {
-                margin-left: -10px;
-                margin-right: -10px;
+                margin-left: 0;
+                margin-right: 0;
             }
         }
 
@@ -4849,6 +4852,7 @@
             var front = document.getElementById('usg-thumb-main');
             var back  = document.getElementById('usg-thumb-back');
             var thumb = front ? front.closest('.doc-img-col') : null;
+            var section = thumb ? thumb.closest('.doc-section') : null;
             if (!front || !back || !thumb) return;
 
             var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4859,14 +4863,14 @@
                 if (ticking) return;
                 ticking = true;
                 requestAnimationFrame(function() {
-                    var rect = thumb.getBoundingClientRect();
+                    var rect = (section || thumb).getBoundingClientRect();
                     var vh   = window.innerHeight;
                     var progress = (vh - rect.top) / (vh + rect.height);
                     progress = Math.max(0, Math.min(1, progress));
                     var swing = (progress - 0.5) * 2; // -1..1
 
-                    var frontY = swing * 120;
-                    var backY  = swing * -230;
+                    var frontY = swing * 160;
+                    var backY  = swing * -300;
 
                     front.style.transform = 'translate3d(0,' + frontY + 'px,0)';
                     back.style.transform  = 'translate3d(0,' + backY + 'px,0)';
