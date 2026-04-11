@@ -776,14 +776,35 @@
         #info-terbaru-fixed-bg {
             position: fixed;
             inset: 0;
-            background-image: url('/images/bg/clearpath-curves.svg');
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center;
             opacity: 0;
             pointer-events: none;
             z-index: 2;
             transition: opacity 0.12s linear;
+            overflow: hidden;
+        }
+
+        #info-terbaru-fixed-bg::before,
+        #info-terbaru-fixed-bg::after {
+            content: '';
+            position: absolute;
+            inset: -2%;
+            background-image: url('/images/bg/clearpath-curves.svg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Shadow/depth layer behind curves */
+        #info-terbaru-fixed-bg::before {
+            opacity: 0.62;
+            transform: translateY(10px) scale(1.018);
+            filter: blur(2.8px) brightness(1.12) saturate(1.1);
+        }
+
+        /* Main brighter curve strokes */
+        #info-terbaru-fixed-bg::after {
+            opacity: 0.82;
+            filter: brightness(1.22) contrast(1.06) saturate(1.12);
         }
 
         @media (max-width: 1199px) {
