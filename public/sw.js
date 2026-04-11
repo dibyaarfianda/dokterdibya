@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411u'; // 2026-04-11 - Sync welcome wrapper opacity exactly with page black fade
+const CACHE_VERSION = '20260411v'; // 2026-04-11 - Soften welcome wrapper edges with feathered overlay mask
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
