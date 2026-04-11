@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260413c'; // 2026-04-13 - Desktop: front layer right 8% for clear separation
+const CACHE_VERSION = '20260413d'; // 2026-04-13 - Square corners, back 20% right edge, front left
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

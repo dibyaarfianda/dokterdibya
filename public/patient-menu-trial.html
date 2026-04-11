@@ -1623,7 +1623,7 @@
 
         .usg-layer {
             position: absolute;
-            border-radius: 16px;
+            border-radius: 0;
             overflow: hidden;
             border: none;
             background: transparent;
@@ -1651,8 +1651,9 @@
 
         .usg-layer-back {
             top: 6%;
-            left: 0;
-            width: 82%;
+            right: 0;
+            left: auto;
+            width: 20%;
             bottom: 0;
             z-index: 1;
             transform: translateY(0);
@@ -1662,7 +1663,8 @@
 
         .usg-layer-front {
             top: 22%;
-            right: 0;
+            right: auto;
+            left: 0;
             width: 62%;
             bottom: 10%;
             z-index: 2;
@@ -1814,15 +1816,18 @@
 
             .usg-layer-back {
                 top: 0;
+                right: 0;
+                left: auto;
                 bottom: 4%;
-                width: 78%;
+                width: 20%;
             }
 
             .usg-layer-front {
                 top: 26%;
-                right: 8%;
+                right: auto;
+                left: 0;
                 bottom: 0;
-                width: 48%;
+                width: 50%;
             }
 
             .doc-links-row {
