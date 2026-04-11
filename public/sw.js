@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260412q'; // 2026-04-12 - Content-only parallax (never move image box wrapper)
+const CACHE_VERSION = '20260412r'; // 2026-04-12 - Slower back parallax + wider back image layer
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
