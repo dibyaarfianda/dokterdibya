@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411k'; // 2026-04-11 - Increase Info Terbaru fixed background opacity strength
+const CACHE_VERSION = '20260411l'; // 2026-04-11 - Adjust desktop typography for Info Terbaru header
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
