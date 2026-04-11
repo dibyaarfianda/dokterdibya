@@ -46,7 +46,6 @@
             --shadow-hard: 0 4px 16px rgba(0, 0, 0, 0.08);
             --radius: 14px;
             --radius-sm: 10px;
-            --welcome-overlay-opacity: 0;
         }
 
         /* ========== RESET ========== */
@@ -1655,23 +1654,6 @@
             align-items: stretch;
             padding: 0;
             box-sizing: border-box;
-            isolation: isolate;
-        }
-
-        .welcome-window::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, var(--welcome-overlay-opacity));
-            pointer-events: none;
-            z-index: 0;
-            -webkit-mask-image: radial-gradient(120% 92% at 50% 50%, rgba(0, 0, 0, 1) 76%, rgba(0, 0, 0, 0) 100%);
-            mask-image: radial-gradient(120% 92% at 50% 50%, rgba(0, 0, 0, 1) 76%, rgba(0, 0, 0, 0) 100%);
-        }
-
-        .welcome-window > * {
-            position: relative;
-            z-index: 1;
         }
 
         .welcome-window-left {
@@ -4812,9 +4794,7 @@
 
                 // Apply full-screen black overlay across entire viewport.
                 var overlay = document.getElementById('welcome-bg-overlay');
-                var overlayOpacity = (opacity * 0.97).toFixed(3);
-                if (overlay) overlay.style.opacity = overlayOpacity;
-                document.documentElement.style.setProperty('--welcome-overlay-opacity', overlayOpacity);
+                if (overlay) overlay.style.opacity = (opacity * 0.97).toFixed(3);
             }
 
             window.addEventListener('scroll', updateBackgroundOpacity, { passive: true });

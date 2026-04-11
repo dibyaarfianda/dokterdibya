@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411v'; // 2026-04-11 - Soften welcome wrapper edges with feathered overlay mask
+const CACHE_VERSION = '20260411w'; // 2026-04-11 - Remove double darkening in welcome wrapper (no box effect)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
