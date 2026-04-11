@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411f'; // 2026-04-11 - Remove filled SVG curve layers on Info Terbaru (stroke-only)
+const CACHE_VERSION = '20260411g'; // 2026-04-11 - Remove Info Terbaru curve decoration entirely
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
