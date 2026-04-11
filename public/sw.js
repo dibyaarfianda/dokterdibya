@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260412b'; // 2026-04-12 - Arsip overlap reveal animation update
+const CACHE_VERSION = '20260412c'; // 2026-04-12 - Arsip title/description ClearPath typography update
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
