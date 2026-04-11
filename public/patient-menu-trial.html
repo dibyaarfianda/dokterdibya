@@ -4918,20 +4918,20 @@
                 var progress = (vh - rect.top) / (vh + rect.height);
                 progress = clamp(progress, 0, 1);
 
-                // Reduced parallax movement - 108px front, 81px back
-                targetFrontY = 54 - (progress * 108);   // 54 -> -54 (move UP, faster)
-                targetBackY  = 40 - (progress * 81);    // 40 -> -41 (move UP, slower)
+                // Parallax movement - 81px front, 200px back
+                targetFrontY = 40 - (progress * 81);    // 40 -> -41 (move UP)
+                targetBackY  = 100 - (progress * 200);  // 100 -> -100 (move UP, more dramatic)
             }
 
             function animate() {
                 var frontImg = front.querySelector('img');
                 var backImg = back.querySelector('img');
 
-                currentFrontY += (targetFrontY - currentFrontY) * 0.22;
-                currentBackY += (targetBackY - currentBackY) * 0.12;
+                currentFrontY += (targetFrontY - currentFrontY) * 0.12;
+                currentBackY += (targetBackY - currentBackY) * 0.08;
 
-                var frontTransform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0) scale(1.05)';
-                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.36)';
+                var frontTransform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0) scale(1.06)';
+                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.06)';
 
                 if (frontImg) {
                     frontImg.style.transform = frontTransform;
