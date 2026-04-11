@@ -1820,9 +1820,9 @@
 
             .usg-layer-front {
                 top: 26%;
-                right: 8%;
+                right: 14%;
                 bottom: 0;
-                width: 54%;
+                width: 48%;
             }
 
             .doc-links-row {
@@ -4913,9 +4913,9 @@
                 var progress = (vh - rect.top) / (vh + rect.height);
                 progress = clamp(progress, 0, 1);
 
-                // 29% parallax movement - both layers move UP (same direction)
-                targetFrontY = 72 - (progress * 145);   // 72 -> -73 (move UP, faster)
-                targetBackY  = 55 - (progress * 109);   // 55 -> -54 (move UP, slower)
+                // Reduced parallax movement - 108px front, 81px back
+                targetFrontY = 54 - (progress * 108);   // 54 -> -54 (move UP, faster)
+                targetBackY  = 40 - (progress * 81);    // 40 -> -41 (move UP, slower)
             }
 
             function animate() {
