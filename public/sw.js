@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260412v'; // 2026-04-12 - 29% parallax movement (145px for 500px container)
+const CACHE_VERSION = '20260412w'; // 2026-04-12 - Adjusted zoom 1.12/1.15 for 145px movement
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

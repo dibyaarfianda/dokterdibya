@@ -1641,11 +1641,11 @@
         .usg-layer img {
             display: block;
             width: 100%;
-            height: 110%;
+            height: 130%;
             object-fit: cover;
             object-position: center center;
             border-radius: 0;
-            transform: translate3d(0, 0, 0) scale(1.05);
+            transform: translate3d(0, 0, 0) scale(1.12);
             will-change: transform;
         }
 
@@ -4925,8 +4925,8 @@
                 currentFrontY += (targetFrontY - currentFrontY) * 0.22;
                 currentBackY += (targetBackY - currentBackY) * 0.12;
 
-                var frontTransform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0) scale(1.05)';
-                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.06)';
+                var frontTransform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0) scale(1.12)';
+                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.15)';
 
                 if (frontImg) {
                     frontImg.style.transform = frontTransform;
