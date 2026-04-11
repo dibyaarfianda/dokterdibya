@@ -1448,13 +1448,63 @@
         /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
         .doc-section {
             padding-top: 70px;
+        }
+
+        .doc-hero {
+            display: flex;
+            align-items: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .doc-text-col {
+            flex: 1 1 260px;
+            min-width: 240px;
             text-align: left;
+        }
+
+        .doc-img-col {
+            flex: 1 1 280px;
+            position: relative;
+            height: 440px;
+            min-width: 240px;
+            max-width: 480px;
+        }
+
+        .doc-cta-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 28px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            text-decoration: none;
+            border-bottom: 1.5px solid currentColor;
+            padding-bottom: 2px;
+            opacity: 0.75;
+            transition: opacity 0.2s ease;
+        }
+
+        .doc-cta-link:hover { opacity: 1; }
+
+        .doc-links-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 32px;
+            flex-wrap: wrap;
+        }
+
+        .doc-links-row .doc-card-side {
+            flex: 1 1 120px;
         }
 
         .doc-section .doc-heading,
         .doc-section .doc-sub,
-        .doc-section .doc-card-main,
-        .doc-section .doc-col-right {
+        .doc-section .doc-img-col,
+        .doc-section .doc-links-row {
             opacity: 0;
             transform: translateY(18px);
             transition: opacity 0.65s ease, transform 0.65s ease;
@@ -1463,16 +1513,16 @@
 
         .doc-section.doc-visible .doc-heading,
         .doc-section.doc-visible .doc-sub,
-        .doc-section.doc-visible .doc-card-main,
-        .doc-section.doc-visible .doc-col-right {
+        .doc-section.doc-visible .doc-img-col,
+        .doc-section.doc-visible .doc-links-row {
             opacity: 1;
             transform: translateY(0);
         }
 
         .doc-section .doc-heading { transition-delay: 0.06s; }
         .doc-section .doc-sub { transition-delay: 0.14s; }
-        .doc-section .doc-card-main { transition-delay: 0.24s; }
-        .doc-section .doc-col-right { transition-delay: 0.34s; }
+        .doc-section .doc-img-col { transition-delay: 0.24s; }
+        .doc-section .doc-links-row { transition-delay: 0.34s; }
 
         .doc-heading {
             font-family: 'Crimson Text', serif;
@@ -1583,18 +1633,24 @@
         }
 
         .usg-layer-back {
-            inset: 24px 24px 30px 20px;
+            top: 8%;
+            left: 0;
+            width: 70%;
+            bottom: 0;
             z-index: 1;
             transform: rotate(-3deg) translateY(4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12);
             opacity: 0.92;
         }
 
         .usg-layer-front {
-            inset: 18px 16px 20px 28px;
+            top: 0;
+            right: 0;
+            width: 70%;
+            bottom: 8%;
             z-index: 2;
             transform: rotate(2deg);
-            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+            box-shadow: 0 24px 56px rgba(0, 0, 0, 0.18);
         }
 
         .doc-card-meta {
@@ -1682,8 +1738,9 @@
         }
 
         @media (max-width: 420px) {
-            .doc-grid {
-                grid-template-columns: 1fr;
+            .doc-img-col {
+                height: 280px;
+                max-width: 100%;
             }
             .doc-heading {
                 line-height: 0.92;
@@ -1695,13 +1752,13 @@
         }
 
         @media (min-width: 1024px) {
+            .doc-img-col {
+                height: 520px;
+            }
             .usg-layer-back {
-                inset: 28px 34px 36px 24px;
                 transform: rotate(-5deg) translateY(6px);
             }
-
             .usg-layer-front {
-                inset: 20px 20px 22px 44px;
                 transform: rotate(3deg);
             }
         }
@@ -1709,8 +1766,8 @@
         @media (prefers-reduced-motion: reduce) {
             .doc-section .doc-heading,
             .doc-section .doc-sub,
-            .doc-section .doc-card-main,
-            .doc-section .doc-col-right {
+            .doc-section .doc-img-col,
+            .doc-section .doc-links-row {
                 transform: none !important;
                 transition: opacity 0.2s linear !important;
             }
@@ -3342,40 +3399,42 @@
 
                 <!-- DOKUMEN -->
                 <div class="doc-section">
-                    <h2 class="doc-heading">Perjalanan Anda, Tersimpan Rapi.</h2>
-                    <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda, mudah dibuka kapan saja saat Anda membutuhkannya.</p>
-                    <div class="doc-grid">
-                        <!-- Kolom kiri: Album USG besar -->
-                        <div class="doc-card doc-card-main" onclick="window.location.href='/album-usg-trial.html'">
-                            <div class="doc-card-thumb doc-card-thumb-layered">
-                                <div class="usg-layer usg-layer-back" id="usg-thumb-back">
-                                    <i class="fa-solid fa-image usg-fallback-icon"></i>
-                                </div>
-                                <div class="usg-layer usg-layer-front" id="usg-thumb-main">
-                                    <i class="fa-solid fa-image usg-fallback-icon"></i>
-                                </div>
+                    <div class="doc-hero">
+                        <div class="doc-text-col">
+                            <h2 class="doc-heading">Perjalanan Anda, Tersimpan Rapi.</h2>
+                            <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda, mudah dibuka kapan saja.</p>
+                            <a class="doc-cta-link" href="/album-usg-trial.html">Lihat Album USG &rarr;</a>
+                            <div class="doc-card-meta" id="usg-thumb-previews" style="margin-top:14px;"></div>
+                        </div>
+                        <div class="doc-img-col">
+                            <div class="usg-layer usg-layer-back" id="usg-thumb-back">
+                                <i class="fa-solid fa-image usg-fallback-icon"></i>
                             </div>
-                            <div class="doc-card-meta" id="usg-thumb-previews">Total foto tersimpan</div>
+                            <div class="usg-layer usg-layer-front" id="usg-thumb-main">
+                                <i class="fa-solid fa-image usg-fallback-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-links-row">
+                        <div class="doc-card doc-card-side" onclick="window.location.href='/album-usg-trial.html'">
+                            <div class="doc-card-icon"><i class="fa-solid fa-camera"></i></div>
                             <div class="doc-card-label">
                                 <h3>Album USG</h3>
                                 <p>Foto USG kehamilan Anda</p>
                             </div>
                         </div>
-                        <!-- Kolom kanan: 2 baris -->
-                        <div class="doc-col-right">
-                            <div class="doc-card doc-card-side" onclick="window.location.href='/dokumen-medis-trial.html'">
-                                <div class="doc-card-icon"><i class="fa-solid fa-file-medical"></i></div>
-                                <div class="doc-card-label">
-                                    <h3>Resume Medis</h3>
-                                    <p>Catatan medis Anda</p>
-                                </div>
+                        <div class="doc-card doc-card-side" onclick="window.location.href='/dokumen-medis-trial.html'">
+                            <div class="doc-card-icon"><i class="fa-solid fa-file-medical"></i></div>
+                            <div class="doc-card-label">
+                                <h3>Resume Medis</h3>
+                                <p>Catatan medis Anda</p>
                             </div>
-                            <div class="doc-card doc-card-side" onclick="window.location.href='/hasil-lab.html'">
-                                <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
-                                <div class="doc-card-label">
-                                    <h3>Hasil Lab</h3>
-                                    <p>Laporan laboratorium</p>
-                                </div>
+                        </div>
+                        <div class="doc-card doc-card-side" onclick="window.location.href='/hasil-lab.html'">
+                            <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
+                            <div class="doc-card-label">
+                                <h3>Hasil Lab</h3>
+                                <p>Laporan laboratorium</p>
                             </div>
                         </div>
                     </div>
@@ -4679,7 +4738,7 @@
         (function() {
             var front = document.getElementById('usg-thumb-main');
             var back  = document.getElementById('usg-thumb-back');
-            var thumb = front ? front.closest('.doc-card-thumb-layered') : null;
+            var thumb = front ? front.closest('.doc-img-col') : null;
             if (!front || !back || !thumb) return;
 
             var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4697,7 +4756,8 @@
                     progress = Math.max(-0.2, Math.min(1.2, progress));
 
                     var frontY = (progress - 0.5) * -18; // shifts -9px…+9px
-                    var backY  = (progress - 0.5) *  28; // shifts -14px…+14px (opposite)
+                    var frontY = (progress - 0.5) * -60; // shifts -30px…+30px
+                    var backY  = (progress - 0.5) *  90; // shifts -45px…+45px (opposite)
 
                     front.style.transform = 'rotate(2deg) translateY(' + frontY + 'px)';
                     back.style.transform  = 'rotate(-3deg) translateY(' + (4 + backY) + 'px)';
