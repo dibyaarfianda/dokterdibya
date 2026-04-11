@@ -1775,8 +1775,8 @@
                 width: 100vw;
                 margin-left: calc(50% - 50vw);
                 margin-right: calc(50% - 50vw);
-                padding-left: clamp(20px, 4.5vw, 64px);
-                padding-right: clamp(20px, 4.5vw, 64px);
+                padding-left: clamp(20px, 3.8vw, 56px);
+                padding-right: clamp(56px, 8vw, 140px);
             }
 
             .doc-hero {
@@ -1793,22 +1793,22 @@
             }
 
             .doc-img-col {
-                flex: 0 0 58%;
-                max-width: 58%;
-                height: 620px;
+                flex: 0 0 52%;
+                max-width: 52%;
+                height: 520px;
             }
 
             .usg-layer-back {
                 top: 0;
                 bottom: 4%;
-                width: 78%;
+                width: 70%;
             }
 
             .usg-layer-front {
                 top: 18%;
-                right: 4%;
+                right: 8%;
                 bottom: 0;
-                width: 60%;
+                width: 54%;
             }
 
             .doc-links-row {
@@ -4861,19 +4861,21 @@
                 requestAnimationFrame(function() {
                     var rect = thumb.getBoundingClientRect();
                     var vh   = window.innerHeight;
-                    var centerDelta = ((vh * 0.5) - (rect.top + rect.height * 0.5)) / vh;
-                    centerDelta = Math.max(-1.1, Math.min(1.1, centerDelta));
+                    var progress = (vh - rect.top) / (vh + rect.height);
+                    progress = Math.max(0, Math.min(1, progress));
+                    var swing = (progress - 0.5) * 2; // -1..1
 
-                    var frontY = centerDelta * 70;
-                    var backY  = centerDelta * -170;
+                    var frontY = swing * 120;
+                    var backY  = swing * -230;
 
-                    front.style.transform = 'translateY(' + frontY + 'px)';
-                    back.style.transform  = 'translateY(' + backY + 'px)';
+                    front.style.transform = 'translate3d(0,' + frontY + 'px,0)';
+                    back.style.transform  = 'translate3d(0,' + backY + 'px,0)';
                     ticking = false;
                 });
             }
 
             window.addEventListener('scroll', onScroll, { passive: true });
+            window.addEventListener('resize', onScroll);
             onScroll();
         })();
 
