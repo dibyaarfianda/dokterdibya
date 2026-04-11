@@ -4913,9 +4913,9 @@
                 var progress = (vh - rect.top) / (vh + rect.height);
                 progress = clamp(progress, 0, 1);
 
-                // 29% parallax movement (145px for 500px container, calculated from 2048px image at 29%)
-                targetFrontY = -72 + (progress * 145);  // -72 -> 73 (total 145px movement)
-                targetBackY  = 55 - (progress * 109);   // 55 -> -54 (total 109px, opposite direction, slower)
+                // 29% parallax movement - both layers move UP (same direction)
+                targetFrontY = 72 - (progress * 145);   // 72 -> -73 (move UP, faster)
+                targetBackY  = 55 - (progress * 109);   // 55 -> -54 (move UP, slower)
             }
 
             function animate() {
