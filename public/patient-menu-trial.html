@@ -737,7 +737,7 @@
             margin-left: -50vw;
             margin-right: -50vw;
             background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 100%);
-            z-index: 4;
+            z-index: 1;
         }
 
         #announcements-container::after {
@@ -754,42 +754,12 @@
             box-sizing: border-box;
             padding: 94px 100px 88px;
             background: linear-gradient(180deg, #f7f9ff 0%, #eef4ff 100%);
-            z-index: 6;
+            z-index: 1;
             overflow: visible;
-            isolation: isolate;
         }
 
         .info-terbaru-block-header::before {
             content: none;
-        }
-
-        .info-terbaru-bg-curves {
-            position: absolute;
-            left: 0;
-            width: 100%;
-            height: 170px;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        .info-terbaru-bg-curves svg {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        .info-terbaru-bg-curves.top {
-            top: -130px;
-        }
-
-        .info-terbaru-bg-curves.bottom {
-            bottom: -130px;
-        }
-
-        .info-terbaru-block-title,
-        .info-terbaru-block-desc {
-            position: relative;
-            z-index: 7;
         }
 
         @media (max-width: 1199px) {
@@ -3165,18 +3135,8 @@
 
             <!-- INFO TERBARU — ClearPath Scroll-Driven Sticky Showcase -->
             <div class="info-terbaru-block-header">
-                <div class="info-terbaru-bg-curves top" aria-hidden="true">
-                    <svg viewBox="0 0 1440 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 106C280 42 1160 42 1440 106" fill="none" stroke="rgba(118, 146, 255, 0.18)" stroke-width="2"/>
-                    </svg>
-                </div>
                 <h2 class="info-terbaru-block-title">Info Terbaru</h2>
                 <p class="info-terbaru-block-desc">Lihat pengumuman, perubahan jadwal, dan pembaruan penting terbaru dari dokter di satu tempat.</p>
-                <div class="info-terbaru-bg-curves bottom" aria-hidden="true">
-                    <svg viewBox="0 0 1440 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 74C300 132 1140 132 1440 74" fill="none" stroke="rgba(118, 146, 255, 0.16)" stroke-width="2"/>
-                    </svg>
-                </div>
             </div>
             <div id="announcements-container" data-layout="info-terbaru">
                 <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
