@@ -1652,7 +1652,7 @@
         .usg-layer-back {
             top: 6%;
             left: 0;
-            width: 76%;
+            width: 82%;
             bottom: 0;
             z-index: 1;
             transform: translateY(0);
@@ -1815,7 +1815,7 @@
             .usg-layer-back {
                 top: 0;
                 bottom: 4%;
-                width: 70%;
+                width: 78%;
             }
 
             .usg-layer-front {
@@ -4915,7 +4915,7 @@
 
                 // Strong opposite movement like ClearPath section motion.
                 targetFrontY = -80 + (progress * 230); // -80 -> 150
-                targetBackY  = 120 - (progress * 340); // 120 -> -220
+                targetBackY  = 90 - (progress * 260); // 90 -> -170 (slower back motion)
             }
 
             function animate() {
@@ -4923,10 +4923,10 @@
                 var backImg = back.querySelector('img');
 
                 currentFrontY += (targetFrontY - currentFrontY) * 0.22;
-                currentBackY += (targetBackY - currentBackY) * 0.22;
+                currentBackY += (targetBackY - currentBackY) * 0.12;
 
                 var frontTransform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0) scale(1.16)';
-                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.24)';
+                var backTransform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0) scale(1.22)';
 
                 if (frontImg) {
                     frontImg.style.transform = frontTransform;
