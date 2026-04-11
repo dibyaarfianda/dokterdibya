@@ -1448,7 +1448,7 @@
         /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
         .doc-section {
             padding-top: 70px;
-            text-align: center;
+            text-align: left;
         }
 
         .doc-section .doc-heading,
@@ -1482,8 +1482,8 @@
             letter-spacing: -0.03em;
             line-height: 0.84;
             max-width: 10ch;
-            margin-left: auto;
-            margin-right: auto;
+            margin-left: 0;
+            margin-right: 0;
         }
 
         .doc-sub {
@@ -1495,8 +1495,8 @@
             letter-spacing: -0.03em;
             line-height: 1.4;
             max-width: 34ch;
-            margin-left: auto;
-            margin-right: auto;
+            margin-left: 0;
+            margin-right: 0;
         }
 
         .doc-grid {
@@ -4673,6 +4673,40 @@
             }, { threshold: [0.28, 0.45, 0.7] });
 
             observer.observe(section);
+        })();
+
+        // ==================== USG PARALLAX ====================
+        (function() {
+            var front = document.getElementById('usg-thumb-main');
+            var back  = document.getElementById('usg-thumb-back');
+            var thumb = front ? front.closest('.doc-card-thumb-layered') : null;
+            if (!front || !back || !thumb) return;
+
+            var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReduced) return;
+
+            var ticking = false;
+            function onScroll() {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(function() {
+                    var rect = thumb.getBoundingClientRect();
+                    var vh   = window.innerHeight;
+                    // progress: 0 when bottom of element enters viewport, 1 when top leaves
+                    var progress = 1 - (rect.bottom / (vh + rect.height));
+                    progress = Math.max(-0.2, Math.min(1.2, progress));
+
+                    var frontY = (progress - 0.5) * -18; // shifts -9px…+9px
+                    var backY  = (progress - 0.5) *  28; // shifts -14px…+14px (opposite)
+
+                    front.style.transform = 'rotate(2deg) translateY(' + frontY + 'px)';
+                    back.style.transform  = 'rotate(-3deg) translateY(' + (4 + backY) + 'px)';
+                    ticking = false;
+                });
+            }
+
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
         })();
 
         // ==================== WELCOME SKIP BUTTON ====================
