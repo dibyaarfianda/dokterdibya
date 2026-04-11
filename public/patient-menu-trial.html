@@ -4892,8 +4892,6 @@
         (function() {
             var front = document.getElementById('usg-thumb-main');
             var back  = document.getElementById('usg-thumb-back');
-            var frontImg = front ? front.querySelector('img') : null;
-            var backImg = back ? back.querySelector('img') : null;
             var thumb = front ? front.closest('.doc-img-col') : null;
             var section = thumb ? thumb.closest('.doc-section') : null;
             if (!front || !back || !thumb) return;
@@ -4921,6 +4919,9 @@
             }
 
             function animate() {
+                var frontImg = front.querySelector('img');
+                var backImg = back.querySelector('img');
+
                 currentFrontY += (targetFrontY - currentFrontY) * 0.22;
                 currentBackY += (targetBackY - currentBackY) * 0.22;
 
@@ -4929,14 +4930,10 @@
 
                 if (frontImg) {
                     frontImg.style.transform = frontTransform;
-                } else {
-                    front.style.transform = 'translate3d(0,' + currentFrontY.toFixed(2) + 'px,0)';
                 }
 
                 if (backImg) {
                     backImg.style.transform = backTransform;
-                } else {
-                    back.style.transform = 'translate3d(0,' + currentBackY.toFixed(2) + 'px,0)';
                 }
                 requestAnimationFrame(animate);
             }
