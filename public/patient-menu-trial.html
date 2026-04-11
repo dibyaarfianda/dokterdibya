@@ -1775,30 +1775,33 @@
 
         @media (min-width: 1024px) {
             .doc-section {
-                width: auto;
-                margin-left: 0;
-                margin-right: 0;
-                padding-left: 0;
-                padding-right: 0;
+                width: 100vw;
+                position: relative;
+                left: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
+                box-sizing: border-box;
+                padding-left: 100px;
+                padding-right: 100px;
             }
 
             .doc-hero {
                 flex-wrap: nowrap;
                 align-items: center;
                 gap: clamp(44px, 6vw, 92px);
-                max-width: 1500px;
-                margin: 0 auto;
+                max-width: none;
+                margin: 0;
             }
 
             .doc-text-col {
-                flex: 0 0 42%;
-                max-width: 42%;
+                flex: 0 0 44%;
+                max-width: 44%;
             }
 
             .doc-img-col {
-                flex: 0 0 52%;
-                max-width: 52%;
-                height: 520px;
+                flex: 0 0 50%;
+                max-width: 50%;
+                height: 500px;
             }
 
             .usg-layer-back {
@@ -1820,6 +1823,19 @@
             }
         }
 
+        @media (max-width: 1199px) and (min-width: 769px) {
+            .doc-section {
+                width: 100vw;
+                position: relative;
+                left: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
+                box-sizing: border-box;
+                padding-left: 60px;
+                padding-right: 60px;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .doc-section .doc-heading,
             .doc-section .doc-sub,
@@ -1834,6 +1850,19 @@
             .doc-section {
                 margin-left: 0;
                 margin-right: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .doc-section {
+                width: 100vw;
+                position: relative;
+                left: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
+                box-sizing: border-box;
+                padding-left: 24px;
+                padding-right: 24px;
             }
         }
 
@@ -4865,12 +4894,14 @@
                 requestAnimationFrame(function() {
                     var rect = (section || thumb).getBoundingClientRect();
                     var vh   = window.innerHeight;
-                    var progress = (vh - rect.top) / (vh + rect.height);
-                    progress = Math.max(0, Math.min(1, progress));
-                    var swing = (progress - 0.5) * 2; // -1..1
+                    var start = vh;
+                    var end = -rect.height;
+                    var progress = (start - rect.top) / (start - end);
+                    progress = Math.max(-0.2, Math.min(1.2, progress));
+                    var swing = (progress - 0.5) * 2;
 
-                    var frontY = swing * 160;
-                    var backY  = swing * -300;
+                    var frontY = swing * 220;
+                    var backY  = swing * -380;
 
                     front.style.transform = 'translate3d(0,' + frontY + 'px,0)';
                     back.style.transform  = 'translate3d(0,' + backY + 'px,0)';
