@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260411h'; // 2026-04-11 - Use clearpath-curves.svg as Info Terbaru background accent
+const CACHE_VERSION = '20260411i'; // 2026-04-11 - Info Terbaru line-only look (remove gradient fill background)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
