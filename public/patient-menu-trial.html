@@ -1451,6 +1451,29 @@
             text-align: center;
         }
 
+        .doc-section .doc-heading,
+        .doc-section .doc-sub,
+        .doc-section .doc-card-main,
+        .doc-section .doc-col-right {
+            opacity: 0;
+            transform: translateY(18px);
+            transition: opacity 0.65s ease, transform 0.65s ease;
+            will-change: opacity, transform;
+        }
+
+        .doc-section.doc-visible .doc-heading,
+        .doc-section.doc-visible .doc-sub,
+        .doc-section.doc-visible .doc-card-main,
+        .doc-section.doc-visible .doc-col-right {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .doc-section .doc-heading { transition-delay: 0.06s; }
+        .doc-section .doc-sub { transition-delay: 0.14s; }
+        .doc-section .doc-card-main { transition-delay: 0.24s; }
+        .doc-section .doc-col-right { transition-delay: 0.34s; }
+
         .doc-heading {
             font-size: 26px;
             font-weight: 700;
@@ -1521,6 +1544,57 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+        }
+
+        .doc-card-thumb-layered {
+            position: relative;
+            min-height: 186px;
+            padding: 10px;
+            background: linear-gradient(160deg, rgba(245, 247, 250, 0.7), rgba(238, 242, 247, 0.85));
+        }
+
+        .usg-layer {
+            position: absolute;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            background: var(--bg-elevated);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .usg-fallback-icon {
+            font-size: 32px;
+            color: var(--text-muted);
+        }
+
+        .usg-layer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .usg-layer-back {
+            inset: 24px 24px 30px 20px;
+            z-index: 1;
+            transform: rotate(-3deg) translateY(4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            opacity: 0.92;
+        }
+
+        .usg-layer-front {
+            inset: 18px 16px 20px 28px;
+            z-index: 2;
+            transform: rotate(2deg);
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+        }
+
+        .doc-card-meta {
+            padding: 8px 12px 2px;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.01em;
         }
 
         .doc-card-thumb img {
@@ -1606,6 +1680,28 @@
             }
             .doc-heading {
                 font-size: 22px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .usg-layer-back {
+                inset: 28px 34px 36px 24px;
+                transform: rotate(-5deg) translateY(6px);
+            }
+
+            .usg-layer-front {
+                inset: 20px 20px 22px 44px;
+                transform: rotate(3deg);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .doc-section .doc-heading,
+            .doc-section .doc-sub,
+            .doc-section .doc-card-main,
+            .doc-section .doc-col-right {
+                transform: none !important;
+                transition: opacity 0.2s linear !important;
             }
         }
 
@@ -3240,13 +3336,15 @@
                     <div class="doc-grid">
                         <!-- Kolom kiri: Album USG besar -->
                         <div class="doc-card doc-card-main" onclick="window.location.href='/album-usg-trial.html'">
-                            <div class="doc-card-thumb" id="usg-thumb-main">
-                                <i class="fa-solid fa-image" style="font-size:48px;color:var(--text-muted);"></i>
+                            <div class="doc-card-thumb doc-card-thumb-layered">
+                                <div class="usg-layer usg-layer-back" id="usg-thumb-back">
+                                    <i class="fa-solid fa-image usg-fallback-icon"></i>
+                                </div>
+                                <div class="usg-layer usg-layer-front" id="usg-thumb-main">
+                                    <i class="fa-solid fa-image usg-fallback-icon"></i>
+                                </div>
                             </div>
-                            <div class="doc-card-previews" id="usg-thumb-previews">
-                                <div class="doc-preview-slot"><i class="fa-solid fa-image" style="font-size:14px;color:var(--text-muted);"></i></div>
-                                <div class="doc-preview-slot"><i class="fa-solid fa-image" style="font-size:14px;color:var(--text-muted);"></i></div>
-                            </div>
+                            <div class="doc-card-meta" id="usg-thumb-previews">Total foto tersimpan</div>
                             <div class="doc-card-label">
                                 <h3>Album USG</h3>
                                 <p>Foto USG kehamilan Anda</p>
@@ -4462,32 +4560,40 @@
                     .sort(function(a, b) { return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at); });
                 if (usg.length === 0) return;
 
+                function createUsgImage(url) {
+                    var img = document.createElement('img');
+                    img.src = url;
+                    img.alt = 'USG';
+                    img.loading = 'lazy';
+                    img.decoding = 'async';
+                    return img;
+                }
+
                 // Main thumbnail
                 var main = document.getElementById('usg-thumb-main');
                 var firstImageUrl = usg[0] && (usg[0].file_url || usg[0].thumbnail_url);
                 if (main && firstImageUrl) {
-                    var img = document.createElement('img');
-                    img.src = firstImageUrl;
-                    img.alt = 'USG';
-                    img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                    var img = createUsgImage(firstImageUrl);
                     main.innerHTML = '';
                     main.appendChild(img);
                 }
 
-                // Preview slots
+                // Back layer thumbnail (second latest if available)
+                var back = document.getElementById('usg-thumb-back');
+                var secondImageUrl = usg[1] && (usg[1].file_url || usg[1].thumbnail_url);
+                if (back && secondImageUrl) {
+                    var bimg = createUsgImage(secondImageUrl);
+                    back.innerHTML = '';
+                    back.appendChild(bimg);
+                }
+
+                // Count metadata
                 var previews = document.getElementById('usg-thumb-previews');
                 if (previews) {
-                    var slots = previews.querySelectorAll('.doc-preview-slot');
-                    for (var i = 0; i < slots.length && i + 1 < usg.length; i++) {
-                        var previewUrl = usg[i + 1] && (usg[i + 1].file_url || usg[i + 1].thumbnail_url);
-                        if (previewUrl) {
-                            var pimg = document.createElement('img');
-                            pimg.src = previewUrl;
-                            pimg.alt = 'USG';
-                            slots[i].innerHTML = '';
-                            slots[i].appendChild(pimg);
-                        }
-                    }
+                    var count = usg.length;
+                    previews.textContent = count === 1
+                        ? '1 foto USG tersimpan'
+                        : count + ' foto USG tersimpan';
                 }
             })
             .catch(function() {});
@@ -4531,6 +4637,31 @@
                 });
                 docGrid.addEventListener('mouseleave', clearDoc);
             }
+        })();
+
+        // ==================== DOC SECTION REVEAL ====================
+        (function() {
+            var section = document.querySelector('.doc-section');
+            if (!section) return;
+
+            if (!('IntersectionObserver' in window)) {
+                section.classList.add('doc-visible');
+                return;
+            }
+
+            var shown = false;
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (shown) return;
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.28) {
+                        shown = true;
+                        section.classList.add('doc-visible');
+                        observer.unobserve(section);
+                    }
+                });
+            }, { threshold: [0.28, 0.45, 0.7] });
+
+            observer.observe(section);
         })();
 
         // ==================== WELCOME SKIP BUTTON ====================
