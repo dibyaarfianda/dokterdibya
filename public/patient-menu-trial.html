@@ -4913,9 +4913,9 @@
                 var progress = (vh - rect.top) / (vh + rect.height);
                 progress = clamp(progress, 0, 1);
 
-                // Strong opposite movement like ClearPath section motion.
-                targetFrontY = -80 + (progress * 230); // -80 -> 150
-                targetBackY  = 90 - (progress * 260); // 90 -> -170 (slower back motion)
+                // Minimal subtle movement - image feels fixed, we peek through window
+                targetFrontY = -10 + (progress * 20);  // -10 -> 10 (small subtle shift)
+                targetBackY  = 8 - (progress * 15);   // 8 -> -7 (even more subtle, slower)
             }
 
             function animate() {
