@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260413h'; // 2026-04-13 - Back layer right: 50px
+const CACHE_VERSION = '20260413i'; // 2026-04-13 - Front scale 1.06, Back scale 1.10
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
