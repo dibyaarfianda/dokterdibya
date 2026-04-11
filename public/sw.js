@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260412s'; // 2026-04-12 - Less overlap on front layer positioning
+const CACHE_VERSION = '20260412t'; // 2026-04-12 - Fixed background parallax: minimal movement
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
