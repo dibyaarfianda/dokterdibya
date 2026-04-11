@@ -1466,9 +1466,9 @@
         .doc-img-col {
             flex: 1 1 280px;
             position: relative;
-            height: 440px;
+            height: 500px;
             min-width: 240px;
-            max-width: 480px;
+            max-width: 560px;
         }
 
         .doc-cta-link {
@@ -1633,24 +1633,24 @@
         }
 
         .usg-layer-back {
-            top: 8%;
+            top: 6%;
             left: 0;
-            width: 70%;
+            width: 76%;
             bottom: 0;
             z-index: 1;
-            transform: rotate(-3deg) translateY(4px);
-            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.12);
+            transform: translateY(0);
+            box-shadow: 0 22px 56px rgba(0, 0, 0, 0.14);
             opacity: 0.92;
         }
 
         .usg-layer-front {
-            top: 0;
+            top: 14%;
             right: 0;
-            width: 70%;
-            bottom: 8%;
+            width: 62%;
+            bottom: 10%;
             z-index: 2;
-            transform: rotate(2deg);
-            box-shadow: 0 24px 56px rgba(0, 0, 0, 0.18);
+            transform: translateY(0);
+            box-shadow: 0 26px 58px rgba(0, 0, 0, 0.2);
         }
 
         .doc-card-meta {
@@ -1658,6 +1658,11 @@
             font-size: 11px;
             color: var(--text-muted);
             letter-spacing: 0.01em;
+        }
+
+        .doc-meta-inline {
+            margin-top: 14px;
+            padding-left: 0;
         }
 
         .doc-card-thumb img {
@@ -1739,7 +1744,7 @@
 
         @media (max-width: 420px) {
             .doc-img-col {
-                height: 280px;
+                height: 340px;
                 max-width: 100%;
             }
             .doc-heading {
@@ -1752,14 +1757,20 @@
         }
 
         @media (min-width: 1024px) {
+            .doc-section {
+                width: calc(100vw - 24px);
+                margin-left: calc(50% - 50vw + 8px);
+                margin-right: calc(50% - 50vw + 8px);
+            }
+
             .doc-img-col {
-                height: 520px;
+                height: 560px;
             }
             .usg-layer-back {
-                transform: rotate(-5deg) translateY(6px);
+                width: 72%;
             }
             .usg-layer-front {
-                transform: rotate(3deg);
+                width: 58%;
             }
         }
 
@@ -3404,7 +3415,7 @@
                             <h2 class="doc-heading">Perjalanan Anda, Tersimpan Rapi.</h2>
                             <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda, mudah dibuka kapan saja.</p>
                             <a class="doc-cta-link" href="/album-usg-trial.html">Lihat Album USG &rarr;</a>
-                            <div class="doc-card-meta" id="usg-thumb-previews" style="margin-top:14px;"></div>
+                            <div class="doc-card-meta doc-meta-inline" id="usg-thumb-previews"></div>
                         </div>
                         <div class="doc-img-col">
                             <div class="usg-layer usg-layer-back" id="usg-thumb-back">
@@ -4755,12 +4766,11 @@
                     var progress = 1 - (rect.bottom / (vh + rect.height));
                     progress = Math.max(-0.2, Math.min(1.2, progress));
 
-                    var frontY = (progress - 0.5) * -18; // shifts -9px…+9px
-                    var frontY = (progress - 0.5) * -60; // shifts -30px…+30px
-                    var backY  = (progress - 0.5) *  90; // shifts -45px…+45px (opposite)
+                    var frontY = (progress - 0.5) * -96; // shifts -48px…+48px
+                    var backY  = (progress - 0.5) *  140; // shifts -70px…+70px (opposite)
 
-                    front.style.transform = 'rotate(2deg) translateY(' + frontY + 'px)';
-                    back.style.transform  = 'rotate(-3deg) translateY(' + (4 + backY) + 'px)';
+                    front.style.transform = 'translateY(' + frontY + 'px)';
+                    back.style.transform  = 'translateY(' + backY + 'px)';
                     ticking = false;
                 });
             }
