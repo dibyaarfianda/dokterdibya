@@ -4742,21 +4742,25 @@
             var welcomePinned = document.getElementById('welcome-pinned');
             if (!welcomePinnedInner || !heroWelcome || !welcomePinned) return;
 
+            // Start dark fade slightly before hero section fully ends.
+            var FADE_IN_EARLY_START_PX = 180;
+
             function updateBackgroundOpacity() {
                 var scrollY = window.scrollY;
                 var heroEnd = heroWelcome.offsetTop + heroWelcome.offsetHeight;
                 var welcomeStart = welcomePinned.offsetTop;
                 var welcomeEnd = welcomeStart + welcomePinned.offsetHeight;
                 var welcomeMid = welcomeStart + (welcomePinned.offsetHeight / 2);
+                var fadeInStart = Math.max(0, heroEnd - FADE_IN_EARLY_START_PX);
                 var opacity = 0;
 
-                if (scrollY < heroEnd) {
-                    // Before hero section ends: 0%
+                if (scrollY < fadeInStart) {
+                    // Before fade-in starts: 0%
                     opacity = 0;
                 } else if (scrollY < welcomeStart) {
-                    // Fade in from hero end to welcome start
-                    var fadeInRange = welcomeStart - heroEnd;
-                    opacity = Math.max(0, Math.min(1, (scrollY - heroEnd) / fadeInRange));
+                    // Fade in from early-start point to welcome start
+                    var fadeInRange = Math.max(1, welcomeStart - fadeInStart);
+                    opacity = Math.max(0, Math.min(1, (scrollY - fadeInStart) / fadeInRange));
                 } else if (scrollY < welcomeMid) {
                     // Full opacity from welcome start to midpoint
                     opacity = 1;
