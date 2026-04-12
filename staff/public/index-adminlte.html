@@ -1642,6 +1642,12 @@
                             <p>Jadwal</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-docboard">
+                        <a href="#" class="nav-link" onclick="showDocboardPage(); return false;">
+                            <i class="nav-icon fas fa-procedures"></i>
+                            <p>DocBoard</p>
+                        </a>
+                    </li>
                     <li class="nav-item" id="nav-notifications">
                         <a href="#" class="nav-link" onclick="showNotificationsPage(); return false;">
                             <i class="nav-icon fas fa-bell"></i>
@@ -6912,6 +6918,7 @@ function openMobileMenu() {
     var menuData = [
         {icon: 'fa-bullhorn', text: 'Pengumuman', fn: 'showKelolaPengumumanPage', color: '#0d6efd'},
         {icon: 'fa-calendar-alt', text: 'Jadwal', fn: 'showKelolaJadwalPage', color: '#0d6efd'},
+        {icon: 'fa-procedures', text: 'DocBoard', fn: 'showDocboardPage', color: '#0d6efd'},
         {icon: 'fa-stethoscope', text: 'Tindakan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
         {icon: 'fa-pills', text: 'Obat', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
         {icon: 'fa-user-shield', text: 'Roles', fn: 'showKelolaRolesPage', color: '#0d6efd'},
@@ -7040,6 +7047,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
             </a>
             <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaJadwalPage==='function')showKelolaJadwalPage(); return false;">
                 <i class="fas fa-calendar-alt"></i> Jadwal
+            </a>
+            <a href="#" onclick="closeMobileMenu(); if(typeof showDocboardPage==='function')showDocboardPage(); return false;">
+                <i class="fas fa-procedures"></i> DocBoard
             </a>
             <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaTindakanPage==='function')showKelolaTindakanPage(); return false;">
                 <i class="fas fa-stethoscope"></i> Tindakan

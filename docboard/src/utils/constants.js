@@ -75,6 +75,21 @@ export const ROLE_PERMISSIONS = {
     canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
     canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
   },
+  managerial: {
+    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
+    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
+    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+  },
+  front_office: {
+    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
+    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
+    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+  },
+  user: {
+    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
+    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
+    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+  },
   bidan: {
     canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
     canChangeStatus: false, canEditClinical: false, canEditAnesthesia: true,
