@@ -141,6 +141,7 @@ export default function SurgeryDetail({ id }) {
   const loc = LOCATIONS[s.location] || {};
   const status = SURGERY_STATUS[s.status] || SURGERY_STATUS.planned;
   const opCat = OP_CATEGORY[s.op_category] || {};
+  const operationDisplayName = s.op_display_name || s.operation_type_other || s.op_name_id || s.op_name;
   const dateObj = new Date(s.surgery_date);
   const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : null;
@@ -206,7 +207,7 @@ export default function SurgeryDetail({ id }) {
         <div class="detail-label">Jenis Operasi</div>
         <div class="detail-op-name">
           {s.op_code && <span class="op-code-badge">{s.op_code}</span>}
-          {s.op_name_id || s.op_name}
+          {operationDisplayName}
         </div>
         {opCat.label && (
           <span class="op-cat-badge" style={{ color: opCat.color }}>{opCat.label}</span>

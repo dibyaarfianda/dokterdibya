@@ -369,7 +369,7 @@ router.get('/export/pdf', async (req, res) => {
         totalCount++;
 
         const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : '--:--';
-        const opName = s.op_name_id || s.op_name || '-';
+        const opName = s.op_display_name || s.operation_type_other || s.op_name_id || s.op_name || '-';
         const locName = locationNames[s.location] || s.location;
         const statusLabel = statusLabels[s.status] || s.status;
         const ageStr = s.patient_age ? `${s.patient_age} th` : '-';
@@ -582,12 +582,12 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { patient_name, diagnosis, operation_type_id, location, surgery_date } = req.body;
+    const { patient_name, diagnosis, operation_type_id, operation_type_other, location, surgery_date } = req.body;
 
-    if (!patient_name || !diagnosis || !operation_type_id || !location || !surgery_date) {
+    if (!patient_name || !diagnosis || (!operation_type_id && !operation_type_other) || !location || !surgery_date) {
       return res.status(400).json({
         success: false,
-        message: 'Data wajib: patient_name, diagnosis, operation_type_id, location, surgery_date'
+        message: 'Data wajib: patient_name, diagnosis, jenis operasi, location, surgery_date'
       });
     }
 

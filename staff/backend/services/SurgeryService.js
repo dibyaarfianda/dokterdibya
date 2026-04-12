@@ -3,6 +3,16 @@ const logger = require('../utils/logger');
 
 class SurgeryService {
 
+  decorateSurgeryRow(row) {
+    if (!row) return row;
+
+    return {
+      ...row,
+      op_display_name: row.operation_type_other || row.op_name_id || row.op_name || '',
+      team_members: typeof row.team_members === 'string' ? JSON.parse(row.team_members) : row.team_members
+    };
+  }
+
   // =====================================================
   // RM LOOKUP - Fetch patient data from SIMRS
   // =====================================================
@@ -245,10 +255,7 @@ class SurgeryService {
       [date]
     );
 
-    return rows.map(r => ({
-      ...r,
-      team_members: typeof r.team_members === 'string' ? JSON.parse(r.team_members) : r.team_members
-    }));
+    return rows.map(r => this.decorateSurgeryRow(r));
   }
 
   async getSurgeryById(id) {
@@ -262,9 +269,7 @@ class SurgeryService {
 
     if (rows.length === 0) return null;
 
-    const row = rows[0];
-    row.team_members = typeof row.team_members === 'string' ? JSON.parse(row.team_members) : row.team_members;
-    return row;
+    return this.decorateSurgeryRow(rows[0]);
   }
 
   async createSurgery(data, userId) {
@@ -312,7 +317,13 @@ class SurgeryService {
     logger.info(`Surgery scheduled: ${patient_name} - ${surgery_date} at ${location}`, { id: result.insertId });
 
     // Audit log
-    await this.logAudit(result.insertId, 'created', userId, { patient_name, operation_type_id, location, surgery_date });
+    await this.logAudit(result.insertId, 'created', userId, {
+      patient_name,
+      operation_type_id,
+      operation_type_other: operation_type_other || null,
+      location,
+      surgery_date
+    });
 
     return this.getSurgeryById(result.insertId);
   }
@@ -409,10 +420,7 @@ class SurgeryService {
       [todayStr, endStr]
     );
 
-    return rows.map(r => ({
-      ...r,
-      team_members: typeof r.team_members === 'string' ? JSON.parse(r.team_members) : r.team_members
-    }));
+    return rows.map(r => this.decorateSurgeryRow(r));
   }
 
   async getForExport(startDate, endDate) {
@@ -425,10 +433,7 @@ class SurgeryService {
       [startDate, endDate]
     );
 
-    return rows.map(r => ({
-      ...r,
-      team_members: typeof r.team_members === 'string' ? JSON.parse(r.team_members) : r.team_members
-    }));
+    return rows.map(r => this.decorateSurgeryRow(r));
   }
 
   async getTomorrowSurgeries() {
