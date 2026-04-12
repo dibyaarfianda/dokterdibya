@@ -3,15 +3,19 @@ import { route } from 'preact-router';
 import LocationCard from '../components/LocationCard';
 import { SkeletonList } from '../components/SkeletonLoader';
 import { api } from '../services/api';
-import { formatDateDisplay, getDayName } from '../utils/date';
+import { formatDateDisplay, getDayName, formatTime } from '../utils/date';
+import { LOCATIONS } from '../utils/constants';
 
 export default function DayDetail({ date }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [surgeries, setSurgeries] = useState([]);
+  const [surgLoading, setSurgLoading] = useState(true);
 
   useEffect(() => {
     loadDay();
+    loadSurgeries();
   }, [date]);
 
   async function loadDay() {
@@ -24,6 +28,18 @@ export default function DayDetail({ date }) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadSurgeries() {
+    setSurgLoading(true);
+    try {
+      const result = await api.getDaySurgeries(date);
+      setSurgeries(result.surgeries || []);
+    } catch (err) {
+      console.error('Failed to load surgeries:', err);
+    } finally {
+      setSurgLoading(false);
     }
   }
 
@@ -77,6 +93,49 @@ export default function DayDetail({ date }) {
           </div>
         )}
       </div>
+
+      {/* Surgery section */}
+      {surgLoading ? (
+        <div class="day-surgery-section">
+          <div class="day-section-title">Jadwal Operasi</div>
+          <SkeletonList count={2} />
+        </div>
+      ) : surgeries.length > 0 && (
+        <div class="day-surgery-section">
+          <div class="day-section-title">
+            Jadwal Operasi
+            <span class="day-section-count">{surgeries.length}</span>
+          </div>
+          {surgeries.map(s => {
+            const loc = LOCATIONS[s.location] || {};
+            const opName = s.op_display_name || s.operation_type_other || s.op_name_id || s.op_name || '-';
+            return (
+              <div
+                key={s.id}
+                class="day-surgery-card"
+                onClick={() => route(`/docboard/surgery/${s.id}`)}
+              >
+                <div class="day-surgery-time">
+                  {s.surgery_time ? formatTime(s.surgery_time) : '--:--'}
+                </div>
+                <div class="day-surgery-info">
+                  <div class="day-surgery-patient">{s.patient_name}</div>
+                  <div class="day-surgery-op">{opName}</div>
+                  <div class="day-surgery-meta">
+                    <span class="day-surgery-loc" style={{ color: loc.color }}>
+                      {loc.shortName || s.location}
+                    </span>
+                    {s.diagnosis && <span class="day-surgery-diag">• {s.diagnosis}</span>}
+                  </div>
+                </div>
+                <div class={`day-surgery-status status-${s.status}`}>
+                  {s.status === 'scheduled' ? '📋' : s.status === 'completed' ? '✅' : s.status === 'in_progress' ? '🔵' : '⬚'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
