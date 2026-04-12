@@ -101,6 +101,7 @@ function SurgeryCard({ surgery: s, onClick }) {
   const loc = LOCATIONS[s.location];
   const status = SURGERY_STATUS[s.status] || SURGERY_STATUS.planned;
   const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : '--:--';
+  const operationDisplayName = s.op_display_name || s.operation_type_other || s.op_name_id || s.op_name;
 
   return (
     <div class="surgery-card" onClick={onClick}>
@@ -111,7 +112,7 @@ function SurgeryCard({ surgery: s, onClick }) {
       <div class="surgery-card-body">
         <div class="surgery-card-name">{s.patient_name}</div>
         <div class="surgery-card-meta">
-          <span class="surgery-op-badge">{s.op_code || s.op_name_id || s.op_name}</span>
+          <span class="surgery-op-badge">{operationDisplayName}</span>
           <span class="surgery-loc-name">{loc?.shortName || s.location}</span>
         </div>
         {s.diagnosis && (

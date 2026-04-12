@@ -15,6 +15,7 @@ export default function SurgeryForm({ id }) {
     mr_id: '',
     diagnosis: '',
     operation_type_id: '',
+    operation_type_ids: [],
     operation_type_other: '',
     location: 'rsia_melinda',
     surgery_date: '',
@@ -57,6 +58,47 @@ export default function SurgeryForm({ id }) {
     loadData();
   }, []);
 
+  function getOperationLabel(op) {
+    return op?.code || op?.name_id || op?.name || '';
+  }
+
+  function parseOperationSelection(types, surgery) {
+    const primaryId = surgery.operation_type_id ? Number(surgery.operation_type_id) : null;
+    const selectedIds = primaryId ? [primaryId] : [];
+    const combined = (surgery.operation_type_other || '').trim();
+
+    if (!combined) {
+      return {
+        selectedIds,
+        customText: ''
+      };
+    }
+
+    const unmatched = [];
+    combined.split('+').map(part => part.trim()).filter(Boolean).forEach(part => {
+      const match = types.find(type => {
+        const label = getOperationLabel(type);
+        return label.toLowerCase() === part.toLowerCase()
+          || String(type.code || '').toLowerCase() === part.toLowerCase()
+          || String(type.name || '').toLowerCase() === part.toLowerCase();
+      });
+
+      if (match) {
+        const matchId = Number(match.id);
+        if (!selectedIds.includes(matchId)) {
+          selectedIds.push(matchId);
+        }
+      } else {
+        unmatched.push(part);
+      }
+    });
+
+    return {
+      selectedIds,
+      customText: unmatched.join(' + ')
+    };
+  }
+
   async function loadData() {
     setLoading(true);
     try {
@@ -74,6 +116,7 @@ export default function SurgeryForm({ id }) {
         if (data.surgery) {
           const s = data.surgery;
           const dateStr = new Date(s.surgery_date).toISOString().split('T')[0];
+          const parsedOps = parseOperationSelection(typesData.types || [], s);
           setForm({
             patient_name: s.patient_name || '',
             patient_age: s.patient_age || '',
@@ -81,7 +124,8 @@ export default function SurgeryForm({ id }) {
             mr_id: s.mr_id || '',
             diagnosis: s.diagnosis || '',
             operation_type_id: s.operation_type_id || '',
-            operation_type_other: s.operation_type_other || '',
+            operation_type_ids: parsedOps.selectedIds,
+            operation_type_other: parsedOps.customText,
             location: s.location || 'rsia_melinda',
             surgery_date: dateStr,
             surgery_time: s.surgery_time ? s.surgery_time.substring(0, 5) : '',
@@ -106,6 +150,22 @@ export default function SurgeryForm({ id }) {
 
   function updateField(field, value) {
     setForm(f => ({ ...f, [field]: value }));
+  }
+
+  function toggleOperationType(typeId) {
+    setForm(current => {
+      const nextId = Number(typeId);
+      const exists = current.operation_type_ids.includes(nextId);
+      const nextIds = exists
+        ? current.operation_type_ids.filter(id => id !== nextId)
+        : [...current.operation_type_ids, nextId];
+
+      return {
+        ...current,
+        operation_type_ids: nextIds,
+        operation_type_id: nextIds[0] || ''
+      };
+    });
   }
 
   // =====================================================
@@ -294,17 +354,31 @@ export default function SurgeryForm({ id }) {
     e.preventDefault();
     setError('');
 
-    if (!form.patient_name || !form.diagnosis || !form.operation_type_id || !form.surgery_date) {
+    if (!form.patient_name || !form.diagnosis || (!form.operation_type_ids.length && !form.operation_type_other.trim()) || !form.surgery_date) {
       setError('Nama pasien, diagnosis, jenis operasi, dan tanggal wajib diisi');
       return;
     }
 
     setSaving(true);
     try {
+      const selectedOps = opTypes.filter(type => form.operation_type_ids.includes(Number(type.id)));
+      const selectedLabels = selectedOps.map(getOperationLabel).filter(Boolean);
+      const customLabels = form.operation_type_other
+        .split(/\r?\n|\+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+      const combinedLabels = [...selectedLabels, ...customLabels];
+      const fallbackOperation = opTypes.find(type => String(type.code || '').toUpperCase() === 'OTHER-OP');
+      const primaryOperationId = form.operation_type_ids[0] || form.operation_type_id || fallbackOperation?.id || null;
+
       const payload = {
         ...form,
         patient_age: form.patient_age ? parseInt(form.patient_age) : null,
-        operation_type_id: parseInt(form.operation_type_id),
+        operation_type_id: primaryOperationId ? parseInt(primaryOperationId, 10) : null,
+        operation_type_ids: form.operation_type_ids.map(Number),
+        operation_type_other: combinedLabels.length > 1 || customLabels.length > 0
+          ? combinedLabels.join(' + ')
+          : '',
         surgery_time: form.surgery_time || null
       };
 
@@ -527,6 +601,7 @@ export default function SurgeryForm({ id }) {
         {/* Operation Type */}
         <div class="form-section">
           <div class="form-section-title">Jenis Operasi *</div>
+          <div class="form-helper-text">Bisa pilih lebih dari satu. Contoh hasil: SVH + BSO.</div>
           <input
             type="text"
             class="op-search"
@@ -543,8 +618,8 @@ export default function SurgeryForm({ id }) {
                     <button
                       key={t.id}
                       type="button"
-                      class={`op-chip ${form.operation_type_id == t.id ? 'selected' : ''}`}
-                      onClick={() => updateField('operation_type_id', t.id)}
+                      class={`op-chip ${form.operation_type_ids.includes(Number(t.id)) ? 'selected' : ''}`}
+                      onClick={() => toggleOperationType(t.id)}
                     >
                       {t.code || t.name_id || t.name}
                     </button>
@@ -552,6 +627,15 @@ export default function SurgeryForm({ id }) {
                 </div>
               </div>
             ))}
+          </div>
+          <div class="form-group" style="margin-top:12px;">
+            <label>Operasi yang belum ada di list</label>
+            <textarea
+              rows="3"
+              value={form.operation_type_other}
+              onInput={e => updateField('operation_type_other', e.target.value)}
+              placeholder="Contoh: Kuret&#10;Lepas Pasang IUD&#10;Operasi lain yang belum ada di list"
+            />
           </div>
         </div>
 
