@@ -429,6 +429,29 @@ input { font-family: inherit; }
   bottom: 2px;
 }
 
+.calendar-surgery-badge {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  background: #EF4444;
+  color: white;
+  border-radius: 4px;
+  padding: 0 3px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  height: 13px;
+}
+
+.calendar-surgery-badge svg {
+  flex-shrink: 0;
+}
+
+.calendar-cell.is-today .calendar-surgery-badge {
+  background: white;
+  color: #EF4444;
+}
+
 .calendar-cell.is-today .calendar-patient-count {
   color: rgba(255,255,255,0.8);
 }
