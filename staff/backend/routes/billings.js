@@ -415,9 +415,10 @@ router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (r
       });
     }
     
-    // Get current billing
+    // Lock billing row so concurrent payment submissions cannot both complete
+    // stock deduction from the same pre-payment state.
     const [billings] = await connection.query(
-      'SELECT * FROM billings WHERE id = ?',
+      'SELECT * FROM billings WHERE id = ? FOR UPDATE',
       [billing_id]
     );
     
