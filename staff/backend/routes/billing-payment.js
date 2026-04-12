@@ -749,18 +749,41 @@ async function handlePaymentSuccess(payment, webhookData) {
             paidAt = new Date(paidAt);
         }
 
-        // Update payment status
-        await connection.query(`
+        // Serialize payment success handling. If another request/webhook has already
+        // completed this payment, skip deduction and return safely.
+        const [paymentUpdateResult] = await connection.query(`
             UPDATE tagihan_payments
             SET status = 'paid',
                 paid_at = ?,
                 webhook_data = ?
             WHERE id = ?
+              AND status <> 'paid'
         `, [
             paidAt,
             JSON.stringify(webhookData),
             payment.id
         ]);
+
+        if (!paymentUpdateResult?.affectedRows) {
+            await connection.rollback();
+            return;
+        }
+
+        const [[billingRow]] = await connection.query(`
+            SELECT id, status
+            FROM sunday_clinic_billings
+            WHERE id = ?
+            FOR UPDATE
+        `, [payment.billing_id]);
+
+        if (!billingRow) {
+            throw new Error('Billing tidak ditemukan saat memproses pembayaran');
+        }
+
+        if (billingRow.status === 'paid') {
+            await connection.commit();
+            return;
+        }
 
         // Log the event
         await connection.query(`
