@@ -1138,6 +1138,18 @@ function showKelolaJadwalPage() {
         console.error('Failed to load kelola-jadwal.js:', error);
     });
 }
+
+function showDocboardPage() {
+    const token = getAuthToken();
+    if (!token) {
+        showWarning('Sesi login tidak ditemukan. Silakan login ulang.');
+        return;
+    }
+
+    localStorage.setItem('docboard_token', token);
+    window.open('/docboard/', '_blank', 'noopener');
+}
+
 function showKelolaTindakanPage() {
     showPengaturanPage();
     setTitleAndActive('Kelola Tindakan', 'management-nav-kelola-tindakan', 'kelola-tindakan');
@@ -4731,6 +4743,7 @@ window.showKelolaPasienPage = showKelolaPasienPage;
 window.showKelolaPengumumanPage = showKelolaPengumumanPage;
 window.showKelolaAppointmentPage = showKelolaAppointmentPage;
 window.showKelolaJadwalPage = showKelolaJadwalPage;
+window.showDocboardPage = showDocboardPage;
 window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showEstimasiBiayaPage = showEstimasiBiayaPage;
