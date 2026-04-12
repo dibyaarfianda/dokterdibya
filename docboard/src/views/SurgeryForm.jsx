@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS } from '../utils/constants';
+import DatePickerCalendar from '../components/DatePickerCalendar';
 
 const LOCATION_KEYS = Object.keys(LOCATIONS);
 
@@ -662,7 +663,11 @@ export default function SurgeryForm({ id }) {
           <div class="form-row">
             <div class="form-group">
               <label>Tanggal *</label>
-              <input type="date" value={form.surgery_date} onInput={e => updateField('surgery_date', e.target.value)} required />
+              <DatePickerCalendar
+                value={form.surgery_date}
+                onSelect={val => updateField('surgery_date', val)}
+                required
+              />
             </div>
             <div class="form-group">
               <label>Jam</label>
