@@ -23,7 +23,7 @@ export default function DatePickerCalendar({ value, onSelect, required }) {
     setLoadingCal(true);
     api.getSurgeryCalendar(viewYear, viewMonth + 1).then(data => {
       if (!cancelled) {
-        setCalendarData(data.calendar || {});
+        setCalendarData(data.days || {});
         setLoadingCal(false);
       }
     }).catch(() => {
@@ -103,7 +103,7 @@ export default function DatePickerCalendar({ value, onSelect, required }) {
             {days.map(day => {
               const evt = calendarData[day.date] || {};
               const locs = evt.locations || [];
-              const total = evt.totalPatients || 0;
+              const total = evt.total || 0;
               const isSel = day.date === value;
               const todayC = isToday(day.date) ? ' dp-today' : '';
               const curC = day.isCurrentMonth ? '' : ' dp-other';
