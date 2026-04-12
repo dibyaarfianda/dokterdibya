@@ -160,6 +160,7 @@ export default function Calendar() {
               year={currentYear.value}
               month={currentMonth.value}
               events={calendarData.value}
+              surgeryEvents={surgeryCalendarData.value}
               onDayClick={handleDayClick}
             />
           )}
