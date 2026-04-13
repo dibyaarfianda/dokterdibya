@@ -1519,11 +1519,17 @@
         .doc-cta-link .text {
             order: 0;
             white-space: nowrap;
+            transform: translateX(0);
+            transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .doc-cta-link:is(:hover, :focus-visible, :active) {
             transform: translateY(-1px);
             filter: brightness(1.03);
+        }
+
+        .doc-cta-link:is(:hover, :focus-visible, :active) .text {
+            transform: translateX(8px);
         }
 
         .doc-cta-link:is(:hover, :focus-visible, :active) .dot-left {
@@ -1533,6 +1539,27 @@
         }
 
         .doc-cta-link:is(:hover, :focus-visible, :active) .dot-right {
+            opacity: 0;
+            width: 0;
+            transform: translateX(8px);
+        }
+
+        .doc-cta-link.is-animating {
+            transform: translateY(-1px);
+            filter: brightness(1.03);
+        }
+
+        .doc-cta-link.is-animating .text {
+            transform: translateX(8px);
+        }
+
+        .doc-cta-link.is-animating .dot-left {
+            opacity: 1;
+            width: 16px;
+            transform: translateX(0);
+        }
+
+        .doc-cta-link.is-animating .dot-right {
             opacity: 0;
             width: 0;
             transform: translateX(8px);
@@ -5755,5 +5782,27 @@
     </script>
     <script src="/js/push-subscribe.js?v=20260322"></script>
     <script src="/js/patient-tracker.js?v=20260322"></script>
+    <script>
+        document.addEventListener('click', function(e) {
+            var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;
+            if (!link) return;
+
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            if (link.target === '_blank') return;
+
+            var href = link.getAttribute('href');
+            if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+
+            e.preventDefault();
+            if (link.dataset.animating === '1') return;
+
+            link.dataset.animating = '1';
+            link.classList.add('is-animating');
+
+            setTimeout(function() {
+                window.location.href = link.href || href;
+            }, 180);
+        }, true);
+    </script>
 </body>
 </html>
