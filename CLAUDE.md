@@ -1148,5 +1148,5 @@ User confirmed with "perfect" after final CTA behavior tuning for patient menu t
 
 **Reusable snippet saved:**
 - VS Code snippet name: `clearpath-button`
-- File: `.vscode/clearpath-button.code-snippets`
+- File: `snippets/clearpath-button.code-snippets`
 - Includes: HTML structure, CSS motion values, and JS delayed navigation handler (620ms)
