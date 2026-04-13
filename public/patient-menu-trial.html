@@ -1499,19 +1499,26 @@
             display: inline-block;
             font-size: 18px;
             line-height: 1;
-            transition: opacity 0.35s ease, transform 0.35s ease;
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
+        /* dot kiri: default tidak muncul, tidak ambil tempat */
         .doc-cta-link::before {
-            margin-right: 10px;
+            max-width: 0;
             opacity: 0;
-            transform: translateX(-6px);
+            margin-right: 0;
+            transform: translateX(-10px);
+            transition: max-width 0.35s ease, margin-right 0.35s ease, opacity 0.25s ease, transform 0.35s ease;
         }
 
+        /* dot kanan: default muncul, ambil tempat */
         .doc-cta-link::after {
-            margin-left: 10px;
+            max-width: 20px;
             opacity: 1;
+            margin-left: 10px;
             transform: translateX(0);
+            transition: max-width 0.35s ease, margin-left 0.35s ease, opacity 0.25s ease, transform 0.35s ease;
         }
 
         .doc-cta-link:hover {
@@ -1519,14 +1526,20 @@
             filter: brightness(1.03);
         }
 
+        /* hover: dot kiri muncul dari kiri, ambil tempat → tulisan geser kanan */
         .doc-cta-link:hover::before {
+            max-width: 20px;
             opacity: 1;
+            margin-right: 10px;
             transform: translateX(0);
         }
 
+        /* hover: dot kanan geser kanan lalu hilang, lepas tempat */
         .doc-cta-link:hover::after {
+            max-width: 0;
             opacity: 0;
-            transform: translateX(6px);
+            margin-left: 0;
+            transform: translateX(10px);
         }
 
         .doc-links-row {
