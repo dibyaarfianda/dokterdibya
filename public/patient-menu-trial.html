@@ -1476,7 +1476,7 @@
         .doc-cta-link {
             display: inline-flex;
             align-items: center;
-            gap: 0;
+            gap: 8px;
             margin-top: 28px;
             font-family: 'Inter', sans-serif;
             font-size: 13px;
@@ -1493,38 +1493,30 @@
             transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), filter 0.32s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .doc-cta-link > span {
-            display: inline-block;
-            transform: translateX(0);
-            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .doc-cta-link::before,
-        .doc-cta-link::after {
-            content: '\2022';
-            display: inline-block;
+        .doc-cta-link .dot {
             font-size: 18px;
             line-height: 1;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        /* dot kiri: default tidak muncul, tidak ambil tempat */
-        .doc-cta-link::before {
-            max-width: 0;
+            min-width: 16px;
+            display: inline-block;
+            text-align: center;
             opacity: 0;
-            margin-right: 0;
-            transform: translateX(-10px);
-            transition: max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1), margin-right 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.34s ease-in-out, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            transform: translateX(-8px);
+            transition: opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* dot kanan: default muncul, ambil tempat */
-        .doc-cta-link::after {
-            max-width: 20px;
+        .doc-cta-link .dot-left {
+            order: -1;
+        }
+
+        .doc-cta-link .dot-right {
+            order: 1;
             opacity: 1;
-            margin-left: 10px;
             transform: translateX(0);
-            transition: max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1), margin-left 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.34s ease-in-out, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .doc-cta-link .text {
+            order: 0;
+            white-space: nowrap;
         }
 
         .doc-cta-link:is(:hover, :focus-visible, :active) {
@@ -1532,24 +1524,14 @@
             filter: brightness(1.03);
         }
 
-        .doc-cta-link:is(:hover, :focus-visible, :active) > span {
-            transform: translateX(8px);
-        }
-
-        /* hover: dot kiri muncul dari kiri, ambil tempat → tulisan geser kanan */
-        .doc-cta-link:is(:hover, :focus-visible, :active)::before {
-            max-width: 20px;
+        .doc-cta-link:is(:hover, :focus-visible, :active) .dot-left {
             opacity: 1;
-            margin-right: 10px;
             transform: translateX(0);
         }
 
-        /* hover: dot kanan geser kanan lalu hilang, lepas tempat */
-        .doc-cta-link:is(:hover, :focus-visible, :active)::after {
-            max-width: 0;
+        .doc-cta-link:is(:hover, :focus-visible, :active) .dot-right {
             opacity: 0;
-            margin-left: 0;
-            transform: translateX(14px);
+            transform: translateX(8px);
         }
 
         .doc-links-row {
@@ -3245,19 +3227,6 @@
             }
         }
 
-        /* Keep CTA micro-animation smooth even when reduced-motion is enabled */
-        @media (prefers-reduced-motion: reduce) {
-            .doc-cta-link {
-                transition-duration: 0.32s !important;
-            }
-
-            .doc-cta-link > span,
-            .doc-cta-link::before,
-            .doc-cta-link::after {
-                transition-duration: 0.45s !important;
-            }
-        }
-
     </style>
 
     <!-- Socket.io for real-time announcements -->
@@ -3580,7 +3549,11 @@
                         <div class="doc-text-col">
                             <h2 class="doc-heading">Perjalanan Anda, Tersimpan Rapi.</h2>
                             <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda, mudah dibuka kapan saja.</p>
-                            <a class="doc-cta-link" href="/album-usg-trial.html"><span>Lihat Album USG</span></a>
+                            <a class="doc-cta-link" href="/album-usg-trial.html">
+                                <span class="dot dot-left">•</span>
+                                <span class="text">Lihat Album USG</span>
+                                <span class="dot dot-right">•</span>
+                            </a>
                             <div class="doc-card-meta doc-meta-inline" id="usg-thumb-previews"></div>
                         </div>
                         <div class="doc-img-col">
