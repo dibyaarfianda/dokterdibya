@@ -3228,19 +3228,13 @@
         }
 
         /* ========== REDUCED MOTION ========== */
-        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card = interactive cards exempt from kill-switch */
+        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .doc-cta-link .doc-cta-track .dot-left .dot-right = interactive cards exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
-            }
-
-            /* Keep doc CTA transition visible even with reduced-motion enabled */
-            .doc-cta-link .doc-cta-track,
-            .doc-cta-link .dot {
-                transition-duration: 0.56s !important;
             }
         }
 
