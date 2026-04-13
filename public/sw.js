@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260413t'; // 2026-04-13 - doc-cta-link active/focus animation
+const CACHE_VERSION = '20260413u'; // 2026-04-13 - doc-cta-link reduced-motion override
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
