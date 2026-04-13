@@ -1022,6 +1022,85 @@ const CACHE_NAME = `dokterdibya-patient-${CACHE_VERSION}`;
 - No hard-reset needed for patients
 - Transparent update process
 
+### 33. CSS Transition Killed by prefers-reduced-motion Kill-Switch (Specificity Trap)
+
+**Problem:** CSS transitions on animated elements appear instant even after setting `transition-duration: 0.5s !important`.
+
+**Root Cause:** A global `@media (prefers-reduced-motion: reduce)` kill-switch using a long `:not()` chain:
+```css
+*:not(.c1):not(.c2)...not(.c16) {
+    transition-duration: 0.01ms !important;
+}
+```
+This has specificity **(0,16,0)**. An override like `.doc-cta-link .dot { transition-duration: 0.5s !important; }` only has **(0,2,0)**. When two `!important` rules clash, **higher specificity wins** — so the kill-switch wins every time.
+
+**Wrong fix (doesn't work):**
+```css
+/* Specificity 0,2,0 — loses to kill-switch at 0,16,0 */
+.doc-cta-link .dot { transition-duration: 0.5s !important; }
+```
+
+**Correct fix:** Add the element's classes to the `:not()` whitelist in the kill-switch itself:
+```css
+@media (prefers-reduced-motion: reduce) {
+    *:not(.existing-whitelist)...:not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right),
+    /* same for ::before and ::after */ {
+        transition-duration: 0.01ms !important;
+    }
+    /* No override needed — element is now excluded from the kill-switch entirely */
+}
+```
+
+**CTA Button Animation (Framer-style) — Working Solution:**
+
+HTML structure:
+```html
+<a class="doc-cta-link" href="/album-usg-trial.html">
+    <span class="doc-cta-track">
+        <span class="dot dot-left"></span>
+        <span class="text">Lihat Album USG</span>
+        <span class="dot dot-right"></span>
+    </span>
+</a>
+```
+
+Key CSS:
+```css
+.doc-cta-link { position: relative; overflow: hidden; }
+.doc-cta-link .doc-cta-track {
+    display: inline-flex; align-items: center; gap: 12px;
+    transform: translateX(0);
+    transition: transform 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.doc-cta-link .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    transition: transform 0.56s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.36s ease;
+}
+.doc-cta-link .dot-left  { transform: translateX(-16px); opacity: 0; }
+.doc-cta-link .dot-right { transform: translateX(0);     opacity: 1; }
+/* On hover/tap: track slides right, right dot exits edge, left dot enters */
+.doc-cta-link:is(:hover,:active) .doc-cta-track { transform: translateX(12px); }
+.doc-cta-link:is(:hover,:active) .dot-left  { transform: translateX(0);    opacity: 1; }
+.doc-cta-link:is(:hover,:active) .dot-right { transform: translateX(18px); opacity: 0; }
+```
+
+JS click handler (intercept tap on mobile, delay navigation to let animation play):
+```javascript
+document.addEventListener('click', function(e) {
+    var link = e.target.closest('.doc-cta-link');
+    if (!link) return;
+    var href = link.getAttribute('href');
+    if (!href || href[0] === '#') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (link.dataset.animating === '1') return;
+    link.dataset.animating = '1';
+    link.classList.add('is-animating');
+    link.style.pointerEvents = 'none';
+    setTimeout(function() { window.location.href = href; }, 620);
+}, true);
+```
+
 ### 32. Trial URL Appears Unchanged After CSS Fix
 
 **Problem:** Changes to `public/patient-menu-trial.html` were deployed, but hover behavior looked unchanged in production.
@@ -1046,3 +1125,28 @@ sed -n '2018,2032p' public/patient-menu-trial.html
 ```
 
 **Lesson:** If UI seems unchanged after valid CSS edits, check route/mode redirect scripts first (not only CSS and cache). URL can be correct visually but content source can still be switched by JS logic.
+
+### 34. Session Log - 14 April 2026
+
+**Clearpath Button Snippet (Final Approved by User)**
+
+User confirmed with "perfect" after final CTA behavior tuning for patient menu trial.
+
+**Final behavior requested:**
+- Hover: text moves further right until near edge
+- Left dot: stays near left area (does not travel far right with text)
+- Right dot: fades/moves out
+
+**Final CSS values:**
+```css
+.doc-cta-link .dot-left { transform: translateX(-58px); opacity: 0; }
+.doc-cta-link:is(:hover, :focus-visible, :active) .doc-cta-track,
+.doc-cta-link.is-animating .doc-cta-track { transform: translateX(42px); }
+.doc-cta-link:is(:hover, :focus-visible, :active) .dot-left,
+.doc-cta-link.is-animating .dot-left { transform: translateX(-42px); opacity: 1; }
+```
+
+**Reusable snippet saved:**
+- VS Code snippet name: `clearpath-button`
+- File: `.vscode/clearpath-button.code-snippets`
+- Includes: HTML structure, CSS motion values, and JS delayed navigation handler (620ms)
