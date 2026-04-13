@@ -1527,17 +1527,17 @@
             transition: max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1), margin-left 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.34s ease-in-out, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .doc-cta-link:hover {
+        .doc-cta-link:is(:hover, :focus-visible, :active) {
             transform: translateY(-1px);
             filter: brightness(1.03);
         }
 
-        .doc-cta-link:hover > span {
+        .doc-cta-link:is(:hover, :focus-visible, :active) > span {
             transform: translateX(8px);
         }
 
         /* hover: dot kiri muncul dari kiri, ambil tempat → tulisan geser kanan */
-        .doc-cta-link:hover::before {
+        .doc-cta-link:is(:hover, :focus-visible, :active)::before {
             max-width: 20px;
             opacity: 1;
             margin-right: 10px;
@@ -1545,7 +1545,7 @@
         }
 
         /* hover: dot kanan geser kanan lalu hilang, lepas tempat */
-        .doc-cta-link:hover::after {
+        .doc-cta-link:is(:hover, :focus-visible, :active)::after {
             max-width: 0;
             opacity: 0;
             margin-left: 0;
