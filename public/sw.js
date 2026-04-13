@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260413x'; // 2026-04-13 - visible CTA width animation fix
+const CACHE_VERSION = '20260413y'; // 2026-04-13 - force CTA animate before navigate
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
