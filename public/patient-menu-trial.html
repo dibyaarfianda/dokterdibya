@@ -3245,6 +3245,19 @@
             }
         }
 
+        /* Keep CTA micro-animation smooth even when reduced-motion is enabled */
+        @media (prefers-reduced-motion: reduce) {
+            .doc-cta-link {
+                transition-duration: 0.32s !important;
+            }
+
+            .doc-cta-link > span,
+            .doc-cta-link::before,
+            .doc-cta-link::after {
+                transition-duration: 0.45s !important;
+            }
+        }
+
     </style>
 
     <!-- Socket.io for real-time announcements -->
