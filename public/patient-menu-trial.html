@@ -1496,12 +1496,13 @@
         .doc-cta-link .dot {
             font-size: 18px;
             line-height: 1;
-            min-width: 16px;
+            width: 0;
             display: inline-block;
             text-align: center;
             opacity: 0;
             transform: translateX(-8px);
-            transition: opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow: hidden;
+            transition: width 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .doc-cta-link .dot-left {
@@ -1511,6 +1512,7 @@
         .doc-cta-link .dot-right {
             order: 1;
             opacity: 1;
+            width: 16px;
             transform: translateX(0);
         }
 
@@ -1526,11 +1528,13 @@
 
         .doc-cta-link:is(:hover, :focus-visible, :active) .dot-left {
             opacity: 1;
+            width: 16px;
             transform: translateX(0);
         }
 
         .doc-cta-link:is(:hover, :focus-visible, :active) .dot-right {
             opacity: 0;
+            width: 0;
             transform: translateX(8px);
         }
 
@@ -3224,6 +3228,13 @@
             *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
+            }
+
+            /* Keep doc CTA transition visible even with reduced-motion enabled */
+            .doc-cta-link,
+            .doc-cta-link .dot,
+            .doc-cta-link .text {
+                transition-duration: 0.35s !important;
             }
         }
 
