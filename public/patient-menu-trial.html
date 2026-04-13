@@ -1474,9 +1474,11 @@
         }
 
         .doc-cta-link {
+            position: relative;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            overflow: hidden;
             margin-top: 28px;
             font-family: 'Inter', sans-serif;
             font-size: 13px;
@@ -1488,81 +1490,45 @@
             background: #7ea89f;
             border: none;
             border-radius: 999px;
-            padding: 11px 24px;
+            padding: 11px 30px;
             box-shadow: 0 2px 10px rgba(126, 168, 159, 0.28);
-            transition: transform 3s cubic-bezier(0.22, 1, 0.36, 1), filter 3s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .doc-cta-link .dot {
-            font-size: 18px;
-            line-height: 1;
-            width: 0;
-            display: inline-block;
-            text-align: center;
-            opacity: 0;
-            transform: translateX(-8px);
-            overflow: hidden;
-            transition: width 3s cubic-bezier(0.22, 1, 0.36, 1), opacity 2.4s ease-in-out, transform 3s cubic-bezier(0.22, 1, 0.36, 1);
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.88);
+            top: 50%;
+            will-change: transform;
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .doc-cta-link .dot-left {
-            order: -1;
+            left: 14px;
+            transform: translate(-300%, -50%);
         }
 
         .doc-cta-link .dot-right {
-            order: 1;
-            opacity: 1;
-            width: 16px;
-            transform: translateX(0);
+            right: 14px;
+            transform: translate(0%, -50%);
         }
 
         .doc-cta-link .text {
-            order: 0;
+            position: relative;
+            z-index: 1;
             white-space: nowrap;
-            transform: translateX(0);
-            transition: transform 3s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .doc-cta-link:is(:hover, :focus-visible, :active) {
-            transform: translateY(-1px);
-            filter: brightness(1.03);
-        }
-
-        .doc-cta-link:is(:hover, :focus-visible, :active) .text {
-            transform: translateX(14px);
-        }
-
-        .doc-cta-link:is(:hover, :focus-visible, :active) .dot-left {
-            opacity: 1;
-            width: 16px;
-            transform: translateX(0);
-        }
-
-        .doc-cta-link:is(:hover, :focus-visible, :active) .dot-right {
-            opacity: 0;
-            width: 0;
-            transform: translateX(16px);
-        }
-
-        .doc-cta-link.is-animating {
-            transform: translateY(-1px);
-            filter: brightness(1.03);
-        }
-
-        .doc-cta-link.is-animating .text {
-            transform: translateX(14px);
-        }
-
+        .doc-cta-link:is(:hover, :focus-visible, :active) .dot-left,
         .doc-cta-link.is-animating .dot-left {
-            opacity: 1;
-            width: 16px;
-            transform: translateX(0);
+            transform: translate(0%, -50%);
         }
 
+        .doc-cta-link:is(:hover, :focus-visible, :active) .dot-right,
         .doc-cta-link.is-animating .dot-right {
-            opacity: 0;
-            width: 0;
-            transform: translateX(16px);
+            transform: translate(300%, -50%);
         }
 
         .doc-links-row {
@@ -3257,11 +3223,9 @@
                 transition-duration: 0.01ms !important;
             }
 
-            /* Keep doc CTA transition visible even with reduced-motion enabled */
-            .doc-cta-link,
-            .doc-cta-link .dot,
-            .doc-cta-link .text {
-                transition-duration: 3s !important;
+            /* Keep doc CTA circle transition visible even with reduced-motion enabled */
+            .doc-cta-link .dot {
+                transition-duration: 0.45s !important;
             }
         }
 
@@ -3588,9 +3552,9 @@
                             <h2 class="doc-heading">Perjalanan Anda, Tersimpan Rapi.</h2>
                             <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda, mudah dibuka kapan saja.</p>
                             <a class="doc-cta-link" href="/album-usg-trial.html">
-                                <span class="dot dot-left">•</span>
+                                <span class="dot dot-left"></span>
                                 <span class="text">Lihat Album USG</span>
-                                <span class="dot dot-right">•</span>
+                                <span class="dot dot-right"></span>
                             </a>
                             <div class="doc-card-meta doc-meta-inline" id="usg-thumb-previews"></div>
                         </div>
@@ -5803,7 +5767,7 @@
 
             setTimeout(function() {
                 window.location.href = link.href || href;
-            }, 3000);
+            }, 450);
         }, true);
     </script>
 </body>
