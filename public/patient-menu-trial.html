@@ -5472,25 +5472,11 @@
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
                 if (desc) {
-                    var collapsePx = p * SEGMENT;
-                    var fadeCutoffPx = SEGMENT * 0.10;
-                    var heightStartPx = SEGMENT * 0.10;
-                    var heightEndPx = SEGMENT * 0.30;
-
-                    var fadeP = Math.min(1, collapsePx / fadeCutoffPx);
-                    var opacity;
-                    if (fadeP <= 0.60) {
-                        // 0-6%: clear fade from 1 -> 0.35
-                        opacity = 1 - (fadeP / 0.60) * 0.65;
-                    } else {
-                        // 6-10%: fast finish 0.35 -> 0
-                        opacity = 0.35 * (1 - ((fadeP - 0.60) / 0.40));
-                    }
+                    var fadeP = Math.max(0, Math.min(1, p / 0.82));
+                    var opacity = 1 - Math.pow(fadeP, 1.15);
                     desc.style.opacity = Math.max(0, opacity).toFixed(3);
 
-                    var heightP = collapsePx <= heightStartPx
-                        ? 0
-                        : Math.min(1, (collapsePx - heightStartPx) / (heightEndPx - heightStartPx));
+                    var heightP = Math.max(0, Math.min(1, p / 0.72));
                     desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
                 }
 
