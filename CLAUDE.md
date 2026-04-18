@@ -1150,3 +1150,81 @@ User confirmed with "perfect" after final CTA behavior tuning for patient menu t
 - VS Code snippet name: `clearpath-button`
 - File: `snippets/clearpath-button.code-snippets`
 - Includes: HTML structure, CSS motion values, and JS delayed navigation handler (620ms)
+
+### 35. Session Log - 15 April 2026
+
+**Sticky Stack Card-Deck - Final Working Pattern**
+
+User confirmed with "sudah sempurna buatan anda" after multiple refinements to the sticky stack in `public/patient-menu-trial.html`.
+
+**Final fixes that worked:**
+
+1. **Stop using a single global active row timeline**
+    - Old approach based collapse on one shared `activeIndex/localP`
+    - This caused later rows to feel delayed and could make top titles appear to shift when the next row started collapsing
+    - Final working approach computes `rowStartY` and progress **per row**
+
+2. **Measure expanded row height from a hidden clone**
+    - Reading live row height during animation produced unstable segment timing
+    - Final fix clones the row off-screen, restores expanded padding and desc state, then measures:
+    ```javascript
+    function measureExpandedRow(row) {
+         var clone = row.cloneNode(true);
+         clone.style.position = 'absolute';
+         clone.style.visibility = 'hidden';
+         clone.style.pointerEvents = 'none';
+         clone.style.zIndex = '-1';
+         clone.style.paddingTop = PAD_TOP_MAX + 'px';
+         clone.style.paddingBottom = PAD_BOT_MAX + 'px';
+         ...
+    }
+    ```
+
+3. **Per-row collapse start formula**
+    - Final working formula:
+    ```javascript
+    var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
+    var rowLead = COLLAPSE_LEAD_PX;
+    if (isPatientFeaturesSection) {
+         rowLead += i * 56;
+    }
+    var start = row.offsetTop - slotTop - rowLead;
+    ```
+    - This is what fixed row 2, 3, and 4 feeling late
+
+4. **Patient features section needs custom tuning**
+    - Generic timing was not enough for `Fitur Pasien Portal`
+    - Final approved tuning:
+    ```javascript
+    var COLLAPSE_LEAD_PX = 72;
+    rowLead += i * 56;          // patient-features-section only
+    lastRowHold = 40;           // instead of full 200 for this section
+    ```
+
+5. **Fade out must happen very early**
+    - Final approved fade settings:
+    ```javascript
+    var fadeWindow = 0.18;
+    var opacity = 1 - Math.pow(fadeP, 0.72);
+    ```
+    - This makes desc text disappear fast enough before the row fully collapses
+
+6. **Scroll sync needed extra help**
+    - Browser scroll updates could lag relative to direct `scrollTo()` tests
+    - Final reliable solution keeps `onScroll()` synced with both event-driven and periodic updates:
+    ```javascript
+    window.addEventListener('scroll', scheduleScrollSync, { passive: true });
+    window.addEventListener('wheel', scheduleScrollSync, { passive: true });
+    window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
+    window.setInterval(onScroll, 33);
+    ```
+
+**Final behavior achieved:**
+- `TANYA DOKTER` title stays locked in its sticky slot
+- Row 2 fades/collapses earlier
+- Row 3 and 4 no longer lag behind
+- Desc text disappears before full collapse finishes
+
+**Documentation updated:**
+- File: `snippets/sticky-stack-card-deck.md`
+- Updated to match the final per-row implementation instead of the older global-segment model
