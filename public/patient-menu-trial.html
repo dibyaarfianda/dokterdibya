@@ -823,6 +823,27 @@
             color: rgb(15, 23, 42);
         }
 
+        .info-terbaru-block-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 22px;
+            font-family: var(--font-main);
+            font-size: 12px;
+            line-height: 1;
+            letter-spacing: 0.24em;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: rgba(15, 23, 42, 0.58);
+        }
+
+        .info-terbaru-block-label::before {
+            content: '';
+            width: 28px;
+            height: 1px;
+            background: rgba(15, 23, 42, 0.28);
+        }
+
         .info-terbaru-block-desc {
             margin: 22px 0 0 auto;
             max-width: 1120px;
@@ -1501,7 +1522,7 @@
             width: 100%;
             transform: translateX(0);
             will-change: transform;
-            transition: transform 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .doc-cta-link .dot {
@@ -1510,7 +1531,7 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.88);
             will-change: transform;
-            transition: transform 0.56s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.36s ease;
+            transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.44s ease;
         }
 
         .doc-cta-link .dot-left {
@@ -2200,7 +2221,7 @@
         .proces-row:active { opacity: 1; }
 
         .proces-spacer {
-            height: 200px;
+            height: 520px;
         }
 
         .proces-step {
@@ -2322,6 +2343,310 @@
         .menu-card p {
             font-size: 10px;
             color: var(--text-muted);
+        }
+
+        .journey-showcase {
+            margin: 26px 0 34px;
+            padding: 12px 0 4px;
+            opacity: 0;
+            transform: translateY(36px);
+            transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+                        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .journey-showcase.journey-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .journey-showcase-header {
+            max-width: 980px;
+            margin: 0 auto 102px;
+            text-align: center;
+        }
+
+        .journey-showcase-title {
+            margin: 0;
+            font-size: clamp(24px, 3.96vw, 52px);
+            line-height: 0.98;
+            letter-spacing: -0.04em;
+            font-weight: 600;
+            color: #1f2623;
+        }
+
+        .journey-showcase-title span {
+            display: block;
+            margin-top: 6px;
+            color: #84b1a4;
+            font-size: 0.9em;
+        }
+
+        .journey-showcase-desc {
+            max-width: 720px;
+            margin: 28px auto 0;
+            font-size: clamp(14px, 1.8vw, 17px);
+            line-height: 1.55;
+            color: rgba(31, 38, 35, 0.86);
+        }
+
+        .journey-showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            align-items: end;
+            width: min(calc(100vw - 100px), 1320px);
+            margin-left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .journey-card {
+            --journey-base-height: 386px;
+            --journey-stretch: 0px;
+            --journey-parallax-y: -118px;
+            --journey-shadow-alpha: 0.14;
+            --journey-sat: 1;
+            --journey-contrast: 1;
+            position: relative;
+            height: var(--journey-base-height);
+            border: 0;
+            border-radius: 0;
+            overflow: visible;
+            cursor: pointer;
+            appearance: none;
+            display: flex;
+            align-items: flex-end;
+            padding: 26px 22px;
+            isolation: isolate;
+            transition: filter 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+            width: 100%;
+            text-align: left;
+            font: inherit;
+            will-change: filter;
+            background: none;
+            filter: saturate(var(--journey-sat)) contrast(var(--journey-contrast));
+        }
+
+        .journey-card-frame {
+            position: absolute;
+            top: calc(var(--journey-stretch) * -0.5);
+            bottom: calc(var(--journey-stretch) * -0.5);
+            left: 0;
+            right: 0;
+            overflow: hidden;
+            background-color: #c7d4cf;
+            box-shadow: 0 26px 56px rgba(31, 38, 35, var(--journey-shadow-alpha));
+            transition: box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+            z-index: -3;
+        }
+
+        .journey-card-media {
+            position: absolute;
+            top: calc(-88px + var(--journey-stretch) * 0.5);
+            bottom: calc(-240px + var(--journey-stretch) * 0.5);
+            left: 0;
+            right: 0;
+            background-image: var(--journey-image);
+            background-size: var(--journey-bg-size, cover);
+            background-position: var(--journey-position, center center);
+            background-repeat: no-repeat;
+            transform: translateY(var(--journey-parallax-y));
+            transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), filter 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+            pointer-events: none;
+            filter: saturate(0.98) contrast(0.98);
+        }
+
+        .journey-card-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(16, 19, 18, 0.08) 0%, rgba(16, 19, 18, 0.28) 42%, rgba(16, 19, 18, 0.68) 100%);
+            z-index: -2;
+        }
+
+        .journey-card-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.34), transparent 34%), linear-gradient(135deg, rgba(147, 183, 172, 0.12), rgba(20, 22, 24, 0.12));
+            mix-blend-mode: screen;
+            z-index: -1;
+        }
+
+        .journey-card-media::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/grain.avif');
+            background-size: 90px 90px;
+            background-repeat: repeat;
+            mix-blend-mode: soft-light;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .journey-card:active {
+            filter: saturate(1.01) contrast(1.01);
+            transition: filter 0.14s ease;
+        }
+
+        .journey-card-copy {
+            position: absolute;
+            top: calc(26px + var(--journey-stretch) * -0.5);
+            left: 22px;
+            right: 22px;
+            z-index: 1;
+            color: #f7f8f5;
+            pointer-events: none;
+        }
+
+        .journey-card-kicker {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(247, 248, 245, 0.82);
+        }
+
+        .journey-card-title {
+            margin: 0;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(34px, 4vw, 54px);
+            line-height: 0.92;
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            text-shadow: 0 2px 18px rgba(0, 0, 0, 0.18);
+            text-align: left;
+        }
+
+        .journey-card-cta {
+            position: absolute;
+            bottom: calc(26px + var(--journey-stretch) * -0.5);
+            left: 22px;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #f7f8f5;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+
+        .journey-card-cta-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #f7f8f5;
+            flex-shrink: 0;
+        }
+
+        .journey-card-cta-text {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .journey-card:hover .journey-card-cta-text,
+        .journey-card:focus-visible .journey-card-cta-text {
+            opacity: 1;
+        }
+
+        .journey-card.is-short,
+        .journey-card.is-tall,
+        .journey-card.is-taller {
+            --journey-base-height: 386px;
+        }
+
+        .journey-card.card-perjalanan {
+            --journey-image: url('/images/hamil.png');
+                --journey-position: 50% 61%;
+            --journey-bg-size: 156% auto;
+        }
+
+        .journey-card.card-membaca {
+            --journey-image: url('/images/buku.png');
+                --journey-position: 50% calc(60% - 20px);
+            --journey-bg-size: 156% auto;
+        }
+
+        .journey-card.card-update {
+            --journey-image: url('/images/mata.png');
+                --journey-position: 52% calc(63% + 220px);
+            --journey-bg-size: 150% auto;
+        }
+
+        .journey-card.card-obgyn {
+            --journey-image: url('/images/uterus.png');
+                --journey-position: 54% 69%;
+            --journey-bg-size: 142% auto;
+        }
+
+        @media (max-width: 1024px) {
+            .journey-showcase-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px;
+                width: calc(100vw - 100px);
+                margin-left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .journey-card,
+            .journey-card.is-short,
+            .journey-card.is-tall,
+            .journey-card.is-taller {
+                --journey-base-height: 280px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .journey-showcase {
+                margin: 20px 0 28px;
+                padding-top: 6px;
+            }
+
+            .journey-showcase-header {
+                margin-bottom: 84px;
+            }
+
+            .journey-showcase-title {
+                font-size: clamp(22px, 7.2vw, 32px);
+            }
+
+            .journey-showcase-title span {
+                margin-top: 4px;
+            }
+
+            .journey-showcase-desc {
+                margin-top: 22px;
+                font-size: 13px;
+                max-width: 340px;
+            }
+
+            .journey-showcase-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                width: 100%;
+                margin-left: 0;
+                transform: none;
+            }
+
+            .journey-card,
+            .journey-card.is-short,
+            .journey-card.is-tall,
+            .journey-card.is-taller {
+                --journey-base-height: 316px;
+                padding: 22px 18px;
+            }
+
+            .journey-card-title {
+                font-size: clamp(32px, 10vw, 44px);
+                max-width: 220px;
+            }
         }
 
         /* Menu Card Badge */
@@ -3253,11 +3578,11 @@
         }
 
         /* ========== REDUCED MOTION ========== */
-        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .doc-cta-link .doc-cta-track .dot-left .dot-right = interactive cards exempt from kill-switch */
+        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .journey-card .journey-card-frame .journey-card-media .journey-card-copy .journey-card-kicker .journey-card-title .journey-card-cta .journey-card-cta-dot .journey-card-cta-text .doc-cta-link .doc-cta-track .dot .dot-left .dot-right .text = interactive cards exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot-left):not(.dot-right)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
@@ -3516,7 +3841,8 @@
 
             <!-- INFO TERBARU — ClearPath Scroll-Driven Sticky Showcase -->
             <div class="info-terbaru-block-header">
-                <h2 class="info-terbaru-block-title">Info Terbaru</h2>
+                <div class="info-terbaru-block-label">Update Terkini</div>
+                <h2 class="info-terbaru-block-title">Kabar Sehat Hari Ini</h2>
                 <p class="info-terbaru-block-desc">Lihat pengumuman, perubahan jadwal, dan pembaruan penting terbaru dari dokter di satu tempat.</p>
             </div>
             <div id="announcements-container" data-layout="info-terbaru">
@@ -3683,17 +4009,65 @@
                 </div>
 
                 <!-- EDUKASI -->
-                <div class="section-title">Edukasi</div>
-                <div class="menu-grid">
-                    <div class="menu-card" onclick="window.location.href='/perjalanan-ibu.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-heart"></i></div>
-                        <h3>Perjalanan Ibu</h3>
+                <section class="journey-showcase" aria-label="Ruang edukasi pasien">
+                    <div class="journey-showcase-header">
+                        <h2 class="journey-showcase-title">
+                            Memahami setiap perjalanan Anda,
+                            <span>dari satu awal menuju kehidupan baru.</span>
+                        </h2>
+                        <p class="journey-showcase-desc">Tempat teduh untuk bertumbuh, belajar, dan menjaga kesehatan Anda secara menyeluruh.</p>
                     </div>
-                    <div class="menu-card" onclick="window.location.href='/artikel.html'">
-                        <div class="menu-icon"><i class="fa-solid fa-book-open"></i></div>
-                        <h3>Ruang Membaca</h3>
+
+                    <div class="journey-showcase-grid">
+                        <button type="button" class="journey-card card-perjalanan is-short" onclick="window.location.href='/perjalanan-ibu.html'" aria-label="Buka Perjalanan Ibu: Langkah Awal Ibu">
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-copy">
+                                <span class="journey-card-kicker">Perjalanan Ibu</span>
+                                <span class="journey-card-title">Langkah Awal Ibu</span>
+                            </span>
+                            <span class="journey-card-cta" aria-hidden="true">
+                                <span class="journey-card-cta-dot"></span>
+                                <span class="journey-card-cta-text">Buka Halaman</span>
+                            </span>
+                        </button>
+
+                        <button type="button" class="journey-card card-membaca is-tall" onclick="window.location.href='/artikel.html'" aria-label="Buka Ruang Membaca: Nadi Pengetahuan">
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-copy">
+                                <span class="journey-card-kicker">Ruang Membaca</span>
+                                <span class="journey-card-title">Nadi Pengetahuan</span>
+                            </span>
+                            <span class="journey-card-cta" aria-hidden="true">
+                                <span class="journey-card-cta-dot"></span>
+                                <span class="journey-card-cta-text">Buka Halaman</span>
+                            </span>
+                        </button>
+
+                        <button type="button" class="journey-card card-update is-taller" onclick="document.getElementById('announcements-container').scrollIntoView({ behavior: 'smooth', block: 'start' });" aria-label="Lihat Update Terkini: Kabar Sehat Hari Ini">
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-copy">
+                                <span class="journey-card-kicker">Update Terkini</span>
+                                <span class="journey-card-title">Kabar Sehat Hari Ini</span>
+                            </span>
+                            <span class="journey-card-cta" aria-hidden="true">
+                                <span class="journey-card-cta-dot"></span>
+                                <span class="journey-card-cta-text">Buka Halaman</span>
+                            </span>
+                        </button>
+
+                        <button type="button" class="journey-card card-obgyn is-short" onclick="window.location.href='/artikel-kesehatan.html'" aria-label="Buka Obstetri Ginekologi: Mengenai istilah bidang Obgyn">
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-copy">
+                                <span class="journey-card-kicker">Obstetri Ginekologi</span>
+                                <span class="journey-card-title">Mengenai istilah bidang Obgyn</span>
+                            </span>
+                            <span class="journey-card-cta" aria-hidden="true">
+                                <span class="journey-card-cta-dot"></span>
+                                <span class="journey-card-cta-text">Buka Halaman</span>
+                            </span>
+                        </button>
                     </div>
-                </div>
+                </section>
 
                 <!-- JADWAL (Flair PROCES layout) -->
                 <div class="proces-section">
@@ -4642,8 +5016,9 @@
                 title: 'Edukasi',
                 icon: 'fa-solid fa-book-open',
                 items: [
-                    { icon: 'fa-solid fa-heart', label: 'Perjalanan Ibu', href: '/perjalanan-ibu.html' },
-                    { icon: 'fa-solid fa-book-open', label: 'Ruang Membaca', href: '/artikel.html' }
+                    { icon: 'fa-solid fa-heart', label: 'Langkah Awal Ibu', href: '/perjalanan-ibu.html' },
+                    { icon: 'fa-solid fa-book-open', label: 'Nadi Pengetahuan', href: '/artikel.html' },
+                    { icon: 'fa-solid fa-stethoscope', label: 'Mengenai istilah bidang Obgyn', href: '/artikel-kesehatan.html' }
                 ]
             },
             'jadwal': {
@@ -4944,6 +5319,271 @@
                 });
                 docGrid.addEventListener('mouseleave', clearDoc);
             }
+        })();
+
+        (function() {
+            var MAX_STRETCH = 160;
+            var lastClientX = window.innerWidth * 0.5;
+
+            function getCardBaseHeight(card) {
+                var cssValue = getComputedStyle(card).getPropertyValue('--journey-base-height');
+                var parsed = parseFloat(cssValue);
+                return Number.isFinite(parsed) ? parsed : 272;
+            }
+
+            function resetJourneyCard(card) {
+                card.style.removeProperty('--journey-stretch');
+                card.style.removeProperty('--journey-parallax-y');
+                card.style.removeProperty('--journey-shadow-alpha');
+                card.style.removeProperty('--journey-sat');
+                card.style.removeProperty('--journey-contrast');
+                card.style.filter = '';
+                card.style.zIndex = '';
+                var media = card.querySelector('.journey-card-media');
+                if (media) {
+                    media.style.transform = '';
+                    media.style.transition = '';
+                }
+            }
+
+            function lockJourneyMedia(card) {
+                var media = card.querySelector('.journey-card-media');
+                if (!media) return;
+                media.style.transition = 'none';
+            }
+
+            function unlockJourneyMedia(card) {
+                var media = card.querySelector('.journey-card-media');
+                if (!media) return;
+                media.style.transition = '';
+            }
+
+            function getRenderedTranslateY(card) {
+                var media = card.querySelector('.journey-card-media');
+                if (!media) return NaN;
+                var transform = getComputedStyle(media).transform;
+                if (!transform || transform === 'none') return NaN;
+                try {
+                    return new DOMMatrixReadOnly(transform).m42;
+                } catch (error) {
+                    return NaN;
+                }
+            }
+
+            function getParallaxShift(card) {
+                var rect = card.getBoundingClientRect();
+                var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+                var travel = 106;
+                var startOffset = -200;
+                var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+                var eased = Math.max(0, Math.min(1, progress));
+                eased = eased * eased * (3 - (2 * eased));
+                return startOffset + (travel * eased);
+            }
+
+            function applyJourneyCardState(card, stretch, intensity, zIndex) {
+                var baseHeight = Number(card.dataset.baseHeight || 0) || getCardBaseHeight(card);
+                var parallaxShift = Number(card.dataset.parallaxShift);
+                if (!Number.isFinite(parallaxShift)) {
+                    parallaxShift = getParallaxShift(card);
+                }
+                var shadowAlpha = 0.14 + (intensity * 0.12);
+                var saturation = 1 + (intensity * 0.06);
+                var contrast = 1 + (intensity * 0.03);
+
+                card.style.setProperty('--journey-stretch', stretch.toFixed(2) + 'px');
+                card.style.setProperty('--journey-parallax-y', parallaxShift.toFixed(2) + 'px');
+                card.style.setProperty('--journey-shadow-alpha', shadowAlpha.toFixed(3));
+                card.style.setProperty('--journey-sat', saturation.toFixed(3));
+                card.style.setProperty('--journey-contrast', contrast.toFixed(3));
+                card.style.filter = 'saturate(' + saturation.toFixed(3) + ') contrast(' + contrast.toFixed(3) + ')';
+                card.style.zIndex = String(zIndex);
+            }
+
+            function getHorizontalProximity(gridRect, cardMetric, clientX) {
+                if (!gridRect.width || !cardMetric.width) return 0;
+                var cursorNormalized = (clientX - gridRect.left) / gridRect.width;
+                var centerNormalized = (cardMetric.centerX - gridRect.left) / gridRect.width;
+                var radius = 0.58;
+                var raw = Math.max(0, 1 - (Math.abs(cursorNormalized - centerNormalized) / radius));
+                return raw * (0.72 + (raw * 0.28));
+            }
+
+            function isGridVisible(grid) {
+                var rect = grid.getBoundingClientRect();
+                return rect.bottom > 0 && rect.top < window.innerHeight;
+            }
+
+            // Fade+slide reveal on scroll-in
+            (function() {
+                var section = document.querySelector('.journey-showcase');
+                if (!section) return;
+                if (!('IntersectionObserver' in window)) {
+                    section.classList.add('journey-visible');
+                    return;
+                }
+                var shown = false;
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (shown) return;
+                        if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
+                            shown = true;
+                            section.classList.add('journey-visible');
+                            observer.unobserve(section);
+                        }
+                    });
+                }, { threshold: [0.15, 0.3, 0.5] });
+                observer.observe(section);
+            })();
+
+            document.querySelectorAll('.journey-showcase-grid').forEach(function(grid) {
+                var cards = Array.from(grid.querySelectorAll('.journey-card'));
+                var metrics = [];
+                var targetClientX = lastClientX;
+                var currentClientX = lastClientX;
+                var velocityClientX = 0;
+                var frameId = 0;
+                var wasVisible = false;
+
+                function rebuildMetrics() {
+                    var oldMetrics = metrics;
+                    metrics = cards.map(function(card, i) {
+                        var rect = card.getBoundingClientRect();
+                        var baseHeight = getCardBaseHeight(card);
+                        var parallaxShift = getParallaxShift(card);
+                        card.dataset.baseHeight = String(baseHeight);
+                        card.dataset.parallaxShift = String(parallaxShift);
+                        var prev = oldMetrics[i];
+                        return {
+                            card: card,
+                            centerX: rect.left + (rect.width / 2),
+                            width: rect.width,
+                            baseHeight: baseHeight,
+                            currentProximity: prev ? prev.currentProximity : 0,
+                            proximityVelocity: prev ? prev.proximityVelocity : 0
+                        };
+                    });
+                }
+
+                function clear() {
+                    cards.forEach(resetJourneyCard);
+                }
+
+                function updateAll(clientX) {
+                    if (!isGridVisible(grid)) return false;
+                    if (metrics.length !== cards.length) {
+                        rebuildMetrics();
+                    }
+                    var gridRect = grid.getBoundingClientRect();
+                    var stillMoving = false;
+
+                    metrics.forEach(function(metric) {
+                        var card = metric.card;
+                        var targetProximity = getHorizontalProximity(gridRect, metric, clientX);
+
+                        // Per-card spring on proximity → ease-in + ease-out for stretch.
+                        // stiffness=0.006, damping=0.15, settling time ~600ms.
+                        if (metric.currentProximity === undefined) metric.currentProximity = 0;
+                        if (metric.proximityVelocity === undefined) metric.proximityVelocity = 0;
+
+                        var delta = targetProximity - metric.currentProximity;
+                        metric.proximityVelocity += delta * 0.006 - metric.proximityVelocity * 0.15;
+                        metric.currentProximity += metric.proximityVelocity;
+
+                        if (Math.abs(delta) < 0.0015 && Math.abs(metric.proximityVelocity) < 0.0015) {
+                            metric.currentProximity = targetProximity;
+                            metric.proximityVelocity = 0;
+                        } else {
+                            stillMoving = true;
+                        }
+
+                        var prox = metric.currentProximity;
+                        var stretch = MAX_STRETCH * prox;
+                        applyJourneyCardState(card, stretch, prox, Math.round(4 + (prox * 6)));
+                    });
+
+                    return stillMoving;
+                }
+
+                function animateToTarget() {
+                    frameId = 0;
+                    if (!isGridVisible(grid)) {
+                        wasVisible = false;
+                        clear();
+                        return;
+                    }
+
+                    currentClientX = targetClientX;
+
+                    // Snap spring to target on first-visibility frame (prevent bloom-in)
+                    if (!wasVisible && metrics.length === cards.length) {
+                        var gridRect = grid.getBoundingClientRect();
+                        metrics.forEach(function(metric) {
+                            metric.currentProximity = getHorizontalProximity(gridRect, metric, currentClientX);
+                            metric.proximityVelocity = 0;
+                        });
+                    }
+                    wasVisible = true;
+
+                    var stillMoving = updateAll(currentClientX);
+
+                    if (stillMoving) {
+                        scheduleUpdate();
+                    }
+                }
+
+                function scheduleUpdate() {
+                    if (frameId) return;
+                    frameId = window.requestAnimationFrame(animateToTarget);
+                }
+
+                function refresh() {
+                    if (!isGridVisible(grid)) {
+                        clear();
+                        return;
+                    }
+                    rebuildMetrics();
+                    currentClientX = targetClientX;
+                    updateAll(currentClientX);
+                }
+
+                window.addEventListener('pointermove', function(event) {
+                    lastClientX = event.clientX;
+                    targetClientX = event.clientX;
+                    scheduleUpdate();
+                }, { passive: true });
+
+                grid.addEventListener('pointermove', function(event) {
+                    lastClientX = event.clientX;
+                    targetClientX = event.clientX;
+                    scheduleUpdate();
+                }, { passive: true });
+
+                cards.forEach(function(card) {
+                    card.addEventListener('pointerenter', function(event) {
+                        lastClientX = event.clientX;
+                        targetClientX = event.clientX;
+                        scheduleUpdate();
+                    }, { passive: true });
+
+                    card.addEventListener('pointermove', function(event) {
+                        lastClientX = event.clientX;
+                        targetClientX = event.clientX;
+                        scheduleUpdate();
+                    }, { passive: true });
+
+                    card.addEventListener('pointerleave', function() {
+                        scheduleUpdate();
+                    }, { passive: true });
+                });
+
+                window.addEventListener('scroll', refresh, { passive: true });
+                window.addEventListener('resize', function() {
+                    refresh();
+                });
+
+                refresh();
+            });
         })();
 
         // ==================== DOC SECTION REVEAL ====================
@@ -5358,9 +5998,9 @@
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
             var STICKY_OFFSET = 90;
-            var PAD_TOP_MAX = 20;
+            var PAD_TOP_MAX = 30;
             var PAD_TOP_MIN = 20;
-            var PAD_BOT_MAX = 70;
+            var PAD_BOT_MAX = 96;
             var PAD_BOT_MIN = 30;
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
@@ -5371,6 +6011,43 @@
                 if (!sample) return 76;
                 var titleH = sample.getBoundingClientRect().height;
                 return Math.round(PAD_TOP_MIN + titleH + PAD_BOT_MIN);
+            }
+
+            function measureExpandedRow(row) {
+                if (!row) {
+                    return {
+                        rowHeight: 140,
+                        descHeight: 80
+                    };
+                }
+
+                var clone = row.cloneNode(true);
+                clone.style.position = 'absolute';
+                clone.style.visibility = 'hidden';
+                clone.style.pointerEvents = 'none';
+                clone.style.top = '-99999px';
+                clone.style.left = '0';
+                clone.style.width = (row.getBoundingClientRect().width || row.offsetWidth || row.parentElement.offsetWidth || 600) + 'px';
+                clone.style.top = '0';
+                clone.style.zIndex = '-1';
+                clone.style.paddingTop = PAD_TOP_MAX + 'px';
+                clone.style.paddingBottom = PAD_BOT_MAX + 'px';
+
+                var cloneDesc = clone.querySelector('.proces-desc');
+                if (cloneDesc) {
+                    cloneDesc.style.opacity = '1';
+                    cloneDesc.style.maxHeight = 'none';
+                }
+
+                document.body.appendChild(clone);
+                var rowHeight = clone.getBoundingClientRect().height || 140;
+                var descHeight = cloneDesc ? (cloneDesc.getBoundingClientRect().height || cloneDesc.scrollHeight || 80) : 80;
+                clone.remove();
+
+                return {
+                    rowHeight: rowHeight,
+                    descHeight: descHeight
+                };
             }
 
             var COLLAPSED_H = getCollapsedH();
@@ -5394,12 +6071,14 @@
 
             // Strict sequential collapse — segmented scroll timeline.
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
-            var SEGMENT = 420;       // px of scroll budget per row (10% fade window = 42px)
             var DELAY_BEFORE_LAST = 200; // px of extra scroll pause before last row collapses
+            var COLLAPSE_LEAD_PX = 72;
             var WIPE_HOLD_PX = 20;
-            var ticking = false;
-            var animating = false;
             var metricsReady = false;
+            var scrollSyncFrame = 0;
+            var lastObservedScrollY = window.scrollY;
+            var stableFrames = 0;
+            var scrollSyncInterval = 0;
 
             var sectionData = [];
             sections.forEach(function(section) {
@@ -5409,6 +6088,7 @@
                     rows: rows,
                     startY: 0,
                     endY: 0,
+                    rowStartY: [],
                     activeIndex: -1,
                     targetP: rows.map(function() { return 0; }),
                     renderP: rows.map(function() { return 0; })
@@ -5417,20 +6097,28 @@
 
             function rebuildMetrics() {
                 assignStickyTops();
-                var scrollY = window.scrollY;
                 sectionData.forEach(function(sd) {
-                    // Use SECTION element top (not sticky row top) as stable baseline
-                    var sectionRect = sd.el.getBoundingClientRect();
-                    var sectionDocTop = sectionRect.top + scrollY;
-                    // Collapse starts when section top scrolls to STICKY_OFFSET from viewport top
-                    // That means: scrollY = sectionDocTop - STICKY_OFFSET  → but we want desc
-                    // visible first, so add the full section visible height before collapsing starts
-                    sd.startY = sectionDocTop + sectionRect.height - window.innerHeight * 0.3;
-                    sd.endY = sd.startY + (sd.rows.length * SEGMENT) + (sd.rows.length > 1 ? DELAY_BEFORE_LAST : 0);
+                    var firstRow = sd.rows[0];
+                    var sampleMetrics = measureExpandedRow(firstRow);
+                    var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
+                    sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
+                    sd.startY = firstRow ? (firstRow.offsetTop - STICKY_OFFSET) : 0;
+                    sd.rowStartY = sd.rows.map(function(row, i) {
+                        var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
+                        var rowLead = COLLAPSE_LEAD_PX;
+                        if (isPatientFeaturesSection) {
+                            rowLead += i * 56;
+                        }
+                        var start = row.offsetTop - slotTop - rowLead;
+                        if (i === sd.rows.length - 1 && sd.rows.length > 1) {
+                            start += isPatientFeaturesSection ? 40 : DELAY_BEFORE_LAST;
+                        }
+                        return start;
+                    });
+                    sd.endY = sd.rowStartY.length ? (sd.rowStartY[sd.rowStartY.length - 1] + sd.segment) : sd.startY;
 
                     sd.descHeights = sd.rows.map(function(row) {
-                        var desc = row.querySelector('.proces-desc');
-                        return desc ? Math.min(desc.scrollHeight, 120) : 80;
+                        return Math.min(measureExpandedRow(row).descHeight, 120);
                     });
 
                     sd.targetP = sd.rows.map(function(_, i) { return sd.targetP[i] || 0; });
@@ -5438,7 +6126,7 @@
                 });
                 metricsReady = true;
                 console.log('[PROCES] metrics rebuilt:', { COLLAPSED_H: COLLAPSED_H }, sectionData.map(function(sd) {
-                    return { startY: Math.round(sd.startY), endY: Math.round(sd.endY), rowCount: sd.rows.length };
+                    return { startY: Math.round(sd.startY), endY: Math.round(sd.endY), rowCount: sd.rows.length, segment: sd.segment, rowStarts: sd.rowStartY.map(Math.round) };
                 }));
 
                 onScroll();
@@ -5468,16 +6156,21 @@
                 else layer = 1000 + i;               // expanded: highest (covers rows above)
                 row.style.zIndex = String(layer);
 
-                // Two-phase fade in first 10%: visible but brief, then fully gone before height collapse.
+                // Each row fades its own description early in its own collapse timeline,
+                // then continues shrinking after the text is already gone.
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
                 if (desc) {
-                    var fadeP = Math.max(0, Math.min(1, p / 0.82));
-                    var opacity = 1 - Math.pow(fadeP, 1.15);
-                    desc.style.opacity = Math.max(0, opacity).toFixed(3);
+                    // Both opacity and max-height reach 0 at p=0.70 (70% of collapse progress)
+                    var fadeWindow = 0.70;
+                    var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
+                    var opacity = 1 - Math.pow(fadeP, 0.72);
+                    var heightEndP = 0.70;
+                    var heightP = Math.max(0, Math.min(1, p / heightEndP));
+                    var remainingDescRatio = Math.max(0, 1 - heightP);
 
-                    var heightP = Math.max(0, Math.min(1, p / 0.72));
-                    desc.style.maxHeight = (descH * (1 - heightP)).toFixed(1) + 'px';
+                    desc.style.opacity = Math.max(0, opacity).toFixed(3);
+                    desc.style.maxHeight = (descH * remainingDescRatio).toFixed(1) + 'px';
                 }
 
                 var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
@@ -5486,90 +6179,44 @@
                 row.style.paddingBottom = padBot.toFixed(1) + 'px';
             }
 
-            function renderAnimatedFrame() {
-                if (!metricsReady) { animating = false; return; }
-
-                var needsMore = false;
-                sectionData.forEach(function(sd) {
-                    sd.rows.forEach(function(_, i) {
-                        var target = sd.targetP[i] || 0;
-                        var current = sd.renderP[i] || 0;
-                        var delta = target - current;
-                        var maxStep = 0.018; // keep 10% fade window visible across multiple frames
-                        var step = Math.max(-maxStep, Math.min(maxStep, delta));
-                        var next = current + step;
-                        if (Math.abs(delta) <= maxStep) {
-                            next = target;
-                        } else {
-                            needsMore = true;
-                        }
-                        sd.renderP[i] = next;
-                        applyRowState(sd, i, next);
-                    });
-                });
-
-                if (needsMore) {
-                    requestAnimationFrame(renderAnimatedFrame);
-                } else {
-                    animating = false;
-                }
-            }
-
             function onScroll() {
-                if (!metricsReady) { ticking = false; return; }
+                if (!metricsReady) { return; }
                 var scrollY = window.scrollY;
 
                 sectionData.forEach(function(sd) {
                     var count = sd.rows.length;
                     if (count === 0) return;
 
-                    // Clamp total to valid range including delay before last row
-                    var hasDelay = count > 1;
-                    var totalBudget = count * SEGMENT + (hasDelay ? DELAY_BEFORE_LAST : 0);
-                    var total = Math.max(0, Math.min(totalBudget, scrollY - sd.startY));
+                    var segment = sd.segment || 96;
+                    var activeIndex = -1;
+                    var rowProgress = sd.rowStartY.map(function(start, i) {
+                        var p = (scrollY - start) / segment;
+                        if (i === count - 1 && scrollY > sd.endY + WIPE_HOLD_PX) {
+                            p = 1;
+                        }
+                        return Math.max(0, Math.min(1, p));
+                    });
 
-                    var activeIndex, localP;
-                    if (scrollY < sd.startY) {
-                        // Before section trigger: all expanded
-                        activeIndex = -1;
-                        localP = 0;
-                    } else if (scrollY > sd.endY + WIPE_HOLD_PX) {
-                        // Past section end + hold: all rows collapsed
-                        activeIndex = count;
-                        localP = 0;
-                    } else if (scrollY > sd.endY) {
-                        // Hold zone: freeze at last row fully collapsed
-                        activeIndex = count - 1;
-                        localP = 1;
-                    } else {
-                        // Active window: sequential collapse with delay before last row
-                        var normalEnd = (count - 1) * SEGMENT;
-                        var delayEnd = normalEnd + (hasDelay ? DELAY_BEFORE_LAST : 0);
-                        if (!hasDelay || total <= normalEnd) {
-                            activeIndex = Math.min(count - 1, Math.floor(total / SEGMENT));
-                            localP = Math.max(0, Math.min(1, (total - activeIndex * SEGMENT) / SEGMENT));
-                        } else if (total <= delayEnd) {
-                            // Delay pause: previous rows collapsed, last row holds expanded
-                            activeIndex = count - 2;
-                            localP = 1;
-                        } else {
-                            // Last row collapses after delay
-                            activeIndex = count - 1;
-                            localP = Math.max(0, Math.min(1, (total - delayEnd) / SEGMENT));
+                    sd.rows.forEach(function(_, i) {
+                        var p = rowProgress[i] || 0;
+                        if (activeIndex === -1 && p > 0 && p < 1) {
+                            activeIndex = i;
+                        }
+
+                        sd.targetP[i] = p;
+                        sd.renderP[i] = p;
+                        applyRowState(sd, i, p);
+                    });
+
+                    if (activeIndex === -1) {
+                        if (rowProgress.every(function(p) { return p >= 1; })) {
+                            activeIndex = count;
+                        } else if (rowProgress.some(function(p) { return p > 0; })) {
+                            activeIndex = Math.max(0, rowProgress.findIndex(function(p) { return p < 1; }));
                         }
                     }
 
                     sd.activeIndex = activeIndex;
-
-                    sd.rows.forEach(function(_, i) {
-                        var p;
-                        if (activeIndex < 0)           p = 0;
-                        else if (i < activeIndex)      p = 1;
-                        else if (i === activeIndex)    p = localP;
-                        else                           p = 0;
-                        sd.targetP[i] = p;
-                        if (typeof sd.renderP[i] !== 'number') sd.renderP[i] = p;
-                    });
 
                     // Debug: log 1 in every 30 frames
                     if (!sd._dbg) sd._dbg = 0;
@@ -5578,30 +6225,46 @@
                             scrollY: Math.round(scrollY),
                             startY: Math.round(sd.startY),
                             endY: Math.round(sd.endY),
-                            total: Math.round(total),
-                            activeIndex: activeIndex,
-                            localP: +localP.toFixed(3),
+                            rowStarts: sd.rowStartY.map(Math.round),
                             rowCount: count
                         });
                     }
                 });
-
-                if (!animating) {
-                    animating = true;
-                    requestAnimationFrame(renderAnimatedFrame);
-                }
-
-                ticking = false;
             }
 
-            window.addEventListener('scroll', function() {
-                if (!ticking) {
-                    requestAnimationFrame(onScroll);
-                    ticking = true;
+            function syncScrollFrame() {
+                onScroll();
+
+                if (Math.abs(window.scrollY - lastObservedScrollY) > 0.5) {
+                    lastObservedScrollY = window.scrollY;
+                    stableFrames = 0;
+                    scrollSyncFrame = requestAnimationFrame(syncScrollFrame);
+                    return;
                 }
-            }, { passive: true });
+
+                if (stableFrames < 2) {
+                    stableFrames += 1;
+                    scrollSyncFrame = requestAnimationFrame(syncScrollFrame);
+                    return;
+                }
+
+                scrollSyncFrame = 0;
+            }
+
+            function scheduleScrollSync() {
+                lastObservedScrollY = window.scrollY;
+                stableFrames = 0;
+                if (!scrollSyncFrame) {
+                    scrollSyncFrame = requestAnimationFrame(syncScrollFrame);
+                }
+            }
+
+            window.addEventListener('scroll', scheduleScrollSync, { passive: true });
+            window.addEventListener('wheel', scheduleScrollSync, { passive: true });
+            window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
 
             onScroll();
+            scrollSyncInterval = window.setInterval(onScroll, 33);
         })();
 
         // ==================== PULL TO REFRESH ====================
@@ -5789,7 +6452,7 @@
 
             setTimeout(function() {
                 window.location.href = link.href || href;
-            }, 620);
+            }, 760);
         }, true);
     </script>
 </body>
