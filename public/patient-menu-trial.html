@@ -6095,21 +6095,27 @@
                 });
             });
 
+            function getDocTop(el) {
+                return el.getBoundingClientRect().top + window.scrollY;
+            }
+
             function rebuildMetrics() {
+                var contentWrapper = document.getElementById('content-wrapper');
+                if (contentWrapper && contentWrapper.style.display === 'none') return;
                 assignStickyTops();
                 sectionData.forEach(function(sd) {
                     var firstRow = sd.rows[0];
                     var sampleMetrics = measureExpandedRow(firstRow);
                     var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
                     sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
-                    sd.startY = firstRow ? (firstRow.offsetTop - STICKY_OFFSET) : 0;
+                    sd.startY = firstRow ? (getDocTop(firstRow) - STICKY_OFFSET) : 0;
                     sd.rowStartY = sd.rows.map(function(row, i) {
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
                         var rowLead = COLLAPSE_LEAD_PX;
                         if (isPatientFeaturesSection) {
                             rowLead += i * 56;
                         }
-                        var start = row.offsetTop - slotTop - rowLead;
+                        var start = getDocTop(row) - slotTop - rowLead;
                         if (i === sd.rows.length - 1 && sd.rows.length > 1) {
                             start += isPatientFeaturesSection ? 40 : DELAY_BEFORE_LAST;
                         }
@@ -6141,8 +6147,9 @@
             new MutationObserver(function() { scheduleRebuild(); })
                 .observe(document.getElementById('content-wrapper'), { attributes: true });
             window.addEventListener('resize', scheduleRebuild);
-            // Also rebuild once now in case content is already visible
+            // Rebuild at 500ms and 1500ms — content-wrapper may become visible at any time
             setTimeout(rebuildMetrics, 500);
+            setTimeout(rebuildMetrics, 1500);
 
             function applyRowState(sd, i, p) {
                 var row = sd.rows[i];
