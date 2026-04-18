@@ -2157,7 +2157,7 @@
 
         .proces-header {
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 40px;
             padding: 0 16px;
         }
 
@@ -6161,11 +6161,11 @@
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
                 if (desc) {
-                    // Fade and collapse complete at 40% of scroll progress — text disappears early
-                    var fadeWindow = 0.40;
+                    // Both opacity and max-height reach 0 at p=0.70 (70% of collapse progress)
+                    var fadeWindow = 0.70;
                     var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
                     var opacity = 1 - Math.pow(fadeP, 0.72);
-                    var heightEndP = 0.45;
+                    var heightEndP = 0.70;
                     var heightP = Math.max(0, Math.min(1, p / heightEndP));
                     var remainingDescRatio = Math.max(0, 1 - heightP);
 
