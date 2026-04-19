@@ -84,19 +84,7 @@
 
         /* ========== GRID BACKGROUND ========== */
         .grid-bg {
-            position: absolute;
-            top: 70px;
-            left: 0;
-            right: 0;
-            height: 600px;
-            z-index: 0;
-            pointer-events: none;
-            background-image:
-                linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px);
-            background-size: 16px 16px;
-            -webkit-mask-image: radial-gradient(ellipse 180% 45% at 50% 40%, rgba(0,0,0,0.6), rgba(0,0,0,0.15) 60%, transparent 85%);
-            mask-image: radial-gradient(ellipse 180% 45% at 50% 40%, rgba(0,0,0,0.6), rgba(0,0,0,0.15) 60%, transparent 85%);
+            display: none;
         }
 
         /* ========== SAFE AREA BARS ========== */
@@ -3454,10 +3442,7 @@
         /* Always-visible fixed background (green + preg overlay) */
         #hero-fixed-bg {
             position: fixed;
-            top: -50px;
-            left: 0;
-            right: 0;
-            bottom: -50px;
+            inset: 0;
             z-index: 0;
             pointer-events: none;
             background: url('/images/bg/green_bg.avif') center center / cover no-repeat;

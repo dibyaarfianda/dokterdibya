@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260420g'; // 2026-04-20 - revert html bg to white for seamless fade
+const CACHE_VERSION = '20260420h'; // 2026-04-20 - disable grid-bg (mask edge causing visible line), revert hero-bg extend
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
