@@ -6112,9 +6112,6 @@
                     sd.rowStartY = sd.rows.map(function(row, i) {
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
                         var rowLead = COLLAPSE_LEAD_PX;
-                        if (isPatientFeaturesSection) {
-                            rowLead += i * 56;
-                        }
                         var start = getDocTop(row) - slotTop - rowLead;
                         if (i === sd.rows.length - 1 && sd.rows.length > 1) {
                             start += isPatientFeaturesSection ? 40 : DELAY_BEFORE_LAST;
@@ -6167,12 +6164,13 @@
                 // then continues shrinking after the text is already gone.
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
+                var collapseCompleteP = 0.70;
                 if (desc) {
-                    // Both opacity and max-height reach 0 at p=0.70 (70% of collapse progress)
-                    var fadeWindow = 0.70;
+                    // Keep all visual collapse movement on the same timeline.
+                    var fadeWindow = collapseCompleteP;
                     var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
                     var opacity = 1 - Math.pow(fadeP, 0.72);
-                    var heightEndP = 0.70;
+                    var heightEndP = collapseCompleteP;
                     var heightP = Math.max(0, Math.min(1, p / heightEndP));
                     var remainingDescRatio = Math.max(0, 1 - heightP);
 
@@ -6180,8 +6178,9 @@
                     desc.style.maxHeight = (descH * remainingDescRatio).toFixed(1) + 'px';
                 }
 
-                var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
-                var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * p;
+                var layoutP = Math.max(0, Math.min(1, p / collapseCompleteP));
+                var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * layoutP;
+                var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * layoutP;
                 row.style.paddingTop = padTop.toFixed(1) + 'px';
                 row.style.paddingBottom = padBot.toFixed(1) + 'px';
             }
