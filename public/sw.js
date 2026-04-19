@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260420a'; // 2026-04-20 - patient features desc fade at 40%, last row pinned
+const CACHE_VERSION = '20260420b'; // 2026-04-20 - hero curves, bg fades, topbar ink, welcome font
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
