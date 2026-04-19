@@ -57,7 +57,7 @@
         }
 
         html {
-            background: var(--bg-page);
+            background: #7a9c85; /* matches hero green so any gap doesn't flash white */
             scroll-behavior: smooth;
             overscroll-behavior: contain;
         }
@@ -3450,7 +3450,10 @@
         /* Always-visible fixed background (green + preg overlay) */
         #hero-fixed-bg {
             position: fixed;
-            inset: 0;
+            top: -50px;
+            left: 0;
+            right: 0;
+            bottom: -50px;
             z-index: 0;
             pointer-events: none;
             background: url('/images/bg/green_bg.avif') center center / cover no-repeat;
