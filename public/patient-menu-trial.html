@@ -6165,17 +6165,26 @@
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
                 var collapseCompleteP = 0.70;
+                var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
+                var isLastRow = (i === sd.rows.length - 1);
                 if (desc) {
-                    // Keep all visual collapse movement on the same timeline.
-                    var fadeWindow = collapseCompleteP;
-                    var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
-                    var opacity = 1 - Math.pow(fadeP, 0.72);
-                    var heightEndP = collapseCompleteP;
-                    var heightP = Math.max(0, Math.min(1, p / heightEndP));
-                    var remainingDescRatio = Math.max(0, 1 - heightP);
+                    if (isPatientFeaturesSection && isLastRow) {
+                        // Last row (JADWAL VITAMIN) sweeps everything up; its desc stays visible.
+                        desc.style.opacity = '1';
+                        desc.style.maxHeight = descH + 'px';
+                    } else {
+                        // Rows 1-4 in patient features: desc fully gone at p=0.40.
+                        // Other sections keep the original 0.70 window.
+                        var fadeWindow = isPatientFeaturesSection ? 0.40 : collapseCompleteP;
+                        var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
+                        var opacity = 1 - Math.pow(fadeP, 0.72);
+                        var heightEndP = fadeWindow;
+                        var heightP = Math.max(0, Math.min(1, p / heightEndP));
+                        var remainingDescRatio = Math.max(0, 1 - heightP);
 
-                    desc.style.opacity = Math.max(0, opacity).toFixed(3);
-                    desc.style.maxHeight = (descH * remainingDescRatio).toFixed(1) + 'px';
+                        desc.style.opacity = Math.max(0, opacity).toFixed(3);
+                        desc.style.maxHeight = (descH * remainingDescRatio).toFixed(1) + 'px';
+                    }
                 }
 
                 var layoutP = Math.max(0, Math.min(1, p / collapseCompleteP));
