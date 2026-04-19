@@ -74,6 +74,7 @@
             padding-right: env(safe-area-inset-right);
             position: relative;
             overflow-x: hidden;
+            touch-action: pan-y;
         }
 
         ::selection {
@@ -6447,10 +6448,12 @@
 
             window.addEventListener('scroll', scheduleScrollSync, { passive: true });
             window.addEventListener('wheel', scheduleScrollSync, { passive: true });
-            window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
+            // touchmove listener removed — scroll event already fires during touch scroll
+            // and the extra listener was triggering heavy onScroll() work mid-drag on mobile,
+            // causing "stuck" feel when tapping and dragging slowly over sticky rows.
 
             onScroll();
-            scrollSyncInterval = window.setInterval(onScroll, 33);
+            scrollSyncInterval = window.setInterval(onScroll, 60);
         })();
 
         // ==================== HERO FIXED BG FADE ON SCROLL ====================
