@@ -612,10 +612,9 @@
             background:
                 linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
                 url('/images/bg/tangan.avif') center center / cover no-repeat;
-            border-radius: 0;
             padding: 64px 24px;
-            margin-top: 40px;
-            margin-bottom: 40px;
+            margin-top: 80px;
+            margin-bottom: 80px;
             min-height: 360px;
             display: flex;
             flex-direction: column;
@@ -628,11 +627,17 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
+            /* Scroll-driven arc on top edge (JS sets --cta-arc from 120 → 0 as user scrolls in) */
+            --cta-arc: 120px;
+            border-top-left-radius: 50% var(--cta-arc);
+            border-top-right-radius: 50% var(--cta-arc);
+            will-change: border-radius;
         }
         @media (min-width: 768px) {
             .cta-card {
                 padding: 88px 32px;
                 min-height: 420px;
+                --cta-arc: 180px;
             }
         }
 
@@ -4612,6 +4617,38 @@
                     });
                 }, { root: null, threshold: 0.01, rootMargin: '0px 0px -40px 0px' });
                 io.observe(footer);
+            })();
+
+            // Scroll-driven arc on .cta-card top edge:
+            // curved (arc height = MAX) when card top is at bottom of viewport,
+            // straight (arc height = 0) as card top reaches ~40% of viewport.
+            (function() {
+                var card = document.querySelector('.cta-card');
+                if (!card) return;
+                var MAX = window.matchMedia('(min-width: 768px)').matches ? 180 : 120;
+                var ticking = false;
+                function update() {
+                    ticking = false;
+                    var rect = card.getBoundingClientRect();
+                    var vh = window.innerHeight || document.documentElement.clientHeight;
+                    // progress: 0 when card top = vh (just entering), 1 when card top = vh * 0.4
+                    var flattenAt = vh * 0.4;
+                    var raw = (vh - rect.top) / (vh - flattenAt);
+                    var progress = Math.max(0, Math.min(1, raw));
+                    var arc = (1 - progress) * MAX;
+                    card.style.setProperty('--cta-arc', arc.toFixed(1) + 'px');
+                }
+                function onScroll() {
+                    if (ticking) return;
+                    ticking = true;
+                    window.requestAnimationFrame(update);
+                }
+                window.addEventListener('scroll', onScroll, { passive: true });
+                window.addEventListener('resize', function() {
+                    MAX = window.matchMedia('(min-width: 768px)').matches ? 180 : 120;
+                    update();
+                });
+                update();
             })();
 
             const LIVE_UPDATE_KEY = 'trial_sw_updated_at';
