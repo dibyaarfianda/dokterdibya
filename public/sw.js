@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422ao'; // 2026-04-22 - cta-card arc fix: dome bukan terbalik (2 quarter-ellipse corner overlays)
+const CACHE_VERSION = '20260422ap'; // 2026-04-22 - cta-card arc: SVG cubic-bezier overlay (horizontal tangent peak = smooth seamless dome), scaleY GPU
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
