@@ -627,7 +627,6 @@
             align-items: flex-start;
             justify-content: center;
             text-align: left;
-            cursor: pointer;
             overflow: hidden;
             /* Break out of .screen max-width to span full viewport width */
             width: 100vw;
@@ -4332,12 +4331,16 @@
                 </div>
 
                 <!-- Booking CTA Card -->
-                <div class="cta-card" onclick="window.location.href='/booking-klinik-trial.html'">
+                <div class="cta-card">
                     <h2 class="cta-heading">Booking Klinik Minggu</h2>
                     <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
-                    <button class="cta-btn" onclick="event.stopPropagation(); window.location.href='/booking-klinik-trial.html'">
-                        Booking Sekarang
-                    </button>
+                    <a class="doc-cta-link" href="/booking-klinik-trial.html">
+                        <span class="doc-cta-track">
+                            <span class="dot dot-left"></span>
+                            <span class="text">Booking Sekarang</span>
+                            <span class="dot dot-right"></span>
+                        </span>
+                    </a>
                 </div>
 
                 <!-- EDUKASI -->
