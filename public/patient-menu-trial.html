@@ -632,17 +632,18 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
-            /* Scroll-driven arc on top edge (JS sets --cta-arc from max → 0 as user scrolls in) */
-            --cta-arc: 240px;
-            border-top-left-radius: 50% var(--cta-arc);
-            border-top-right-radius: 50% var(--cta-arc);
-            will-change: border-radius;
+            /* Scroll-driven arc on top edge via single elliptical clip-path
+               (no border-radius kink at center — smooth continuous curve like Clearpath).
+               JS grows --cta-flatten as user scrolls in → ellipse gets taller than element → arc flattens. */
+            --cta-flatten: 0px;
+            clip-path: ellipse(140% calc(100% + var(--cta-flatten)) at 50% 100%);
+            -webkit-clip-path: ellipse(140% calc(100% + var(--cta-flatten)) at 50% 100%);
+            will-change: clip-path;
         }
         @media (min-width: 768px) {
             .cta-card {
                 padding: 176px 80px;
                 min-height: 100vh;
-                --cta-arc: 380px;
             }
         }
 
@@ -4629,24 +4630,23 @@
                 io.observe(footer);
             })();
 
-            // Scroll-driven arc on .cta-card top edge:
-            // curved (arc height = MAX) when card top is at bottom of viewport,
-            // straight (arc height = 0) as card top reaches ~40% of viewport.
+            // Scroll-driven arc on .cta-card top edge via clip-path ellipse.
+            // progress 0 (just entering) → --cta-flatten = 0 → ellipse ry = 100% of card height (pronounced arc).
+            // progress 1 (fully in view) → --cta-flatten = MAX → ellipse ry huge → top edge nearly flat.
             (function() {
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
-                var MAX = window.matchMedia('(min-width: 768px)').matches ? 380 : 240;
+                var MAX_FLATTEN = 4000; // px — ellipse ry offset; huge → near-flat top
                 var ticking = false;
                 function update() {
                     ticking = false;
                     var rect = card.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight;
-                    // progress: 0 when card top = vh (just entering), 1 when card top = vh * 0.4
                     var flattenAt = vh * 0.4;
                     var raw = (vh - rect.top) / (vh - flattenAt);
                     var progress = Math.max(0, Math.min(1, raw));
-                    var arc = (1 - progress) * MAX;
-                    card.style.setProperty('--cta-arc', arc.toFixed(1) + 'px');
+                    var flatten = progress * MAX_FLATTEN;
+                    card.style.setProperty('--cta-flatten', flatten.toFixed(0) + 'px');
                 }
                 function onScroll() {
                     if (ticking) return;
@@ -4654,10 +4654,7 @@
                     window.requestAnimationFrame(update);
                 }
                 window.addEventListener('scroll', onScroll, { passive: true });
-                window.addEventListener('resize', function() {
-                    MAX = window.matchMedia('(min-width: 768px)').matches ? 380 : 240;
-                    update();
-                });
+                window.addEventListener('resize', update);
                 update();
             })();
 
