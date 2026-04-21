@@ -609,15 +609,7 @@
         /* ========== CTA CARD (Anvil-style) ========== */
         .cta-card {
             position: relative;
-            /* Explicit dark background-color so updateNavContrast() reads it as dark
-               (it only samples backgroundColor, not backgroundImage) */
             background-color: #111111;
-            background-image:
-                linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
-                url('/images/bg/tangan.avif');
-            background-position: center center;
-            background-size: cover;
-            background-repeat: no-repeat;
             padding: 128px 28px;
             margin-top: 400px;
             margin-bottom: 320px;
@@ -627,18 +619,38 @@
             align-items: flex-start;
             justify-content: center;
             text-align: left;
-            overflow: hidden;
             /* Break out of .screen max-width to span full viewport width */
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
-            /* Permanent continuous arc on top edge via single elliptical clip-path (no kink).
-               --cta-arc-ry base 140% = noticeably curved. JS grows it mildly on scroll (max ~200%)
-               so top looks slightly flatter when card is fully in view, but never fully flat. */
-            --cta-arc-ry: 140%;
-            clip-path: ellipse(150% var(--cta-arc-ry) at 50% 100%);
-            -webkit-clip-path: ellipse(150% var(--cta-arc-ry) at 50% 100%);
+            --cta-arc-ry: 104%;
+        }
+        /* Inner bg layer: holds image + gets the elliptical clip-path so it shows as an arc at top.
+           Curves are OUTSIDE this layer so they are NOT clipped by the arc. */
+        .cta-card .cta-bg {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
+                url('/images/bg/tangan.avif');
+            background-position: center center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            clip-path: ellipse(100% var(--cta-arc-ry) at 50% 100%);
+            -webkit-clip-path: ellipse(100% var(--cta-arc-ry) at 50% 100%);
+            z-index: 0;
             will-change: clip-path;
+        }
+        .cta-card .cta-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/grain.avif');
+            background-size: 90px 90px;
+            background-repeat: repeat;
+            mix-blend-mode: soft-light;
+            opacity: 0.5;
+            pointer-events: none;
         }
         @media (min-width: 768px) {
             .cta-card {
@@ -648,7 +660,7 @@
         }
 
         /* Clearpath-style curves inside cta-card, stroke draws on scroll.
-           z-index: 2 → above background image AND grain overlay (::after z-index:1). */
+           Placed AFTER .cta-bg in source, z-index: 1 → above bg & grain, not clipped by arc. */
         .cta-card .cta-curves {
             position: absolute;
             top: 0;
@@ -658,7 +670,7 @@
             max-width: 100vw;
             height: 100%;
             pointer-events: none;
-            z-index: 2;
+            z-index: 1;
         }
         .cta-card .cta-curve {
             position: absolute;
@@ -678,16 +690,22 @@
         }
         .cta-card .cta-content {
             position: relative;
-            z-index: 3;
+            z-index: 2;
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
         }
-        /* Booking CTA button tuning: text mepet kiri, dot mepet kanan, hover track shift lebih kecil */
+        /* Booking CTA button — 30% lebih kecil dari Album USG button */
         .cta-card .doc-cta-link {
-            padding: 12px 12px 12px 12px;
-            min-width: 280px;
+            padding: 8px 10px 8px 10px;
+            min-width: 196px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+        }
+        .cta-card .doc-cta-link .dot {
+            width: 6px;
+            height: 6px;
         }
         .cta-card .doc-cta-link .text {
             margin-left: 4px;
@@ -713,19 +731,6 @@
             opacity: 1;
         }
 
-        /* Grain overlay — same setting as .journey-card-media::after */
-        .cta-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url('/images/grain.avif');
-            background-size: 90px 90px;
-            background-repeat: repeat;
-            mix-blend-mode: soft-light;
-            opacity: 0.5;
-            pointer-events: none;
-            z-index: 1;
-        }
 
         .cta-heading {
             font-size: 22px;
@@ -3500,6 +3505,7 @@
 
         /* ========== SITE FOOTER ========== */
         .site-footer {
+            position: relative;
             margin-top: 150px;
             padding: 40px 22px calc(env(safe-area-inset-bottom, 0px) + 28px);
             background: #0d0d0d;
@@ -3507,6 +3513,50 @@
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             /* Ensure footer bg paints down to page bottom */
             margin-bottom: 0;
+            overflow: hidden;
+        }
+        /* Clearpath-style curves overlay on footer */
+        .site-footer .footer-curves {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 780px;
+            max-width: 100vw;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .site-footer .footer-curve {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .site-footer .footer-curve path {
+            stroke: rgba(255, 255, 255, 0.22);
+            stroke-width: 2;
+            fill: transparent;
+            vector-effect: non-scaling-stroke;
+        }
+        .site-footer .footer-curve-2 path {
+            stroke: rgba(255, 255, 255, 0.12);
+        }
+        .site-footer .footer-grain {
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/grain.avif');
+            background-size: 90px 90px;
+            background-repeat: repeat;
+            mix-blend-mode: soft-light;
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .site-footer .footer-inner {
+            position: relative;
+            z-index: 1;
         }
         /* Page bg behind footer = dark (prevents white below footer in overscroll/rubber-band) */
         html { background-color: #0d0d0d !important; }
@@ -4413,6 +4463,7 @@
 
                 <!-- Booking CTA Card -->
                 <div class="cta-card">
+                    <div class="cta-bg" aria-hidden="true"></div>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
                             <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
@@ -4536,6 +4587,15 @@
 
     <!-- Site Footer (outside .screen so its padding-bottom doesn't leak white space below) -->
     <footer class="site-footer">
+        <div class="footer-curves" aria-hidden="true">
+            <svg class="footer-curve footer-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
+                <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
+            </svg>
+            <svg class="footer-curve footer-curve-2" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
+                <path d="M 555 0 C -514.95 653.314 502.942 726.558 720 509.5 C 937.058 292.442 174.231 575.033 381 1140"/>
+            </svg>
+        </div>
+        <div class="footer-grain" aria-hidden="true"></div>
         <div class="footer-inner">
             <div class="footer-intro">
                 <div class="footer-brand">
@@ -4723,12 +4783,53 @@
             // Scroll-driven arc on .cta-card top edge via clip-path ellipse.
             // progress 0 (just entering) → --cta-flatten = 0 → ellipse ry = 100% of card height (pronounced arc).
             // progress 1 (fully in view) → --cta-flatten = MAX → ellipse ry huge → top edge nearly flat.
+            // Footer curves draw-in on scroll (same mechanism as hero/cta)
+            (function() {
+                var footer = document.querySelector('.site-footer');
+                if (!footer) return;
+                var paths = Array.prototype.slice.call(footer.querySelectorAll('.footer-curve path'));
+                if (!paths.length) return;
+                var lens = [];
+                function measure() {
+                    lens = paths.map(function(p) {
+                        var len = typeof p.getTotalLength === 'function' ? p.getTotalLength() : 2420;
+                        if (len > 0) p.style.strokeDasharray = len + 'px';
+                        return len;
+                    });
+                }
+                measure();
+                setTimeout(measure, 100);
+                setTimeout(measure, 800);
+                var ticking = false;
+                function update() {
+                    ticking = false;
+                    var rect = footer.getBoundingClientRect();
+                    var vh = window.innerHeight || document.documentElement.clientHeight;
+                    var raw = (vh - rect.top) / vh;
+                    var progress = Math.max(0, Math.min(1, raw));
+                    paths.forEach(function(p, idx) {
+                        var len = lens[idx];
+                        if (!len) return;
+                        var offset = len * 0.605 * (1 - progress);
+                        p.style.strokeDashoffset = offset.toFixed(1) + 'px';
+                    });
+                }
+                function onScroll() {
+                    if (ticking) return;
+                    ticking = true;
+                    window.requestAnimationFrame(update);
+                }
+                window.addEventListener('scroll', onScroll, { passive: true });
+                window.addEventListener('resize', update);
+                update();
+            })();
+
             (function() {
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
-                // Ellipse ry range: 140% (curved) → 200% (slightly flatter, still visibly curved)
-                var RY_MIN = 140;
-                var RY_MAX = 200;
+                // Ellipse ry range: 102% (strong arc) → 110% (subtle arc, still visible)
+                var RY_MIN = 102;
+                var RY_MAX = 110;
                 var CURVE_INITIAL_RATIO = 0.605; // same as hero curves
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
