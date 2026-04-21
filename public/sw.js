@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422w'; // 2026-04-22 - footer buang curves (user revert), sisakan grain saja
+const CACHE_VERSION = '20260422x'; // 2026-04-22 - cta-card grain opacity turun (0.5→0.22), curves stroke lebih tegas
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
