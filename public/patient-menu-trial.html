@@ -4760,27 +4760,26 @@
                     var vh = window.innerHeight || document.documentElement.clientHeight;
                     var cardCenter = (rect.top + rect.bottom) / 2;
                     var vpCenter = vh / 2;
-                    // 0 when card center aligned with viewport center, 1+ when off-screen
+                    // centerness: 1 when card center aligned with viewport center, 0 when half-off or more
                     var distFromCenter = Math.abs(cardCenter - vpCenter) / vh;
-                    // scrollFactor: 0 centered → 1 half-off or more
-                    var scrollFactor = Math.min(1, distFromCenter * 2);
+                    var centerness = Math.max(0, 1 - distFromCenter * 2);
 
-                    // Arc depth: deep when entering/exiting, flat when centered
-                    var dip = DIP_MIN + (DIP_MAX - DIP_MIN) * scrollFactor;
+                    // Arc depth: deep (melengkung) saat entering/exiting, flat (lurus) saat centered
+                    var dip = DIP_MIN + (DIP_MAX - DIP_MIN) * (1 - centerness);
                     if (arcPath) {
                         arcPath.setAttribute('d',
                             'M 0 0 Q 0.5 ' + dip.toFixed(3) + ' 1 0 L 1 1 L 0 1 Z');
                     }
 
-                    // Curves: visible at entry/exit (scrollFactor high), hidden when centered (scrollFactor low)
+                    // Curves: HIDDEN saat entering/exiting, MUNCUL & berjalan saat card di tengah viewport
                     if (curvesWrap) {
-                        curvesWrap.style.opacity = scrollFactor.toFixed(3);
+                        curvesWrap.style.opacity = centerness.toFixed(3);
                     }
-                    // Draw-in effect tied to same scrollFactor (invert: more drawn = more hidden via dashoffset)
+                    // Draw-in: curves draw more as card approaches center (centerness 0→1)
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
                         if (!len) return;
-                        var offset = len * 0.35 * (1 - scrollFactor);
+                        var offset = len * 0.5 * (1 - centerness);
                         p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                     });
                 }
