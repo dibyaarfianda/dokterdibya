@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422ag'; // 2026-04-22 - cta-card: arc via clip-path: path() pixel-based JS (reliable animation), scroll down → valley to straight
+const CACHE_VERSION = '20260422ah'; // 2026-04-22 - cta-card: clearpath-style arc (border-top-radius animated curved→flat) + bg image parallax
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
