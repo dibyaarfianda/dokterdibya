@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422c'; // 2026-04-22 - patient-menu-trial: remove tagihan section, footer full-width desktop
+const CACHE_VERSION = '20260422d'; // 2026-04-22 - patient-menu-trial: 150px gap before footer, hide bottom-nav when footer visible
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
