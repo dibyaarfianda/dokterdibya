@@ -609,18 +609,24 @@
         /* ========== CTA CARD (Anvil-style) ========== */
         .cta-card {
             position: relative;
-            background:
+            /* Explicit dark background-color so updateNavContrast() reads it as dark
+               (it only samples backgroundColor, not backgroundImage) */
+            background-color: #111111;
+            background-image:
                 linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
-                url('/images/bg/tangan.avif') center center / cover no-repeat;
-            padding: 64px 24px;
+                url('/images/bg/tangan.avif');
+            background-position: center center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            padding: 128px 28px;
             margin-top: 80px;
             margin-bottom: 80px;
             min-height: 360px;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
-            text-align: center;
+            text-align: left;
             cursor: pointer;
             overflow: hidden;
             /* Break out of .screen max-width to span full viewport width */
@@ -635,8 +641,8 @@
         }
         @media (min-width: 768px) {
             .cta-card {
-                padding: 88px 32px;
-                min-height: 420px;
+                padding: 176px 80px;
+                min-height: 480px;
                 --cta-arc: 180px;
             }
         }
@@ -652,11 +658,12 @@
 
         .cta-sub {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.75);
             line-height: 1.6;
-            max-width: 340px;
-            margin: 0 auto 20px;
+            max-width: 420px;
+            margin: 0 0 20px;
             font-weight: 400;
+            text-align: left;
         }
 
         .cta-btn {
