@@ -632,8 +632,8 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
-            /* Scroll-driven arc on top edge (JS sets --cta-arc from 120 → 0 as user scrolls in) */
-            --cta-arc: 120px;
+            /* Scroll-driven arc on top edge (JS sets --cta-arc from max → 0 as user scrolls in) */
+            --cta-arc: 240px;
             border-top-left-radius: 50% var(--cta-arc);
             border-top-right-radius: 50% var(--cta-arc);
             will-change: border-radius;
@@ -642,7 +642,7 @@
             .cta-card {
                 padding: 176px 80px;
                 min-height: 100vh;
-                --cta-arc: 180px;
+                --cta-arc: 380px;
             }
         }
 
@@ -4635,7 +4635,7 @@
             (function() {
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
-                var MAX = window.matchMedia('(min-width: 768px)').matches ? 180 : 120;
+                var MAX = window.matchMedia('(min-width: 768px)').matches ? 380 : 240;
                 var ticking = false;
                 function update() {
                     ticking = false;
@@ -4655,7 +4655,7 @@
                 }
                 window.addEventListener('scroll', onScroll, { passive: true });
                 window.addEventListener('resize', function() {
-                    MAX = window.matchMedia('(min-width: 768px)').matches ? 180 : 120;
+                    MAX = window.matchMedia('(min-width: 768px)').matches ? 380 : 240;
                     update();
                 });
                 update();
