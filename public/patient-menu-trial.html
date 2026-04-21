@@ -630,9 +630,9 @@
             position: absolute;
             inset: 0;
             overflow: hidden;
-            border-radius: 50% 50% 0 0 / var(--cta-arc-h, 0px) var(--cta-arc-h, 0px) 0 0;
             z-index: 0;
-            will-change: border-radius;
+            /* clip-path is set by JS as path(...) — GPU-composited, smooth like stroke animations */
+            will-change: clip-path;
         }
         .cta-card .cta-bg-img {
             position: absolute;
@@ -4769,10 +4769,26 @@
                     var raw = (vh - rect.top) / vh;
                     var progress = Math.max(0, Math.min(1, raw));
 
-                    // Arc: max curved at entry (progress 0) → straight line (progress 1)
+                    // Arc (dome): peak at top-center (0,0), corners at (0,arcH)/(W,arcH).
+                    // clip-path: path() is GPU-composited → smooth animation.
                     var arcMax = isDesktop ? ARC_MAX_DESKTOP : ARC_MAX_MOBILE;
                     var arcH = arcMax * (1 - progress);
-                    if (bg) bg.style.setProperty('--cta-arc-h', arcH.toFixed(1) + 'px');
+                    if (bg) {
+                        var bgRect = bg.getBoundingClientRect();
+                        var W = bgRect.width;
+                        var H = bgRect.height;
+                        if (W > 1 && H > 1) {
+                            // Dome shape: quadratic from left corner to right corner, peak at top
+                            var d = 'M 0 ' + arcH.toFixed(1)
+                                  + ' Q ' + (W / 2).toFixed(1) + ' 0 '
+                                  + W.toFixed(1) + ' ' + arcH.toFixed(1)
+                                  + ' L ' + W.toFixed(1) + ' ' + H.toFixed(1)
+                                  + ' L 0 ' + H.toFixed(1) + ' Z';
+                            var clipVal = 'path("' + d + '")';
+                            bg.style.webkitClipPath = clipVal;
+                            bg.style.clipPath = clipVal;
+                        }
+                    }
 
                     // Parallax: as user scrolls card up through viewport, shift bg image up slower.
                     // translateY goes from 0 (card entering) to -PARALLAX_MAX (card scrolled past).

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422al'; // 2026-04-22 - cta-card: multi-source scroll sync (scroll/wheel/touch/interval) seperti hero, hapus CSS transition
+const CACHE_VERSION = '20260422am'; // 2026-04-22 - cta-card: arc pakai clip-path path() (GPU-composited, bukan border-radius yang trigger repaint)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
