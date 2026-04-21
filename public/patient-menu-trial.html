@@ -624,20 +624,30 @@
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
         }
-        /* Inner bg layer — clearpath-style valley arc.
-           clip-path is set by JS as path(...) in pixel coordinates (reliable animation,
-           unlike SVG clipPath reference which often doesn't re-render on d-attribute change). */
+        /* Clearpath-style section: outer .cta-bg has border-top-radius (animated curved → flat),
+           inner .cta-bg-img holds the image & moves via translateY for parallax. */
         .cta-card .cta-bg {
             position: absolute;
             inset: 0;
+            overflow: hidden;
+            border-top-left-radius: 50% var(--cta-arc-h, 0px);
+            border-top-right-radius: 50% var(--cta-arc-h, 0px);
+            z-index: 0;
+            will-change: border-top-left-radius, border-top-right-radius;
+        }
+        .cta-card .cta-bg-img {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: -15%;
+            height: 130%;
             background-image:
                 linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
                 url('/images/bg/tangan.avif');
             background-position: center center;
             background-size: cover;
             background-repeat: no-repeat;
-            z-index: 0;
-            will-change: clip-path;
+            will-change: transform;
         }
         @media (min-width: 768px) {
             .cta-card {
@@ -4425,7 +4435,9 @@
 
                 <!-- Booking CTA Card -->
                 <div class="cta-card">
-                    <div class="cta-bg" aria-hidden="true"></div>
+                    <div class="cta-bg" aria-hidden="true">
+                        <div class="cta-bg-img"></div>
+                    </div>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
                             <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
@@ -4725,14 +4737,13 @@
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
                 var bg = card.querySelector('.cta-bg');
+                var bgImg = card.querySelector('.cta-bg-img');
                 var curvesWrap = card.querySelector('.cta-curves');
-                var isDesktop = window.matchMedia('(min-width: 768px)').matches;
 
-                // Valley depth as a fraction of card height (positive = dip DOWN at middle).
-                // Entering viewport = DEEP valley. Centered = 0 (straight line).
-                var DIP_MAX_FRAC = 0.14;         // desktop deep valley
-                var DIP_MIN_FRAC = 0;            // centered = straight line
-                var DIP_MOBILE_FRAC = 0.05;      // mobile: static subtle valley
+                // Arc height range (px): curved when entering, straight when card top at viewport top.
+                var ARC_MAX_DESKTOP = 160;
+                var ARC_MAX_MOBILE = 90;
+                var PARALLAX_MAX = 120; // max translateY in px for bg image parallax
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
                 var curveLens = [];
@@ -4747,40 +4758,30 @@
                 setTimeout(measureCurves, 100);
                 setTimeout(measureCurves, 800);
 
-                function setArcByDipFrac(frac) {
-                    if (!bg) return;
-                    var rect = bg.getBoundingClientRect();
-                    var w = rect.width;
-                    var h = rect.height;
-                    if (w < 1 || h < 1) return;
-                    // Quadratic Bezier from (0, 0) to (w, 0) with control (w/2, frac*2*h).
-                    // The visible curve peak is at (w/2, frac*h) — so frac=0.14 ≈ 14% dip at middle.
-                    var ctrlY = frac * 2 * h;
-                    var d = 'M 0 0 Q ' + (w / 2).toFixed(1) + ' ' + ctrlY.toFixed(1)
-                          + ' ' + w.toFixed(1) + ' 0 L ' + w.toFixed(1) + ' ' + h.toFixed(1)
-                          + ' L 0 ' + h.toFixed(1) + ' Z';
-                    var val = 'path("' + d + '")';
-                    bg.style.webkitClipPath = val;
-                    bg.style.clipPath = val;
-                }
-
                 var ticking = false;
                 function update() {
                     ticking = false;
                     var rect = card.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight;
+                    var isDesktop = window.matchMedia('(min-width: 768px)').matches;
 
-                    // Desktop: arc animates. When card top is at bottom of viewport (just entering),
-                    // dip is max. As user scrolls down and card top moves up through the viewport,
-                    // dip shrinks to 0 (straight line) by the time card top reaches viewport top.
-                    if (isDesktop) {
-                        var raw = (vh - rect.top) / vh;  // 0 entering → 1 card top at viewport top
-                        var progress = Math.max(0, Math.min(1, raw));
-                        var frac = DIP_MAX_FRAC + (DIP_MIN_FRAC - DIP_MAX_FRAC) * progress;
-                        setArcByDipFrac(frac);
-                    } else {
-                        setArcByDipFrac(DIP_MOBILE_FRAC);
-                    }
+                    // Progress 0 when card top at bottom of viewport (just entering),
+                    // 1 when card top has reached top of viewport (fully anchored).
+                    var raw = (vh - rect.top) / vh;
+                    var progress = Math.max(0, Math.min(1, raw));
+
+                    // Arc: max curved at entry (progress 0) → straight line (progress 1)
+                    var arcMax = isDesktop ? ARC_MAX_DESKTOP : ARC_MAX_MOBILE;
+                    var arcH = arcMax * (1 - progress);
+                    if (bg) bg.style.setProperty('--cta-arc-h', arcH.toFixed(1) + 'px');
+
+                    // Parallax: as user scrolls card up through viewport, shift bg image up slower.
+                    // translateY goes from 0 (card entering) to -PARALLAX_MAX (card scrolled past).
+                    // Use full scroll range (card entering → card exiting top) for smoother feel.
+                    var fullRange = (vh - rect.top) / (vh + rect.height);
+                    fullRange = Math.max(0, Math.min(1, fullRange));
+                    var parallaxY = -PARALLAX_MAX * fullRange;
+                    if (bgImg) bgImg.style.transform = 'translate3d(0, ' + parallaxY.toFixed(1) + 'px, 0)';
 
                     // Curves: muncul & drawing saat card di tengah viewport
                     var cardCenter = (rect.top + rect.bottom) / 2;
@@ -4800,12 +4801,8 @@
                     window.requestAnimationFrame(update);
                 }
                 window.addEventListener('scroll', onScroll, { passive: true });
-                window.addEventListener('resize', function() {
-                    isDesktop = window.matchMedia('(min-width: 768px)').matches;
-                    update();
-                });
+                window.addEventListener('resize', update);
                 update();
-                // Run again after layout settles (content-wrapper unhidden)
                 setTimeout(update, 150);
                 setTimeout(update, 800);
             })();
