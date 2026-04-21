@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422ab'; // 2026-04-22 - cta-card: kurva lebih tegas (stroke putih solid, width 3), initial ratio 0.3 supaya selalu terlihat
+const CACHE_VERSION = '20260422ac'; // 2026-04-22 - cta-card: SVG clipPath quadratic arc (smooth full-width), curves hide saat card centered
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
