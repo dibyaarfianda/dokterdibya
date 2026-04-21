@@ -623,9 +623,9 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
-            --cta-arc-ry: 104%;
         }
-        /* Inner bg layer: holds image + gets SVG clipPath (smooth quadratic arc full width).
+        /* Inner bg layer — clearpath-style arc via border-top-radius (wide, smooth, static).
+           Large horizontal radius (50%) with moderate vertical radius creates the signature arc.
            Curves are OUTSIDE this layer so they are NOT clipped. */
         .cta-card .cta-bg {
             position: absolute;
@@ -636,9 +636,16 @@
             background-position: center center;
             background-size: cover;
             background-repeat: no-repeat;
-            clip-path: url(#cta-arc-clip);
-            -webkit-clip-path: url(#cta-arc-clip);
+            border-top-left-radius: 50% 100px;
+            border-top-right-radius: 50% 100px;
             z-index: 0;
+            overflow: hidden;
+        }
+        @media (min-width: 768px) {
+            .cta-card .cta-bg {
+                border-top-left-radius: 50% 140px;
+                border-top-right-radius: 50% 140px;
+            }
         }
         @media (min-width: 768px) {
             .cta-card {
@@ -4426,13 +4433,6 @@
 
                 <!-- Booking CTA Card -->
                 <div class="cta-card">
-                    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-                        <defs>
-                            <clipPath id="cta-arc-clip" clipPathUnits="objectBoundingBox">
-                                <path id="cta-arc-path" d="M 0 0 Q 0.5 0.18, 1 0 L 1 1 L 0 1 Z"/>
-                            </clipPath>
-                        </defs>
-                    </svg>
                     <div class="cta-bg" aria-hidden="true"></div>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
@@ -4732,13 +4732,7 @@
             (function() {
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
-                var arcPath = document.getElementById('cta-arc-path');
                 var curvesWrap = card.querySelector('.cta-curves');
-
-                // Arc depth range in objectBoundingBox units (quadratic control-point Y):
-                // DIP_MAX when card entering/exiting (strong arc), DIP_MIN when centered (flat).
-                var DIP_MAX = 0.16;
-                var DIP_MIN = 0.02;
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
                 var curveLens = [];
@@ -4760,22 +4754,11 @@
                     var vh = window.innerHeight || document.documentElement.clientHeight;
                     var cardCenter = (rect.top + rect.bottom) / 2;
                     var vpCenter = vh / 2;
-                    // centerness: 1 when card center aligned with viewport center, 0 when half-off or more
                     var distFromCenter = Math.abs(cardCenter - vpCenter) / vh;
                     var centerness = Math.max(0, 1 - distFromCenter * 2);
 
-                    // Arc depth: deep (melengkung) saat entering/exiting, flat (lurus) saat centered
-                    var dip = DIP_MIN + (DIP_MAX - DIP_MIN) * (1 - centerness);
-                    if (arcPath) {
-                        arcPath.setAttribute('d',
-                            'M 0 0 Q 0.5 ' + dip.toFixed(3) + ' 1 0 L 1 1 L 0 1 Z');
-                    }
-
-                    // Curves: HIDDEN saat entering/exiting, MUNCUL & berjalan saat card di tengah viewport
-                    if (curvesWrap) {
-                        curvesWrap.style.opacity = centerness.toFixed(3);
-                    }
-                    // Draw-in: curves draw more as card approaches center (centerness 0→1)
+                    // Curves muncul & drawing saat card di tengah viewport
+                    if (curvesWrap) curvesWrap.style.opacity = centerness.toFixed(3);
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
                         if (!len) return;
