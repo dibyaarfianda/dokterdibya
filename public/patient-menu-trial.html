@@ -4528,6 +4528,10 @@
                 <i class="fa-solid fa-book-open"></i>
                 <span>Edukasi</span>
             </a>
+            <a class="nav-item" onclick="navigateTo('jadwal')">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Jadwal</span>
+            </a>
         </div>
     </nav>
 
@@ -5323,6 +5327,15 @@
                     { icon: 'fa-solid fa-book-open', label: 'Nadi Pengetahuan', href: '/artikel.html' },
                     { icon: 'fa-solid fa-stethoscope', label: 'Mengenai istilah bidang Obgyn', href: '/artikel-kesehatan.html' }
                 ]
+            },
+            'jadwal': {
+                title: 'Jadwal',
+                icon: 'fa-solid fa-calendar-check',
+                items: [
+                    { icon: 'fa-solid fa-calendar-check', label: 'Booking Klinik Minggu', href: '/booking-klinik-trial.html' },
+                    { icon: 'fa-solid fa-hospital', label: 'Jadwal Rumah Sakit', href: '/jadwal-rs.html' },
+                    { icon: 'fa-solid fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan.html' }
+                ]
             }
         };
 
@@ -5331,7 +5344,8 @@
         var sheetAlign = {
             'dokumen': 'left',
             'aplikasi': 'center',
-            'edukasi': 'right'
+            'edukasi': 'right',
+            'jadwal': 'right'
         };
 
         function _showSheet(category, navBtn) {

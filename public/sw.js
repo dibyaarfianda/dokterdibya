@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422e'; // 2026-04-22 - patient-menu-trial: footer ke bawah tanpa white gap, hapus kolom layanan/informasi
+const CACHE_VERSION = '20260422f'; // 2026-04-22 - patient-menu-trial: kembalikan tombol Jadwal di bottom-nav
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
