@@ -3395,11 +3395,16 @@
         /* ========== SITE FOOTER ========== */
         .site-footer {
             margin-top: 150px;
-            padding: 40px 22px 28px;
+            padding: 40px 22px calc(env(safe-area-inset-bottom, 0px) + 28px);
             background: #0d0d0d;
             color: rgba(255, 255, 255, 0.78);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
+            /* Ensure footer bg paints down to page bottom */
+            margin-bottom: 0;
         }
+        /* Page bg behind footer = dark (prevents white below footer in overscroll/rubber-band) */
+        html { background-color: #0d0d0d !important; }
+        body { background-color: var(--bg-page) !important; }
         /* Hide bottom-nav when footer scrolled into view */
         body.footer-visible .bottom-nav,
         body.footer-visible .nav-blur-fade {
@@ -3518,15 +3523,12 @@
         /* Desktop: break out of screen container to full-viewport width + multi-col layout */
         @media (min-width: 768px) {
             .site-footer {
-                width: 100vw;
-                margin-left: calc(50% - 50vw);
-                margin-right: calc(50% - 50vw);
                 padding: 64px 56px 36px;
             }
             .site-footer .footer-inner {
                 display: grid;
-                grid-template-columns: minmax(280px, 1.4fr) 1fr 1fr 1.1fr;
-                gap: 48px;
+                grid-template-columns: minmax(320px, 1.6fr) minmax(260px, 1fr);
+                gap: 64px;
                 align-items: start;
             }
             .site-footer .footer-intro .footer-brand { margin-bottom: 18px; }
@@ -4409,65 +4411,49 @@
                 </div>
             </div>
 
-            <!-- Site Footer -->
-            <footer class="site-footer">
-                <div class="footer-inner">
-                    <div class="footer-intro">
-                        <div class="footer-brand">
-                            <div class="footer-logo">dD</div>
-                            <div>
-                                <div class="footer-brand-name">dokterDIBYA</div>
-                                <div class="footer-brand-sub">Patient Portal</div>
-                            </div>
-                        </div>
-                        <p class="footer-tagline">
-                            Portal privat kandungan Anda — konsultasi, jadwal, rekam medis,
-                            dan pengingat vitamin dalam satu tempat.
-                        </p>
-                    </div>
-
-                    <div class="footer-links">
-                        <div class="footer-col">
-                            <h5>Layanan</h5>
-                            <a href="/booking-klinik-trial.html">Booking Klinik</a>
-                            <a href="/jadwal-rs.html">Jadwal Rumah Sakit</a>
-                            <a href="/riwayat-kunjungan.html">Riwayat Kunjungan</a>
-                            <a href="/jadwal-vitamin.html">Jadwal Vitamin</a>
-                        </div>
-                        <div class="footer-col">
-                            <h5>Informasi</h5>
-                            <a href="/artikel-kesehatan.html">Artikel Kesehatan</a>
-                            <a href="/patient-announcements.html">Pengumuman</a>
-                            <a href="/tanya-dokter.html">Tanya Dokter</a>
-                            <a href="/patient-profile.html">Profil Saya</a>
-                        </div>
-                    </div>
-
-                    <div class="footer-contact">
-                        <h5 class="footer-contact-title">Kontak</h5>
-                        <a href="https://wa.me/6281234567890" class="footer-contact-item">
-                            <i class="fa-brands fa-whatsapp"></i>
-                            <span>WhatsApp Klinik</span>
-                        </a>
-                        <a href="mailto:admin@dokterdibya.com" class="footer-contact-item">
-                            <i class="fa-solid fa-envelope"></i>
-                            <span>admin@dokterdibya.com</span>
-                        </a>
-                        <div class="footer-contact-item">
-                            <i class="fa-solid fa-location-dot"></i>
-                            <span>Kediri, Jawa Timur</span>
-                        </div>
-                    </div>
-
-                    <div class="footer-bottom">
-                        <span>&copy; 2026 dokterDIBYA</span>
-                        <span class="dot-sep">•</span>
-                        <span>Portal v2.0</span>
-                    </div>
-                </div>
-            </footer>
         </div>
     </main>
+
+    <!-- Site Footer (outside .screen so its padding-bottom doesn't leak white space below) -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-intro">
+                <div class="footer-brand">
+                    <div class="footer-logo">dD</div>
+                    <div>
+                        <div class="footer-brand-name">dokterDIBYA</div>
+                        <div class="footer-brand-sub">Patient Portal</div>
+                    </div>
+                </div>
+                <p class="footer-tagline">
+                    Portal privat kandungan Anda — konsultasi, jadwal, rekam medis,
+                    dan pengingat vitamin dalam satu tempat.
+                </p>
+            </div>
+
+            <div class="footer-contact">
+                <h5 class="footer-contact-title">Kontak</h5>
+                <a href="https://wa.me/6281234567890" class="footer-contact-item">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    <span>WhatsApp Klinik</span>
+                </a>
+                <a href="mailto:admin@dokterdibya.com" class="footer-contact-item">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>admin@dokterdibya.com</span>
+                </a>
+                <div class="footer-contact-item">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>Kediri, Jawa Timur</span>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>&copy; 2026 dokterDIBYA</span>
+                <span class="dot-sep">•</span>
+                <span>Portal v2.0</span>
+            </div>
+        </div>
+    </footer>
 
     <!-- iOS PWA Install Prompt -->
     <div class="ios-install-prompt-overlay" id="ios-install-overlay" onclick="dismissIosInstallPrompt()"></div>
