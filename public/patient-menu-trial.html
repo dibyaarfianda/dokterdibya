@@ -3394,11 +3394,19 @@
 
         /* ========== SITE FOOTER ========== */
         .site-footer {
-            margin-top: 48px;
+            margin-top: 150px;
             padding: 40px 22px 28px;
             background: #0d0d0d;
             color: rgba(255, 255, 255, 0.78);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Hide bottom-nav when footer scrolled into view */
+        body.footer-visible .bottom-nav,
+        body.footer-visible .nav-blur-fade {
+            transform: translateY(100%) !important;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.35s ease, opacity 0.35s ease !important;
         }
         /* Inner wrapper constrains content while footer bg goes edge-to-edge on desktop */
         .site-footer .footer-inner {
@@ -4590,6 +4598,18 @@
 
         // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Hide bottom-nav when footer is visible (scroll to bottom)
+            (function() {
+                var footer = document.querySelector('.site-footer');
+                if (!footer || !('IntersectionObserver' in window)) return;
+                var io = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(e) {
+                        document.body.classList.toggle('footer-visible', e.isIntersecting);
+                    });
+                }, { root: null, threshold: 0.01, rootMargin: '0px 0px -40px 0px' });
+                io.observe(footer);
+            })();
+
             const LIVE_UPDATE_KEY = 'trial_sw_updated_at';
 
             function showLiveUpdateBadge(text) {
