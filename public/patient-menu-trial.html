@@ -3400,6 +3400,14 @@
             color: rgba(255, 255, 255, 0.78);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
+        /* Inner wrapper constrains content while footer bg goes edge-to-edge on desktop */
+        .site-footer .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .site-footer .footer-contact-title {
+            display: none;
+        }
         .site-footer .footer-brand {
             display: flex;
             align-items: center;
@@ -3498,6 +3506,54 @@
         .site-footer .footer-bottom .dot-sep {
             margin: 0 8px;
             opacity: 0.5;
+        }
+        /* Desktop: break out of screen container to full-viewport width + multi-col layout */
+        @media (min-width: 768px) {
+            .site-footer {
+                width: 100vw;
+                margin-left: calc(50% - 50vw);
+                margin-right: calc(50% - 50vw);
+                padding: 64px 56px 36px;
+            }
+            .site-footer .footer-inner {
+                display: grid;
+                grid-template-columns: minmax(280px, 1.4fr) 1fr 1fr 1.1fr;
+                gap: 48px;
+                align-items: start;
+            }
+            .site-footer .footer-intro .footer-brand { margin-bottom: 18px; }
+            .site-footer .footer-tagline { margin-bottom: 0; max-width: none; }
+            .site-footer .footer-links {
+                display: contents;
+            }
+            .site-footer .footer-contact {
+                border: none;
+                padding: 0;
+                margin: 0;
+                gap: 10px;
+            }
+            .site-footer .footer-contact-title {
+                display: block;
+                font-size: 11px;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.9);
+                margin: 0 0 4px;
+                font-weight: 700;
+            }
+            .site-footer .footer-col h5,
+            .site-footer .footer-contact-title { margin-top: 4px; }
+            .site-footer .footer-bottom {
+                grid-column: 1 / -1;
+                padding-top: 28px;
+                margin-top: 24px;
+                border-top: 1px solid rgba(255, 255, 255, 0.08);
+                text-align: left;
+            }
+        }
+        @media (min-width: 1200px) {
+            .site-footer { padding: 72px 80px 40px; }
+            .site-footer .footer-inner { gap: 64px; }
         }
 
         /* ========== TOAST ========== */
@@ -4309,17 +4365,6 @@
                     </div>
                 </section>
 
-                <!-- TAGIHAN (hidden by default) -->
-                <div id="menu-tagihan" style="display:none;">
-                    <div class="section-title">Tagihan</div>
-                    <div class="menu-grid">
-                        <div class="menu-card" onclick="window.location.href='/patient-billing.html'">
-                            <div class="menu-icon"><i class="fa-solid fa-credit-card"></i></div>
-                            <h3>Bayar Online</h3>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
             <!-- Notification Permission Banner -->
@@ -4358,55 +4403,59 @@
 
             <!-- Site Footer -->
             <footer class="site-footer">
-                <div class="footer-brand">
-                    <div class="footer-logo">dD</div>
-                    <div>
-                        <div class="footer-brand-name">dokterDIBYA</div>
-                        <div class="footer-brand-sub">Patient Portal</div>
+                <div class="footer-inner">
+                    <div class="footer-intro">
+                        <div class="footer-brand">
+                            <div class="footer-logo">dD</div>
+                            <div>
+                                <div class="footer-brand-name">dokterDIBYA</div>
+                                <div class="footer-brand-sub">Patient Portal</div>
+                            </div>
+                        </div>
+                        <p class="footer-tagline">
+                            Portal privat kandungan Anda — konsultasi, jadwal, rekam medis,
+                            dan pengingat vitamin dalam satu tempat.
+                        </p>
                     </div>
-                </div>
 
-                <p class="footer-tagline">
-                    Portal privat kandungan Anda — konsultasi, jadwal, rekam medis,
-                    dan pengingat vitamin dalam satu tempat.
-                </p>
-
-                <div class="footer-links">
-                    <div class="footer-col">
-                        <h5>Layanan</h5>
-                        <a href="/booking-klinik-trial.html">Booking Klinik</a>
-                        <a href="/jadwal-rs.html">Jadwal Rumah Sakit</a>
-                        <a href="/riwayat-kunjungan.html">Riwayat Kunjungan</a>
-                        <a href="/jadwal-vitamin.html">Jadwal Vitamin</a>
+                    <div class="footer-links">
+                        <div class="footer-col">
+                            <h5>Layanan</h5>
+                            <a href="/booking-klinik-trial.html">Booking Klinik</a>
+                            <a href="/jadwal-rs.html">Jadwal Rumah Sakit</a>
+                            <a href="/riwayat-kunjungan.html">Riwayat Kunjungan</a>
+                            <a href="/jadwal-vitamin.html">Jadwal Vitamin</a>
+                        </div>
+                        <div class="footer-col">
+                            <h5>Informasi</h5>
+                            <a href="/artikel-kesehatan.html">Artikel Kesehatan</a>
+                            <a href="/patient-announcements.html">Pengumuman</a>
+                            <a href="/tanya-dokter.html">Tanya Dokter</a>
+                            <a href="/patient-profile.html">Profil Saya</a>
+                        </div>
                     </div>
-                    <div class="footer-col">
-                        <h5>Informasi</h5>
-                        <a href="/artikel-kesehatan.html">Artikel Kesehatan</a>
-                        <a href="/patient-announcements.html">Pengumuman</a>
-                        <a href="/tanya-dokter.html">Tanya Dokter</a>
-                        <a href="/patient-profile.html">Profil Saya</a>
-                    </div>
-                </div>
 
-                <div class="footer-contact">
-                    <a href="https://wa.me/6281234567890" class="footer-contact-item">
-                        <i class="fa-brands fa-whatsapp"></i>
-                        <span>WhatsApp Klinik</span>
-                    </a>
-                    <a href="mailto:admin@dokterdibya.com" class="footer-contact-item">
-                        <i class="fa-solid fa-envelope"></i>
-                        <span>admin@dokterdibya.com</span>
-                    </a>
-                    <div class="footer-contact-item">
-                        <i class="fa-solid fa-location-dot"></i>
-                        <span>Kediri, Jawa Timur</span>
+                    <div class="footer-contact">
+                        <h5 class="footer-contact-title">Kontak</h5>
+                        <a href="https://wa.me/6281234567890" class="footer-contact-item">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            <span>WhatsApp Klinik</span>
+                        </a>
+                        <a href="mailto:admin@dokterdibya.com" class="footer-contact-item">
+                            <i class="fa-solid fa-envelope"></i>
+                            <span>admin@dokterdibya.com</span>
+                        </a>
+                        <div class="footer-contact-item">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span>Kediri, Jawa Timur</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="footer-bottom">
-                    <span>&copy; 2026 dokterDIBYA</span>
-                    <span class="dot-sep">•</span>
-                    <span>Portal v2.0</span>
+                    <div class="footer-bottom">
+                        <span>&copy; 2026 dokterDIBYA</span>
+                        <span class="dot-sep">•</span>
+                        <span>Portal v2.0</span>
+                    </div>
                 </div>
             </footer>
         </div>
@@ -4859,12 +4908,6 @@
                             document.getElementById('welcome-toggle-icon').classList.remove('fa-chevron-up');
                             document.getElementById('welcome-toggle-icon').classList.add('fa-chevron-down');
                         }
-                    }
-
-                    // Show Tagihan menu for trial patient
-                    if (profile.id === 'P2025091') {
-                        var menuTagihan = document.getElementById('menu-tagihan');
-                        if (menuTagihan) menuTagihan.style.display = '';
                     }
 
                     // Check subscription for VIP badge
