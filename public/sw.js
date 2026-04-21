@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422y'; // 2026-04-22 - cta-card hapus grain overlay (menutupi kurva)
+const CACHE_VERSION = '20260422z'; // 2026-04-22 - hapus section Aktifkan Notifikasi
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
