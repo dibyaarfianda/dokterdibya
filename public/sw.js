@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422aj'; // 2026-04-22 - cta-card: arc smooth (short transition), curves slower reveal (2× scroll range)
+const CACHE_VERSION = '20260422ak'; // 2026-04-22 - journey-showcase-title font-size lebih kecil
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
