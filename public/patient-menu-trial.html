@@ -3392,15 +3392,112 @@
             border: 2px solid var(--bg-surface);
         }
 
-        /* ========== VERSION FOOTER ========== */
-        .version-footer {
+        /* ========== SITE FOOTER ========== */
+        .site-footer {
+            margin-top: 48px;
+            padding: 40px 22px 28px;
+            background: #0d0d0d;
+            color: rgba(255, 255, 255, 0.78);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .site-footer .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .site-footer .footer-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111;
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 0.04em;
+        }
+        .site-footer .footer-brand-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.02em;
+        }
+        .site-footer .footer-brand-sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.55);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .site-footer .footer-tagline {
+            font-size: 13px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.65);
+            margin: 0 0 24px;
+            max-width: 420px;
+        }
+        .site-footer .footer-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px 18px;
+            margin-bottom: 26px;
+        }
+        .site-footer .footer-col h5 {
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0 0 10px;
+            font-weight: 700;
+        }
+        .site-footer .footer-col a {
+            display: block;
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 13px;
+            text-decoration: none;
+            padding: 4px 0;
+            transition: color 0.2s;
+        }
+        .site-footer .footer-col a:hover,
+        .site-footer .footer-col a:active {
+            color: #fff;
+        }
+        .site-footer .footer-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 18px;
+        }
+        .site-footer .footer-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12.5px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+        .site-footer .footer-contact-item i {
+            width: 16px;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 13px;
+        }
+        .site-footer .footer-bottom {
             text-align: center;
-            padding: 18px 16px 28px;
-            color: var(--text-muted);
             font-size: 10px;
             letter-spacing: 0.14em;
             text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
             font-weight: 600;
+        }
+        .site-footer .footer-bottom .dot-sep {
+            margin: 0 8px;
+            opacity: 0.5;
         }
 
         /* ========== TOAST ========== */
@@ -4212,37 +4309,6 @@
                     </div>
                 </section>
 
-                <!-- JADWAL (Flair PROCES layout) -->
-                <div class="proces-section">
-                    <div class="proces-header">
-                        <h2>Jadwal & Kunjungan</h2>
-                        <p>Booking klinik, lihat jadwal rumah sakit, dan akses riwayat kunjungan Anda.</p>
-                    </div>
-
-
-                    <a href="/booking-klinik-trial.html" class="proces-row">
-                        <span class="proces-step">Langkah 1</span>
-                        <h3 class="proces-title">BOOKING KLINIK MINGGU</h3>
-                        <p class="proces-desc">Pesan slot konsultasi dengan dr. Dibya setiap hari Minggu. Pilih waktu yang tersedia, konfirmasi langsung, dan datang sesuai jadwal Anda.</p>
-                    </a>
-
-
-                    <a href="/jadwal-rs.html" class="proces-row">
-                        <span class="proces-step">Langkah 2</span>
-                        <h3 class="proces-title">JADWAL RUMAH SAKIT</h3>
-                        <p class="proces-desc">Lihat jadwal praktik dr. Dibya di berbagai rumah sakit — RSIA Melinda, RSUD Gambiran, dan RS Bhayangkara. Rencanakan kunjungan dengan mudah.</p>
-                    </a>
-
-
-                    <a href="/riwayat-kunjungan.html" class="proces-row">
-                        <span class="proces-step">Langkah 3</span>
-                        <h3 class="proces-title">RIWAYAT KUNJUNGAN</h3>
-                        <p class="proces-desc">Rekam jejak setiap kunjungan Anda tersimpan rapi — tanggal, lokasi rumah sakit, dan catatan medis bisa diakses kapan saja dari portal ini.</p>
-                    </a>
-
-                    <div class="proces-spacer"></div>
-                </div>
-
                 <!-- TAGIHAN (hidden by default) -->
                 <div id="menu-tagihan" style="display:none;">
                     <div class="section-title">Tagihan</div>
@@ -4290,10 +4356,59 @@
                 </div>
             </div>
 
-            <!-- Version Footer -->
-            <div class="version-footer">
-                <p>dokterDIBYA Patient Portal v2.0</p>
-            </div>
+            <!-- Site Footer -->
+            <footer class="site-footer">
+                <div class="footer-brand">
+                    <div class="footer-logo">dD</div>
+                    <div>
+                        <div class="footer-brand-name">dokterDIBYA</div>
+                        <div class="footer-brand-sub">Patient Portal</div>
+                    </div>
+                </div>
+
+                <p class="footer-tagline">
+                    Portal privat kandungan Anda — konsultasi, jadwal, rekam medis,
+                    dan pengingat vitamin dalam satu tempat.
+                </p>
+
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h5>Layanan</h5>
+                        <a href="/booking-klinik-trial.html">Booking Klinik</a>
+                        <a href="/jadwal-rs.html">Jadwal Rumah Sakit</a>
+                        <a href="/riwayat-kunjungan.html">Riwayat Kunjungan</a>
+                        <a href="/jadwal-vitamin.html">Jadwal Vitamin</a>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Informasi</h5>
+                        <a href="/artikel-kesehatan.html">Artikel Kesehatan</a>
+                        <a href="/patient-announcements.html">Pengumuman</a>
+                        <a href="/tanya-dokter.html">Tanya Dokter</a>
+                        <a href="/patient-profile.html">Profil Saya</a>
+                    </div>
+                </div>
+
+                <div class="footer-contact">
+                    <a href="https://wa.me/6281234567890" class="footer-contact-item">
+                        <i class="fa-brands fa-whatsapp"></i>
+                        <span>WhatsApp Klinik</span>
+                    </a>
+                    <a href="mailto:admin@dokterdibya.com" class="footer-contact-item">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>admin@dokterdibya.com</span>
+                    </a>
+                    <div class="footer-contact-item">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span>Kediri, Jawa Timur</span>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <span>&copy; 2026 dokterDIBYA</span>
+                    <span class="dot-sep">•</span>
+                    <span>Portal v2.0</span>
+                </div>
+            </footer>
         </div>
     </main>
 

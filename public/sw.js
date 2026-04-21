@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260420i'; // 2026-04-20 - announcements-container bg transparent for seamless bg transition
+const CACHE_VERSION = '20260422a'; // 2026-04-22 - patient-menu-trial: remove jadwal & kunjungan, add new footer
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
