@@ -632,12 +632,12 @@
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
-            /* Scroll-driven arc on top edge via single elliptical clip-path
-               (no border-radius kink at center — smooth continuous curve like Clearpath).
-               JS grows --cta-flatten as user scrolls in → ellipse gets taller than element → arc flattens. */
-            --cta-flatten: 0px;
-            clip-path: ellipse(140% calc(100% + var(--cta-flatten)) at 50% 100%);
-            -webkit-clip-path: ellipse(140% calc(100% + var(--cta-flatten)) at 50% 100%);
+            /* Permanent continuous arc on top edge via single elliptical clip-path (no kink).
+               --cta-arc-ry base 140% = noticeably curved. JS grows it mildly on scroll (max ~200%)
+               so top looks slightly flatter when card is fully in view, but never fully flat. */
+            --cta-arc-ry: 140%;
+            clip-path: ellipse(150% var(--cta-arc-ry) at 50% 100%);
+            -webkit-clip-path: ellipse(150% var(--cta-arc-ry) at 50% 100%);
             will-change: clip-path;
         }
         @media (min-width: 768px) {
@@ -647,7 +647,8 @@
             }
         }
 
-        /* Clearpath-style curves inside cta-card, stroke draws on scroll */
+        /* Clearpath-style curves inside cta-card, stroke draws on scroll.
+           z-index: 2 → above background image AND grain overlay (::after z-index:1). */
         .cta-card .cta-curves {
             position: absolute;
             top: 0;
@@ -657,7 +658,7 @@
             max-width: 100vw;
             height: 100%;
             pointer-events: none;
-            z-index: 0;
+            z-index: 2;
         }
         .cta-card .cta-curve {
             position: absolute;
@@ -677,7 +678,7 @@
         }
         .cta-card .cta-content {
             position: relative;
-            z-index: 1;
+            z-index: 3;
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -723,7 +724,7 @@
             mix-blend-mode: soft-light;
             opacity: 0.5;
             pointer-events: none;
-            z-index: 0;
+            z-index: 1;
         }
 
         .cta-heading {
@@ -4725,35 +4726,43 @@
             (function() {
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
-                var MAX_FLATTEN = 4000; // px — ellipse ry offset; huge → near-flat top
-                var CURVE_INITIAL_RATIO = 0.605; // same as hero curves (60.5% hidden initially)
+                // Ellipse ry range: 140% (curved) → 200% (slightly flatter, still visibly curved)
+                var RY_MIN = 140;
+                var RY_MAX = 200;
+                var CURVE_INITIAL_RATIO = 0.605; // same as hero curves
 
-                // Setup stroke-dasharray on curves for draw-in effect
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
-                var curveLens = curvePaths.map(function(p) {
-                    var len = typeof p.getTotalLength === 'function' ? p.getTotalLength() : 2420;
-                    p.style.strokeDasharray = len + 'px';
-                    return len;
-                });
+                var curveLens = [];
+
+                function measureCurves() {
+                    curveLens = curvePaths.map(function(p) {
+                        var len = typeof p.getTotalLength === 'function' ? p.getTotalLength() : 2420;
+                        if (len > 0) p.style.strokeDasharray = len + 'px';
+                        return len;
+                    });
+                }
+                measureCurves();
+                // Re-measure after content-wrapper becomes visible (initial render may be display:none)
+                setTimeout(measureCurves, 100);
+                setTimeout(measureCurves, 800);
 
                 var ticking = false;
                 function update() {
                     ticking = false;
                     var rect = card.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight;
-                    var flattenAt = vh * 0.4;
-                    var raw = (vh - rect.top) / (vh - flattenAt);
-                    var progress = Math.max(0, Math.min(1, raw));
-                    var flatten = progress * MAX_FLATTEN;
-                    card.style.setProperty('--cta-flatten', flatten.toFixed(0) + 'px');
 
-                    // Draw curves: extend as user scrolls card in (0 → full visible).
-                    // Use wider window than flatten so curves keep drawing even after top flattens.
-                    var drawRaw = (vh - rect.top) / vh;
-                    var drawProgress = Math.max(0, Math.min(1, drawRaw));
+                    // Clip-path arc: progress 0 (entering) → RY_MIN, progress 1 (fully in) → RY_MAX
+                    var raw = (vh - rect.top) / vh;
+                    var progress = Math.max(0, Math.min(1, raw));
+                    var ry = RY_MIN + (RY_MAX - RY_MIN) * progress;
+                    card.style.setProperty('--cta-arc-ry', ry.toFixed(1) + '%');
+
+                    // SVG curves draw-in: progress 0 → partially drawn, progress 1 → fully drawn
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
-                        var offset = len * CURVE_INITIAL_RATIO * (1 - drawProgress);
+                        if (!len) return;
+                        var offset = len * CURVE_INITIAL_RATIO * (1 - progress);
                         p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                     });
                 }

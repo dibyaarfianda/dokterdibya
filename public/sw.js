@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422t'; // 2026-04-22 - cta-card booking button tuning (text mepet kiri, dot mepet kanan, hover shift lebih kecil)
+const CACHE_VERSION = '20260422u'; // 2026-04-22 - cta-card fix: curves above grain, arc permanen, re-measure curves after render
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
