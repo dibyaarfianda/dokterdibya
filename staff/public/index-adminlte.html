@@ -1470,7 +1470,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v62'; // Increment this to force refresh - SweetAlert2 for kelola pasien actions
+            const CACHE_VERSION = 'v63'; // Increment this to force refresh - loading overlay on purchase stock submit
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -10128,6 +10128,10 @@ Apakah Anda yakin ingin melanjutkan?`;
     });
 
     window.submitPurchaseStock = async function() {
+        const submitBtn = document.getElementById('purchase-submit-btn');
+        const cancelBtn = document.getElementById('purchase-cancel-btn');
+        if (submitBtn?.dataset.submitting === '1') return;
+
         const obatId = document.getElementById('purchase-obat-id').value;
         const supplierId = document.getElementById('purchase-supplier').value;
         const quantity = document.getElementById('purchase-quantity').value;
@@ -10151,6 +10155,15 @@ Apakah Anda yakin ingin melanjutkan?`;
             showWarning('Tanggal pembelian harus diisi');
             return;
         }
+
+        const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.dataset.submitting = '1';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span>Menyimpan...';
+        }
+        if (cancelBtn) cancelBtn.disabled = true;
+        showPurchaseStockLoading(true);
 
         try {
             const token = localStorage.getItem('vps_auth_token');
@@ -10191,8 +10204,32 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
         } catch (error) {
             showError('Error: ' + error.message);
+        } finally {
+            if (submitBtn) {
+                submitBtn.dataset.submitting = '0';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnHTML;
+            }
+            if (cancelBtn) cancelBtn.disabled = false;
+            showPurchaseStockLoading(false);
         }
     };
+
+    function showPurchaseStockLoading(show) {
+        let overlay = document.getElementById('purchase-stock-loading-overlay');
+        if (show) {
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'purchase-stock-loading-overlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:20000;display:flex;align-items:center;justify-content:center;';
+                overlay.innerHTML = '<div style="background:#fff;padding:24px 32px;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,0.25);display:flex;flex-direction:column;align-items:center;gap:12px;min-width:200px;"><div class="spinner-border text-success" role="status" style="width:3rem;height:3rem;"></div><div style="font-weight:500;color:#333;">Menyimpan...</div><div style="font-size:12px;color:#888;">Mohon tunggu, jangan tutup</div></div>';
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+        } else if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
 
     // Kelola Tindakan (Pengaturan) Page Function
     window.showPengaturanPage = function() {
@@ -12059,8 +12096,8 @@ async function deleteCode(codeId) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-success" onclick="submitPurchaseStock()">
+                <button type="button" class="btn btn-secondary" id="purchase-cancel-btn" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" id="purchase-submit-btn" onclick="submitPurchaseStock()">
                     <i class="fas fa-save mr-1"></i>Simpan
                 </button>
             </div>
