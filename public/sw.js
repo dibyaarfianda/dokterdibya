@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422ae'; // 2026-04-22 - cta-card: arc pakai simple border-top-radius static (clearpath-style)
+const CACHE_VERSION = '20260422af'; // 2026-04-22 - cta-card: SVG clipPath valley arc, desktop animated (deep→shallow), mobile static
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

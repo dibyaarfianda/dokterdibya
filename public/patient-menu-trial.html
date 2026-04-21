@@ -624,9 +624,8 @@
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
         }
-        /* Inner bg layer — clearpath-style arc via border-top-radius (wide, smooth, static).
-           Large horizontal radius (50%) with moderate vertical radius creates the signature arc.
-           Curves are OUTSIDE this layer so they are NOT clipped. */
+        /* Inner bg layer — clearpath-style valley arc via SVG clipPath.
+           Top-middle dips DOWN (not a dome). Path control-point Y is animated on desktop via JS. */
         .cta-card .cta-bg {
             position: absolute;
             inset: 0;
@@ -636,16 +635,9 @@
             background-position: center center;
             background-size: cover;
             background-repeat: no-repeat;
-            border-top-left-radius: 50% 100px;
-            border-top-right-radius: 50% 100px;
+            -webkit-clip-path: url(#cta-arc-clip);
+            clip-path: url(#cta-arc-clip);
             z-index: 0;
-            overflow: hidden;
-        }
-        @media (min-width: 768px) {
-            .cta-card .cta-bg {
-                border-top-left-radius: 50% 140px;
-                border-top-right-radius: 50% 140px;
-            }
         }
         @media (min-width: 768px) {
             .cta-card {
@@ -4433,6 +4425,13 @@
 
                 <!-- Booking CTA Card -->
                 <div class="cta-card">
+                    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+                        <defs>
+                            <clipPath id="cta-arc-clip" clipPathUnits="objectBoundingBox">
+                                <path id="cta-arc-path" d="M 0 0.04 Q 0.5 -0.03 1 0.04 L 1 1 L 0 1 Z"/>
+                            </clipPath>
+                        </defs>
+                    </svg>
                     <div class="cta-bg" aria-hidden="true"></div>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
@@ -4733,6 +4732,15 @@
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
                 var curvesWrap = card.querySelector('.cta-curves');
+                var arcPath = document.getElementById('cta-arc-path');
+                var isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
+                // Arc dip range (objectBoundingBox units — control-point Y of quadratic curve).
+                // Negative values = deeper valley (dip more pronounced at top-middle).
+                // Entering viewport: DEEP valley. Centered: SHALLOW / near-flat.
+                var DIP_ENTER_DESKTOP = -0.06;
+                var DIP_CENTER_DESKTOP = -0.01;
+                var DIP_STATIC_MOBILE = -0.03; // mobile: static, no animation
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
                 var curveLens = [];
@@ -4747,6 +4755,16 @@
                 setTimeout(measureCurves, 100);
                 setTimeout(measureCurves, 800);
 
+                function setArcDip(dip) {
+                    if (!arcPath) return;
+                    // Top baseline stays at y=0.04; control-point Y = dip (negative dips higher above top)
+                    // Visible valley depth at middle ≈ (0.04 + dip) / 2 pushed down from the baseline.
+                    arcPath.setAttribute('d',
+                        'M 0 0.04 Q 0.5 ' + dip.toFixed(3) + ' 1 0.04 L 1 1 L 0 1 Z');
+                }
+                // Mobile: set static arc once, no animation
+                if (!isDesktop) setArcDip(DIP_STATIC_MOBILE);
+
                 var ticking = false;
                 function update() {
                     ticking = false;
@@ -4757,7 +4775,13 @@
                     var distFromCenter = Math.abs(cardCenter - vpCenter) / vh;
                     var centerness = Math.max(0, 1 - distFromCenter * 2);
 
-                    // Curves muncul & drawing saat card di tengah viewport
+                    // Desktop only: animate arc — deep valley on entry/exit, shallow when centered
+                    if (isDesktop) {
+                        var dip = DIP_ENTER_DESKTOP + (DIP_CENTER_DESKTOP - DIP_ENTER_DESKTOP) * centerness;
+                        setArcDip(dip);
+                    }
+
+                    // Curves: muncul & drawing saat card di tengah viewport (both mobile & desktop)
                     if (curvesWrap) curvesWrap.style.opacity = centerness.toFixed(3);
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
@@ -4772,7 +4796,11 @@
                     window.requestAnimationFrame(update);
                 }
                 window.addEventListener('scroll', onScroll, { passive: true });
-                window.addEventListener('resize', update);
+                window.addEventListener('resize', function() {
+                    isDesktop = window.matchMedia('(min-width: 768px)').matches;
+                    if (!isDesktop) setArcDip(DIP_STATIC_MOBILE);
+                    update();
+                });
                 update();
             })();
 
