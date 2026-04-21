@@ -632,38 +632,26 @@
             overflow: hidden;
             z-index: 0;
         }
-        /* Arc technique: TWO white quarter-ellipse overlays at top-left & top-right corners.
-           Their curved inner edges meet at top-center (peak), creating a DOME shape where dark
-           bg peaks at middle. Entire overlay animated via transform: scaleY() — pure GPU-composited.
-           scaleY(1) = full dome → dark bg peaks at center. scaleY(0) = collapsed → flat edge. */
+        /* Arc: white SVG overlay with cubic-bezier bottom edge (horizontal tangent at peak → smooth).
+           Path is STATIC (defined once in DOM), only transform: scaleY animates → GPU-composited.
+           Cubic control points have y < 0 (above viewBox) so peak is exactly at y=0 (top flush).
+           At scaleY(1): full dome visible on dark bg. scaleY(0): collapsed → flat seamless edge. */
         .cta-card .cta-arc-mask {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 90px;
+            height: 120px;
             pointer-events: none;
-            display: flex;
             transform-origin: center top;
             transform: scaleY(var(--cta-arc-scale, 1));
             z-index: 2;
             will-change: transform;
-        }
-        .cta-card .cta-arc-mask::before,
-        .cta-card .cta-arc-mask::after {
-            content: '';
-            flex: 1;
-            height: 100%;
-            background: var(--bg-page, #ffffff);
-        }
-        .cta-card .cta-arc-mask::before {
-            border-bottom-right-radius: 100% 100%;
-        }
-        .cta-card .cta-arc-mask::after {
-            border-bottom-left-radius: 100% 100%;
+            display: block;
+            overflow: visible;
         }
         @media (min-width: 768px) {
-            .cta-card .cta-arc-mask { height: 140px; }
+            .cta-card .cta-arc-mask { height: 180px; }
         }
         .cta-card .cta-bg-img {
             position: absolute;
@@ -4468,7 +4456,12 @@
                     <div class="cta-bg" aria-hidden="true">
                         <div class="cta-bg-img"></div>
                     </div>
-                    <div class="cta-arc-mask" aria-hidden="true"></div>
+                    <svg class="cta-arc-mask" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        <!-- White overlay: flat top + cubic-bezier bottom dipping up to peak=0 at center.
+                             Control points at y=-50 ensure horizontal tangent at peak → SEAMLESS SMOOTH dome.
+                             Dark bg visible below the curve; curve meets top corners at y=100 (full overlay height). -->
+                        <path d="M 0 0 L 100 0 L 100 100 C 75 -50, 25 -50, 0 100 Z" fill="#ffffff"/>
+                    </svg>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
                             <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
