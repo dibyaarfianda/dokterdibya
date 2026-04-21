@@ -631,8 +631,29 @@
             inset: 0;
             overflow: hidden;
             z-index: 0;
-            /* clip-path is set by JS as path(...) — GPU-composited, smooth like stroke animations */
-            will-change: clip-path;
+        }
+        /* Arc technique: white dome overlay at top of card, STATIC shape (border-radius computed once).
+           Animation driven by transform: scaleY() — pure GPU-composited, never triggers paint/layout.
+           scaleY(1) = full dome covering dark bg corners → arc visible.
+           scaleY(0) = collapsed → flat straight edge.
+           Same compositing class as stroke-dashoffset (why hero curves are butter-smooth). */
+        .cta-card .cta-arc-mask {
+            position: absolute;
+            top: 0;
+            left: -6%;
+            right: -6%;
+            height: 90px;
+            background: var(--bg-page, #ffffff);
+            border-bottom-left-radius: 50% 100%;
+            border-bottom-right-radius: 50% 100%;
+            transform-origin: center top;
+            transform: scaleY(var(--cta-arc-scale, 1));
+            z-index: 2;
+            pointer-events: none;
+            will-change: transform;
+        }
+        @media (min-width: 768px) {
+            .cta-card .cta-arc-mask { height: 140px; }
         }
         .cta-card .cta-bg-img {
             position: absolute;
@@ -4437,6 +4458,7 @@
                     <div class="cta-bg" aria-hidden="true">
                         <div class="cta-bg-img"></div>
                     </div>
+                    <div class="cta-arc-mask" aria-hidden="true"></div>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
                             <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
@@ -4739,9 +4761,7 @@
                 var bgImg = card.querySelector('.cta-bg-img');
                 var curvesWrap = card.querySelector('.cta-curves');
 
-                // Arc height range (px) — subtle dome like Clearpath, curved when entering → flat at top
-                var ARC_MAX_DESKTOP = 70;
-                var ARC_MAX_MOBILE = 40;
+                // Arc fixed dome height is in CSS (.cta-arc-mask height). JS only animates scaleY.
                 var PARALLAX_MAX = 120; // max translateY in px for bg image parallax
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
@@ -4762,33 +4782,15 @@
                     ticking = false;
                     var rect = card.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight;
-                    var isDesktop = window.matchMedia('(min-width: 768px)').matches;
 
                     // Progress 0 when card top at bottom of viewport (just entering),
                     // 1 when card top has reached top of viewport (fully anchored).
                     var raw = (vh - rect.top) / vh;
                     var progress = Math.max(0, Math.min(1, raw));
 
-                    // Arc (dome): peak at top-center (0,0), corners at (0,arcH)/(W,arcH).
-                    // clip-path: path() is GPU-composited → smooth animation.
-                    var arcMax = isDesktop ? ARC_MAX_DESKTOP : ARC_MAX_MOBILE;
-                    var arcH = arcMax * (1 - progress);
-                    if (bg) {
-                        var bgRect = bg.getBoundingClientRect();
-                        var W = bgRect.width;
-                        var H = bgRect.height;
-                        if (W > 1 && H > 1) {
-                            // Dome shape: quadratic from left corner to right corner, peak at top
-                            var d = 'M 0 ' + arcH.toFixed(1)
-                                  + ' Q ' + (W / 2).toFixed(1) + ' 0 '
-                                  + W.toFixed(1) + ' ' + arcH.toFixed(1)
-                                  + ' L ' + W.toFixed(1) + ' ' + H.toFixed(1)
-                                  + ' L 0 ' + H.toFixed(1) + ' Z';
-                            var clipVal = 'path("' + d + '")';
-                            bg.style.webkitClipPath = clipVal;
-                            bg.style.clipPath = clipVal;
-                        }
-                    }
+                    // Arc = transform: scaleY() on white dome overlay (GPU-composited, never triggers paint).
+                    // scale 1 at entry (full dome visible → dark bg corners hidden) → 0 at top (dome collapsed → flat).
+                    card.style.setProperty('--cta-arc-scale', (1 - progress).toFixed(3));
 
                     // Parallax: as user scrolls card up through viewport, shift bg image up slower.
                     // translateY goes from 0 (card entering) to -PARALLAX_MAX (card scrolled past).
