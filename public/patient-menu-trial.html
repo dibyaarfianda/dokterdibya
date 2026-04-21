@@ -633,7 +633,6 @@
             border-radius: 50% 50% 0 0 / var(--cta-arc-h, 0px) var(--cta-arc-h, 0px) 0 0;
             z-index: 0;
             will-change: border-radius;
-            transition: border-radius 0.12s linear;
         }
         .cta-card .cta-bg-img {
             position: absolute;
@@ -4801,8 +4800,14 @@
                     ticking = true;
                     window.requestAnimationFrame(update);
                 }
+                // Multi-source sync (same pattern as hero curves) — scroll, wheel, touchmove,
+                // plus a 33ms interval to catch frames that don't fire scroll events
+                // (scroll restoration, momentum, trackpad gaps).
                 window.addEventListener('scroll', onScroll, { passive: true });
+                window.addEventListener('wheel', onScroll, { passive: true });
+                window.addEventListener('touchmove', onScroll, { passive: true });
                 window.addEventListener('resize', update);
+                window.setInterval(onScroll, 33);
                 update();
                 setTimeout(update, 150);
                 setTimeout(update, 800);
