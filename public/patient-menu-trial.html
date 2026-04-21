@@ -647,6 +647,56 @@
             }
         }
 
+        /* Clearpath-style curves inside cta-card, stroke draws on scroll */
+        .cta-card .cta-curves {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 780px;
+            max-width: 100vw;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .cta-card .cta-curve {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .cta-card .cta-curve path {
+            stroke: rgba(255, 255, 255, 0.55);
+            stroke-width: 2;
+            fill: transparent;
+            vector-effect: non-scaling-stroke;
+        }
+        .cta-card .cta-curve-2 path {
+            stroke: rgba(255, 255, 255, 0.28);
+        }
+        .cta-card .cta-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        /* Grain overlay — same setting as .journey-card-media::after */
+        .cta-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/grain.avif');
+            background-size: 90px 90px;
+            background-repeat: repeat;
+            mix-blend-mode: soft-light;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         .cta-heading {
             font-size: 22px;
             font-weight: 700;
@@ -4333,15 +4383,25 @@
 
                 <!-- Booking CTA Card -->
                 <div class="cta-card">
-                    <h2 class="cta-heading">Booking Klinik Minggu</h2>
-                    <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
-                    <a class="doc-cta-link" href="/booking-klinik-trial.html">
-                        <span class="doc-cta-track">
-                            <span class="dot dot-left"></span>
-                            <span class="text">Booking Sekarang</span>
-                            <span class="dot dot-right"></span>
-                        </span>
-                    </a>
+                    <div class="cta-curves" aria-hidden="true">
+                        <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
+                            <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
+                        </svg>
+                        <svg class="cta-curve cta-curve-2" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
+                            <path d="M 555 0 C -514.95 653.314 502.942 726.558 720 509.5 C 937.058 292.442 174.231 575.033 381 1140"/>
+                        </svg>
+                    </div>
+                    <div class="cta-content">
+                        <h2 class="cta-heading">Booking Klinik Minggu</h2>
+                        <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
+                        <a class="doc-cta-link" href="/booking-klinik-trial.html">
+                            <span class="doc-cta-track">
+                                <span class="dot dot-left"></span>
+                                <span class="text">Booking Sekarang</span>
+                                <span class="dot dot-right"></span>
+                            </span>
+                        </a>
+                    </div>
                 </div>
 
                 <!-- EDUKASI -->
@@ -4637,6 +4697,16 @@
                 var card = document.querySelector('.cta-card');
                 if (!card) return;
                 var MAX_FLATTEN = 4000; // px — ellipse ry offset; huge → near-flat top
+                var CURVE_INITIAL_RATIO = 0.605; // same as hero curves (60.5% hidden initially)
+
+                // Setup stroke-dasharray on curves for draw-in effect
+                var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
+                var curveLens = curvePaths.map(function(p) {
+                    var len = typeof p.getTotalLength === 'function' ? p.getTotalLength() : 2420;
+                    p.style.strokeDasharray = len + 'px';
+                    return len;
+                });
+
                 var ticking = false;
                 function update() {
                     ticking = false;
@@ -4647,6 +4717,16 @@
                     var progress = Math.max(0, Math.min(1, raw));
                     var flatten = progress * MAX_FLATTEN;
                     card.style.setProperty('--cta-flatten', flatten.toFixed(0) + 'px');
+
+                    // Draw curves: extend as user scrolls card in (0 → full visible).
+                    // Use wider window than flatten so curves keep drawing even after top flattens.
+                    var drawRaw = (vh - rect.top) / vh;
+                    var drawProgress = Math.max(0, Math.min(1, drawRaw));
+                    curvePaths.forEach(function(p, idx) {
+                        var len = curveLens[idx];
+                        var offset = len * CURVE_INITIAL_RATIO * (1 - drawProgress);
+                        p.style.strokeDashoffset = offset.toFixed(1) + 'px';
+                    });
                 }
                 function onScroll() {
                     if (ticking) return;
