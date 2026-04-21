@@ -669,13 +669,14 @@
             overflow: visible;
         }
         .cta-card .cta-curve path {
-            stroke: rgba(255, 255, 255, 0.85);
-            stroke-width: 2.5;
+            stroke: #ffffff;
+            stroke-width: 3;
             fill: transparent;
             vector-effect: non-scaling-stroke;
+            opacity: 0.95;
         }
         .cta-card .cta-curve-2 path {
-            stroke: rgba(255, 255, 255, 0.5);
+            opacity: 0.65;
         }
         .cta-card .cta-content {
             position: relative;
@@ -4726,7 +4727,7 @@
                 // Ellipse ry range: 102% (strong arc) → 110% (subtle arc, still visible)
                 var RY_MIN = 102;
                 var RY_MAX = 110;
-                var CURVE_INITIAL_RATIO = 0.605; // same as hero curves
+                var CURVE_INITIAL_RATIO = 0.3; // 30% hidden at entry → user sees curve prominently while scrolling
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
                 var curveLens = [];
