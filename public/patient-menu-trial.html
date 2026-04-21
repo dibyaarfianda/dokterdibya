@@ -630,10 +630,10 @@
             position: absolute;
             inset: 0;
             overflow: hidden;
-            border-top-left-radius: 50% var(--cta-arc-h, 0px);
-            border-top-right-radius: 50% var(--cta-arc-h, 0px);
+            border-radius: 50% 50% 0 0 / var(--cta-arc-h, 0px) var(--cta-arc-h, 0px) 0 0;
             z-index: 0;
-            will-change: border-top-left-radius, border-top-right-radius;
+            will-change: border-radius;
+            transition: border-radius 0.12s linear;
         }
         .cta-card .cta-bg-img {
             position: absolute;
@@ -4783,11 +4783,11 @@
                     var parallaxY = -PARALLAX_MAX * fullRange;
                     if (bgImg) bgImg.style.transform = 'translate3d(0, ' + parallaxY.toFixed(1) + 'px, 0)';
 
-                    // Curves: fade in as card approaches center, STAY visible once revealed
-                    // (tidak fade out saat exit — user minta tetap disitu).
-                    // Use `progress` for fade-in (0 at bottom-of-viewport entry → 1 at top-anchored),
-                    // clamp to [0,1] so stays at 1 when card continues past.
-                    var curveReveal = progress;  // monotonic, no fade-out
+                    // Curves: slow monotonic reveal over wider scroll range.
+                    // Use full travel from card entering bottom → card exiting top (≈ vh + cardHeight of scroll),
+                    // giving curves ~2× the scroll range of the arc animation for a slower draw feel.
+                    var travel = (vh - rect.top) / (vh + rect.height);
+                    var curveReveal = Math.max(0, Math.min(1, travel));
                     if (curvesWrap) curvesWrap.style.opacity = curveReveal.toFixed(3);
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
