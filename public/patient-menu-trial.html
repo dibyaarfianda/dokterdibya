@@ -609,7 +609,7 @@
         /* ========== CTA CARD (Anvil-style) ========== */
         .cta-card {
             position: relative;
-            background-color: #111111;
+            /* No bg-color — corners outside the arc should show body white, not black */
             padding: 128px 28px;
             margin-top: 400px;
             margin-bottom: 320px;
@@ -4740,9 +4740,9 @@
                 var bgImg = card.querySelector('.cta-bg-img');
                 var curvesWrap = card.querySelector('.cta-curves');
 
-                // Arc height range (px): curved when entering, straight when card top at viewport top.
-                var ARC_MAX_DESKTOP = 160;
-                var ARC_MAX_MOBILE = 90;
+                // Arc height range (px) — subtle dome like Clearpath, curved when entering → flat at top
+                var ARC_MAX_DESKTOP = 70;
+                var ARC_MAX_MOBILE = 40;
                 var PARALLAX_MAX = 120; // max translateY in px for bg image parallax
 
                 var curvePaths = Array.prototype.slice.call(card.querySelectorAll('.cta-curve path'));
@@ -4783,15 +4783,16 @@
                     var parallaxY = -PARALLAX_MAX * fullRange;
                     if (bgImg) bgImg.style.transform = 'translate3d(0, ' + parallaxY.toFixed(1) + 'px, 0)';
 
-                    // Curves: muncul & drawing saat card di tengah viewport
-                    var cardCenter = (rect.top + rect.bottom) / 2;
-                    var distFromCenter = Math.abs(cardCenter - vh / 2) / vh;
-                    var centerness = Math.max(0, 1 - distFromCenter * 2);
-                    if (curvesWrap) curvesWrap.style.opacity = centerness.toFixed(3);
+                    // Curves: fade in as card approaches center, STAY visible once revealed
+                    // (tidak fade out saat exit — user minta tetap disitu).
+                    // Use `progress` for fade-in (0 at bottom-of-viewport entry → 1 at top-anchored),
+                    // clamp to [0,1] so stays at 1 when card continues past.
+                    var curveReveal = progress;  // monotonic, no fade-out
+                    if (curvesWrap) curvesWrap.style.opacity = curveReveal.toFixed(3);
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
                         if (!len) return;
-                        var offset = len * 0.5 * (1 - centerness);
+                        var offset = len * 0.5 * (1 - curveReveal);
                         p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                     });
                 }
