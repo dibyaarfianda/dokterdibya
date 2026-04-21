@@ -683,6 +683,35 @@
             flex-direction: column;
             align-items: flex-start;
         }
+        /* Booking CTA button tuning: text mepet kiri, dot mepet kanan, hover track shift lebih kecil */
+        .cta-card .doc-cta-link {
+            padding: 12px 12px 12px 12px;
+            min-width: 280px;
+        }
+        .cta-card .doc-cta-link .text {
+            margin-left: 4px;
+        }
+        .cta-card .doc-cta-link .dot-right {
+            margin-right: 2px;
+        }
+        .cta-card .doc-cta-link:is(:hover, :focus-visible, :active) .doc-cta-track,
+        .cta-card .doc-cta-link.is-animating .doc-cta-track {
+            transform: translateX(22px);
+        }
+        .cta-card .doc-cta-link:is(:hover, :focus-visible, :active) .dot-right,
+        .cta-card .doc-cta-link.is-animating .dot-right {
+            transform: translateX(14px);
+            opacity: 0;
+        }
+        .cta-card .doc-cta-link .dot-left {
+            transform: translateX(-40px);
+        }
+        .cta-card .doc-cta-link:is(:hover, :focus-visible, :active) .dot-left,
+        .cta-card .doc-cta-link.is-animating .dot-left {
+            transform: translateX(-22px);
+            opacity: 1;
+        }
+
         /* Grain overlay — same setting as .journey-card-media::after */
         .cta-card::after {
             content: '';
