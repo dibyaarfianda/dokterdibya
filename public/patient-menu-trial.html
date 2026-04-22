@@ -632,16 +632,15 @@
             overflow: hidden;
             z-index: 0;
         }
-        /* Arc: white SVG overlay with cubic-bezier bottom edge (horizontal tangent at peak → smooth).
-           Path is STATIC (defined once in DOM), only transform: scaleY animates → GPU-composited.
-           Cubic control points have y < 0 (above viewBox) so peak is exactly at y=0 (top flush).
-           At scaleY(1): full dome visible on dark bg. scaleY(0): collapsed → flat seamless edge. */
+        /* Arc: white SVG overlay masking the top of the CTA image.
+           Use a taller viewBox + deeper control points so the revealed dark area reads as a dome,
+           not a shallow stretched oval, while keeping the existing scaleY scroll animation. */
         .cta-card .cta-arc-mask {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 120px;
+            height: 196px;
             pointer-events: none;
             transform-origin: center top;
             transform: scaleY(var(--cta-arc-scale, 1));
@@ -649,9 +648,10 @@
             will-change: transform;
             display: block;
             overflow: visible;
+            transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
         }
         @media (min-width: 768px) {
-            .cta-card .cta-arc-mask { height: 180px; }
+            .cta-card .cta-arc-mask { height: 292px; }
         }
         .cta-card .cta-bg-img {
             position: absolute;
@@ -660,12 +660,14 @@
             top: -15%;
             height: 130%;
             background-image:
-                linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
+                linear-gradient(rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0.36)),
                 url('/images/bg/tangan.avif');
             background-position: center center;
             background-size: cover;
             background-repeat: no-repeat;
+            filter: brightness(1.08) saturate(1.03);
             will-change: transform;
+            transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
         }
         @media (min-width: 768px) {
             .cta-card {
@@ -688,6 +690,7 @@
             pointer-events: none;
             z-index: 1;
             opacity: 0;
+            transition: opacity 180ms linear;
         }
         .cta-card .cta-curve {
             position: absolute;
@@ -702,6 +705,7 @@
             fill: transparent;
             vector-effect: non-scaling-stroke;
             opacity: 0.95;
+            transition: stroke-dashoffset 180ms cubic-bezier(0.22, 1, 0.36, 1);
         }
         .cta-card .cta-curve-2 path {
             opacity: 0.65;
@@ -2537,13 +2541,13 @@
 
         .journey-showcase-header {
             max-width: 980px;
-            margin: 0 auto 102px;
+            margin: 0 auto 138px;
             text-align: center;
         }
 
         .journey-showcase-title {
             margin: 0;
-            font-size: clamp(18px, 2.6vw, 34px);
+            font-size: 38px;
             line-height: 1.1;
             letter-spacing: -0.03em;
             font-weight: 600;
@@ -2786,11 +2790,11 @@
             }
 
             .journey-showcase-header {
-                margin-bottom: 84px;
+                margin-bottom: 138px;
             }
 
             .journey-showcase-title {
-                font-size: clamp(17px, 4.6vw, 22px);
+                font-size: 38px;
             }
 
             .journey-showcase-title span {
@@ -3329,11 +3333,20 @@
             right: 0;
             bottom: 0;
             z-index: 1002;
+            --nav-fg: #ffffff;
+            --nav-active-fg: rgb(59, 130, 246);
+            --nav-indicator: #ffffff;
+            --nav-hover-fg: rgb(15, 23, 42);
             border-top: none;
             box-shadow: none;
             padding-bottom: env(safe-area-inset-bottom, 0px);
             transform: translateY(100%);
             transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1) !important;
+        }
+
+        .bottom-nav.nav-on-light {
+            --nav-fg: rgb(15, 23, 42);
+            --nav-indicator: rgb(15, 23, 42);
         }
 
         /* ClearPath progressive blur - 8 layers, exact same values */
@@ -3378,7 +3391,6 @@
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 2px;
-            isolation: isolate;
         }
 
         .nav-item {
@@ -3404,6 +3416,12 @@
             font-size: 18px;
             transition: transform 0.4s ease-out, color 0.4s ease-out;
             transform: scale(1);
+            filter: none;
+        }
+
+        .nav-item i::before {
+            color: currentColor !important;
+            -webkit-text-fill-color: currentColor;
         }
 
         /* White bg as pseudo - counter-scales so it stays fixed size */
@@ -3418,22 +3436,20 @@
             z-index: -1;
         }
 
-        /* Bottom nav default (dark section): white icon/label */
+        /* Bottom nav defaults to white on dark sections. JS toggles nav-on-light
+           after sampling the real backdrop behind the fixed nav. */
         .nav-item i,
         .nav-item span {
-            color: #ffffff !important;
+            color: var(--nav-fg) !important;
             mix-blend-mode: normal;
         }
 
-        /* Bottom nav on light section: switch icon/label to dark for readability */
-        .bottom-nav.nav-on-light .nav-item i,
-        .bottom-nav.nav-on-light .nav-item span {
-            color: rgb(15, 23, 42) !important;
+        .bottom-nav.nav-on-light .nav-item:not(.active) i {
+            filter: brightness(0) saturate(100%) opacity(0.92);
         }
 
-        .bottom-nav.nav-on-light .nav-item.active i,
-        .bottom-nav.nav-on-light .nav-item.active span {
-            color: rgb(59, 130, 246) !important;
+        .bottom-nav.nav-on-light .nav-item.active i {
+            filter: none;
         }
 
         .nav-item span {
@@ -3450,7 +3466,7 @@
         /* Selected nav gets blue accent */
         .nav-item.active i,
         .nav-item.active span {
-            color: rgb(59, 130, 246) !important;
+            color: var(--nav-active-fg) !important;
         }
 
         .nav-item.active::before {
@@ -3461,12 +3477,7 @@
             height: 3px;
             border-radius: 3px;
             border: none;
-            background: #ffffff;
-        }
-
-        /* Indicator follows auto-contrast mode too */
-        .bottom-nav.nav-on-light .nav-item.active::before {
-            background: rgb(15, 23, 42);
+            background: var(--nav-indicator);
         }
 
         /* Hover visual: JS sets prox-hover class, transform handled by JS inline */
@@ -3475,18 +3486,13 @@
         }
 
         .nav-item.prox-hover::after {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.92);
             transform: scale(0.85);
         }
 
         .nav-item.prox-hover i,
         .nav-item.prox-hover span {
-            color: rgb(15, 23, 42) !important;
-        }
-
-        .nav-item.prox-hover.active i,
-        .nav-item.prox-hover.active span {
-            color: rgb(59, 130, 246) !important;
+            color: var(--nav-hover-fg) !important;
         }
 
         .nav-item:active {
@@ -3523,26 +3529,109 @@
 
         /* ========== SITE FOOTER ========== */
         .site-footer {
+            --footer-shift-photo: 0px;
+            --footer-shift-a: 0px;
+            --footer-shift-b: 0px;
+            --footer-shift-c: 0px;
+            --footer-shift-d: 0px;
+            --footer-progress: 0;
             position: relative;
             margin-top: 150px;
-            padding: 40px 22px calc(env(safe-area-inset-bottom, 0px) + 28px);
-            background: #0d0d0d;
+            padding: 44px 22px calc(env(safe-area-inset-bottom, 0px) + 28px);
+            min-height: 380px;
+            background:
+                radial-gradient(112% 120% at 82% 0%, rgba(86, 111, 136, 0.12) 0%, rgba(86, 111, 136, 0.05) 22%, rgba(86, 111, 136, 0) 46%),
+                linear-gradient(180deg, #1b2129 0%, #141922 46%, #0e1218 100%);
             color: rgba(255, 255, 255, 0.78);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
             /* Ensure footer bg paints down to page bottom */
             margin-bottom: 0;
             overflow: hidden;
+            isolation: isolate;
         }
+        .site-footer .footer-photo,
+        .site-footer .footer-backdrop,
+        .site-footer .footer-grid,
+        .site-footer .footer-orb,
+        .site-footer .footer-orb-right,
+        .site-footer .footer-vignette,
         .site-footer .footer-grain {
             position: absolute;
             inset: 0;
+            pointer-events: none;
+        }
+        .site-footer .footer-photo {
+            inset: -16% -8% -10%;
+            background-image: url('/images/bg/footer.avif');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center center;
+            transform: translate3d(0, var(--footer-shift-photo), 0) scale(1.2);
+            transform-origin: 50% 0%;
+            z-index: 0;
+        }
+        .site-footer .footer-backdrop {
+            inset: -12% -8% -4%;
+            background:
+                linear-gradient(180deg, rgba(9, 12, 16, 0.28) 0%, rgba(9, 12, 16, 0.38) 34%, rgba(7, 9, 12, 0.62) 100%),
+                radial-gradient(70% 72% at 84% 6%, rgba(103, 131, 160, 0.16) 0%, rgba(103, 131, 160, 0.07) 24%, rgba(103, 131, 160, 0) 52%),
+                radial-gradient(52% 64% at 18% 44%, rgba(255, 255, 255, 0.028) 0%, rgba(255, 255, 255, 0) 64%);
+            transform: translate3d(0, var(--footer-shift-a), 0) scale(1.03);
+            transform-origin: 50% 0%;
+            z-index: 1;
+        }
+        .site-footer .footer-grid {
+            inset: -8% -4% 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+            background-size: 46px 46px, 46px 46px, 92px 92px;
+            background-position: 0 0, 0 0, 12px 0;
+            opacity: 0.16;
+            mask-image: radial-gradient(130% 96% at 50% 0%, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.72) 56%, rgba(0, 0, 0, 0.22) 82%, transparent 100%);
+            -webkit-mask-image: radial-gradient(130% 96% at 50% 0%, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.72) 56%, rgba(0, 0, 0, 0.22) 82%, transparent 100%);
+            transform: translate3d(0, var(--footer-shift-b), 0) scale(1.01);
+            z-index: 1;
+        }
+        .site-footer .footer-orb {
+            inset: -4% auto auto -8%;
+            width: min(72vw, 520px);
+            height: min(72vw, 520px);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(203, 222, 215, 0.09) 0%, rgba(203, 222, 215, 0.04) 28%, rgba(203, 222, 215, 0) 66%);
+            filter: blur(18px);
+            opacity: calc(0.22 + (var(--footer-progress) * 0.08));
+            transform: translate3d(0, var(--footer-shift-c), 0);
+            z-index: 1;
+        }
+        .site-footer .footer-orb-right {
+            inset: auto -10% -18% auto;
+            width: min(68vw, 460px);
+            height: min(68vw, 460px);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(110, 137, 167, 0.14) 0%, rgba(110, 137, 167, 0.05) 32%, rgba(110, 137, 167, 0) 72%);
+            filter: blur(26px);
+            opacity: 0.34;
+            transform: translate3d(0, var(--footer-shift-d), 0);
+            z-index: 1;
+        }
+        .site-footer .footer-vignette {
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(7, 9, 12, 0) 0%, rgba(7, 9, 12, 0.16) 40%, rgba(5, 7, 10, 0.4) 100%),
+                radial-gradient(120% 120% at 50% 100%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.36) 100%);
+            z-index: 1;
+        }
+        .site-footer .footer-grain {
             background-image: url('/images/grain.avif');
-            background-size: 90px 90px;
+            background-size: 110px 110px;
             background-repeat: repeat;
             mix-blend-mode: soft-light;
-            opacity: 0.4;
-            pointer-events: none;
-            z-index: 0;
+            opacity: 0.11;
+            transform: translate3d(0, calc(var(--footer-shift-b) * 0.22), 0) scale(1.01);
+            z-index: 2;
         }
         .site-footer .footer-inner {
             position: relative;
@@ -3564,152 +3653,199 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-        .site-footer .footer-contact-title {
-            display: none;
-        }
-        .site-footer .footer-brand {
-            display: flex;
+        .footer-newsletter-kicker {
+            display: inline-flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .site-footer .footer-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #111;
-            font-weight: 800;
-            font-size: 16px;
-            letter-spacing: 0.04em;
-        }
-        .site-footer .footer-brand-name {
-            font-size: 15px;
+            gap: 8px;
+            margin-bottom: 22px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 11px;
             font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.02em;
-        }
-        .site-footer .footer-brand-sub {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.55);
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            margin-top: 2px;
-        }
-        .site-footer .footer-tagline {
-            font-size: 13px;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 0 24px;
-            max-width: 420px;
-        }
-        .site-footer .footer-links {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 22px 18px;
-            margin-bottom: 26px;
-        }
-        .site-footer .footer-col h5 {
-            font-size: 11px;
             letter-spacing: 0.14em;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.9);
-            margin: 0 0 10px;
-            font-weight: 700;
+            color: rgba(255, 255, 255, 0.72);
         }
-        .site-footer .footer-col a {
-            display: block;
-            color: rgba(255, 255, 255, 0.62);
-            font-size: 13px;
-            text-decoration: none;
-            padding: 4px 0;
-            transition: color 0.2s;
+        .footer-newsletter-kicker::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #c7e1d8;
+            box-shadow: 0 0 0 6px rgba(199, 225, 216, 0.08);
         }
-        .site-footer .footer-col a:hover,
-        .site-footer .footer-col a:active {
-            color: #fff;
+        .footer-hero {
+            display: grid;
+            gap: 34px;
         }
-        .site-footer .footer-contact {
+        .footer-copy {
+            max-width: 640px;
+        }
+        .footer-copy h2 {
+            margin: 0 0 20px;
+            font-size: clamp(48px, 10vw, 96px);
+            line-height: 0.92;
+            letter-spacing: -0.06em;
+            color: #f4f6f8;
+            max-width: 6.6ch;
+        }
+        .footer-copy p {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.8;
+            color: rgba(239, 243, 247, 0.74);
+            max-width: 43ch;
+        }
+        .footer-subscribe {
+            padding: 20px;
+            border-radius: 26px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+        .footer-subscribe-form {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding: 16px 0;
+            gap: 12px;
+        }
+        .footer-subscribe-input {
+            width: 100%;
+            min-height: 54px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            background: rgba(8, 11, 15, 0.22);
+            padding: 0 18px;
+            color: #fff;
+            font: inherit;
+        }
+        .footer-subscribe-input::placeholder {
+            color: rgba(255, 255, 255, 0.42);
+        }
+        .footer-subscribe-button {
+            min-height: 54px;
+            border: none;
+            border-radius: 18px;
+            background: #eef2f6;
+            color: #10141b;
+            font: inherit;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .footer-policy {
+            margin: 14px 0 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: rgba(239, 243, 247, 0.56);
+        }
+        .footer-meta {
+            margin-top: 38px;
+            padding-top: 26px;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 18px;
-        }
-        .site-footer .footer-contact-item {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12.5px;
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
+            flex-direction: column;
+            gap: 22px;
         }
-        .site-footer .footer-contact-item i {
-            width: 16px;
-            color: rgba(255, 255, 255, 0.55);
-            font-size: 13px;
+        .footer-meta-col {
+            display: grid;
+            gap: 12px;
         }
-        .site-footer .footer-bottom {
-            text-align: center;
-            font-size: 10px;
+        .footer-meta-title {
+            font-size: 11px;
+            font-weight: 700;
             letter-spacing: 0.14em;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.4);
-            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
         }
-        .site-footer .footer-bottom .dot-sep {
-            margin: 0 8px;
-            opacity: 0.5;
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 18px;
         }
-        /* Desktop: break out of screen container to full-viewport width + multi-col layout */
-        @media (min-width: 768px) {
+        .footer-links a,
+        .footer-social a {
+            color: rgba(255, 255, 255, 0.68);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .footer-links a,
+        .footer-email {
+            font-size: 14px;
+        }
+        .footer-links a:hover,
+        .footer-social a:hover,
+        .footer-email:hover {
+            color: #fff;
+        }
+        .footer-email {
+            color: rgba(255, 255, 255, 0.72);
+            text-decoration: none;
+            width: fit-content;
+        }
+        .footer-social {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 18px;
+        }
+        .footer-bottom {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: rgba(255, 255, 255, 0.42);
+        }
+        @media (min-width: 900px) {
             .site-footer {
-                padding: 64px 56px 36px;
+                min-height: 460px;
+                padding: 78px 56px 40px;
             }
             .site-footer .footer-inner {
                 display: grid;
-                grid-template-columns: minmax(320px, 1.6fr) minmax(260px, 1fr);
-                gap: 64px;
+                grid-template-columns: minmax(0, 1.16fr) minmax(340px, 0.84fr);
+                gap: 68px;
                 align-items: start;
             }
-            .site-footer .footer-intro .footer-brand { margin-bottom: 18px; }
-            .site-footer .footer-tagline { margin-bottom: 0; max-width: none; }
-            .site-footer .footer-links {
-                display: contents;
+            .footer-subscribe {
+                margin-top: 72px;
+                max-width: 420px;
+                justify-self: end;
             }
-            .site-footer .footer-contact {
-                border: none;
-                padding: 0;
-                margin: 0;
-                gap: 10px;
-            }
-            .site-footer .footer-contact-title {
-                display: block;
-                font-size: 11px;
-                letter-spacing: 0.14em;
-                text-transform: uppercase;
-                color: rgba(255, 255, 255, 0.9);
-                margin: 0 0 4px;
-                font-weight: 700;
-            }
-            .site-footer .footer-col h5,
-            .site-footer .footer-contact-title { margin-top: 4px; }
-            .site-footer .footer-bottom {
+            .footer-meta {
                 grid-column: 1 / -1;
-                padding-top: 28px;
-                margin-top: 24px;
-                border-top: 1px solid rgba(255, 255, 255, 0.08);
-                text-align: left;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(280px, 0.7fr);
+                gap: 40px;
+                align-items: start;
+            }
+            .footer-bottom {
+                grid-column: 1 / -1;
             }
         }
         @media (min-width: 1200px) {
-            .site-footer { padding: 72px 80px 40px; }
-            .site-footer .footer-inner { gap: 64px; }
+            .site-footer {
+                padding: 80px 80px 44px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .site-footer .footer-backdrop,
+            .site-footer .footer-photo,
+            .site-footer .footer-grid,
+            .site-footer .footer-orb,
+            .site-footer .footer-orb-right,
+            .site-footer .footer-grain {
+                transform: none !important;
+            }
         }
 
         /* ========== TOAST ========== */
@@ -4003,11 +4139,11 @@
         }
 
         /* ========== REDUCED MOTION ========== */
-        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .journey-card .journey-card-frame .journey-card-media .journey-card-copy .journey-card-kicker .journey-card-title .journey-card-cta .journey-card-cta-dot .journey-card-cta-text .doc-cta-link .doc-cta-track .dot .dot-left .dot-right .text = interactive cards exempt from kill-switch */
+        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .journey-card .journey-card-frame .journey-card-media .journey-card-copy .journey-card-kicker .journey-card-title .journey-card-cta .journey-card-cta-dot .journey-card-cta-text .doc-cta-link .doc-cta-track .dot .dot-left .dot-right .text .cta-arc-mask .cta-bg-img .cta-curves .cta-curve .cta-curve-path = interactive cards/booking visuals exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
@@ -4456,18 +4592,17 @@
                     <div class="cta-bg" aria-hidden="true">
                         <div class="cta-bg-img"></div>
                     </div>
-                    <svg class="cta-arc-mask" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                        <!-- White overlay: flat top + cubic-bezier bottom dipping up to peak=0 at center.
-                             Control points at y=-50 ensure horizontal tangent at peak → SEAMLESS SMOOTH dome.
-                             Dark bg visible below the curve; curve meets top corners at y=100 (full overlay height). -->
-                        <path d="M 0 0 L 100 0 L 100 100 C 75 -50, 25 -50, 0 100 Z" fill="#ffffff"/>
+                    <svg class="cta-arc-mask" viewBox="0 0 1000 320" preserveAspectRatio="none" aria-hidden="true">
+                        <!-- Exact centered dome: the top edge is a true half-ellipse,
+                             so the highest point is locked to x=50% instead of approximated by bezier controls. -->
+                        <path d="M 0 0 L 1000 0 L 1000 320 A 500 320 0 0 0 0 320 Z" fill="#ffffff"/>
                     </svg>
                     <div class="cta-curves" aria-hidden="true">
                         <svg class="cta-curve cta-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
-                            <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
+                            <path class="cta-curve-path" d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
                         </svg>
                         <svg class="cta-curve cta-curve-2" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
-                            <path d="M 555 0 C -514.95 653.314 502.942 726.558 720 509.5 C 937.058 292.442 174.231 575.033 381 1140"/>
+                            <path class="cta-curve-path" d="M 555 0 C -514.95 653.314 502.942 726.558 720 509.5 C 937.058 292.442 174.231 575.033 381 1140"/>
                         </svg>
                     </div>
                     <div class="cta-content">
@@ -4569,42 +4704,62 @@
 
     <!-- Site Footer (outside .screen so its padding-bottom doesn't leak white space below) -->
     <footer class="site-footer">
+        <div class="footer-photo" aria-hidden="true"></div>
+        <div class="footer-backdrop" aria-hidden="true"></div>
+        <div class="footer-grid" aria-hidden="true"></div>
+        <div class="footer-orb" aria-hidden="true"></div>
+        <div class="footer-orb-right" aria-hidden="true"></div>
+        <div class="footer-vignette" aria-hidden="true"></div>
         <div class="footer-grain" aria-hidden="true"></div>
         <div class="footer-inner">
-            <div class="footer-intro">
-                <div class="footer-brand">
-                    <div class="footer-logo">dD</div>
-                    <div>
-                        <div class="footer-brand-name">dokterDIBYA</div>
-                        <div class="footer-brand-sub">Patient Portal</div>
-                    </div>
+            <div class="footer-hero">
+                <div class="footer-copy">
+                    <span class="footer-newsletter-kicker">dokterDIBYA Portal</span>
+                    <h2>Join Our Newsletter.</h2>
+                    <p>
+                        We share occasional reflections on women&apos;s health, emotional well-being,
+                        and practical guidance to move through each phase with more clarity and calm.
+                    </p>
                 </div>
-                <p class="footer-tagline">
-                    Portal privat kandungan Anda — konsultasi, jadwal, rekam medis,
-                    dan pengingat vitamin dalam satu tempat.
+            </div>
+
+            <div class="footer-subscribe">
+                <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
+                    <input class="footer-subscribe-input" type="email" placeholder="Enter your email address" aria-label="Email address">
+                    <button class="footer-subscribe-button" type="submit">Subscribe</button>
+                </form>
+                <p class="footer-policy">
+                    By signing up to receive emails from dokterDIBYA, you agree to our Privacy Policy.
                 </p>
             </div>
 
-            <div class="footer-contact">
-                <h5 class="footer-contact-title">Kontak</h5>
-                <a href="https://wa.me/6281234567890" class="footer-contact-item">
-                    <i class="fa-brands fa-whatsapp"></i>
-                    <span>WhatsApp Klinik</span>
-                </a>
-                <a href="mailto:admin@dokterdibya.com" class="footer-contact-item">
-                    <i class="fa-solid fa-envelope"></i>
-                    <span>admin@dokterdibya.com</span>
-                </a>
-                <div class="footer-contact-item">
-                    <i class="fa-solid fa-location-dot"></i>
-                    <span>Kediri, Jawa Timur</span>
+            <div class="footer-meta">
+                <div class="footer-meta-col">
+                    <span class="footer-meta-title">Sitemap</span>
+                    <div class="footer-links">
+                        <a href="/patient-menu-trial.html">Main Page</a>
+                        <a href="/artikel-kesehatan.html">Journal</a>
+                        <a href="/patient-dashboard.html">Patient Portal</a>
+                        <a href="/patient-login.html">Login</a>
+                        <a href="mailto:admin@dokterdibya.com">Contact</a>
+                    </div>
+                </div>
+                <div class="footer-meta-col">
+                    <span class="footer-meta-title">Contact Us</span>
+                    <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
+                    <div class="footer-social" aria-label="Social links">
+                        <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    </div>
                 </div>
             </div>
 
             <div class="footer-bottom">
                 <span>&copy; 2026 dokterDIBYA</span>
-                <span class="dot-sep">•</span>
-                <span>Portal v2.0</span>
+                <span>Patient Portal</span>
+                <span>All rights reserved</span>
             </div>
         </div>
     </footer>
@@ -4742,6 +4897,56 @@
 
         // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
+            (function() {
+                var footer = document.querySelector('.site-footer');
+                if (!footer) return;
+                var reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+                var ticking = false;
+
+                function updateFooterParallax() {
+                    ticking = false;
+                    if (reduceMotion && reduceMotion.matches) {
+                        footer.style.setProperty('--footer-shift-photo', '0px');
+                        footer.style.setProperty('--footer-shift-a', '0px');
+                        footer.style.setProperty('--footer-shift-b', '0px');
+                        footer.style.setProperty('--footer-shift-c', '0px');
+                        footer.style.setProperty('--footer-shift-d', '0px');
+                        footer.style.setProperty('--footer-progress', '0');
+                        return;
+                    }
+
+                    var rect = footer.getBoundingClientRect();
+                    var vh = window.innerHeight || document.documentElement.clientHeight || 1;
+                    var travel = vh + rect.height;
+                    var progress = Math.max(0, Math.min(1, (vh - rect.top) / travel));
+                    var drift = 0.5 - progress;
+
+                    footer.style.setProperty('--footer-progress', progress.toFixed(3));
+                    footer.style.setProperty('--footer-shift-photo', (drift * 320).toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-a', (drift * 18).toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-b', (drift * 12).toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-c', (drift * 42).toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-d', (drift * -26).toFixed(2) + 'px');
+                }
+
+                function scheduleFooterParallax() {
+                    if (ticking) return;
+                    ticking = true;
+                    window.requestAnimationFrame(updateFooterParallax);
+                }
+
+                window.addEventListener('scroll', scheduleFooterParallax, { passive: true });
+                window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
+                window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
+                window.addEventListener('resize', scheduleFooterParallax, { passive: true });
+                if (reduceMotion && typeof reduceMotion.addEventListener === 'function') {
+                    reduceMotion.addEventListener('change', scheduleFooterParallax);
+                }
+                window.setInterval(scheduleFooterParallax, 90);
+                scheduleFooterParallax();
+                setTimeout(scheduleFooterParallax, 180);
+            })();
+
             // Hide bottom-nav when footer is visible (scroll to bottom)
             (function() {
                 var footer = document.querySelector('.site-footer');
@@ -4781,45 +4986,113 @@
                 setTimeout(measureCurves, 800);
 
                 var ticking = false;
-                function update() {
-                    ticking = false;
+                var animationFrameId = 0;
+                var lastAnimationTime = 0;
+                var state = {
+                    initialized: false,
+                    arcScale: 1,
+                    parallaxY: 0,
+                    curveReveal: 0
+                };
+
+                function clamp01(value) {
+                    return Math.max(0, Math.min(1, value));
+                }
+
+                function moveToward(current, target, maxStep) {
+                    var delta = target - current;
+                    if (Math.abs(delta) <= maxStep) return target;
+                    return current + (delta > 0 ? maxStep : -maxStep);
+                }
+
+                function readTargets() {
                     var rect = card.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight;
 
                     // Progress 0 when card top at bottom of viewport (just entering),
                     // 1 when card top has reached top of viewport (fully anchored).
                     var raw = (vh - rect.top) / vh;
-                    var progress = Math.max(0, Math.min(1, raw));
-
-                    // Arc = transform: scaleY() on white dome overlay (GPU-composited, never triggers paint).
-                    // scale 1 at entry (full dome visible → dark bg corners hidden) → 0 at top (dome collapsed → flat).
-                    card.style.setProperty('--cta-arc-scale', (1 - progress).toFixed(3));
+                    var progress = clamp01(raw);
 
                     // Parallax: as user scrolls card up through viewport, shift bg image up slower.
                     // translateY goes from 0 (card entering) to -PARALLAX_MAX (card scrolled past).
                     // Use full scroll range (card entering → card exiting top) for smoother feel.
                     var fullRange = (vh - rect.top) / (vh + rect.height);
-                    fullRange = Math.max(0, Math.min(1, fullRange));
+                    fullRange = clamp01(fullRange);
                     var parallaxY = -PARALLAX_MAX * fullRange;
-                    if (bgImg) bgImg.style.transform = 'translate3d(0, ' + parallaxY.toFixed(1) + 'px, 0)';
 
                     // Curves: slow monotonic reveal over wider scroll range.
                     // Use full travel from card entering bottom → card exiting top (≈ vh + cardHeight of scroll),
                     // giving curves ~2× the scroll range of the arc animation for a slower draw feel.
                     var travel = (vh - rect.top) / (vh + rect.height);
-                    var curveReveal = Math.max(0, Math.min(1, travel));
-                    if (curvesWrap) curvesWrap.style.opacity = curveReveal.toFixed(3);
+                    var curveReveal = clamp01(travel);
+
+                    return {
+                        arcScale: 1 - progress,
+                        parallaxY: parallaxY,
+                        curveReveal: curveReveal
+                    };
+                }
+
+                function renderValues() {
+                    // Arc = transform: scaleY() on white dome overlay (GPU-composited, never triggers paint).
+                    // scale 1 at entry (full dome visible → dark bg corners hidden) → 0 at top (dome collapsed → flat).
+                    card.style.setProperty('--cta-arc-scale', state.arcScale.toFixed(3));
+                    if (bgImg) bgImg.style.transform = 'translate3d(0, ' + state.parallaxY.toFixed(1) + 'px, 0)';
+                    if (curvesWrap) curvesWrap.style.opacity = state.curveReveal.toFixed(3);
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
                         if (!len) return;
-                        var offset = len * 0.5 * (1 - curveReveal);
+                        var offset = len * 0.5 * (1 - state.curveReveal);
                         p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                     });
                 }
+
+                function update(forceImmediate, timestamp) {
+                    ticking = false;
+                    animationFrameId = 0;
+                    var targets = readTargets();
+                    var frameTime = typeof timestamp === 'number' ? timestamp : window.performance.now();
+
+                    if (!state.initialized || forceImmediate) {
+                        state.initialized = true;
+                        lastAnimationTime = frameTime;
+                        state.arcScale = targets.arcScale;
+                        state.parallaxY = targets.parallaxY;
+                        state.curveReveal = targets.curveReveal;
+                        renderValues();
+                        return;
+                    }
+
+                    var deltaMs = lastAnimationTime ? (frameTime - lastAnimationTime) : 16;
+                    lastAnimationTime = frameTime;
+                    deltaMs = Math.max(8, Math.min(34, deltaMs));
+                    var deltaSeconds = deltaMs / 1000;
+
+                    state.arcScale = moveToward(state.arcScale, targets.arcScale, 2.6 * deltaSeconds);
+                    state.parallaxY = moveToward(state.parallaxY, targets.parallaxY, 220 * deltaSeconds);
+                    state.curveReveal = moveToward(state.curveReveal, targets.curveReveal, 1.65 * deltaSeconds);
+                    renderValues();
+
+                    var isSettled =
+                        Math.abs(state.arcScale - targets.arcScale) < 0.002 &&
+                        Math.abs(state.parallaxY - targets.parallaxY) < 0.35 &&
+                        Math.abs(state.curveReveal - targets.curveReveal) < 0.002;
+
+                    if (!isSettled) {
+                        animationFrameId = window.requestAnimationFrame(function(nextTimestamp) {
+                            update(false, nextTimestamp);
+                        });
+                    }
+                }
+
                 function onScroll() {
                     if (ticking) return;
                     ticking = true;
-                    window.requestAnimationFrame(update);
+                    if (animationFrameId) return;
+                    animationFrameId = window.requestAnimationFrame(function(nextTimestamp) {
+                        update(false, nextTimestamp);
+                    });
                 }
                 // Multi-source sync (same pattern as hero curves) — scroll, wheel, touchmove,
                 // plus a 33ms interval to catch frames that don't fire scroll events
@@ -4827,11 +5100,11 @@
                 window.addEventListener('scroll', onScroll, { passive: true });
                 window.addEventListener('wheel', onScroll, { passive: true });
                 window.addEventListener('touchmove', onScroll, { passive: true });
-                window.addEventListener('resize', update);
+                window.addEventListener('resize', function() { update(true); });
                 window.setInterval(onScroll, 33);
-                update();
-                setTimeout(update, 150);
-                setTimeout(update, 800);
+                update(true);
+                setTimeout(function() { update(true); }, 150);
+                setTimeout(function() { update(true); }, 800);
             })();
 
             const LIVE_UPDATE_KEY = 'trial_sw_updated_at';
@@ -6358,18 +6631,72 @@
                 return luminance > 0.62;
             }
 
-            function updateNavContrast() {
-                var sampleX = Math.floor(window.innerWidth / 2);
-                var sampleY = Math.max(0, Math.floor(window.innerHeight - nav.offsetHeight - 12));
-                var el = document.elementFromPoint(sampleX, sampleY);
-                if (!el) return;
+            function getBackdropElement(sampleX, sampleY) {
+                var stack = document.elementsFromPoint(sampleX, sampleY);
+                for (var i = 0; i < stack.length; i += 1) {
+                    var el = stack[i];
+                    if (!el) continue;
+                    if (el === nav || el.closest('.bottom-nav') || el.id === 'nav-blur-fade' || el.closest('.nav-blur-fade')) {
+                        continue;
+                    }
+                    return el;
+                }
+                return null;
+            }
 
-                var bg = findBackgroundColor(el);
-                if (isLight(bg)) {
+            function applyNavTone(isOnLight) {
+                var baseColor = isOnLight ? 'rgb(15, 23, 42)' : '#ffffff';
+                var activeColor = 'rgb(59, 130, 246)';
+                var hoverColor = 'rgb(15, 23, 42)';
+                nav.style.setProperty('--nav-fg', baseColor);
+                nav.style.setProperty('--nav-indicator', isOnLight ? 'rgb(15, 23, 42)' : '#ffffff');
+
+                var items = nav.querySelectorAll('.nav-item');
+                items.forEach(function(item) {
+                    var isActive = item.classList.contains('active');
+                    var isHover = item.classList.contains('prox-hover');
+                    var tone = isActive ? activeColor : (isHover ? hoverColor : baseColor);
+                    item.style.setProperty('color', tone, 'important');
+                    item.style.setProperty('-webkit-text-fill-color', tone, 'important');
+                    item.querySelectorAll('i, span').forEach(function(child) {
+                        child.style.setProperty('color', tone, 'important');
+                        child.style.setProperty('-webkit-text-fill-color', tone, 'important');
+                    });
+                });
+            }
+
+            function updateNavContrast() {
+                var sampleY = Math.max(0, Math.floor(window.innerHeight - nav.offsetHeight - 16));
+                var samplePoints = [0.2, 0.5, 0.8];
+                var lightHits = 0;
+
+                for (var i = 0; i < samplePoints.length; i += 1) {
+                    var sampleX = Math.floor(window.innerWidth * samplePoints[i]);
+                    var el = getBackdropElement(sampleX, sampleY);
+                    if (!el) continue;
+                    var bg = findBackgroundColor(el);
+                    if (isLight(bg)) {
+                        lightHits += 1;
+                    }
+                }
+
+                if (lightHits >= 2) {
                     nav.classList.add('nav-on-light');
+                    applyNavTone(true);
                 } else {
                     nav.classList.remove('nav-on-light');
+                    applyNavTone(false);
                 }
+            }
+
+            var navContrastQueued = false;
+            function scheduleNavContrast() {
+                if (navContrastQueued) return;
+                navContrastQueued = true;
+                requestAnimationFrame(function() {
+                    navContrastQueued = false;
+                    updateNavContrast();
+                });
             }
 
             window.addEventListener('scroll', function() {
@@ -6381,10 +6708,13 @@
                     if (blurFade) blurFade.classList.remove('nav-visible');
                 }
 
-                updateNavContrast();
+                scheduleNavContrast();
             }, { passive: true });
 
-            window.addEventListener('resize', updateNavContrast, { passive: true });
+            window.addEventListener('resize', scheduleNavContrast, { passive: true });
+            window.addEventListener('wheel', scheduleNavContrast, { passive: true });
+            window.addEventListener('touchmove', scheduleNavContrast, { passive: true });
+            window.setInterval(updateNavContrast, 120);
             updateNavContrast();
         })();
 

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422ap'; // 2026-04-22 - cta-card arc: SVG cubic-bezier overlay (horizontal tangent peak = smooth seamless dome), scaleY GPU
+const CACHE_VERSION = '20260422br'; // 2026-04-22 - footer photo layer scale increased slightly so the parallax reads more clearly
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
