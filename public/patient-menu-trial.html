@@ -201,6 +201,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            opacity: 0;
         }
 
         .brand-mark {
@@ -254,6 +255,7 @@
             font-size: 15px;
             transition: transform 0.25s ease;
             cursor: pointer;
+            opacity: 0;
         }
 
         .circle-btn:hover { background: var(--bg-elevated); }
@@ -306,6 +308,7 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
+            opacity: 0;
         }
 
         .avatar img {
@@ -2139,7 +2142,12 @@
 
         .welcome-pinned {
             position: relative;
-            height: 1200px;
+            /* Tinggi container dinaikkan dari 1200px agar ada ekstra ruang scroll
+               setelah paragraf terakhir ("Terima kasih...", "salam hangat dr. Dibya")
+               tersingkap. Selama ruang itu, konten terus ter-translate ke atas sampai
+               hilang dari window — baru setelah itu sticky-nya dilepas dan
+               "Selamat Datang" ikut scroll keatas. */
+            height: 1900px;
             margin: 0 calc(-50vw + 50%);
             z-index: 1001;
             background: transparent;
@@ -3900,7 +3908,8 @@
             z-index: 0;
             pointer-events: none;
             background: url('/images/bg/green_bg.avif') center center / cover no-repeat;
-            opacity: var(--hero-green-opacity, 1);
+            opacity: var(--hero-green-opacity, 0);
+            --hero-green-opacity: 0;
         }
 
         /* Clearpath-style curves: absolute inside hero-welcome, stroke draws on scroll. */
@@ -3914,8 +3923,9 @@
             height: 100vh;
             pointer-events: none;
             z-index: 1;
-            opacity: var(--hero-green-opacity, 1);
+            opacity: var(--hero-green-opacity, 0);
             will-change: opacity;
+            --hero-green-opacity: 0;
         }
         #hero-curves .hero-curve {
             position: absolute;
@@ -3925,13 +3935,21 @@
             overflow: visible;
         }
         #hero-curves .hero-curve path {
-            stroke: rgba(255, 255, 255, 0.6);
-            stroke-width: 2;
+            stroke: #CCFF00;
+            stroke-width: 2.5;
             fill: transparent;
             vector-effect: non-scaling-stroke;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.85;
         }
         #hero-curves .hero-curve-2 path {
-            stroke: rgba(255, 255, 255, 0.35);
+            opacity: 0.72;
+        }
+
+        /* Curves lift upward on scroll via --hero-curve-lift (0 to 1) */
+        #hero-curves {
+            transform: scaleX(1.3) scaleY(1.8) translateX(-150px) translateY(calc(var(--hero-curve-lift, 0) * -200px));
         }
 
         #hero-fixed-bg .hero-fixed-bg-preg {
@@ -3941,7 +3959,8 @@
             mix-blend-mode: soft-light;
             -webkit-mask-image: radial-gradient(ellipse 45% 55% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0) 90%);
             mask-image: radial-gradient(ellipse 45% 55% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0) 90%);
-            opacity: var(--hero-preg-opacity, 1);
+            opacity: var(--hero-preg-opacity, 0);
+            --hero-preg-opacity: 0;
         }
 
 
@@ -3968,7 +3987,7 @@
             font-weight: 500;
             color: var(--text-secondary);
             opacity: 0;
-            transform: translateY(14px);
+            transform: translateY(12px);
         }
 
         body.header-animated .hero-welcome .kicker {
@@ -4030,8 +4049,8 @@
             color: var(--text-primary);
             max-width: 20ch;
             opacity: 0;
-            transform: translateY(20px);
-            filter: blur(5px);
+            transform: translateY(12px);
+            filter: none;
         }
 
 
@@ -4063,6 +4082,8 @@
             line-height: 1.7;
             font-size: 18px;
             font-style: italic;
+            opacity: 0;
+            transform: translateY(12px);
         }
 
         .hero-copy::before {
@@ -4125,6 +4146,71 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* ========== HERO PAGE-LOAD ANIMATIONS ========== */
+        @keyframes fadeInOnly {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Background lady (preg overlay) - 0.7s fade-in at 0s */
+        body.page-loaded .hero-fixed-bg-preg {
+            animation: fadeInOnly 0.7s ease-out forwards;
+        }
+
+        /* Green background - 1s fade-in at 0s */
+        body.page-loaded #hero-fixed-bg {
+            animation: fadeInOnly 1s ease-out forwards;
+        }
+
+        /* Curves - 1.2s fade-in at 0s */
+        body.page-loaded #hero-curves {
+            animation: fadeInOnly 1.2s ease-out forwards;
+        }
+
+        /* Logo - 1s fade-in at 1.2s */
+        body.page-loaded .brand {
+            animation: fadeInDown 1s ease-out 1.2s forwards;
+        }
+
+        /* Notification bell - 0.7s fade-in at 2.2s (after logo finishes) */
+        body.page-loaded #notification-bell {
+            animation: fadeInDown 0.7s ease-out 2.2s forwards;
+        }
+
+        /* Avatar - 0.9s fade-in + downward slide at 2.2s */
+        body.page-loaded .avatar {
+            animation: fadeInDown 0.9s ease-out 2.2s forwards;
+        }
+
+        /* Hero content (greeting, kicker, copy) - 1.3s fade-in + upward slide at 1.2s */
+        body.page-loaded .hero-welcome .kicker,
+        body.page-loaded .hero-welcome .hero-greeting,
+        body.page-loaded .hero-welcome .hero-copy {
+            animation: fadeInUp 1.3s ease-out 1.2s forwards;
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (min-width: 600px) {
             .screen { padding-left: 24px; padding-right: 24px; }
@@ -4142,11 +4228,11 @@
         }
 
         /* ========== REDUCED MOTION ========== */
-        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .journey-card .journey-card-frame .journey-card-media .journey-card-copy .journey-card-kicker .journey-card-title .journey-card-cta .journey-card-cta-dot .journey-card-cta-text .doc-cta-link .doc-cta-track .dot .dot-left .dot-right .text .cta-arc-mask .cta-bg-img .cta-curves .cta-curve .cta-curve-path = interactive cards/booking visuals exempt from kill-switch */
+        /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .journey-card .journey-card-frame .journey-card-media .journey-card-copy .journey-card-kicker .journey-card-title .journey-card-cta .journey-card-cta-dot .journey-card-cta-text .doc-cta-link .doc-cta-track .dot .dot-left .dot-right .text .cta-arc-mask .cta-bg-img .cta-curves .cta-curve .cta-curve-path .brand .circle-btn .avatar .hero-greeting .kicker = interactive cards/booking visuals + hero page-load animations exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path),
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path)::before,
-            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path)::after {
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path):not(.brand):not(.circle-btn):not(.avatar):not(.hero-greeting):not(.kicker):not(#hero-fixed-bg):not(#hero-curves),
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path):not(.brand):not(.circle-btn):not(.avatar):not(.hero-greeting):not(.kicker):not(#hero-fixed-bg):not(#hero-curves)::before,
+            *:not(.topbar):not(.menu-card):not(.menu-icon):not(.cta-btn):not(.doc-card):not(.journey-showcase):not(.journey-card):not(.journey-card-frame):not(.journey-card-media):not(.journey-card-grain):not(.journey-card-copy):not(.journey-card-kicker):not(.journey-card-title):not(.journey-card-cta):not(.journey-card-cta-dot):not(.journey-card-cta-text):not(.proces-reveal):not(.proces-row):not(.proces-desc):not(.proces-section):not(.patient-features-section):not(.proces-header):not(.proces-step):not(.proces-title):not(.bottom-sheet):not(.bottom-sheet-overlay):not(.sheet-menu-item):not(.nav-item):not(main):not(.green-light-glow):not(.bottom-nav):not(.hero-copy):not(.doc-cta-link):not(.doc-cta-track):not(.dot):not(.dot-left):not(.dot-right):not(.text):not(.cta-arc-mask):not(.cta-bg-img):not(.cta-curves):not(.cta-curve):not(.cta-curve-path):not(.brand):not(.circle-btn):not(.avatar):not(.hero-greeting):not(.kicker):not(#hero-fixed-bg):not(#hero-curves)::after {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
@@ -4259,11 +4345,11 @@
             <!-- Hero Welcome Section -->
             <section class="hero-welcome">
                 <div id="hero-curves" aria-hidden="true">
-                    <svg class="hero-curve hero-curve-1" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
-                        <path d="M 568.5 0 C -446.766 669.726 420.757 754.867 688 543.5 C 955.243 332.133 149.225 460.324 381 1140"/>
+                    <svg class="hero-curve hero-curve-1" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                        <path d="M 900 30 C 700 80, 500 300, 300 350 C 200 375, 150 320, 180 220 C 220 100, 400 60, 600 100 C 750 130, 880 180, 950 280"/>
                     </svg>
-                    <svg class="hero-curve hero-curve-2" viewBox="0 0 780 1140" preserveAspectRatio="xMidYMid slice">
-                        <path d="M 555 0 C -514.95 653.314 502.942 726.558 720 509.5 C 937.058 292.442 174.231 575.033 381 1140"/>
+                    <svg class="hero-curve hero-curve-2" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+                        <path d="M 920 100 C 720 160, 520 370, 320 420 C 210 450, 150 380, 190 270 C 240 140, 430 90, 640 140 C 800 170, 920 230, 980 350"/>
                     </svg>
                 </div>
                 <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> <span id="hero-kicker-text">Selamat Pagi</span></div>
@@ -5353,9 +5439,11 @@
         // ==================== HERO ANIMATION HELPER ====================
         function triggerHeroAnimations() {
             document.body.classList.remove('header-animated');
+            document.body.classList.remove('page-loaded');
             requestAnimationFrame(function() {
                 requestAnimationFrame(function() {
                     document.body.classList.add('header-animated');
+                    document.body.classList.add('page-loaded');
                 });
             });
 
@@ -5363,6 +5451,7 @@
             setTimeout(function() {
                 var kicker = document.getElementById('hero-kicker');
                 var greeting = document.getElementById('hero-greeting');
+                var copy = document.getElementById('hero-copy');
                 if (kicker && getComputedStyle(kicker).opacity === '0') {
                     kicker.style.opacity = '1';
                     kicker.style.transform = 'none';
@@ -5371,6 +5460,10 @@
                     greeting.style.opacity = '1';
                     greeting.style.transform = 'none';
                     greeting.style.filter = 'none';
+                }
+                if (copy && getComputedStyle(copy).opacity === '0') {
+                    copy.style.opacity = '1';
+                    copy.style.transform = 'none';
                 }
             }, 3000);
         }
@@ -6518,14 +6611,18 @@
                 // Progress based on full viewport (inner is 100vh)
                 var scrollRange = containerH - window.innerHeight;
                 var progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
-                // Content is CSS-centered, so top is clipped by overflow/2.
-                // At progress=0: shift down to reveal top. At progress=1: shift up to reveal bottom.
-                var shift = overflow * (0.5 - progress);
+                // Content is CSS-centered in window. Shift range sekarang extend dari
+                // +overflow/2 (top content visible) → -overflow/2 - windowH (konten
+                // fully pushed out above window). Dengan ini paragraf terakhir
+                // ("Terima kasih...", "salam hangat dr. Dibya") ter-scroll keluar
+                // viewport dulu sebelum sticky welcome-pinned-inner di-lepas.
+                var shift = overflow / 2 - (overflow + windowH) * progress;
                 content.style.transform = 'translateY(' + shift + 'px)';
 
-                // Show/hide skip button
+                // Show/hide skip button — sembunyikan lebih cepat (progress 0.7)
+                // karena phase akhir = konten sudah nggak visible.
                 if (skipBtn) {
-                    if (progress > 0.01 && progress < 0.85) {
+                    if (progress > 0.01 && progress < 0.7) {
                         skipBtn.classList.add('visible');
                     } else {
                         skipBtn.classList.remove('visible');
@@ -7215,7 +7312,7 @@
                 // background-preg fades out during the hero scroll.
                 var pregFadeEnd = h * 0.6;
                 var pregT = Math.max(0, Math.min(1, y / pregFadeEnd));
-                root.setProperty('--hero-preg-opacity', (1 - pregT).toFixed(3));
+                root.setProperty('--hero-preg-opacity', (1 - pregT).toFixed(3), 'important');
 
                 // green_bg (background 1) fades out only AFTER "Selamat Datang" section ends.
                 var welcomePinned = document.getElementById('welcome-pinned');
@@ -7232,7 +7329,7 @@
                     // Fallback: fade using hero end
                     greenT = 0;
                 }
-                root.setProperty('--hero-green-opacity', (1 - greenT).toFixed(3));
+                root.setProperty('--hero-green-opacity', (1 - greenT).toFixed(3), 'important');
                 // Curve lift matches green fade: when green disappears, curves are fully lifted out the top.
                 root.setProperty('--hero-curve-lift', greenT.toFixed(3));
             }
