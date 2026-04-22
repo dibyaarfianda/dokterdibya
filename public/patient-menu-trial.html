@@ -3542,7 +3542,7 @@
             --footer-progress: 0;
             position: relative;
             margin-top: 150px;
-            padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 32px);
+            padding: 0;
             min-height: 0;
             background: none;
             color: rgba(255, 255, 255, 0.78);
@@ -3662,7 +3662,7 @@
             padding-top: 68px;
             padding-left: clamp(22px, 5vw, 80px);
             padding-right: clamp(22px, 5vw, 80px);
-            padding-bottom: 32px;
+            padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
         }
         .footer-newsletter-kicker {
             display: inline-flex;
@@ -3817,7 +3817,7 @@
         }
         @media (min-width: 900px) {
             .site-footer {
-                padding: 0 0 48px;
+                padding: 0;
             }
             .site-footer .footer-card-frame {
                 min-height: 620px;
@@ -3828,7 +3828,7 @@
                 gap: 68px;
                 align-items: start;
                 padding-top: 88px;
-                padding-bottom: 48px;
+                padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px));
             }
             .footer-subscribe {
                 margin-top: 72px;
@@ -3848,20 +3848,13 @@
         }
         @media (min-width: 1200px) {
             .site-footer {
-                padding: 0 0 52px;
+                padding: 0;
             }
         }
 
-        @media (prefers-reduced-motion: reduce) {
-            .site-footer .footer-backdrop,
-            .site-footer .footer-photo,
-            .site-footer .footer-grid,
-            .site-footer .footer-orb,
-            .site-footer .footer-orb-right,
-            .site-footer .footer-grain {
-                transform: none !important;
-            }
-        }
+        /* NOTE: reduced-motion override sengaja dihapus untuk .site-footer .footer-photo.
+           Parallax-nya subtle (translateY 106px selama scroll) dan sama seperti journey-card
+           yang juga di-whitelist dari kill-switch reduced-motion. */
 
         /* ========== TOAST ========== */
         .toast-msg {
@@ -4917,30 +4910,24 @@
             (function() {
                 var footer = document.querySelector('.site-footer');
                 if (!footer) return;
-                var reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
                 var ticking = false;
 
                 function updateFooterParallax() {
                     ticking = false;
-                    if (reduceMotion && reduceMotion.matches) {
-                        footer.style.setProperty('--footer-shift-photo', '0px');
-                        footer.style.setProperty('--footer-shift-a', '0px');
-                        footer.style.setProperty('--footer-shift-b', '0px');
-                        footer.style.setProperty('--footer-shift-c', '0px');
-                        footer.style.setProperty('--footer-shift-d', '0px');
-                        footer.style.setProperty('--footer-progress', '0');
-                        return;
-                    }
 
-                    // Match journey-card parallax exactly: -200px → -94px across viewport pass.
-                    // Reference rect = .footer-card-frame (the visible photo container), not the
-                    // whole <footer> (which has 150px margin-top of empty space above it).
+                    // Journey-card parallax feel (-200px → -94px translateY on over-extended image),
+                    // tapi range progress dikalibrasi untuk footer (elemen terminal yang nggak bisa
+                    // scroll keluar atas viewport). Jadi progress 0 = footer mulai masuk dari bawah,
+                    // progress 1 = footer fully visible di layar — bukan sampai keluar atas.
                     var frame = footer.querySelector('.footer-card-frame') || footer;
                     var rect = frame.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight || 1;
                     var travel = 106;
                     var startOffset = -200;
-                    var rawProgress = (vh - rect.top) / (vh + rect.height);
+                    var startTop = vh;
+                    var endTop = Math.max(0, vh - rect.height);
+                    var span = Math.max(1, startTop - endTop);
+                    var rawProgress = (startTop - rect.top) / span;
                     var eased = Math.max(0, Math.min(1, rawProgress));
                     eased = eased * eased * (3 - (2 * eased));
                     var photoShift = startOffset + (travel * eased);
@@ -4968,9 +4955,6 @@
                 window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
                 window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
                 window.addEventListener('resize', scheduleFooterParallax, { passive: true });
-                if (reduceMotion && typeof reduceMotion.addEventListener === 'function') {
-                    reduceMotion.addEventListener('change', scheduleFooterParallax);
-                }
                 window.setInterval(scheduleFooterParallax, 90);
                 scheduleFooterParallax();
                 setTimeout(scheduleFooterParallax, 180);
