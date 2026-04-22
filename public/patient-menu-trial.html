@@ -3529,6 +3529,11 @@
 
         /* ========== SITE FOOTER ========== */
         .site-footer {
+            --journey-stretch: 0px;
+            --journey-parallax-y: var(--footer-shift-photo);
+            --journey-shadow-alpha: 0.14;
+            --journey-bg-size: 156% auto;
+            --journey-position: center center;
             --footer-shift-photo: 0px;
             --footer-shift-a: 0px;
             --footer-shift-b: 0px;
@@ -3537,18 +3542,40 @@
             --footer-progress: 0;
             position: relative;
             margin-top: 150px;
-            padding: 44px 22px calc(env(safe-area-inset-bottom, 0px) + 28px);
-            min-height: 380px;
-            background:
-                radial-gradient(112% 120% at 82% 0%, rgba(86, 111, 136, 0.12) 0%, rgba(86, 111, 136, 0.05) 22%, rgba(86, 111, 136, 0) 46%),
-                linear-gradient(180deg, #1b2129 0%, #141922 46%, #0e1218 100%);
+            padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 32px);
+            min-height: 0;
+            background: none;
             color: rgba(255, 255, 255, 0.78);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            /* Ensure footer bg paints down to page bottom */
             margin-bottom: 0;
-            overflow: hidden;
+            overflow: visible;
             isolation: isolate;
+        }
+        .site-footer .footer-card-frame {
+            position: relative;
+            min-height: 520px;
+            width: 100%;
+            overflow: hidden;
+            background-color: #c7d4cf;
+            box-shadow: 0 26px 56px rgba(31, 38, 35, var(--journey-shadow-alpha));
+            transition: box-shadow 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+            isolation: isolate;
+        }
+        .site-footer .footer-card-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(16, 19, 18, 0.08) 0%, rgba(16, 19, 18, 0.28) 42%, rgba(16, 19, 18, 0.68) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+        .site-footer .footer-card-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.34), transparent 34%), linear-gradient(135deg, rgba(147, 183, 172, 0.12), rgba(20, 22, 24, 0.12));
+            mix-blend-mode: screen;
+            z-index: 2;
+            pointer-events: none;
         }
         .site-footer .footer-photo,
         .site-footer .footer-backdrop,
@@ -3562,38 +3589,36 @@
             pointer-events: none;
         }
         .site-footer .footer-photo {
-            inset: -16% -8% -10%;
+            top: calc(-88px + var(--journey-stretch) * 0.5);
+            bottom: calc(-240px + var(--journey-stretch) * 0.5);
+            left: 0;
+            right: 0;
             background-image: url('/images/bg/footer.avif');
             background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center center;
-            transform: translate3d(0, var(--footer-shift-photo), 0) scale(1.2);
-            transform-origin: 50% 0%;
+            background-size: var(--journey-bg-size, cover);
+            background-position: var(--journey-position, center center);
+            transform: translateY(var(--journey-parallax-y));
             z-index: 0;
+            filter: saturate(0.98) contrast(0.98);
+            transition: none;
+            will-change: transform;
         }
-        .site-footer .footer-backdrop {
-            inset: -12% -8% -4%;
-            background:
-                linear-gradient(180deg, rgba(9, 12, 16, 0.28) 0%, rgba(9, 12, 16, 0.38) 34%, rgba(7, 9, 12, 0.62) 100%),
-                radial-gradient(70% 72% at 84% 6%, rgba(103, 131, 160, 0.16) 0%, rgba(103, 131, 160, 0.07) 24%, rgba(103, 131, 160, 0) 52%),
-                radial-gradient(52% 64% at 18% 44%, rgba(255, 255, 255, 0.028) 0%, rgba(255, 255, 255, 0) 64%);
-            transform: translate3d(0, var(--footer-shift-a), 0) scale(1.03);
-            transform-origin: 50% 0%;
-            z-index: 1;
+        .site-footer .footer-photo::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/grain.avif');
+            background-size: 90px 90px;
+            background-repeat: repeat;
+            mix-blend-mode: soft-light;
+            opacity: 0.5;
+            pointer-events: none;
         }
-        .site-footer .footer-grid {
-            inset: -8% -4% 0;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
-            background-size: 46px 46px, 46px 46px, 92px 92px;
-            background-position: 0 0, 0 0, 12px 0;
-            opacity: 0.16;
-            mask-image: radial-gradient(130% 96% at 50% 0%, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.72) 56%, rgba(0, 0, 0, 0.22) 82%, transparent 100%);
-            -webkit-mask-image: radial-gradient(130% 96% at 50% 0%, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.72) 56%, rgba(0, 0, 0, 0.22) 82%, transparent 100%);
-            transform: translate3d(0, var(--footer-shift-b), 0) scale(1.01);
-            z-index: 1;
+        .site-footer .footer-backdrop,
+        .site-footer .footer-grid,
+        .site-footer .footer-vignette,
+        .site-footer .footer-grain {
+            display: none;
         }
         .site-footer .footer-orb {
             inset: -4% auto auto -8%;
@@ -3602,8 +3627,7 @@
             border-radius: 50%;
             background: radial-gradient(circle, rgba(203, 222, 215, 0.09) 0%, rgba(203, 222, 215, 0.04) 28%, rgba(203, 222, 215, 0) 66%);
             filter: blur(18px);
-            opacity: calc(0.22 + (var(--footer-progress) * 0.08));
-            transform: translate3d(0, var(--footer-shift-c), 0);
+            opacity: 0;
             z-index: 1;
         }
         .site-footer .footer-orb-right {
@@ -3613,29 +3637,12 @@
             border-radius: 50%;
             background: radial-gradient(circle, rgba(110, 137, 167, 0.14) 0%, rgba(110, 137, 167, 0.05) 32%, rgba(110, 137, 167, 0) 72%);
             filter: blur(26px);
-            opacity: 0.34;
-            transform: translate3d(0, var(--footer-shift-d), 0);
+            opacity: 0;
             z-index: 1;
-        }
-        .site-footer .footer-vignette {
-            inset: 0;
-            background:
-                linear-gradient(180deg, rgba(7, 9, 12, 0) 0%, rgba(7, 9, 12, 0.16) 40%, rgba(5, 7, 10, 0.4) 100%),
-                radial-gradient(120% 120% at 50% 100%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.36) 100%);
-            z-index: 1;
-        }
-        .site-footer .footer-grain {
-            background-image: url('/images/grain.avif');
-            background-size: 110px 110px;
-            background-repeat: repeat;
-            mix-blend-mode: soft-light;
-            opacity: 0.11;
-            transform: translate3d(0, calc(var(--footer-shift-b) * 0.22), 0) scale(1.01);
-            z-index: 2;
         }
         .site-footer .footer-inner {
             position: relative;
-            z-index: 1;
+            z-index: 3;
         }
         /* Page bg behind footer = dark (prevents white below footer in overscroll/rubber-band) */
         html { background-color: #0d0d0d !important; }
@@ -3650,8 +3657,12 @@
         }
         /* Inner wrapper constrains content while footer bg goes edge-to-edge on desktop */
         .site-footer .footer-inner {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
+            padding-top: 68px;
+            padding-left: clamp(22px, 5vw, 80px);
+            padding-right: clamp(22px, 5vw, 80px);
+            padding-bottom: 32px;
         }
         .footer-newsletter-kicker {
             display: inline-flex;
@@ -3806,14 +3817,18 @@
         }
         @media (min-width: 900px) {
             .site-footer {
-                min-height: 460px;
-                padding: 78px 56px 40px;
+                padding: 0 0 48px;
+            }
+            .site-footer .footer-card-frame {
+                min-height: 620px;
             }
             .site-footer .footer-inner {
                 display: grid;
                 grid-template-columns: minmax(0, 1.16fr) minmax(340px, 0.84fr);
                 gap: 68px;
                 align-items: start;
+                padding-top: 88px;
+                padding-bottom: 48px;
             }
             .footer-subscribe {
                 margin-top: 72px;
@@ -3833,7 +3848,7 @@
         }
         @media (min-width: 1200px) {
             .site-footer {
-                padding: 80px 80px 44px;
+                padding: 0 0 52px;
             }
         }
 
@@ -4704,62 +4719,64 @@
 
     <!-- Site Footer (outside .screen so its padding-bottom doesn't leak white space below) -->
     <footer class="site-footer">
-        <div class="footer-photo" aria-hidden="true"></div>
-        <div class="footer-backdrop" aria-hidden="true"></div>
-        <div class="footer-grid" aria-hidden="true"></div>
-        <div class="footer-orb" aria-hidden="true"></div>
-        <div class="footer-orb-right" aria-hidden="true"></div>
-        <div class="footer-vignette" aria-hidden="true"></div>
-        <div class="footer-grain" aria-hidden="true"></div>
-        <div class="footer-inner">
-            <div class="footer-hero">
-                <div class="footer-copy">
-                    <span class="footer-newsletter-kicker">dokterDIBYA Portal</span>
-                    <h2>Join Our Newsletter.</h2>
-                    <p>
-                        We share occasional reflections on women&apos;s health, emotional well-being,
-                        and practical guidance to move through each phase with more clarity and calm.
+        <div class="footer-card-frame">
+            <div class="footer-photo" aria-hidden="true"></div>
+            <div class="footer-backdrop" aria-hidden="true"></div>
+            <div class="footer-grid" aria-hidden="true"></div>
+            <div class="footer-orb" aria-hidden="true"></div>
+            <div class="footer-orb-right" aria-hidden="true"></div>
+            <div class="footer-vignette" aria-hidden="true"></div>
+            <div class="footer-grain" aria-hidden="true"></div>
+            <div class="footer-inner">
+                <div class="footer-hero">
+                    <div class="footer-copy">
+                        <span class="footer-newsletter-kicker">dokterDIBYA Portal</span>
+                        <h2>Join Our Newsletter.</h2>
+                        <p>
+                            We share occasional reflections on women&apos;s health, emotional well-being,
+                            and practical guidance to move through each phase with more clarity and calm.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="footer-subscribe">
+                    <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
+                        <input class="footer-subscribe-input" type="email" placeholder="Enter your email address" aria-label="Email address">
+                        <button class="footer-subscribe-button" type="submit">Subscribe</button>
+                    </form>
+                    <p class="footer-policy">
+                        By signing up to receive emails from dokterDIBYA, you agree to our Privacy Policy.
                     </p>
                 </div>
-            </div>
 
-            <div class="footer-subscribe">
-                <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
-                    <input class="footer-subscribe-input" type="email" placeholder="Enter your email address" aria-label="Email address">
-                    <button class="footer-subscribe-button" type="submit">Subscribe</button>
-                </form>
-                <p class="footer-policy">
-                    By signing up to receive emails from dokterDIBYA, you agree to our Privacy Policy.
-                </p>
-            </div>
-
-            <div class="footer-meta">
-                <div class="footer-meta-col">
-                    <span class="footer-meta-title">Sitemap</span>
-                    <div class="footer-links">
-                        <a href="/patient-menu-trial.html">Main Page</a>
-                        <a href="/artikel-kesehatan.html">Journal</a>
-                        <a href="/patient-dashboard.html">Patient Portal</a>
-                        <a href="/patient-login.html">Login</a>
-                        <a href="mailto:admin@dokterdibya.com">Contact</a>
+                <div class="footer-meta">
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Sitemap</span>
+                        <div class="footer-links">
+                            <a href="/patient-menu-trial.html">Main Page</a>
+                            <a href="/artikel-kesehatan.html">Journal</a>
+                            <a href="/patient-dashboard.html">Patient Portal</a>
+                            <a href="/patient-login.html">Login</a>
+                            <a href="mailto:admin@dokterdibya.com">Contact</a>
+                        </div>
+                    </div>
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Contact Us</span>
+                        <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
+                        <div class="footer-social" aria-label="Social links">
+                            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                            <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                        </div>
                     </div>
                 </div>
-                <div class="footer-meta-col">
-                    <span class="footer-meta-title">Contact Us</span>
-                    <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
-                    <div class="footer-social" aria-label="Social links">
-                        <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                        <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                        <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-                    </div>
-                </div>
-            </div>
 
-            <div class="footer-bottom">
-                <span>&copy; 2026 dokterDIBYA</span>
-                <span>Patient Portal</span>
-                <span>All rights reserved</span>
+                <div class="footer-bottom">
+                    <span>&copy; 2026 dokterDIBYA</span>
+                    <span>Patient Portal</span>
+                    <span>All rights reserved</span>
+                </div>
             </div>
         </div>
     </footer>
@@ -4915,18 +4932,30 @@
                         return;
                     }
 
-                    var rect = footer.getBoundingClientRect();
+                    // Match journey-card parallax exactly: -200px → -94px across viewport pass.
+                    // Reference rect = .footer-card-frame (the visible photo container), not the
+                    // whole <footer> (which has 150px margin-top of empty space above it).
+                    var frame = footer.querySelector('.footer-card-frame') || footer;
+                    var rect = frame.getBoundingClientRect();
                     var vh = window.innerHeight || document.documentElement.clientHeight || 1;
-                    var travel = vh + rect.height;
-                    var progress = Math.max(0, Math.min(1, (vh - rect.top) / travel));
-                    var drift = 0.5 - progress;
+                    var travel = 106;
+                    var startOffset = -200;
+                    var rawProgress = (vh - rect.top) / (vh + rect.height);
+                    var eased = Math.max(0, Math.min(1, rawProgress));
+                    eased = eased * eased * (3 - (2 * eased));
+                    var photoShift = startOffset + (travel * eased);
+                    var progress = eased;
+                    var backdropShift = 0;
+                    var gridShift = 0;
+                    var orbLeftShift = 0;
+                    var orbRightShift = 0;
 
                     footer.style.setProperty('--footer-progress', progress.toFixed(3));
-                    footer.style.setProperty('--footer-shift-photo', (drift * 320).toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-a', (drift * 18).toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-b', (drift * 12).toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-c', (drift * 42).toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-d', (drift * -26).toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-photo', photoShift.toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-a', backdropShift.toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-b', gridShift.toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-c', orbLeftShift.toFixed(2) + 'px');
+                    footer.style.setProperty('--footer-shift-d', orbRightShift.toFixed(2) + 'px');
                 }
 
                 function scheduleFooterParallax() {
