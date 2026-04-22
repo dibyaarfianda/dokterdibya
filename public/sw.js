@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422co'; // 2026-04-22 - heavy-scroll damping disamakan 0.07 di seluruh halaman; hilangkan welcome 0.03 yang bikin title tersentak saat keluar welcome zone
+const CACHE_VERSION = '20260422cp'; // 2026-04-22 - journey-showcase (Kisah Anda) margin-top +100px untuk breathing room setelah UPDATE TERKINI
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
