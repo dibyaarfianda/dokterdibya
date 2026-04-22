@@ -6797,9 +6797,9 @@
                     opacity = 0;
                 }
 
-                // Apply full-screen black overlay — capped at 20% opacity.
+                // Apply full-screen black overlay — capped at 60% opacity.
                 var overlay = document.getElementById('welcome-bg-overlay');
-                if (overlay) overlay.style.opacity = (opacity * 0.40).toFixed(3);
+                if (overlay) overlay.style.opacity = (opacity * 0.60).toFixed(3);
             }
 
             var welcomeBgTicking = false;

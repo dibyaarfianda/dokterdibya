@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422cp'; // 2026-04-22 - journey-showcase (Kisah Anda) margin-top +100px untuk breathing room setelah UPDATE TERKINI
+const CACHE_VERSION = '20260422cq'; // 2026-04-22 - welcome-bg-overlay max opacity 0.40 → 0.60 untuk Selamat Datang section yang lebih gelap
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
