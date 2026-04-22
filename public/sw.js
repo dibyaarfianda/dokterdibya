@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260422cl'; // 2026-04-22 - footer parallax recalibrated for terminal element + reduce-motion kill-switch dilepas + edge putih bawah footer dihapus (full image)
+const CACHE_VERSION = '20260422cm'; // 2026-04-22 - hero: hapus garis pemisah putih di antara nama dan daily quote
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
