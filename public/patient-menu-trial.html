@@ -949,7 +949,8 @@
             opacity: 0;
             pointer-events: none;
             z-index: 2;
-            transition: opacity 0.12s linear;
+            /* CSS transition sengaja dihilangkan — JS drive opacity lockstep ke scrollY via RAF.
+               Combo CSS-transition + JS-per-scroll-event bikin 1-frame snap saat scroll perlahan. */
             overflow: hidden;
         }
 
@@ -6729,32 +6730,23 @@
         (function() {
             var targetY = window.scrollY;
             var currentY = window.scrollY;
-            var defaultDamping = 0.07;
-            var welcomeDamping = 0.03;
+            // Damping tunggal di seluruh halaman. Sebelumnya welcome pakai 0.03
+            // (heavy feel) dan section lain 0.07 — tapi transisi di batas welcome
+            // bikin title "tersentak" karena currentY catch-up cepat dari lag besar
+            // yang tertumpuk selama damping rendah. Satu nilai = transisi halus.
+            var damping = 0.07;
             var wheelForce = 0.75;
-            var activeDamping = defaultDamping;
             var rafId = null;
-            var welcomePinned = document.getElementById('welcome-pinned');
-
-            function isInWelcomeRange(y) {
-                if (!welcomePinned) return false;
-                var top = welcomePinned.offsetTop;
-                var bottom = top + welcomePinned.offsetHeight;
-                return y >= top && y <= bottom;
-            }
 
             window.addEventListener('wheel', function(e) {
                 e.preventDefault();
                 targetY += e.deltaY * wheelForce;
                 targetY = Math.max(0, Math.min(targetY, document.documentElement.scrollHeight - window.innerHeight));
-                activeDamping = (isInWelcomeRange(window.scrollY) || isInWelcomeRange(targetY))
-                    ? welcomeDamping
-                    : defaultDamping;
                 if (!rafId) tick();
             }, { passive: false });
 
             function tick() {
-                currentY += (targetY - currentY) * activeDamping;
+                currentY += (targetY - currentY) * damping;
                 if (Math.abs(targetY - currentY) < 0.5) {
                     currentY = targetY;
                     window.scrollTo(0, currentY);
@@ -6810,7 +6802,17 @@
                 if (overlay) overlay.style.opacity = (opacity * 0.40).toFixed(3);
             }
 
-            window.addEventListener('scroll', updateBackgroundOpacity, { passive: true });
+            var welcomeBgTicking = false;
+            function scheduleWelcomeBg() {
+                if (welcomeBgTicking) return;
+                welcomeBgTicking = true;
+                window.requestAnimationFrame(function() {
+                    welcomeBgTicking = false;
+                    updateBackgroundOpacity();
+                });
+            }
+            window.addEventListener('scroll', scheduleWelcomeBg, { passive: true });
+            window.addEventListener('resize', scheduleWelcomeBg, { passive: true });
             // Initial call
             updateBackgroundOpacity();
         })();
@@ -6866,8 +6868,17 @@
                 fixedBg.style.opacity = (opacityFactor * MAX_OPACITY).toFixed(3);
             }
 
-            window.addEventListener('scroll', updateInfoTerbaruBgOpacity, { passive: true });
-            window.addEventListener('resize', updateInfoTerbaruBgOpacity, { passive: true });
+            var infoBgTicking = false;
+            function scheduleInfoTerbaruBg() {
+                if (infoBgTicking) return;
+                infoBgTicking = true;
+                window.requestAnimationFrame(function() {
+                    infoBgTicking = false;
+                    updateInfoTerbaruBgOpacity();
+                });
+            }
+            window.addEventListener('scroll', scheduleInfoTerbaruBg, { passive: true });
+            window.addEventListener('resize', scheduleInfoTerbaruBg, { passive: true });
             updateInfoTerbaruBgOpacity();
         })();
 
@@ -7225,8 +7236,17 @@
                 // Curve lift matches green fade: when green disappears, curves are fully lifted out the top.
                 root.setProperty('--hero-curve-lift', greenT.toFixed(3));
             }
-            window.addEventListener('scroll', updateHeroBgFade, { passive: true });
-            window.addEventListener('resize', updateHeroBgFade);
+            var heroBgTicking = false;
+            function scheduleHeroBg() {
+                if (heroBgTicking) return;
+                heroBgTicking = true;
+                window.requestAnimationFrame(function() {
+                    heroBgTicking = false;
+                    updateHeroBgFade();
+                });
+            }
+            window.addEventListener('scroll', scheduleHeroBg, { passive: true });
+            window.addEventListener('resize', scheduleHeroBg);
             updateHeroBgFade();
         })();
 
