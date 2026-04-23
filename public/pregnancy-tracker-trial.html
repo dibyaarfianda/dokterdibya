@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Monitoring Kehamilan - dokterDIBYA</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        .content {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+
+        /* Hero */
+        .pt-hero {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+        .pt-hero .section-title { margin-top: 8px; }
+        .pt-hero .serif {
+            font-family: 'Crimson Text', 'Crimson Pro', Georgia, serif;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        /* Main ring card */
+        .ring-card {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: minmax(220px, 280px) 1fr;
+            gap: 36px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .ring-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+        .ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-track { fill: none; stroke: var(--line-soft, #e5e5e5); stroke-width: 10; }
+        .ring-progress {
+            fill: none;
+            stroke: var(--success, #2f8f4e);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .ring-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .ring-center .week-kicker {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-muted, #888);
+        }
+        .ring-center .week-big {
+            font-family: 'Crimson Text', 'Crimson Pro', Georgia, serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: clamp(64px, 18vw, 96px);
+            line-height: 1;
+            color: var(--text-strong, #111);
+            margin: 4px 0;
+        }
+        .ring-center .week-sub {
+            font-size: 13px;
+            color: var(--text-muted, #666);
+        }
+
+        .ring-info .info-kicker {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--success, #2f8f4e);
+            margin-bottom: 8px;
+        }
+        .ring-info h3 {
+            font-family: 'Crimson Text', 'Crimson Pro', Georgia, serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 28px;
+            line-height: 1.2;
+            color: var(--text-strong, #111);
+            margin-bottom: 10px;
+        }
+        .ring-info .info-len {
+            font-size: 13px;
+            color: var(--text-muted, #666);
+            margin-bottom: 16px;
+        }
+        .ring-info .dev-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .ring-info .dev-list li {
+            font-size: 14px;
+            color: var(--text-body, #333);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.5;
+        }
+        .ring-info .dev-list li i {
+            color: var(--success, #2f8f4e);
+            font-size: 13px;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        /* Stat tiles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .stat-tile { padding: 20px; }
+        .stat-tile .trial-card-kicker { margin-bottom: 6px; }
+        .stat-tile .stat-value {
+            font-family: 'Crimson Text', 'Crimson Pro', Georgia, serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 26px;
+            color: var(--text-strong, #111);
+            line-height: 1.2;
+        }
+        .stat-tile .stat-sub {
+            font-size: 12px;
+            color: var(--text-muted, #666);
+            margin-top: 4px;
+        }
+
+        /* Tip / milestone block */
+        .info-block { padding: 24px; margin-bottom: 20px; }
+        .info-block .trial-card-title { margin-bottom: 10px; }
+
+        /* HPHT form */
+        .hpht-card { padding: 24px; margin-bottom: 20px; }
+        .hpht-card .form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        /* States */
+        .loading, .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted, #666);
+        }
+        .loading i { margin-right: 8px; animation: spin 1s linear infinite; }
+        .empty-state i {
+            font-size: 48px;
+            color: var(--success, #2f8f4e);
+            opacity: 0.6;
+            margin-bottom: 16px;
+            display: block;
+        }
+        .empty-state p { font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 720px) {
+            .ring-card {
+                grid-template-columns: 1fr;
+                padding: 28px 20px;
+                gap: 24px;
+            }
+            .ring-wrap { max-width: 240px; }
+            .ring-info { text-align: center; }
+            .ring-info .dev-list li { text-align: left; }
+        }
+        @media (max-width: 400px) {
+            .content { padding: 24px 14px 40px; }
+            .ring-card { padding: 22px 16px; }
+            .hpht-card .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body class="trial-themed">
+    <!-- Topbar -->
+    <header class="topbar-trial">
+        <button class="back-btn" onclick="history.back()" aria-label="Kembali" style="background:none;border:none;cursor:pointer;padding:8px 12px;font-size:18px;color:inherit;">
+            <i class="fa fa-chevron-left"></i>
+        </button>
+        <span style="font-size:14px;letter-spacing:0.16em;text-transform:uppercase;">Monitoring Kehamilan</span>
+        <span style="width:36px;"></span>
+    </header>
+    <div class="topbar-trial-spacer"></div>
+
+    <div class="grain-overlay" aria-hidden="true"></div>
+
+    <main class="content" id="main-content">
+        <div class="loading">
+            <i class="fa fa-spinner"></i> Memuat data...
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div class="site-footer-brand">
+                <div class="site-footer-logo">dokterDIBYA</div>
+                <p class="site-footer-tag">Pendamping kehamilan, minggu demi minggu.</p>
+            </div>
+            <div class="site-footer-cols">
+                <div class="site-footer-col">
+                    <h4>Navigasi</h4>
+                    <a href="/patient-menu-trial.html">Beranda</a>
+                    <a href="/album-usg-trial.html">Album USG</a>
+                    <a href="/tanya-dokter-trial.html">Tanya Dokter</a>
+                </div>
+                <div class="site-footer-col">
+                    <h4>Kontak</h4>
+                    <a href="tel:+6281234567890">+62 812-3456-7890</a>
+                    <a href="mailto:halo@dokterdibya.com">halo@dokterdibya.com</a>
+                </div>
+            </div>
+            <div class="site-footer-bottom">
+                <span>&copy; <span id="footerYear"></span> dokterDIBYA. Semua hak dilindungi.</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        var fy = document.getElementById('footerYear');
+        if (fy) fy.textContent = new Date().getFullYear();
+    </script>
+
+    <script type="module">
+        import { getToken, checkAuth, formatDate } from '/scripts/patient-utils.js';
+
+        if (!checkAuth()) { /* redirect handled */ }
+        const token = getToken();
+
+        loadPregnancyData();
+
+        async function loadPregnancyData() {
+            const container = document.getElementById('main-content');
+            try {
+                const response = await fetch('/api/patients/pregnancy-tracker', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    renderEmpty(container);
+                    return;
+                }
+                renderPregnancyTracker(result.data);
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat data. Coba lagi nanti.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderEmpty(container) {
+            container.innerHTML = `
+                <section class="pt-hero">
+                    <div class="section-kicker">Monitoring Kehamilan</div>
+                    <h1 class="section-title">Minggu ke-<span id="weekNumber" class="serif">—</span></h1>
+                    <p class="section-lead">
+                        Pantau perkembangan janin Dokter minggu demi minggu, dari ukuran tubuh,
+                        organ yang sedang terbentuk, hingga tonggak penting menjelang persalinan.
+                    </p>
+                </section>
+
+                <div class="trial-card hpht-card">
+                    <div class="trial-card-kicker">Mulai Pantau</div>
+                    <h3 class="trial-card-title">Masukkan HPHT</h3>
+                    <p class="trial-card-desc" style="margin-bottom:16px;">
+                        Tanggal Hari Pertama Haid Terakhir digunakan untuk menghitung usia kehamilan dan taksiran persalinan.
+                    </p>
+                    <form class="form-row" onsubmit="return false;">
+                        <div class="trial-field">
+                            <label for="hphtInput">Tanggal HPHT</label>
+                            <input type="date" id="hphtInput" class="trial-input" />
+                        </div>
+                        <button type="submit" class="trial-button" id="hphtSubmit">Simpan</button>
+                    </form>
+                </div>
+
+                <div class="empty-state">
+                    <i class="fa fa-heartbeat"></i>
+                    <p>Data kehamilan belum tersedia.</p>
+                    <p style="font-size:13px;">Hubungi dokter Anda untuk mengaktifkan fitur ini, atau isi HPHT di atas.</p>
+                </div>
+            `;
+        }
+
+        function renderPregnancyTracker(data) {
+            const container = document.getElementById('main-content');
+            const weeks = data.weeksPregnant || 0;
+            const totalWeeks = 40;
+            const progressPercent = data.progressPercent || Math.min(100, Math.round((weeks / totalWeeks) * 100));
+
+            // Ring geometry
+            const radius = 92;
+            const circumference = 2 * Math.PI * radius;
+            const dashOffset = circumference - (progressPercent / 100) * circumference;
+
+            container.innerHTML = `
+                <section class="pt-hero">
+                    <div class="section-kicker">Monitoring Kehamilan</div>
+                    <h1 class="section-title">Minggu ke-<span id="weekNumber" class="serif">${weeks}</span></h1>
+                    <p class="section-lead">
+                        Ikuti perjalanan kehamilan Dokter minggu demi minggu — ukuran janin,
+                        perkembangan organ, dan tonggak penting menuju hari persalinan.
+                    </p>
+                </section>
+
+                <div class="trial-card ring-card">
+                    <div class="ring-wrap">
+                        <svg class="ring-svg" viewBox="0 0 200 200" aria-hidden="true">
+                            <circle class="ring-track" cx="100" cy="100" r="${radius}"></circle>
+                            <circle class="ring-progress" cx="100" cy="100" r="${radius}"
+                                stroke-dasharray="${circumference.toFixed(2)}"
+                                stroke-dashoffset="${dashOffset.toFixed(2)}"></circle>
+                        </svg>
+                        <div class="ring-center">
+                            <div class="week-kicker">Minggu</div>
+                            <div class="week-big">${weeks}</div>
+                            <div class="week-sub">${data.daysExtra || 0} hari &middot; ${progressPercent}%</div>
+                        </div>
+                    </div>
+                    <div class="ring-info">
+                        <div class="info-kicker">Trimester ${data.trimester || '—'}</div>
+                        <h3>Ukuran seperti ${data.babySize ? data.babySize.size : '—'}</h3>
+                        <div class="info-len">${data.babySize && data.babySize.length ? '~' + data.babySize.length : ''}</div>
+                        ${data.developments && data.developments.length ? `
+                            <ul class="dev-list">
+                                ${data.developments.slice(0, 4).map(dev => `
+                                    <li><i class="fa fa-check-circle"></i><span>${dev}</span></li>
+                                `).join('')}
+                            </ul>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="trial-card stat-tile">
+                        <div class="trial-card-kicker">Taksiran Persalinan</div>
+                        <div class="stat-value">${data.eddFormatted || '—'}</div>
+                        <div class="stat-sub">HPL berdasarkan USG</div>
+                    </div>
+                    <div class="trial-card stat-tile">
+                        <div class="trial-card-kicker">Sisa Hari</div>
+                        <div class="stat-value">${data.daysUntilEdd != null ? data.daysUntilEdd : '—'}</div>
+                        <div class="stat-sub">menuju persalinan</div>
+                    </div>
+                    <div class="trial-card stat-tile">
+                        <div class="trial-card-kicker">Progress</div>
+                        <div class="stat-value">${progressPercent}%</div>
+                        <div class="stat-sub">dari 40 minggu</div>
+                    </div>
+                </div>
+
+                ${data.tip ? `
+                    <div class="trial-card info-block">
+                        <div class="trial-card-kicker">Tips Minggu Ini</div>
+                        <h3 class="trial-card-title">Untuk minggu ke-${weeks}</h3>
+                        <p class="trial-card-desc">${data.tip}</p>
+                    </div>
+                ` : ''}
+
+                <div class="trial-card info-block">
+                    <div class="trial-card-kicker">Lanjutkan</div>
+                    <h3 class="trial-card-title">Pantau lebih lanjut</h3>
+                    <p class="trial-card-desc" style="margin-bottom:14px;">
+                        Catat tendangan, lihat album USG, atau tanyakan langsung ke dokter.
+                    </p>
+                    <a href="/tanya-dokter-trial.html" class="doc-cta-link">
+                        <span class="doc-cta-track">
+                            <span class="dot dot-left"></span>
+                            <span class="text">Tanya Dokter</span>
+                            <span class="dot dot-right"></span>
+                        </span>
+                    </a>
+                </div>
+            `;
+        }
+    </script>
+    <script src="/js/patient-tracker.js?v=20260424"></script>
+    <script src="/js/push-subscribe.js?v=20260424"></script>
+</body>
+</html>

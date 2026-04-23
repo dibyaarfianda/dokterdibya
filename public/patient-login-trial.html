@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Masuk - dokterDIBYA</title>
+
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/png" href="/images/pwa-icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/images/pwa-icons/icon-192x192.png">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+    <!-- Trial Theme Stylesheet -->
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css">
+
+    <!-- Google Identity Services (for popup sign-in) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        /* Reset & base — keep minimal; theme handles typography/colors */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        html, body { min-height: 100%; }
+        body.trial-themed {
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Subtle page grain */
+        .page-grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Loading overlay — monochrome */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.25s ease;
+        }
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loading-overlay .ov-spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-top-color: #111;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .loading-overlay p {
+            margin-top: 14px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Minimal topbar (brand only) */
+        .mini-topbar {
+            position: relative;
+            z-index: 2;
+            padding: 20px clamp(16px, 4vw, 32px) 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .mini-topbar .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+        .mini-topbar .brand-sub {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* Main container — centers the card */
+        .login-shell {
+            position: relative;
+            z-index: 1;
+            min-height: calc(100vh - 80px);
+            min-height: calc(100dvh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px clamp(16px, 4vw, 32px) 48px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 36px 32px;
+        }
+
+        /* Heading area with green pulse */
+        .login-heading {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.015em;
+            margin-bottom: 6px;
+        }
+        .login-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+            line-height: 1.55;
+        }
+        .login-subtitle .serif {
+            font-family: var(--font-serif);
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        /* Field row with inline link */
+        .field-row-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .forgot-link {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        .forgot-link:hover { color: var(--text-primary); }
+
+        /* Override label margin when inside row-head */
+        .field-row-head .trial-label { margin-bottom: 0; }
+
+        /* Inline error */
+        .error-message {
+            display: none;
+            padding: 10px 14px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 10px;
+            color: #b91c1c;
+            font-size: 13px;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 8px;
+        }
+        .error-message.show { display: flex; }
+        .error-message svg {
+            width: 16px; height: 16px;
+            fill: #b91c1c;
+            flex-shrink: 0;
+        }
+
+        /* Divider */
+        .login-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line-soft);
+        }
+        .login-divider span { padding: 0 14px; }
+
+        /* Google button — styled as ghost variant with full Google branding */
+        .btn-google {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--line-strong);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-google:hover { background: var(--bg-elevated); }
+        .btn-google:active { transform: scale(0.98); }
+        .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+        /* Bottom link */
+        .login-foot {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .login-foot a {
+            color: var(--text-primary);
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 1px solid var(--line-strong);
+            transition: border-color 0.2s ease;
+        }
+        .login-foot a:hover { border-color: var(--text-primary); }
+
+        /* Button spinner override */
+        .trial-button .btn-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Password field with toggle */
+        .pw-wrapper { position: relative; }
+        .pw-wrapper .trial-input { padding-right: 44px; }
+        .toggle-pw {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toggle-pw svg { width: 18px; height: 18px; fill: currentColor; }
+        .toggle-pw:hover { color: var(--text-primary); }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card { padding: 28px 22px; }
+            .login-heading { font-size: 28px; }
+        }
+    </style>
+
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body class="trial-themed">
+    <!-- Subtle grain overlay -->
+    <div class="grain-overlay grain-subtle page-grain"></div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="ov-spinner"></div>
+        <p>Memproses login...</p>
+    </div>
+
+    <!-- Minimal topbar: brand only -->
+    <header class="mini-topbar">
+        <div>
+            <div class="brand-title">dokter<span style="font-weight:400">DIBYA</span></div>
+            <div class="brand-sub">Portal Privat Kandungan Anda</div>
+        </div>
+    </header>
+
+    <!-- Centered login -->
+    <main class="login-shell">
+        <section class="trial-card login-card" id="page-login">
+            <h1 class="login-heading">
+                <span class="green-light" aria-hidden="true">
+                    <span class="green-light-glow"></span>
+                    <span class="green-light-core"></span>
+                </span>
+                Masuk
+            </h1>
+            <p class="login-subtitle">Portal pasien <span class="serif">dr. Dibya</span></p>
+
+            <!-- Error message -->
+            <div class="error-message" id="login-error">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="login-error-text">Login gagal</span>
+            </div>
+
+            <form id="login-form" novalidate>
+                <!-- Email / Phone -->
+                <div class="trial-field">
+                    <label class="trial-label" for="login-email">Email atau Nomor HP</label>
+                    <input
+                        type="text"
+                        id="login-email"
+                        name="email"
+                        class="trial-input"
+                        placeholder="nama@email.com"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <!-- Password -->
+                <div class="trial-field">
+                    <div class="field-row-head">
+                        <label class="trial-label" for="login-password">Kata Sandi</label>
+                        <a href="/patient-forgot-password.html" class="forgot-link">Lupa sandi?</a>
+                    </div>
+                    <div class="pw-wrapper">
+                        <input
+                            type="password"
+                            id="login-password"
+                            name="password"
+                            class="trial-input"
+                            placeholder="Minimal 6 karakter"
+                            autocomplete="current-password"
+                            required
+                            minlength="6"
+                        >
+                        <button type="button" class="toggle-pw" onclick="togglePassword('login-password')" aria-label="Tampilkan sandi">
+                            <svg id="toggle-eye-login" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="trial-button" id="btn-login-submit" style="width:100%; margin-top: 4px;">
+                    <span>Masuk</span>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="login-divider"><span>atau</span></div>
+
+            <!-- Google Sign-In -->
+            <button type="button" class="btn-google" id="btn-google" onclick="loginWithGoogle()">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span>Masuk dengan Google</span>
+            </button>
+
+            <p class="login-foot">
+                Belum punya akun? <a href="#" onclick="showRegInfo(); return false;">Daftar di klinik</a>
+            </p>
+        </section>
+    </main>
+
+    <script>
+        // ==================== MOBILE APP CONTEXT ====================
+        const urlParams = new URLSearchParams(window.location.search);
+        const referrer = document.referrer;
+        const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+
+        if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
+            console.log('[Login] Detected mobile app context, redirecting to app');
+            localStorage.removeItem('from_mobile_app');
+            window.location.href = 'dokterdibya://logout';
+        }
+
+        // ==================== AUTH CONFIG ====================
+        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+
+        // ==================== AUTO-LOGIN CHECK ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+            if (token && user.id) {
+                window.location.href = '/patient-menu.html';
+            }
+        });
+
+        // ==================== ERROR HANDLING ====================
+        function showError(elementId, message) {
+            var errorEl = document.getElementById(elementId);
+            var textEl = document.getElementById(elementId + '-text');
+            if (textEl) textEl.textContent = message;
+            if (errorEl) errorEl.classList.add('show');
+        }
+        function clearError(elementId) {
+            var errorEl = document.getElementById(elementId);
+            if (errorEl) errorEl.classList.remove('show');
+        }
+
+        // ==================== POST-LOGIN REDIRECT ====================
+        function getPostLoginUrl(data) {
+            if (data.needs_profile_completion) {
+                return '/complete-profile.html';
+            }
+            if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
+                return '/patient-intake.html';
+            }
+            return '/patient-menu.html';
+        }
+
+        // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
+        var googleCodeClient = null;
+
+        function initGoogleCodeClient() {
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                setTimeout(initGoogleCodeClient, 300);
+                return;
+            }
+            googleCodeClient = google.accounts.oauth2.initCodeClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'email profile',
+                ux_mode: 'popup',
+                callback: handleGoogleCodeCallback
+            });
+            console.log('[GIS] Code client initialized');
+        }
+        initGoogleCodeClient();
+
+        async function handleGoogleCodeCallback(response) {
+            if (response.error) {
+                console.error('[GIS] Error:', response.error);
+                showError('login-error', 'Login Google dibatalkan atau gagal');
+                return;
+            }
+
+            var overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden');
+
+            try {
+                var bodyData = {
+                    code: response.code,
+                    redirectUri: 'postmessage'
+                };
+
+                var res = await fetch('/api/patients/google-auth-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+
+                var data = await res.json();
+
+                if (res.ok && data.success) {
+                    localStorage.setItem('vps_auth_token', data.token);
+                    if (data.user) {
+                        localStorage.setItem('patient_user', JSON.stringify(data.user));
+                    }
+                    localStorage.setItem('auth_provider', 'google');
+                    window.location.href = getPostLoginUrl(data);
+                } else {
+                    overlay.classList.add('hidden');
+                    if (data.code_required) {
+                        showError('login-error', 'Akun belum terdaftar. Silakan hubungi klinik untuk mendaftar.');
+                    } else {
+                        showError('login-error', data.message || 'Login Google gagal');
+                    }
+                }
+            } catch (err) {
+                console.error('[GIS] Auth error:', err);
+                overlay.classList.add('hidden');
+                showError('login-error', 'Terjadi kesalahan. Silakan coba lagi.');
+            }
+        }
+
+        function loginWithGoogle() {
+            clearError('login-error');
+            if (!googleCodeClient) {
+                showError('login-error', 'Google Sign-In belum siap. Tunggu sebentar lalu coba lagi.');
+                return;
+            }
+            googleCodeClient.requestCode();
+        }
+
+        // ==================== EMAIL/PHONE + PASSWORD LOGIN ====================
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearError('login-error');
+
+            var emailOrPhone = document.getElementById('login-email').value.trim();
+            var password = document.getElementById('login-password').value;
+
+            if (!emailOrPhone) {
+                showError('login-error', 'Email atau nomor HP harus diisi');
+                return;
+            }
+            if (!password || password.length < 6) {
+                showError('login-error', 'Kata sandi minimal 6 karakter');
+                return;
+            }
+
+            var btn = document.getElementById('btn-login-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="btn-spinner"></div>';
+
+            var overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden');
+
+            try {
+                var res = await fetch('/api/auth/patient-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: emailOrPhone,
+                        password: password
+                    })
+                });
+
+                var data = await res.json();
+
+                if (res.ok && (data.token || (data.data && data.data.token))) {
+                    var token = data.token || (data.data && data.data.token);
+                    var user = data.user || (data.data && data.data.user);
+                    localStorage.setItem('vps_auth_token', token);
+                    if (user) {
+                        localStorage.setItem('patient_user', JSON.stringify(user));
+                    }
+                    localStorage.setItem('auth_provider', 'email');
+                    window.location.href = getPostLoginUrl(data);
+                } else {
+                    overlay.classList.add('hidden');
+                    showError('login-error', data.message || 'Email/HP atau kata sandi salah');
+                }
+            } catch (err) {
+                console.error('[Login] Error:', err);
+                overlay.classList.add('hidden');
+                showError('login-error', 'Tidak dapat terhubung ke server');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>Masuk</span>';
+        });
+
+        // ==================== TOGGLE PASSWORD ====================
+        function togglePassword(inputId) {
+            var input = document.getElementById(inputId);
+            var eyeIcon = document.getElementById('toggle-eye-login');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (eyeIcon) eyeIcon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>';
+            } else {
+                input.type = 'password';
+                if (eyeIcon) eyeIcon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+            }
+        }
+
+        // ==================== REGISTRATION INFO ====================
+        function showRegInfo() {
+            alert('Pendaftaran akun baru dilakukan di klinik.\n\nSilakan hubungi resepsionis klinik dr. Dibya untuk mendapatkan kode registrasi.');
+        }
+    </script>
+</body>
+</html>

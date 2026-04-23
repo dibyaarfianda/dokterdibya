@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f5f3ef">
+    <title>Tanya Dokter - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+
+    <!-- Trial Theme -->
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css">
+
+    <style>
+        /* Page-specific local styles (trial theme overrides) */
+        body.trial-themed {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--trial-bg, #f5f3ef);
+            color: var(--trial-ink, #1a1a1a);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .serif {
+            font-family: 'Crimson Pro', Georgia, serif;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        .page-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 20px 120px;
+        }
+
+        /* Hero */
+        .tanya-hero {
+            padding: 32px 0 28px;
+            text-align: left;
+        }
+        .tanya-hero .section-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--trial-ink-muted, #6b6b6b);
+            margin-bottom: 14px;
+        }
+        .tanya-hero .section-title {
+            font-size: clamp(30px, 6vw, 44px);
+            line-height: 1.08;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            margin: 0 0 14px;
+        }
+        .tanya-hero .section-lead {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--trial-ink-muted, #4a4a4a);
+            max-width: 56ch;
+            margin: 0;
+        }
+
+        /* Quota chip */
+        .quota-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            font-size: 12.5px;
+            color: var(--trial-ink, #1a1a1a);
+            margin-top: 18px;
+        }
+        .quota-chip strong { font-weight: 600; }
+
+        /* Form card */
+        .ask-card {
+            margin-top: 24px;
+            padding: 22px;
+            border-radius: 18px;
+        }
+        .ask-card .trial-card-kicker {
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--trial-ink-muted, #6b6b6b);
+            margin-bottom: 8px;
+        }
+        .ask-card .trial-card-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 0 0 14px;
+        }
+
+        .trial-field { margin-bottom: 14px; }
+        .trial-field label {
+            display: block;
+            font-size: 12.5px;
+            color: var(--trial-ink-muted, #4a4a4a);
+            margin-bottom: 6px;
+        }
+        .trial-field label .required { color: #b04a3a; }
+
+        .trial-input, .trial-textarea, select.trial-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 12px;
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .trial-input:focus, .trial-textarea:focus, select.trial-input:focus {
+            outline: none;
+            border-color: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+        }
+        .trial-textarea { min-height: 130px; resize: vertical; }
+
+        .char-count {
+            font-size: 11px;
+            color: var(--trial-ink-muted, #8a8a8a);
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .image-upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px dashed rgba(0, 0, 0, 0.22);
+            border-radius: 12px;
+            color: var(--trial-ink-muted, #6b6b6b);
+            cursor: pointer;
+            font-size: 13.5px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .image-upload-btn:hover {
+            border-color: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .image-preview { position: relative; margin-top: 12px; display: none; }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 220px;
+            border-radius: 12px;
+            display: block;
+        }
+        .image-preview .remove-btn {
+            position: absolute; top: 8px; right: 8px;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8);
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Trial button */
+        .trial-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 22px;
+            background: var(--trial-ink, #1a1a1a);
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            font-family: inherit;
+        }
+        .trial-button:hover { transform: translateY(-1px); opacity: 0.92; }
+        .trial-button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .trial-button.full { width: 100%; }
+
+        .trial-button-ghost {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: transparent;
+            color: var(--trial-ink, #1a1a1a);
+            border: 1px solid rgba(0, 0, 0, 0.18);
+            border-radius: 999px;
+            font-size: 13.5px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        /* Blocked state */
+        .blocked-container {
+            text-align: center;
+            padding: 28px 18px;
+        }
+        .blocked-container i {
+            font-size: 38px;
+            color: var(--trial-ink-muted, #6b6b6b);
+            margin-bottom: 14px;
+        }
+        .blocked-container p {
+            color: var(--trial-ink-muted, #4a4a4a);
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        /* Thread list section */
+        .threads-section { margin-top: 36px; }
+        .threads-section h2 {
+            font-size: 13px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--trial-ink-muted, #6b6b6b);
+            font-weight: 500;
+            margin: 0 0 14px;
+        }
+
+        /* Thread card */
+        .thread-card {
+            position: relative;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .thread-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .thread-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 12px;
+        }
+
+        .thread-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11.5px;
+            color: var(--trial-ink-muted, #4a4a4a);
+            font-weight: 500;
+        }
+        .thread-chip .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #b8b8b8;
+            display: inline-block;
+        }
+        .thread-chip.open .dot {
+            background: var(--success, #4a9b6e);
+            box-shadow: 0 0 0 4px rgba(74, 155, 110, 0.18);
+            animation: pulseDot 1.8s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(74, 155, 110, 0.18); }
+            50% { box-shadow: 0 0 0 7px rgba(74, 155, 110, 0.08); }
+        }
+
+        .thread-date { font-size: 11.5px; color: var(--trial-ink-muted, #8a8a8a); }
+
+        .thread-question {
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 14.5px;
+            line-height: 1.55;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .thread-replies {
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--trial-ink-muted, #6b6b6b);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+        }
+        .empty-state i {
+            font-size: 42px;
+            color: var(--trial-ink-muted, #a8a8a8);
+            margin-bottom: 16px;
+        }
+        .empty-state p {
+            color: var(--trial-ink-muted, #4a4a4a);
+            margin: 0 0 22px;
+            font-size: 14.5px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--trial-ink-muted, #6b6b6b);
+            font-size: 13.5px;
+        }
+        .loading i { margin-right: 8px; }
+
+        /* Thread modal */
+        .thread-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--trial-bg, #f5f3ef);
+            z-index: 9999;
+            flex-direction: column;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        .thread-modal.active { display: flex; }
+
+        .thread-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            padding-top: calc(16px + env(safe-area-inset-top, 0px));
+            background: var(--trial-bg, #f5f3ef);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .thread-modal-header h3 {
+            font-size: 15px;
+            color: var(--trial-ink, #1a1a1a);
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .thread-modal-close {
+            background: none;
+            border: none;
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px;
+        }
+        .thread-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 22px 20px;
+            max-width: 720px;
+            width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+        .thread-modal-footer {
+            padding: 14px 20px;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            background: var(--trial-bg, #f5f3ef);
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .thread-modal-footer-inner {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* Message bubbles — patient vs dokter */
+        .message-bubble {
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            max-width: 92%;
+        }
+        .message-bubble.patient {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            margin-left: auto;
+            border-bottom-right-radius: 6px;
+        }
+        .message-bubble.doctor {
+            background: #dde5e0;
+            border: 1px solid rgba(74, 120, 95, 0.18);
+            margin-right: auto;
+            border-bottom-left-radius: 6px;
+        }
+        .message-sender {
+            font-size: 11.5px;
+            color: var(--trial-ink-muted, #6b6b6b);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .message-bubble.doctor .message-sender {
+            color: #3c6b54;
+        }
+        .message-text {
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 14px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            margin: 0;
+        }
+        .message-image {
+            max-width: 100%;
+            max-height: 220px;
+            margin-top: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: block;
+        }
+
+        /* Original question highlight */
+        .original-question {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 16px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+        }
+        .original-question-label {
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--trial-ink-muted, #6b6b6b);
+            margin-bottom: 8px;
+        }
+        .original-question-text {
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 14.5px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin: 0;
+        }
+
+        .doctor-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            font-size: 12.5px;
+            color: var(--trial-ink-muted, #4a4a4a);
+        }
+        .doctor-meta strong { color: #3c6b54; font-weight: 600; }
+
+        /* Reply form */
+        .reply-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .reply-form textarea {
+            flex: 1;
+            padding: 12px 14px;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 18px;
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            min-height: 42px;
+            max-height: 90px;
+        }
+        .reply-form textarea:focus {
+            outline: none;
+            border-color: rgba(0, 0, 0, 0.45);
+        }
+        .reply-form button {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: var(--trial-ink, #1a1a1a);
+            border: none;
+            color: #fff;
+            font-size: 15px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .reply-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Tabs */
+        .tanya-tabs {
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 999px;
+            margin-top: 18px;
+        }
+        .tanya-tab {
+            padding: 8px 18px;
+            border-radius: 999px;
+            font-size: 12.5px;
+            cursor: pointer;
+            color: var(--trial-ink-muted, #6b6b6b);
+            transition: background 0.2s, color 0.2s;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .tanya-tab.active {
+            background: #fff;
+            color: var(--trial-ink, #1a1a1a);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Content sections */
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        /* Back button */
+        .topbar-trial-back {
+            background: transparent;
+            border: none;
+            color: var(--trial-ink, #1a1a1a);
+            font-size: 14px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            font-family: inherit;
+        }
+
+        /* Toast */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+        }
+
+        @media (max-width: 480px) {
+            .page-wrap { padding: 18px 16px 100px; }
+            .tanya-hero { padding: 20px 0 18px; }
+        }
+    </style>
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body class="trial-themed">
+    <!-- Grain overlay -->
+    <div class="grain-overlay" aria-hidden="true"></div>
+
+    <!-- Top Bar -->
+    <div class="topbar-trial">
+        <div style="max-width: 720px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <button class="topbar-trial-back" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+                <span>Kembali</span>
+            </button>
+            <span style="font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--trial-ink-muted, #6b6b6b);">dokterDIBYA</span>
+        </div>
+    </div>
+    <div class="topbar-trial-spacer"></div>
+
+    <main class="page-wrap">
+        <!-- Hero -->
+        <header class="tanya-hero">
+            <div class="section-kicker">
+                <span class="green-light" aria-hidden="true"></span>
+                Tanya Dokter
+            </div>
+            <h1 class="section-title">Konsultasi <span class="serif">pribadi</span></h1>
+            <p class="section-lead">
+                Ajukan pertanyaan langsung kepada dr. Dibya secara asinkron — bukan chatbot, bukan asisten otomatis. Dokter membaca dan membalas sendiri bila sempat, biasanya dalam 1&ndash;2 hari kerja.
+            </p>
+
+            <!-- Tabs -->
+            <div class="tanya-tabs" role="tablist">
+                <div class="tanya-tab active" data-section="ask" onclick="switchSection('ask')" role="tab">
+                    Tanya
+                </div>
+                <div class="tanya-tab" data-section="history" onclick="switchSection('history')" role="tab">
+                    Riwayat
+                </div>
+                <div class="tanya-tab" data-section="premium" onclick="switchSection('premium')" style="display:none;" role="tab">
+                    Premium
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading-state">
+            <i class="fa fa-spinner fa-spin"></i>
+            <span>Memuat...</span>
+        </div>
+
+        <!-- Content -->
+        <div id="content-wrapper" style="display: none;">
+
+            <!-- Section: Ask Question -->
+            <div class="content-section active" id="section-ask">
+                <div class="trial-card ask-card">
+                    <div class="trial-card-kicker">Pertanyaan baru</div>
+                    <h2 class="trial-card-title">Tulis pertanyaan Anda</h2>
+
+                    <!-- Quota chip -->
+                    <div class="quota-chip">
+                        <i class="fa fa-info-circle" aria-hidden="true"></i>
+                        <span id="quota-text">Memuat kuota...</span>
+                    </div>
+
+                    <!-- Form -->
+                    <div id="form-container" style="margin-top: 18px;">
+                        <form id="question-form" onsubmit="submitQuestion(event)">
+                            <div class="trial-field">
+                                <label>Pilih Dokter <span class="required">*</span></label>
+                                <select id="doctor-select" class="trial-input" required>
+                                    <option value="">Memuat daftar dokter...</option>
+                                </select>
+                            </div>
+
+                            <div class="trial-field">
+                                <label>Pertanyaan Anda <span class="required">*</span></label>
+                                <textarea id="question-text" class="trial-textarea" placeholder="Tuliskan pertanyaan Anda secara detail — kronologi, keluhan, riwayat obat, dll." required></textarea>
+                                <div class="char-count"><span id="char-count">0</span>/1000 karakter</div>
+                            </div>
+
+                            <div class="trial-field">
+                                <label>Lampiran (opsional)</label>
+                                <input type="file" id="question-image" accept="image/*" style="display: none;">
+                                <button type="button" class="image-upload-btn" onclick="document.getElementById('question-image').click()">
+                                    <i class="fa fa-camera"></i> Tambah Foto
+                                </button>
+                                <div class="image-preview" id="image-preview">
+                                    <img id="preview-img" src="" alt="Preview">
+                                    <button type="button" class="remove-btn" onclick="removeImage()" aria-label="Hapus foto">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="trial-button full" id="submit-btn" style="margin-top: 6px;">
+                                <i class="fa fa-paper-plane"></i> Kirim Pertanyaan
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Blocked Message -->
+                    <div id="blocked-container" class="blocked-container" style="display: none;">
+                        <i class="fa fa-clock-o"></i>
+                        <p id="blocked-message">Anda memiliki pertanyaan yang belum dijawab.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: History -->
+            <div class="content-section" id="section-history">
+                <div class="threads-section">
+                    <h2>Riwayat Percakapan</h2>
+                    <div id="history-container">
+                        <div class="loading">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            <span>Memuat riwayat...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Premium (hidden) -->
+            <div class="content-section" id="section-premium" style="display:none !important;">
+                <div class="trial-card ask-card">
+                    <p style="color: var(--trial-ink-muted, #4a4a4a); font-size: 14px; margin-bottom: 20px;">
+                        Dapatkan lebih banyak kesempatan bertanya dengan berlangganan Premium!
+                    </p>
+                    <div id="tier-list"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Thread Modal -->
+    <div class="thread-modal" id="thread-modal">
+        <div class="thread-modal-header">
+            <h3><i class="fa fa-comments-o"></i> Detail Percakapan</h3>
+            <button class="thread-modal-close" onclick="closeThreadModal()" aria-label="Tutup">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="thread-modal-body" id="thread-modal-body"></div>
+        <div class="thread-modal-footer" id="thread-modal-footer">
+            <div class="thread-modal-footer-inner"></div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container"></div>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div class="site-footer-brand">
+                <div class="site-footer-logo">dokter<span class="serif">DIBYA</span></div>
+                <p class="site-footer-tagline">Klinik kebidanan & kandungan yang ditulis dengan hati.</p>
+            </div>
+            <nav class="site-footer-nav" aria-label="Navigasi footer">
+                <a href="/patient-menu.html">Beranda</a>
+                <a href="/janji-temu.html">Janji Temu</a>
+                <a href="/tanya-dokter-trial.html">Tanya Dokter</a>
+                <a href="/profil.html">Profil</a>
+            </nav>
+            <div class="site-footer-meta">
+                <small>&copy; <span id="footer-year"></span> dokterDIBYA. Semua hak dilindungi.</small>
+            </div>
+        </div>
+    </footer>
+    <script>
+        var _fy = document.getElementById('footer-year');
+        if (_fy) _fy.textContent = new Date().getFullYear();
+    </script>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatDate, showLoading, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
+
+        // State
+        let currentSection = 'ask';
+        let currentQuestionId = null;
+
+        // Global exposure
+        window.switchSection = switchSection;
+        window.submitQuestion = submitQuestion;
+        window.removeImage = removeImage;
+        window.openThread = openThread;
+        window.closeThreadModal = closeThreadModal;
+        window.sendReply = sendReply;
+        window.selectTier = selectTier;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            const textarea = document.getElementById('question-text');
+            textarea.addEventListener('input', function() {
+                const count = this.value.length;
+                document.getElementById('char-count').textContent = count;
+                if (count > 1000) {
+                    this.value = this.value.substring(0, 1000);
+                    document.getElementById('char-count').textContent = 1000;
+                }
+            });
+
+            document.getElementById('question-image').addEventListener('change', handleImageSelect);
+
+            handleHash();
+            window.addEventListener('hashchange', handleHash);
+
+            await Promise.all([
+                loadQuotaInfo(),
+                loadDoctors(),
+                loadHistory()
+            ]);
+
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+        });
+
+        function handleHash() {
+            const hash = window.location.hash;
+            if (hash === '#ask') switchSection('ask');
+            else if (hash === '#history') switchSection('history');
+            else if (hash === '#premium') switchSection('premium');
+        }
+
+        function switchSection(section) {
+            currentSection = section;
+            document.querySelectorAll('.tanya-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.section === section);
+            });
+            document.querySelectorAll('.content-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(`section-${section}`).classList.add('active');
+            if (section === 'history') loadHistory();
+        }
+
+        async function loadQuotaInfo() {
+            try {
+                const data = await apiRequest('/api/patient-questions/can-ask');
+                if (data) {
+                    const tierNames = { 'free': 'Gratis', 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
+                    const tier = data.tier || 'free';
+                    const limit = data.limit || 1;
+                    const used = data.used || 0;
+                    const remaining = data.remaining !== undefined ? data.remaining : (limit - used);
+
+                    document.getElementById('quota-text').innerHTML =
+                        `Paket: <strong>${tierNames[tier]}</strong> · Sisa <strong>${remaining}/${limit}</strong> pertanyaan minggu ini`;
+
+                    if (data.canAsk) {
+                        document.getElementById('form-container').style.display = 'block';
+                        document.getElementById('blocked-container').style.display = 'none';
+                    } else {
+                        document.getElementById('form-container').style.display = 'none';
+                        document.getElementById('blocked-container').style.display = 'block';
+
+                        let message = 'Anda tidak bisa bertanya saat ini.';
+                        if (data.reason === 'thread_open') {
+                            message = 'Anda masih memiliki pertanyaan yang belum dijawab. Silakan tunggu jawaban dari dokter.';
+                        } else if (data.reason === 'weekly_quota') {
+                            message = `Kuota pertanyaan minggu ini sudah habis (${data.used || 0}/${data.limit || 1}). Silakan coba lagi minggu depan.`;
+                        }
+                        document.getElementById('blocked-message').textContent = message;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading quota:', error);
+            }
+        }
+
+        async function loadDoctors() {
+            try {
+                const data = await apiRequest('/api/doctors/available');
+                const select = document.getElementById('doctor-select');
+
+                if (data && data.success && data.doctors && data.doctors.length > 0) {
+                    select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
+                    data.doctors.forEach(doc => {
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${doc.name}${doc.label ? ' - ' + doc.label : ''}`;
+                        select.appendChild(option);
+                    });
+                    if (data.doctors.length === 1) {
+                        select.value = data.doctors[0].id;
+                    }
+                } else {
+                    select.innerHTML = '<option value="">Tidak ada dokter tersedia</option>';
+                }
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                document.getElementById('doctor-select').innerHTML = '<option value="">Gagal memuat daftar dokter</option>';
+            }
+        }
+
+        function handleImageSelect(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('preview-img').src = ev.target.result;
+                    document.getElementById('image-preview').style.display = 'block';
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        }
+
+        function removeImage() {
+            document.getElementById('question-image').value = '';
+            document.getElementById('image-preview').style.display = 'none';
+        }
+
+        async function submitQuestion(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('submit-btn');
+            const questionText = document.getElementById('question-text').value.trim();
+            const doctorId = document.getElementById('doctor-select').value;
+            const imageInput = document.getElementById('question-image');
+
+            if (!doctorId) { showToast('Silakan pilih dokter', 'error'); return; }
+            if (!questionText) { showToast('Silakan tulis pertanyaan Anda', 'error'); return; }
+            if (questionText.length > 1000) { showToast('Pertanyaan maksimal 1000 karakter', 'error'); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
+
+            try {
+                const token = getToken();
+                const formData = new FormData();
+                formData.append('question_text', questionText);
+                formData.append('doctor_id', doctorId);
+                if (imageInput.files && imageInput.files[0]) {
+                    formData.append('image', imageInput.files[0]);
+                }
+
+                const response = await fetch('/api/patient-questions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('question-text').value = '';
+                    document.getElementById('char-count').textContent = '0';
+                    removeImage();
+                    showToast('Pertanyaan berhasil dikirim!', 'success');
+                    loadQuotaInfo();
+                    loadHistory();
+                    setTimeout(() => switchSection('history'), 1500);
+                } else {
+                    showToast(data.message || 'Gagal mengirim pertanyaan', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting:', error);
+                showToast('Terjadi kesalahan', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Kirim Pertanyaan';
+            }
+        }
+
+        async function loadHistory() {
+            const container = document.getElementById('history-container');
+            try {
+                const data = await apiRequest('/api/patient-questions');
+
+                if (!data || !data.questions || data.questions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa fa-comments-o"></i>
+                            <p>Belum ada riwayat tanya jawab.<br>Mulai pertanyaan pertama Anda.</p>
+                            <button class="trial-button" onclick="switchSection('ask')">
+                                <i class="fa fa-pencil"></i> Tanyakan sekarang
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.questions.map(q => {
+                    const isOpen = q.status === 'open';
+                    const isAnswered = q.status === 'answered';
+                    const chipLabel = isOpen ? 'Menunggu jawaban'
+                        : isAnswered ? 'Terjawab'
+                        : 'Selesai';
+                    const chipClass = isOpen ? 'open' : 'done';
+
+                    const date = new Date(q.created_at);
+                    const dateStr = date.toLocaleDateString('id-ID', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+
+                    const cardClass = isAnswered || q.status === 'closed' ? 'trial-card card-sage thread-card' : 'trial-card thread-card';
+
+                    return `
+                        <div class="${cardClass}" onclick="openThread('${q.id}')">
+                            <div class="thread-header">
+                                <span class="thread-chip ${chipClass}">
+                                    <span class="dot"></span>${chipLabel}
+                                </span>
+                                <span class="thread-date">${dateStr}</span>
+                            </div>
+                            <p class="thread-question">${escapeHtml(q.question_text)}</p>
+                            ${q.reply_count > 0 ? `<div class="thread-replies"><i class="fa fa-reply"></i> ${q.reply_count} balasan</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading history:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat riwayat</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function openThread(questionId) {
+            currentQuestionId = questionId;
+            const modal = document.getElementById('thread-modal');
+            const body = document.getElementById('thread-modal-body');
+            const footerInner = document.querySelector('#thread-modal-footer .thread-modal-footer-inner');
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            body.innerHTML = '<div class="loading"><i class="fa fa-spinner fa-spin"></i><span>Memuat...</span></div>';
+            footerInner.innerHTML = '';
+
+            try {
+                const data = await apiRequest(`/api/patient-questions/${questionId}`);
+                if (data && data.success) {
+                    const q = data.question;
+                    const replies = data.replies || [];
+                    const doctorName = q.doctor_name || 'dr. Dibya';
+
+                    let messagesHtml = replies.map(r => {
+                        const rDate = new Date(r.created_at);
+                        const rDateStr = rDate.toLocaleDateString('id-ID', {
+                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                        });
+                        const isDoctor = r.sender_type === 'doctor';
+                        const senderName = r.sender_name || (isDoctor ? doctorName : 'Anda');
+
+                        return `
+                            <div class="message-bubble ${isDoctor ? 'doctor' : 'patient'}">
+                                <div class="message-sender">
+                                    ${isDoctor ? '<i class="fa fa-user-md"></i> ' + escapeHtml(senderName) : '<i class="fa fa-user"></i> Anda'} &middot; ${rDateStr}
+                                </div>
+                                <p class="message-text">${escapeHtml(r.message)}</p>
+                                ${r.image_signed_url ? `<img src="${r.image_signed_url}" class="message-image" onclick="window.open('${r.image_signed_url}', '_blank')">` : ''}
+                            </div>
+                        `;
+                    }).join('');
+
+                    if (replies.length === 0) {
+                        messagesHtml = `
+                            <div class="empty-state">
+                                <i class="fa fa-clock-o"></i>
+                                <p>Menunggu jawaban dari dokter</p>
+                            </div>
+                        `;
+                    }
+
+                    const isOpen = q.status === 'open';
+                    const chipLabel = isOpen ? 'Menunggu jawaban'
+                        : q.status === 'answered' ? 'Terjawab'
+                        : 'Selesai';
+                    const chipClass = isOpen ? 'open' : 'done';
+
+                    body.innerHTML = `
+                        <div style="margin-bottom: 14px;">
+                            <span class="thread-chip ${chipClass}">
+                                <span class="dot"></span>${chipLabel}
+                            </span>
+                        </div>
+                        <div class="original-question">
+                            <div class="original-question-label">Pertanyaan Anda</div>
+                            <p class="original-question-text">${escapeHtml(q.question_text)}</p>
+                            ${q.image_signed_url ? `<img src="${q.image_signed_url}" class="message-image" style="margin-top: 10px;" onclick="window.open('${q.image_signed_url}', '_blank')">` : ''}
+                        </div>
+                        <div class="doctor-meta">
+                            <i class="fa fa-user-md"></i> Dokter: <strong>${escapeHtml(doctorName)}</strong>
+                        </div>
+                        ${messagesHtml}
+                    `;
+
+                    if (q.status === 'closed') {
+                        footerInner.innerHTML = `
+                            <div style="text-align: center; color: var(--trial-ink-muted, #6b6b6b); font-size: 13px;">
+                                <i class="fa fa-check-circle" style="color: var(--success, #4a9b6e);"></i> Percakapan ini sudah selesai
+                            </div>
+                        `;
+                    } else {
+                        footerInner.innerHTML = `
+                            <div class="reply-form">
+                                <textarea id="reply-text" placeholder="Tulis balasan..." rows="1"></textarea>
+                                <button onclick="sendReply()" aria-label="Kirim balasan"><i class="fa fa-paper-plane"></i></button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading thread:', error);
+                body.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat percakapan</p>
+                    </div>
+                `;
+            }
+        }
+
+        function closeThreadModal() {
+            document.getElementById('thread-modal').classList.remove('active');
+            document.body.style.overflow = '';
+            currentQuestionId = null;
+        }
+
+        async function sendReply() {
+            if (!currentQuestionId) return;
+            const textarea = document.getElementById('reply-text');
+            const message = textarea.value.trim();
+            if (!message) { showToast('Silakan tulis balasan', 'error'); return; }
+
+            try {
+                const data = await apiRequest(`/api/patient-questions/${currentQuestionId}/reply`, {
+                    method: 'POST',
+                    body: JSON.stringify({ message })
+                });
+
+                if (data && data.success) {
+                    textarea.value = '';
+                    openThread(currentQuestionId);
+                    loadHistory();
+                } else {
+                    showToast(data?.message || 'Gagal mengirim balasan', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                showToast('Terjadi kesalahan', 'error');
+            }
+        }
+
+        function selectTier(tier) {
+            const tierNames = { 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
+            showToast(`Fitur pembayaran ${tierNames[tier]} akan segera hadir`, 'info');
+        }
+    </script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+</body>
+</html>

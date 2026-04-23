@@ -2759,8 +2759,82 @@
 
         .journey-card.card-membaca {
             --journey-image: url('/images/buku.png');
-                --journey-position: 50% calc(60% - 20px);
+                --journey-position: 50% calc(100% + 40px);
             --journey-bg-size: 156% auto;
+        }
+
+        /* === Clearpath-style overlay (exact match): no dark tint, grain at 15% overlay === */
+        .journey-card.card-membaca .journey-card-frame::before,
+        .journey-card.card-membaca .journey-card-frame::after {
+            display: none;
+        }
+        .journey-card.card-membaca .journey-card-media {
+            filter: none;
+        }
+        .journey-card.card-membaca .journey-card-media::after {
+            background-size: 100px 100px;
+            mix-blend-mode: overlay;
+            opacity: 0.35;
+        }
+
+        /* === Clearpath-style progressive backdrop blur (bottom-up, 8 layers) === */
+        .journey-card.card-membaca .journey-card-blur {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .journey-card.card-membaca .journey-card-blur > span {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(1) {
+            -webkit-backdrop-filter: blur(0.15625px);
+            backdrop-filter: blur(0.15625px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(2) {
+            -webkit-backdrop-filter: blur(0.3125px);
+            backdrop-filter: blur(0.3125px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(3) {
+            -webkit-backdrop-filter: blur(0.625px);
+            backdrop-filter: blur(0.625px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(4) {
+            -webkit-backdrop-filter: blur(1.25px);
+            backdrop-filter: blur(1.25px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(5) {
+            -webkit-backdrop-filter: blur(2.5px);
+            backdrop-filter: blur(2.5px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(6) {
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(7) {
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
+        }
+        .journey-card.card-membaca .journey-card-blur > span:nth-child(8) {
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
         }
 
         .journey-card.card-update {
@@ -3908,8 +3982,8 @@
             z-index: 0;
             pointer-events: none;
             background: url('/images/bg/green_bg.avif') center center / cover no-repeat;
-            opacity: var(--hero-green-opacity, 0);
-            --hero-green-opacity: 0;
+            opacity: var(--hero-green-opacity, 1);
+            --hero-green-opacity: 1;
         }
 
         /* Clearpath-style curves: absolute inside hero-welcome, stroke draws on scroll. */
@@ -3957,12 +4031,10 @@
         #hero-fixed-bg .hero-fixed-bg-preg {
             position: absolute;
             inset: 0;
-            background: url('/images/bg/background-preg.png') center 30px / cover no-repeat;
-            mix-blend-mode: soft-light;
-            -webkit-mask-image: radial-gradient(ellipse 45% 55% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0) 90%);
-            mask-image: radial-gradient(ellipse 45% 55% at center, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0) 90%);
-            opacity: var(--hero-preg-opacity, 0);
-            --hero-preg-opacity: 0;
+            background: url('/images/bg/background-preg.png') center 0 / cover no-repeat;
+            mix-blend-mode: overlay;
+            opacity: calc(var(--hero-preg-opacity, 1) * 0.8);
+            --hero-preg-opacity: 1;
         }
 
 
@@ -4154,6 +4226,11 @@
             to { opacity: 1; }
         }
 
+        @keyframes fadeInPreg {
+            from { opacity: 0; }
+            to { opacity: 0.8; }
+        }
+
         @keyframes fadeInDown {
             from {
                 opacity: 0;
@@ -4176,9 +4253,9 @@
             }
         }
 
-        /* Background lady (preg overlay) - 0.7s fade-in at 0s */
+        /* Background lady (preg overlay) - 0.7s fade-in at 0s, ending at 15% opacity (overlay blend) */
         body.page-loaded .hero-fixed-bg-preg {
-            animation: fadeInOnly 0.7s ease-out forwards;
+            animation: fadeInPreg 0.7s ease-out forwards;
         }
 
         /* Green background - 1s fade-in at 0s */
@@ -4348,10 +4425,10 @@
             <section class="hero-welcome">
                 <div id="hero-curves" aria-hidden="true">
                     <svg class="hero-curve hero-curve-1" viewBox="0 0 780 1640" preserveAspectRatio="xMidYMid meet">
-                        <path d="M 568.5 0 C -446.766 750 -900 1300 300 1200 C 1500 1100 -960 460 381 1400"/>
+                        <path d="M 568.5 0 C -446.766 750 -900 1300 300 1200 C 1500 1100 -960 460 390 1400"/>
                     </svg>
                     <svg class="hero-curve hero-curve-2" viewBox="0 0 780 1640" preserveAspectRatio="xMidYMid meet">
-                        <path d="M 555 0 C -514.95 700 -860 1250 332 1160 C 1524 1070 -935 575 381 1400"/>
+                        <path d="M 555 0 C -514.95 700 -860 1250 332 1160 C 1524 1070 -935 575 390 1400"/>
                     </svg>
                 </div>
                 <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> <span id="hero-kicker-text">Selamat Pagi</span></div>
@@ -4550,14 +4627,14 @@
                 <div id="tanya-dokter-content" class="tanya-dokter-body" style="display: none;">
                     <p>Punya pertanyaan seputar kehamilan atau kesehatan kandungan? Tanyakan langsung secara privat kepada dr. Dibya.</p>
                     <div class="tanya-actions">
-                        <a href="/tanya-dokter.html#ask" class="tanya-action-btn">
+                        <a href="/tanya-dokter-trial.html#ask" class="tanya-action-btn">
                             <i class="fa-solid fa-pen-to-square"></i>
                             <div>
                                 <div class="label">Ajukan Pertanyaan</div>
                                 <div class="sublabel">Tulis pertanyaan baru</div>
                             </div>
                         </a>
-                        <a href="/tanya-dokter.html#history" class="tanya-action-btn">
+                        <a href="/tanya-dokter-trial.html#history" class="tanya-action-btn">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <div>
                                 <div class="label">Riwayat Tanya Jawab</div>
@@ -4641,35 +4718,35 @@
                     </div>
 
 
-                    <a href="/tanya-dokter.html" class="proces-row">
+                    <a href="/tanya-dokter-trial.html" class="proces-row">
                         <span class="proces-step">01</span>
                         <h3 class="proces-title">TANYA DOKTER</h3>
                         <p class="proces-desc">Ajukan pertanyaan seputar kehamilan atau kandungan secara privat langsung ke dr. Dibya. Jawaban diberikan langsung oleh dokter, bukan chatbot.</p>
                     </a>
 
 
-                    <a href="/kick-counter.html" class="proces-row">
+                    <a href="/kick-counter-trial.html" class="proces-row">
                         <span class="proces-step">02</span>
                         <h3 class="proces-title">GERAKAN BAYI</h3>
                         <p class="proces-desc">Hitung dan pantau gerakan bayi Anda setiap hari. Catat setiap tendangan untuk memastikan kesehatan janin tetap terjaga dengan baik.</p>
                     </a>
 
 
-                    <a href="/pregnancy-tracker.html" class="proces-row">
+                    <a href="/pregnancy-tracker-trial.html" class="proces-row">
                         <span class="proces-step">03</span>
                         <h3 class="proces-title">MONITORING KEHAMILAN</h3>
                         <p class="proces-desc">Pantau perkembangan kehamilan minggu demi minggu. Lihat estimasi berat janin, ukuran, dan milestone penting setiap tahap kehamilan Anda.</p>
                     </a>
 
 
-                    <a href="/fertility-calendar.html" class="proces-row">
+                    <a href="/fertility-calendar-trial.html" class="proces-row">
                         <span class="proces-step">04</span>
                         <h3 class="proces-title">KALENDER KESUBURAN</h3>
                         <p class="proces-desc">Prediksi masa subur dan ovulasi berdasarkan siklus menstruasi Anda. Rencanakan kehamilan dengan lebih tepat dan terukur setiap bulannya.</p>
                     </a>
 
 
-                    <a href="/jadwal-vitamin.html" class="proces-row">
+                    <a href="/jadwal-vitamin-trial.html" class="proces-row">
                         <span class="proces-step">05</span>
                         <h3 class="proces-title">JADWAL VITAMIN</h3>
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
@@ -4720,11 +4797,10 @@
                     </div>
 
                     <div class="journey-showcase-grid">
-                        <button type="button" class="journey-card card-perjalanan is-short" onclick="window.location.href='/perjalanan-ibu.html'" aria-label="Buka Perjalanan Ibu: Langkah Awal Ibu">
+                        <button type="button" class="journey-card card-perjalanan is-short" onclick="window.location.href='/perjalanan-ibu-trial.html'" aria-label="Buka Perjalanan Ibu: Langkah Awal Ibu">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
                             <span class="journey-card-copy">
-                                <span class="journey-card-kicker">Perjalanan Ibu</span>
-                                <span class="journey-card-title">Langkah Awal Ibu</span>
+                                <span class="journey-card-title">Perjalanan Ibu</span>
                             </span>
                             <span class="journey-card-cta" aria-hidden="true">
                                 <span class="journey-card-cta-dot"></span>
@@ -4732,11 +4808,10 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-membaca is-tall" onclick="window.location.href='/artikel.html'" aria-label="Buka Ruang Membaca: Nadi Pengetahuan">
-                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                        <button type="button" class="journey-card card-membaca is-tall" onclick="window.location.href='/artikel-trial.html'" aria-label="Buka Ruang Membaca: Nadi Pengetahuan">
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
-                                <span class="journey-card-kicker">Ruang Membaca</span>
-                                <span class="journey-card-title">Nadi Pengetahuan</span>
+                                <span class="journey-card-title">Ruang Membaca</span>
                             </span>
                             <span class="journey-card-cta" aria-hidden="true">
                                 <span class="journey-card-cta-dot"></span>
@@ -4747,8 +4822,7 @@
                         <button type="button" class="journey-card card-update is-taller" onclick="document.getElementById('announcements-container').scrollIntoView({ behavior: 'smooth', block: 'start' });" aria-label="Lihat Update Terkini: Kabar Sehat Hari Ini">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
                             <span class="journey-card-copy">
-                                <span class="journey-card-kicker">Update Terkini</span>
-                                <span class="journey-card-title">Kabar Sehat Hari Ini</span>
+                                <span class="journey-card-title">Update Terkini</span>
                             </span>
                             <span class="journey-card-cta" aria-hidden="true">
                                 <span class="journey-card-cta-dot"></span>
@@ -4756,11 +4830,10 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-obgyn is-short" onclick="window.location.href='/artikel-kesehatan.html'" aria-label="Buka Obstetri Ginekologi: Mengenai istilah bidang Obgyn">
+                        <button type="button" class="journey-card card-obgyn is-short" onclick="window.location.href='/artikel-kesehatan-trial.html'" aria-label="Buka Obstetri Ginekologi: Mengenai istilah bidang Obgyn">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
                             <span class="journey-card-copy">
-                                <span class="journey-card-kicker">Obstetri Ginekologi</span>
-                                <span class="journey-card-title">Mengenai istilah bidang Obgyn</span>
+                                <span class="journey-card-title">Istilah Obstetri Ginekologi</span>
                             </span>
                             <span class="journey-card-cta" aria-hidden="true">
                                 <span class="journey-card-cta-dot"></span>
@@ -4806,40 +4879,41 @@
             <div class="footer-inner">
                 <div class="footer-hero">
                     <div class="footer-copy">
-                        <span class="footer-newsletter-kicker">dokterDIBYA Portal</span>
-                        <h2>Join Our Newsletter.</h2>
+                        <span class="footer-newsletter-kicker">Portal Pasien dokterDIBYA</span>
+                        <h2>Kabar dari Dokter.</h2>
                         <p>
-                            We share occasional reflections on women&apos;s health, emotional well-being,
-                            and practical guidance to move through each phase with more clarity and calm.
+                            Kami berbagi catatan berkala seputar kehamilan, kesehatan perempuan,
+                            dan panduan praktis agar setiap tahap terasa lebih jelas dan tenang.
                         </p>
                     </div>
                 </div>
 
                 <div class="footer-subscribe">
                     <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
-                        <input class="footer-subscribe-input" type="email" placeholder="Enter your email address" aria-label="Email address">
-                        <button class="footer-subscribe-button" type="submit">Subscribe</button>
+                        <input class="footer-subscribe-input" type="email" placeholder="Masukkan alamat email Anda" aria-label="Alamat email">
+                        <button class="footer-subscribe-button" type="submit">Berlangganan</button>
                     </form>
                     <p class="footer-policy">
-                        By signing up to receive emails from dokterDIBYA, you agree to our Privacy Policy.
+                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi dokterDIBYA.
                     </p>
                 </div>
 
                 <div class="footer-meta">
                     <div class="footer-meta-col">
-                        <span class="footer-meta-title">Sitemap</span>
+                        <span class="footer-meta-title">Peta Situs</span>
                         <div class="footer-links">
-                            <a href="/patient-menu-trial.html">Main Page</a>
-                            <a href="/artikel-kesehatan.html">Journal</a>
-                            <a href="/patient-dashboard.html">Patient Portal</a>
-                            <a href="/patient-login.html">Login</a>
-                            <a href="mailto:admin@dokterdibya.com">Contact</a>
+                            <a href="/patient-menu-trial.html">Halaman Utama</a>
+                            <a href="/artikel-trial.html">Ruang Membaca</a>
+                            <a href="/artikel-kesehatan-trial.html">Istilah Obgyn</a>
+                            <a href="/perjalanan-ibu-trial.html">Perjalanan Ibu</a>
+                            <a href="/patient-dashboard.html">Dashboard Pasien</a>
+                            <a href="/patient-login-trial.html">Masuk</a>
                         </div>
                     </div>
                     <div class="footer-meta-col">
-                        <span class="footer-meta-title">Contact Us</span>
+                        <span class="footer-meta-title">Hubungi Kami</span>
                         <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
-                        <div class="footer-social" aria-label="Social links">
+                        <div class="footer-social" aria-label="Tautan sosial">
                             <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
                             <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
                             <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
@@ -4850,8 +4924,8 @@
 
                 <div class="footer-bottom">
                     <span>&copy; 2026 dokterDIBYA</span>
-                    <span>Patient Portal</span>
-                    <span>All rights reserved</span>
+                    <span>Portal Pasien</span>
+                    <span>Seluruh hak cipta dilindungi</span>
                 </div>
             </div>
         </div>
@@ -5276,7 +5350,7 @@
                     localStorage.removeItem('from_mobile_app');
                     window.location.href = 'dokterdibya://logout';
                 } else {
-                    window.location.href = '/patient-login.html';
+                    window.location.href = '/patient-login-trial.html';
                 }
                 return;
             }
@@ -5446,6 +5520,9 @@
                 requestAnimationFrame(function() {
                     document.body.classList.add('header-animated');
                     document.body.classList.add('page-loaded');
+                    // Recompute hero bg fade now that #content-wrapper is visible —
+                    // the initial IIFE call ran against a display:none element.
+                    window.dispatchEvent(new Event('scroll'));
                 });
             });
 
@@ -5876,7 +5953,7 @@
                 if (response.status === 401) {
                     localStorage.removeItem('vps_auth_token');
                     sessionStorage.removeItem('vps_auth_token');
-                    window.location.href = '/patient-login.html';
+                    window.location.href = '/patient-login-trial.html';
                     return;
                 }
                 const data = await response.json();
@@ -5922,20 +5999,20 @@
                 title: 'Aplikasi',
                 icon: 'fa-solid fa-th-large',
                 items: [
-                    { icon: 'fa-solid fa-comments', label: 'Tanya Dokter', href: '/tanya-dokter.html' },
-                    { icon: 'fa-solid fa-hand', label: 'Gerakan Bayi', href: '/kick-counter.html' },
-                    { icon: 'fa-solid fa-chart-line', label: 'Monitoring Kehamilan', href: '/pregnancy-tracker.html' },
-                    { icon: 'fa-solid fa-calendar-days', label: 'Kalender Kesuburan', href: '/fertility-calendar.html' },
-                    { icon: 'fa-solid fa-kit-medical', label: 'Jadwal Vitamin', href: '/jadwal-vitamin.html' }
+                    { icon: 'fa-solid fa-comments', label: 'Tanya Dokter', href: '/tanya-dokter-trial.html' },
+                    { icon: 'fa-solid fa-hand', label: 'Gerakan Bayi', href: '/kick-counter-trial.html' },
+                    { icon: 'fa-solid fa-chart-line', label: 'Monitoring Kehamilan', href: '/pregnancy-tracker-trial.html' },
+                    { icon: 'fa-solid fa-calendar-days', label: 'Kalender Kesuburan', href: '/fertility-calendar-trial.html' },
+                    { icon: 'fa-solid fa-kit-medical', label: 'Jadwal Vitamin', href: '/jadwal-vitamin-trial.html' }
                 ]
             },
             'edukasi': {
                 title: 'Edukasi',
                 icon: 'fa-solid fa-book-open',
                 items: [
-                    { icon: 'fa-solid fa-heart', label: 'Langkah Awal Ibu', href: '/perjalanan-ibu.html' },
-                    { icon: 'fa-solid fa-book-open', label: 'Nadi Pengetahuan', href: '/artikel.html' },
-                    { icon: 'fa-solid fa-stethoscope', label: 'Mengenai istilah bidang Obgyn', href: '/artikel-kesehatan.html' }
+                    { icon: 'fa-solid fa-heart', label: 'Langkah Awal Ibu', href: '/perjalanan-ibu-trial.html' },
+                    { icon: 'fa-solid fa-book-open', label: 'Nadi Pengetahuan', href: '/artikel-trial.html' },
+                    { icon: 'fa-solid fa-stethoscope', label: 'Mengenai istilah bidang Obgyn', href: '/artikel-kesehatan-trial.html' }
                 ]
             },
             'jadwal': {
@@ -6114,7 +6191,7 @@
             if (isCapacitor) {
                 window.location.href = 'dokterdibya://logout';
             } else {
-                window.location.href = '/patient-login.html';
+                window.location.href = '/patient-login-trial.html';
             }
         }
 
@@ -7296,14 +7373,16 @@
                 return len;
             });
             var CURVE_INITIAL_RATIO = 0.88;
+            var heroBgEl = document.getElementById('hero-fixed-bg');
+            var heroPreg = document.querySelector('.hero-fixed-bg-preg');
 
             function updateHeroBgFade() {
                 var h = window.innerHeight;
                 var y = window.scrollY;
                 var root = document.documentElement.style;
 
-                // Extend curve strokes as user scrolls.
-                var drawDistance = 1800;
+                // Draw completes just as Selamat Datang enters viewport (~375px hero margin).
+                var drawDistance = 2800;
                 var drawProgress = Math.max(0, Math.min(1, y / drawDistance));
                 curvePaths.forEach(function(p, idx) {
                     var len = curveLens[idx];
@@ -7311,27 +7390,42 @@
                     p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                 });
 
-                // background-preg fades out during the hero scroll.
-                var pregFadeEnd = h * 0.6;
-                var pregT = Math.max(0, Math.min(1, y / pregFadeEnd));
-                root.setProperty('--hero-preg-opacity', (1 - pregT).toFixed(3), 'important');
-
-                // green_bg (background 1) fades out only AFTER "Selamat Datang" section ends.
-                var welcomePinned = document.getElementById('welcome-pinned');
+                // Preg (lady overlay) fades as Selamat Datang enters viewport.
+                // Green bg stays until Selamat Datang section ENDS and starts moving off-screen.
+                var welcomePinned = document.querySelector('.welcome-pinned');
+                var fadeSpan = 200;
+                var pregT = 0;
                 var greenT = 0;
-                if (welcomePinned) {
-                    var welcomeStart = welcomePinned.offsetTop;
-                    var welcomeEnd = welcomeStart + welcomePinned.offsetHeight;
-                    // Start fade at 50% through the welcome section (earlier), end at welcome end.
-                    var greenFadeStart = welcomeStart + welcomePinned.offsetHeight * 0.5;
-                    var greenFadeEnd = welcomeEnd;
-                    var span = Math.max(1, greenFadeEnd - greenFadeStart);
-                    greenT = Math.max(0, Math.min(1, (y - greenFadeStart) / span));
-                } else {
-                    // Fallback: fade using hero end
-                    greenT = 0;
+                // Only compute fade if the element is actually laid out.
+                // Before auth check finishes, #content-wrapper is display:none and
+                // getBoundingClientRect() returns zeros — which would falsely push t→1
+                // and make the bg invisible until the user scrolls.
+                if (welcomePinned && welcomePinned.offsetParent !== null) {
+                    var rect = welcomePinned.getBoundingClientRect();
+                    if (rect.height > 0) {
+                        // Preg: rect.top == h (section entering bottom) → 0; rect.top == h-fadeSpan → 1.
+                        pregT = Math.max(0, Math.min(1, (h - rect.top) / fadeSpan));
+                        // Green: rect.bottom == fadeSpan (section almost done) → 0; rect.bottom == 0 (section fully gone off top) → 1.
+                        greenT = Math.max(0, Math.min(1, (fadeSpan - rect.bottom) / fadeSpan));
+                    }
                 }
-                root.setProperty('--hero-green-opacity', (1 - greenT).toFixed(3), 'important');
+                var pregFadeVal = ((1 - pregT) * 0.8).toFixed(3);
+                var greenFadeVal = (1 - greenT).toFixed(3);
+                // Keep CSS vars in sync (logo/topbar-ink reads --hero-green-opacity).
+                root.setProperty('--hero-green-opacity', greenFadeVal, 'important');
+                root.setProperty('--hero-preg-opacity', pregFadeVal, 'important');
+                // Only force inline opacity when actually fading — leaving it unset during
+                // page load lets the `fadeInOnly` animation play.
+                if (greenT > 0) {
+                    if (heroBgEl) heroBgEl.style.setProperty('opacity', greenFadeVal, 'important');
+                } else {
+                    if (heroBgEl) heroBgEl.style.removeProperty('opacity');
+                }
+                if (pregT > 0) {
+                    if (heroPreg) heroPreg.style.setProperty('opacity', pregFadeVal, 'important');
+                } else {
+                    if (heroPreg) heroPreg.style.removeProperty('opacity');
+                }
                 // Curve lift matches green fade: when green disappears, curves are fully lifted out the top.
                 root.setProperty('--hero-curve-lift', greenT.toFixed(3));
             }

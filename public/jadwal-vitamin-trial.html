@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Jadwal Vitamin - dokterDIBYA</title>
+
+    <!-- Fonts: Inter + Crimson Pro italic (trial theme) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Shared trial theme -->
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body.trial-themed {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-canvas, #f7f6f2);
+            color: var(--text-primary, #141414);
+            min-height: 100vh;
+            padding-bottom: 60px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .serif {
+            font-family: 'Crimson Pro', 'Times New Roman', serif;
+            font-style: italic;
+            font-weight: 500;
+        }
+
+        /* Layout */
+        .page-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px clamp(16px, 4vw, 32px) 80px;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 32px 4px 28px;
+            border-bottom: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+            margin-bottom: 28px;
+        }
+        .hero .section-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: var(--text-muted, #6b6b6b);
+            margin-bottom: 18px;
+        }
+        .hero .section-title {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(32px, 7vw, 46px);
+            font-weight: 600;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--text-primary, #141414);
+            margin-bottom: 16px;
+        }
+        .hero .section-lead {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-secondary, #3a3a3a);
+            max-width: 540px;
+        }
+
+        /* Top action buttons */
+        .actions-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+
+        .trial-button,
+        .trial-button-ghost {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 999px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+            border: 1px solid var(--line-strong, rgba(20,20,20,0.14));
+        }
+        .trial-button {
+            background: var(--text-primary, #141414);
+            color: #fff;
+            border-color: var(--text-primary, #141414);
+        }
+        .trial-button:hover { transform: translateY(-1px); }
+        .trial-button:active { transform: scale(0.99); }
+        .trial-button-ghost {
+            background: var(--bg-surface, #fff);
+            color: var(--text-primary, #141414);
+        }
+        .trial-button-ghost:hover { background: var(--bg-elevated, #f1f0ec); }
+
+        /* Section label */
+        .section-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: var(--text-muted, #6b6b6b);
+            margin: 28px 0 14px;
+        }
+        .section-label:first-of-type { margin-top: 0; }
+
+        /* Trial card (vitamin entry) */
+        .trial-card {
+            background: var(--bg-surface, #ffffff);
+            border: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+            border-radius: 18px;
+            padding: 18px 18px 18px;
+            margin-bottom: 12px;
+            transition: border-color 0.25s ease, transform 0.25s ease;
+        }
+        .trial-card:hover {
+            border-color: var(--line-strong, rgba(20,20,20,0.18));
+        }
+
+        .med-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .trial-card-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted, #6b6b6b);
+            padding: 4px 10px;
+            border: 1px solid var(--line-strong, rgba(20,20,20,0.14));
+            border-radius: 999px;
+            margin-bottom: 10px;
+        }
+
+        .trial-card-title {
+            font-family: 'Inter', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-primary, #141414);
+            letter-spacing: -0.01em;
+            margin-bottom: 6px;
+        }
+
+        .trial-card-desc {
+            font-size: 13.5px;
+            line-height: 1.55;
+            color: var(--text-secondary, #3a3a3a);
+        }
+
+        .med-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            min-width: 92px;
+        }
+
+        .time-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--bg-elevated, #f1f0ec);
+            color: var(--text-primary, #141414);
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--text-muted, #6b6b6b);
+        }
+        .status-indicator .gray-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--line-strong, rgba(20,20,20,0.2));
+        }
+
+        /* Action strip (toggle + delete) */
+        .med-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--line-soft, rgba(20,20,20,0.08));
+        }
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            background: transparent;
+            border: 1px solid var(--line-strong, rgba(20,20,20,0.14));
+            border-radius: 999px;
+            color: var(--text-primary, #141414);
+            font-family: inherit;
+            font-size: 11.5px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .icon-btn:hover { background: var(--bg-elevated, #f1f0ec); }
+        .icon-btn.danger {
+            color: #a13232;
+            border-color: rgba(161,50,50,0.25);
+        }
+        .icon-btn.danger:hover { background: rgba(161,50,50,0.06); }
+
+        /* Prescription card */
+        .prescription-card {
+            background: var(--bg-surface, #ffffff);
+            border: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 12px;
+        }
+        .prescription-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted, #6b6b6b);
+            margin-bottom: 14px;
+        }
+        .prescription-list {
+            list-style: none;
+            padding: 0;
+        }
+        .prescription-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--line-soft, rgba(20,20,20,0.06));
+            font-size: 14px;
+            color: var(--text-secondary, #3a3a3a);
+        }
+        .prescription-list li:last-child { border-bottom: none; }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+        }
+        .empty-state-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            border: 1px solid var(--line-strong, rgba(20,20,20,0.14));
+            display: grid;
+            place-items: center;
+            font-size: 26px;
+            color: var(--text-muted, #6b6b6b);
+        }
+        .empty-state h3 {
+            font-family: 'Crimson Pro', serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 26px;
+            color: var(--text-primary, #141414);
+            margin-bottom: 8px;
+        }
+        .empty-state p {
+            font-size: 14px;
+            color: var(--text-muted, #6b6b6b);
+            margin-bottom: 22px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 88px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 22px;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 500;
+            z-index: 9999;
+            background: var(--text-primary, #141414);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
+        }
+        .toast.success { background: var(--success, #2e7d5b); }
+        .toast.error { background: #8a2626; }
+        .toast.info { background: var(--text-primary, #141414); }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -16px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20,20,20,0.42);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: var(--bg-surface, #fff);
+            border: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+            border-radius: 22px;
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.18);
+        }
+        .modal-header {
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary, #141414);
+            letter-spacing: -0.01em;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted, #6b6b6b);
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+        }
+        .modal-body { padding: 22px; }
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 18px 22px;
+            border-top: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+        }
+        .modal-footer button { flex: 1; }
+
+        /* Trial inputs */
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--text-muted, #6b6b6b);
+            margin-bottom: 8px;
+        }
+        .trial-input,
+        .trial-select,
+        .trial-textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-surface, #fff);
+            border: 1px solid var(--line-strong, rgba(20,20,20,0.14));
+            border-radius: 12px;
+            color: var(--text-primary, #141414);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+        .trial-input:focus,
+        .trial-select:focus,
+        .trial-textarea:focus {
+            outline: none;
+            border-color: var(--text-primary, #141414);
+        }
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+        .form-row .form-group { flex: 1; }
+
+        .reminder-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            background: var(--bg-elevated, #f1f0ec);
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 14px;
+        }
+        .reminder-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--success, #2e7d5b);
+        }
+        .reminder-toggle label {
+            color: var(--text-primary, #141414);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .reminder-toggle i { color: var(--success, #2e7d5b); }
+
+        .time-inputs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* CTA link (doc-cta-link reference, used in empty state) */
+        .doc-cta-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 22px;
+            border-radius: 999px;
+            background: var(--text-primary, #141414);
+            color: #fff;
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: 0.01em;
+            transition: transform 0.2s ease;
+        }
+        .doc-cta-link:hover { transform: translateY(-1px); }
+
+        /* Site footer (copied from trial menu) */
+        .site-footer {
+            padding: 24px clamp(16px, 4vw, 32px) 40px;
+            max-width: 1280px;
+            margin: 40px auto 0;
+        }
+        .footer-card-frame {
+            position: relative;
+            border-radius: 28px;
+            overflow: hidden;
+            background: #0e0e0e;
+            color: #e8e6df;
+            padding: clamp(32px, 5vw, 56px);
+        }
+        .footer-backdrop {
+            position: absolute; inset: 0;
+            background: radial-gradient(120% 80% at 0% 0%, rgba(255,255,255,0.08), transparent 60%),
+                        radial-gradient(100% 70% at 100% 100%, rgba(255,255,255,0.05), transparent 60%);
+            pointer-events: none;
+        }
+        .footer-grid, .footer-orb, .footer-orb-right, .footer-vignette, .footer-grain, .footer-photo {
+            position: absolute; inset: 0; pointer-events: none;
+        }
+        .footer-grain {
+            background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 3px 3px;
+            mix-blend-mode: overlay;
+        }
+        .footer-inner { position: relative; z-index: 1; }
+        .footer-hero { margin-bottom: 28px; }
+        .footer-newsletter-kicker {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: rgba(232,230,223,0.6);
+            margin-bottom: 14px;
+        }
+        .footer-hero h2 {
+            font-family: 'Crimson Pro', serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: clamp(28px, 5vw, 44px);
+            line-height: 1.1;
+            color: #fff;
+            margin-bottom: 14px;
+        }
+        .footer-copy p {
+            font-size: 14px;
+            line-height: 1.65;
+            color: rgba(232,230,223,0.76);
+            max-width: 520px;
+        }
+        .footer-subscribe { margin-bottom: 36px; }
+        .footer-subscribe-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .footer-subscribe-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.16);
+            background: rgba(255,255,255,0.04);
+            color: #fff;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .footer-subscribe-input::placeholder { color: rgba(232,230,223,0.46); }
+        .footer-subscribe-button {
+            padding: 14px 22px;
+            border-radius: 999px;
+            border: none;
+            background: #fff;
+            color: #0e0e0e;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .footer-policy {
+            font-size: 11.5px;
+            color: rgba(232,230,223,0.5);
+        }
+        .footer-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 28px;
+            margin-bottom: 32px;
+            padding-top: 28px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .footer-meta-title {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: rgba(232,230,223,0.5);
+            margin-bottom: 14px;
+        }
+        .footer-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .footer-links a,
+        .footer-email {
+            color: rgba(232,230,223,0.82);
+            font-size: 13.5px;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .footer-links a:hover, .footer-email:hover { color: #fff; }
+        .footer-social {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .footer-social a {
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.14);
+            color: rgba(232,230,223,0.82);
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+        .footer-social a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .footer-bottom {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 24px;
+            padding-top: 22px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 11.5px;
+            color: rgba(232,230,223,0.46);
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .page-wrap { padding: 16px 16px 80px; }
+            .hero { padding: 20px 0 24px; margin-bottom: 22px; }
+            .med-card { grid-template-columns: 1fr; }
+            .med-right { flex-direction: row; align-items: center; justify-content: space-between; min-width: 0; }
+        }
+    </style>
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body class="trial-themed">
+    <!-- Topbar (trial) -->
+    <header class="topbar-trial">
+        <div class="topbar-trial-inner">
+            <div class="brand">
+                <button class="back-link" onclick="history.back()" aria-label="Kembali">
+                    <i class="fa-solid fa-chevron-left"></i> Kembali
+                </button>
+                <div>
+                    <div class="brand-title">dokter<span>DIBYA</span></div>
+                    <div class="brand-sub">Portal Pasien</div>
+                </div>
+            </div>
+            <div class="top-actions">
+                <a href="/notifikasi.html" class="circle-btn" aria-label="Notifikasi">
+                    <i class="fa-regular fa-bell"></i>
+                </a>
+                <a href="/profil.html" class="avatar" aria-label="Profil">
+                    <i class="fa-regular fa-user"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+    <div class="topbar-trial-spacer"></div>
+
+    <!-- Main -->
+    <main class="page-wrap">
+        <!-- Hero -->
+        <section class="hero">
+            <span class="section-kicker"><span class="green-light"></span> Jadwal Vitamin</span>
+            <h1 class="section-title">Pengingat <span class="serif">harian</span></h1>
+            <p class="section-lead">
+                Atur pengingat untuk vitamin, suplemen, dan obat harian sesuai resep Dokter.
+                Setiap jadwal akan muncul tepat waktu agar rutinitas Anda tetap terjaga,
+                tenang, dan tanpa ragu.
+            </p>
+        </section>
+
+        <!-- Actions -->
+        <div class="actions-row">
+            <button class="trial-button" onclick="openAddModal()">
+                <i class="fa-solid fa-plus"></i> Tambah Vitamin
+            </button>
+            <button class="trial-button-ghost" onclick="testNotification()">
+                <i class="fa-regular fa-bell"></i> Uji Notifikasi
+            </button>
+        </div>
+
+        <!-- My Medications -->
+        <div id="my-meds-section" style="display: none;">
+            <h3 class="section-label">Vitamin Saya</h3>
+            <div id="my-meds-container"></div>
+        </div>
+
+        <!-- Doctor Prescriptions -->
+        <div id="prescriptions-section" style="display: none;">
+            <h3 class="section-label">Resep dari Dokter</h3>
+            <div id="prescriptions-container"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-state-icon"><i class="fa-regular fa-calendar"></i></div>
+            <h3>Belum ada jadwal</h3>
+            <p>Tambahkan vitamin atau suplemen harian untuk mulai menerima pengingat tepat waktu.</p>
+            <a href="#" class="doc-cta-link" onclick="event.preventDefault(); openAddModal();">
+                <i class="fa-solid fa-plus"></i> Tambah Vitamin
+            </a>
+        </div>
+    </main>
+
+    <!-- Add Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-content trial-card" style="padding: 0; margin: 0;">
+            <div class="modal-header">
+                <h3>Tambah Vitamin</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Tutup">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Vitamin / Obat</label>
+                    <input type="text" class="trial-input" id="med-name" placeholder="Contoh: Asam Folat">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jumlah</label>
+                        <input type="number" class="trial-input" id="med-qty" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Satuan</label>
+                        <select class="trial-select" id="med-unit">
+                            <option value="tablet">Tablet</option>
+                            <option value="kapsul">Kapsul</option>
+                            <option value="strip">Strip</option>
+                            <option value="botol">Botol</option>
+                            <option value="sachet">Sachet</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Frekuensi</label>
+                    <select class="trial-select" id="med-freq" onchange="updateTimeInputs()">
+                        <option value="1">1x sehari</option>
+                        <option value="2">2x sehari</option>
+                        <option value="3">3x sehari</option>
+                        <option value="4">4x sehari</option>
+                    </select>
+                </div>
+                <div class="reminder-toggle">
+                    <input type="checkbox" id="med-reminder" checked>
+                    <i class="fa-regular fa-bell"></i>
+                    <label for="med-reminder">Ingatkan saya minum vitamin</label>
+                </div>
+                <div class="time-inputs" id="time-inputs">
+                    <div class="form-group">
+                        <label>Waktu 1</label>
+                        <input type="time" class="trial-input" id="time-1" value="08:00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="trial-button-ghost" onclick="closeModal()">Batal</button>
+                <button class="trial-button" onclick="saveMedication()">
+                    <i class="fa-solid fa-check"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, showToast } from '/scripts/patient-utils.js';
+        import {
+            requestNotificationPermission,
+            isNotificationPermitted,
+            scheduleVitaminReminder,
+            cancelVitaminReminder,
+            rescheduleAllReminders,
+            showTestNotification,
+            startWebNotificationChecker,
+            setupNotificationChannel,
+            isCapacitor
+        } from '/scripts/vitamin-notifications.js';
+
+        // Check auth
+        if (!checkAuth()) {
+            // Redirect handled by checkAuth
+        }
+
+        const token = getToken();
+        const STORAGE_KEY = 'custom_medications';
+
+        // ========== DEFINE FUNCTIONS FIRST ==========
+
+        function getMedications() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function saveMedications(meds) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(meds));
+        }
+
+        function getReminderTimes(frequency, customTimes) {
+            const defaultTimes = {
+                1: ['08:00'],
+                2: ['08:00', '20:00'],
+                3: ['08:00', '14:00', '20:00'],
+                4: ['06:00', '12:00', '18:00', '22:00']
+            };
+            const times = customTimes || defaultTimes[frequency] || ['08:00'];
+            return times;
+        }
+
+        function categoryFromTime(hhmm) {
+            if (!hhmm) return 'Harian';
+            const h = parseInt((hhmm || '').split(':')[0], 10) || 0;
+            if (h < 11) return 'Pagi';
+            if (h < 16) return 'Siang';
+            if (h < 19) return 'Sore';
+            return 'Malam';
+        }
+
+        function isDueNow(times) {
+            if (!times || !times.length) return false;
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            return times.some(t => {
+                const [h, m] = t.split(':').map(Number);
+                const mm = h * 60 + m;
+                return Math.abs(nowMin - mm) <= 30;
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateTimeInputs() {
+            const freqEl = document.getElementById('med-freq');
+            if (!freqEl) return;
+            const freq = parseInt(freqEl.value);
+            const container = document.getElementById('time-inputs');
+            if (!container) return;
+            const defaultTimes = {
+                1: ['08:00'],
+                2: ['08:00', '20:00'],
+                3: ['08:00', '14:00', '20:00'],
+                4: ['06:00', '12:00', '18:00', '22:00']
+            };
+            const times = defaultTimes[freq] || ['08:00'];
+
+            container.innerHTML = times.map((time, i) => `
+                <div class="form-group">
+                    <label>Waktu ${i + 1}</label>
+                    <input type="time" class="trial-input" id="time-${i + 1}" value="${time}">
+                </div>
+            `).join('');
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('med-name').value = '';
+            document.getElementById('med-qty').value = '1';
+            document.getElementById('med-unit').value = 'tablet';
+            document.getElementById('med-freq').value = '1';
+            document.getElementById('med-reminder').checked = true;
+            updateTimeInputs();
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        async function saveMedication() {
+            const name = document.getElementById('med-name').value.trim();
+            const quantity = parseInt(document.getElementById('med-qty').value) || 1;
+            const unit = document.getElementById('med-unit').value;
+            const frequency = parseInt(document.getElementById('med-freq').value);
+            const reminder = document.getElementById('med-reminder').checked;
+
+            if (!name) {
+                showToast('Masukkan nama vitamin', 'error');
+                return;
+            }
+
+            const times = [];
+            for (let i = 1; i <= frequency; i++) {
+                const input = document.getElementById(`time-${i}`);
+                if (input) times.push(input.value);
+            }
+
+            const newMed = {
+                name,
+                quantity,
+                unit,
+                frequency,
+                reminder,
+                reminderTimes: times,
+                notificationIds: [],
+                createdAt: new Date().toISOString()
+            };
+
+            if (reminder) {
+                newMed.notificationIds = await scheduleVitaminReminder(newMed);
+            }
+
+            const meds = getMedications();
+            meds.push(newMed);
+            saveMedications(meds);
+
+            closeModal();
+            showToast('Vitamin berhasil ditambahkan' + (reminder ? ' dengan pengingat' : ''), 'success');
+            loadMedications();
+        }
+
+        async function toggleReminder(index) {
+            const meds = getMedications();
+            if (meds[index]) {
+                const wasEnabled = meds[index].reminder;
+                meds[index].reminder = !wasEnabled;
+
+                if (meds[index].reminder) {
+                    meds[index].notificationIds = await scheduleVitaminReminder(meds[index]);
+                    showToast('Pengingat diaktifkan', 'success');
+                } else {
+                    if (meds[index].notificationIds && meds[index].notificationIds.length > 0) {
+                        await cancelVitaminReminder(meds[index].notificationIds);
+                    }
+                    meds[index].notificationIds = [];
+                    showToast('Pengingat dimatikan', 'info');
+                }
+
+                saveMedications(meds);
+                renderMyMedications(meds);
+            }
+        }
+
+        async function deleteMedication(index) {
+            if (!confirm('Hapus vitamin ini dari daftar?')) return;
+
+            const meds = getMedications();
+            const med = meds[index];
+
+            if (med && med.notificationIds && med.notificationIds.length > 0) {
+                await cancelVitaminReminder(med.notificationIds);
+            }
+
+            meds.splice(index, 1);
+            saveMedications(meds);
+            showToast('Vitamin berhasil dihapus', 'success');
+            loadMedications();
+        }
+
+        // Export to window for onclick handlers
+        window.openAddModal = openAddModal;
+        window.closeModal = closeModal;
+        window.updateTimeInputs = updateTimeInputs;
+        window.saveMedication = saveMedication;
+        window.toggleReminder = toggleReminder;
+        window.deleteMedication = deleteMedication;
+
+        // ========== RENDER ==========
+
+        async function loadMedications() {
+            const myMeds = getMedications();
+            renderMyMedications(myMeds);
+
+            try {
+                const response = await fetch('/api/patients/medications', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data && result.data.length > 0) {
+                        renderPrescriptions(result.data);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading prescriptions:', error);
+            }
+
+            const emptyState = document.getElementById('empty-state');
+            const mySection = document.getElementById('my-meds-section');
+            const presSection = document.getElementById('prescriptions-section');
+
+            if (mySection.style.display === 'none' && presSection.style.display === 'none') {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+
+        function renderMyMedications(meds) {
+            const section = document.getElementById('my-meds-section');
+            const container = document.getElementById('my-meds-container');
+
+            if (!meds || meds.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = meds.map((med, index) => {
+                const times = getReminderTimes(med.frequency, med.reminderTimes);
+                const freqText = `${med.frequency}x sehari`;
+                const qtyText = med.quantity ? `${med.quantity} ${med.unit || 'tablet'}` : '';
+                const firstTime = times[0] || '08:00';
+                const category = categoryFromTime(firstTime);
+                const due = med.reminder && isDueNow(times);
+                const timeChips = times.map(t => `<span class="time-chip"><i class="fa-regular fa-clock"></i> ${t}</span>`).join('');
+
+                return `
+                    <div class="trial-card">
+                        <div class="med-card">
+                            <div class="med-info">
+                                <span class="trial-card-kicker">${category}</span>
+                                <div class="trial-card-title">${escapeHtml(med.name)}</div>
+                                <div class="trial-card-desc">
+                                    ${qtyText ? escapeHtml(qtyText) + ' · ' : ''}${freqText}
+                                    ${med.reminder ? '' : ' · Pengingat mati'}
+                                </div>
+                            </div>
+                            <div class="med-right">
+                                ${timeChips}
+                                <span class="status-indicator">
+                                    ${due
+                                        ? '<span class="green-light"></span> Aktif'
+                                        : '<span class="gray-dot"></span> Terjadwal'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="med-actions">
+                            <button class="icon-btn" onclick="toggleReminder(${index})">
+                                <i class="fa-regular fa-bell${med.reminder ? '' : '-slash'}"></i>
+                                ${med.reminder ? 'Matikan' : 'Aktifkan'}
+                            </button>
+                            <button class="icon-btn danger" onclick="deleteMedication(${index})">
+                                <i class="fa-regular fa-trash-can"></i> Hapus
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPrescriptions(prescriptions) {
+            const section = document.getElementById('prescriptions-section');
+            const container = document.getElementById('prescriptions-container');
+
+            if (!prescriptions || prescriptions.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = prescriptions.map(pres => {
+                const visitDate = new Date(pres.visit_date).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                const medLines = (pres.terapi || '').split('\n').filter(line => line.trim());
+
+                return `
+                    <div class="prescription-card">
+                        <div class="prescription-header">
+                            <i class="fa-solid fa-stethoscope"></i>
+                            Kunjungan ${visitDate}
+                        </div>
+                        <ul class="prescription-list">
+                            ${medLines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== NOTIFICATIONS ==========
+        async function initNotifications() {
+            await setupNotificationChannel();
+
+            const hasPermission = await requestNotificationPermission();
+            if (!hasPermission) {
+                console.warn('Notification permission not granted');
+                const reminderToggle = document.getElementById('med-reminder');
+                if (reminderToggle) {
+                    reminderToggle.addEventListener('change', async function() {
+                        if (this.checked) {
+                            const granted = await requestNotificationPermission();
+                            if (!granted) {
+                                this.checked = false;
+                                showToast('Buka Pengaturan HP > Aplikasi > dokterDIBYA untuk aktifkan notifikasi', 'error');
+                            }
+                        }
+                    });
+                }
+            }
+
+            startWebNotificationChecker();
+
+            let meds = getMedications();
+            meds = await rescheduleAllReminders(meds);
+            saveMedications(meds);
+        }
+
+        async function testNotification() {
+            await showTestNotification('Uji Pengingat Vitamin', 'Ini adalah notifikasi percobaan dari dokterDIBYA.');
+        }
+        window.testNotification = testNotification;
+
+        // ========== INIT ==========
+        updateTimeInputs();
+        initNotifications();
+        loadMedications();
+    </script>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-card-frame">
+            <div class="footer-photo" aria-hidden="true"></div>
+            <div class="footer-backdrop" aria-hidden="true"></div>
+            <div class="footer-grid" aria-hidden="true"></div>
+            <div class="footer-orb" aria-hidden="true"></div>
+            <div class="footer-orb-right" aria-hidden="true"></div>
+            <div class="footer-vignette" aria-hidden="true"></div>
+            <div class="footer-grain" aria-hidden="true"></div>
+            <div class="footer-inner">
+                <div class="footer-hero">
+                    <div class="footer-copy">
+                        <span class="footer-newsletter-kicker">Portal Pasien dokterDIBYA</span>
+                        <h2>Kabar dari Dokter.</h2>
+                        <p>
+                            Kami berbagi catatan berkala seputar kehamilan, kesehatan perempuan,
+                            dan panduan praktis agar setiap tahap terasa lebih jelas dan tenang.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="footer-subscribe">
+                    <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
+                        <input class="footer-subscribe-input" type="email" placeholder="Masukkan alamat email Anda" aria-label="Alamat email">
+                        <button class="footer-subscribe-button" type="submit">Berlangganan</button>
+                    </form>
+                    <p class="footer-policy">
+                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi dokterDIBYA.
+                    </p>
+                </div>
+
+                <div class="footer-meta">
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Peta Situs</span>
+                        <div class="footer-links">
+                            <a href="/patient-menu-trial.html">Halaman Utama</a>
+                            <a href="/artikel-trial.html">Ruang Membaca</a>
+                            <a href="/artikel-kesehatan-trial.html">Istilah Obgyn</a>
+                            <a href="/perjalanan-ibu-trial.html">Perjalanan Ibu</a>
+                            <a href="/patient-dashboard.html">Dashboard Pasien</a>
+                            <a href="/patient-login-trial.html">Masuk</a>
+                        </div>
+                    </div>
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Hubungi Kami</span>
+                        <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
+                        <div class="footer-social" aria-label="Tautan sosial">
+                            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                            <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <span>&copy; 2026 dokterDIBYA</span>
+                    <span>Portal Pasien</span>
+                    <span>Seluruh hak cipta dilindungi</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+</body>
+</html>
