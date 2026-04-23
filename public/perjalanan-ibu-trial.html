@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Perjalanan Ibu - dokterDIBYA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Crimson+Text:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            background: var(--bg-page, #f5f3ee);
+            color: var(--text-primary, #0f172a);
+            font-family: var(--font-main, 'Inter', system-ui, sans-serif);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+        body { min-height: 100vh; padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+        .page-wrap {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 clamp(18px, 4vw, 48px);
+        }
+
+        /* Hero */
+        .pi-hero {
+            padding: clamp(24px, 5vw, 56px) 0 clamp(16px, 3vw, 40px);
+        }
+        .pi-hero .section-heading { max-width: 760px; }
+
+        /* Proces rows (adapted from patient-menu-trial) */
+        .pi-proces {
+            padding: clamp(24px, 5vw, 56px) 0 clamp(40px, 6vw, 80px);
+        }
+        .pi-proces-header {
+            text-align: left;
+            margin-bottom: 32px;
+        }
+        .pi-proces-header h2 {
+            font-size: clamp(22px, 3vw, 28px);
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 8px;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+        .pi-proces-header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+            line-height: 1.6;
+            max-width: 640px;
+        }
+
+        .proces-row {
+            display: grid;
+            grid-template-columns: 56px 1fr;
+            column-gap: 20px;
+            row-gap: 8px;
+            align-items: start;
+            padding: 28px 0 32px;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+            background: transparent;
+            border-top: 1px solid rgba(0, 0, 0, 0.35);
+            transition: background 0.25s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .proces-row:last-of-type { border-bottom: 1px solid rgba(0, 0, 0, 0.35); }
+        .proces-row:hover { background: rgba(0, 0, 0, 0.02); }
+        .proces-row[aria-disabled="true"] {
+            opacity: 0.55;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .proces-step {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            align-self: start;
+            padding-top: 6px;
+            line-height: 1;
+        }
+        .proces-title {
+            font-size: clamp(20px, 2.4vw, 26px);
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0;
+            line-height: 1.2;
+            margin: 0;
+            grid-column: 2;
+            grid-row: 1;
+        }
+        .proces-desc {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin: 0;
+            grid-column: 2;
+            grid-row: 2;
+            max-width: 680px;
+        }
+
+        .proces-title .weeks {
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 0.7em;
+            color: var(--text-muted);
+            margin-left: 6px;
+        }
+
+        @media (max-width: 600px) {
+            .proces-row {
+                grid-template-columns: 44px 1fr;
+                column-gap: 14px;
+                padding: 22px 0 26px;
+            }
+            .proces-title { font-size: 19px; }
+            .proces-desc { font-size: 13px; }
+        }
+    </style>
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body class="trial-themed">
+
+    <!-- Topbar -->
+    <header class="topbar-trial" role="banner">
+        <div class="topbar-trial-inner">
+            <div class="brand">
+                <a class="back-link" href="/patient-menu-trial.html" aria-label="Kembali">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    <span>Kembali</span>
+                </a>
+                <div>
+                    <div class="brand-title">dokter<span>DIBYA</span></div>
+                    <div class="brand-sub">Perjalanan Ibu</div>
+                </div>
+            </div>
+            <div class="top-actions">
+                <button type="button" class="circle-btn" aria-label="Notifikasi" onclick="window.location.href='/notifikasi-trial.html'">
+                    <i class="fa-regular fa-bell"></i>
+                </button>
+                <button type="button" class="avatar" aria-label="Profil" onclick="window.location.href='/profil-trial.html'">
+                    <i class="fa-regular fa-user"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+    <div class="topbar-trial-spacer"></div>
+
+    <main class="page-wrap" id="perjalananIbuMain">
+
+        <!-- Hero -->
+        <section class="pi-hero">
+            <div class="section-heading">
+                <div class="section-kicker">
+                    <span class="green-light" aria-hidden="true">
+                        <span class="green-light-core"></span>
+                        <span class="green-light-glow"></span>
+                    </span>
+                    Perjalanan Ibu
+                </div>
+                <h1 class="section-title">Langkah demi <span class="serif">langkah</span></h1>
+                <p class="section-lead">
+                    Setiap kehamilan adalah perjalanan yang berharga. Di sini Anda dapat memahami tiap tahapnya —
+                    mulai dari persiapan sebelum konsepsi, trimester demi trimester, hingga masa persalinan
+                    dan nifas. Pelajari apa yang terjadi pada tubuh Anda, pertumbuhan janin, dan hal-hal
+                    yang penting untuk dijaga di setiap babak.
+                </p>
+            </div>
+        </section>
+
+        <!-- Stages (adopts .proces-row numbered pattern) -->
+        <section class="pi-proces" aria-label="Tahapan Perjalanan Ibu">
+            <div class="pi-proces-header">
+                <h2>Enam Babak Perjalanan</h2>
+                <p>Klik tiap babak untuk membuka panduan, alat bantu, dan catatan yang relevan.</p>
+            </div>
+
+            <a href="/fertility-calendar-trial.html" class="proces-row">
+                <span class="proces-step">01</span>
+                <h3 class="proces-title">Prakonsepsi</h3>
+                <p class="proces-desc">Mempersiapkan tubuh dan pikiran sebelum kehamilan. Pantau masa subur,
+                    cukupi asam folat, evaluasi kesehatan, dan bangun kebiasaan hidup sehat agar kehamilan
+                    berlangsung sebaik mungkin sejak awal.</p>
+            </a>
+
+            <a href="/pregnancy-tracker-trial.html" class="proces-row">
+                <span class="proces-step">02</span>
+                <h3 class="proces-title">Trimester 1 <small class="weeks">(0–12 minggu)</small></h3>
+                <p class="proces-desc">Babak pembentukan. Organ-organ utama janin mulai terbentuk. Mual,
+                    lelah, dan perubahan suasana hati adalah hal wajar. Kunjungan antenatal pertama, USG awal,
+                    dan pemeriksaan darah dilakukan di babak ini.</p>
+            </a>
+
+            <a href="/pregnancy-tracker-trial.html" class="proces-row">
+                <span class="proces-step">03</span>
+                <h3 class="proces-title">Trimester 2 <small class="weeks">(13–27 minggu)</small></h3>
+                <p class="proces-desc">Babak paling nyaman bagi banyak ibu. Gerakan janin mulai terasa,
+                    perut membesar, dan energi kembali. USG anomali dilakukan untuk memastikan pertumbuhan
+                    janin sesuai, serta memantau plasenta dan air ketuban.</p>
+            </a>
+
+            <a href="/kick-counter-trial.html" class="proces-row">
+                <span class="proces-step">04</span>
+                <h3 class="proces-title">Trimester 3 <small class="weeks">(28–40 minggu)</small></h3>
+                <p class="proces-desc">Babak persiapan persalinan. Pantau gerakan bayi setiap hari, kenali
+                    tanda bahaya, siapkan tas persalinan, dan diskusikan rencana melahirkan dengan dokter.
+                    Pemeriksaan semakin rutin menjelang hari H.</p>
+            </a>
+
+            <a href="#" class="proces-row" aria-disabled="true">
+                <span class="proces-step">05</span>
+                <h3 class="proces-title">Persalinan</h3>
+                <p class="proces-desc">Hari yang dinanti. Kenali tanda-tanda persalinan — kontraksi teratur,
+                    pecah ketuban, atau lendir darah — dan kapan harus ke rumah sakit. Pilihan persalinan
+                    pervaginam atau caesar akan didiskusikan sesuai kondisi Anda dan janin.</p>
+            </a>
+
+            <a href="/jadwal-vitamin-trial.html" class="proces-row">
+                <span class="proces-step">06</span>
+                <h3 class="proces-title">Nifas &amp; Menyusui</h3>
+                <p class="proces-desc">Enam minggu pertama setelah melahirkan adalah masa pemulihan.
+                    Dukung proses menyusui, jaga nutrisi dan istirahat, pantau tanda baby blues, serta
+                    lanjutkan konsumsi vitamin sesuai anjuran dokter untuk pemulihan optimal.</p>
+            </a>
+        </section>
+
+    </main>
+
+    <!-- Site Footer (copied from patient-menu-trial.html) -->
+    <footer class="site-footer">
+        <div class="footer-card-frame">
+            <div class="footer-photo" aria-hidden="true"></div>
+            <div class="footer-backdrop" aria-hidden="true"></div>
+            <div class="footer-grid" aria-hidden="true"></div>
+            <div class="footer-orb" aria-hidden="true"></div>
+            <div class="footer-orb-right" aria-hidden="true"></div>
+            <div class="footer-vignette" aria-hidden="true"></div>
+            <div class="footer-grain" aria-hidden="true"></div>
+            <div class="footer-inner">
+                <div class="footer-hero">
+                    <div class="footer-copy">
+                        <span class="footer-newsletter-kicker">Portal Pasien dokterDIBYA</span>
+                        <h2>Kabar dari Dokter.</h2>
+                        <p>
+                            Kami berbagi catatan berkala seputar kehamilan, kesehatan perempuan,
+                            dan panduan praktis agar setiap tahap terasa lebih jelas dan tenang.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="footer-subscribe">
+                    <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
+                        <input class="footer-subscribe-input" type="email" placeholder="Masukkan alamat email Anda" aria-label="Alamat email">
+                        <button class="footer-subscribe-button" type="submit">Berlangganan</button>
+                    </form>
+                    <p class="footer-policy">
+                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi dokterDIBYA.
+                    </p>
+                </div>
+
+                <div class="footer-meta">
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Peta Situs</span>
+                        <div class="footer-links">
+                            <a href="/patient-menu-trial.html">Halaman Utama</a>
+                            <a href="/artikel-trial.html">Ruang Membaca</a>
+                            <a href="/artikel-kesehatan-trial.html">Istilah Obgyn</a>
+                            <a href="/perjalanan-ibu-trial.html">Perjalanan Ibu</a>
+                            <a href="/patient-dashboard.html">Dashboard Pasien</a>
+                            <a href="/patient-login-trial.html">Masuk</a>
+                        </div>
+                    </div>
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Hubungi Kami</span>
+                        <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
+                        <div class="footer-social" aria-label="Tautan sosial">
+                            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                            <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <span>&copy; 2026 dokterDIBYA</span>
+                    <span>Portal Pasien</span>
+                    <span>Seluruh hak cipta dilindungi</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Auth check - preserved from original
+        (function() {
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+
+            if (!token || !user.id) {
+                const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+                if (fromMobile) {
+                    console.log('[Perjalanan Ibu] From mobile app, redirecting to app login');
+                    localStorage.removeItem('from_mobile_app');
+                    window.location.href = 'dokterdibya://logout';
+                } else {
+                    window.location.href = '/patient-login-trial.html';
+                }
+                return;
+            }
+        })();
+    </script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+</body>
+</html>

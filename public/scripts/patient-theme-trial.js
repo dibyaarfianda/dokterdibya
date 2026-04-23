@@ -17,12 +17,21 @@
     // ---- Centralized route map (old ↔ trial) ----
     // Add entries here as new trial pages are created.
     var TRIAL_ROUTES = {
-        '/patient-menu.html':   '/patient-menu-trial.html',
-        '/profil.html':         '/profil-trial.html',
-        '/notifikasi.html':     '/notifikasi-trial.html',
-        '/album-usg.html':      '/album-usg-trial.html',
-        '/dokumen-medis.html':  '/dokumen-medis-trial.html',
-        '/booking-klinik.html': '/booking-klinik-trial.html'
+        '/patient-menu.html':       '/patient-menu-trial.html',
+        '/profil.html':             '/profil-trial.html',
+        '/notifikasi.html':         '/notifikasi-trial.html',
+        '/album-usg.html':          '/album-usg-trial.html',
+        '/dokumen-medis.html':      '/dokumen-medis-trial.html',
+        '/booking-klinik.html':     '/booking-klinik-trial.html',
+        '/artikel.html':            '/artikel-trial.html',
+        '/artikel-kesehatan.html':  '/artikel-kesehatan-trial.html',
+        '/perjalanan-ibu.html':     '/perjalanan-ibu-trial.html',
+        '/fertility-calendar.html': '/fertility-calendar-trial.html',
+        '/jadwal-vitamin.html':     '/jadwal-vitamin-trial.html',
+        '/pregnancy-tracker.html':  '/pregnancy-tracker-trial.html',
+        '/kick-counter.html':       '/kick-counter-trial.html',
+        '/patient-login.html':      '/patient-login-trial.html',
+        '/tanya-dokter.html':       '/tanya-dokter-trial.html'
     };
 
     // Build reverse map (trial → old)

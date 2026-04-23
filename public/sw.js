@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260423b'; // 2026-04-23 - hero curve drawDistance 3600→1800 so downward segment visible before Selamat Datang
+const CACHE_VERSION = '20260424b'; // 2026-04-24 - trial pages forked to *-trial.html variants; old portal pages restored
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
