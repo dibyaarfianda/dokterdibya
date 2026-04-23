@@ -7302,8 +7302,8 @@
                 var y = window.scrollY;
                 var root = document.documentElement.style;
 
-                // Extend curve strokes as user scrolls. 6x slower than scroll speed.
-                var drawDistance = 3600;
+                // Extend curve strokes as user scrolls.
+                var drawDistance = 1800;
                 var drawProgress = Math.max(0, Math.min(1, y / drawDistance));
                 curvePaths.forEach(function(p, idx) {
                     var len = curveLens[idx];
