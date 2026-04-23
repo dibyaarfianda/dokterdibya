@@ -3917,15 +3917,14 @@
             position: absolute;
             top: 0;
             left: 50%;
-            transform: translateX(-50%);
             width: 780px;
             max-width: 100vw;
             height: 100vh;
             pointer-events: none;
             z-index: 1;
-            opacity: var(--hero-green-opacity, 0);
-            will-change: opacity;
-            --hero-green-opacity: 0;
+            will-change: transform;
+            opacity: 1;
+            transform: translateX(-50%);
         }
         #hero-curves .hero-curve {
             position: absolute;
@@ -3933,6 +3932,14 @@
             width: 100%;
             height: 100%;
             overflow: visible;
+            will-change: transform;
+            transform: none;
+        }
+        #hero-curves .hero-curve-1 {
+            opacity: 0.5;
+        }
+        #hero-curves .hero-curve-2 {
+            opacity: 1;
         }
         #hero-curves .hero-curve path {
             stroke: #CCFF00;
@@ -3941,17 +3948,6 @@
             vector-effect: non-scaling-stroke;
             stroke-linecap: round;
             stroke-linejoin: round;
-        }
-        #hero-curves .hero-curve-1 path {
-            opacity: 0.5;
-        }
-        #hero-curves .hero-curve-2 path {
-            opacity: 1;
-        }
-
-        /* Curves lift upward on scroll via --hero-curve-lift (0 to 1) */
-        #hero-curves {
-            transform: scaleX(1.3) scaleY(1.8) translateX(-150px) translateY(calc(var(--hero-curve-lift, 0) * -200px));
         }
 
         #hero-fixed-bg .hero-fixed-bg-preg {
