@@ -7295,15 +7295,15 @@
                 p.style.strokeDasharray = len + 'px';
                 return len;
             });
-            var CURVE_INITIAL_RATIO = 0.925;
+            var CURVE_INITIAL_RATIO = 0.890;
 
             function updateHeroBgFade() {
                 var h = window.innerHeight;
                 var y = window.scrollY;
                 var root = document.documentElement.style;
 
-                // Extend curve strokes as user scrolls. 2x slower than scroll speed.
-                var drawDistance = 1200;
+                // Extend curve strokes as user scrolls. 3x slower than scroll speed.
+                var drawDistance = 1800;
                 var drawProgress = Math.max(0, Math.min(1, y / drawDistance));
                 curvePaths.forEach(function(p, idx) {
                     var len = curveLens[idx];
