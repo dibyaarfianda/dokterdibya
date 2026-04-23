@@ -7302,10 +7302,9 @@
                 var y = window.scrollY;
                 var root = document.documentElement.style;
 
-                // Extend curve strokes as user scrolls. Ease-in so drawing starts slow.
-                var drawDistance = 800;
-                var rawProgress = Math.max(0, Math.min(1, y / drawDistance));
-                var drawProgress = rawProgress * rawProgress; // ease-in: slow start, faster later
+                // Extend curve strokes as user scrolls. 2x slower than scroll speed.
+                var drawDistance = 1200;
+                var drawProgress = Math.max(0, Math.min(1, y / drawDistance));
                 curvePaths.forEach(function(p, idx) {
                     var len = curveLens[idx];
                     var offset = len * CURVE_INITIAL_RATIO * (1 - drawProgress);
