@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260424i'; // 2026-04-24 - patient trial portal icon update for Fitur Pasien Portal
+const CACHE_VERSION = '20260425a'; // 2026-04-25 - shared bottom nav across trial pages
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
