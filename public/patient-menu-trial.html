@@ -2763,74 +2763,74 @@
             --journey-bg-size: 156% auto;
         }
 
-        /* === Clearpath-style overlay (exact match): no dark tint, grain at 15% overlay === */
-        .journey-card.card-membaca .journey-card-frame::before,
-        .journey-card.card-membaca .journey-card-frame::after {
+        /* === Clearpath-style overlay: no dark tint, grain at overlay blend === */
+        .journey-card .journey-card-frame::before,
+        .journey-card .journey-card-frame::after {
             display: none;
         }
-        .journey-card.card-membaca .journey-card-media {
+        .journey-card .journey-card-media {
             filter: none;
         }
-        .journey-card.card-membaca .journey-card-media::after {
+        .journey-card .journey-card-media::after {
             background-size: 100px 100px;
             mix-blend-mode: overlay;
             opacity: 0.35;
         }
 
         /* === Clearpath-style progressive backdrop blur (bottom-up, 8 layers) === */
-        .journey-card.card-membaca .journey-card-blur {
+        .journey-card .journey-card-blur {
             position: absolute;
             inset: 0;
             pointer-events: none;
         }
-        .journey-card.card-membaca .journey-card-blur > span {
+        .journey-card .journey-card-blur > span {
             position: absolute;
             inset: 0;
             pointer-events: none;
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(1) {
+        .journey-card .journey-card-blur > span:nth-child(1) {
             -webkit-backdrop-filter: blur(0.15625px);
             backdrop-filter: blur(0.15625px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(2) {
+        .journey-card .journey-card-blur > span:nth-child(2) {
             -webkit-backdrop-filter: blur(0.3125px);
             backdrop-filter: blur(0.3125px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(3) {
+        .journey-card .journey-card-blur > span:nth-child(3) {
             -webkit-backdrop-filter: blur(0.625px);
             backdrop-filter: blur(0.625px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(4) {
+        .journey-card .journey-card-blur > span:nth-child(4) {
             -webkit-backdrop-filter: blur(1.25px);
             backdrop-filter: blur(1.25px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(5) {
+        .journey-card .journey-card-blur > span:nth-child(5) {
             -webkit-backdrop-filter: blur(2.5px);
             backdrop-filter: blur(2.5px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(6) {
+        .journey-card .journey-card-blur > span:nth-child(6) {
             -webkit-backdrop-filter: blur(5px);
             backdrop-filter: blur(5px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(7) {
+        .journey-card .journey-card-blur > span:nth-child(7) {
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
             mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
         }
-        .journey-card.card-membaca .journey-card-blur > span:nth-child(8) {
+        .journey-card .journey-card-blur > span:nth-child(8) {
             -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
             -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
@@ -4793,7 +4793,7 @@
 
                     <div class="journey-showcase-grid">
                         <button type="button" class="journey-card card-perjalanan is-short" onclick="window.location.href='/perjalanan-ibu-trial.html'" aria-label="Buka Perjalanan Ibu: Langkah Awal Ibu">
-                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Perjalanan Ibu</span>
                             </span>
@@ -4815,7 +4815,7 @@
                         </button>
 
                         <button type="button" class="journey-card card-update is-taller" onclick="document.getElementById('announcements-container').scrollIntoView({ behavior: 'smooth', block: 'start' });" aria-label="Lihat Update Terkini: Kabar Sehat Hari Ini">
-                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Update Terkini</span>
                             </span>
@@ -4826,7 +4826,7 @@
                         </button>
 
                         <button type="button" class="journey-card card-obgyn is-short" onclick="window.location.href='/artikel-kesehatan-trial.html'" aria-label="Buka Obstetri Ginekologi: Mengenai istilah bidang Obgyn">
-                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span></span>
+                            <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Istilah Obstetri Ginekologi</span>
                             </span>
