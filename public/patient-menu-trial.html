@@ -4394,23 +4394,18 @@
         </div>
     </header>
 
+    <!-- Fixed background layers must live OUTSIDE <main> — when body.sheet-open adds
+         filter:blur to <main>, any position:fixed child gets contained to main's box
+         instead of the viewport, causing the white-border clipping on the bg. -->
+    <div id="welcome-bg-overlay" aria-hidden="true"></div>
+    <div id="info-terbaru-fixed-bg" aria-hidden="true"></div>
+    <div id="hero-fixed-bg" aria-hidden="true">
+        <div class="hero-fixed-bg-preg"></div>
+    </div>
+    <div class="grid-bg" aria-hidden="true"></div>
+
     <!-- Main Content -->
     <main class="screen" id="main-content">
-
-        <!-- Full-screen black overlay for Welcome section scroll effect -->
-        <div id="welcome-bg-overlay" aria-hidden="true"></div>
-
-        <!-- Fixed ClearPath curves background for Info Terbaru (opacity driven by scroll) -->
-        <div id="info-terbaru-fixed-bg" aria-hidden="true"></div>
-
-        <!-- Always-visible hero background (green + preg overlay) -->
-        <div id="hero-fixed-bg" aria-hidden="true">
-            <div class="hero-fixed-bg-preg"></div>
-        </div>
-
-
-        <!-- Grid Background -->
-        <div class="grid-bg" aria-hidden="true"></div>
 
         <!-- Loading State -->
         <div class="loading-state" id="loading-state">
