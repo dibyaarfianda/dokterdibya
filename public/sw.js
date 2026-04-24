@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260424e'; // 2026-04-24 - fix white border on bg: move fixed bg elements outside <main> to avoid filter:blur containment
+const CACHE_VERSION = '20260424f'; // 2026-04-24 - fix white border on bg: move fixed bg elements outside <main> to avoid filter:blur containment
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
