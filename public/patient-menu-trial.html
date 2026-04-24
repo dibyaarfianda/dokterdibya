@@ -6477,7 +6477,7 @@
                         if (metric.proximityVelocity === undefined) metric.proximityVelocity = 0;
 
                         var delta = targetProximity - metric.currentProximity;
-                        metric.proximityVelocity += delta * 0.006 - metric.proximityVelocity * 0.15;
+                        metric.proximityVelocity += delta * 0.009 - metric.proximityVelocity * 0.18;
                         metric.currentProximity += metric.proximityVelocity;
 
                         if (Math.abs(delta) < 0.0015 && Math.abs(metric.proximityVelocity) < 0.0015) {
