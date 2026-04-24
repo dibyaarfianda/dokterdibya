@@ -2541,6 +2541,15 @@
             transform: translateY(36px);
             transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
                         transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+            content-visibility: auto;
+            contain-intrinsic-size: auto 560px;
+        }
+
+        /* Backdrop-filter suppressed until section enters viewport (.blur-active).
+           Prevents 32 GPU composite layers from being active before user scrolls here. */
+        .journey-showcase:not(.blur-active) .journey-card-blur > span {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
 
         .journey-showcase.journey-visible {
@@ -6407,6 +6416,11 @@
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
                             shown = true;
                             section.classList.add('journey-visible');
+                            // Delay blur activation: let fade-in animation start first,
+                            // then hand off 32 backdrop-filter layers to GPU compositor.
+                            setTimeout(function() {
+                                section.classList.add('blur-active');
+                            }, 400);
                             observer.unobserve(section);
                         }
                     });
