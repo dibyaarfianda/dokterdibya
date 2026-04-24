@@ -122,7 +122,7 @@
             top: env(safe-area-inset-top, 0px);
             left: 0;
             right: 0;
-            z-index: 40;
+            z-index: 1010;
             background: transparent;
             border-bottom: none;
             transform: none;
@@ -156,7 +156,7 @@
             right: 0;
             top: 0;
             height: 220px;
-            z-index: 39;
+            z-index: 1009;
             pointer-events: none;
         }
         .topbar-blur-fade div[class^="topbar-blur-"] {
@@ -395,7 +395,8 @@
             padding-left: 16px;
             padding-right: 16px;
             position: relative;
-            z-index: 1;
+            /* No z-index here — avoids creating a stacking context that would
+               trap .welcome-pinned (z-1001) below #welcome-bg-overlay (z-1000). */
         }
 
         /* ========== KICKER & SECTION TITLE ========== */
@@ -923,9 +924,9 @@
             left: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
-            margin-top: 200px;
+            margin-top: 0px;
             box-sizing: border-box;
-            padding: 94px 100px 88px;
+            padding: 24px 100px 24px;
             background: transparent;
             z-index: 1;
             overflow: visible;
@@ -2147,7 +2148,7 @@
                tersingkap. Selama ruang itu, konten terus ter-translate ke atas sampai
                hilang dari window — baru setelah itu sticky-nya dilepas dan
                "Selamat Datang" ikut scroll keatas. */
-            height: 1900px;
+            height: 1600px;
             margin: 0 calc(-50vw + 50%);
             z-index: 1001;
             background: transparent;
@@ -2427,6 +2428,12 @@
             line-height: 1;
         }
 
+        .proces-step i {
+            font-size: 26px;
+            width: 14px;
+            text-align: center;
+        }
+
         .proces-title {
             font-size: 26px;
             font-weight: 600;
@@ -2537,22 +2544,10 @@
         .journey-showcase {
             margin: 126px 0 34px;
             padding: 12px 0 4px;
-            opacity: 0;
-            transform: translateY(36px);
-            transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-                        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        /* Backdrop-filter suppressed until section enters viewport (.blur-active).
-           Prevents 32 GPU composite layers from being active before user scrolls here. */
-        .journey-showcase:not(.blur-active) .journey-card-blur > span {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-        }
 
         .journey-showcase.journey-visible {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .journey-showcase-header {
@@ -2590,7 +2585,7 @@
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
             align-items: end;
-            width: min(calc(100vw - 100px), 1320px);
+            width: min(calc(100vw - 160px), 1320px);
             margin-left: 50%;
             transform: translateX(-50%);
         }
@@ -2598,7 +2593,7 @@
         .journey-card {
             --journey-base-height: 386px;
             --journey-stretch: 0px;
-            --journey-parallax-y: -118px;
+            --journey-parallax-y: -200px;
             --journey-shadow-alpha: 0.14;
             --journey-sat: 1;
             --journey-contrast: 1;
@@ -2647,10 +2642,10 @@
             background-position: var(--journey-position, center center);
             background-repeat: no-repeat;
             transform: translateY(var(--journey-parallax-y));
-            transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), filter 0.26s cubic-bezier(0.22, 1, 0.36, 1);
             will-change: transform;
             pointer-events: none;
             filter: saturate(0.98) contrast(0.98);
+            opacity: 1;
         }
 
         .journey-card-frame::before {
@@ -2710,7 +2705,7 @@
         .journey-card-title {
             margin: 0;
             font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(34px, 4vw, 54px);
+            font-size: clamp(31px, 3.6vw, 49px);
             line-height: 0.92;
             font-weight: 500;
             letter-spacing: -0.03em;
@@ -2784,64 +2779,8 @@
             opacity: 0.35;
         }
 
-        /* === Clearpath-style progressive backdrop blur (bottom-up, 8 layers) === */
         .journey-card .journey-card-blur {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-        .journey-card .journey-card-blur > span {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-        .journey-card .journey-card-blur > span:nth-child(1) {
-            -webkit-backdrop-filter: blur(0.15625px);
-            backdrop-filter: blur(0.15625px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(2) {
-            -webkit-backdrop-filter: blur(0.3125px);
-            backdrop-filter: blur(0.3125px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(3) {
-            -webkit-backdrop-filter: blur(0.625px);
-            backdrop-filter: blur(0.625px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(4) {
-            -webkit-backdrop-filter: blur(1.25px);
-            backdrop-filter: blur(1.25px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(5) {
-            -webkit-backdrop-filter: blur(2.5px);
-            backdrop-filter: blur(2.5px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(6) {
-            -webkit-backdrop-filter: blur(5px);
-            backdrop-filter: blur(5px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(7) {
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%);
-        }
-        .journey-card .journey-card-blur > span:nth-child(8) {
-            -webkit-backdrop-filter: blur(20px);
-            backdrop-filter: blur(20px);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%);
+            display: none;
         }
 
         .journey-card.card-update {
@@ -2914,7 +2853,7 @@
             }
 
             .journey-card-title {
-                font-size: clamp(32px, 10vw, 44px);
+                font-size: clamp(29px, 9vw, 40px);
                 max-width: 220px;
             }
         }
@@ -3470,6 +3409,13 @@
         .nav-blur-7 { z-index:7; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
         .nav-blur-8 { z-index:8; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
 
+        /* DEACTIVATED — uncomment to re-enable bottom nav frosted glass */
+        .nav-blur-1, .nav-blur-2, .nav-blur-3, .nav-blur-4,
+        .nav-blur-5, .nav-blur-6, .nav-blur-7, .nav-blur-8 {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+
         .bottom-nav.nav-visible {
             transform: translateY(0);
         }
@@ -3975,7 +3921,7 @@
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
             margin-top: calc(-1 * (env(safe-area-inset-top, 0px) + 72px));
-            margin-bottom: 375px;
+            margin-bottom: 40px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -4599,8 +4545,7 @@
 
             <!-- INFO TERBARU — ClearPath Scroll-Driven Sticky Showcase -->
             <div class="info-terbaru-block-header">
-                <div class="info-terbaru-block-label">Update Terkini</div>
-                <h2 class="info-terbaru-block-title">Kabar Sehat Hari Ini</h2>
+                <h2 class="info-terbaru-block-title">Update Terkini</h2>
                 <p class="info-terbaru-block-desc">Lihat pengumuman, perubahan jadwal, dan pembaruan penting terbaru dari dokter di satu tempat.</p>
             </div>
             <div id="announcements-container" data-layout="info-terbaru">
@@ -4721,35 +4666,35 @@
 
 
                     <a href="/tanya-dokter-trial.html" class="proces-row">
-                        <span class="proces-step">01</span>
+                        <span class="proces-step"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
                         <h3 class="proces-title">TANYA DOKTER</h3>
                         <p class="proces-desc">Ajukan pertanyaan seputar kehamilan atau kandungan secara privat langsung ke dr. Dibya. Jawaban diberikan langsung oleh dokter, bukan chatbot.</p>
                     </a>
 
 
                     <a href="/kick-counter-trial.html" class="proces-row">
-                        <span class="proces-step">02</span>
+                        <span class="proces-step"><i class="fa-solid fa-baby" aria-hidden="true"></i></span>
                         <h3 class="proces-title">GERAKAN BAYI</h3>
                         <p class="proces-desc">Hitung dan pantau gerakan bayi Anda setiap hari. Catat setiap tendangan untuk memastikan kesehatan janin tetap terjaga dengan baik.</p>
                     </a>
 
 
                     <a href="/pregnancy-tracker-trial.html" class="proces-row">
-                        <span class="proces-step">03</span>
+                        <span class="proces-step"><i class="fa-solid fa-person-pregnant" aria-hidden="true"></i></span>
                         <h3 class="proces-title">MONITORING KEHAMILAN</h3>
                         <p class="proces-desc">Pantau perkembangan kehamilan minggu demi minggu. Lihat estimasi berat janin, ukuran, dan milestone penting setiap tahap kehamilan Anda.</p>
                     </a>
 
 
                     <a href="/fertility-calendar-trial.html" class="proces-row">
-                        <span class="proces-step">04</span>
+                        <span class="proces-step"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
                         <h3 class="proces-title">KALENDER KESUBURAN</h3>
                         <p class="proces-desc">Prediksi masa subur dan ovulasi berdasarkan siklus menstruasi Anda. Rencanakan kehamilan dengan lebih tepat dan terukur setiap bulannya.</p>
                     </a>
 
 
                     <a href="/jadwal-vitamin-trial.html" class="proces-row">
-                        <span class="proces-step">05</span>
+                        <span class="proces-step"><i class="fa-solid fa-pills" aria-hidden="true"></i></span>
                         <h3 class="proces-title">JADWAL VITAMIN</h3>
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
                     </a>
@@ -6307,8 +6252,19 @@
         })();
 
         (function() {
+            /* Mini summary - ClearPath card engine:
+               1. Scroll only updates parallax, never reveal or hover stretch.
+               2. Hover stretch only starts after real pointer interaction, so cards do not bloom on entry.
+               3. Frame/media/copy/CTA all follow the same variables in the same RAF tick.
+               4. Spring values below intentionally match the slower ClearPath feel. */
             var MAX_STRETCH = 160;
+            var PARALLAX_TRAVEL = 106;
+            var PARALLAX_START = -200;
+            var SPRING_STIFFNESS = 0.006;
+            var SPRING_DAMPING = 0.15;
             var lastClientX = window.innerWidth * 0.5;
+            var hasPointerSignal = false;
+            var supportsFinePointer = !window.matchMedia || window.matchMedia('(pointer: fine)').matches;
 
             function getCardBaseHeight(card) {
                 var cssValue = getComputedStyle(card).getPropertyValue('--journey-base-height');
@@ -6316,58 +6272,68 @@
                 return Number.isFinite(parsed) ? parsed : 272;
             }
 
+            // Pre-position all journey cards on load (like ClearPath inline style approach):
+            // 1. Lock explicit height so no layout shift when JS runs later.
+            // 2. Pre-compute and apply correct parallax so first-visible frame has no jump.
+            function prePositionAllCards() {
+                var allCards = document.querySelectorAll('.journey-card');
+                allCards.forEach(function(card) {
+                    var h = getCardBaseHeight(card);
+                    card.style.height = h + 'px';
+                    card.dataset.baseHeight = String(h);
+                    var rect = card.getBoundingClientRect();
+                    var viewportHeight = window.innerHeight || 1;
+                    var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+                    var eased = Math.max(0, Math.min(1, progress));
+                    eased = eased * eased * (3 - (2 * eased));
+                    var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
+                    card.dataset.parallaxShift = String(parallax);
+                    card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
+                });
+            }
+
+            // Run after layout is stable (two rAF = post-paint)
+            requestAnimationFrame(function() {
+                requestAnimationFrame(prePositionAllCards);
+            });
+
+            // Keep parallax updated on scroll for ALL cards (including off-screen),
+            // so there is never a jump when a card first enters the viewport.
+            window.addEventListener('scroll', function() {
+                var allCards = document.querySelectorAll('.journey-card');
+                allCards.forEach(function(card) {
+                    var rect = card.getBoundingClientRect();
+                    var viewportHeight = window.innerHeight || 1;
+                    var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+                    var eased = Math.max(0, Math.min(1, progress));
+                    eased = eased * eased * (3 - (2 * eased));
+                    var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
+                    card.dataset.parallaxShift = String(parallax);
+                    card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
+                });
+            }, { passive: true });
+
             function resetJourneyCard(card) {
+                // Off-screen cleanup only resets hover/stretch state.
+                // Scroll-owned parallax stays intact for entry continuity.
                 card.style.removeProperty('--journey-stretch');
-                card.style.removeProperty('--journey-parallax-y');
                 card.style.removeProperty('--journey-shadow-alpha');
                 card.style.removeProperty('--journey-sat');
                 card.style.removeProperty('--journey-contrast');
                 card.style.filter = '';
                 card.style.zIndex = '';
-                var media = card.querySelector('.journey-card-media');
-                if (media) {
-                    media.style.transform = '';
-                    media.style.transition = '';
-                }
-            }
-
-            function lockJourneyMedia(card) {
-                var media = card.querySelector('.journey-card-media');
-                if (!media) return;
-                media.style.transition = 'none';
-            }
-
-            function unlockJourneyMedia(card) {
-                var media = card.querySelector('.journey-card-media');
-                if (!media) return;
-                media.style.transition = '';
-            }
-
-            function getRenderedTranslateY(card) {
-                var media = card.querySelector('.journey-card-media');
-                if (!media) return NaN;
-                var transform = getComputedStyle(media).transform;
-                if (!transform || transform === 'none') return NaN;
-                try {
-                    return new DOMMatrixReadOnly(transform).m42;
-                } catch (error) {
-                    return NaN;
-                }
             }
 
             function getParallaxShift(card) {
                 var rect = card.getBoundingClientRect();
                 var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
-                var travel = 106;
-                var startOffset = -200;
                 var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
                 var eased = Math.max(0, Math.min(1, progress));
                 eased = eased * eased * (3 - (2 * eased));
-                return startOffset + (travel * eased);
+                return PARALLAX_START + (PARALLAX_TRAVEL * eased);
             }
 
             function applyJourneyCardState(card, stretch, intensity, zIndex) {
-                var baseHeight = Number(card.dataset.baseHeight || 0) || getCardBaseHeight(card);
                 var parallaxShift = Number(card.dataset.parallaxShift);
                 if (!Number.isFinite(parallaxShift)) {
                     parallaxShift = getParallaxShift(card);
@@ -6407,23 +6373,19 @@
                     section.classList.add('journey-visible');
                     return;
                 }
+
                 var shown = false;
-                var observer = new IntersectionObserver(function(entries) {
+                var visibleObserver = new IntersectionObserver(function(entries) {
                     entries.forEach(function(entry) {
                         if (shown) return;
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
                             shown = true;
                             section.classList.add('journey-visible');
-                            // Delay blur activation: let fade-in animation start first,
-                            // then hand off 32 backdrop-filter layers to GPU compositor.
-                            setTimeout(function() {
-                                section.classList.add('blur-active');
-                            }, 400);
-                            observer.unobserve(section);
+                            visibleObserver.unobserve(section);
                         }
                     });
                 }, { threshold: [0.15, 0.3, 0.5] });
-                observer.observe(section);
+                visibleObserver.observe(section);
             })();
 
             document.querySelectorAll('.journey-showcase-grid').forEach(function(grid) {
@@ -6431,7 +6393,6 @@
                 var metrics = [];
                 var targetClientX = lastClientX;
                 var currentClientX = lastClientX;
-                var velocityClientX = 0;
                 var frameId = 0;
                 var wasVisible = false;
 
@@ -6459,6 +6420,11 @@
                     cards.forEach(resetJourneyCard);
                 }
 
+                function getTargetProximity(gridRect, metric, clientX) {
+                    if (!supportsFinePointer || !hasPointerSignal) return 0;
+                    return getHorizontalProximity(gridRect, metric, clientX);
+                }
+
                 function updateAll(clientX) {
                     if (!isGridVisible(grid)) return false;
                     if (metrics.length !== cards.length) {
@@ -6469,15 +6435,14 @@
 
                     metrics.forEach(function(metric) {
                         var card = metric.card;
-                        var targetProximity = getHorizontalProximity(gridRect, metric, clientX);
+                        var targetProximity = getTargetProximity(gridRect, metric, clientX);
 
-                        // Per-card spring on proximity → ease-in + ease-out for stretch.
-                        // stiffness=0.006, damping=0.15, settling time ~600ms.
+                        // ClearPath spring: slower settle, softer acceleration.
                         if (metric.currentProximity === undefined) metric.currentProximity = 0;
                         if (metric.proximityVelocity === undefined) metric.proximityVelocity = 0;
 
                         var delta = targetProximity - metric.currentProximity;
-                        metric.proximityVelocity += delta * 0.009 - metric.proximityVelocity * 0.18;
+                        metric.proximityVelocity += delta * SPRING_STIFFNESS - metric.proximityVelocity * SPRING_DAMPING;
                         metric.currentProximity += metric.proximityVelocity;
 
                         if (Math.abs(delta) < 0.0015 && Math.abs(metric.proximityVelocity) < 0.0015) {
@@ -6505,11 +6470,15 @@
 
                     currentClientX = targetClientX;
 
-                    // Snap spring to target on first-visibility frame (prevent bloom-in)
-                    if (!wasVisible && metrics.length === cards.length) {
-                        var gridRect = grid.getBoundingClientRect();
+                    // Keep first-visibility state passive.
+                    // With interaction gating enabled, snapping to hover target here
+                    // would reintroduce the ClearPath pop we just removed.
+                    if (!wasVisible) {
+                        rebuildMetrics();
                         metrics.forEach(function(metric) {
-                            metric.currentProximity = getHorizontalProximity(gridRect, metric, currentClientX);
+                            if (typeof metric.currentProximity !== 'number') {
+                                metric.currentProximity = 0;
+                            }
                             metric.proximityVelocity = 0;
                         });
                     }
@@ -6538,41 +6507,56 @@
                 }
 
                 window.addEventListener('pointermove', function(event) {
+                    if (!supportsFinePointer) return;
+                    hasPointerSignal = true;
                     lastClientX = event.clientX;
                     targetClientX = event.clientX;
-                    scheduleUpdate();
+                    if (isGridVisible(grid)) {
+                        scheduleUpdate();
+                    }
                 }, { passive: true });
 
-                grid.addEventListener('pointermove', function(event) {
-                    lastClientX = event.clientX;
-                    targetClientX = event.clientX;
-                    scheduleUpdate();
+                window.addEventListener('pointerleave', function() {
+                    if (!supportsFinePointer) return;
+                    hasPointerSignal = false;
+                    if (isGridVisible(grid)) {
+                        scheduleUpdate();
+                    }
                 }, { passive: true });
-
-                cards.forEach(function(card) {
-                    card.addEventListener('pointerenter', function(event) {
-                        lastClientX = event.clientX;
-                        targetClientX = event.clientX;
-                        scheduleUpdate();
-                    }, { passive: true });
-
-                    card.addEventListener('pointermove', function(event) {
-                        lastClientX = event.clientX;
-                        targetClientX = event.clientX;
-                        scheduleUpdate();
-                    }, { passive: true });
-
-                    card.addEventListener('pointerleave', function() {
-                        scheduleUpdate();
-                    }, { passive: true });
-                });
 
                 window.addEventListener('scroll', refresh, { passive: true });
                 window.addEventListener('resize', function() {
                     refresh();
                 });
 
-                refresh();
+                // Pre-warm: cache geometry + parallax state before entry.
+                // Stretch stays passive until real pointer interaction turns it on.
+                function preWarm() {
+                    rebuildMetrics();
+                    var gridRect = grid.getBoundingClientRect();
+                    metrics.forEach(function(metric) {
+                        metric.currentProximity = getTargetProximity(gridRect, metric, lastClientX);
+                        metric.proximityVelocity = 0;
+                        var prox = metric.currentProximity;
+                        var stretch = MAX_STRETCH * prox;
+                        applyJourneyCardState(metric.card, stretch, prox, Math.round(4 + (prox * 6)));
+                    });
+                    wasVisible = false;
+                }
+
+                if ('IntersectionObserver' in window) {
+                    var preObserver = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(entry) {
+                            if (entry.isIntersecting) {
+                                preWarm();
+                                preObserver.unobserve(grid);
+                            }
+                        });
+                    }, { rootMargin: '0px 0px 800px 0px', threshold: 0 });
+                    preObserver.observe(grid);
+                } else {
+                    refresh();
+                }
             });
         })();
 
@@ -6671,8 +6655,30 @@
             var container = document.getElementById('welcome-pinned');
             var content = document.getElementById('welcome-pinned-content');
             var windowEl = container ? container.querySelector('.welcome-window-scroll') : null;
+            var pinnedInner = container ? container.querySelector('.welcome-pinned-inner') : null;
+            var signEl = content ? content.querySelector('.welcome-sign') : null;
             var skipBtn = document.getElementById('welcome-skip');
-            if (!container || !content || !windowEl) return;
+            if (!container || !content || !windowEl || !pinnedInner) return;
+
+            // Phase 1: content scrolls up over a FIXED pixel distance (independent of container height).
+            // Phase 2: content frozen, entire welcome window slides up as one unit.
+            // PHASE1_PX controls reading speed — change container height freely without affecting it.
+            var PHASE1_PX = 580;
+
+            function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+            // Compute translateY that places the center of .welcome-sign at the vertical
+            // center of the visible window. Natural content position = centered (flex),
+            // so content top = -(overflow/2) relative to window top.
+            function getCenterShift(overflow, windowH) {
+                if (!signEl) return -overflow / 2;
+                var signCenter = signEl.offsetTop + signEl.offsetHeight / 2;
+                // natural content top = -(overflow/2), so sign center in window (no shift) =
+                //   -(overflow/2) + signCenter
+                // we want that = windowH/2, so:
+                var shift = windowH * 0.20 - (signCenter - overflow / 2);
+                return Math.max(-overflow, Math.min(overflow / 2, shift));
+            }
 
             window.addEventListener('scroll', function() {
                 var rect = container.getBoundingClientRect();
@@ -6683,21 +6689,29 @@
 
                 if (overflow <= 0) return;
 
-                // Progress based on full viewport (inner is 100vh)
                 var scrollRange = containerH - window.innerHeight;
-                var progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
-                // Content is CSS-centered in window. Shift range sekarang extend dari
-                // +overflow/2 (top content visible) → -overflow/2 - windowH (konten
-                // fully pushed out above window). Dengan ini paragraf terakhir
-                // ("Terima kasih...", "salam hangat dr. Dibya") ter-scroll keluar
-                // viewport dulu sebelum sticky welcome-pinned-inner di-lepas.
-                var shift = overflow / 2 - (overflow + windowH) * progress;
-                content.style.transform = 'translateY(' + shift + 'px)';
+                var scrolled = Math.max(0, -rect.top);
+                var finalShift = getCenterShift(overflow, windowH);
 
-                // Show/hide skip button — sembunyikan lebih cepat (progress 0.7)
-                // karena phase akhir = konten sudah nggak visible.
+                if (scrolled <= PHASE1_PX) {
+                    // Phase 1: fixed-speed content scroll (PHASE1_PX px of scroll = full content)
+                    var p1 = scrolled / PHASE1_PX;
+                    var shift = overflow / 2 + (finalShift - overflow / 2) * p1;
+                    content.style.transform = 'translateY(' + shift.toFixed(2) + 'px)';
+                    pinnedInner.style.transform = '';
+                } else {
+                    // Phase 2: freeze content, slide whole window up over remaining scroll range
+                    content.style.transform = 'translateY(' + finalShift.toFixed(2) + 'px)';
+                    var phase2Range = Math.max(1, scrollRange - PHASE1_PX);
+                    var p2 = (scrolled - PHASE1_PX) / phase2Range;
+                    var eased = smoothstep(Math.max(0, Math.min(1, p2)));
+                    pinnedInner.style.transform = 'translateY(' + (-window.innerHeight * eased).toFixed(2) + 'px)';
+                }
+
                 if (skipBtn) {
-                    if (progress > 0.01 && progress < 0.7) {
+                    var splitRatio = PHASE1_PX / scrollRange;
+                    var progress = Math.max(0, Math.min(1, scrolled / scrollRange));
+                    if (progress > 0.01 && progress < splitRatio + 0.05) {
                         skipBtn.classList.add('visible');
                     } else {
                         skipBtn.classList.remove('visible');
@@ -6939,7 +6953,7 @@
 
             // Fade in starts slightly before welcome section (smooth transition).
             var FADE_IN_EARLY_START_PX = 150;
-            var FADE_OUT_START_RATIO = 0.30;
+            var FADE_OUT_START_RATIO = 0.15;
 
             function updateBackgroundOpacity() {
                 var scrollY = window.scrollY;
@@ -7389,20 +7403,16 @@
                 // Preg (lady overlay) fades as Selamat Datang enters viewport.
                 // Green bg stays until Selamat Datang section ENDS and starts moving off-screen.
                 var welcomePinned = document.querySelector('.welcome-pinned');
-                var fadeSpan = 200;
+                var pregFadeSpan = 200;
+                var greenFadeStart = 1000; // green starts fading when section bottom is 1000px from top
+                var greenFadeEnd   = 50;   // fully gone by 50px
                 var pregT = 0;
                 var greenT = 0;
-                // Only compute fade if the element is actually laid out.
-                // Before auth check finishes, #content-wrapper is display:none and
-                // getBoundingClientRect() returns zeros — which would falsely push t→1
-                // and make the bg invisible until the user scrolls.
                 if (welcomePinned && welcomePinned.offsetParent !== null) {
                     var rect = welcomePinned.getBoundingClientRect();
                     if (rect.height > 0) {
-                        // Preg: rect.top == h (section entering bottom) → 0; rect.top == h-fadeSpan → 1.
-                        pregT = Math.max(0, Math.min(1, (h - rect.top) / fadeSpan));
-                        // Green: rect.bottom == fadeSpan (section almost done) → 0; rect.bottom == 0 (section fully gone off top) → 1.
-                        greenT = Math.max(0, Math.min(1, (fadeSpan - rect.bottom) / fadeSpan));
+                        pregT  = Math.max(0, Math.min(1, (h - rect.top) / pregFadeSpan));
+                        greenT = Math.max(0, Math.min(1, (greenFadeStart - rect.bottom) / (greenFadeStart - greenFadeEnd)));
                     }
                 }
                 var pregFadeVal = ((1 - pregT) * 0.8).toFixed(3);
