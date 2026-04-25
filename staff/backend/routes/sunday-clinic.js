@@ -188,6 +188,41 @@ function getSlotTime(session, slotNumber) {
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+function formatUtcYmd(date) {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getGmt7DayWindow(baseDate = new Date()) {
+    const gmt7OffsetMs = 7 * 60 * 60 * 1000;
+    const gmt7Now = new Date(baseDate.getTime() + gmt7OffsetMs);
+
+    const year = gmt7Now.getUTCFullYear();
+    const monthIndex = gmt7Now.getUTCMonth();
+    const day = gmt7Now.getUTCDate();
+
+    const dayStartUtc = new Date(Date.UTC(year, monthIndex, day));
+    const dayEndUtc = new Date(dayStartUtc.getTime() + 24 * 60 * 60 * 1000);
+
+    const dateStr = formatUtcYmd(dayStartUtc);
+    const nextDateStr = formatUtcYmd(dayEndUtc);
+
+    return {
+        dateStr,
+        startDateTime: `${dateStr} 00:00:00`,
+        endDateTime: `${nextDateStr} 00:00:00`
+    };
+}
+
+const QUEUE_CACHE_TTL_MS = 10000;
+const queueTodayCache = {
+    key: null,
+    expiresAt: 0,
+    payload: null
+};
+
 async function getAppointment(appointmentId) {
     if (!appointmentId) {
         return null;
@@ -474,11 +509,12 @@ function buildAggregateSummary(record, patient, appointment, intake) {
  */
 router.get('/queue/today', verifyToken, async (req, res, next) => {
     try {
-        // Get today's date in GMT+7
-        const now = new Date();
-        const gmt7Offset = 7 * 60 * 60 * 1000;
-        const todayGMT7 = new Date(now.getTime() + gmt7Offset);
-        const todayStr = todayGMT7.toISOString().split('T')[0];
+        const { dateStr: todayStr, startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
+        const forceRefresh = req.query.refresh === '1';
+
+        if (!forceRefresh && queueTodayCache.key === todayStr && queueTodayCache.expiresAt > Date.now() && queueTodayCache.payload) {
+            return res.json(queueTodayCache.payload);
+        }
 
         // Join by appointment_id first, then fallback to patient_id + today's date
         // This handles cases where record was created without appointment_id link
@@ -499,15 +535,28 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
                 COALESCE(scr1.status, scr2.status) as record_status
              FROM sunday_appointments sa
              LEFT JOIN sunday_clinic_records scr1
-                ON scr1.appointment_id = sa.id
+                                ON scr1.id = (
+                                        SELECT scrx.id
+                                        FROM sunday_clinic_records scrx
+                                        WHERE scrx.appointment_id = sa.id
+                                        ORDER BY scrx.created_at DESC, scrx.id DESC
+                                        LIMIT 1
+                                )
              LEFT JOIN sunday_clinic_records scr2
-                ON scr2.patient_id = sa.patient_id
-                AND DATE(scr2.created_at) = ?
-                AND scr2.appointment_id IS NULL
+                                ON scr2.id = (
+                                        SELECT scry.id
+                                        FROM sunday_clinic_records scry
+                                        WHERE scry.patient_id = sa.patient_id
+                                            AND scry.appointment_id IS NULL
+                                            AND scry.created_at >= ?
+                                            AND scry.created_at < ?
+                                        ORDER BY scry.created_at DESC, scry.id DESC
+                                        LIMIT 1
+                                )
              WHERE sa.appointment_date = ?
                AND sa.status IN ('confirmed', 'completed')
              ORDER BY sa.session ASC, sa.slot_number ASC`,
-            [todayStr, todayStr]
+                        [todayStart, tomorrowStart, todayStr]
         );
 
         // Enrich with session labels and slot times
@@ -530,12 +579,18 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
             has_record: !!apt.mr_id
         }));
 
-        res.json({
+        const payload = {
             success: true,
             date: todayStr,
             count: enriched.length,
             data: enriched
-        });
+        };
+
+        queueTodayCache.key = todayStr;
+        queueTodayCache.expiresAt = Date.now() + QUEUE_CACHE_TTL_MS;
+        queueTodayCache.payload = payload;
+
+        res.json(payload);
 
     } catch (error) {
         logger.error('Error fetching today queue:', error);
@@ -553,6 +608,7 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
 router.get('/check-existing', verifyToken, async (req, res, next) => {
     try {
         const { patient_id, location } = req.query;
+        const { startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
 
         if (!patient_id) {
             return res.status(400).json({
@@ -565,9 +621,11 @@ router.get('/check-existing', verifyToken, async (req, res, next) => {
         let query = `
             SELECT mr_id, id, status, visit_location
             FROM sunday_clinic_records
-            WHERE patient_id = ? AND DATE(created_at) = CURDATE()
+                        WHERE patient_id = ?
+                            AND created_at >= ?
+                            AND created_at < ?
         `;
-        const params = [patient_id];
+                const params = [patient_id, todayStart, tomorrowStart];
 
         if (location) {
             query += ` AND visit_location = ?`;
@@ -613,6 +671,11 @@ router.get('/directory', verifyToken, async (req, res, next) => {
     }
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const orderByClause = search
+        ? `ORDER BY COALESCE(p.full_name, sa.patient_name, scr.mr_id) ASC,
+                 IFNULL(sa.appointment_date, scr.created_at) DESC,
+                 scr.created_at DESC`
+        : `ORDER BY scr.updated_at DESC, scr.created_at DESC`;
 
     try {
         const [rows] = await db.query(
@@ -638,9 +701,7 @@ router.get('/directory', verifyToken, async (req, res, next) => {
              LEFT JOIN patients p ON p.id = scr.patient_id
              LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
              ${whereClause}
-             ORDER BY COALESCE(p.full_name, sa.patient_name, scr.mr_id) ASC,
-                      IFNULL(sa.appointment_date, scr.created_at) DESC,
-                      scr.created_at DESC
+             ${orderByClause}
              LIMIT 400`,
             params
         );
