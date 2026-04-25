@@ -77,6 +77,9 @@ class SundayClinicApp {
         this.components = {};
         this.initialized = false;
         this.billingNotifications = null;
+        this.beforeUnloadBound = false;
+        this.softRefreshTimer = null;
+        this.softRefreshInFlight = false;
     }
 
     /**
@@ -204,20 +207,24 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.4';
-        const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
+        const COMPONENT_VERSION = '3.0.5';
+        const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
-        for (const { section, path } of componentPaths) {
+        const loaders = componentPaths.map(async ({ section, path }) => {
             try {
                 const module = await import(path + cacheBuster);
-                this.components[section] = module.default || module;
-                console.log(`[SundayClinic] Loaded component: ${section}`);
+                return { section, component: module.default || module };
             } catch (error) {
                 console.error(`[SundayClinic] Failed to load component ${section}:`, error);
-                // For now, continue even if a component fails to load
-                this.components[section] = this.createPlaceholderComponent(section);
+                return { section, component: this.createPlaceholderComponent(section) };
             }
-        }
+        });
+
+        const loadedComponents = await Promise.all(loaders);
+        loadedComponents.forEach(({ section, component }) => {
+            this.components[section] = component;
+            console.log(`[SundayClinic] Loaded component: ${section}`);
+        });
     }
 
     /**
@@ -757,15 +764,21 @@ class SundayClinicApp {
      * Attach global event listeners
      */
     attachEventListeners() {
+        const bindOnce = (element, flag, handler) => {
+            if (!element) return;
+            const key = `bound${flag}`;
+            if (element.dataset[key] === '1') return;
+            element.addEventListener('click', handler);
+            element.dataset[key] = '1';
+        };
+
         // Save button
         const saveBtn = document.getElementById('save-record-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveAll());
-        }
+        bindOnce(saveBtn, 'SaveAll', () => this.saveAll());
 
         // Section navigation
         document.querySelectorAll('[data-section-nav]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            bindOnce(btn, 'SectionNav', (e) => {
                 const section = e.currentTarget.dataset.sectionNav;
                 this.scrollToSection(section);
             });
@@ -797,15 +810,15 @@ class SundayClinicApp {
         // No need to add addEventListener here (was causing duplicate calls)
         if (resetTindakanBtn && window.resetTindakan) {
             console.log('[SundayClinic] Attaching resetTindakan listener');
-            resetTindakanBtn.addEventListener('click', window.resetTindakan);
+            bindOnce(resetTindakanBtn, 'ResetTindakan', window.resetTindakan);
         }
         if (resetTerapiBtn && window.resetTerapi) {
             console.log('[SundayClinic] Attaching resetTerapi listener');
-            resetTerapiBtn.addEventListener('click', window.resetTerapi);
+            bindOnce(resetTerapiBtn, 'ResetTerapi', window.resetTerapi);
         }
         if (savePlanBtn) {
             console.log('[SundayClinic] Attaching savePlanningObstetri listener');
-            savePlanBtn.addEventListener('click', () => this.savePlanningObstetri());
+            bindOnce(savePlanBtn, 'SavePlanning', () => this.savePlanningObstetri());
         }
 
         // Render terapi items list if container exists
@@ -824,7 +837,7 @@ class SundayClinicApp {
         const savePhysicalExamBtn = document.getElementById('save-physical-exam');
         if (savePhysicalExamBtn) {
             console.log('[SundayClinic] Attaching savePhysicalExam listener');
-            savePhysicalExamBtn.addEventListener('click', () => this.savePhysicalExam());
+            bindOnce(savePhysicalExamBtn, 'SavePhysicalExam', () => this.savePhysicalExam());
         }
 
         // USG save button (for old format obstetri category)
@@ -835,13 +848,41 @@ class SundayClinicApp {
         } */
 
         // Warn before leaving if there are unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (stateManager.hasUnsavedChanges()) {
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return e.returnValue;
+        if (!this.beforeUnloadBound) {
+            window.addEventListener('beforeunload', (e) => {
+                if (stateManager.hasUnsavedChanges()) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                    return e.returnValue;
+                }
+            });
+            this.beforeUnloadBound = true;
+        }
+    }
+
+    scheduleMetadataRefresh(delay = 1200) {
+        if (!this.currentMrId) {
+            return;
+        }
+
+        if (this.softRefreshTimer) {
+            clearTimeout(this.softRefreshTimer);
+        }
+
+        this.softRefreshTimer = setTimeout(async () => {
+            if (this.softRefreshInFlight) {
+                return;
             }
-        });
+
+            this.softRefreshInFlight = true;
+            try {
+                await this.fetchRecord(this.currentMrId, { silent: true, rerender: false });
+            } catch (error) {
+                console.warn('[SundayClinic] Background metadata refresh skipped:', error.message);
+            } finally {
+                this.softRefreshInFlight = false;
+            }
+        }, delay);
     }
 
     /**
@@ -959,8 +1000,8 @@ class SundayClinicApp {
 
             this.showSuccess('Planning berhasil disimpan!');
 
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
         } catch (error) {
             console.error('[SundayClinic] Save Planning failed:', error);
@@ -1040,8 +1081,8 @@ class SundayClinicApp {
 
             this.showSuccess('Pemeriksaan Obstetri berhasil disimpan!');
 
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
         } catch (error) {
             console.error('[SundayClinic] Save Pemeriksaan Obstetri failed:', error);
@@ -1224,10 +1265,10 @@ class SundayClinicApp {
 
             this.showSuccess('Data USG berhasil disimpan!');
 
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
-            // Auto-generate diagnosis (after fetchRecord so state is fresh)
+            // Auto-generate diagnosis from latest local state.
             try {
                 const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
                 const freshState = stateManager.getState();
@@ -1339,8 +1380,8 @@ class SundayClinicApp {
             const result = await response.json();
             console.log('[SundayClinic] Physical Exam saved successfully:', result);
 
-            // Reload the record to show updated data
-            await this.reload();
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
             this.showSuccess('Pemeriksaan Fisik berhasil disimpan!');
 
@@ -1508,10 +1549,10 @@ class SundayClinicApp {
             // Show success message
             this.showSuccess('Anamnesa berhasil disimpan!');
 
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
-            // Auto-generate diagnosis (after fetchRecord so state is fresh)
+            // Auto-generate diagnosis from latest local state.
             try {
                 const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
                 const freshState = stateManager.getState();
@@ -1546,7 +1587,8 @@ class SundayClinicApp {
     /**
      * Fetch and reload record data
      */
-    async fetchRecord(mrId) {
+    async fetchRecord(mrId, options = {}) {
+        const { silent = false, rerender = true } = options;
         const token = window.getToken();
         if (!token) {
             return;
@@ -1554,11 +1596,15 @@ class SundayClinicApp {
 
         const normalizedMr = mrId ? String(mrId).trim() : '';
         if (!normalizedMr) {
-            this.showError('MR ID tidak ditemukan');
+            if (!silent) {
+                this.showError('MR ID tidak ditemukan');
+            }
             return;
         }
 
-        this.showLoading('Memuat data rekam medis...');
+        if (!silent) {
+            this.showLoading('Memuat data rekam medis...');
+        }
 
         try {
             // Use apiClient instead of direct fetch to ensure consistent data structure
@@ -1569,23 +1615,29 @@ class SundayClinicApp {
             }
 
             if (!response.data) {
-                this.showError('Data rekam medis Sunday Clinic kosong.');
-                return;
+                throw new Error('Data rekam medis Sunday Clinic kosong.');
             }
+
+            const activeSectionBeforeRefresh = stateManager.getState().activeSection || SECTIONS.IDENTITY;
 
             // Load record data into state manager
             await stateManager.loadRecord(response.data);
 
-            // Re-render the current section
-            const currentSection = stateManager.getState().activeSection || SECTIONS.IDENTITY;
-            await this.render(currentSection);
-
-            this.hideLoading();
+            // Re-render only when explicitly requested by caller.
+            if (rerender) {
+                await this.render(activeSectionBeforeRefresh);
+            }
 
         } catch (error) {
             console.error('Sunday Clinic: gagal memuat rekam medis', error);
-            this.showError('Terjadi kesalahan saat memuat data rekam medis Sunday Clinic.');
-            this.hideLoading();
+            if (!silent) {
+                this.showError('Terjadi kesalahan saat memuat data rekam medis Sunday Clinic.');
+            }
+            throw error;
+        } finally {
+            if (!silent) {
+                this.hideLoading();
+            }
         }
     }
 
@@ -1659,8 +1711,8 @@ class SundayClinicApp {
 
             this.showSuccess('Diagnosis berhasil disimpan!');
 
-            // Reload the record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
         } catch (error) {
             console.error('Error saving diagnosis:', error);
@@ -1835,8 +1887,8 @@ class SundayClinicApp {
 
             this.showSuccess('Resume medis berhasil disimpan!');
 
-            // Reload record to show updated metadata
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
         } catch (error) {
             console.error('[SundayClinic] Save resume failed:', error);
@@ -1907,8 +1959,8 @@ class SundayClinicApp {
 
             this.showSuccess('Resume medis berhasil direset dan dihapus dari database!');
 
-            // Reload to update state
-            await this.fetchRecord(this.currentMrId);
+            // Refresh metadata in background to keep save flow snappy.
+            this.scheduleMetadataRefresh();
 
         } catch (error) {
             console.error('[SundayClinic] Reset resume failed:', error);
