@@ -1169,6 +1169,8 @@ const ESTIMASI_TRIMESTER_META = {
 
 let estimasiBiayaCatalog = [];
 let estimasiBiayaCatalogMap = new Map();
+let estimasiTindakanCatalog = [];
+let estimasiTindakanCatalogMap = new Map();
 let estimasiBiayaConfig = createDefaultEstimasiBiayaConfig();
 let estimasiBiayaLoaded = false;
 let estimasiBiayaLoadingPromise = null;
@@ -1182,6 +1184,11 @@ function createDefaultEstimasiBiayaConfig() {
             t1: [],
             t2: [],
             t3: []
+        },
+        trimester_tindakan_configs: {
+            t1: [],
+            t2: [],
+            t3: []
         }
     };
 }
@@ -1191,8 +1198,11 @@ function normalizeEstimasiBiayaConfig(rawConfig) {
     const trimesterConfigs = config.trimester_configs && typeof config.trimester_configs === 'object'
         ? config.trimester_configs
         : {};
+    const trimesterTindakanConfigs = config.trimester_tindakan_configs && typeof config.trimester_tindakan_configs === 'object'
+        ? config.trimester_tindakan_configs
+        : {};
 
-    const normalizeItems = (items) => {
+    const normalizeMedicationItems = (items) => {
         if (!Array.isArray(items)) return [];
 
         const seen = new Set();
@@ -1216,13 +1226,42 @@ function normalizeEstimasiBiayaConfig(rawConfig) {
             });
     };
 
+    const normalizeServiceItems = (items) => {
+        if (!Array.isArray(items)) return [];
+
+        const seen = new Set();
+
+        return items
+            .map((item) => {
+                const tindakanId = Number(item?.tindakan_id ?? item?.tindakanId ?? item?.tindakan?.id);
+                const quantity = Number(item?.quantity ?? item?.qty ?? 1);
+
+                return {
+                    tindakan_id: Number.isInteger(tindakanId) && tindakanId > 0 ? tindakanId : null,
+                    quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 1
+                };
+            })
+            .filter((item) => item.tindakan_id)
+            .filter((item) => {
+                const key = String(item.tindakan_id);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    };
+
     return {
         version: 1,
         updated_at: config.updated_at || null,
         trimester_configs: {
-            t1: normalizeItems(trimesterConfigs.t1),
-            t2: normalizeItems(trimesterConfigs.t2),
-            t3: normalizeItems(trimesterConfigs.t3)
+            t1: normalizeMedicationItems(trimesterConfigs.t1),
+            t2: normalizeMedicationItems(trimesterConfigs.t2),
+            t3: normalizeMedicationItems(trimesterConfigs.t3)
+        },
+        trimester_tindakan_configs: {
+            t1: normalizeServiceItems(trimesterTindakanConfigs.t1),
+            t2: normalizeServiceItems(trimesterTindakanConfigs.t2),
+            t3: normalizeServiceItems(trimesterTindakanConfigs.t3)
         }
     };
 }
@@ -1260,6 +1299,12 @@ function setEstimasiBiayaStatus(message, tone = 'muted') {
 function buildSelectedMedicationMap(trimester) {
     return new Map(
         (estimasiBiayaConfig.trimester_configs?.[trimester] || []).map((item) => [String(item.obat_id), item])
+    );
+}
+
+function buildSelectedServiceMap(trimester) {
+    return new Map(
+        (estimasiBiayaConfig.trimester_tindakan_configs?.[trimester] || []).map((item) => [String(item.tindakan_id), item])
     );
 }
 
@@ -1328,6 +1373,71 @@ function renderEstimasiBiayaMedicationSelectors() {
     });
 }
 
+function renderEstimasiBiayaServiceSelectors() {
+    ['t1', 't2', 't3'].forEach((trimester) => {
+        const container = document.getElementById(`estimasi-tindakan-selector-${trimester}`);
+        if (!container) return;
+
+        if (!estimasiTindakanCatalog.length) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-stethoscope fa-lg mb-2"></i>
+                    <p class="small mb-0">Belum ada layanan/tindakan aktif di master tindakan.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const selectedMap = buildSelectedServiceMap(trimester);
+
+        container.innerHTML = estimasiTindakanCatalog.map((tindakan) => {
+            const selected = selectedMap.get(String(tindakan.id));
+            const quantity = selected?.quantity || 1;
+            return `
+                <div class="border rounded p-2 mb-2 bg-white estimasi-tindakan-row" data-trimester="${trimester}" data-tindakan-id="${tindakan.id}">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="custom-control custom-checkbox pr-2 flex-grow-1">
+                            <input type="checkbox" class="custom-control-input estimasi-tindakan-toggle" id="estimasi-tindakan-${trimester}-${tindakan.id}" data-trimester="${trimester}" data-tindakan-id="${tindakan.id}" ${selected ? 'checked' : ''}>
+                            <label class="custom-control-label small font-weight-bold" for="estimasi-tindakan-${trimester}-${tindakan.id}">${escapeHtml(tindakan.name)}</label>
+                            <div class="small text-muted mt-1">${formatRupiah(Number(tindakan.price) || 0)}${tindakan.category ? ` • ${escapeHtml(tindakan.category)}` : ''}</div>
+                        </div>
+                        <div class="ml-2 text-right" style="width: 74px;">
+                            <label class="small text-muted d-block mb-1">Qty</label>
+                            <input type="number" min="1" max="12" class="form-control form-control-sm estimasi-tindakan-qty" data-trimester="${trimester}" data-tindakan-id="${tindakan.id}" value="${quantity}" ${selected ? '' : 'disabled'}>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.estimasi-tindakan-toggle').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const qtyInput = container.querySelector(`.estimasi-tindakan-qty[data-tindakan-id="${checkbox.dataset.tindakanId}"]`);
+                if (qtyInput) {
+                    qtyInput.disabled = !checkbox.checked;
+                    if (checkbox.checked && (!qtyInput.value || Number(qtyInput.value) < 1)) {
+                        qtyInput.value = '1';
+                    }
+                }
+
+                syncEstimasiBiayaTrimesterServiceFromDom(trimester);
+                markEstimasiBiayaDirty();
+                updateEstimasiBiaya();
+            });
+        });
+
+        container.querySelectorAll('.estimasi-tindakan-qty').forEach((input) => {
+            input.addEventListener('input', () => {
+                const normalized = Math.max(1, Math.min(12, Number(input.value) || 1));
+                input.value = String(normalized);
+                syncEstimasiBiayaTrimesterServiceFromDom(trimester);
+                markEstimasiBiayaDirty();
+                updateEstimasiBiaya();
+            });
+        });
+    });
+}
+
 function syncEstimasiBiayaTrimesterFromDom(trimester) {
     const container = document.getElementById(`estimasi-obat-selector-${trimester}`);
     if (!container) return;
@@ -1348,13 +1458,36 @@ function syncEstimasiBiayaTrimesterFromDom(trimester) {
     estimasiBiayaConfig.trimester_configs[trimester] = items;
 }
 
+function syncEstimasiBiayaTrimesterServiceFromDom(trimester) {
+    const container = document.getElementById(`estimasi-tindakan-selector-${trimester}`);
+    if (!container) return;
+
+    const items = [];
+    container.querySelectorAll('.estimasi-tindakan-toggle').forEach((checkbox) => {
+        if (!checkbox.checked) return;
+
+        const tindakanId = Number(checkbox.dataset.tindakanId);
+        const qtyInput = container.querySelector(`.estimasi-tindakan-qty[data-tindakan-id="${checkbox.dataset.tindakanId}"]`);
+        const quantity = Math.max(1, Math.min(12, Number(qtyInput?.value) || 1));
+
+        if (Number.isInteger(tindakanId) && tindakanId > 0) {
+            items.push({ tindakan_id: tindakanId, quantity });
+        }
+    });
+
+    estimasiBiayaConfig.trimester_tindakan_configs[trimester] = items;
+}
+
 function syncEstimasiBiayaConfigFromDom() {
-    ['t1', 't2', 't3'].forEach(syncEstimasiBiayaTrimesterFromDom);
+    ['t1', 't2', 't3'].forEach((trimester) => {
+        syncEstimasiBiayaTrimesterFromDom(trimester);
+        syncEstimasiBiayaTrimesterServiceFromDom(trimester);
+    });
 }
 
 function markEstimasiBiayaDirty() {
     estimasiBiayaDirty = true;
-    setEstimasiBiayaStatus('Perubahan obat portal pasien belum disimpan.', 'warning');
+    setEstimasiBiayaStatus('Perubahan obat dan layanan portal pasien belum disimpan.', 'warning');
 }
 
 async function ensureEstimasiBiayaData(forceReload = false) {
@@ -1364,6 +1497,7 @@ async function ensureEstimasiBiayaData(forceReload = false) {
 
     if (estimasiBiayaLoaded && !forceReload) {
         renderEstimasiBiayaMedicationSelectors();
+        renderEstimasiBiayaServiceSelectors();
         setEstimasiBiayaStatus(`Tersimpan terakhir: ${formatEstimasiBiayaUpdatedAt(estimasiBiayaConfig.updated_at)}`);
         return;
     }
@@ -1374,7 +1508,7 @@ async function ensureEstimasiBiayaData(forceReload = false) {
         return;
     }
 
-    setEstimasiBiayaStatus('Memuat daftar obat dan konfigurasi estimasi...', 'muted');
+    setEstimasiBiayaStatus('Memuat daftar obat, layanan, dan konfigurasi estimasi...', 'muted');
 
     estimasiBiayaLoadingPromise = (async () => {
         const headers = {
@@ -1382,16 +1516,22 @@ async function ensureEstimasiBiayaData(forceReload = false) {
             'Cache-Control': 'no-cache'
         };
 
-        const [obatResponse, configResponse] = await Promise.all([
+        const [obatResponse, tindakanResponse, configResponse] = await Promise.all([
             fetch(`/api/obat?active=true&category=${encodeURIComponent('Obat-obatan')}&_t=${Date.now()}`, { headers }),
+            fetch(`/api/tindakan?active=true&_t=${Date.now()}`, { headers }),
             fetch(`/api/estimasi-biaya?_t=${Date.now()}`, { headers })
         ]);
 
         const obatResult = await obatResponse.json();
+        const tindakanResult = await tindakanResponse.json();
         const configResult = await configResponse.json();
 
         if (!obatResponse.ok || !obatResult.success) {
             throw new Error(obatResult.message || 'Gagal memuat master obat');
+        }
+
+        if (!tindakanResponse.ok || !tindakanResult.success) {
+            throw new Error(tindakanResult.message || 'Gagal memuat master layanan/tindakan');
         }
 
         if (!configResponse.ok || !configResult.success) {
@@ -1400,11 +1540,17 @@ async function ensureEstimasiBiayaData(forceReload = false) {
 
         estimasiBiayaCatalog = Array.isArray(obatResult.data) ? obatResult.data : [];
         estimasiBiayaCatalogMap = new Map(estimasiBiayaCatalog.map((obat) => [Number(obat.id), obat]));
+        const allowedTindakanCategories = new Set(['LAYANAN', 'TINDAKAN MEDIS']);
+        estimasiTindakanCatalog = Array.isArray(tindakanResult.data)
+            ? tindakanResult.data.filter((item) => allowedTindakanCategories.has(String(item.category || '').toUpperCase()))
+            : [];
+        estimasiTindakanCatalogMap = new Map(estimasiTindakanCatalog.map((tindakan) => [Number(tindakan.id), tindakan]));
         estimasiBiayaConfig = normalizeEstimasiBiayaConfig(configResult.config);
         estimasiBiayaDirty = false;
         estimasiBiayaLoaded = true;
 
         renderEstimasiBiayaMedicationSelectors();
+        renderEstimasiBiayaServiceSelectors();
         setEstimasiBiayaStatus(`Tersimpan terakhir: ${formatEstimasiBiayaUpdatedAt(estimasiBiayaConfig.updated_at)}`);
     })()
         .catch((error) => {
@@ -1451,7 +1597,8 @@ async function saveEstimasiBiayaPortalConfig() {
             },
             body: JSON.stringify({
                 version: 1,
-                trimester_configs: estimasiBiayaConfig.trimester_configs
+                trimester_configs: estimasiBiayaConfig.trimester_configs,
+                trimester_tindakan_configs: estimasiBiayaConfig.trimester_tindakan_configs
             })
         });
 
@@ -1463,6 +1610,7 @@ async function saveEstimasiBiayaPortalConfig() {
         estimasiBiayaConfig = normalizeEstimasiBiayaConfig(result.config);
         estimasiBiayaDirty = false;
         renderEstimasiBiayaMedicationSelectors();
+        renderEstimasiBiayaServiceSelectors();
         updateEstimasiBiaya();
         setEstimasiBiayaStatus(`Tersimpan terakhir: ${formatEstimasiBiayaUpdatedAt(estimasiBiayaConfig.updated_at)}`, 'success');
         showSuccess(result.message || 'Konfigurasi estimasi biaya berhasil disimpan');
@@ -1518,6 +1666,23 @@ function buildTrimesterMedicationItems(trimester) {
         .filter(Boolean);
 }
 
+function buildTrimesterServiceItems(trimester) {
+    const selections = estimasiBiayaConfig.trimester_tindakan_configs?.[trimester] || [];
+
+    return selections
+        .map((selection) => {
+            const tindakan = estimasiTindakanCatalogMap.get(Number(selection.tindakan_id));
+            if (!tindakan) return null;
+
+            return {
+                nama: `${tindakan.name} (Layanan)` ,
+                harga: Number(tindakan.price) || 0,
+                qty: Number(selection.quantity) || 1
+            };
+        })
+        .filter(Boolean);
+}
+
 function updateEstimasiBiaya() {
     const trimester = document.getElementById('estimasi-fase')?.value || 'semua';
     const tipe = document.getElementById('estimasi-tipe')?.value || 'tunggal';
@@ -1538,6 +1703,7 @@ function updateEstimasiBiaya() {
         { nama: 'Lab Paket T1', harga: ESTIMASI_HARGA.labT1, qty: 1 }
     ];
     t1Items.push(...buildTrimesterMedicationItems('t1'));
+    t1Items.push(...buildTrimesterServiceItems('t1'));
 
     // Trimester 2 (14-27 minggu): ~5 kunjungan
     // USG 2D: 3x jika tanpa skrining, 2x jika dengan skrining
@@ -1552,6 +1718,7 @@ function updateEstimasiBiaya() {
         t2Items.push({ nama: 'USG Skrining Kelainan (20-24mg)', harga: ESTIMASI_HARGA.usgKelainan, qty: 1 });
     }
     t2Items.push(...buildTrimesterMedicationItems('t2'));
+    t2Items.push(...buildTrimesterServiceItems('t2'));
 
     // Trimester 3 (28-40 minggu): ~8 kunjungan
     const t3Items = [
@@ -1570,6 +1737,7 @@ function updateEstimasiBiaya() {
     t3Items.push({ nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 2 });
     t3Items.push({ nama: 'Stripping of Membrane', harga: ESTIMASI_HARGA.strippingMembrane, qty: 2 });
     t3Items.push(...buildTrimesterMedicationItems('t3'));
+    t3Items.push(...buildTrimesterServiceItems('t3'));
 
     // Render tables
     const renderTable = (items, tableId) => {
