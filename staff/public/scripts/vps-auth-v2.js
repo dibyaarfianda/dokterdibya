@@ -19,9 +19,15 @@ export const auth = {
 };
 
 const listeners = [];
+let initAuthPromise = null;
+let authInitialized = false;
 
 export function onAuthStateChanged(cb) {
     if (typeof cb !== 'function') return;
+    if (listeners.includes(cb)) {
+        console.log('[AUTH] onAuthStateChanged duplicate listener skipped');
+        return;
+    }
     listeners.push(cb);
     console.log('[AUTH] onAuthStateChanged registered, current user:', auth.currentUser?.id || 'null');
     // Call immediately with current state so caller knows the auth status right away
@@ -137,6 +143,17 @@ export async function signOut() {
 
 // Initialize auth state when called
 export async function initAuth() {
+    if (initAuthPromise) {
+        return initAuthPromise;
+    }
+
+    if (authInitialized) {
+        console.log('[AUTH] initAuth skipped (already initialized)');
+        notifyAuthChange();
+        return auth.currentUser;
+    }
+
+    initAuthPromise = (async () => {
     console.log('[AUTH] initAuth starting...');
     const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
     console.log('[AUTH] Token found:', !!token);
@@ -151,6 +168,15 @@ export async function initAuth() {
     }
     console.log('[AUTH] Calling notifyAuthChange from initAuth');
     notifyAuthChange();
+    authInitialized = true;
+    return auth.currentUser;
+    })();
+
+    try {
+        return await initAuthPromise;
+    } finally {
+        initAuthPromise = null;
+    }
 }
 
 // Permission checking
