@@ -31,8 +31,8 @@
             padding: 15px 20px;
             padding-top: max(15px, env(safe-area-inset-top));
             background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
@@ -115,8 +115,8 @@
         /* Visit Card */
         .visit-card {
             background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 12px;
             padding: 15px;
@@ -310,8 +310,8 @@
             padding: 10px 0;
             padding-bottom: max(10px, env(safe-area-inset-bottom));
             background: rgba(26, 26, 46, 0.98);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 100;
         }
@@ -373,7 +373,7 @@
     <!-- Top Navbar -->
     <nav class="nav-bar">
         <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
+            <button class="back-btn" onclick="history.back()" title="Kembali" aria-label="Kembali">
                 <i class="fa fa-chevron-left"></i>
             </button>
             <h1 class="page-title"><i class="fa fa-stethoscope"></i> Riwayat Kunjungan</h1>
@@ -666,13 +666,25 @@
                 return;
             }
 
+            const reasonInput = window.prompt('Tuliskan alasan pembatalan minimal 10 karakter:');
+            if (reasonInput === null) {
+                return;
+            }
+
+            const reason = reasonInput.trim();
+            if (reason.length < 10) {
+                showToast('Alasan pembatalan minimal 10 karakter.', 'error');
+                return;
+            }
+
             try {
                 const response = await fetch(`/api/sunday-appointments/${bookingId}/cancel`, {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({ reason })
                 });
 
                 const data = await response.json();

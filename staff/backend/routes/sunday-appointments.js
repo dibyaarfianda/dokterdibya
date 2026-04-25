@@ -768,6 +768,9 @@ router.get('/list', verifyToken, async (req, res) => {
         if (status) {
             query += ' AND a.status = ?';
             params.push(status);
+        } else {
+            query += ' AND a.status != ?';
+            params.push('cancelled');
         }
         
         if (session) {
