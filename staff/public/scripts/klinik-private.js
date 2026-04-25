@@ -2,7 +2,9 @@ const API_BASE = '/api/sunday-appointments';
 const state = {
     appointments: [],
     selectedDate: null,
-    isLoading: false
+    isLoading: false,
+    realtimeBound: false,
+    realtimeRetryCount: 0
 };
 
 // Expose state globally for WebView onclick handlers
@@ -142,6 +144,30 @@ function showTemporaryToast(message) {
         toast.classList.remove('visible');
         toast.addEventListener('transitionend', () => toast.remove(), { once: true });
     }, 3000);
+}
+
+function setupRealtimeUpdates() {
+    if (state.realtimeBound) {
+        return;
+    }
+
+    if (!window.socket) {
+        if (state.realtimeRetryCount < 10) {
+            state.realtimeRetryCount += 1;
+            window.setTimeout(setupRealtimeUpdates, 1000);
+        }
+        return;
+    }
+
+    const refreshAppointments = () => {
+        loadUpcomingAppointments({ force: true });
+    };
+
+    window.socket.on('booking:new', refreshAppointments);
+    window.socket.on('booking:update', refreshAppointments);
+    window.socket.on('booking:cancel', refreshAppointments);
+
+    state.realtimeBound = true;
 }
 
 function updateCount(count) {
@@ -524,6 +550,7 @@ async function loadRecentPatients() {
 
 export function initKlinikPrivatePage() {
     ensureElements();
+    setupRealtimeUpdates();
     loadUpcomingAppointments();
     loadRecentPatients();
 }
