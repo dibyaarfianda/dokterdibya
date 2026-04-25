@@ -16,9 +16,9 @@
             if (storedVersion && storedVersion !== PAGE_VERSION) {
                 console.log('[Cache] Version mismatch! Stored:', storedVersion, 'Current:', PAGE_VERSION);
                 localStorage.setItem('sunday_clinic_version', PAGE_VERSION);
-                // Add timestamp to force reload
+                // Add deterministic version marker to force reload once per version.
                 var url = new URL(window.location.href);
-                url.searchParams.set('_cb', Date.now());
+                url.searchParams.set('_cb', PAGE_VERSION);
                 window.location.replace(url.toString());
             } else {
                 localStorage.setItem('sunday_clinic_version', PAGE_VERSION);
@@ -611,7 +611,7 @@
                 // Only hard-reload if this is a version upgrade (not first visit)
                 if (currentVersion) {
                     const url = new URL(window.location.href);
-                    url.searchParams.set('_v', Date.now());
+                    url.searchParams.set('_v', SC_CACHE_VERSION);
                     window.location.replace(url.href);
                     return;
                 }
@@ -1406,9 +1406,11 @@ PLAN
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 
     <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=20260118v4"></script>
-    <!-- Planning helpers for tindakan and terapi modals - DYNAMIC LOAD TO BUST CACHE -->
+    <!-- Planning helpers for tindakan and terapi modals -->
     <script>
         (function() {
+            var planningHelpersVersion = '20260118v5';
+
             // Global debug function
             window.checkPlanningStatus = function() {
                 console.log('=== PLANNING DEBUG ===');
@@ -1427,14 +1429,13 @@ PLAN
             };
 
             var script = document.createElement('script');
-            var timestamp = Date.now();
-            script.src = '/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=' + timestamp;
+            script.src = '/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=' + planningHelpersVersion;
             script.onload = function() {
-                console.log('[CACHE BUST] planning-helpers.js loaded fresh at', timestamp);
-                console.log('[CACHE BUST] Version:', window.PLANNING_HELPERS_VERSION);
+                console.log('[SundayClinic] planning-helpers.js loaded. Requested version:', planningHelpersVersion);
+                console.log('[SundayClinic] planning-helpers runtime version:', window.PLANNING_HELPERS_VERSION);
             };
             script.onerror = function() {
-                console.error('[CACHE BUST] Failed to load planning-helpers.js');
+                console.error('[SundayClinic] Failed to load planning-helpers.js');
                 alert('Gagal memuat planning-helpers.js! Silakan refresh halaman.');
             };
             document.head.appendChild(script);
@@ -1442,7 +1443,7 @@ PLAN
             // Timeout fallback - if script not loaded in 5 seconds, show warning
             setTimeout(function() {
                 if (!window.openTindakanModal) {
-                    console.error('[CACHE BUST] planning-helpers.js NOT LOADED after 5 seconds!');
+                    console.error('[SundayClinic] planning-helpers.js NOT LOADED after 5 seconds!');
                 }
             }, 5000);
         })();
@@ -1614,129 +1615,6 @@ PLAN
                     }
                 });
             };
-        })();
-    </script>
-
-    <!-- Queue Dropdown Handler -->
-    <script>
-        (function() {
-            // Load queue on dropdown open
-            const queueBtn = document.getElementById('btn-header-queue');
-            const queueList = document.getElementById('header-queue-list');
-            const queueCount = document.getElementById('header-queue-count');
-
-            if (queueBtn) {
-                queueBtn.addEventListener('click', loadHeaderQueue);
-            }
-
-            async function loadHeaderQueue() {
-                if (!queueList) return;
-
-                queueList.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>';
-
-                try {
-                    const token = localStorage.getItem('vps_auth_token');
-                    const response = await fetch('/api/sunday-clinic/queue/today', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    const data = await response.json();
-                    if (!data.success) throw new Error(data.message);
-
-                    const queue = Array.isArray(data.data) ? data.data : [];
-                    if (queueCount) queueCount.textContent = queue.length;
-
-                    if (queue.length === 0) {
-                        queueList.innerHTML = '<div class="text-center text-muted p-3"><i class="fas fa-calendar-check"></i><br>Tidak ada antrian</div>';
-                        return;
-                    }
-
-                    queueList.innerHTML = queue.map((item, index) => `
-                        <div class="header-queue-item"
-                             data-patient-id="${item.patient_id}"
-                             data-mr-id="${item.mr_id || ''}"
-                             data-appointment-id="${item.id || ''}"
-                             onclick="handleQueueItemClick(event, this)">
-                            <span class="queue-number">${index + 1}</span>
-                            <div class="queue-info">
-                                <div class="queue-name">${item.patient_name || 'Pasien'}</div>
-                                <div class="queue-meta">${(item.slot_time || '').substring(0, 5)} • ${(item.chief_complaint || '-').substring(0, 30)}${(item.chief_complaint && item.chief_complaint.length > 30) ? '...' : ''}</div>
-                            </div>
-                            <div class="queue-status">
-                                ${item.mr_id ? '<i class="fas fa-check-circle text-success" title="Sudah ada rekam medis"></i>' : '<i class="far fa-circle text-muted" title="Belum diisi"></i>'}
-                            </div>
-                        </div>
-                    `).join('');
-
-                } catch (error) {
-                    console.error('Error loading queue:', error);
-                    queueList.innerHTML = '<div class="text-center text-danger p-3"><i class="fas fa-exclamation-triangle"></i><br>' + error.message + '</div>';
-                }
-            }
-
-            // Handle queue item click - like "Periksa" button
-            window.handleQueueItemClick = async function(event, element) {
-                event.preventDefault();
-                event.stopPropagation(); // Prevent event bubbling to dropdown
-
-                const patientId = element.dataset.patientId;
-                const existingMrId = element.dataset.mrId;
-                const category = element.dataset.category || 'obstetri';
-
-                // Prevent double-click
-                if (element.dataset.loading === 'true') {
-                    console.log('[Queue] Already loading, ignoring click');
-                    return;
-                }
-                element.dataset.loading = 'true';
-
-                // Close dropdown immediately
-                const dropdownMenu = $(element).closest('.dropdown-menu');
-                dropdownMenu.removeClass('show');
-                dropdownMenu.parent().removeClass('show');
-
-                try {
-                    const token = localStorage.getItem('vps_auth_token');
-
-                    // Show loading
-                    element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
-
-                    // Check for existing record today (from dataset or API)
-                    let mrIdToOpen = existingMrId;
-
-                    if (!mrIdToOpen) {
-                        // Check via API if patient has record today
-                        const checkResponse = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=klinik_private`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        });
-                        const checkData = await checkResponse.json();
-                        if (checkData.success && checkData.existingMrId) {
-                            mrIdToOpen = checkData.existingMrId;
-                        }
-                    }
-
-                    if (mrIdToOpen) {
-                        // Has existing MR - open it
-                        console.log('[Queue] Opening existing MR:', mrIdToOpen);
-                        window.location.href = `/sunday-clinic/${mrIdToOpen}/identity`;
-                    } else {
-                        // No existing record - tell user to use PERIKSA button
-                        console.log('[Queue] No existing record for patient:', patientId);
-                        alert('Pasien ini belum ada rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru.');
-                        loadHeaderQueue(); // Reload queue to reset UI
-                    }
-                } catch (error) {
-                    console.error('[Queue] Error:', error);
-                    alert('Gagal: ' + error.message);
-                    element.dataset.loading = 'false';
-                    loadHeaderQueue(); // Reload queue
-                }
-            };
-
-            // Load queue on page load
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(loadHeaderQueue, 500);
-            });
         })();
     </script>
 

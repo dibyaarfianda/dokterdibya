@@ -81,6 +81,7 @@ const appState = {
 
 // Directory state
 const directoryState = {
+    loaded: false,
     loading: false,
     patients: [],
     filteredPatients: [],
@@ -105,6 +106,26 @@ const DOM = {
     closeDirectoryBtn: null,
     staffNameDisplay: null
 };
+
+function applyStaffIdentityToUI() {
+    const identity = appState.staffIdentity || {};
+    if (!identity.id) {
+        return;
+    }
+
+    window.currentStaffIdentity.id = identity.id;
+    window.currentStaffIdentity.name = identity.name;
+    window.currentStaffIdentity.role = identity.role;
+
+    if (DOM.staffNameDisplay) {
+        const roleLabel = getRoleLabel(identity.role);
+        const roleColor = getRoleColor(identity.role);
+        DOM.staffNameDisplay.innerHTML = `
+            ${identity.name}
+            <span class="badge badge-${roleColor} ml-2" style="font-size: 0.75rem; vertical-align: middle;">${roleLabel}</span>
+        `;
+    }
+}
 
 // ============================================================================
 // GLOBAL HELPERS (for planning-helpers.js compatibility)
@@ -221,48 +242,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[SundayClinic] Initializing application...');
 
     try {
+        // Initialize DOM references early so auth UI can be populated without another API call.
+        initializeDOMReferences();
+
         // Check authentication
         if (!await checkAuthentication()) {
             return;
         }
 
-        // Fetch and set currentStaffIdentity
-        try {
-            const token = window.getToken();
-            if (token) {
-                const response = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+        applyStaffIdentityToUI();
 
-                if (response.ok) {
-                    const userData = await response.json();
-                    const identity = resolveStaffIdentity(userData);
-                    window.currentStaffIdentity.id = identity.id;
-                    window.currentStaffIdentity.name = identity.name;
-                    window.currentStaffIdentity.role = identity.role;
-                    
-                    // Update staff name display
-                    const staffNameDisplay = document.getElementById('staff-name-display');
-                    if (staffNameDisplay) {
-                        staffNameDisplay.textContent = identity.name || 'Staff';
-                    }
-                    
-                    console.log('[SundayClinic] Staff identity set:', identity);
-
-                    // Initialize real-time sync for chat and online status
-                    initRealtimeSync({
-                        id: identity.id,
-                        name: identity.name,
-                        role: identity.role
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('[SundayClinic] Failed to fetch staff identity:', error);
-        }
-
-        // Initialize DOM references
-        initializeDOMReferences();
+        // Initialize real-time sync for chat and online status once identity is known.
+        initRealtimeSync({
+            id: appState.staffIdentity.id,
+            name: appState.staffIdentity.name,
+            role: appState.staffIdentity.role
+        });
 
         // Setup event listeners
         setupEventListeners();
@@ -270,8 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Setup date/time display
         setupDateTimeDisplay();
 
-        // Initialize directory system
-        await initializeDirectory();
+        // Directory data is loaded lazily when the picker/search is opened.
 
         // Check for initial MR ID in URL (support both path-based and query params)
         const initialRoute = parseRoute();
@@ -330,15 +324,7 @@ async function checkAuthentication() {
                 role: response.data.user.role || ''
             };
 
-            // Update staff name display with role
-            if (DOM.staffNameDisplay) {
-                const roleLabel = getRoleLabel(appState.staffIdentity.role);
-                const roleColor = getRoleColor(appState.staffIdentity.role);
-                DOM.staffNameDisplay.innerHTML = `
-                    ${appState.staffIdentity.name}
-                    <span class="badge badge-${roleColor} ml-2" style="font-size: 0.75rem; vertical-align: middle;">${roleLabel}</span>
-                `;
-            }
+            applyStaffIdentityToUI();
 
             console.log('[SundayClinic] Authenticated as:', appState.staffIdentity.name, '(', appState.staffIdentity.role, ')');
             return true;
@@ -657,6 +643,15 @@ function scrollToSection(section) {
 // ============================================================================
 
 async function initializeDirectory() {
+    if (directoryState.loaded) {
+        return;
+    }
+
+    if (directoryState.loading) {
+        return;
+    }
+
+    directoryState.loading = true;
     console.log('[SundayClinic] Initializing directory...');
 
     try {
@@ -665,19 +660,34 @@ async function initializeDirectory() {
         if (response.success && response.data) {
             directoryState.patients = response.data.patients || [];
             directoryState.filteredPatients = directoryState.patients;
+            directoryState.loaded = true;
+            directoryState.error = null;
             console.log('[SundayClinic] Directory loaded:', directoryState.patients.length, 'patients');
         }
     } catch (error) {
         console.error('[SundayClinic] Failed to load directory:', error);
         directoryState.error = error.message;
+    } finally {
+        directoryState.loading = false;
     }
 }
 
-function openDirectory() {
+async function openDirectory() {
     if (DOM.directoryOverlay) {
         DOM.directoryOverlay.removeAttribute('hidden');
         DOM.directoryOverlay.setAttribute('aria-hidden', 'false');
         DOM.directoryOverlay.classList.add('is-visible');
+
+        if (DOM.directoryPatientList && !directoryState.loaded) {
+            DOM.directoryPatientList.innerHTML = `
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                    <p class="mb-0">Memuat data pasien...</p>
+                </div>
+            `;
+        }
+
+        await initializeDirectory();
         renderDirectoryPatients();
 
         // Focus search input
@@ -704,7 +714,11 @@ function closeDirectory() {
     }
 }
 
-function handleDirectorySearch(e) {
+async function handleDirectorySearch(e) {
+    if (!directoryState.loaded) {
+        await initializeDirectory();
+    }
+
     directoryState.searchTerm = e.target.value.toLowerCase().trim();
 
     if (directoryState.searchTerm === '') {
