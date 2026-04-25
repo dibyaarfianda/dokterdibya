@@ -7140,7 +7140,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v66';
+    window.__assetVersion = 'v67';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -7151,19 +7151,33 @@ body.mobile-app-mode .mobile-action-bar-force button {
     const v = window.__assetVersion;
 
     // Critical startup modules only - auth + shell + dashboard
-    const { auth, getIdToken } = await import('./scripts/vps-auth-v2.js?v=' + v);
+    const { auth, getIdToken, initAuth: initAuthLib } = await import('./scripts/vps-auth-v2.js?v=' + v);
     window.auth = auth;
     window.getIdToken = getIdToken;
-    await import('./scripts/toast.js?v=' + v);
-    const { initMain } = await import('./scripts/main.js?v=' + v);
-    const { initDashboard } = await import('./scripts/dashboard.js?v=' + v);
-    const { initAuth } = await import('./scripts/auth.js?v=' + v);
-    const { initSessionManager, restoreSessionOnLoad } = await import('./scripts/session-manager.js?v=' + v);
-    const { initRealtimeSync } = await import('./scripts/realtime-sync.js?v=' + v);
 
-    // Wait for auth to initialize before checking state
-    const { initAuth: initAuthLib, fetchMe } = await import('./scripts/vps-auth-v2.js?v=' + v);
-    await initAuthLib();
+    // Run auth bootstrap in parallel with module loading to reduce startup wait.
+    const authInitPromise = initAuthLib();
+    const [
+        _,
+        mainModule,
+        dashboardModule,
+        authModule,
+        sessionModule
+    ] = await Promise.all([
+        import('./scripts/toast.js?v=' + v),
+        import('./scripts/main.js?v=' + v),
+        import('./scripts/dashboard.js?v=' + v),
+        import('./scripts/auth.js?v=' + v),
+        import('./scripts/session-manager.js?v=' + v)
+    ]);
+
+    const { initMain } = mainModule;
+    const { initDashboard } = dashboardModule;
+    const { initAuth } = authModule;
+    const { initSessionManager, restoreSessionOnLoad } = sessionModule;
+
+    // Ensure auth state is available before route decision.
+    await authInitPromise;
 
     // Now check authentication
     const user = auth.currentUser;
@@ -7213,31 +7227,33 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
 
         try {
-            initSessionManager();
-        } catch (error) {
-            console.error('❌ Error initializing session manager:', error);
-        }
-
-        try {
             initDashboard();
         } catch (error) {
             console.error('❌ Error initializing dashboard:', error);
         }
 
-        // Load current registration code for dashboard
-        try {
-            if (typeof window.loadDashboardCurrentCode === 'function') {
-                window.loadDashboardCurrentCode();
-            } else {
-                setTimeout(() => {
-                    if (typeof window.loadDashboardCurrentCode === 'function') {
-                        window.loadDashboardCurrentCode();
-                    }
-                }, 500);
+        // Non-critical boot tasks run during idle so first paint can happen sooner.
+        requestIdleCallback(() => {
+            try {
+                initSessionManager();
+            } catch (error) {
+                console.error('❌ Error initializing session manager:', error);
             }
-        } catch (error) {
-            console.error('❌ Error loading dashboard code:', error);
-        }
+
+            try {
+                if (typeof window.loadDashboardCurrentCode === 'function') {
+                    window.loadDashboardCurrentCode();
+                } else {
+                    setTimeout(() => {
+                        if (typeof window.loadDashboardCurrentCode === 'function') {
+                            window.loadDashboardCurrentCode();
+                        }
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('❌ Error loading dashboard code:', error);
+            }
+        }, { timeout: 1500 });
 
         // Lazy-load non-critical modules after initial render
         // These modules are loaded in the background and init on first page access
@@ -7265,17 +7281,19 @@ body.mobile-app-mode .mobile-action-bar-force button {
         // Real-time sync initialized in main.js via onAuthStateChanged
 
         // Restore session if exists
-        try {
-            restoreSessionOnLoad().then(session => {
-                if (session && session.patient) {
-                    console.log('✅ Session restored for patient:', session.patient.name);
-                }
-            }).catch(error => {
-                console.warn('⚠️ Session restore failed (non-critical):', error);
-            });
-        } catch (error) {
-            console.error('⚠️ Session restoration setup failed:', error);
-        }
+        requestIdleCallback(() => {
+            try {
+                restoreSessionOnLoad().then(session => {
+                    if (session && session.patient) {
+                        console.log('✅ Session restored for patient:', session.patient.name);
+                    }
+                }).catch(error => {
+                    console.warn('⚠️ Session restore failed (non-critical):', error);
+                });
+            } catch (error) {
+                console.error('⚠️ Session restoration setup failed:', error);
+            }
+        }, { timeout: 2200 });
 
         console.log('✅ AdminLTE app initialized successfully');
     }

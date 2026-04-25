@@ -3452,8 +3452,10 @@ async function initializeApp(user) {
         // Update welcome card
         updateWelcomeCard(user);
 
-        // Fetch menu visibility from API based on user's role
-        await applyMenuVisibility(user);
+        // Fetch menu visibility without blocking critical startup tasks.
+        applyMenuVisibility(user).catch(error => {
+            console.error('Error fetching menu visibility:', error);
+        });
 
         // Defer badge counts so first render is not blocked by non-critical request.
         scheduleNotificationBadges();
