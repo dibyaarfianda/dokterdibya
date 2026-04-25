@@ -6,6 +6,89 @@ const { verifyToken, requireSuperadmin, requirePermission } = require('../middle
 
 // ==================== VISITS ROUTES ====================
 
+// GET daily aggregated visit stats (lightweight endpoint for dashboard charts)
+router.get('/stats/daily', verifyToken, requirePermission('visits.view'), async (req, res) => {
+    try {
+        const { patient_id, start_date, end_date, exclude_dummy } = req.query;
+
+        if (exclude_dummy === 'true') {
+            let query = `
+                SELECT
+                    DATE(scr.created_at) as visit_date,
+                    COUNT(*) as count
+                FROM sunday_clinic_records scr
+                WHERE 1=1
+            `;
+            const params = [];
+
+            if (patient_id) {
+                query += ' AND scr.patient_id = ?';
+                params.push(patient_id);
+            }
+
+            if (start_date) {
+                query += ' AND scr.created_at >= ?';
+                params.push(`${start_date} 00:00:00`);
+            }
+
+            if (end_date) {
+                query += ' AND scr.created_at < DATE_ADD(?, INTERVAL 1 DAY)';
+                params.push(end_date);
+            }
+
+            query += ' GROUP BY DATE(scr.created_at) ORDER BY visit_date ASC';
+
+            const [rows] = await pool.query(query, params);
+
+            return res.json({
+                success: true,
+                data: rows
+            });
+        }
+
+        // Default aggregate from visits table
+        let query = `
+            SELECT
+                DATE(v.visit_date) as visit_date,
+                COUNT(*) as count
+            FROM visits v
+            WHERE 1=1
+        `;
+        const params = [];
+
+        if (patient_id) {
+            query += ' AND v.patient_id = ?';
+            params.push(patient_id);
+        }
+
+        if (start_date) {
+            query += ' AND v.visit_date >= ?';
+            params.push(`${start_date} 00:00:00`);
+        }
+
+        if (end_date) {
+            query += ' AND v.visit_date < DATE_ADD(?, INTERVAL 1 DAY)';
+            params.push(end_date);
+        }
+
+        query += ' GROUP BY DATE(v.visit_date) ORDER BY visit_date ASC';
+
+        const [rows] = await pool.query(query, params);
+
+        res.json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error('Error fetching daily visit stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch daily visit stats',
+            error: error.message
+        });
+    }
+});
+
 // GET all visits (with optional filters)
 // When exclude_dummy=true, returns actual clinic visits from sunday_clinic_records
 router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) => {

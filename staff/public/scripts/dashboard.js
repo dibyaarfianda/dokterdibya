@@ -96,36 +96,54 @@ async function fetchVisitStats(token) {
         end_date: formatDateLocal(today)
     });
 
-    const response = await fetch(`${VPS_API_BASE}/api/visits?${params.toString()}`, {
+    const statsResponse = await fetch(`${VPS_API_BASE}/api/visits/stats/daily?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (!response.ok) {
-        const error = new Error('Failed to fetch visit stats');
-        error.status = response.status;
-        throw error;
-    }
+    const counts = new Map();
 
-    const payload = await response.json();
-    const visits = Array.isArray(payload.data) ? payload.data : [];
+    if (statsResponse.ok) {
+        const payload = await statsResponse.json();
+        const dailyStats = Array.isArray(payload.data) ? payload.data : [];
+
+        dailyStats.forEach(item => {
+            const key = (item.visit_date || '').toString().substring(0, 10);
+            const count = Number(item.count) || 0;
+            if (key) counts.set(key, count);
+        });
+    } else {
+        // Backward-compatible fallback: use legacy endpoint when stats endpoint is unavailable.
+        const fallbackResponse = await fetch(`${VPS_API_BASE}/api/visits?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!fallbackResponse.ok) {
+            const error = new Error('Failed to fetch visit stats');
+            error.status = fallbackResponse.status;
+            throw error;
+        }
+
+        const payload = await fallbackResponse.json();
+        const visits = Array.isArray(payload.data) ? payload.data : [];
+
+        visits.forEach(visit => {
+            const rawDate = visit.visit_date || visit.visitDate || visit.created_at || visit.createdAt;
+            if (!rawDate) return;
+            const key = rawDate.substring(0, 10);
+            counts.set(key, (counts.get(key) || 0) + 1);
+        });
+    }
 
     const todayKey = formatDateLocal(today);
     const thirtyDayStartKey = formatDateLocal(thirtyDayStart);
     const prevMonthStartKey = formatDateLocal(prevMonthStart);
     const prevMonthEndKey = formatDateLocal(prevMonthEnd);
 
-    const counts = new Map();
     let lastMonthCount = 0;
 
-    visits.forEach(visit => {
-        const rawDate = visit.visit_date || visit.visitDate || visit.created_at || visit.createdAt;
-        if (!rawDate) return;
-        const key = rawDate.substring(0, 10);
-        if (key >= thirtyDayStartKey && key <= todayKey) {
-            counts.set(key, (counts.get(key) || 0) + 1);
-        }
+    counts.forEach((count, key) => {
         if (key >= prevMonthStartKey && key <= prevMonthEndKey) {
-            lastMonthCount += 1;
+            lastMonthCount += count;
         }
     });
 
