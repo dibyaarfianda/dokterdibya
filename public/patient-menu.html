@@ -1766,6 +1766,15 @@
                             <h3>Tagihan</h3>
                             <p>Bayar Online</p>
                         </div>
+
+                        <!-- Card 8: Estimasi Biaya (Tester only) -->
+                        <div class="menu-card" id="menu-estimasi-biaya" onclick="window.location.href='/estimasi-biaya-kehamilan.html'" style="display:none;">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                                <i class="fa fa-calculator"></i>
+                            </div>
+                            <h3>Estimasi Biaya</h3>
+                            <p>Perkiraan biaya kontrol</p>
+                        </div>
                     </div>
                 </div>
 
@@ -2044,6 +2053,9 @@
                     if (profile.id === 'P2025091') {
                         var menuTagihan = document.getElementById('menu-tagihan');
                         if (menuTagihan) menuTagihan.style.display = '';
+
+                        var menuEstimasi = document.getElementById('menu-estimasi-biaya');
+                        if (menuEstimasi) menuEstimasi.style.display = '';
                     }
 
                     // Check subscription for VIP badge
