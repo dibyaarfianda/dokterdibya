@@ -4699,6 +4699,13 @@
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
                     </a>
 
+                    <!-- Estimasi Biaya — tester only, hidden by default -->
+                    <a href="/estimasi-biaya-kehamilan.html" class="proces-row" id="menu-estimasi-biaya" style="display:none;">
+                        <span class="proces-step"><i class="fa-solid fa-calculator" aria-hidden="true"></i></span>
+                        <h3 class="proces-title">ESTIMASI BIAYA</h3>
+                        <p class="proces-desc">Perkiraan biaya obat dan suplemen per trimester berdasarkan konfigurasi dokter. Harga bersifat indikatif sesuai kebijakan klinik.</p>
+                    </a>
+
                     <div class="proces-spacer"></div>
                 </div>
 
@@ -5545,6 +5552,12 @@
 
                     // Check subscription for VIP badge
                     checkVipSubscription();
+
+                    // Show Estimasi Biaya for tester patient
+                    if (profile.id === 'P2025091') {
+                        var menuEstimasi = document.getElementById('menu-estimasi-biaya');
+                        if (menuEstimasi) menuEstimasi.style.display = '';
+                    }
 
                     // Show content
                     document.getElementById('loading-state').style.display = 'none';

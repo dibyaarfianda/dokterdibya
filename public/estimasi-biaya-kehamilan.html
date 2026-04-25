@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Estimasi Biaya - dokterDIBYA</title>
+
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            color: #ffffff;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .safe-area-top {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #000000; z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #000000; z-index: 9999;
+        }
+
+        .app-wrapper {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 100vh;
+            background: #000000;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .nav-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Content */
+        .content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+            padding-bottom: 40px;
+        }
+
+        /* Section visibility */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Loading */
+        .loading-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .loading-state i {
+            font-size: 36px;
+            margin-bottom: 15px;
+            display: block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error state */
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .error-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+            color: #ef4444;
+        }
+
+        .btn-retry {
+            margin-top: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+        }
+
+        /* Intro section */
+        .intro-card {
+            background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(2,132,199,0.1));
+            border: 1px solid rgba(14,165,233,0.3);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .intro-card h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 6px;
+        }
+
+        .intro-card p {
+            font-size: 13px;
+            color: rgba(255,255,255,0.65);
+            line-height: 1.6;
+        }
+
+        .tester-badge {
+            display: inline-block;
+            background: rgba(14,165,233,0.2);
+            border: 1px solid rgba(14,165,233,0.4);
+            color: #38bdf8;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Updated at */
+        .updated-at {
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        /* Trimester card */
+        .trimester-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .trimester-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .trimester-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .trimester-icon.t1 { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+        .trimester-icon.t2 { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
+        .trimester-icon.t3 { background: linear-gradient(135deg, #10b981, #059669); }
+
+        .trimester-label {
+            flex: 1;
+        }
+
+        .trimester-label h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .trimester-label small {
+            font-size: 11px;
+            color: rgba(255,255,255,0.45);
+        }
+
+        .trimester-total {
+            font-size: 15px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* Medication rows */
+        .medication-list {
+            padding: 4px 0;
+        }
+
+        .medication-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .medication-row:last-child {
+            border-bottom: none;
+        }
+
+        .med-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .med-name small {
+            display: block;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 2px;
+        }
+
+        .med-qty {
+            font-size: 12px;
+            color: rgba(255,255,255,0.45);
+            text-align: right;
+            min-width: 40px;
+        }
+
+        .med-subtotal {
+            font-size: 13px;
+            font-weight: 600;
+            text-align: right;
+            min-width: 90px;
+            color: #e2e8f0;
+        }
+
+        /* Empty trimester */
+        .empty-trimester {
+            padding: 16px;
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
+        }
+
+        /* Grand total */
+        .grand-total-card {
+            background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08));
+            border: 1px solid rgba(16,185,129,0.3);
+            border-radius: 16px;
+            padding: 18px;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .grand-total-card .label {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .grand-total-card .amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        /* Empty state (no config yet) */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+            color: rgba(255,255,255,0.2);
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .disclaimer {
+            margin-top: 20px;
+            padding: 14px;
+            background: rgba(249,115,22,0.08);
+            border: 1px solid rgba(249,115,22,0.2);
+            border-radius: 12px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.6;
+        }
+
+        .disclaimer i {
+            color: #f97316;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <div class="app-wrapper">
+        <!-- Navbar -->
+        <nav class="nav-bar">
+            <div class="nav-container">
+                <button class="btn-back" onclick="window.history.length > 1 ? history.back() : (window.location.href = '/patient-menu.html')">
+                    <i class="fa fa-arrow-left"></i>
+                </button>
+                <span class="nav-title">Estimasi Biaya</span>
+            </div>
+        </nav>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- Loading -->
+            <div id="section-loading" class="section active">
+                <div class="loading-state">
+                    <i class="fa fa-circle-o-notch"></i>
+                    <p>Memuat estimasi biaya...</p>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div id="section-error" class="section">
+                <div class="error-state">
+                    <i class="fa fa-exclamation-circle"></i>
+                    <p id="error-message">Gagal memuat data. Silakan coba lagi.</p>
+                    <button class="btn-retry" onclick="loadEstimasi()">
+                        <i class="fa fa-refresh"></i> Coba Lagi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main content -->
+            <div id="section-main" class="section">
+                <div class="intro-card">
+                    <span class="tester-badge"><i class="fa fa-flask"></i> &nbsp;Fitur Percobaan</span>
+                    <h2>Estimasi Biaya Kehamilan</h2>
+                    <p>Perkiraan biaya obat dan suplemen berdasarkan konfigurasi dokter. Harga dapat berubah sesuai kebijakan klinik.</p>
+                </div>
+
+                <div id="updated-at" class="updated-at"></div>
+
+                <!-- Trimester cards injected here -->
+                <div id="trimester-container"></div>
+
+                <!-- Grand total -->
+                <div id="grand-total-card" class="grand-total-card" style="display:none;">
+                    <span class="label"><i class="fa fa-calculator"></i>&nbsp; Total Estimasi (3 Trimester)</span>
+                    <span class="amount" id="grand-total-amount">Rp 0</span>
+                </div>
+
+                <!-- Empty state -->
+                <div id="empty-state" class="empty-state" style="display:none;">
+                    <i class="fa fa-inbox"></i>
+                    <p>Estimasi biaya belum dikonfigurasi.<br>Hubungi klinik untuk informasi lebih lanjut.</p>
+                </div>
+
+                <div class="disclaimer">
+                    <i class="fa fa-info-circle"></i>
+                    Estimasi ini bersifat indikatif dan hanya mencakup obat/suplemen per trimester. Biaya konsultasi dan pemeriksaan tidak termasuk.
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        var API_BASE = '';
+
+        function getToken() {
+            return localStorage.getItem('vps_auth_token') || '';
+        }
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + getToken(),
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            };
+        }
+
+        function showSection(id) {
+            ['section-loading', 'section-error', 'section-main'].forEach(function(s) {
+                var el = document.getElementById(s);
+                if (el) el.className = 'section' + (s === id ? ' active' : '');
+            });
+        }
+
+        function formatRupiah(amount) {
+            if (!amount || isNaN(amount)) return 'Rp 0';
+            return 'Rp ' + Number(amount).toLocaleString('id-ID');
+        }
+
+        var TRIMESTER_META = {
+            t1: { label: 'Trimester 1', sub: 'Minggu 1 – 12', icon: 'fa-seedling', iconClass: 't1', iconFa: 'fa fa-leaf' },
+            t2: { label: 'Trimester 2', sub: 'Minggu 13 – 26', icon: 'fa-sun-o',   iconClass: 't2', iconFa: 'fa fa-sun-o' },
+            t3: { label: 'Trimester 3', sub: 'Minggu 27 – 40', icon: 'fa-star',    iconClass: 't3', iconFa: 'fa fa-star-o' }
+        };
+
+        function renderTrimesters(trimesterConfigs) {
+            var container = document.getElementById('trimester-container');
+            container.innerHTML = '';
+
+            var grandTotal = 0;
+            var hasAny = false;
+
+            ['t1', 't2', 't3'].forEach(function(t) {
+                var items = trimesterConfigs[t] || [];
+                var meta = TRIMESTER_META[t];
+                var trimesterTotal = items.reduce(function(sum, i) { return sum + (i.subtotal || 0); }, 0);
+                grandTotal += trimesterTotal;
+                if (items.length) hasAny = true;
+
+                var medRows = '';
+                if (items.length) {
+                    items.forEach(function(item) {
+                        var med = item.medication || {};
+                        medRows += '<div class="medication-row">' +
+                            '<div class="med-name">' +
+                                escapeHtml(med.name || '-') +
+                                '<small>' + escapeHtml(med.category || '') + ' &bull; ' + escapeHtml(med.unit || 'pcs') + '</small>' +
+                            '</div>' +
+                            '<div class="med-qty">' + item.quantity + 'x</div>' +
+                            '<div class="med-subtotal">' + formatRupiah(item.subtotal) + '</div>' +
+                        '</div>';
+                    });
+                } else {
+                    medRows = '<div class="empty-trimester"><i class="fa fa-minus-circle"></i> Belum dikonfigurasi</div>';
+                }
+
+                var card = '<div class="trimester-card">' +
+                    '<div class="trimester-header">' +
+                        '<div class="trimester-icon ' + meta.iconClass + '"><i class="' + meta.iconFa + '"></i></div>' +
+                        '<div class="trimester-label"><h3>' + meta.label + '</h3><small>' + meta.sub + '</small></div>' +
+                        '<div class="trimester-total">' + (items.length ? formatRupiah(trimesterTotal) : '<span style="color:rgba(255,255,255,0.25);font-size:12px;">-</span>') + '</div>' +
+                    '</div>' +
+                    '<div class="medication-list">' + medRows + '</div>' +
+                '</div>';
+
+                container.innerHTML += card;
+            });
+
+            // Grand total
+            var gtCard = document.getElementById('grand-total-card');
+            var emptyState = document.getElementById('empty-state');
+
+            if (hasAny) {
+                document.getElementById('grand-total-amount').textContent = formatRupiah(grandTotal);
+                gtCard.style.display = '';
+                emptyState.style.display = 'none';
+            } else {
+                gtCard.style.display = 'none';
+                emptyState.style.display = '';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        async function loadEstimasi() {
+            showSection('section-loading');
+
+            var token = getToken();
+            if (!token) {
+                window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname);
+                return;
+            }
+
+            try {
+                var res = await fetch(API_BASE + '/api/patient/estimasi-biaya?_t=' + Date.now(), {
+                    headers: authHeaders()
+                });
+
+                if (res.status === 401) {
+                    window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname);
+                    return;
+                }
+
+                if (res.status === 403) {
+                    document.getElementById('error-message').textContent = 'Fitur ini belum tersedia untuk akun Anda.';
+                    showSection('section-error');
+                    return;
+                }
+
+                if (!res.ok) {
+                    throw new Error('Server error ' + res.status);
+                }
+
+                var data = await res.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Gagal mengambil data');
+                }
+
+                var config = (data.data && data.data.config) ? data.data.config : {};
+                var trimesterConfigs = config.trimester_configs || { t1: [], t2: [], t3: [] };
+
+                // Updated at
+                if (config.updated_at) {
+                    var d = new Date(config.updated_at);
+                    document.getElementById('updated-at').textContent =
+                        'Diperbarui: ' + d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+
+                renderTrimesters(trimesterConfigs);
+                showSection('section-main');
+
+            } catch (err) {
+                console.error('[EstimasiBiaya] Load failed', err);
+                document.getElementById('error-message').textContent = 'Gagal memuat data. Silakan coba lagi.';
+                showSection('section-error');
+            }
+        }
+
+        // Start
+        loadEstimasi();
+    </script>
+
+    <!-- Theme router (handles old vs trial menu redirect) -->
+    <script src="/scripts/patient-theme-trial.js"></script>
+</body>
+</html>

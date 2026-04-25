@@ -345,6 +345,10 @@ app.use('/api/billings', billingsRoutes);
 const patientBillingRoutes = require('./routes/patient-billing');
 app.use('/api/patient-billing', patientBillingRoutes);
 
+// Patient estimasi biaya (pregnancy cost estimate) — tester only
+const patientEstimasiBiayaRoutes = require('./routes/patient-estimasi-biaya');
+app.use('/api/patient/estimasi-biaya', patientEstimasiBiayaRoutes);
+
 // Greeting cards routes
 const greetingCardsRoutes = require('./routes/greeting-cards');
 app.use('/api/greeting-cards', greetingCardsRoutes);
@@ -393,6 +397,10 @@ app.use('/api/patient-activity', patientActivityRoutes);
 // Registration Codes routes (for patient registration control)
 const registrationCodesRoutes = require('./routes/registration-codes');
 app.use('/api/registration-codes', registrationCodesRoutes);
+
+// Pregnancy cost estimate configuration routes
+const estimasiBiayaRoutes = require('./routes/estimasi-biaya');
+app.use('/api/estimasi-biaya', estimasiBiayaRoutes);
 
 // Subscriptions routes (Midtrans payment for premium features)
 const subscriptionsRoutes = require('./routes/subscriptions');
