@@ -632,7 +632,7 @@ router.get('/check-existing', verifyToken, async (req, res, next) => {
             params.push(location);
         }
 
-        query += ` ORDER BY created_at DESC LIMIT 1`;
+        query += ` ORDER BY created_at DESC, id DESC LIMIT 1`;
 
         const [rows] = await db.query(query, params);
 
