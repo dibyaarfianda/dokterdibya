@@ -19,6 +19,7 @@ function getAuthToken() {
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
+let isMainInitialized = false;
 function updateDateTime() {
     const dateEl = document.getElementById('date-display');
     const timeEl = document.getElementById('time-display');
@@ -3829,6 +3830,12 @@ async function showQuickPatientSelector(searchName, hospitalName) {
 
 // -------------------- BOOT --------------------
 function initMain() {
+    if (isMainInitialized) {
+        console.log('[MAIN] initMain skipped (already initialized)');
+        return;
+    }
+    isMainInitialized = true;
+
     initPages();
     startClock();
     bindBasics();
