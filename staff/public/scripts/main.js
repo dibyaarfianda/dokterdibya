@@ -1632,23 +1632,6 @@ async function reloadEstimasiBiayaConfig() {
     }
 }
 
-// Pricing data based on actual tindakan table
-const ESTIMASI_HARGA = {
-    // Tindakan
-    admin: 5000,           // S01 - Biaya Admin
-    bukuANC: 25000,        // S03 - Buku Kontrol
-    tvs: 150000,           // TVS (Transvaginal Sonography)
-    usg2d: 110000,         // S06 - USG 2 Dimensi
-    usg4d: 200000,         // S09 - USG 4 Dimensi
-    usgKelainan: 300000,   // S07 - USG Kelainan Janin (20-24 minggu)
-    usg2dKembar: 200000,   // S10 - USG 2D Janin Kembar
-    usg4dKembar: 400000,   // S11 - USG 4D Janin Kembar
-    labT1: 200000,         // S30 - Paket T1 (Hb, GDA, Gol Darah, Rhesus, PPIA)
-    labT3: 70000,          // S31 - Paket T3 (Hb, GDA)
-    ctgNst: 50000,         // S05 - Rekam Jantung Janin (NST/CTG)
-    strippingMembrane: 150000 // Stripping of Membrane
-};
-
 function buildTrimesterMedicationItems(trimester) {
     const selections = estimasiBiayaConfig.trimester_configs?.[trimester] || [];
 
@@ -1675,7 +1658,7 @@ function buildTrimesterServiceItems(trimester) {
             if (!tindakan) return null;
 
             return {
-                nama: `${tindakan.name} (Layanan)` ,
+                nama: `${tindakan.name} (Layanan)`,
                 harga: Number(tindakan.price) || 0,
                 qty: Number(selection.quantity) || 1
             };
@@ -1683,66 +1666,32 @@ function buildTrimesterServiceItems(trimester) {
         .filter(Boolean);
 }
 
+function buildTrimesterEstimatorItems(trimester) {
+    return [
+        ...buildTrimesterServiceItems(trimester),
+        ...buildTrimesterMedicationItems(trimester)
+    ];
+}
+
 function updateEstimasiBiaya() {
     const trimester = document.getElementById('estimasi-fase')?.value || 'semua';
-    const tipe = document.getElementById('estimasi-tipe')?.value || 'tunggal';
-
-    const t2Skrining = document.getElementById('t2-skrining')?.checked || false;
-    const t3Dengan4D = document.getElementById('t3-4d')?.checked || false;
-
-    const isKembar = tipe === 'kembar';
-    const usg2dPrice = isKembar ? ESTIMASI_HARGA.usg2dKembar : ESTIMASI_HARGA.usg2d;
-    const usg4dPrice = isKembar ? ESTIMASI_HARGA.usg4dKembar : ESTIMASI_HARGA.usg4d;
-
-    // Trimester 1 (1-13 minggu): ~3 kunjungan
-    const t1Items = [
-        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 3 },
-        { nama: 'Buku ANC', harga: ESTIMASI_HARGA.bukuANC, qty: 1 },
-        { nama: 'TVS', harga: ESTIMASI_HARGA.tvs, qty: 1 },
-        { nama: 'USG 2D', harga: usg2dPrice, qty: 2 },
-        { nama: 'Lab Paket T1', harga: ESTIMASI_HARGA.labT1, qty: 1 }
-    ];
-    t1Items.push(...buildTrimesterMedicationItems('t1'));
-    t1Items.push(...buildTrimesterServiceItems('t1'));
-
-    // Trimester 2 (14-27 minggu): ~5 kunjungan
-    // USG 2D: 3x jika tanpa skrining, 2x jika dengan skrining
-    const t2Usg2dQty = t2Skrining ? 2 : 3;
-    const t2Items = [
-        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 5 },
-        { nama: 'USG 2D', harga: usg2dPrice, qty: t2Usg2dQty }
-    ];
-
-    // Add USG Skrining if checked
-    if (t2Skrining) {
-        t2Items.push({ nama: 'USG Skrining Kelainan (20-24mg)', harga: ESTIMASI_HARGA.usgKelainan, qty: 1 });
-    }
-    t2Items.push(...buildTrimesterMedicationItems('t2'));
-    t2Items.push(...buildTrimesterServiceItems('t2'));
-
-    // Trimester 3 (28-40 minggu): ~8 kunjungan
-    const t3Items = [
-        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 8 }
-    ];
-
-    // USG options
-    if (t3Dengan4D) {
-        t3Items.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 3 });
-        t3Items.push({ nama: 'USG 4D (28 minggu)', harga: usg4dPrice, qty: 1 });
-    } else {
-        t3Items.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 4 });
-    }
-
-    t3Items.push({ nama: 'Lab Paket T3', harga: ESTIMASI_HARGA.labT3, qty: 1 });
-    t3Items.push({ nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 2 });
-    t3Items.push({ nama: 'Stripping of Membrane', harga: ESTIMASI_HARGA.strippingMembrane, qty: 2 });
-    t3Items.push(...buildTrimesterMedicationItems('t3'));
-    t3Items.push(...buildTrimesterServiceItems('t3'));
+    const t1Items = buildTrimesterEstimatorItems('t1');
+    const t2Items = buildTrimesterEstimatorItems('t2');
+    const t3Items = buildTrimesterEstimatorItems('t3');
 
     // Render tables
     const renderTable = (items, tableId) => {
         const table = document.getElementById(tableId);
         if (!table) return 0;
+
+        if (!items.length) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="2" class="text-muted" style="font-size: 11px;">Belum ada item dipilih.</td>
+                </tr>
+            `;
+            return 0;
+        }
 
         let html = '';
         let subtotal = 0;
@@ -1775,7 +1724,6 @@ function updateEstimasiBiaya() {
         cardT1?.classList.remove('d-none');
         subtotalT1 = renderTable(t1Items, 'tabel-estimasi-t1');
         document.getElementById('subtotal-t1').textContent = formatRupiah(subtotalT1);
-        document.getElementById('perkontrol-t1').textContent = formatRupiah(Math.round(subtotalT1 / 3));
     } else {
         cardT1?.classList.add('d-none');
     }
@@ -1784,7 +1732,6 @@ function updateEstimasiBiaya() {
         cardT2?.classList.remove('d-none');
         subtotalT2 = renderTable(t2Items, 'tabel-estimasi-t2');
         document.getElementById('subtotal-t2').textContent = formatRupiah(subtotalT2);
-        document.getElementById('perkontrol-t2').textContent = formatRupiah(Math.round(subtotalT2 / 4));
     } else {
         cardT2?.classList.add('d-none');
     }
@@ -1793,7 +1740,6 @@ function updateEstimasiBiaya() {
         cardT3?.classList.remove('d-none');
         subtotalT3 = renderTable(t3Items, 'tabel-estimasi-t3');
         document.getElementById('subtotal-t3').textContent = formatRupiah(subtotalT3);
-        document.getElementById('perkontrol-t3').textContent = formatRupiah(Math.round(subtotalT3 / 7));
     } else {
         cardT3?.classList.add('d-none');
     }
@@ -1804,7 +1750,7 @@ function updateEstimasiBiaya() {
 }
 
 function formatRupiah(amount) {
-    return 'Rp ' + amount.toLocaleString('id-ID');
+    return 'Rp ' + (Number(amount) || 0).toLocaleString('id-ID');
 }
 
 function showKelolaPengumumanPage() {
