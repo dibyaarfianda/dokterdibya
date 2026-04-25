@@ -7140,7 +7140,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v65';
+    window.__assetVersion = 'v66';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -12313,7 +12313,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const checkAuth = setInterval(() => {
         if (window.auth && window.auth.currentUser) {
             clearInterval(checkAuth);
-            initNotificationSystem();
+            setTimeout(initNotificationSystem, 900);
         }
     }, 500);
 
@@ -12322,8 +12322,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initNotificationSystem() {
-    // Load notifications initially
-    loadNotifications();
+    // Load unread count first, full list only when user opens dropdown.
     loadNotificationCount();
 
     // Poll for new notifications every 30 seconds, pause when tab hidden

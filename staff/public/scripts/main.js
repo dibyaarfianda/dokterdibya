@@ -2904,6 +2904,23 @@ async function loadNotificationBadges() {
     }
 }
 
+let notificationBadgeScheduleHandle = null;
+
+function scheduleNotificationBadges(delayMs = 900) {
+    if (notificationBadgeScheduleHandle) return;
+
+    const execute = () => {
+        notificationBadgeScheduleHandle = null;
+        loadNotificationBadges();
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+        notificationBadgeScheduleHandle = window.requestIdleCallback(execute, { timeout: delayMs + 800 });
+    } else {
+        notificationBadgeScheduleHandle = setTimeout(execute, delayMs);
+    }
+}
+
 // Export markBadgeRead to window
 window.markBadgeRead = markBadgeRead;
 
@@ -3438,8 +3455,8 @@ async function initializeApp(user) {
         // Fetch menu visibility from API based on user's role
         await applyMenuVisibility(user);
 
-        // Load notification badge counts
-        loadNotificationBadges();
+        // Defer badge counts so first render is not blocked by non-critical request.
+        scheduleNotificationBadges();
 
         // Initialize real-time sync for online users tracking
         console.log('[MAIN] Calling initRealtimeSync with:', { id: user.id, name: user.name, role: user.role });

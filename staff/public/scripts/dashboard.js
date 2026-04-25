@@ -7,6 +7,20 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
     ? 'http://localhost:3001'
     : window.location.origin.replace(/\/$/, '');
 
+function runWhenIdle(task, timeout = 1200) {
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(() => task(), { timeout });
+    } else {
+        setTimeout(task, 350);
+    }
+}
+
+function recordDashboardPerf(metricName, value) {
+    if (!window.__staffPerf) window.__staffPerf = {};
+    if (!window.__staffPerf.dashboard) window.__staffPerf.dashboard = {};
+    window.__staffPerf.dashboard[metricName] = value;
+}
+
 function formatDateLocal(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -366,6 +380,10 @@ async function loadRecentActivity() {
 }
 
 export async function initDashboard() {
+    const perfStart = (typeof performance !== 'undefined' && performance.now)
+        ? performance.now()
+        : Date.now();
+
     const visitsLastMonthEl = document.getElementById('stat-visits-last-month');
     const totalPatientsEl = document.getElementById('stat-total-bookings');
     const nextSundayAppointmentsEl = document.getElementById('stat-appointments-today');
@@ -382,9 +400,29 @@ export async function initDashboard() {
 
     await Promise.all([
         loadVisitSection(),
-        loadDashboardStats(),
-        loadRecentActivity()
+        loadDashboardStats()
     ]);
+
+    const criticalDone = (typeof performance !== 'undefined' && performance.now)
+        ? performance.now()
+        : Date.now();
+    const criticalMs = Math.round(criticalDone - perfStart);
+    recordDashboardPerf('criticalMs', criticalMs);
+    console.log('[DASHBOARD PERF] Critical load done in', `${criticalMs}ms`);
+
+    // Recent activity is non-critical for first render, so we load it during idle time.
+    runWhenIdle(async () => {
+        const nonCriticalStart = (typeof performance !== 'undefined' && performance.now)
+            ? performance.now()
+            : Date.now();
+        await loadRecentActivity();
+        const nonCriticalDone = (typeof performance !== 'undefined' && performance.now)
+            ? performance.now()
+            : Date.now();
+        const recentActivityMs = Math.round(nonCriticalDone - nonCriticalStart);
+        recordDashboardPerf('recentActivityMs', recentActivityMs);
+        console.log('[DASHBOARD PERF] Recent activity loaded in', `${recentActivityMs}ms`);
+    });
 
     if (window.socketIoInstance && !window.__dashboardActivityListenerAttached) {
         setupActivityLogUpdates();
