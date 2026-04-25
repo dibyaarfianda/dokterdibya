@@ -3,7 +3,7 @@
 
 import { auth, onAuthStateChanged } from './vps-auth-v2.js';
 import { validatePatient, validateObatUsage, updatePatientDisplay, getCurrentPatientData, getSelectedServices, getSelectedObat } from './billing.js';
-import { showWarning } from './toast.js';
+import { showWarning, showSuccess, showError } from './toast.js';
 import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
@@ -1161,11 +1161,327 @@ function showKelolaObatManagementPage() {
 // ============================================
 // ESTIMASI BIAYA KEHAMILAN
 // ============================================
-function showEstimasiBiayaPage() {
+const ESTIMASI_TRIMESTER_META = {
+    t1: { label: 'Trimester 1', averageControls: 3 },
+    t2: { label: 'Trimester 2', averageControls: 4 },
+    t3: { label: 'Trimester 3', averageControls: 7 }
+};
+
+let estimasiBiayaCatalog = [];
+let estimasiBiayaCatalogMap = new Map();
+let estimasiBiayaConfig = createDefaultEstimasiBiayaConfig();
+let estimasiBiayaLoaded = false;
+let estimasiBiayaLoadingPromise = null;
+let estimasiBiayaDirty = false;
+
+function createDefaultEstimasiBiayaConfig() {
+    return {
+        version: 1,
+        updated_at: null,
+        trimester_configs: {
+            t1: [],
+            t2: [],
+            t3: []
+        }
+    };
+}
+
+function normalizeEstimasiBiayaConfig(rawConfig) {
+    const config = rawConfig && typeof rawConfig === 'object' ? rawConfig : {};
+    const trimesterConfigs = config.trimester_configs && typeof config.trimester_configs === 'object'
+        ? config.trimester_configs
+        : {};
+
+    const normalizeItems = (items) => {
+        if (!Array.isArray(items)) return [];
+
+        const seen = new Set();
+
+        return items
+            .map((item) => {
+                const obatId = Number(item?.obat_id ?? item?.obatId ?? item?.medication?.id);
+                const quantity = Number(item?.quantity ?? item?.qty ?? 3);
+
+                return {
+                    obat_id: Number.isInteger(obatId) && obatId > 0 ? obatId : null,
+                    quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : 3
+                };
+            })
+            .filter((item) => item.obat_id)
+            .filter((item) => {
+                const key = String(item.obat_id);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    };
+
+    return {
+        version: 1,
+        updated_at: config.updated_at || null,
+        trimester_configs: {
+            t1: normalizeItems(trimesterConfigs.t1),
+            t2: normalizeItems(trimesterConfigs.t2),
+            t3: normalizeItems(trimesterConfigs.t3)
+        }
+    };
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatEstimasiBiayaUpdatedAt(value) {
+    if (!value) return 'Belum pernah disimpan';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Belum pernah disimpan';
+
+    return date.toLocaleString('id-ID', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Asia/Jakarta'
+    }) + ' WIB';
+}
+
+function setEstimasiBiayaStatus(message, tone = 'muted') {
+    const statusEl = document.getElementById('estimasi-config-status');
+    if (!statusEl) return;
+
+    statusEl.textContent = message;
+    statusEl.className = `small text-${tone}`;
+}
+
+function buildSelectedMedicationMap(trimester) {
+    return new Map(
+        (estimasiBiayaConfig.trimester_configs?.[trimester] || []).map((item) => [String(item.obat_id), item])
+    );
+}
+
+function renderEstimasiBiayaMedicationSelectors() {
+    ['t1', 't2', 't3'].forEach((trimester) => {
+        const container = document.getElementById(`estimasi-obat-selector-${trimester}`);
+        if (!container) return;
+
+        if (!estimasiBiayaCatalog.length) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-pills fa-lg mb-2"></i>
+                    <p class="small mb-0">Belum ada obat aktif di master obat.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const selectedMap = buildSelectedMedicationMap(trimester);
+
+        container.innerHTML = estimasiBiayaCatalog.map((obat) => {
+            const selected = selectedMap.get(String(obat.id));
+            const quantity = selected?.quantity || 3;
+            return `
+                <div class="border rounded p-2 mb-2 bg-white estimasi-obat-row" data-trimester="${trimester}" data-obat-id="${obat.id}">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="custom-control custom-checkbox pr-2 flex-grow-1">
+                            <input type="checkbox" class="custom-control-input estimasi-obat-toggle" id="estimasi-${trimester}-${obat.id}" data-trimester="${trimester}" data-obat-id="${obat.id}" ${selected ? 'checked' : ''}>
+                            <label class="custom-control-label small font-weight-bold" for="estimasi-${trimester}-${obat.id}">${escapeHtml(obat.name)}</label>
+                            <div class="small text-muted mt-1">${formatRupiah(Number(obat.price) || 0)}${obat.unit ? ` / ${escapeHtml(obat.unit)}` : ''}</div>
+                        </div>
+                        <div class="ml-2 text-right" style="width: 74px;">
+                            <label class="small text-muted d-block mb-1">Qty</label>
+                            <input type="number" min="1" max="12" class="form-control form-control-sm estimasi-obat-qty" data-trimester="${trimester}" data-obat-id="${obat.id}" value="${quantity}" ${selected ? '' : 'disabled'}>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.estimasi-obat-toggle').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const qtyInput = container.querySelector(`.estimasi-obat-qty[data-obat-id="${checkbox.dataset.obatId}"]`);
+                if (qtyInput) {
+                    qtyInput.disabled = !checkbox.checked;
+                    if (checkbox.checked && (!qtyInput.value || Number(qtyInput.value) < 1)) {
+                        qtyInput.value = '3';
+                    }
+                }
+
+                syncEstimasiBiayaTrimesterFromDom(trimester);
+                markEstimasiBiayaDirty();
+                updateEstimasiBiaya();
+            });
+        });
+
+        container.querySelectorAll('.estimasi-obat-qty').forEach((input) => {
+            input.addEventListener('input', () => {
+                const normalized = Math.max(1, Math.min(12, Number(input.value) || 1));
+                input.value = String(normalized);
+                syncEstimasiBiayaTrimesterFromDom(trimester);
+                markEstimasiBiayaDirty();
+                updateEstimasiBiaya();
+            });
+        });
+    });
+}
+
+function syncEstimasiBiayaTrimesterFromDom(trimester) {
+    const container = document.getElementById(`estimasi-obat-selector-${trimester}`);
+    if (!container) return;
+
+    const items = [];
+    container.querySelectorAll('.estimasi-obat-toggle').forEach((checkbox) => {
+        if (!checkbox.checked) return;
+
+        const obatId = Number(checkbox.dataset.obatId);
+        const qtyInput = container.querySelector(`.estimasi-obat-qty[data-obat-id="${checkbox.dataset.obatId}"]`);
+        const quantity = Math.max(1, Math.min(12, Number(qtyInput?.value) || 3));
+
+        if (Number.isInteger(obatId) && obatId > 0) {
+            items.push({ obat_id: obatId, quantity });
+        }
+    });
+
+    estimasiBiayaConfig.trimester_configs[trimester] = items;
+}
+
+function syncEstimasiBiayaConfigFromDom() {
+    ['t1', 't2', 't3'].forEach(syncEstimasiBiayaTrimesterFromDom);
+}
+
+function markEstimasiBiayaDirty() {
+    estimasiBiayaDirty = true;
+    setEstimasiBiayaStatus('Perubahan obat portal pasien belum disimpan.', 'warning');
+}
+
+async function ensureEstimasiBiayaData(forceReload = false) {
+    if (estimasiBiayaLoadingPromise && !forceReload) {
+        return estimasiBiayaLoadingPromise;
+    }
+
+    if (estimasiBiayaLoaded && !forceReload) {
+        renderEstimasiBiayaMedicationSelectors();
+        setEstimasiBiayaStatus(`Tersimpan terakhir: ${formatEstimasiBiayaUpdatedAt(estimasiBiayaConfig.updated_at)}`);
+        return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+        setEstimasiBiayaStatus('Login ulang diperlukan untuk memuat estimasi biaya.', 'danger');
+        return;
+    }
+
+    setEstimasiBiayaStatus('Memuat daftar obat dan konfigurasi estimasi...', 'muted');
+
+    estimasiBiayaLoadingPromise = (async () => {
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache'
+        };
+
+        const [obatResponse, configResponse] = await Promise.all([
+            fetch(`/api/obat?active=true&category=${encodeURIComponent('Obat-obatan')}&_t=${Date.now()}`, { headers }),
+            fetch(`/api/estimasi-biaya?_t=${Date.now()}`, { headers })
+        ]);
+
+        const obatResult = await obatResponse.json();
+        const configResult = await configResponse.json();
+
+        if (!obatResponse.ok || !obatResult.success) {
+            throw new Error(obatResult.message || 'Gagal memuat master obat');
+        }
+
+        if (!configResponse.ok || !configResult.success) {
+            throw new Error(configResult.message || 'Gagal memuat konfigurasi estimasi biaya');
+        }
+
+        estimasiBiayaCatalog = Array.isArray(obatResult.data) ? obatResult.data : [];
+        estimasiBiayaCatalogMap = new Map(estimasiBiayaCatalog.map((obat) => [Number(obat.id), obat]));
+        estimasiBiayaConfig = normalizeEstimasiBiayaConfig(configResult.config);
+        estimasiBiayaDirty = false;
+        estimasiBiayaLoaded = true;
+
+        renderEstimasiBiayaMedicationSelectors();
+        setEstimasiBiayaStatus(`Tersimpan terakhir: ${formatEstimasiBiayaUpdatedAt(estimasiBiayaConfig.updated_at)}`);
+    })()
+        .catch((error) => {
+            estimasiBiayaLoaded = false;
+            setEstimasiBiayaStatus(error.message || 'Gagal memuat estimasi biaya.', 'danger');
+            throw error;
+        })
+        .finally(() => {
+            estimasiBiayaLoadingPromise = null;
+        });
+
+    return estimasiBiayaLoadingPromise;
+}
+
+async function showEstimasiBiayaPage() {
     hideAllPages();
     pages.estimasiBiaya?.classList.remove('d-none');
     setTitleAndActive('Estimasi Biaya', 'nav-estimasi-biaya', 'estimasi-biaya');
+
+    try {
+        await ensureEstimasiBiayaData();
+    } catch (error) {
+        console.error('Error loading estimasi biaya page:', error);
+        showError(error.message || 'Gagal memuat data estimasi biaya');
+    }
+
     updateEstimasiBiaya();
+}
+
+async function saveEstimasiBiayaPortalConfig() {
+    try {
+        syncEstimasiBiayaConfigFromDom();
+
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('Login ulang diperlukan untuk menyimpan konfigurasi.');
+        }
+
+        const response = await fetch('/api/estimasi-biaya', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                version: 1,
+                trimester_configs: estimasiBiayaConfig.trimester_configs
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Gagal menyimpan konfigurasi estimasi biaya');
+        }
+
+        estimasiBiayaConfig = normalizeEstimasiBiayaConfig(result.config);
+        estimasiBiayaDirty = false;
+        renderEstimasiBiayaMedicationSelectors();
+        updateEstimasiBiaya();
+        setEstimasiBiayaStatus(`Tersimpan terakhir: ${formatEstimasiBiayaUpdatedAt(estimasiBiayaConfig.updated_at)}`, 'success');
+        showSuccess(result.message || 'Konfigurasi estimasi biaya berhasil disimpan');
+    } catch (error) {
+        console.error('Save estimasi biaya config error:', error);
+        setEstimasiBiayaStatus(error.message || 'Gagal menyimpan konfigurasi estimasi biaya.', 'danger');
+        showError(error.message || 'Gagal menyimpan konfigurasi estimasi biaya');
+    }
+}
+
+async function reloadEstimasiBiayaConfig() {
+    try {
+        await ensureEstimasiBiayaData(true);
+        updateEstimasiBiaya();
+        showSuccess('Konfigurasi estimasi biaya dimuat ulang dari server');
+    } catch (error) {
+        console.error('Reload estimasi biaya config error:', error);
+        showError(error.message || 'Gagal memuat ulang konfigurasi estimasi biaya');
+    }
 }
 
 // Pricing data based on actual tindakan table
@@ -1182,52 +1498,32 @@ const ESTIMASI_HARGA = {
     labT1: 200000,         // S30 - Paket T1 (Hb, GDA, Gol Darah, Rhesus, PPIA)
     labT3: 70000,          // S31 - Paket T3 (Hb, GDA)
     ctgNst: 50000,         // S05 - Rekam Jantung Janin (NST/CTG)
-    strippingMembrane: 150000, // Stripping of Membrane
-
-    // Obat T1 Cost-Effective
-    t1CostFolamilGenio: 85000,    // Folamil Genio 30 tablet
-
-    // Obat T1 Premium
-    t1PremOndavell: 150000,       // Ondavell 1x1 pagi
-    t1PremElevit: 280000,         // Elevit Pronatal 30 tablet
-    t1PremMaltofer: 180000,       // Maltofer Fol 30 tablet
-
-    // Obat T2 Cost-Effective (20-34 minggu)
-    t2CostFolamilGold: 95000,     // Folamil Gold 30 tablet
-    t2CostFormicalB: 65000,       // Formical B 30 tablet
-
-    // Obat T2 Premium (<20 minggu)
-    t2PremElevit: 280000,         // Elevit Pronatal 30 tablet
-    t2PremMaltofer: 180000,       // Maltofer Fol 30 tablet
-
-    // Obat T2 Premium (>20 minggu)
-    t2Prem20Elevit: 280000,       // Elevit Pronatal 30 tablet
-    t2Prem20Prolacta: 320000,     // Prolacta for Mother 30 softgel
-    t2Prem20Maltofer: 180000,     // Maltofer Fol 30 tablet
-    t2Prem20Ossoral: 150000,      // Ossoral 200 30 tablet
-
-    // Obat T3 Cost-Effective (34-menyusui)
-    t3CostDomavit: 75000,         // Domavit 60 tablet (2x1)
-    t3CostFolamilGold: 95000,     // Folamil Gold 30 tablet
-    t3CostFormicalB: 65000,       // Formical B 30 tablet
-
-    // Obat T3 Premium (sama dengan T2 >20mg)
-    t3PremElevit: 280000,
-    t3PremProlacta: 320000,
-    t3PremMaltofer: 180000,
-    t3PremOssoral: 150000
+    strippingMembrane: 150000 // Stripping of Membrane
 };
+
+function buildTrimesterMedicationItems(trimester) {
+    const selections = estimasiBiayaConfig.trimester_configs?.[trimester] || [];
+
+    return selections
+        .map((selection) => {
+            const obat = estimasiBiayaCatalogMap.get(Number(selection.obat_id));
+            if (!obat) return null;
+
+            return {
+                nama: obat.name,
+                harga: Number(obat.price) || 0,
+                qty: Number(selection.quantity) || 3
+            };
+        })
+        .filter(Boolean);
+}
 
 function updateEstimasiBiaya() {
     const trimester = document.getElementById('estimasi-fase')?.value || 'semua';
     const tipe = document.getElementById('estimasi-tipe')?.value || 'tunggal';
 
-    // Get options
-    const t1Obat = document.getElementById('t1-obat')?.value || 'none';
     const t2Skrining = document.getElementById('t2-skrining')?.checked || false;
-    const t2Obat = document.getElementById('t2-obat')?.value || 'none';
     const t3Dengan4D = document.getElementById('t3-4d')?.checked || false;
-    const t3Obat = document.getElementById('t3-obat')?.value || 'none';
 
     const isKembar = tipe === 'kembar';
     const usg2dPrice = isKembar ? ESTIMASI_HARGA.usg2dKembar : ESTIMASI_HARGA.usg2d;
@@ -1241,15 +1537,7 @@ function updateEstimasiBiaya() {
         { nama: 'USG 2D', harga: usg2dPrice, qty: 2 },
         { nama: 'Lab Paket T1', harga: ESTIMASI_HARGA.labT1, qty: 1 }
     ];
-
-    // Add T1 medications (x3 untuk T1)
-    if (t1Obat === 'cost') {
-        t1Items.push({ nama: 'Folamil Genio (30 tab)', harga: ESTIMASI_HARGA.t1CostFolamilGenio, qty: 3 });
-    } else if (t1Obat === 'premium') {
-        t1Items.push({ nama: 'Ondavell', harga: ESTIMASI_HARGA.t1PremOndavell, qty: 3 });
-        t1Items.push({ nama: 'Elevit Pronatal (30 tab)', harga: ESTIMASI_HARGA.t1PremElevit, qty: 3 });
-        t1Items.push({ nama: 'Maltofer Fol (30 tab)', harga: ESTIMASI_HARGA.t1PremMaltofer, qty: 3 });
-    }
+    t1Items.push(...buildTrimesterMedicationItems('t1'));
 
     // Trimester 2 (14-27 minggu): ~5 kunjungan
     // USG 2D: 3x jika tanpa skrining, 2x jika dengan skrining
@@ -1263,18 +1551,7 @@ function updateEstimasiBiaya() {
     if (t2Skrining) {
         t2Items.push({ nama: 'USG Skrining Kelainan (20-24mg)', harga: ESTIMASI_HARGA.usgKelainan, qty: 1 });
     }
-
-    // Add T2 medications (x3 untuk T2)
-    if (t2Obat === 'cost') {
-        t2Items.push({ nama: 'Folamil Gold (30 tab)', harga: ESTIMASI_HARGA.t2CostFolamilGold, qty: 3 });
-        t2Items.push({ nama: 'Formical B (30 tab)', harga: ESTIMASI_HARGA.t2CostFormicalB, qty: 3 });
-    } else if (t2Obat === 'premium') {
-        // Premium untuk >20 minggu (mayoritas T2)
-        t2Items.push({ nama: 'Elevit Pronatal (30 tab)', harga: ESTIMASI_HARGA.t2Prem20Elevit, qty: 3 });
-        t2Items.push({ nama: 'Prolacta for Mother (30 softgel)', harga: ESTIMASI_HARGA.t2Prem20Prolacta, qty: 3 });
-        t2Items.push({ nama: 'Maltofer Fol (30 tab)', harga: ESTIMASI_HARGA.t2Prem20Maltofer, qty: 3 });
-        t2Items.push({ nama: 'Ossoral 200 (30 tab)', harga: ESTIMASI_HARGA.t2Prem20Ossoral, qty: 3 });
-    }
+    t2Items.push(...buildTrimesterMedicationItems('t2'));
 
     // Trimester 3 (28-40 minggu): ~8 kunjungan
     const t3Items = [
@@ -1292,18 +1569,7 @@ function updateEstimasiBiaya() {
     t3Items.push({ nama: 'Lab Paket T3', harga: ESTIMASI_HARGA.labT3, qty: 1 });
     t3Items.push({ nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 2 });
     t3Items.push({ nama: 'Stripping of Membrane', harga: ESTIMASI_HARGA.strippingMembrane, qty: 2 });
-
-    // Add T3 medications (x3 untuk T3)
-    if (t3Obat === 'cost') {
-        t3Items.push({ nama: 'Domavit (60 tab 3x1) 36mg-menyusui', harga: ESTIMASI_HARGA.t3CostDomavit, qty: 3 });
-        t3Items.push({ nama: 'Folamil Gold (30 tab)', harga: ESTIMASI_HARGA.t3CostFolamilGold, qty: 3 });
-        t3Items.push({ nama: 'Formical B (30 tab)', harga: ESTIMASI_HARGA.t3CostFormicalB, qty: 3 });
-    } else if (t3Obat === 'premium') {
-        t3Items.push({ nama: 'Elevit Pronatal (30 tab)', harga: ESTIMASI_HARGA.t3PremElevit, qty: 3 });
-        t3Items.push({ nama: 'Prolacta for Mother (30 softgel)', harga: ESTIMASI_HARGA.t3PremProlacta, qty: 3 });
-        t3Items.push({ nama: 'Maltofer Fol (30 tab)', harga: ESTIMASI_HARGA.t3PremMaltofer, qty: 3 });
-        t3Items.push({ nama: 'Ossoral 200 (30 tab)', harga: ESTIMASI_HARGA.t3PremOssoral, qty: 3 });
-    }
+    t3Items.push(...buildTrimesterMedicationItems('t3'));
 
     // Render tables
     const renderTable = (items, tableId) => {
@@ -4748,6 +5014,8 @@ window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showEstimasiBiayaPage = showEstimasiBiayaPage;
 window.updateEstimasiBiaya = updateEstimasiBiaya;
+window.saveEstimasiBiayaPortalConfig = saveEstimasiBiayaPortalConfig;
+window.reloadEstimasiBiayaConfig = reloadEstimasiBiayaConfig;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showBirthCongratsPage = showBirthCongratsPage;
 window.loadBirthCongratsList = loadBirthCongratsList;
