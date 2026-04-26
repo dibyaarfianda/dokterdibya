@@ -159,6 +159,53 @@ router.put('/api/obat/:id', verifyToken, requirePermission('obat_alkes.edit'), v
     }
 });
 
+// TOGGLE OBAT ACTIVE STATUS
+router.patch('/api/obat/:id/status', verifyToken, requirePermission('obat_alkes.edit'), async (req, res) => {
+    try {
+        const { is_active } = req.body;
+
+        if (is_active === undefined || (is_active !== 0 && is_active !== 1 && is_active !== false && is_active !== true)) {
+            return res.status(400).json({
+                success: false,
+                message: 'is_active harus bernilai true/false atau 1/0'
+            });
+        }
+
+        const normalizedStatus = is_active === true || is_active === 1 ? 1 : 0;
+
+        const [result] = await db.query(
+            'UPDATE obat SET is_active = ? WHERE id = ?',
+            [normalizedStatus, req.params.id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Obat tidak ditemukan'
+            });
+        }
+
+        // Invalidate obat cache
+        cache.delPattern('obat:');
+
+        res.json({
+            success: true,
+            message: normalizedStatus ? 'Obat berhasil diaktifkan' : 'Obat berhasil dinonaktifkan',
+            data: {
+                id: req.params.id,
+                is_active: normalizedStatus
+            }
+        });
+    } catch (error) {
+        console.error('Error updating obat status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengubah status obat',
+            error: error.message
+        });
+    }
+});
+
 // UPDATE STOCK (for deducting after finalization or manual adjustment)
 router.patch('/api/obat/:id/stock', async (req, res) => {
     try {
