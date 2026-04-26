@@ -64,7 +64,18 @@ const trackError = (err) => {
  * Enhanced with tracking, correlation IDs, and better logging
  */
 const errorHandler = (err, req, res, next) => {
-    err.statusCode = err.statusCode || 500;
+    // Express JSON parser errors should be treated as client input errors.
+    if (
+        !err.isOperational &&
+        (
+            err.type === 'entity.parse.failed' ||
+            (err instanceof SyntaxError && err.status === 400 && Object.prototype.hasOwnProperty.call(err, 'body'))
+        )
+    ) {
+        err = new AppError('Invalid JSON payload.', 400, true, 'INVALID_JSON');
+    }
+
+    err.statusCode = err.statusCode || err.status || 500;
     err.status = err.status || 'error';
     
     // Track error
