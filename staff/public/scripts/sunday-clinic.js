@@ -8,10 +8,10 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.8 - auto diagnosis sync fix
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.8';
-import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.8';
-import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.8';
+// Version 2.1.9 - resume auto-save and auto-complete flow
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.9';
+import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.9';
+import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.9';
 import { initRealtimeSync } from './realtime-sync.js';
 
 // ============================================================================

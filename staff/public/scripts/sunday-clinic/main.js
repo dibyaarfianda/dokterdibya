@@ -207,7 +207,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.6';
+        const COMPONENT_VERSION = '3.0.7';
         const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
         const loaders = componentPaths.map(async ({ section, path }) => {
@@ -1767,12 +1767,27 @@ class SundayClinicApp {
 
             const result = await response.json();
             console.log('[SundayClinic] Resume generated:', result);
+            const generatedResume = result.data?.resume || '';
+
+            if (!generatedResume) {
+                throw new Error('Resume AI kosong, tidak dapat disimpan otomatis');
+            }
+
+            // Auto-save immediately after successful generation.
+            await this.saveResumeMedis({
+                resumeText: generatedResume,
+                silent: true,
+                skipLoading: true
+            });
+
+            // Auto-complete examination after resume is persisted.
+            const completion = await this.completeExaminationStatus({ silent: true });
 
             // Update display with generated resume
             const resumeContent = document.getElementById('resume-content');
             const resumeDisplay = document.getElementById('resume-display');
             const resumeEmpty = document.getElementById('resume-empty');
-            const resumeText = result.data?.resume || '';
+            const resumeText = generatedResume;
             const escapedForAttr = resumeText.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
             if (resumeContent && resumeText) {
@@ -1798,20 +1813,35 @@ class SundayClinicApp {
                 `;
             }
 
-            // Show save button
+            // Show action buttons for saved resume (without manual save / complete buttons).
             const buttonGroup = document.getElementById('resume-button-group');
-            if (buttonGroup && !document.getElementById('btn-save-resume')) {
+            if (buttonGroup && !document.getElementById('btn-download-pdf')) {
                 buttonGroup.innerHTML = `
                     <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
                         <i class="fas fa-magic mr-2"></i>Generate Resume AI
                     </button>
-                    <button type="button" class="btn btn-success ml-2" id="btn-save-resume" onclick="window.saveResumeMedis()">
-                        <i class="fas fa-save mr-2"></i>Simpan Resume
+                    <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" onclick="window.downloadResumePDF()">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                    <button type="button" class="btn btn-success ml-2" id="btn-send-whatsapp" onclick="window.openWhatsAppModal()">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" onclick="window.openSendToPatientModal()">
+                        <i class="fas fa-share-alt"></i> Kirim ke Pasien
+                    </button>
+                    <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
+                        <i class="fas fa-redo"></i> Reset
                     </button>
                 `;
             }
 
-            this.showSuccess('Resume medis berhasil dibuat!');
+            if (completion.success) {
+                this.showSuccess('Resume medis berhasil dibuat, disimpan otomatis, dan status pemeriksaan selesai.');
+            } else if (completion.reason === 'already_completed') {
+                this.showSuccess('Resume medis berhasil dibuat dan disimpan otomatis. Status pemeriksaan sudah selesai sebelumnya.');
+            } else {
+                this.showSuccess('Resume medis berhasil dibuat dan disimpan otomatis.');
+            }
 
         } catch (error) {
             console.error('[SundayClinic] Generate resume failed:', error);
@@ -1825,7 +1855,13 @@ class SundayClinicApp {
     /**
      * Save Resume Medis
      */
-    async saveResumeMedis() {
+    async saveResumeMedis(options = {}) {
+        const {
+            resumeText = null,
+            silent = false,
+            skipLoading = false
+        } = options;
+
         if (this._savingResume) {
             console.warn('[SundayClinic] Resume save already in progress');
             return;
@@ -1833,18 +1869,26 @@ class SundayClinicApp {
         this._savingResume = true;
 
         try {
-            this.showLoading('Menyimpan resume medis...');
-
-            const resumeContent = document.getElementById('resume-content');
-            if (!resumeContent) {
-                throw new Error('Resume content tidak ditemukan');
+            if (!skipLoading) {
+                this.showLoading('Menyimpan resume medis...');
             }
 
-            // Get plain text from data attribute (original unformatted text)
-            const plainText = resumeContent.getAttribute('data-plain-text');
+            let resumeValue = resumeText;
+            if (!resumeValue) {
+                const resumeContent = document.getElementById('resume-content');
+                if (!resumeContent) {
+                    throw new Error('Resume content tidak ditemukan');
+                }
+                const plainText = resumeContent.getAttribute('data-plain-text');
+                resumeValue = plainText || resumeContent.textContent || resumeContent.innerText;
+            }
+
+            if (!resumeValue) {
+                throw new Error('Resume kosong, tidak dapat disimpan');
+            }
 
             const data = {
-                resume: plainText || resumeContent.textContent || resumeContent.innerText,
+                resume: resumeValue,
                 saved_at: new Date().toISOString()
             };
 
@@ -1885,18 +1929,73 @@ class SundayClinicApp {
             // Update state
             stateManager.updateSectionData('resume_medis', data);
 
-            this.showSuccess('Resume medis berhasil disimpan!');
+            if (!silent) {
+                this.showSuccess('Resume medis berhasil disimpan!');
+            }
 
             // Refresh metadata in background to keep save flow snappy.
             this.scheduleMetadataRefresh();
 
+            return { success: true };
+
         } catch (error) {
             console.error('[SundayClinic] Save resume failed:', error);
-            this.showError(error.message);
+            if (!silent) {
+                this.showError(error.message);
+            }
+            throw error;
         } finally {
-            this.hideLoading();
+            if (!skipLoading) {
+                this.hideLoading();
+            }
             this._savingResume = false;
         }
+    }
+
+    /**
+     * Set appointment status to completed if still pending.
+     */
+    async completeExaminationStatus(options = {}) {
+        const { silent = false } = options;
+        const state = stateManager.getState();
+        const appointment = state.appointmentData;
+
+        if (!appointment || !appointment.id) {
+            return { success: false, reason: 'no_appointment' };
+        }
+
+        if (appointment.status === 'completed') {
+            return { success: false, reason: 'already_completed' };
+        }
+
+        const token = window.getToken();
+        if (!token) {
+            throw new Error('Authentication token tidak tersedia');
+        }
+
+        const response = await fetch(`/api/sunday-appointments/${appointment.id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'completed' })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || 'Gagal mengupdate status');
+        }
+
+        stateManager.setState({
+            appointmentData: { ...appointment, status: 'completed' }
+        });
+
+        if (!silent && window.showToast) {
+            window.showToast('success', 'Pemeriksaan berhasil ditandai selesai');
+        }
+
+        return { success: true };
     }
 
     /**
@@ -2310,65 +2409,20 @@ window.resetResumeMedis = () => app.resetResumeMedis();
 
 // Mark examination as completed
 window.markExaminationCompleted = async () => {
-    const state = stateManager.getState();
-    const appointment = state.appointmentData;
-
-    if (!appointment || !appointment.id) {
-        window.showToast('error', 'Data janji temu tidak ditemukan');
-        return;
-    }
-
-    if (appointment.status === 'completed') {
-        window.showToast('info', 'Pemeriksaan sudah ditandai selesai');
-        return;
-    }
-
-
-    const btn = document.getElementById('btn-mark-completed');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
-    }
-
     try {
-        const token = window.getToken();
-        const response = await fetch(`/api/sunday-appointments/${appointment.id}/status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ status: 'completed' })
-        });
+        const completion = await app.completeExaminationStatus({ silent: false });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message || 'Gagal mengupdate status');
+        if (completion.reason === 'no_appointment') {
+            window.showToast('error', 'Data janji temu tidak ditemukan');
+            return;
         }
 
-        // Update state with new status
-        stateManager.setState({
-            appointmentData: { ...appointment, status: 'completed' }
-        });
-
-        window.showToast('success', 'Pemeriksaan berhasil ditandai selesai');
-
-        // Re-render resume medis section to show updated status
-        const resumeMedisSection = document.getElementById('resume-medis-card');
-        if (resumeMedisSection) {
-            const ResumeComponent = await import('./components/shared/resume-medis.js');
-            const newHtml = await ResumeComponent.default.render(stateManager.getState());
-            resumeMedisSection.outerHTML = newHtml;
+        if (completion.reason === 'already_completed') {
+            window.showToast('info', 'Pemeriksaan sudah ditandai selesai');
         }
-
     } catch (error) {
         console.error('Error marking examination completed:', error);
         window.showToast('error', error.message || 'Gagal menandai selesai diperiksa');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-clipboard-check"></i> Selesai Diperiksa';
-        }
     }
 };
 

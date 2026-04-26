@@ -20,11 +20,6 @@ export default {
         const documentsSent = state.documentsSent;
         const hasSentDocuments = documentsSent?.resume || documentsSent?.usg || documentsSent?.lab;
 
-        // Check appointment status
-        const appointment = state.appointmentData;
-        const isCompleted = appointment?.status === 'completed';
-        console.log('[Resume Medis] appointment data:', appointment, 'isCompleted:', isCompleted);
-
         // Build sent status text
         let sentStatusText = '';
         if (hasSentDocuments) {
@@ -53,9 +48,6 @@ export default {
                                 <i class="fas fa-magic"></i> Generate AI
                             </button>
                             ${savedResume ? `
-                                <button type="button" class="btn btn-success ml-2" id="btn-save-resume" onclick="window.saveResumeMedis()">
-                                    <i class="fas fa-save"></i> Simpan
-                                </button>
                                 <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" onclick="window.downloadResumePDF()">
                                     <i class="fas fa-file-pdf"></i> PDF
                                 </button>
@@ -68,11 +60,6 @@ export default {
                                 <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
                                     <i class="fas fa-redo"></i> Reset
                                 </button>
-                                ${!isCompleted && appointment ? `
-                                <button type="button" class="btn btn-warning ml-2" id="btn-mark-completed" onclick="window.markExaminationCompleted()">
-                                    <i class="fas fa-clipboard-check"></i> Selesai Diperiksa
-                                </button>
-                                ` : ''}
                             ` : ''}
                         </div>
                     </div>
