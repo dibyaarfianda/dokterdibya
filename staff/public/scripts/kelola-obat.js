@@ -17,6 +17,7 @@ let allObat = [];
 let allSuppliers = [];
 let isEditMode = false;
 let editingObatId = null;
+let editingObatActive = true;
 let initialized = false;
 
 // Initialize the module
@@ -104,7 +105,7 @@ function bindFormSubmit() {
                         stock,
                         unit: 'pcs',
                         min_stock: 10,
-                        is_active: true,
+                        is_active: editingObatActive,
                         default_supplier_id: supplierId,
                         default_cost_price: costPrice,
                         discount: discount
@@ -217,8 +218,8 @@ async function loadObat() {
         // Load suppliers first
         await loadSuppliers();
 
-        // Use authenticated endpoint - only get active obat
-        const url = `${API_BASE}/obat?active=true&_t=${Date.now()}`;
+        // Load all items so staff can activate/deactivate specific obat.
+        const url = `${API_BASE}/obat?active=all&_t=${Date.now()}`;
         console.log('📡 Fetching from:', url);
 
         const response = await fetch(url, {
@@ -297,7 +298,7 @@ function renderObatTable(obat) {
     if (obat.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">
+                <td colspan="8" class="text-center text-muted py-4">
                     <i class="fas fa-inbox fa-2x mb-2"></i>
                     <p class="mb-0">Tidak ada data obat</p>
                 </td>
@@ -317,30 +318,38 @@ function renderObatTable(obat) {
             ? 'badge-info'
             : 'badge-secondary';
 
+        const isActive = Number(item.is_active) === 1;
+        const statusBadge = isActive
+            ? '<span class="badge badge-success">Aktif</span>'
+            : '<span class="badge badge-secondary">Nonaktif</span>';
+
+        const rowClass = isActive ? '' : 'table-secondary';
+
         // Supplier badge
         const supplierBadge = item.supplier_name
             ? `<span class="badge badge-outline-info" title="${item.supplier_code || ''}">${item.supplier_name}</span>`
             : `<span class="badge badge-light text-muted">-</span>`;
 
         return `
-            <tr>
+            <tr class="${rowClass}">
                 <td>${index + 1}</td>
                 <td>${item.name || '-'}</td>
                 <td>
                     <span class="badge ${categoryBadge}">${item.category || '-'}</span>
                 </td>
                 <td>${supplierBadge}</td>
+                <td class="text-center">${statusBadge}</td>
                 <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                 <td class="text-center">${stockBadge}</td>
                 <td class="text-center">
-                    <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
+                    <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok" ${isActive ? '' : 'disabled'}>
                         <i class="fas fa-plus"></i>
                     </button>
                     <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-xs btn-danger" onclick="window.deleteObat('${item.id}')" title="Hapus">
-                        <i class="fas fa-trash"></i>
+                    <button class="btn btn-xs btn-${isActive ? 'secondary' : 'primary'}" onclick="window.toggleObatStatus('${item.id}', ${isActive ? 0 : 1})" title="${isActive ? 'Nonaktifkan' : 'Aktifkan'}">
+                        <i class="fas fa-${isActive ? 'ban' : 'check'}"></i>
                     </button>
                 </td>
             </tr>
@@ -358,6 +367,7 @@ function editObat(obatId) {
 
     isEditMode = true;
     editingObatId = obatId;
+    editingObatActive = Number(obat.is_active) === 1;
 
     const nameInput = document.getElementById('kelola-obat-name');
     const categoryInput = document.getElementById('kelola-obat-category');
@@ -386,6 +396,48 @@ function editObat(obatId) {
     if (form) {
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         nameInput?.focus();
+    }
+}
+
+// Toggle active/inactive status
+async function toggleObatStatus(obatId, newStatus) {
+    const obat = allObat.find(o => o.id == obatId);
+    if (!obat) return;
+
+    const statusText = Number(newStatus) === 1 ? 'mengaktifkan' : 'menonaktifkan';
+    if (!confirm(`Yakin ingin ${statusText} obat "${obat.name}"?`)) return;
+
+    try {
+        const token = await getIdToken();
+        if (!token) {
+            showError('Anda tidak terautentikasi. Silakan login kembali.');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE}/obat/${obatId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ is_active: Number(newStatus) === 1 })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.success) {
+            showSuccess(Number(newStatus) === 1 ? 'Obat berhasil diaktifkan' : 'Obat berhasil dinonaktifkan');
+            loadObat();
+        } else {
+            throw new Error(result.message || 'Gagal mengubah status obat');
+        }
+    } catch (error) {
+        console.error('Error toggling obat status:', error);
+        showError('Gagal mengubah status obat: ' + error.message);
     }
 }
 
@@ -432,6 +484,7 @@ async function deleteObat(obatId) {
 function resetForm() {
     isEditMode = false;
     editingObatId = null;
+    editingObatActive = true;
 
     const supplierInput = document.getElementById('kelola-obat-supplier');
     if (supplierInput) supplierInput.value = '';
@@ -453,5 +506,6 @@ function resetForm() {
 // Expose functions to window
 window.editObat = editObat;
 window.deleteObat = deleteObat;
+window.toggleObatStatus = toggleObatStatus;
 window.loadKelolaObatList = loadObat;
 
