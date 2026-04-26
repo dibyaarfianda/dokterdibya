@@ -90,6 +90,7 @@ function initPages() {
     pages.birthCongrats = grab('birth-congrats-page');
     pages.kelolaRoles = grab('kelola-roles-page');
     pages.bookingSettings = grab('booking-settings-page');
+    pages.birthClass = grab('birth-class-page');
     pages.activityLog = grab('activity-log-page');
     pages.kelolaSupplier = grab('kelola-supplier-page');
     pages.staffActivity = grab('staff-activity-page');
@@ -2541,6 +2542,22 @@ function showBookingSettingsPage() {
     });
 }
 
+function showBirthClassPage() {
+    hideAllPages();
+    pages.birthClass?.classList.remove('d-none');
+    setTitleAndActive('Kelas Persalinan', 'nav-birth-class', 'birth-class');
+
+    importWithVersion('./kelas-persalinan.js').then(module => {
+        if (typeof window.initKelasPersalinan === 'function') {
+            window.initKelasPersalinan();
+        } else {
+            console.error('Kelas Persalinan module loaded, but initKelasPersalinan function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelas-persalinan.js:', error);
+    });
+}
+
 function showImportFieldsPage() {
     hideAllPages();
     pages.importFields?.classList.remove('d-none');
@@ -3505,7 +3522,7 @@ async function applyMenuVisibility(user) {
         'dashboard': null, // Dashboard always visible
         'kelola_pasien': ['nav-kelola-pasien'],
         'pasien_baru': ['nav-kelola-pasien'], // Same as kelola_pasien
-        'klinik_privat': ['nav-klinik-private'],
+        'klinik_privat': ['nav-klinik-private', 'nav-birth-class'],
         'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan', 'management-nav-kelola-supplier'],
         'keuangan': ['nav-invoice-history'],
         'kelola_roles': ['management-nav-kelola-roles'],
@@ -5168,6 +5185,7 @@ window.showKelolaRolesPage = showKelolaRolesPage;
 window.showStaffActivityPage = showStaffActivityPage;
 window.loadStaffActivityLogs = loadStaffActivityLogs;
 window.showBookingSettingsPage = showBookingSettingsPage;
+window.showBirthClassPage = showBirthClassPage;
 window.showImportFieldsPage = showImportFieldsPage;
 window.showArtikelKesehatanPage = showArtikelKesehatanPage;
 window.loadArticlesAdmin = loadArticlesAdmin;

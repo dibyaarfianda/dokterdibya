@@ -1470,7 +1470,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v70'; // Increment this to force refresh - add permanent delete button for obat
+            const CACHE_VERSION = 'v71'; // Birth class registration system
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -1721,6 +1721,12 @@
                         <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
                             <i class="nav-icon fas fa-calendar-day"></i>
                             <p>Pengaturan Sesi</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-birth-class">
+                        <a href="#" class="nav-link" onclick="showBirthClassPage(); return false;">
+                            <i class="nav-icon fas fa-baby-carriage"></i>
+                            <p>Kelas Persalinan</p>
                         </a>
                     </li>
                     <li class="nav-item" id="management-nav-kelola-tindakan">
@@ -3831,6 +3837,11 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- BIRTH CLASS PAGE -->
+                <div id="birth-class-page" class="d-none">
+                    <div class="container-fluid" id="birth-class-root"></div>
                 </div>
 
                 <!-- Session Settings Modal -->
@@ -7102,6 +7113,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
             <a href="#" class="superadmin-menu-item d-none" onclick="closeMobileMenu(); if(typeof showBookingSettingsPage==='function')showBookingSettingsPage(); return false;">
                 <i class="fas fa-calendar-day"></i> Pengaturan Sesi
             </a>
+            <a href="#" onclick="closeMobileMenu(); if(typeof showBirthClassPage==='function')showBirthClassPage(); return false;">
+                <i class="fas fa-baby-carriage"></i> Kelas Persalinan
+            </a>
             <div class="mobile-menu-divider"></div>
             <a href="#" id="pwa-install-btn" style="display:none;" onclick="closeMobileMenu(); installPWA(); return false;">
                 <i class="fas fa-download"></i> Install Aplikasi
@@ -7141,7 +7155,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v70';
+    window.__assetVersion = 'v71';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
