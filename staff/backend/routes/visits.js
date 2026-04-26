@@ -141,7 +141,7 @@ router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) 
                         WHERE status IN ('paid', 'confirmed')
                         GROUP BY mr_id
                     ) b2 ON b1.id = b2.latest_id
-                ) scb ON scb.mr_id = scr.mr_id
+                ) scb ON BINARY scb.mr_id = BINARY scr.mr_id
                 WHERE 1=1
             `;
             const params = [];
