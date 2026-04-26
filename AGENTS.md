@@ -1228,3 +1228,45 @@ User confirmed with "sudah sempurna buatan anda" after multiple refinements to t
 **Documentation updated:**
 - File: `snippets/sticky-stack-card-deck.md`
 - Updated to match the final per-row implementation instead of the older global-segment model
+
+### 36. Session Log - 26 April 2026
+
+**Staff Panel + Sunday Clinic Performance and Readiness (Approved by User as Smooth)**
+
+User confirmed system smooth after workday operation.
+
+**What worked:**
+
+1. **Sunday Clinic Stage 1 (frontend responsiveness)**
+    - Removed duplicate auth fetch during init
+    - Switched directory loading to lazy load (open/search only)
+    - Prevented duplicate event listener binding on repeated render
+    - Replaced blocking post-save full refetch with debounced background metadata refresh
+    - Removed Date.now cache-buster from navigation and duplicate inline queue renderer in HTML
+
+2. **Sunday Clinic Stage 2 (backend query optimization)**
+    - Replaced `DATE(created_at)` filters with GMT+7 range filters (`>= start`, `< end`)
+    - Optimized queue query joins and added short in-memory queue cache (10s)
+    - Simplified directory default ordering path for faster non-search load
+
+3. **Sunday Clinic Stage 3 (index tuning)**
+    - Added targeted indexes for queue subqueries, directory ordering, and check-existing lookup
+    - Follow-up index for check-existing: patient + created_at + id
+    - `EXPLAIN` verification confirmed key usage improvements on critical lookup paths
+
+4. **Auth/API hardening after incident checks**
+    - Added malformed JSON handling in global error handler:
+      - invalid JSON now returns `400 INVALID_JSON` (operational error)
+      - avoids misleading `500` for bad request payloads
+
+5. **Operational readiness pattern that proved reliable**
+    - Always validate with both local upstream check (`127.0.0.1:3000`) and public domain check
+    - Treat transient post-restart 502 as potential warm-up/proxy timing issue; recheck in short loop
+    - Final readiness criteria used:
+      - `/api/health` stable 200 in repeated checks
+      - staff HTML routes 200
+      - invalid login returns 401 (not 500)
+      - malformed JSON returns 400
+
+**Important note:**
+- Firebase service-account ENOENT logs were present but did not block core staff panel/Sunday Clinic flows in this session.
