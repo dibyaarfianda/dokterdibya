@@ -192,69 +192,124 @@ router.get('/activity-log', verifyToken, requirePermission('obat_logs.view'), as
         const limit = parseInt(req.query.limit) || 100;
         const offset = parseInt(req.query.offset) || 0;
 
-        let query = `
-            SELECT
-                sm.id,
-                sm.created_at,
-                sm.movement_type,
-                sm.quantity,
-                sm.cost_price,
-                sm.reference_type,
-                sm.reference_id,
-                sm.notes,
-                sm.created_by,
-                o.id as obat_id,
-                o.code as obat_code,
-                o.name as obat_name,
-                ob.batch_number,
-                ob.expiry_date,
-                s.name as supplier_name
+        const selectFields = `
+            sm.id,
+            sm.created_at,
+            sm.movement_type,
+            sm.quantity,
+            sm.cost_price,
+            sm.reference_type,
+            sm.reference_id,
+            sm.notes,
+            sm.created_by,
+            o.id as obat_id,
+            o.code as obat_code,
+            o.name as obat_name,
+            o.price as selling_price,
+            o.default_cost_price,
+            ob.batch_number,
+            ob.expiry_date,
+            ob.cost_price as batch_cost_price,
+            s.name as supplier_name,
+            COALESCE(NULLIF(sm.cost_price, 0), NULLIF(ob.cost_price, 0), NULLIF(o.default_cost_price, 0), 0) AS effective_cost_price,
+            CASE
+                WHEN sm.movement_type = 'sale' THEN COALESCE(
+                    (
+                        SELECT osi.price
+                        FROM obat_sale_items osi
+                        WHERE osi.sale_id = sm.reference_id
+                          AND sm.reference_type = 'obat_sale'
+                          AND osi.obat_id = sm.obat_id
+                        ORDER BY osi.id DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT bi.unit_price
+                        FROM billing_items bi
+                        WHERE bi.billing_id = sm.reference_id
+                          AND sm.reference_type = 'billing'
+                          AND bi.item_type = 'medication'
+                          AND (
+                                (bi.item_code REGEXP '^[0-9]+$' AND CAST(bi.item_code AS UNSIGNED) = sm.obat_id)
+                              OR CONVERT(bi.item_code USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(o.code USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                          )
+                        ORDER BY bi.id DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT scbi.price
+                        FROM sunday_clinic_billing_items scbi
+                        WHERE scbi.billing_id = sm.reference_id
+                          AND sm.reference_type = 'sunday_clinic_billing'
+                          AND scbi.item_type = 'obat'
+                          AND CAST(JSON_UNQUOTE(JSON_EXTRACT(scbi.item_data, '$.obatId')) AS UNSIGNED) = sm.obat_id
+                        ORDER BY scbi.id DESC
+                        LIMIT 1
+                    ),
+                    NULLIF(o.price, 0),
+                    NULLIF(sm.cost_price, 0),
+                    NULLIF(ob.cost_price, 0),
+                    NULLIF(o.default_cost_price, 0),
+                    0
+                )
+                ELSE COALESCE(NULLIF(sm.cost_price, 0), NULLIF(ob.cost_price, 0), NULLIF(o.default_cost_price, 0), 0)
+            END AS display_price
+        `;
+
+        const fromClause = `
             FROM stock_movements sm
             JOIN obat o ON sm.obat_id = o.id
             LEFT JOIN obat_batches ob ON sm.batch_id = ob.id
             LEFT JOIN suppliers s ON ob.supplier_id = s.id
-            WHERE 1=1
         `;
+
+        let whereClause = ` WHERE 1=1 `;
         const params = [];
 
         // Date range filter
         if (start_date) {
-            query += ` AND DATE(sm.created_at) >= ?`;
+            whereClause += ` AND DATE(sm.created_at) >= ?`;
             params.push(start_date);
         }
         if (end_date) {
-            query += ` AND DATE(sm.created_at) <= ?`;
+            whereClause += ` AND DATE(sm.created_at) <= ?`;
             params.push(end_date);
         }
 
         // Movement type filter
         if (movement_type) {
-            query += ` AND sm.movement_type = ?`;
+            whereClause += ` AND sm.movement_type = ?`;
             params.push(movement_type);
         }
 
         // Created by filter
         if (created_by) {
-            query += ` AND sm.created_by LIKE ?`;
+            whereClause += ` AND sm.created_by LIKE ?`;
             params.push(`%${created_by}%`);
         }
 
         // Obat filter
         if (obat_id) {
-            query += ` AND sm.obat_id = ?`;
+            whereClause += ` AND sm.obat_id = ?`;
             params.push(obat_id);
         }
 
         // Get total count
-        const countQuery = query.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
+        const countQuery = `SELECT COUNT(*) as total ${fromClause} ${whereClause}`;
         const [countResult] = await db.query(countQuery, params);
         const total = countResult[0]?.total || 0;
 
         // Add sorting and pagination
-        query += ` ORDER BY sm.created_at DESC LIMIT ? OFFSET ?`;
-        params.push(limit, offset);
+        const dataQuery = `
+            SELECT ${selectFields}
+            ${fromClause}
+            ${whereClause}
+            ORDER BY sm.created_at DESC
+            LIMIT ? OFFSET ?
+        `;
+        const dataParams = [...params, limit, offset];
 
-        const [movements] = await db.query(query, params);
+        const [movements] = await db.query(dataQuery, dataParams);
 
         // Get unique users for filter dropdown
         const [users] = await db.query(`

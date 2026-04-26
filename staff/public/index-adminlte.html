@@ -9356,14 +9356,17 @@ Apakah Anda yakin ingin melanjutkan?`;
             let totalIn = 0, totalOut = 0, totalAdjust = 0, totalValue = 0;
             filteredData.forEach(d => {
                 const qty = Math.abs(d.quantity);
-                const value = qty * parseFloat(d.cost_price || 0);
+                const unitPrice = parseFloat(d.display_price ?? d.cost_price ?? 0);
+                const value = qty * unitPrice;
                 if (d.movement_type === 'purchase') {
                     totalIn += qty;
                     totalValue += value;
                 } else if (d.movement_type === 'sale') {
                     totalOut += qty;
+                    totalValue += value;
                 } else if (d.movement_type === 'adjustment') {
                     totalAdjust += Math.abs(d.quantity);
+                    totalValue += value;
                 }
             });
 
@@ -9399,7 +9402,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 }
 
                 const qty = d.quantity > 0 ? '+' + d.quantity : d.quantity;
-                const price = parseFloat(d.cost_price || 0);
+                const price = parseFloat(d.display_price ?? d.cost_price ?? 0);
                 const total = Math.abs(d.quantity) * price;
 
                 return `<tr>
@@ -9440,7 +9443,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         } catch (error) {
             console.error('Load activity log error:', error);
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
         }
     };
 
