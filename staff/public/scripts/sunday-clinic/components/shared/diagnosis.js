@@ -145,9 +145,9 @@ export default {
         // Merge with passed diagnosis parameter (fallback to savedData from medicalRecords)
         // Support both form field names (diagnosis_utama) and MEDIFY field names (diagnosis)
         const diagnosisData = {
-            diagnosis_utama: savedData.diagnosis_utama || savedData.diagnosis || diagnosis.diagnosis_utama || diagnosis.diagnosis || '',
-            diagnosis_sekunder: savedData.diagnosis_sekunder || diagnosis.diagnosis_sekunder || '',
-            record_datetime: savedData.record_datetime || diagnosis.record_datetime || defaultDatetime
+            diagnosis_utama: diagnosis.diagnosis_utama || diagnosis.diagnosis || savedData.diagnosis_utama || savedData.diagnosis || '',
+            diagnosis_sekunder: diagnosis.diagnosis_sekunder || savedData.diagnosis_sekunder || '',
+            record_datetime: diagnosis.record_datetime || savedData.record_datetime || defaultDatetime
         };
 
         const escapeHtml = (str) => {
