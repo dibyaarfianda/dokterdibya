@@ -441,43 +441,20 @@ async function toggleObatStatus(obatId, newStatus) {
     }
 }
 
-// Delete obat
+// Legacy delete handler kept for backward compatibility with cached UI.
+// Older cached pages may still call window.deleteObat from a red trash button.
+// We intentionally map that action to deactivation instead of delete.
 async function deleteObat(obatId) {
     const obat = allObat.find(o => o.id == obatId);
     if (!obat) return;
 
-    if (!confirm(`Yakin ingin menghapus obat "${obat.name}"?`)) return;
-
-    try {
-        const token = await getIdToken();
-        if (!token) {
-            showError('Anda tidak terautentikasi. Silakan login kembali.');
-            return;
-        }
-
-        const response = await fetch(`${API_BASE}/obat/${obatId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        if (result.success) {
-            showSuccess('Obat berhasil dihapus');
-            loadObat();
-        } else {
-            throw new Error(result.message || 'Gagal menghapus obat');
-        }
-    } catch (error) {
-        console.error('Error deleting obat:', error);
-        showError('Gagal menghapus obat: ' + error.message);
+    if (Number(obat.is_active) !== 1) {
+        showWarning(`Obat "${obat.name}" sudah nonaktif`);
+        return;
     }
+
+    if (!confirm(`Tombol hapus dialihkan menjadi nonaktifkan.\n\nNonaktifkan obat "${obat.name}"?`)) return;
+    await toggleObatStatus(obatId, 0);
 }
 
 // Reset form
