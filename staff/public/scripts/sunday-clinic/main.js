@@ -207,7 +207,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.7';
+        const COMPONENT_VERSION = '3.0.8';
         const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
         const loaders = componentPaths.map(async ({ section, path }) => {
@@ -1268,21 +1268,8 @@ class SundayClinicApp {
             // Refresh metadata in background to keep save flow snappy.
             this.scheduleMetadataRefresh();
 
-            // Auto-generate diagnosis from latest local state.
-            try {
-                const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
-                const freshState = stateManager.getState();
-                const stateForGen = {
-                    ...freshState,
-                    recordData: { ...freshState.recordData, usg: data }
-                };
-                const diagText = generateObstetricDiagnosis(stateForGen);
-                if (diagText) {
-                    stateManager.updateSectionData('diagnosis', { diagnosis_utama: diagText });
-                    const textarea = document.getElementById('diagnosis-utama');
-                    if (textarea) textarea.value = diagText;
-                }
-            } catch (e) { console.warn('[AutoDiag]', e); }
+            // Auto-generate and persist diagnosis from latest local state.
+            await this.autoGenerateAndPersistDiagnosis({ usg: data });
 
         } catch (error) {
             console.error('[SundayClinic] Save USG failed:', error);
@@ -1553,20 +1540,7 @@ class SundayClinicApp {
             this.scheduleMetadataRefresh();
 
             // Auto-generate diagnosis from latest local state.
-            try {
-                const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
-                const freshState = stateManager.getState();
-                const stateForGen = {
-                    ...freshState,
-                    recordData: { ...freshState.recordData, anamnesa: data }
-                };
-                const diagText = generateObstetricDiagnosis(stateForGen);
-                if (diagText) {
-                    stateManager.updateSectionData('diagnosis', { diagnosis_utama: diagText });
-                    const textarea = document.getElementById('diagnosis-utama');
-                    if (textarea) textarea.value = diagText;
-                }
-            } catch (e) { console.warn('[AutoDiag]', e); }
+            await this.autoGenerateAndPersistDiagnosis({ anamnesa: data });
 
             // Re-enable button
             btn.disabled = false;
@@ -1720,6 +1694,89 @@ class SundayClinicApp {
         } finally {
             this.hideLoading();
             this._savingDiagnosis = false;
+        }
+    }
+
+    /**
+     * Return current local datetime in datetime-local input format.
+     */
+    getCurrentDateTimeLocal() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
+    /**
+     * Generate obstetric diagnosis from local state and persist it to DB.
+     */
+    async autoGenerateAndPersistDiagnosis(sectionUpdates = {}) {
+        try {
+            const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
+            const freshState = stateManager.getState();
+            const mergedRecordData = {
+                ...(freshState.recordData || {}),
+                ...sectionUpdates
+            };
+            const stateForGen = {
+                ...freshState,
+                recordData: mergedRecordData
+            };
+
+            const diagText = generateObstetricDiagnosis(stateForGen);
+            if (!diagText) {
+                return { success: false, reason: 'no_diagnosis_generated' };
+            }
+
+            const existingDiagnosis = mergedRecordData.diagnosis || {};
+            const sourceDatetime = sectionUpdates.anamnesa?.record_datetime || sectionUpdates.usg?.record_datetime || '';
+            const diagnosisDatetime = existingDiagnosis.record_datetime || sourceDatetime || this.getCurrentDateTimeLocal();
+
+            const diagnosisData = {
+                record_datetime: diagnosisDatetime,
+                record_date: diagnosisDatetime.split('T')[0] || '',
+                record_time: diagnosisDatetime.split('T')[1] || '',
+                diagnosis_utama: diagText,
+                diagnosis_sekunder: existingDiagnosis.diagnosis_sekunder || '',
+                saved_at: new Date().toISOString()
+            };
+
+            // Update local state/UI immediately.
+            stateManager.updateSectionData('diagnosis', diagnosisData);
+            const textarea = document.getElementById('diagnosis-utama');
+            if (textarea) textarea.value = diagText;
+
+            const mrId = freshState.currentMrId ||
+                        mergedRecordData?.mrId ||
+                        mergedRecordData?.mr_id ||
+                        mergedRecordData?.record?.mrId ||
+                        mergedRecordData?.record?.mr_id;
+            if (!mrId) {
+                return { success: false, reason: 'missing_mr_id' };
+            }
+
+            const token = window.getToken();
+            if (!token) {
+                return { success: false, reason: 'missing_token' };
+            }
+
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/diagnosis`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(diagnosisData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            console.log('[AutoDiag] Diagnosis generated and persisted:', diagText);
+            return { success: true, diagnosis: diagText };
+        } catch (error) {
+            console.warn('[AutoDiag] Failed to generate/persist diagnosis', error);
+            return { success: false, reason: 'error', error: error.message };
         }
     }
 
