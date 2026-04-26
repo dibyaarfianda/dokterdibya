@@ -11052,13 +11052,13 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Load Obat Profit Analysis
     async function loadObatProfitAnalysis() {
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = await getIdToken();
             if (!token) return;
 
             // Get first day of current month
             const now = new Date();
-            const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-            const endDate = now.toISOString().split('T')[0];
+            const startDate = formatDateLocal(new Date(now.getFullYear(), now.getMonth(), 1));
+            const endDate = formatDateLocal(now);
 
             // Fetch profit data
             const [profitRes, summaryRes] = await Promise.all([
@@ -11147,7 +11147,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         // Generate last 12 months
         for (let i = 0; i < 12; i++) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const value = d.toISOString().slice(0, 7);
+            const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
             const option = document.createElement('option');
             option.value = value;
@@ -11159,7 +11159,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     async function loadPrivateClinicAnalysis() {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = await getIdToken();
         if (!token) return;
 
         const monthSelect = document.getElementById('private-clinic-month');

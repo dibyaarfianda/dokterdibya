@@ -105,9 +105,43 @@ router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) 
                     scr.created_at as visit_date,
                     scr.visit_location,
                     scr.mr_id,
+                    COALESCE(scb.total, 0) as grand_total,
+                    COALESCE(scb.total, 0) as total_amount,
+                    (
+                        SELECT JSON_ARRAYAGG(JSON_OBJECT(
+                            'name', bi.item_name,
+                            'quantity', bi.quantity,
+                            'price', bi.price,
+                            'total', bi.total
+                        ))
+                        FROM sunday_clinic_billing_items bi
+                        WHERE bi.billing_id = scb.id
+                        AND bi.item_type = 'obat'
+                    ) as medications,
+                    (
+                        SELECT JSON_ARRAYAGG(JSON_OBJECT(
+                            'name', bi.item_name,
+                            'quantity', bi.quantity,
+                            'price', bi.price,
+                            'total', bi.total
+                        ))
+                        FROM sunday_clinic_billing_items bi
+                        WHERE bi.billing_id = scb.id
+                        AND bi.item_type = 'tindakan'
+                    ) as services,
                     0 as is_dummy
                 FROM sunday_clinic_records scr
                 LEFT JOIN patients p ON scr.patient_id = p.id
+                LEFT JOIN (
+                    SELECT b1.*
+                    FROM sunday_clinic_billings b1
+                    INNER JOIN (
+                        SELECT mr_id, MAX(id) AS latest_id
+                        FROM sunday_clinic_billings
+                        WHERE status IN ('paid', 'confirmed')
+                        GROUP BY mr_id
+                    ) b2 ON b1.id = b2.latest_id
+                ) scb ON scb.mr_id = scr.mr_id
                 WHERE 1=1
             `;
             const params = [];
