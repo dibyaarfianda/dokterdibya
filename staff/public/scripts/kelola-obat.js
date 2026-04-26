@@ -351,6 +351,9 @@ function renderObatTable(obat) {
                     <button class="btn btn-xs btn-${isActive ? 'secondary' : 'primary'}" onclick="window.toggleObatStatus('${item.id}', ${isActive ? 0 : 1})" title="${isActive ? 'Nonaktifkan' : 'Aktifkan'}">
                         <i class="fas fa-${isActive ? 'ban' : 'check'}"></i>
                     </button>
+                    <button class="btn btn-xs btn-danger ml-1" onclick="window.deleteObatPermanen('${item.id}')" title="Delete Permanen" ${isActive ? 'disabled' : ''}>
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;
@@ -441,6 +444,51 @@ async function toggleObatStatus(obatId, newStatus) {
     }
 }
 
+// Delete obat permanently (must be inactive and without history)
+async function deleteObatPermanen(obatId) {
+    const obat = allObat.find(o => o.id == obatId);
+    if (!obat) return;
+
+    if (Number(obat.is_active) === 1) {
+        showWarning(`Nonaktifkan dulu obat "${obat.name}" sebelum delete permanen`);
+        return;
+    }
+
+    const confirmed = confirm(
+        `DELETE PERMANEN akan menghapus data obat ini selamanya.\n\n` +
+        `Obat: "${obat.name}"\n\n` +
+        'Lanjutkan delete permanen?'
+    );
+    if (!confirmed) return;
+
+    try {
+        const token = await getIdToken();
+        if (!token) {
+            showError('Anda tidak terautentikasi. Silakan login kembali.');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE}/obat/${obatId}/permanent`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || `HTTP error! status: ${response.status}`);
+        }
+
+        showSuccess(result.message || 'Obat berhasil dihapus permanen');
+        loadObat();
+    } catch (error) {
+        console.error('Error deleting obat permanently:', error);
+        showError('Gagal delete permanen: ' + error.message);
+    }
+}
+
 // Legacy delete handler kept for backward compatibility with cached UI.
 // Older cached pages may still call window.deleteObat from a red trash button.
 // We intentionally map that action to deactivation instead of delete.
@@ -484,5 +532,6 @@ function resetForm() {
 window.editObat = editObat;
 window.deleteObat = deleteObat;
 window.toggleObatStatus = toggleObatStatus;
+window.deleteObatPermanen = deleteObatPermanen;
 window.loadKelolaObatList = loadObat;
 
