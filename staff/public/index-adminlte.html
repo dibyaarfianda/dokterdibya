@@ -1470,7 +1470,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v63'; // Increment this to force refresh - loading overlay on purchase stock submit
+            const CACHE_VERSION = 'v68'; // Increment this to force refresh - kelola-obat deactivation action update
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -7141,7 +7141,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v67';
+    window.__assetVersion = 'v68';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -9224,7 +9224,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
     
     // Kelola Obat Page Function
-    window.showKelolaObatPage = function() {
+    window.showKelolaObatPage = async function() {
         // Hide all pages
         document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
         
@@ -9239,6 +9239,17 @@ Apakah Anda yakin ingin melanjutkan?`;
         const floatingPanel = document.getElementById('floating-kelola-pasien');
         if (floatingPanel) {
             floatingPanel.classList.add('d-none');
+        }
+
+        // Always load the latest kelola-obat module with current asset version.
+        try {
+            const v = window.__assetVersion || Date.now().toString();
+            const module = await import('./scripts/kelola-obat.js?v=' + encodeURIComponent(v));
+            if (module?.initKelolaObat) {
+                module.initKelolaObat();
+            }
+        } catch (error) {
+            console.error('Failed to load kelola-obat.js:', error);
         }
     };
     
@@ -10256,7 +10267,8 @@ Apakah Anda yakin ingin melanjutkan?`;
                 window.loadKelolaObatList();
             } else {
                 // Fallback: reload kelola-obat module if available
-                const { initKelolaObat } = await import('./scripts/kelola-obat.js');
+                const v = window.__assetVersion || Date.now().toString();
+                const { initKelolaObat } = await import('./scripts/kelola-obat.js?v=' + encodeURIComponent(v));
                 if (initKelolaObat) initKelolaObat();
             }
         } catch (error) {
