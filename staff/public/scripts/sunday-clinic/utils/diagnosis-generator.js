@@ -5,6 +5,7 @@
  * Output format:
  *   G5 P2112 30 6/7 minggu T/H
  *   Letak Sungsang
+ *   Bekas SC 2x
  */
 
 export function generateObstetricDiagnosis(state) {
@@ -50,7 +51,7 @@ export function generateObstetricDiagnosis(state) {
     }
 
     // --- Line 1 ---
-    let result = parityStr + gaStr;
+    const lines = [parityStr + gaStr];
 
     // --- Line 2: Presentation (if USG has data) ---
     const presentation = t3.presentation || t2.presentation;
@@ -60,7 +61,21 @@ export function generateObstetricDiagnosis(state) {
     else if (presentation === 'breech') presentationStr = 'Letak Sungsang';
     else if (presentation === 'shoulder' || fetusLie === 'transverse') presentationStr = 'Letak Lintang';
 
-    if (presentationStr) result += '\n' + presentationStr;
+    if (presentationStr) lines.push(presentationStr);
 
-    return result;
+    // --- Line 3: Previous C-section marker from obstetric history ---
+    let previousScCount = 0;
+    if (Array.isArray(rp) && rp.length > 0) {
+        previousScCount = rp.filter((entry) => {
+            if (!entry || entry.type !== 'DELIVERY') return false;
+            const method = String(entry.metode_persalinan || '').toLowerCase();
+            return method.includes('sc') || method.includes('caesar');
+        }).length;
+    }
+
+    if (previousScCount > 0) {
+        lines.push(previousScCount === 1 ? 'Bekas SC' : `Bekas SC ${previousScCount}x`);
+    }
+
+    return lines.join('\n');
 }
