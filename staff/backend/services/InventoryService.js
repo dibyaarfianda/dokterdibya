@@ -113,11 +113,22 @@ class InventoryService {
                     [obatId]
                 );
 
+                const [latestBatchRows] = await connection.query(
+                    `SELECT cost_price
+                     FROM obat_batches
+                     WHERE obat_id = ? AND cost_price > 0
+                     ORDER BY purchase_date DESC, id DESC
+                     LIMIT 1`,
+                    [obatId]
+                );
+
                 if (!obatData[0] || obatData[0].stock < quantity) {
                     throw new Error(`Insufficient stock. Available: ${obatData[0]?.stock || 0}, Required: ${quantity}`);
                 }
 
-                const costPrice = obatData[0].default_cost_price || 0;
+                const defaultCost = parseFloat(obatData[0].default_cost_price) || 0;
+                const latestBatchCost = parseFloat(latestBatchRows[0]?.cost_price) || 0;
+                const costPrice = defaultCost > 0 ? defaultCost : latestBatchCost;
 
                 // Update obat stock directly
                 await connection.query(
@@ -356,10 +367,20 @@ class InventoryService {
                 o.price as selling_price,
                 SUM(CASE WHEN sm.movement_type = 'sale' THEN ABS(sm.quantity) ELSE 0 END) as qty_sold,
                 SUM(CASE WHEN sm.movement_type = 'sale' THEN ABS(sm.quantity) * o.price ELSE 0 END) as revenue,
-                SUM(CASE WHEN sm.movement_type = 'sale' THEN ABS(sm.quantity) * sm.cost_price ELSE 0 END) as cost,
-                SUM(CASE WHEN sm.movement_type = 'sale' THEN ABS(sm.quantity) * (o.price - sm.cost_price) ELSE 0 END) as profit
+                SUM(CASE WHEN sm.movement_type = 'sale' THEN ABS(sm.quantity) * COALESCE(NULLIF(sm.cost_price, 0), NULLIF(o.default_cost_price, 0), lc.latest_cost, 0) ELSE 0 END) as cost,
+                SUM(CASE WHEN sm.movement_type = 'sale' THEN ABS(sm.quantity) * (o.price - COALESCE(NULLIF(sm.cost_price, 0), NULLIF(o.default_cost_price, 0), lc.latest_cost, 0)) ELSE 0 END) as profit
              FROM obat o
              LEFT JOIN stock_movements sm ON o.id = sm.obat_id
+             LEFT JOIN (
+                SELECT ob1.obat_id, ob1.cost_price AS latest_cost
+                FROM obat_batches ob1
+                INNER JOIN (
+                    SELECT obat_id, MAX(id) AS latest_id
+                    FROM obat_batches
+                    WHERE cost_price > 0
+                    GROUP BY obat_id
+                ) ob2 ON ob1.id = ob2.latest_id
+             ) lc ON lc.obat_id = o.id
              WHERE sm.movement_type = 'sale'
                AND sm.created_at BETWEEN ? AND ?
              GROUP BY o.id
@@ -394,9 +415,19 @@ class InventoryService {
         const [salesData] = await db.query(
             `SELECT
                 SUM(ABS(sm.quantity) * o.price) as revenue,
-                SUM(ABS(sm.quantity) * sm.cost_price) as cost
+                SUM(ABS(sm.quantity) * COALESCE(NULLIF(sm.cost_price, 0), NULLIF(o.default_cost_price, 0), lc.latest_cost, 0)) as cost
              FROM stock_movements sm
              JOIN obat o ON sm.obat_id = o.id
+             LEFT JOIN (
+                SELECT ob1.obat_id, ob1.cost_price AS latest_cost
+                FROM obat_batches ob1
+                INNER JOIN (
+                    SELECT obat_id, MAX(id) AS latest_id
+                    FROM obat_batches
+                    WHERE cost_price > 0
+                    GROUP BY obat_id
+                ) ob2 ON ob1.id = ob2.latest_id
+             ) lc ON lc.obat_id = o.id
              WHERE sm.movement_type = 'sale'
                AND sm.created_at BETWEEN ? AND ?`,
             [startDate, endDate]
