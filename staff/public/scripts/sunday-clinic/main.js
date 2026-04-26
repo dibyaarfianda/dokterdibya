@@ -207,7 +207,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.8';
+        const COMPONENT_VERSION = '3.0.9';
         const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
         const loaders = componentPaths.map(async ({ section, path }) => {
@@ -1710,7 +1710,7 @@ class SundayClinicApp {
      */
     async autoGenerateAndPersistDiagnosis(sectionUpdates = {}) {
         try {
-            const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
+            const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js?v=20260426v1');
             const freshState = stateManager.getState();
             const mergedRecordData = {
                 ...(freshState.recordData || {}),

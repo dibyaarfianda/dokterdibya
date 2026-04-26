@@ -8,10 +8,10 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.10 - persist auto diagnosis from anamnesa/usg
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.10';
-import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.10';
-import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.10';
+// Version 2.1.11 - auto diagnosis adds Bekas SC markers
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.11';
+import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
+import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';
 
 // ============================================================================
