@@ -654,6 +654,11 @@ router.get('/check-existing', verifyToken, async (req, res, next) => {
 
 router.get('/directory', verifyToken, async (req, res, next) => {
     const search = (req.query.search || '').trim();
+    const requestedLimit = Number.parseInt(req.query.limit, 10);
+    const defaultLimit = search ? 120 : 200;
+    const limit = Number.isFinite(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 20), 400)
+        : defaultLimit;
     const conditions = [];
     const params = [];
 
@@ -702,8 +707,8 @@ router.get('/directory', verifyToken, async (req, res, next) => {
              LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
              ${whereClause}
              ${orderByClause}
-             LIMIT 400`,
-            params
+             LIMIT ?`,
+            [...params, limit]
         );
 
         const patientsMap = new Map();
@@ -772,7 +777,8 @@ router.get('/directory', verifyToken, async (req, res, next) => {
             data: {
                 patients,
                 totalPatients: patients.length,
-                totalRecords: rows.length
+                totalRecords: rows.length,
+                limit
             }
         });
     } catch (error) {
