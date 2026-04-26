@@ -294,6 +294,83 @@ router.delete('/api/obat/:id', verifyToken, requirePermission('obat_alkes.delete
     }
 });
 
+// DELETE OBAT PERMANEN (only for inactive items without history)
+router.delete('/api/obat/:id/permanent', verifyToken, requirePermission('obat_alkes.delete'), async (req, res) => {
+    try {
+        const obatId = req.params.id;
+
+        const [obatRows] = await db.query(
+            'SELECT id, name, is_active FROM obat WHERE id = ?',
+            [obatId]
+        );
+
+        if (obatRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Obat tidak ditemukan'
+            });
+        }
+
+        const obat = obatRows[0];
+        if (Number(obat.is_active) === 1) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nonaktifkan obat terlebih dahulu sebelum delete permanen'
+            });
+        }
+
+        // Do not allow permanent delete for items that already have transaction history.
+        const [historyRows] = await db.query(
+            `SELECT
+                (SELECT COUNT(*) FROM stock_movements WHERE obat_id = ?) AS movement_count,
+                (SELECT COUNT(*) FROM obat_batches WHERE obat_id = ?) AS batch_count,
+                (SELECT COUNT(*) FROM obat_sale_items WHERE obat_id = ?) AS sale_item_count`,
+            [obatId, obatId, obatId]
+        );
+
+        const history = historyRows[0] || {};
+        const movementCount = Number(history.movement_count || 0);
+        const batchCount = Number(history.batch_count || 0);
+        const saleItemCount = Number(history.sale_item_count || 0);
+
+        if (movementCount > 0 || batchCount > 0 || saleItemCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Obat tidak bisa dihapus permanen karena sudah memiliki riwayat transaksi/stok',
+                data: {
+                    movementCount,
+                    batchCount,
+                    saleItemCount
+                }
+            });
+        }
+
+        const [deleteResult] = await db.query('DELETE FROM obat WHERE id = ?', [obatId]);
+
+        if (deleteResult.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Obat tidak ditemukan'
+            });
+        }
+
+        // Invalidate obat cache
+        cache.delPattern('obat:');
+
+        res.json({
+            success: true,
+            message: `Obat "${obat.name}" berhasil dihapus permanen`
+        });
+    } catch (error) {
+        console.error('Error deleting obat permanently:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal menghapus obat permanen',
+            error: error.message
+        });
+    }
+});
+
 // GET LOW STOCK ITEMS
 router.get('/public/obat/low-stock', async (req, res) => {
     try {
