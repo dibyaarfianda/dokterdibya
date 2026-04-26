@@ -47,10 +47,14 @@ module.exports = {
             // 'max' = one worker per CPU core
             instances: parseInt(process.env.PM2_INSTANCES, 10) || 1,
 
+            // Increase V8 heap headroom to reduce GC pressure during burst traffic.
+            node_args: process.env.PM2_NODE_ARGS || '--max-old-space-size=512',
+
             // --- Restart policy ---
-            max_restarts: 10,
-            min_uptime: '10s',
-            restart_delay: 4000,
+            max_restarts: 20,
+            min_uptime: '30s',
+            restart_delay: 5000,
+            exp_backoff_restart_delay: 100,
             autorestart: true,
 
             // --- Zero-downtime reload ---
@@ -59,7 +63,7 @@ module.exports = {
             kill_timeout: 5000,        // grace period before SIGKILL
 
             // --- Memory guard ---
-            max_memory_restart: process.env.PM2_MAX_MEMORY || '512M',
+            max_memory_restart: process.env.PM2_MAX_MEMORY || '768M',
 
             // --- Logging ---
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
