@@ -254,8 +254,31 @@ class StateManager {
             }
         };
 
+        // Keep medicalRecords.byType in sync so helpers that read byType
+        // (e.g. getMedicalRecordContext) see the latest local updates.
+        let updatedMedicalRecords = this.state.medicalRecords;
+        if (this.state.medicalRecords) {
+            const byType = this.state.medicalRecords.byType || {};
+            const existingTypeRecord = byType[sectionName] || {};
+
+            updatedMedicalRecords = {
+                ...this.state.medicalRecords,
+                byType: {
+                    ...byType,
+                    [sectionName]: {
+                        ...existingTypeRecord,
+                        data: {
+                            ...(existingTypeRecord.data || {}),
+                            ...data
+                        }
+                    }
+                }
+            };
+        }
+
         this.setState({
-            recordData: updatedRecordData
+            recordData: updatedRecordData,
+            medicalRecords: updatedMedicalRecords
         });
 
         console.log(`[StateManager] Section data updated: ${sectionName}`, data);
