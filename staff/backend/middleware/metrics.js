@@ -6,6 +6,64 @@
 const os = require('os');
 const logger = require('../utils/logger');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+const toClampedRate = (rawValue, fallback) => {
+    const parsed = Number.parseFloat(rawValue);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(1, Math.max(0, parsed));
+};
+
+const ENABLE_METRICS = process.env.ENABLE_METRICS !== 'false';
+const ENABLE_DETAILED_METRICS = process.env.ENABLE_DETAILED_METRICS === 'true' || !isProduction;
+const ENABLE_METRICS_SUMMARY_LOG = process.env.ENABLE_METRICS_SUMMARY_LOG === 'true' || !isProduction;
+const METRICS_SAMPLE_RATE = toClampedRate(
+    process.env.METRICS_SAMPLE_RATE || (isProduction ? '0.35' : '1'),
+    isProduction ? 0.35 : 1
+);
+const MAX_GLOBAL_SAMPLES = Number.parseInt(
+    process.env.METRICS_GLOBAL_SAMPLES || (isProduction ? '300' : '1000'),
+    10
+);
+const MAX_ENDPOINT_SAMPLES = Number.parseInt(
+    process.env.METRICS_ENDPOINT_SAMPLES || (isProduction ? '30' : '100'),
+    10
+);
+const MAX_TRACKED_ENDPOINTS = Number.parseInt(
+    process.env.METRICS_MAX_ENDPOINTS || (isProduction ? '120' : '500'),
+    10
+);
+const METRICS_SLOW_REQUEST_MS = Number.parseInt(
+    process.env.METRICS_SLOW_REQUEST_MS || (isProduction ? '1500' : '1000'),
+    10
+);
+const ENABLE_METRICS_SLOW_LOG = process.env.METRICS_LOG_SLOW_REQUESTS === 'true';
+
+const trimArrayToMax = (arr, max) => {
+    if (arr.length > max) {
+        arr.splice(0, arr.length - max);
+    }
+};
+
+const normalizePath = (routePath) => {
+    if (!routePath || !isProduction) return routePath || 'unknown';
+
+    return routePath
+        .replace(/\/\d+(?=\/|$)/g, '/:id')
+        .replace(/\/[A-Za-z]{2,}\d+(?=\/|$)/g, '/:id')
+        .replace(/\/[0-9a-fA-F-]{8,}(?=\/|$)/g, '/:id');
+};
+
+const getEndpointKey = (req) => {
+    const routePath = req.route?.path || req.path || req.originalUrl || 'unknown';
+    return `${req.method} ${normalizePath(routePath)}`;
+};
+
+const trackEndpointAllowed = (map, endpointKey) => {
+    if (map[endpointKey]) return true;
+    return Object.keys(map).length < MAX_TRACKED_ENDPOINTS;
+};
+
 // Metrics storage (in production, use Redis or a proper metrics store)
 const metrics = {
     requests: {
@@ -33,11 +91,6 @@ const metrics = {
     users: {
         active: new Set(),
         total: 0
-    },
-    endpoints: {
-        slowest: [],
-        fastest: [],
-        errorProne: []
     }
 };
 
@@ -55,92 +108,78 @@ const calculatePercentile = (arr, percentile) => {
  * Track request metrics
  */
 const metricsMiddleware = (req, res, next) => {
-    const startTime = Date.now();
-    const endpoint = `${req.method} ${req.route?.path || req.path}`;
-    
-    // Track active users
-    if (req.user?.id) {
-        metrics.users.active.add(req.user.id);
-        metrics.users.total++;
+    if (!ENABLE_METRICS) {
+        return next();
     }
-    
-    // Track request count
+
+    const startNs = process.hrtime.bigint();
+
     metrics.requests.total++;
     metrics.requests.byMethod[req.method] = (metrics.requests.byMethod[req.method] || 0) + 1;
-    
-    // Capture response
-    const originalSend = res.send;
-    res.send = function(data) {
-        // Calculate response time
-        const responseTime = Date.now() - startTime;
-        
-        // Track response time
-        metrics.responseTimes.total += responseTime;
-        metrics.responseTimes.count++;
-        metrics.responseTimes.all.push(responseTime);
-        
-        // Keep only last 1000 response times for percentile calculation
-        if (metrics.responseTimes.all.length > 1000) {
-            metrics.responseTimes.all.shift();
-        }
-        
-        // Initialize endpoint metrics if needed
-        if (!metrics.responseTimes.byEndpoint[endpoint]) {
-            metrics.responseTimes.byEndpoint[endpoint] = {
-                total: 0,
-                count: 0,
-                min: Infinity,
-                max: 0,
-                times: []
-            };
-        }
-        
-        const endpointMetrics = metrics.responseTimes.byEndpoint[endpoint];
-        endpointMetrics.total += responseTime;
-        endpointMetrics.count++;
-        endpointMetrics.min = Math.min(endpointMetrics.min, responseTime);
-        endpointMetrics.max = Math.max(endpointMetrics.max, responseTime);
-        endpointMetrics.times.push(responseTime);
-        
-        // Keep only last 100 times per endpoint
-        if (endpointMetrics.times.length > 100) {
-            endpointMetrics.times.shift();
-        }
-        
-        // Track by endpoint
-        if (!metrics.requests.byEndpoint[endpoint]) {
-            metrics.requests.byEndpoint[endpoint] = 0;
-        }
-        metrics.requests.byEndpoint[endpoint]++;
-        
-        // Track by status code
+
+    if (ENABLE_DETAILED_METRICS && req.user?.id && metrics.users.active.size < 5000) {
+        metrics.users.active.add(req.user.id);
+    }
+
+    res.on('finish', () => {
+        const responseTime = Number(process.hrtime.bigint() - startNs) / 1e6;
         const statusCode = res.statusCode;
-        metrics.requests.byStatusCode[statusCode] = (metrics.requests.byStatusCode[statusCode] || 0) + 1;
-        
-        // Track by status category
         const statusCategory = `${Math.floor(statusCode / 100)}xx`;
+        const endpoint = getEndpointKey(req);
+
+        metrics.requests.byStatusCode[statusCode] = (metrics.requests.byStatusCode[statusCode] || 0) + 1;
         metrics.requests.byStatus[statusCategory] = (metrics.requests.byStatus[statusCategory] || 0) + 1;
-        
-        // Track errors
+
         if (statusCode >= 400) {
             metrics.errors.total++;
             const errorType = statusCode >= 500 ? 'server' : 'client';
             metrics.errors.byType[errorType] = (metrics.errors.byType[errorType] || 0) + 1;
             metrics.errors.byStatus[statusCode] = (metrics.errors.byStatus[statusCode] || 0) + 1;
         }
-        
-        // Log slow requests
-        if (responseTime > 1000) {
+
+        const shouldTrackDetailed = ENABLE_DETAILED_METRICS &&
+            (METRICS_SAMPLE_RATE >= 1 || Math.random() <= METRICS_SAMPLE_RATE);
+
+        if (shouldTrackDetailed) {
+            metrics.responseTimes.total += responseTime;
+            metrics.responseTimes.count++;
+            metrics.responseTimes.all.push(responseTime);
+            trimArrayToMax(metrics.responseTimes.all, MAX_GLOBAL_SAMPLES);
+
+            if (trackEndpointAllowed(metrics.requests.byEndpoint, endpoint)) {
+                metrics.requests.byEndpoint[endpoint] = (metrics.requests.byEndpoint[endpoint] || 0) + 1;
+            }
+
+            if (trackEndpointAllowed(metrics.responseTimes.byEndpoint, endpoint)) {
+                if (!metrics.responseTimes.byEndpoint[endpoint]) {
+                    metrics.responseTimes.byEndpoint[endpoint] = {
+                        total: 0,
+                        count: 0,
+                        min: Infinity,
+                        max: 0,
+                        times: []
+                    };
+                }
+
+                const endpointMetrics = metrics.responseTimes.byEndpoint[endpoint];
+                endpointMetrics.total += responseTime;
+                endpointMetrics.count++;
+                endpointMetrics.min = Math.min(endpointMetrics.min, responseTime);
+                endpointMetrics.max = Math.max(endpointMetrics.max, responseTime);
+                endpointMetrics.times.push(responseTime);
+                trimArrayToMax(endpointMetrics.times, MAX_ENDPOINT_SAMPLES);
+            }
+        }
+
+        if (ENABLE_METRICS_SLOW_LOG && responseTime > METRICS_SLOW_REQUEST_MS) {
             logger.warn('Slow request detected', {
                 endpoint,
-                responseTime: `${responseTime}ms`,
+                responseTime: `${Math.round(responseTime)}ms`,
                 statusCode,
                 userId: req.user?.id
             });
         }
-        
-        return originalSend.call(this, data);
-    };
+    });
     
     next();
 };
@@ -236,7 +275,7 @@ const getMetrics = () => {
         },
         users: {
             active: metrics.users.active.size,
-            total: metrics.users.total
+            total: metrics.users.active.size
         },
         system: systemInfo
     };
@@ -292,7 +331,7 @@ const logMetricsSummary = () => {
 };
 
 // Log metrics summary every 5 minutes in production
-if (process.env.NODE_ENV === 'production') {
+if (ENABLE_METRICS_SUMMARY_LOG) {
     setInterval(logMetricsSummary, 5 * 60 * 1000);
 }
 
