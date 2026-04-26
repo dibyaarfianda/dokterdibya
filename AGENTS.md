@@ -1270,3 +1270,41 @@ User confirmed system smooth after workday operation.
 
 **Important note:**
 - Firebase service-account ENOENT logs were present but did not block core staff panel/Sunday Clinic flows in this session.
+
+### 37. Session Log - 26 April 2026
+
+**24-Hour Production Monitoring (Approved by User)**
+
+User confirmed with "oke good" after 24-hour monitoring was activated successfully.
+
+**What worked:**
+
+1. **Dedicated monitor script with fixed cadence and summary output**
+    - Added monitoring script at `scripts/monitor-24h.sh`
+    - Default run profile: 24 hours, sample every 300 seconds
+    - Writes CSV + LOG + summary text in one run directory
+
+2. **Reliable server-side metrics captured per sample**
+    - `/api/health` HTTP status + database latency
+    - `/api/metrics` HTTP status + p95/p99 + error rate + request counters
+    - PM2 process snapshot for `dibyaklinik-backend`:
+      - pid, restart count, memory MB, CPU %
+
+3. **Operational output paths standardized**
+    - `/var/www/dokterdibya/reports/monitoring/latest_monitor.log`
+    - `/var/www/dokterdibya/reports/monitoring/latest_monitor.csv`
+    - `/var/www/dokterdibya/reports/monitoring/latest_monitor_summary.txt`
+    - `latest_*` symlinks point to current run automatically
+
+4. **Run and verification pattern that proved reliable**
+    - Start in background using `nohup`
+    - Verify process with `pgrep -af monitor-24h.sh`
+    - Verify first sample via `tail -n` on log and csv
+
+5. **First sample sanity check (healthy start)**
+    - `health_http=200`
+    - `metrics_http=200`
+    - PM2 restart counter captured successfully
+
+**Lesson:**
+- For post-optimization stability checks, prefer low-overhead periodic sampling (5 minutes) over heavy continuous probing; it preserves production performance while still capturing p95 drift, restart deltas, and endpoint health over a full work cycle.
