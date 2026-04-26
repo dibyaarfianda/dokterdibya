@@ -74,7 +74,7 @@
         const submitBtn = document.getElementById('birth-class-public-submit-btn');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Mengirim...';
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
         }
 
         const payload = {
@@ -91,7 +91,7 @@
             setMessage('Pilih sesi, isi nama, dan nomor HP terlebih dahulu.', 'warning');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i>Daftar Sekarang';
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Daftar Sekarang';
             }
             return;
         }
@@ -119,7 +119,7 @@
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i>Daftar Sekarang';
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Daftar Sekarang';
             }
         }
     }
