@@ -10,6 +10,42 @@ const { verifyToken, requireRoles } = require('../middleware/auth');
 const { ROLE_NAMES } = require('../constants/roles');
 const logger = require('../utils/logger');
 
+function normalizeArticleCategoryName(category) {
+    const raw = String(category || '').trim();
+    if (!raw) return 'Kehamilan';
+
+    const lowered = raw.toLowerCase();
+    if (lowered === 'gangguan_kandungan' || lowered === 'gangguan kandungan' || lowered === 'ginekologi') {
+        return 'Ginekologi';
+    }
+
+    if (lowered === 'program_hamil') {
+        return 'Program Hamil';
+    }
+    if (lowered === 'kehamilan') {
+        return 'Kehamilan';
+    }
+
+    return raw;
+}
+
+function getCategoryFilterValues(category) {
+    const lowered = String(category || '').trim().toLowerCase();
+    if (!lowered || lowered === 'all') return [];
+
+    if (lowered === 'ginekologi' || lowered === 'gangguan_kandungan' || lowered === 'gangguan kandungan') {
+        return ['Ginekologi', 'Gangguan Kandungan', 'gangguan_kandungan'];
+    }
+    if (lowered === 'program_hamil' || lowered === 'program hamil') {
+        return ['Program Hamil', 'program_hamil'];
+    }
+    if (lowered === 'kehamilan') {
+        return ['Kehamilan', 'kehamilan'];
+    }
+
+    return [category];
+}
+
 /**
  * GET /api/articles - Get all published articles (public)
  */
@@ -25,22 +61,27 @@ router.get('/', async (req, res) => {
         `;
         const params = [];
 
-        if (category && category !== 'all') {
-            query += ` AND category = ?`;
-            params.push(category);
+        const categoryFilterValues = getCategoryFilterValues(category);
+        if (categoryFilterValues.length) {
+            query += ` AND category IN (?)`;
+            params.push(categoryFilterValues);
         }
 
         query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
         params.push(parseInt(limit), parseInt(offset));
 
-        const [articles] = await db.query(query, params);
+        const [articlesRaw] = await db.query(query, params);
+        const articles = articlesRaw.map((article) => ({
+            ...article,
+            category: normalizeArticleCategoryName(article.category)
+        }));
 
         // Get total count
         let countQuery = `SELECT COUNT(*) as total FROM health_articles WHERE is_published = 1`;
-        if (category && category !== 'all') {
-            countQuery += ` AND category = ?`;
+        if (categoryFilterValues.length) {
+            countQuery += ` AND category IN (?)`;
         }
-        const [countResult] = await db.query(countQuery, category && category !== 'all' ? [category] : []);
+        const [countResult] = await db.query(countQuery, categoryFilterValues.length ? [categoryFilterValues] : []);
 
         res.json({
             success: true,
@@ -58,13 +99,25 @@ router.get('/', async (req, res) => {
  */
 router.get('/categories', async (req, res) => {
     try {
-        const [categories] = await db.query(`
+        const [categoriesRaw] = await db.query(`
             SELECT category, COUNT(*) as count
             FROM health_articles
             WHERE is_published = 1
             GROUP BY category
             ORDER BY count DESC
         `);
+
+        const categoryMap = new Map();
+        categoriesRaw.forEach((item) => {
+            const normalized = normalizeArticleCategoryName(item.category);
+            const prev = Number(categoryMap.get(normalized) || 0);
+            categoryMap.set(normalized, prev + Number(item.count || 0));
+        });
+
+        const categories = Array.from(categoryMap.entries()).map(([categoryName, count]) => ({
+            category: categoryName,
+            count
+        }));
 
         res.json({
             success: true,
@@ -97,7 +150,10 @@ router.get('/:id', async (req, res) => {
         res.json({
             success: true,
             article: articles[0],
-            data: articles[0]  // Keep for backwards compatibility
+            data: {
+                ...articles[0],
+                category: normalizeArticleCategoryName(articles[0].category)
+            }  // Keep for backwards compatibility
         });
     } catch (error) {
         logger.error('Error fetching article:', error);
@@ -117,9 +173,10 @@ router.get('/admin/all', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (re
         let query = `SELECT * FROM health_articles WHERE 1=1`;
         const params = [];
 
-        if (category && category !== 'all') {
-            query += ` AND category = ?`;
-            params.push(category);
+        const categoryFilterValues = getCategoryFilterValues(category);
+        if (categoryFilterValues.length) {
+            query += ` AND category IN (?)`;
+            params.push(categoryFilterValues);
         }
 
         if (status === 'published') {
@@ -131,7 +188,11 @@ router.get('/admin/all', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (re
         query += ` ORDER BY updated_at DESC LIMIT ? OFFSET ?`;
         params.push(parseInt(limit), parseInt(offset));
 
-        const [articles] = await db.query(query, params);
+        const [articlesRaw] = await db.query(query, params);
+        const articles = articlesRaw.map((article) => ({
+            ...article,
+            category: normalizeArticleCategoryName(article.category)
+        }));
 
         res.json({
             success: true,
@@ -151,6 +212,7 @@ router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) 
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
         const normalizedIcon = typeof icon === 'string' ? icon.trim() : null;
         const iconToSave = normalizedIcon === null ? 'fa-heartbeat' : normalizedIcon;
+        const normalizedCategory = normalizeArticleCategoryName(category || 'Kehamilan');
 
         if (!title) {
             return res.status(400).json({ success: false, message: 'Title is required' });
@@ -163,7 +225,7 @@ router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) 
             title,
             summary || null,
             content || null,
-            category || 'Kehamilan',
+            normalizedCategory,
             iconToSave,
             color || '#28a7e9',
             source || null,
@@ -193,6 +255,7 @@ router.put('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
         const normalizedIcon = typeof icon === 'string' ? icon.trim() : null;
         const iconToSave = normalizedIcon === null ? 'fa-heartbeat' : normalizedIcon;
+        const normalizedCategory = normalizeArticleCategoryName(category || 'Kehamilan');
 
         // Check if article exists
         const [existing] = await db.query(`SELECT id FROM health_articles WHERE id = ?`, [id]);
@@ -209,7 +272,7 @@ router.put('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res
             title,
             summary || null,
             content || null,
-            category || 'Kehamilan',
+            normalizedCategory,
             iconToSave,
             color || '#28a7e9',
             source || null,

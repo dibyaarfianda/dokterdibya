@@ -1470,7 +1470,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v75'; // Voting manual push notification button
+            const CACHE_VERSION = 'v76'; // Ruang Membaca: Gangguan Kandungan renamed to Ginekologi
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -4928,7 +4928,7 @@
                                                 <option value="all">Semua Kategori</option>
                                                 <option value="Kehamilan">Kehamilan</option>
                                                 <option value="Program Hamil">Program Hamil</option>
-                                                <option value="Gangguan Kandungan">Gangguan Kandungan</option>
+                                                <option value="Ginekologi">Ginekologi</option>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
@@ -4998,7 +4998,7 @@
                                                 <select id="article-category" class="form-control">
                                                     <option value="Kehamilan">Kehamilan</option>
                                                     <option value="Program Hamil">Program Hamil</option>
-                                                    <option value="Gangguan Kandungan">Gangguan Kandungan</option>
+                                                    <option value="Ginekologi">Ginekologi</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -7285,7 +7285,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v75';
+    window.__assetVersion = 'v76';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
