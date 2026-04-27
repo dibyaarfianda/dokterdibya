@@ -5382,6 +5382,70 @@ Contoh Markdown:
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-lg-6 mb-3 mb-lg-0">
+                            <div class="card card-warning card-outline h-100">
+                                <div class="card-header py-2">
+                                    <h3 class="card-title mb-0">
+                                        <i class="fas fa-clock mr-2"></i>Tag Kuning - Mendekati HPL
+                                        <span class="badge badge-warning ml-2" id="near-hpl-count">0</span>
+                                    </h3>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-sm table-bordered table-striped mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama</th>
+                                                    <th>No. Telp</th>
+                                                    <th>Email</th>
+                                                    <th>Diagnosis Kontrol Terakhir</th>
+                                                    <th>Tanggal Kontrol Terakhir</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="near-hpl-patients-tbody">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="card card-danger card-outline h-100">
+                                <div class="card-header py-2">
+                                    <h3 class="card-title mb-0">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>Tag Merah - Lebih dari HPL
+                                        <span class="badge badge-danger ml-2" id="overdue-hpl-count">0</span>
+                                    </h3>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-sm table-bordered table-striped mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama</th>
+                                                    <th>No. Telp</th>
+                                                    <th>Email</th>
+                                                    <th>Diagnosis Kontrol Terakhir</th>
+                                                    <th>Tanggal Kontrol Terakhir</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="overdue-hpl-patients-tbody">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-12">
                             <div class="card card-primary">
@@ -7472,6 +7536,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
         // Load patients data
         loadNewPatients(1);
         loadWebPatients();
+        if (typeof window.loadHplRiskPatients === 'function') {
+            window.loadHplRiskPatients();
+        }
     };
 
     // ==================== Medical Import Functions ====================
@@ -8104,6 +8171,113 @@ body.mobile-app-mode .mobile-action-bar-force button {
     }
     window.formatPatientType = formatPatientType;
 
+    function escapeHtmlSafe(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatControlDate(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return escapeHtmlSafe(value);
+        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    function formatHplDate(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return escapeHtmlSafe(value);
+        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+    }
+
+    function renderHplRiskRows(items, tbodyId, riskType) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        if (!Array.isArray(items) || items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada pasien.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map(patient => {
+            const patientName = escapeHtmlSafe(patient.full_name || '-');
+            const patientId = escapeHtmlSafe(patient.patient_id || '');
+            const phone = escapeHtmlSafe(patient.contact_phone || patient.whatsapp || patient.phone || '-');
+            const email = escapeHtmlSafe(patient.email || '-');
+            const diagnosis = escapeHtmlSafe(patient.last_diagnosis || '-');
+            const diagnosisShort = diagnosis.length > 90 ? `${diagnosis.slice(0, 90)}...` : diagnosis;
+            const lastControlDate = formatControlDate(patient.last_visit);
+            const hplDate = formatHplDate(patient.hpl);
+            const riskBadge = riskType === 'overdue'
+                ? `<span class="badge badge-danger ml-1">Lewat HPL ${hplDate}</span>`
+                : `<span class="badge badge-warning ml-1">Mendekati HPL ${hplDate}</span>`;
+
+            return `
+                <tr>
+                    <td>
+                        <a href="#" onclick="showPatientMRList('${patientId}', '${patientName}'); return false;">${patientName}</a>
+                        ${riskBadge}
+                    </td>
+                    <td>${phone}</td>
+                    <td>${email}</td>
+                    <td title="${diagnosis}">${diagnosisShort}</td>
+                    <td>${lastControlDate}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.loadHplRiskPatients = async function() {
+        const nearTbody = document.getElementById('near-hpl-patients-tbody');
+        const overdueTbody = document.getElementById('overdue-hpl-patients-tbody');
+        const nearCount = document.getElementById('near-hpl-count');
+        const overdueCount = document.getElementById('overdue-hpl-count');
+
+        if (!nearTbody || !overdueTbody) return;
+
+        nearTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Memuat data...</td></tr>';
+        overdueTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Memuat data...</td></tr>';
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const headers = { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' };
+
+            const [nearRes, overdueRes] = await Promise.all([
+                fetch(`/api/patients/near-due-pregnancies?_=${Date.now()}`, { headers }),
+                fetch(`/api/patients/overdue-pregnancies?_=${Date.now()}`, { headers })
+            ]);
+
+            const nearData = await nearRes.json().catch(() => ({ success: false, data: [] }));
+            const overdueData = await overdueRes.json().catch(() => ({ success: false, data: [] }));
+
+            if (!nearRes.ok || !nearData.success) {
+                throw new Error(nearData.message || 'Gagal memuat pasien mendekati HPL');
+            }
+            if (!overdueRes.ok || !overdueData.success) {
+                throw new Error(overdueData.message || 'Gagal memuat pasien lewat HPL');
+            }
+
+            const nearItems = nearData.data || [];
+            const overdueItems = overdueData.data || [];
+
+            if (nearCount) nearCount.textContent = String(nearItems.length);
+            if (overdueCount) overdueCount.textContent = String(overdueItems.length);
+
+            renderHplRiskRows(nearItems, 'near-hpl-patients-tbody', 'near');
+            renderHplRiskRows(overdueItems, 'overdue-hpl-patients-tbody', 'overdue');
+        } catch (error) {
+            console.error('Error loading HPL risk patients:', error);
+            nearTbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${escapeHtmlSafe(error.message || 'Gagal memuat data')}</td></tr>`;
+            overdueTbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">${escapeHtmlSafe(error.message || 'Gagal memuat data')}</td></tr>`;
+            if (nearCount) nearCount.textContent = '0';
+            if (overdueCount) overdueCount.textContent = '0';
+        }
+    };
+
     async function loadWebPatients() {
         try {
             const token = localStorage.getItem('vps_auth_token');
@@ -8623,6 +8797,9 @@ Apakah Anda yakin ingin melanjutkan?`;
             
             alert(successMessage);
             loadWebPatients(); // Reload the main list
+            if (typeof window.loadHplRiskPatients === 'function') {
+                window.loadHplRiskPatients();
+            }
             
             // Also reload floating panel if visible
             const floatingPanel = document.getElementById('floating-kelola-pasien');
@@ -8704,6 +8881,10 @@ Apakah Anda yakin ingin melanjutkan?`;
                     // Remove the delivery button
                     btnEl.remove();
                 }
+            }
+
+            if (typeof window.loadHplRiskPatients === 'function') {
+                window.loadHplRiskPatients();
             }
 
             Swal.fire({ icon: 'success', title: 'Berhasil', text: `${patientName} ditandai sudah melahirkan!`, timer: 2000, showConfirmButton: false });
