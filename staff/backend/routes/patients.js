@@ -843,7 +843,7 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
             ) latest ON p.id = latest.patient_id AND latest.rn = 1
-            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id AND bc.is_published = 1
+            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id
             WHERE bc.id IS NULL
             AND DATEDIFF(CURDATE(), latest.hpht) >= 259
             AND DATEDIFF(CURDATE(), latest.hpht) < 280
@@ -937,7 +937,7 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
             ) latest ON p.id = latest.patient_id AND latest.rn = 1
-            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id AND bc.is_published = 1
+            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id
             WHERE bc.id IS NULL
             AND DATEDIFF(CURDATE(), latest.hpht) >= 280
             ORDER BY days_pregnant DESC
