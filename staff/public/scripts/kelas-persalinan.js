@@ -195,7 +195,7 @@ function renderSkeleton() {
                 <div class="card card-info card-outline">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-list mr-2"></i>Daftar Sesi Kelas Persalinan
+                            <i class="fas fa-list mr-2"></i>Daftar Sesi Kelas Dr. Dibya
                         </h3>
                         <button class="btn btn-sm btn-outline-primary" id="birth-class-refresh-btn">
                             <i class="fas fa-sync-alt mr-1"></i>Refresh

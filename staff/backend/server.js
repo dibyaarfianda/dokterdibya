@@ -178,7 +178,7 @@ app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
 const PATIENT_ALLOWED_ROUTES = [
     '/api/patients',           // Patient auth & profile
     '/api/patient/',           // Patient-specific endpoints (birth-congratulations, etc)
-    '/api/birth-classes',      // Kelas persalinan public schedule & registration
+    '/api/birth-classes',      // Kelas Dr. Dibya public schedule & registration
     '/api/patient-intake',     // Patient intake form submission
     '/api/patient-documents',  // Patient documents (USG, lab results, uploads)
     '/api/patient-questions',  // Tanya Dokter - Q&A with doctor
@@ -383,7 +383,7 @@ app.use('/api/role-visibility', roleVisibilityRoutes);
 const bookingSettingsRoutes = require('./routes/booking-settings');
 app.use('/api/booking-settings', bookingSettingsRoutes);
 
-// Birth Class routes (kelas persalinan)
+// Birth Class routes (Kelas Dr. Dibya)
 const birthClassRoutes = require('./routes/birth-classes');
 app.use('/api/birth-classes', birthClassRoutes);
 

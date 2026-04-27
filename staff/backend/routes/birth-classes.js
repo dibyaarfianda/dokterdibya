@@ -151,7 +151,7 @@ router.get('/sessions/public', async (req, res) => {
         console.error('Error loading public birth class sessions:', error);
         res.status(500).json({
             success: false,
-            message: 'Gagal memuat jadwal kelas persalinan'
+            message: 'Gagal memuat jadwal Kelas Dr. Dibya'
         });
     }
 });
@@ -296,7 +296,7 @@ router.post('/register', optionalAuth, async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: 'Gagal melakukan pendaftaran kelas persalinan'
+            message: 'Gagal melakukan pendaftaran Kelas Dr. Dibya'
         });
     }
 });
@@ -406,7 +406,7 @@ router.post('/sessions', verifyToken, requireMenuAccess('klinik_privat'), async 
 
         res.status(201).json({
             success: true,
-            message: 'Sesi kelas persalinan berhasil dibuat'
+            message: 'Sesi Kelas Dr. Dibya berhasil dibuat'
         });
     } catch (error) {
         console.error('Error creating birth class session:', error);

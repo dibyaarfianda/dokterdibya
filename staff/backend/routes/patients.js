@@ -1007,7 +1007,7 @@ const PREGNANCY_TIPS = {
     20: "Separuh perjalanan! Saatnya USG detail anatomi bayi.",
     24: "Bayi sudah bisa mendengar suara Anda. Ajak bicara!",
     28: "Trimester ketiga dimulai. Persiapkan perlengkapan bayi.",
-    32: "Bayi sudah dalam posisi kepala di bawah. Ikuti kelas persalinan.",
+    32: "Bayi sudah dalam posisi kepala di bawah. Ikuti Kelas Dr. Dibya.",
     36: "Bayi hampir siap lahir. Perhatikan tanda-tanda persalinan.",
     40: "Selamat! Bayi Anda sudah full-term. Siap menyambut si kecil!"
 };
