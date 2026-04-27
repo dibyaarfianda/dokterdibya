@@ -267,7 +267,7 @@
         modal.tabIndex = -1;
         modal.setAttribute('aria-hidden', 'true');
         modal.innerHTML = `
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header bg-warning">
                         <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Edit Voting</h5>
@@ -275,8 +275,8 @@
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <form id="voting-edit-form">
-                        <div class="modal-body">
+                    <form id="voting-edit-form" style="display:flex;flex-direction:column;max-height:calc(100vh - 180px);">
+                        <div class="modal-body" style="overflow-y:auto;">
                             <input type="hidden" id="voting-edit-poll-id">
                             <div class="form-group">
                                 <label for="voting-edit-title">Judul Voting</label>
