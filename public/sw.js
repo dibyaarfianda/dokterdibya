@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260427e'; // 2026-04-27 - Article category renamed to Ginekologi
+const CACHE_VERSION = '20260428a'; // 2026-04-28 - Birth congrats: patient fills data, close/reshow from settings
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
