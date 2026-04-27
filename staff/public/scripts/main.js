@@ -2545,13 +2545,13 @@ function showBookingSettingsPage() {
 function showBirthClassPage() {
     hideAllPages();
     pages.birthClass?.classList.remove('d-none');
-    setTitleAndActive('Kelas Persalinan', 'nav-birth-class', 'birth-class');
+    setTitleAndActive('Kelas Dr. Dibya', 'nav-birth-class', 'birth-class');
 
     importWithVersion('./kelas-persalinan.js').then(module => {
         if (typeof window.initKelasPersalinan === 'function') {
             window.initKelasPersalinan();
         } else {
-            console.error('Kelas Persalinan module loaded, but initKelasPersalinan function not found on window.');
+            console.error('Kelas Dr. Dibya module loaded, but initKelasPersalinan function not found on window.');
         }
     }).catch(error => {
         console.error('Failed to load kelas-persalinan.js:', error);
