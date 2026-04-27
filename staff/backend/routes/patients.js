@@ -1653,6 +1653,10 @@ router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) 
         const patientName = req.patient.full_name || req.patient.name || '';
         const { baby_name, gender, birth_date, birth_time, birth_weight, birth_length } = req.body;
 
+        let normalizedGender = null;
+        if (gender === 'Laki-laki' || gender === 'male') normalizedGender = 'male';
+        if (gender === 'Perempuan' || gender === 'female') normalizedGender = 'female';
+
         // Ensure this entry belongs to this patient and is still pending
         const [rows] = await db.query(
             'SELECT id FROM birth_congratulations WHERE id = ? AND patient_id = ? AND patient_data_submitted = 0',
@@ -1671,7 +1675,7 @@ router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) 
                 message = ?, doctor_name = 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
                 is_published = 1, patient_data_submitted = 1, patient_dismissed = 0
             WHERE id = ? AND patient_id = ?`,
-            [baby_name || null, gender || null, birth_date || null, birth_time || null,
+            [baby_name || null, normalizedGender, birth_date || null, birth_time || null,
              birth_weight || null, birth_length || null,
              hardcodedMessage, entryId, patientId]
         );

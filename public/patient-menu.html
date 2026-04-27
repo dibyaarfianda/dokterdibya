@@ -800,6 +800,10 @@
             font-size: 14px;
             outline: none;
         }
+        .birth-popup-field select option {
+            color: #111;
+            background: #fff;
+        }
         .birth-popup-field input:focus, .birth-popup-field select:focus {
             border-color: #a855f7;
         }
@@ -2627,7 +2631,7 @@
             document.getElementById('birth-baby-name').textContent = data.baby_name || 'Si Kecil';
             document.getElementById('birth-congrats-doctor').textContent = 'Dari dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
 
-            const genderText = data.gender === 'Laki-laki' ? 'Putra' : (data.gender === 'Perempuan' ? 'Putri' : 'Buah Hati');
+            const genderText = (data.gender === 'Laki-laki' || data.gender === 'male') ? 'Putra' : ((data.gender === 'Perempuan' || data.gender === 'female') ? 'Putri' : 'Buah Hati');
             document.getElementById('birth-subtitle').textContent = genderText + ' Anda telah lahir dengan selamat';
 
             if (data.birth_date) {
@@ -2651,8 +2655,8 @@
                 blue:   { accent: '#3b82f6', accentLight: 'rgba(59,130,246,0.5)',  shadow: 'rgba(59,130,246,0.3)' },
                 purple: { accent: '#a855f7', accentLight: 'rgba(168,85,247,0.5)',  shadow: 'rgba(168,85,247,0.3)' }
             };
-            const theme = data.gender === 'Perempuan' ? themeColors.pink
-                        : data.gender === 'Laki-laki' ? themeColors.blue
+            const theme = (data.gender === 'Perempuan' || data.gender === 'female') ? themeColors.pink
+                        : (data.gender === 'Laki-laki' || data.gender === 'male') ? themeColors.blue
                         : themeColors.purple;
 
             const photoContainer = document.getElementById('birth-photo-container');
