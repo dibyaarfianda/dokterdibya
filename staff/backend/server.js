@@ -383,7 +383,7 @@ app.use('/api/role-visibility', roleVisibilityRoutes);
 const bookingSettingsRoutes = require('./routes/booking-settings');
 app.use('/api/booking-settings', bookingSettingsRoutes);
 
-// Birth Class routes (Kelas Dr. Dibya)
+// Kelas Dr. Dibya routes
 const birthClassRoutes = require('./routes/birth-classes');
 app.use('/api/birth-classes', birthClassRoutes);
 
