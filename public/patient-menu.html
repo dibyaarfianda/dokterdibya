@@ -2155,11 +2155,20 @@
         });
 
         // Auto-refresh badge counts when user navigates back to this page
+        let _lastBirthRefreshAt = 0;
+        function refreshBirthDataOnReturn() {
+            const now = Date.now();
+            if (now - _lastBirthRefreshAt < 1200) return;
+            _lastBirthRefreshAt = now;
+            loadBirthData();
+        }
+
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
                 // Page was restored from bfcache, refresh counts
                 loadUnreadDocCounts();
                 loadNotificationCount();
+                refreshBirthDataOnReturn();
             }
         });
         // Also refresh on visibility change (e.g. switching tabs back)
@@ -2167,7 +2176,11 @@
             if (document.visibilityState === 'visible') {
                 loadUnreadDocCounts();
                 loadNotificationCount();
+                refreshBirthDataOnReturn();
             }
+        });
+        window.addEventListener('focus', function() {
+            refreshBirthDataOnReturn();
         });
 
         // ==================== LOAD PROFILE ====================

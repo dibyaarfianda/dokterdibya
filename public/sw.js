@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260428b'; // 2026-04-28 - Birth card re-show visibility hotfix
+const CACHE_VERSION = '20260428c'; // 2026-04-28 - Birth card auto-refresh on page return/focus
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
