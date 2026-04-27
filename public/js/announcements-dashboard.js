@@ -8,6 +8,8 @@ let infoTerbaruAllAnnouncements = [];
 let infoTerbaruExpanded = false;
 let infoTerbaruObserver = null;
 let infoTerbaruScrollCleanup = null;
+const ANNOUNCEMENT_LAST_SEEN_KEY = 'patient_announcements_last_seen_id';
+let latestAnnouncementId = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -77,11 +79,80 @@ async function loadAnnouncements() {
         }
 
         const data = await response.json();
-        displayAnnouncements(data.data || []);
+        const announcements = data.data || [];
+        displayAnnouncements(announcements);
+        refreshAnnouncementBadgeState(announcements);
     } catch (error) {
         console.error('Error loading announcements:', error);
         displayError();
     }
+}
+
+function getLastSeenAnnouncementId() {
+    try {
+        return localStorage.getItem(ANNOUNCEMENT_LAST_SEEN_KEY) || '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function setLastSeenAnnouncementId(announcementId) {
+    if (!announcementId) return;
+    try {
+        localStorage.setItem(ANNOUNCEMENT_LAST_SEEN_KEY, String(announcementId));
+    } catch (error) {
+        // no-op
+    }
+}
+
+function isAnnouncementsSectionOpen() {
+    const wrapper = document.getElementById('announcements-content');
+    return !!wrapper && wrapper.style.display !== 'none';
+}
+
+function setAnnouncementBadgeVisible(visible) {
+    const badge = document.getElementById('announcements-new-badge');
+    if (!badge) return;
+    badge.style.display = visible ? 'inline-flex' : 'none';
+}
+
+function refreshAnnouncementBadgeState(announcements) {
+    if (!Array.isArray(announcements) || announcements.length === 0) {
+        latestAnnouncementId = null;
+        setAnnouncementBadgeVisible(false);
+        return;
+    }
+
+    const sorted = [...announcements].sort((a, b) => {
+        const ad = new Date(a.published_at || a.created_at || 0).getTime();
+        const bd = new Date(b.published_at || b.created_at || 0).getTime();
+        return bd - ad;
+    });
+
+    latestAnnouncementId = sorted[0]?.id ? String(sorted[0].id) : null;
+    if (!latestAnnouncementId) {
+        setAnnouncementBadgeVisible(false);
+        return;
+    }
+
+    if (isAnnouncementsSectionOpen()) {
+        setLastSeenAnnouncementId(latestAnnouncementId);
+        setAnnouncementBadgeVisible(false);
+        return;
+    }
+
+    const lastSeen = getLastSeenAnnouncementId();
+    setAnnouncementBadgeVisible(lastSeen !== latestAnnouncementId);
+}
+
+function markAnnouncementsAsSeen() {
+    if (!latestAnnouncementId) {
+        setAnnouncementBadgeVisible(false);
+        return;
+    }
+
+    setLastSeenAnnouncementId(latestAnnouncementId);
+    setAnnouncementBadgeVisible(false);
 }
 
 // Toggle like on announcement
@@ -858,6 +929,7 @@ document.addEventListener('keydown', (event) => {
 
 // Export for pull-to-refresh
 window.loadAnnouncements = loadAnnouncements;
+window.markAnnouncementsAsSeen = markAnnouncementsAsSeen;
 window.openInfoTerbaruModal = openInfoTerbaruModal;
 window.closeInfoTerbaruModal = closeInfoTerbaruModal;
 window.toggleInfoTerbaruExpanded = toggleInfoTerbaruExpanded;
