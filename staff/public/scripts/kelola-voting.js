@@ -9,6 +9,7 @@
 
     let socket = null;
     let initialized = false;
+    let pollsById = new Map();
 
     function getToken() {
         return localStorage.getItem('vps_auth_token') ||
@@ -38,6 +39,10 @@
 
     function getOptionsListEl() {
         return document.getElementById('voting-options-list');
+    }
+
+    function getEditOptionsListEl() {
+        return document.getElementById('voting-edit-options-list');
     }
 
     function updateOptionRowsUI() {
@@ -119,6 +124,110 @@
         return raw.filter((value, index) => raw.indexOf(value) === index).slice(0, MAX_OPTIONS);
     }
 
+    function updateEditOptionRowsUI() {
+        const listEl = getEditOptionsListEl();
+        if (!listEl) return;
+
+        const rows = Array.from(listEl.querySelectorAll('.voting-edit-option-row'));
+        rows.forEach((row, index) => {
+            const indexEl = row.querySelector('.voting-edit-option-index');
+            const inputEl = row.querySelector('.voting-edit-option-input');
+            const removeBtn = row.querySelector('.btn-remove-voting-edit-option');
+
+            if (indexEl) {
+                indexEl.textContent = String(index + 1);
+            }
+
+            if (inputEl) {
+                inputEl.placeholder = `Isi jawaban ${index + 1}`;
+            }
+
+            if (removeBtn) {
+                removeBtn.style.display = rows.length > MIN_OPTIONS ? 'inline-flex' : 'none';
+            }
+        });
+
+        const addBtn = document.getElementById('btn-add-voting-edit-option');
+        if (addBtn) {
+            addBtn.disabled = rows.length >= MAX_OPTIONS;
+        }
+    }
+
+    function addEditOptionRow(option = {}) {
+        const listEl = getEditOptionsListEl();
+        if (!listEl) return;
+
+        const totalRows = listEl.querySelectorAll('.voting-edit-option-row').length;
+        if (totalRows >= MAX_OPTIONS) {
+            toastr.warning(`Maksimal ${MAX_OPTIONS} opsi jawaban`);
+            return;
+        }
+
+        const optionId = Number(option.id);
+        const normalizedId = Number.isInteger(optionId) && optionId > 0 ? optionId : null;
+        const optionText = String(option.option_text || '').trim();
+
+        const row = document.createElement('div');
+        row.className = 'input-group input-group-sm mb-2 voting-edit-option-row';
+        if (normalizedId) {
+            row.setAttribute('data-option-id', String(normalizedId));
+        }
+        row.innerHTML = `
+            <div class="input-group-prepend">
+                <span class="input-group-text" style="min-width: 66px;">
+                    <input type="radio" name="voting-edit-option-preview" class="mr-1" ${totalRows === 0 ? 'checked' : ''}>
+                    <span class="voting-edit-option-index">${totalRows + 1}</span>
+                </span>
+            </div>
+            <input type="text" class="form-control voting-edit-option-input" maxlength="255" placeholder="Isi jawaban ${totalRows + 1}" value="${escapeHtml(optionText)}">
+            <div class="input-group-append">
+                <button class="btn btn-outline-danger btn-remove-voting-edit-option" type="button" title="Hapus opsi">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        const removeBtn = row.querySelector('.btn-remove-voting-edit-option');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                row.remove();
+                updateEditOptionRowsUI();
+            });
+        }
+
+        listEl.appendChild(row);
+        updateEditOptionRowsUI();
+    }
+
+    function collectEditOptions() {
+        const listEl = getEditOptionsListEl();
+        if (!listEl) return [];
+
+        const rows = Array.from(listEl.querySelectorAll('.voting-edit-option-row'));
+        const seen = new Set();
+        const options = [];
+
+        rows.forEach((row) => {
+            const inputEl = row.querySelector('.voting-edit-option-input');
+            const optionText = String(inputEl ? inputEl.value : '').trim();
+            if (!optionText) return;
+
+            const dedupeKey = optionText.toLowerCase();
+            if (seen.has(dedupeKey)) return;
+            seen.add(dedupeKey);
+
+            const payload = { option_text: optionText };
+            const rawId = Number(row.getAttribute('data-option-id'));
+            if (Number.isInteger(rawId) && rawId > 0) {
+                payload.id = rawId;
+            }
+
+            options.push(payload);
+        });
+
+        return options.slice(0, MAX_OPTIONS);
+    }
+
     function resetOptionRows() {
         const listEl = getOptionsListEl();
         if (!listEl) return;
@@ -144,6 +253,184 @@
 
         if (listEl && !listEl.querySelector('.voting-option-row')) {
             resetOptionRows();
+        }
+    }
+
+    function ensureEditModal() {
+        if (document.getElementById('voting-edit-modal')) {
+            return;
+        }
+
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'voting-edit-modal';
+        modal.tabIndex = -1;
+        modal.setAttribute('aria-hidden', 'true');
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Edit Voting</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="voting-edit-form">
+                        <div class="modal-body">
+                            <input type="hidden" id="voting-edit-poll-id">
+                            <div class="form-group">
+                                <label for="voting-edit-title">Judul Voting</label>
+                                <input type="text" class="form-control" id="voting-edit-title" maxlength="180" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="voting-edit-description">Deskripsi (Opsional)</label>
+                                <textarea class="form-control" id="voting-edit-description" rows="3" maxlength="1000"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Opsi Jawaban</label>
+                                <div id="voting-edit-options-list" class="mb-2"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-add-voting-edit-option">
+                                    <i class="fas fa-plus mr-1"></i>Tambah Opsi
+                                </button>
+                                <small class="form-text text-muted">Minimal 2 opsi, maksimal 10 opsi.</small>
+                            </div>
+                            <div class="form-group mb-0">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="voting-edit-show-on-open">
+                                    <label class="custom-control-label" for="voting-edit-show-on-open">Tampilkan popup saat pasien membuka portal</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-warning" id="btn-save-voting-edit">
+                                <i class="fas fa-save mr-1"></i>Simpan Perubahan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const addBtn = document.getElementById('btn-add-voting-edit-option');
+        if (addBtn && !addBtn.dataset.boundVotingEdit) {
+            addBtn.addEventListener('click', () => addEditOptionRow({ option_text: '' }));
+            addBtn.dataset.boundVotingEdit = 'true';
+        }
+
+        const editForm = document.getElementById('voting-edit-form');
+        if (editForm && !editForm.dataset.boundVotingEdit) {
+            editForm.addEventListener('submit', saveVotingEdit);
+            editForm.dataset.boundVotingEdit = 'true';
+        }
+    }
+
+    function openVotingEditPoll(pollId) {
+        const poll = pollsById.get(Number(pollId));
+        if (!poll) {
+            toastr.warning('Data voting tidak ditemukan. Silakan refresh.');
+            return;
+        }
+
+        ensureEditModal();
+
+        const pollIdEl = document.getElementById('voting-edit-poll-id');
+        const titleEl = document.getElementById('voting-edit-title');
+        const descriptionEl = document.getElementById('voting-edit-description');
+        const showOnOpenEl = document.getElementById('voting-edit-show-on-open');
+        const optionsListEl = getEditOptionsListEl();
+
+        if (!pollIdEl || !titleEl || !descriptionEl || !showOnOpenEl || !optionsListEl) {
+            toastr.error('Form edit voting tidak tersedia');
+            return;
+        }
+
+        pollIdEl.value = String(poll.id);
+        titleEl.value = String(poll.title || '');
+        descriptionEl.value = String(poll.description || '');
+        showOnOpenEl.checked = poll.show_on_open !== 0;
+
+        optionsListEl.innerHTML = '';
+        const existingOptions = Array.isArray(poll.options) ? poll.options : [];
+        existingOptions.forEach((option) => addEditOptionRow(option));
+
+        if (existingOptions.length < MIN_OPTIONS) {
+            while (optionsListEl.querySelectorAll('.voting-edit-option-row').length < MIN_OPTIONS) {
+                addEditOptionRow({ option_text: '' });
+            }
+        }
+
+        $('#voting-edit-modal').modal('show');
+    }
+
+    async function saveVotingEdit(event) {
+        event.preventDefault();
+
+        const pollIdEl = document.getElementById('voting-edit-poll-id');
+        const titleEl = document.getElementById('voting-edit-title');
+        const descriptionEl = document.getElementById('voting-edit-description');
+        const showOnOpenEl = document.getElementById('voting-edit-show-on-open');
+        const submitBtn = document.getElementById('btn-save-voting-edit');
+
+        const pollId = Number(pollIdEl ? pollIdEl.value : 0);
+        const title = String(titleEl ? titleEl.value : '').trim();
+        const description = String(descriptionEl ? descriptionEl.value : '').trim();
+        const showOnOpen = showOnOpenEl ? showOnOpenEl.checked : true;
+        const options = collectEditOptions();
+
+        if (!Number.isInteger(pollId) || pollId <= 0) {
+            toastr.error('ID voting tidak valid');
+            return;
+        }
+
+        if (!title) {
+            toastr.warning('Judul voting wajib diisi');
+            return;
+        }
+
+        if (options.length < MIN_OPTIONS) {
+            toastr.warning('Minimal 2 opsi jawaban');
+            return;
+        }
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...';
+        }
+
+        try {
+            const token = getToken();
+            const response = await fetch(`${API_URL}/polls/staff/${pollId}/update`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title,
+                    description,
+                    options,
+                    show_on_open: showOnOpen
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal memperbarui voting');
+            }
+
+            toastr.success('Voting berhasil diperbarui');
+            $('#voting-edit-modal').modal('hide');
+            await loadVotingList();
+        } catch (error) {
+            toastr.error(error.message || 'Gagal memperbarui voting');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Simpan Perubahan';
+            }
         }
     }
 
@@ -199,11 +486,16 @@
                 <div class="card-body py-3">
                     ${poll.description ? `<p class="text-muted mb-3">${escapeHtml(poll.description)}</p>` : ''}
                     ${optionsHtml || '<div class="text-muted small">Belum ada opsi.</div>'}
-                    ${poll.status === 'active' ? `
-                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="window.closeVotingPoll(${poll.id})">
-                            <i class="fas fa-stop-circle mr-1"></i>Tutup Voting
+                    <div class="mt-2 d-flex flex-wrap" style="gap:8px;">
+                        <button class="btn btn-sm btn-outline-warning" onclick="window.openVotingEditPoll(${poll.id})">
+                            <i class="fas fa-edit mr-1"></i>Edit Voting
                         </button>
-                    ` : ''}
+                        ${poll.status === 'active' ? `
+                            <button class="btn btn-sm btn-outline-danger" onclick="window.closeVotingPoll(${poll.id})">
+                                <i class="fas fa-stop-circle mr-1"></i>Tutup Voting
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
             </div>
         `;
@@ -297,6 +589,7 @@
             }
 
             const polls = result.data || [];
+            pollsById = new Map(polls.map((poll) => [Number(poll.id), poll]));
             const activeCount = polls.filter((poll) => poll.status === 'active').length;
             const activeCountEl = document.getElementById('voting-active-count');
             if (activeCountEl) {
@@ -350,6 +643,7 @@
     function initKelolaVoting() {
         setupSocket();
         initOptionEditor();
+        ensureEditModal();
 
         const formEl = document.getElementById('voting-create-form');
         const refreshBtn = document.getElementById('btn-refresh-voting');
@@ -369,6 +663,7 @@
         if (!initialized) {
             initialized = true;
             window.closeVotingPoll = closeVotingPoll;
+            window.openVotingEditPoll = openVotingEditPoll;
         }
     }
 
