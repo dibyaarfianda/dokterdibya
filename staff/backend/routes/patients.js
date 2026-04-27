@@ -1503,7 +1503,7 @@ router.patch('/api/patients/:id/status', verifyToken, async (req, res) => {
     }
 });
 
-// MARK PATIENT AS DELIVERED (creates birth_congratulations entry)
+// MARK PATIENT AS DELIVERED (creates birth_congratulations entry, supports multiple children)
 router.post('/api/patients/:id/mark-delivered', verifyToken, async (req, res) => {
     try {
         const patientId = req.params.id;
@@ -1514,21 +1514,18 @@ router.post('/api/patients/:id/mark-delivered', verifyToken, async (req, res) =>
             return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
         }
 
-        // Check if already marked as delivered
-        const [existingBirth] = await db.query(
-            'SELECT id FROM birth_congratulations WHERE patient_id = ?',
+        // Determine child_number (support multiple children)
+        const [existingBirths] = await db.query(
+            'SELECT MAX(child_number) as max_child FROM birth_congratulations WHERE patient_id = ?',
             [patientId]
         );
+        const nextChildNumber = (existingBirths[0].max_child || 0) + 1;
 
-        if (existingBirth.length > 0) {
-            return res.status(400).json({ success: false, message: 'Pasien sudah ditandai melahirkan sebelumnya' });
-        }
-
-        // Create birth_congratulations entry (minimal entry just to mark as delivered)
+        // Create birth_congratulations entry (minimal - patient fills the rest)
         await db.query(
-            `INSERT INTO birth_congratulations (patient_id, birth_date, is_published, created_at)
-             VALUES (?, CURDATE(), 0, NOW())`,
-            [patientId]
+            `INSERT INTO birth_congratulations (patient_id, child_number, birth_date, is_published, patient_data_submitted, patient_dismissed, created_at)
+             VALUES (?, ?, CURDATE(), 0, 0, 0, NOW())`,
+            [patientId, nextChildNumber]
         );
 
         // Invalidate cache
@@ -1536,7 +1533,8 @@ router.post('/api/patients/:id/mark-delivered', verifyToken, async (req, res) =>
 
         res.json({
             success: true,
-            message: `Pasien ${patientRows[0].full_name} berhasil ditandai sudah melahirkan`
+            child_number: nextChildNumber,
+            message: `Pasien ${patientRows[0].full_name} berhasil ditandai sudah melahirkan (anak ke-${nextChildNumber})`
         });
     } catch (error) {
         console.error('Error marking patient as delivered:', error);
@@ -1627,7 +1625,116 @@ router.get('/api/patients/medications', verifyPatientToken, async (req, res) => 
 
 // ==================== BIRTH CONGRATULATIONS ====================
 
-// GET birth congratulations for logged-in patient (Patient Dashboard)
+// GET pending birth entry (patient needs to fill data)
+router.get('/api/patient/birth-pending', verifyPatientToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    try {
+        const patientId = req.patient.id;
+        const [rows] = await db.query(
+            `SELECT id, child_number, created_at FROM birth_congratulations
+             WHERE patient_id = ? AND patient_data_submitted = 0
+             ORDER BY child_number ASC LIMIT 1`,
+            [patientId]
+        );
+        res.json({ success: true, pending: rows.length > 0 ? rows[0] : null });
+    } catch (error) {
+        console.error('Error fetching pending birth:', error);
+        res.status(500).json({ success: false, message: 'Gagal memeriksa data lahiran' });
+    }
+});
+
+// POST patient submits birth data (fills in data after staff marks delivered)
+router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) => {
+    try {
+        const entryId = req.params.id;
+        const patientId = req.patient.id;
+        const patientName = req.patient.full_name || req.patient.name || '';
+        const { baby_name, gender, birth_date, birth_time, birth_weight, birth_length } = req.body;
+
+        // Ensure this entry belongs to this patient and is still pending
+        const [rows] = await db.query(
+            'SELECT id FROM birth_congratulations WHERE id = ? AND patient_id = ? AND patient_data_submitted = 0',
+            [entryId, patientId]
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Data tidak ditemukan atau sudah diisi' });
+        }
+
+        const hardcodedMessage = `Selamat atas kelahiran buah hati Ibu ${patientName} dan suami. Turut berbahagia melihat proses persalinan berjalan lancar dan si kecil lahir ke dunia dengan sehat. Terima kasih telah mempercayakan perjalanan kehamilan dan persalinan Ibu kepada saya dan tim. Semoga Ibu lekas pulih dan selamat menikmati momen bersama si kecil dan keluarga.`;
+
+        await db.query(`
+            UPDATE birth_congratulations SET
+                baby_name = ?, gender = ?, birth_date = ?, birth_time = ?,
+                birth_weight = ?, birth_length = ?,
+                message = ?, doctor_name = 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
+                is_published = 1, patient_data_submitted = 1, patient_dismissed = 0
+            WHERE id = ? AND patient_id = ?`,
+            [baby_name || null, gender || null, birth_date || null, birth_time || null,
+             birth_weight || null, birth_length || null,
+             hardcodedMessage, entryId, patientId]
+        );
+
+        res.json({ success: true, message: 'Data kelahiran berhasil disimpan' });
+    } catch (error) {
+        console.error('Error saving patient birth data:', error);
+        res.status(500).json({ success: false, message: 'Gagal menyimpan data kelahiran' });
+    }
+});
+
+// POST patient dismisses birth card (close)
+router.post('/api/patient/birth-dismiss/:id', verifyPatientToken, async (req, res) => {
+    try {
+        const entryId = req.params.id;
+        const patientId = req.patient.id;
+        await db.query(
+            'UPDATE birth_congratulations SET patient_dismissed = 1 WHERE id = ? AND patient_id = ?',
+            [entryId, patientId]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error dismissing birth card:', error);
+        res.status(500).json({ success: false, message: 'Gagal menutup kartu' });
+    }
+});
+
+// POST patient re-shows birth card from settings
+router.post('/api/patient/birth-show/:id', verifyPatientToken, async (req, res) => {
+    try {
+        const entryId = req.params.id;
+        const patientId = req.patient.id;
+        await db.query(
+            'UPDATE birth_congratulations SET patient_dismissed = 0 WHERE id = ? AND patient_id = ?',
+            [entryId, patientId]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error showing birth card:', error);
+        res.status(500).json({ success: false, message: 'Gagal menampilkan kartu' });
+    }
+});
+
+// GET all birth records for patient (for settings page)
+router.get('/api/patient/birth-all', verifyPatientToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    try {
+        const patientId = req.patient.id;
+        const [rows] = await db.query(`
+            SELECT id, child_number, baby_name, gender, birth_date, birth_weight, birth_length,
+                   is_published, patient_dismissed, patient_data_submitted
+            FROM birth_congratulations WHERE patient_id = ?
+            ORDER BY child_number ASC`, [patientId]);
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error('Error fetching all birth records:', error);
+        res.status(500).json({ success: false, message: 'Gagal memuat data kelahiran' });
+    }
+});
+
+// GET birth congratulations for logged-in patient (Patient Dashboard - legacy/staff-published)
 router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req, res) => {
     // Prevent browser caching - always fetch fresh data
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -1651,11 +1758,12 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
                 message,
                 doctor_name,
                 theme_color,
+                child_number,
+                patient_dismissed,
                 created_at
             FROM birth_congratulations
-            WHERE patient_id = ? AND is_published = 1
-            ORDER BY created_at DESC
-            LIMIT 1
+            WHERE patient_id = ? AND is_published = 1 AND patient_dismissed = 0
+            ORDER BY child_number ASC
         `, [patientId]);
 
         if (rows.length === 0) {
@@ -1667,10 +1775,9 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
         // Regenerate signed URL if R2 key exists
         if (data.photo_r2_key) {
             try {
-                data.photo_url = await r2Storage.getSignedDownloadUrl(data.photo_r2_key, 3600); // 1 hour
+                data.photo_url = await r2Storage.getSignedDownloadUrl(data.photo_r2_key, 3600);
             } catch (r2Error) {
                 console.error('Error generating signed URL:', r2Error);
-                // Keep existing photo_url as fallback
             }
         }
 

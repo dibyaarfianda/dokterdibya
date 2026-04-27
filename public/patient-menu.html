@@ -729,6 +729,114 @@
             z-index: 10000;
         }
 
+        /* Birth Card Close Button */
+        .birth-card-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #aaa;
+            font-size: 18px;
+            line-height: 30px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: background 0.2s, color 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .birth-card-close:hover { background: rgba(255,80,80,0.3); color: #fff; }
+
+        /* Birth Data Input Popup */
+        .birth-popup-overlay {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.85);
+            z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .birth-popup-box {
+            background: #1a1a2e;
+            border: 1px solid rgba(168,85,247,0.5);
+            border-radius: 20px;
+            padding: 28px 24px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 0 60px rgba(168,85,247,0.25);
+            position: relative;
+        }
+        .birth-popup-box h3 {
+            color: #a855f7;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .birth-popup-box p {
+            color: #bbb;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .birth-popup-field {
+            margin-bottom: 14px;
+        }
+        .birth-popup-field label {
+            display: block;
+            color: #ccc;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        .birth-popup-field input, .birth-popup-field select {
+            width: 100%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .birth-popup-field input:focus, .birth-popup-field select:focus {
+            border-color: #a855f7;
+        }
+        .birth-popup-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .birth-popup-btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .birth-popup-submit {
+            flex: 1;
+            padding: 12px;
+            background: #a855f7;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .birth-popup-submit:hover { background: #9333ea; }
+        .birth-popup-skip {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            color: #aaa;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .birth-popup-skip:hover { background: rgba(255,255,255,0.15); }
+
         /* Menu Container */
         .menu-container {
             padding: 0 0 20px;
@@ -1579,7 +1687,10 @@
                 </div>
 
                 <!-- Birth Congratulations Card - Hidden by default, matching patient-dashboard.html -->
-                <div class="dashboard-card birth-congrats-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px;">
+                <div class="dashboard-card birth-congrats-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px; position: relative;">
+                    <!-- Close Button -->
+                    <button class="birth-card-close" id="birth-card-close-btn" onclick="dismissBirthCard()" title="Tutup kartu">&times;</button>
+
                     <!-- Decorative Corner Accents -->
                     <div class="birth-corner-accent" id="birth-corner-tl"></div>
                     <div class="birth-corner-accent" id="birth-corner-tr"></div>
@@ -1637,10 +1748,56 @@
                     </div>
                 </div>
 
+
                 <!-- Birth Photo Modal -->
                 <div class="birth-photo-modal" id="birth-photo-modal" onclick="closeBirthPhotoModal()">
                     <button class="birth-photo-modal-close" onclick="closeBirthPhotoModal()">&times;</button>
                     <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
+                </div>
+
+                <!-- Birth Data Input Popup -->
+                <div class="birth-popup-overlay" id="birth-input-popup" style="display:none;">
+                    <div class="birth-popup-box">
+                        <h3>🍼 Si Kecil Telah Lahir!</h3>
+                        <p>dr. Dibya menandai bahwa Anda telah melahirkan. Isi data si kecil untuk menampilkan kartu ucapan dari dokter.</p>
+                        <input type="hidden" id="birth-entry-id">
+                        <div class="birth-popup-field">
+                            <label>Nama Bayi (opsional)</label>
+                            <input type="text" id="popup-baby-name" placeholder="Nama si kecil">
+                        </div>
+                        <div class="birth-popup-row">
+                            <div class="birth-popup-field">
+                                <label>Jenis Kelamin</label>
+                                <select id="popup-gender">
+                                    <option value="">-- Pilih --</option>
+                                    <option value="Laki-laki">Laki-laki</option>
+                                    <option value="Perempuan">Perempuan</option>
+                                </select>
+                            </div>
+                            <div class="birth-popup-field">
+                                <label>Tanggal Lahir</label>
+                                <input type="date" id="popup-birth-date">
+                            </div>
+                        </div>
+                        <div class="birth-popup-row">
+                            <div class="birth-popup-field">
+                                <label>Jam Lahir</label>
+                                <input type="time" id="popup-birth-time">
+                            </div>
+                            <div class="birth-popup-field">
+                                <label>Berat (cth: 3.2 kg)</label>
+                                <input type="text" id="popup-birth-weight" placeholder="3.2 kg">
+                            </div>
+                        </div>
+                        <div class="birth-popup-field">
+                            <label>Panjang Badan (cth: 50 cm)</label>
+                            <input type="text" id="popup-birth-length" placeholder="50 cm">
+                        </div>
+                        <div class="birth-popup-btn-row">
+                            <button class="birth-popup-submit" onclick="submitBirthData()">Simpan & Tampilkan Kartu</button>
+                            <button class="birth-popup-skip" onclick="skipBirthPopup()">Nanti</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Pengumuman - same structure as patient-dashboard -->
@@ -2364,135 +2521,178 @@
         };
 
         // ==================== BIRTH CONGRATULATIONS ====================
+        let _birthCardId = null;
+
         async function loadBirthData() {
             const token = getToken();
             try {
-                const response = await fetch('/api/patients/birth-record', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Cache-Control': 'no-cache'
-                    }
+                // 1. Check for pending (staff marked but patient hasn't filled data yet)
+                const pendingResp = await fetch('/api/patient/birth-pending?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
+                if (pendingResp.ok) {
+                    const pendingResult = await pendingResp.json();
+                    if (pendingResult.success && pendingResult.pending) {
+                        showBirthInputPopup(pendingResult.pending);
+                        return;
+                    }
+                }
 
+                // 2. Load published, non-dismissed birth card
+                const response = await fetch('/api/patients/birth-record', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+                });
                 if (!response.ok) return;
-
                 const result = await response.json();
                 if (!result.success || !result.birth) return;
 
                 const data = result.birth;
-                const card = document.getElementById('birth-congrats-card');
-                if (!card) return;
-
-                // Fill in the data
-                document.getElementById('birth-baby-name').textContent = data.baby_name || 'Baby';
-                document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + (data.doctor_name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.');
-
-                // Set subtitle with gender
-                const genderText = data.gender === 'Laki-laki' ? 'Putra' : (data.gender === 'Perempuan' ? 'Putri' : 'Buah Hati');
-                document.getElementById('birth-subtitle').textContent = genderText + ' Anda telah lahir dengan selamat';
-
-                // Format date
-                if (data.birth_date) {
-                    const birthDate = new Date(data.birth_date);
-                    document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                }
-
-                // Format time
-                if (data.birth_time) {
-                    const timeParts = data.birth_time.split(':');
-                    document.getElementById('birth-time').textContent = timeParts[0] + ':' + timeParts[1] + ' WIB';
-                }
-
-                document.getElementById('birth-weight').textContent = data.weight || '-';
-                document.getElementById('birth-length').textContent = data.length || '-';
-                document.getElementById('birth-message').textContent = data.message || 'Selamat atas kelahiran buah hati Anda!';
-
-                // Define theme colors based on GENDER (dark style with accent colors)
-                const themeColors = {
-                    pink: {      // For female
-                        accent: '#ec4899',
-                        accentLight: 'rgba(236, 72, 153, 0.5)',
-                        shadow: 'rgba(236, 72, 153, 0.3)'
-                    },
-                    blue: {      // For male
-                        accent: '#3b82f6',
-                        accentLight: 'rgba(59, 130, 246, 0.5)',
-                        shadow: 'rgba(59, 130, 246, 0.3)'
-                    },
-                    purple: {    // Neutral/default
-                        accent: '#a855f7',
-                        accentLight: 'rgba(168, 85, 247, 0.5)',
-                        shadow: 'rgba(168, 85, 247, 0.3)'
-                    }
-                };
-
-                // Select theme based on gender
-                let theme;
-                if (data.gender === 'Perempuan') {
-                    theme = themeColors.pink;
-                } else if (data.gender === 'Laki-laki') {
-                    theme = themeColors.blue;
-                } else {
-                    theme = themeColors.purple;
-                }
-
-                // Handle photo with theme-appropriate colors
-                const photoContainer = document.getElementById('birth-photo-container');
-                const photoImg = document.getElementById('birth-photo');
-                if (data.photo_url) {
-                    photoImg.src = data.photo_url;
-                    photoImg.onerror = function() {
-                        photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
-                    };
-                } else {
-                    photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
-                }
-
-                // Apply theme to photo container
-                photoContainer.style.border = `3px solid ${theme.accentLight}`;
-                photoContainer.style.boxShadow = `0 8px 25px ${theme.shadow}`;
-
-                // Update title and icon colors
-                const cardTitle = document.getElementById('birth-card-title');
-                const cardIcon = document.getElementById('birth-card-icon');
-                const babyName = document.getElementById('birth-baby-name');
-                if (cardTitle) cardTitle.style.color = theme.accent;
-                if (cardIcon) cardIcon.style.color = theme.accent;
-                if (babyName) babyName.style.color = theme.accent;
-
-                // Apply theme to detail boxes
-                document.querySelectorAll('.birth-detail-box').forEach(box => {
-                    box.style.background = 'rgba(30, 30, 40, 0.9)';
-                    box.style.border = `1px solid ${theme.accentLight}`;
-                });
-
-                // Apply theme to message container
-                const msgContainer = document.getElementById('birth-message-container');
-                if (msgContainer) {
-                    msgContainer.style.background = 'rgba(30, 30, 40, 0.9)';
-                    msgContainer.style.borderLeft = `3px solid ${theme.accent}`;
-                }
-
-                // Update message label color
-                const msgLabel = msgContainer?.querySelector('.birth-message-label');
-                if (msgLabel) msgLabel.style.color = theme.accent;
-
-                // Update corner accent colors
-                document.querySelectorAll('.birth-corner-accent').forEach(corner => {
-                    corner.style.borderColor = theme.accent;
-                });
-
-                // Show the card
-                card.style.display = 'block';
+                _birthCardId = data.id;
+                renderBirthCard(data);
 
             } catch (error) {
                 console.error('Error loading birth congratulations:', error);
             }
+        }
+
+        function showBirthInputPopup(pending) {
+            document.getElementById('birth-entry-id').value = pending.id;
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2,'0');
+            const mm = String(today.getMonth()+1).padStart(2,'0');
+            document.getElementById('popup-birth-date').value = today.getFullYear()+'-'+mm+'-'+dd;
+            document.getElementById('birth-input-popup').style.display = 'flex';
+        }
+
+        async function submitBirthData() {
+            const entryId = document.getElementById('birth-entry-id').value;
+            if (!entryId) return;
+            const token = getToken();
+            const payload = {
+                baby_name: document.getElementById('popup-baby-name').value.trim() || null,
+                gender: document.getElementById('popup-gender').value || null,
+                birth_date: document.getElementById('popup-birth-date').value || null,
+                birth_time: document.getElementById('popup-birth-time').value || null,
+                birth_weight: document.getElementById('popup-birth-weight').value.trim() || null,
+                birth_length: document.getElementById('popup-birth-length').value.trim() || null,
+            };
+            const submitBtn = document.querySelector('.birth-popup-submit');
+            try {
+                if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...'; }
+                const resp = await fetch('/api/patient/birth-data/' + entryId, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    document.getElementById('birth-input-popup').style.display = 'none';
+                    await loadBirthData();
+                } else {
+                    alert('Gagal menyimpan: ' + (result.message || 'Coba lagi'));
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan & Tampilkan Kartu'; }
+                }
+            } catch (e) {
+                console.error('submitBirthData error:', e);
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Simpan & Tampilkan Kartu'; }
+            }
+        }
+
+        function skipBirthPopup() {
+            document.getElementById('birth-input-popup').style.display = 'none';
+        }
+
+        async function dismissBirthCard() {
+            const card = document.getElementById('birth-congrats-card');
+            if (card) {
+                card.style.transition = 'opacity 0.3s';
+                card.style.opacity = '0';
+                setTimeout(() => { card.style.display = 'none'; card.style.opacity = ''; }, 320);
+            }
+            if (_birthCardId) {
+                const token = getToken();
+                try {
+                    await fetch('/api/patient/birth-dismiss/' + _birthCardId, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                } catch (e) { console.error('dismissBirthCard error:', e); }
+            }
+        }
+
+        function renderBirthCard(data) {
+            const card = document.getElementById('birth-congrats-card');
+            if (!card) return;
+
+            document.getElementById('birth-baby-name').textContent = data.baby_name || 'Si Kecil';
+            document.getElementById('birth-congrats-doctor').textContent = 'Dari dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
+
+            const genderText = data.gender === 'Laki-laki' ? 'Putra' : (data.gender === 'Perempuan' ? 'Putri' : 'Buah Hati');
+            document.getElementById('birth-subtitle').textContent = genderText + ' Anda telah lahir dengan selamat';
+
+            if (data.birth_date) {
+                const birthDate = new Date(data.birth_date);
+                document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+            }
+
+            if (data.birth_time) {
+                const t = data.birth_time.split(':');
+                document.getElementById('birth-time').textContent = t[0] + ':' + t[1] + ' WIB';
+            }
+
+            document.getElementById('birth-weight').textContent = (data.weight || data.birth_weight) || '-';
+            document.getElementById('birth-length').textContent = (data.length || data.birth_length) || '-';
+            document.getElementById('birth-message').textContent = data.message || 'Selamat atas kelahiran buah hati Anda!';
+
+            const themeColors = {
+                pink:   { accent: '#ec4899', accentLight: 'rgba(236,72,153,0.5)',  shadow: 'rgba(236,72,153,0.3)' },
+                blue:   { accent: '#3b82f6', accentLight: 'rgba(59,130,246,0.5)',  shadow: 'rgba(59,130,246,0.3)' },
+                purple: { accent: '#a855f7', accentLight: 'rgba(168,85,247,0.5)',  shadow: 'rgba(168,85,247,0.3)' }
+            };
+            const theme = data.gender === 'Perempuan' ? themeColors.pink
+                        : data.gender === 'Laki-laki' ? themeColors.blue
+                        : themeColors.purple;
+
+            const photoContainer = document.getElementById('birth-photo-container');
+            const photoImg = document.getElementById('birth-photo');
+            if (data.photo_url) {
+                photoImg.src = data.photo_url;
+                photoImg.onerror = function() {
+                    photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                };
+            } else {
+                photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+            }
+            photoContainer.style.border = `3px solid ${theme.accentLight}`;
+            photoContainer.style.boxShadow = `0 8px 25px ${theme.shadow}`;
+
+            const cardTitle = document.getElementById('birth-card-title');
+            const cardIcon  = document.getElementById('birth-card-icon');
+            const babyName  = document.getElementById('birth-baby-name');
+            if (cardTitle) cardTitle.style.color = theme.accent;
+            if (cardIcon)  cardIcon.style.color  = theme.accent;
+            if (babyName)  babyName.style.color  = theme.accent;
+
+            document.querySelectorAll('.birth-detail-box').forEach(box => {
+                box.style.background = 'rgba(30,30,40,0.9)';
+                box.style.border = `1px solid ${theme.accentLight}`;
+            });
+
+            const msgContainer = document.getElementById('birth-message-container');
+            if (msgContainer) {
+                msgContainer.style.background = 'rgba(30,30,40,0.9)';
+                msgContainer.style.borderLeft = `3px solid ${theme.accent}`;
+            }
+            const msgLabel = msgContainer?.querySelector('.birth-message-label');
+            if (msgLabel) msgLabel.style.color = theme.accent;
+
+            document.querySelectorAll('.birth-corner-accent').forEach(corner => {
+                corner.style.borderColor = theme.accent;
+            });
+
+            card.style.display = 'block';
         }
 
         // Birth Photo Modal Functions

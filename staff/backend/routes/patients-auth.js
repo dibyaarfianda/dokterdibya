@@ -2332,10 +2332,11 @@ router.get('/birth-record', verifyToken, async (req, res) => {
     try {
         const patientId = req.user.id;
 
-        // Get published birth congratulations for this patient
+        // Get published, non-dismissed birth congratulations for this patient
         const [birthRecords] = await db.query(`
             SELECT
                 id,
+                child_number,
                 baby_name,
                 birth_date,
                 birth_time,
@@ -2346,11 +2347,13 @@ router.get('/birth-record', verifyToken, async (req, res) => {
                 photo_r2_key,
                 message,
                 doctor_name,
-                theme_color
+                theme_color,
+                patient_dismissed
             FROM birth_congratulations
             WHERE patient_id = ?
             AND is_published = 1
-            ORDER BY birth_date DESC
+            AND patient_dismissed = 0
+            ORDER BY child_number ASC
             LIMIT 1
         `, [patientId]);
 
@@ -2374,6 +2377,8 @@ router.get('/birth-record', verifyToken, async (req, res) => {
                 // Keep existing URL as fallback
             }
         }
+
+        delete birth.photo_r2_key;
 
         res.json({
             success: true,
