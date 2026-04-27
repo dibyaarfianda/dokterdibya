@@ -201,6 +201,8 @@ function setTitleAndActive(title, navId, mobileAction) {
     if (navId) {
         const link = document.querySelector(`#${navId} .nav-link`);
         if (link) link.classList.add('active');
+        // Save last visited page so refresh/back restores it
+        try { sessionStorage.setItem('lastStaffNavId', navId); } catch(e) {}
     }
     if (mobileAction) {
         document.dispatchEvent(new CustomEvent('page:changed', {
@@ -3966,8 +3968,61 @@ function initMain() {
         };
     };
     
-    // Default landing: Dashboard
-    showDashboardPage();
+    // Default landing: restore last page or Dashboard
+    restoreLastPage();
+}
+
+function restoreLastPage() {
+    try {
+        const navId = sessionStorage.getItem('lastStaffNavId');
+        if (!navId) { showDashboardPage(); return; }
+        const pageMap = {
+            'nav-dashboard':                        () => showDashboardPage(),
+            'nav-klinik-private':                   () => showKlinikPrivatePage(),
+            'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
+            'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
+            'nav-rs-bhayangkara':                   () => showHospitalAppointmentsPage('rs_bhayangkara'),
+            'nav-klinik-private-pasien':            () => showHospitalPatientsPage('klinik_private'),
+            'nav-rsia-melinda-pasien':              () => showHospitalPatientsPage('rsia_melinda'),
+            'nav-rsud-gambiran-pasien':             () => showHospitalPatientsPage('rsud_gambiran'),
+            'nav-rs-bhayangkara-pasien':            () => showHospitalPatientsPage('rs_bhayangkara'),
+            'nav-pasien-baru':                      () => showPasienBaruPage(),
+            'nav-patient':                          () => showPatientPage(),
+            'nav-admin':                            () => showStokOpnamePage(),
+            'nav-pengaturan':                       () => showPengaturanPage(),
+            'management-nav-kelola-obat':           () => showKelolaObatPage(),
+            'nav-logs':                             () => showLogPage(),
+            'nav-appointments':                     () => showAppointmentsPage(),
+            'nav-analytics':                        () => showAnalyticsPage(),
+            'nav-finance':                          () => showFinancePage(),
+            'management-nav-kelola-pasien':         () => showKelolaPasienPage(),
+            'management-nav-kelola-appointment':    () => showKelolaAppointmentPage(),
+            'nav-jadwal':                           () => showKelolaJadwalPage(),
+            'management-nav-kelola-tindakan':       () => showKelolaTindakanPage(),
+            'nav-estimasi-biaya':                   () => showEstimasiBiayaPage(),
+            'nav-pengumuman':                       () => showKelolaPengumumanPage(),
+            'nav-voting':                           () => showVotingPage(),
+            'nav-penjualan-obat':                   () => showPenjualanObatPage(),
+            'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
+            'nav-medify-sync':                      () => showMedifySyncPage(),
+            'nav-mobile-app':                       () => showMobileAppPage(),
+            'management-nav-kelola-roles':          () => showKelolaRolesPage(),
+            'nav-staff-activity':                   () => showStaffActivityPage(),
+            'finance-analysis-nav':                 () => showFinanceAnalysisPage(),
+            'nav-birth-congrats':                   () => showBirthCongratsPage(),
+            'nav-invoice-history':                  () => showInvoiceHistoryPage(),
+            'nav-booking-settings':                 () => showBookingSettingsPage(),
+            'nav-birth-class':                      () => showBirthClassPage(),
+            'nav-import-fields':                    () => showImportFieldsPage(),
+            'nav-artikel-kesehatan':                () => showArtikelKesehatanPage(),
+            'nav-profile-settings':                 () => showProfileSettings(),
+        };
+        const fn = pageMap[navId];
+        if (fn) { fn(); } else { showDashboardPage(); }
+    } catch (e) {
+        console.error('[MAIN] restoreLastPage error:', e);
+        showDashboardPage();
+    }
 }
 
 // Auto-init if DOM is ready, otherwise wait
