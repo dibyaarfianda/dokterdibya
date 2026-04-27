@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260427b'; // 2026-04-27 - Voting submit click fix (card + modal binding)
+const CACHE_VERSION = '20260427c'; // 2026-04-27 - Voting like non-JSON response handling fix
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
