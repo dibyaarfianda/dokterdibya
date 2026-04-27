@@ -110,6 +110,74 @@
             color: rgba(255, 255, 255, 0.6);
         }
 
+        .tester-badge-section {
+            display: none;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(236, 72, 153, 0.12));
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .tester-badge-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #f5d0fe;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .tester-badge-subtitle {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .tester-badge-hero {
+            width: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
+        }
+
+        .tester-badge-hero img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tester-badge-thumbs {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .tester-badge-thumb {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 0;
+            overflow: hidden;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .tester-badge-thumb.active {
+            border-color: rgba(236, 72, 153, 0.8);
+            box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.3);
+        }
+
+        .tester-badge-thumb img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            display: block;
+        }
+
         /* Menu Items */
         .menu-section {
             margin-bottom: 20px;
@@ -386,6 +454,15 @@
                 <div class="profile-id" id="profile-id">ID: -</div>
             </div>
 
+            <div class="tester-badge-section" id="tester-badge-section">
+                <div class="tester-badge-title"><i class="fa fa-trophy"></i> Badge Showcase</div>
+                <div class="tester-badge-subtitle">Preview badge khusus akun tester.</div>
+                <div class="tester-badge-hero">
+                    <img id="tester-badge-hero-image" src="/images/badges/1.jpg" alt="Badge preview">
+                </div>
+                <div class="tester-badge-thumbs" id="tester-badge-thumbs"></div>
+            </div>
+
             <!-- Basic Info -->
             <div class="info-card">
                 <div class="info-row">
@@ -648,6 +725,8 @@
 
         // State
         let profileData = null;
+        const TESTER_BADGE_ACCOUNT_NAME = 'nanda ananda';
+        const TESTER_BADGE_IMAGES = Array.from({ length: 11 }, (_, index) => `/images/badges/${index + 1}.jpg`);
 
         // Make functions globally available
         window.openEditModal = openEditModal;
@@ -743,6 +822,51 @@
 
             // Check VIP subscription for badge
             checkVipSubscription();
+
+            // Tester-only badge preview (strictly for Nanda Ananda)
+            renderTesterBadgeSection();
+        }
+
+        function normalizeName(value) {
+            return (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        }
+
+        function isTesterBadgeAccount() {
+            const name = profileData?.fullname || profileData?.full_name || '';
+            return normalizeName(name) === TESTER_BADGE_ACCOUNT_NAME;
+        }
+
+        function renderTesterBadgeSection() {
+            const section = document.getElementById('tester-badge-section');
+            const heroImage = document.getElementById('tester-badge-hero-image');
+            const thumbsContainer = document.getElementById('tester-badge-thumbs');
+            if (!section || !heroImage || !thumbsContainer) return;
+
+            if (!isTesterBadgeAccount()) {
+                section.style.display = 'none';
+                thumbsContainer.innerHTML = '';
+                return;
+            }
+
+            section.style.display = 'block';
+            heroImage.src = TESTER_BADGE_IMAGES[0];
+
+            thumbsContainer.innerHTML = TESTER_BADGE_IMAGES.map((imagePath, index) => `
+                <button type="button" class="tester-badge-thumb${index === 0 ? ' active' : ''}" data-badge-index="${index}" aria-label="Pilih badge ${index + 1}">
+                    <img src="${imagePath}" alt="Badge ${index + 1}">
+                </button>
+            `).join('');
+
+            thumbsContainer.querySelectorAll('.tester-badge-thumb').forEach((thumb) => {
+                thumb.addEventListener('click', function() {
+                    const badgeIndex = Number(this.getAttribute('data-badge-index'));
+                    if (Number.isNaN(badgeIndex) || !TESTER_BADGE_IMAGES[badgeIndex]) return;
+
+                    heroImage.src = TESTER_BADGE_IMAGES[badgeIndex];
+                    thumbsContainer.querySelectorAll('.tester-badge-thumb').forEach((item) => item.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
         }
 
         // Check if patient has VIP subscription
