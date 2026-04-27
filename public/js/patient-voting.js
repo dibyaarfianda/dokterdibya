@@ -184,7 +184,7 @@
             <div style="margin-top:12px;">
                 <label style="display:block;font-size:12px;color:#bbb;margin-bottom:6px;">Komentar</label>
                 <textarea id="patient-voting-comment" rows="3" maxlength="800" placeholder="Tulis komentar Anda..." style="width:100%;background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:8px;padding:10px;font-size:13px;resize:vertical;"></textarea>
-                <button id="patient-voting-comment-submit" type="button" style="margin-top:8px;background:#f59e0b;border:0;color:#111;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer;">
+                <button type="button" class="js-voting-comment-submit" style="margin-top:8px;background:#f59e0b;border:0;color:#111;padding:8px 12px;border-radius:8px;font-weight:700;cursor:pointer;">
                     Kirim Komentar
                 </button>
             </div>
@@ -202,10 +202,9 @@
             });
         });
 
-        const commentSubmitBtn = document.getElementById('patient-voting-comment-submit');
-        if (commentSubmitBtn) {
-            commentSubmitBtn.addEventListener('click', submitComment);
-        }
+        document.querySelectorAll('.js-voting-comment-submit').forEach((button) => {
+            button.addEventListener('click', submitComment);
+        });
 
         document.querySelectorAll('.btn-comment-like').forEach((button) => {
             button.addEventListener('click', function() {
@@ -236,7 +235,7 @@
             ${data.description ? `<p style="margin:0 0 12px 0;color:#bdbdbd;font-size:13px;">${escapeHtml(data.description)}</p>` : ''}
             ${showVoteForm ? `
                 <div id="patient-voting-options-wrap">${renderOptions(data.options, null)}</div>
-                <button id="patient-voting-submit" style="width:100%;margin-top:8px;background:#f59e0b;border:0;color:#111;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;">
+                <button type="button" class="js-voting-submit" style="width:100%;margin-top:8px;background:#f59e0b;border:0;color:#111;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;">
                     Kirim Pilihan
                 </button>
             ` : `
@@ -280,10 +279,9 @@
             </div>
         `;
 
-        const submitBtn = document.getElementById('patient-voting-submit');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', submitVote);
-        }
+        document.querySelectorAll('.js-voting-submit').forEach((button) => {
+            button.addEventListener('click', submitVote);
+        });
         bindCommentActions();
     }
 
@@ -305,10 +303,9 @@
         const hasVoted = !!data.has_voted;
         contentEl.innerHTML = renderPollBlock(data, 'modal');
 
-        const submitBtn = document.getElementById('patient-voting-submit');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', submitVote);
-        }
+        document.querySelectorAll('.js-voting-submit').forEach((button) => {
+            button.addEventListener('click', submitVote);
+        });
         bindCommentActions();
 
         if (forceOpen || ((allowAutoOpen !== false) && !hasVoted)) {
@@ -362,11 +359,11 @@
             return;
         }
 
-        const submitBtn = document.getElementById('patient-voting-submit');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Menyimpan...';
-        }
+        const submitButtons = Array.from(document.querySelectorAll('.js-voting-submit'));
+        submitButtons.forEach((button) => {
+            button.disabled = true;
+            button.textContent = 'Menyimpan...';
+        });
         submittingVote = true;
 
         try {
@@ -393,10 +390,10 @@
             }
         } catch (error) {
             alert(error.message || 'Gagal menyimpan pilihan');
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Kirim Pilihan';
-            }
+            submitButtons.forEach((button) => {
+                button.disabled = false;
+                button.textContent = 'Kirim Pilihan';
+            });
         } finally {
             submittingVote = false;
         }
@@ -414,11 +411,11 @@
             return;
         }
 
-        const submitBtn = document.getElementById('patient-voting-comment-submit');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Mengirim...';
-        }
+        const submitButtons = Array.from(document.querySelectorAll('.js-voting-comment-submit'));
+        submitButtons.forEach((button) => {
+            button.disabled = true;
+            button.textContent = 'Mengirim...';
+        });
 
         submittingComment = true;
         try {
@@ -445,10 +442,10 @@
             alert(error.message || 'Gagal mengirim komentar');
         } finally {
             submittingComment = false;
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Kirim Komentar';
-            }
+            submitButtons.forEach((button) => {
+                button.disabled = false;
+                button.textContent = 'Kirim Komentar';
+            });
         }
     }
 
