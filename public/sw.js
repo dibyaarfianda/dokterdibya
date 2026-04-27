@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260427a'; // 2026-04-27 - Kelas Dr. Dibya info-first flow and profile-based registration
+const CACHE_VERSION = '20260427b'; // 2026-04-27 - Voting submit click fix (card + modal binding)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
