@@ -1807,10 +1807,13 @@
                 <!-- Pengumuman - same structure as patient-dashboard -->
                 <div class="dashboard-card" id="announcements-section" style="margin-bottom: 20px; border: 1px solid rgba(40, 167, 233, 0.6); box-shadow: 0 0 8px rgba(40, 167, 233, 0.15);">
                     <h3 class="collapsible-header" onclick="toggleAnnouncementsSection()">
-                        <span><i class="fa fa-bullhorn"></i> PENGUMUMAN</span>
-                        <i class="fa fa-chevron-down toggle-icon" id="announcements-toggle-icon"></i>
+                        <span>
+                            <i class="fa fa-bullhorn"></i> PENGUMUMAN
+                            <span id="announcements-new-badge" style="display:none; margin-left: 8px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; letter-spacing: 0.3px; vertical-align: middle;">BARU</span>
+                        </span>
+                        <i class="fa fa-chevron-up toggle-icon" id="announcements-toggle-icon"></i>
                     </h3>
-                    <div id="announcements-content" style="display: block;">
+                    <div id="announcements-content" style="display: none;">
                         <div id="announcements-container">
                             <div style="text-align: center; padding: 20px; color: #999;">
                                 <i class="fa fa-spinner fa-spin fa-2x"></i>
@@ -2393,6 +2396,9 @@
                 wrapper.style.display = 'block';
                 icon.classList.remove('fa-chevron-up');
                 icon.classList.add('fa-chevron-down');
+                if (typeof window.markAnnouncementsAsSeen === 'function') {
+                    window.markAnnouncementsAsSeen();
+                }
             } else {
                 wrapper.style.display = 'none';
                 icon.classList.remove('fa-chevron-down');
