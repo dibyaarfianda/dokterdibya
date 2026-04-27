@@ -490,6 +490,9 @@
                         <button class="btn btn-sm btn-outline-warning" onclick="window.openVotingEditPoll(${poll.id})">
                             <i class="fas fa-edit mr-1"></i>Edit Voting
                         </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="window.sendVotingNotification(${poll.id})">
+                            <i class="fas fa-bell mr-1"></i>Kirim Notifikasi
+                        </button>
                         ${poll.status === 'active' ? `
                             <button class="btn btn-sm btn-outline-danger" onclick="window.closeVotingPoll(${poll.id})">
                                 <i class="fas fa-stop-circle mr-1"></i>Tutup Voting
@@ -640,6 +643,32 @@
         }
     }
 
+    async function sendVotingNotification(pollId) {
+        const poll = pollsById.get(Number(pollId));
+        const pollTitle = poll && poll.title ? `\n\nJudul: ${poll.title}` : '';
+        const confirmed = window.confirm(`Kirim push notifikasi untuk voting ini ke semua pasien?${pollTitle}`);
+        if (!confirmed) return;
+
+        try {
+            const token = getToken();
+            const response = await fetch(`${API_URL}/polls/staff/${pollId}/notify`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal mengirim push notifikasi voting');
+            }
+
+            toastr.success('Push notifikasi voting berhasil dikirim');
+        } catch (error) {
+            toastr.error(error.message || 'Gagal mengirim push notifikasi voting');
+        }
+    }
+
     function initKelolaVoting() {
         setupSocket();
         initOptionEditor();
@@ -664,6 +693,7 @@
             initialized = true;
             window.closeVotingPoll = closeVotingPoll;
             window.openVotingEditPoll = openVotingEditPoll;
+            window.sendVotingNotification = sendVotingNotification;
         }
     }
 
