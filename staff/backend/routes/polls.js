@@ -115,6 +115,45 @@ function normalizeOptions(options) {
         .slice(0, 10);
 }
 
+function normalizeOptionPayload(options) {
+    if (!Array.isArray(options)) {
+        return [];
+    }
+
+    const seen = new Set();
+    const normalized = [];
+
+    options.forEach((entry) => {
+        let optionId = null;
+        let optionText = '';
+
+        if (typeof entry === 'string') {
+            optionText = String(entry).trim();
+        } else if (entry && typeof entry === 'object') {
+            const parsedId = Number(entry.id);
+            optionId = Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
+            optionText = String(entry.option_text || entry.text || '').trim();
+        }
+
+        if (!optionText) {
+            return;
+        }
+
+        const dedupeKey = optionText.toLowerCase();
+        if (seen.has(dedupeKey)) {
+            return;
+        }
+        seen.add(dedupeKey);
+
+        normalized.push({
+            id: optionId,
+            option_text: optionText
+        });
+    });
+
+    return normalized.slice(0, 10);
+}
+
 function extractUserId(payload) {
     if (!payload || typeof payload !== 'object') return null;
     return payload.uid || payload.id || payload.user_id || payload.email || null;
@@ -431,6 +470,153 @@ router.post('/staff/create', verifyToken, async (req, res) => {
     } catch (error) {
         logger.error('Failed to create poll', { error: error.message });
         res.status(500).json({ success: false, message: 'Gagal membuat voting' });
+    }
+});
+
+router.put('/staff/:id/update', verifyToken, async (req, res) => {
+    let connection;
+
+    try {
+        await ensureVotingTables();
+
+        const pollId = Number(req.params.id);
+        const title = String(req.body?.title || '').trim();
+        const description = String(req.body?.description || '').trim();
+        const showOnOpen = req.body?.show_on_open === false || req.body?.show_on_open === 0 ? 0 : 1;
+        const options = normalizeOptionPayload(req.body?.options || []);
+
+        if (!Number.isInteger(pollId) || pollId <= 0) {
+            return res.status(400).json({ success: false, message: 'ID voting tidak valid' });
+        }
+
+        if (!title) {
+            return res.status(400).json({ success: false, message: 'Judul voting wajib diisi' });
+        }
+
+        if (options.length < 2) {
+            return res.status(400).json({ success: false, message: 'Minimal 2 opsi jawaban' });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const [pollRows] = await connection.query(
+            'SELECT id FROM polls WHERE id = ? LIMIT 1',
+            [pollId]
+        );
+
+        if (!pollRows.length) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Voting tidak ditemukan' });
+        }
+
+        const [optionRows] = await connection.query(`
+            SELECT
+                o.id,
+                o.option_text,
+                COUNT(v.id) AS vote_count
+            FROM poll_options o
+            LEFT JOIN poll_votes v ON v.option_id = o.id
+            WHERE o.poll_id = ?
+            GROUP BY o.id
+        `, [pollId]);
+
+        const existingOptionMap = new Map(optionRows.map((row) => [Number(row.id), {
+            id: Number(row.id),
+            vote_count: Number(row.vote_count || 0)
+        }]));
+
+        const incomingOptionIds = new Set();
+        for (const option of options) {
+            if (!option.id) {
+                continue;
+            }
+
+            if (!existingOptionMap.has(option.id)) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Data opsi voting tidak valid' });
+            }
+            incomingOptionIds.add(option.id);
+        }
+
+        const removedOptionIds = Array.from(existingOptionMap.values())
+            .filter((row) => !incomingOptionIds.has(row.id))
+            .map((row) => row.id);
+
+        const blockedRemovedOptions = removedOptionIds.filter((id) => {
+            const row = existingOptionMap.get(id);
+            return row && row.vote_count > 0;
+        });
+
+        if (blockedRemovedOptions.length) {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Opsi yang sudah dipilih pasien tidak bisa dihapus'
+            });
+        }
+
+        await connection.query(
+            'UPDATE polls SET title = ?, description = ?, show_on_open = ? WHERE id = ?',
+            [title, description || null, showOnOpen, pollId]
+        );
+
+        for (let index = 0; index < options.length; index += 1) {
+            const option = options[index];
+            const optionOrder = index + 1;
+
+            if (option.id) {
+                await connection.query(
+                    'UPDATE poll_options SET option_text = ?, option_order = ? WHERE id = ? AND poll_id = ?',
+                    [option.option_text, optionOrder, option.id, pollId]
+                );
+            } else {
+                await connection.query(
+                    'INSERT INTO poll_options (poll_id, option_text, option_order) VALUES (?, ?, ?)',
+                    [pollId, option.option_text, optionOrder]
+                );
+            }
+        }
+
+        if (removedOptionIds.length) {
+            await connection.query(
+                'DELETE FROM poll_options WHERE poll_id = ? AND id IN (?)',
+                [pollId, removedOptionIds]
+            );
+        }
+
+        await connection.commit();
+
+        const poll = await getPollResultById(pollId);
+
+        if (global.io) {
+            global.io.emit('poll:updated', {
+                poll_id: poll.id,
+                total_votes: poll.total_votes,
+                title: poll.title
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Voting berhasil diperbarui',
+            data: poll
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.warn('Rollback failed when updating poll', { error: rollbackError.message });
+            }
+        }
+
+        logger.error('Failed to update poll', { error: error.message });
+        return res.status(500).json({ success: false, message: 'Gagal memperbarui voting' });
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 

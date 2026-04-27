@@ -495,6 +495,11 @@
                 loadActivePoll(false);
             }
         });
+        socket.on('poll:updated', () => {
+            if (currentPoll && currentPoll.id) {
+                loadActivePoll(false);
+            }
+        });
         socket.on('poll:closed', () => loadActivePoll(false));
         socket.on('poll:comment', () => {
             if (currentPoll && currentPoll.id) {
