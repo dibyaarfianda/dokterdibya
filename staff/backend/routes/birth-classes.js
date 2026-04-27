@@ -148,7 +148,7 @@ router.get('/sessions/public', async (req, res) => {
             data: rows.map(mapSessionRow)
         });
     } catch (error) {
-        console.error('Error loading public birth class sessions:', error);
+        console.error('Error loading public Kelas Dr. Dibya sessions:', error);
         res.status(500).json({
             success: false,
             message: 'Gagal memuat jadwal Kelas Dr. Dibya'
@@ -286,7 +286,7 @@ router.post('/register', optionalAuth, async (req, res) => {
             message: `Pendaftaran berhasil. Anda terdaftar di kelas ${session.class_title}`
         });
     } catch (error) {
-        console.error('Error registering birth class:', error);
+        console.error('Error registering Kelas Dr. Dibya:', error);
         if (error.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({
                 success: false,
@@ -325,7 +325,7 @@ router.get('/sessions', verifyToken, requireMenuAccess('klinik_privat'), async (
             data: rows.map(mapSessionRow)
         });
     } catch (error) {
-        console.error('Error loading birth class sessions (staff):', error);
+        console.error('Error loading Kelas Dr. Dibya sessions (staff):', error);
         res.status(500).json({
             success: false,
             message: 'Gagal memuat data sesi kelas'
@@ -409,7 +409,7 @@ router.post('/sessions', verifyToken, requireMenuAccess('klinik_privat'), async 
             message: 'Sesi Kelas Dr. Dibya berhasil dibuat'
         });
     } catch (error) {
-        console.error('Error creating birth class session:', error);
+        console.error('Error creating Kelas Dr. Dibya session:', error);
         res.status(500).json({
             success: false,
             message: 'Gagal membuat sesi kelas'
@@ -516,7 +516,7 @@ router.put('/sessions/:id', verifyToken, requireMenuAccess('klinik_privat'), asy
             message: 'Sesi kelas berhasil diperbarui'
         });
     } catch (error) {
-        console.error('Error updating birth class session:', error);
+        console.error('Error updating Kelas Dr. Dibya session:', error);
         res.status(500).json({
             success: false,
             message: 'Gagal memperbarui sesi kelas'
@@ -549,7 +549,7 @@ router.patch('/sessions/:id/status', verifyToken, requireMenuAccess('klinik_priv
             message: isActive ? 'Sesi kelas diaktifkan' : 'Sesi kelas dinonaktifkan'
         });
     } catch (error) {
-        console.error('Error toggling birth class session status:', error);
+        console.error('Error toggling Kelas Dr. Dibya session status:', error);
         res.status(500).json({
             success: false,
             message: 'Gagal mengubah status sesi kelas'
@@ -597,7 +597,7 @@ router.get('/registrations', verifyToken, requireMenuAccess('klinik_privat'), as
             data: rows
         });
     } catch (error) {
-        console.error('Error loading birth class registrations:', error);
+        console.error('Error loading Kelas Dr. Dibya registrations:', error);
         res.status(500).json({
             success: false,
             message: 'Gagal memuat data pendaftar kelas'
@@ -639,7 +639,7 @@ router.patch('/registrations/:id/status', verifyToken, requireMenuAccess('klinik
             message: 'Status pendaftaran berhasil diperbarui'
         });
     } catch (error) {
-        console.error('Error updating birth class registration status:', error);
+        console.error('Error updating Kelas Dr. Dibya registration status:', error);
         res.status(500).json({
             success: false,
             message: 'Gagal memperbarui status pendaftaran'

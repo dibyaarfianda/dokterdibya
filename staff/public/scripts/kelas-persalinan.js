@@ -391,7 +391,7 @@ async function loadSessions() {
         window.__birthClassSessionsCache = sessions;
         populateSessionFilterOptions(sessions);
     } catch (error) {
-        console.error('Error loading birth class sessions:', error);
+        console.error('Error loading Kelas Dr. Dibya sessions:', error);
         tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
     }
 }
@@ -453,7 +453,7 @@ async function loadRegistrations() {
             </tr>
         `).join('');
     } catch (error) {
-        console.error('Error loading birth class registrations:', error);
+        console.error('Error loading Kelas Dr. Dibya registrations:', error);
         tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
     }
 }
@@ -500,7 +500,7 @@ async function saveSession(event) {
         resetSessionForm();
         await Promise.all([loadSessions(), loadRegistrations()]);
     } catch (error) {
-        console.error('Error saving birth class session:', error);
+        console.error('Error saving Kelas Dr. Dibya session:', error);
         alert(error.message);
     }
 }
