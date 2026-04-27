@@ -11,6 +11,7 @@
     let submittingVote = false;
     let submittingComment = false;
     let commentSortMode = 'recent';
+    const pendingLikeCommentIds = new Set();
 
     function getToken() {
         return localStorage.getItem('vps_auth_token') ||
@@ -484,8 +485,14 @@
 
     async function toggleCommentLike(commentId) {
         if (!currentPoll || !currentPoll.id) return;
+        if (pendingLikeCommentIds.has(commentId)) return;
 
-        try {
+        pendingLikeCommentIds.add(commentId);
+
+        const previousComments = Array.isArray(currentPoll.comments) ? currentPoll.comments.slice() : [];
+        const previousComment = previousComments.find((comment) => Number(comment.id) === Number(commentId));
+
+        const attemptLikeRequest = async () => {
             const token = getToken();
             const response = await fetch(`${API_URL}/polls/patient/${currentPoll.id}/comments/${commentId}/like`, {
                 method: 'POST',
@@ -496,14 +503,46 @@
 
             const result = await parseApiResult(response);
             if (!response.ok || !result.success) {
-                throw new Error(result.message || 'Gagal memproses like');
+                const error = new Error(result.message || 'Gagal memproses like');
+                error.status = response.status;
+                throw error;
+            }
+
+            return result;
+        };
+
+        try {
+            let result;
+            try {
+                result = await attemptLikeRequest();
+            } catch (firstError) {
+                if (firstError.status >= 502 && firstError.status <= 504) {
+                    result = await attemptLikeRequest();
+                } else {
+                    throw firstError;
+                }
             }
 
             currentPoll.comments = result.data || [];
             renderVotingCard(currentPoll);
             renderPollContent(currentPoll, false, false);
         } catch (error) {
-            alert(error.message || 'Gagal memproses like');
+            await loadActivePoll(false);
+
+            const latestComments = Array.isArray(currentPoll && currentPoll.comments) ? currentPoll.comments : [];
+            const latestComment = latestComments.find((comment) => Number(comment.id) === Number(commentId));
+
+            const previousLikedByMe = !!(previousComment && previousComment.liked_by_me);
+            const latestLikedByMe = !!(latestComment && latestComment.liked_by_me);
+            const previousLikeCount = Number((previousComment && previousComment.like_count) || 0);
+            const latestLikeCount = Number((latestComment && latestComment.like_count) || 0);
+
+            const stateChanged = previousLikedByMe !== latestLikedByMe || previousLikeCount !== latestLikeCount;
+            if (!stateChanged) {
+                alert(error.message || 'Gagal memproses like');
+            }
+        } finally {
+            pendingLikeCommentIds.delete(commentId);
         }
     }
 
