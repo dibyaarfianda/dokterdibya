@@ -39,6 +39,35 @@ function normalizeTime(value) {
     return String(value).slice(0, 5);
 }
 
+function formatRupiah(value) {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(amount);
+}
+
+function truncateText(value, maxLength = 70) {
+    const text = String(value || '').trim();
+    if (!text) return '-';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength)}...`;
+}
+
+function populateSessionFilterOptions(sessions = []) {
+    const select = document.getElementById('birth-class-registration-session-filter');
+    if (!select) return;
+
+    const current = select.value;
+    const options = sessions.map(session => `
+        <option value="${session.id}">${escapeHtml(session.class_title)} (${formatDate(session.session_date)})</option>
+    `).join('');
+
+    select.innerHTML = `<option value="">Semua Sesi</option>${options}`;
+    select.value = current || '';
+}
+
 function getStatusBadge(status) {
     const statusMap = {
         registered: 'badge badge-warning',
@@ -125,8 +154,31 @@ function renderSkeleton() {
                             <input type="text" class="form-control" id="birth-class-instructor" placeholder="Nama dokter/bidan">
                         </div>
                         <div class="form-group">
+                            <label for="birth-class-price">Biaya Kelas (Rp)</label>
+                            <input type="number" class="form-control" id="birth-class-price" min="0" step="5000" value="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-learning-points">Materi yang Dipelajari</label>
+                            <textarea class="form-control" id="birth-class-learning-points" rows="3" placeholder="Contoh: Tanda persalinan, teknik napas, manajemen nyeri"></textarea>
+                            <small class="text-muted">Pisahkan poin dengan baris baru.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-items-to-bring">Yang Harus Dibawa</label>
+                            <textarea class="form-control" id="birth-class-items-to-bring" rows="2" placeholder="Contoh: Buku KIA, hasil lab terakhir, kartu identitas"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-benefits">Benefit Peserta</label>
+                            <textarea class="form-control" id="birth-class-benefits" rows="2" placeholder="Contoh: Modul kelas, konsultasi singkat, snack"></textarea>
+                        </div>
+                        <div class="form-group">
                             <label for="birth-class-notes">Catatan</label>
                             <textarea class="form-control" id="birth-class-notes" rows="2" placeholder="Informasi tambahan kelas"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="birth-class-is-active" checked>
+                                <label class="custom-control-label" for="birth-class-is-active">Sesi Aktif</label>
+                            </div>
                         </div>
                         <div class="d-flex justify-content-between">
                             <button type="button" class="btn btn-secondary" id="birth-class-reset-session-btn">
@@ -156,14 +208,16 @@ function renderSkeleton() {
                                     <tr>
                                         <th>Tanggal & Jam</th>
                                         <th>Judul</th>
+                                        <th>Materi / Benefit</th>
                                         <th>Lokasi</th>
+                                        <th>Biaya</th>
                                         <th>Kuota</th>
                                         <th>Status</th>
                                         <th class="text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
-                                    <tr><td colspan="6" class="text-center py-4">Memuat data...</td></tr>
+                                    <tr><td colspan="8" class="text-center py-4">Memuat data...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -175,13 +229,18 @@ function renderSkeleton() {
                         <h3 class="card-title mb-0">
                             <i class="fas fa-users mr-2"></i>Daftar Pendaftar
                         </h3>
-                        <select id="birth-class-registration-filter" class="form-control form-control-sm" style="width: 170px;">
-                            <option value="">Semua Status</option>
-                            <option value="registered">Terdaftar</option>
-                            <option value="confirmed">Dikonfirmasi</option>
-                            <option value="attended">Hadir</option>
-                            <option value="cancelled">Batal</option>
-                        </select>
+                        <div class="d-flex" style="gap: 8px;">
+                            <select id="birth-class-registration-filter" class="form-control form-control-sm" style="width: 150px;">
+                                <option value="">Semua Status</option>
+                                <option value="registered">Terdaftar</option>
+                                <option value="confirmed">Dikonfirmasi</option>
+                                <option value="attended">Hadir</option>
+                                <option value="cancelled">Batal</option>
+                            </select>
+                            <select id="birth-class-registration-session-filter" class="form-control form-control-sm" style="width: 180px;">
+                                <option value="">Semua Sesi</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -190,7 +249,7 @@ function renderSkeleton() {
                                     <tr>
                                         <th>Peserta</th>
                                         <th>Sesi</th>
-                                        <th>Kehamilan</th>
+                                        <th>Catatan</th>
                                         <th>Status</th>
                                         <th>Ubah Status</th>
                                     </tr>
@@ -220,6 +279,9 @@ function resetSessionForm() {
         'birth-class-end-time',
         'birth-class-location',
         'birth-class-instructor',
+        'birth-class-learning-points',
+        'birth-class-items-to-bring',
+        'birth-class-benefits',
         'birth-class-notes'
     ];
 
@@ -230,6 +292,12 @@ function resetSessionForm() {
 
     const quota = document.getElementById('birth-class-quota');
     if (quota) quota.value = '20';
+
+    const price = document.getElementById('birth-class-price');
+    if (price) price.value = '0';
+
+    const active = document.getElementById('birth-class-is-active');
+    if (active) active.checked = true;
 
     if (title) title.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Sesi Kelas';
     if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Simpan Sesi';
@@ -248,7 +316,12 @@ function fillSessionForm(session) {
     document.getElementById('birth-class-location').value = session.location || '';
     document.getElementById('birth-class-instructor').value = session.instructor_name || '';
     document.getElementById('birth-class-quota').value = session.quota || 20;
+    document.getElementById('birth-class-price').value = Number(session.price || 0);
+    document.getElementById('birth-class-learning-points').value = session.learning_points || '';
+    document.getElementById('birth-class-items-to-bring').value = session.items_to_bring || '';
+    document.getElementById('birth-class-benefits').value = session.benefits || '';
     document.getElementById('birth-class-notes').value = session.notes || '';
+    document.getElementById('birth-class-is-active').checked = Number(session.is_active) === 1;
 
     if (title) title.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Sesi Kelas';
     if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Update Sesi';
@@ -263,14 +336,15 @@ async function loadSessions() {
     const tbody = document.getElementById('birth-class-sessions-tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat sesi...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat sesi...</td></tr>';
 
     try {
         const result = await apiRequest('/sessions');
         const sessions = result.data || [];
 
         if (!sessions.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada sesi kelas.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Belum ada sesi kelas.</td></tr>';
+            populateSessionFilterOptions([]);
             return;
         }
 
@@ -278,6 +352,11 @@ async function loadSessions() {
             const activeBadge = Number(session.is_active) === 1
                 ? '<span class="badge badge-success">Aktif</span>'
                 : '<span class="badge badge-secondary">Nonaktif</span>';
+
+            const contentPreview = [
+                session.learning_points ? `Materi: ${escapeHtml(truncateText(session.learning_points, 52))}` : '',
+                session.benefits ? `Benefit: ${escapeHtml(truncateText(session.benefits, 52))}` : ''
+            ].filter(Boolean).join('<br>') || '-';
 
             return `
                 <tr>
@@ -289,7 +368,9 @@ async function loadSessions() {
                         <div>${escapeHtml(session.class_title)}</div>
                         <small class="text-muted">${escapeHtml(session.instructor_name || '-')}</small>
                     </td>
+                    <td><small>${contentPreview}</small></td>
                     <td>${escapeHtml(session.location || '-')}</td>
+                    <td><strong>${formatRupiah(session.price)}</strong></td>
                     <td>
                         <strong>${session.registered_count}/${session.quota}</strong><br>
                         <small class="text-muted">Sisa ${session.available_slots}</small>
@@ -308,19 +389,25 @@ async function loadSessions() {
         }).join('');
 
         window.__birthClassSessionsCache = sessions;
+        populateSessionFilterOptions(sessions);
     } catch (error) {
         console.error('Error loading birth class sessions:', error);
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
 async function loadRegistrations() {
     const tbody = document.getElementById('birth-class-registrations-tbody');
     const filterEl = document.getElementById('birth-class-registration-filter');
+    const sessionFilterEl = document.getElementById('birth-class-registration-session-filter');
     if (!tbody) return;
 
     const status = filterEl?.value || '';
-    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+    const sessionId = sessionFilterEl?.value || '';
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (sessionId) params.set('session_id', sessionId);
+    const query = params.toString() ? `?${params.toString()}` : '';
 
     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat pendaftar...</td></tr>';
 
@@ -337,15 +424,15 @@ async function loadRegistrations() {
             <tr>
                 <td>
                     <strong>${escapeHtml(row.patient_name)}</strong><br>
-                    <small class="text-muted">${escapeHtml(row.phone || '-')} ${row.email ? `| ${escapeHtml(row.email)}` : ''}</small>
+                    <small class="text-muted">${escapeHtml(row.phone || '-')} ${row.email ? `| ${escapeHtml(row.email)}` : ''}</small><br>
+                    <small class="text-muted">Sumber: ${escapeHtml(row.created_by || '-')}</small>
                 </td>
                 <td>
                     <div>${escapeHtml(row.class_title)}</div>
                     <small class="text-muted">${formatDate(row.session_date)} ${normalizeTime(row.start_time)}</small>
                 </td>
                 <td>
-                    <div>UK: ${row.gestational_weeks || '-'} minggu</div>
-                    <small class="text-muted">HPL: ${row.due_date ? formatDate(row.due_date) : '-'}</small>
+                    <small>${escapeHtml(row.notes || '-')}</small>
                 </td>
                 <td>${getStatusBadge(row.status)}</td>
                 <td>
@@ -382,8 +469,12 @@ async function saveSession(event) {
         location: document.getElementById('birth-class-location')?.value?.trim(),
         instructor_name: document.getElementById('birth-class-instructor')?.value?.trim() || null,
         quota: Number(document.getElementById('birth-class-quota')?.value || 0),
+        price: Number(document.getElementById('birth-class-price')?.value || 0),
+        learning_points: document.getElementById('birth-class-learning-points')?.value?.trim() || null,
+        items_to_bring: document.getElementById('birth-class-items-to-bring')?.value?.trim() || null,
+        benefits: document.getElementById('birth-class-benefits')?.value?.trim() || null,
         notes: document.getElementById('birth-class-notes')?.value?.trim() || null,
-        is_active: 1
+        is_active: document.getElementById('birth-class-is-active')?.checked ? 1 : 0
     };
 
     if (!payload.class_title || !payload.session_date || !payload.start_time || !payload.location || !payload.quota) {
@@ -480,6 +571,7 @@ function bindEvents() {
         Promise.all([loadSessions(), loadRegistrations()]);
     });
     document.getElementById('birth-class-registration-filter')?.addEventListener('change', loadRegistrations);
+    document.getElementById('birth-class-registration-session-filter')?.addEventListener('change', loadRegistrations);
     document.getElementById('birth-class-root')?.addEventListener('click', handleRootClick);
 }
 

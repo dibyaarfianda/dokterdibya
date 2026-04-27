@@ -1,9 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requireMenuAccess } = require('../middleware/auth');
+const { verifyToken, optionalAuth, requireMenuAccess } = require('../middleware/auth');
 
 let tablesReady = false;
+
+async function ensureColumn(tableName, columnName, alterSql) {
+    const [rows] = await db.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()
+           AND table_name = ?
+           AND column_name = ?
+         LIMIT 1`,
+        [tableName, columnName]
+    );
+
+    if (rows.length === 0) {
+        await db.query(alterSql);
+    }
+}
 
 async function ensureTables() {
     if (tablesReady) return;
@@ -27,6 +43,27 @@ async function ensureTables() {
             KEY idx_birth_class_sessions_date_active (session_date, is_active)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    await ensureColumn(
+        'birth_class_sessions',
+        'learning_points',
+        'ALTER TABLE birth_class_sessions ADD COLUMN learning_points TEXT NULL AFTER quota'
+    );
+    await ensureColumn(
+        'birth_class_sessions',
+        'items_to_bring',
+        'ALTER TABLE birth_class_sessions ADD COLUMN items_to_bring TEXT NULL AFTER learning_points'
+    );
+    await ensureColumn(
+        'birth_class_sessions',
+        'price',
+        'ALTER TABLE birth_class_sessions ADD COLUMN price DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER items_to_bring'
+    );
+    await ensureColumn(
+        'birth_class_sessions',
+        'benefits',
+        'ALTER TABLE birth_class_sessions ADD COLUMN benefits TEXT NULL AFTER price'
+    );
 
     await db.query(`
         CREATE TABLE IF NOT EXISTS birth_class_registrations (
@@ -61,6 +98,12 @@ function normalizePhone(value) {
     return String(value || '').trim().replace(/\s+/g, '');
 }
 
+function normalizeDecimal(value, fallback = 0) {
+    const parsed = Number(value);
+    if (Number.isNaN(parsed)) return fallback;
+    return parsed;
+}
+
 function formatDateLocal(dateValue) {
     const d = new Date(dateValue);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -69,9 +112,11 @@ function formatDateLocal(dateValue) {
 function mapSessionRow(row) {
     const registeredCount = Number(row.registered_count || 0);
     const quota = Number(row.quota || 0);
+    const price = normalizeDecimal(row.price, 0);
     return {
         ...row,
         quota,
+        price,
         registered_count: registeredCount,
         available_slots: Math.max(quota - registeredCount, 0)
     };
@@ -112,7 +157,7 @@ router.get('/sessions/public', async (req, res) => {
 });
 
 // Public: register to class
-router.post('/register', async (req, res) => {
+router.post('/register', optionalAuth, async (req, res) => {
     try {
         await ensureTables();
 
@@ -121,31 +166,53 @@ router.post('/register', async (req, res) => {
             patient_name,
             phone,
             email,
-            due_date,
-            gestational_weeks,
             notes
         } = req.body || {};
 
         const sessionId = Number(session_id);
-        const trimmedName = String(patient_name || '').trim();
-        const normalizedPhone = normalizePhone(phone);
-        const normalizedEmail = String(email || '').trim();
+        let patientId = null;
+        let trimmedName = String(patient_name || '').trim();
+        let normalizedPhone = normalizePhone(phone);
+        let normalizedEmail = String(email || '').trim();
         const normalizedNotes = String(notes || '').trim();
-        const weeks = gestational_weeks === undefined || gestational_weeks === null || gestational_weeks === ''
-            ? null
-            : Number(gestational_weeks);
+        let registrationSource = 'public_form';
+
+        const isPatientToken = req.user && (req.user.user_type === 'patient' || req.user.role === 'patient');
+        if (isPatientToken) {
+            const [patientRows] = await db.query(
+                `SELECT id, full_name, email, phone
+                 FROM patients
+                 WHERE id = ?
+                 LIMIT 1`,
+                [req.user.id]
+            );
+
+            if (patientRows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Profil pasien tidak ditemukan'
+                });
+            }
+
+            const patient = patientRows[0];
+            patientId = patient.id;
+            trimmedName = String(patient.full_name || '').trim();
+            normalizedPhone = normalizePhone(patient.phone || '');
+            normalizedEmail = String(patient.email || '').trim();
+            registrationSource = `patient:${patient.id}`;
+
+            if (!normalizedPhone) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nomor HP Anda belum tersedia. Silakan lengkapi profil terlebih dahulu.'
+                });
+            }
+        }
 
         if (!sessionId || !trimmedName || !normalizedPhone) {
             return res.status(400).json({
                 success: false,
                 message: 'session_id, patient_name, dan phone wajib diisi'
-            });
-        }
-
-        if (weeks !== null && (Number.isNaN(weeks) || weeks < 0 || weeks > 50)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Usia kehamilan tidak valid'
             });
         }
 
@@ -202,17 +269,16 @@ router.post('/register', async (req, res) => {
 
         await db.query(`
             INSERT INTO birth_class_registrations
-            (session_id, patient_name, phone, email, due_date, gestational_weeks, notes, status, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'registered', ?)
+            (session_id, patient_id, patient_name, phone, email, notes, status, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, 'registered', ?)
         `, [
             sessionId,
+            patientId,
             trimmedName,
             normalizedPhone,
             normalizedEmail || null,
-            due_date || null,
-            weeks,
             normalizedNotes || null,
-            'public_form'
+            registrationSource
         ]);
 
         res.status(201).json({
@@ -280,14 +346,22 @@ router.post('/sessions', verifyToken, requireMenuAccess('klinik_privat'), async 
             location,
             instructor_name,
             quota,
+            learning_points,
+            items_to_bring,
+            price,
+            benefits,
             notes
         } = req.body || {};
 
         const classTitle = String(class_title || '').trim();
         const locationText = String(location || '').trim();
         const instructor = String(instructor_name || '').trim();
+        const learningPoints = String(learning_points || '').trim();
+        const itemsToBring = String(items_to_bring || '').trim();
+        const benefitsText = String(benefits || '').trim();
         const noteText = String(notes || '').trim();
         const quotaNumber = Number(quota || 0);
+        const priceNumber = normalizeDecimal(price, 0);
 
         if (!classTitle || !session_date || !start_time || !locationText || !quotaNumber) {
             return res.status(400).json({
@@ -303,10 +377,17 @@ router.post('/sessions', verifyToken, requireMenuAccess('klinik_privat'), async 
             });
         }
 
+        if (Number.isNaN(priceNumber) || priceNumber < 0 || priceNumber > 1000000000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Harga kelas tidak valid'
+            });
+        }
+
         await db.query(`
             INSERT INTO birth_class_sessions
-            (class_title, session_date, start_time, end_time, location, instructor_name, quota, notes, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (class_title, session_date, start_time, end_time, location, instructor_name, quota, learning_points, items_to_bring, price, benefits, notes, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             classTitle,
             session_date,
@@ -315,6 +396,10 @@ router.post('/sessions', verifyToken, requireMenuAccess('klinik_privat'), async 
             locationText,
             instructor || null,
             quotaNumber,
+            learningPoints || null,
+            itemsToBring || null,
+            priceNumber,
+            benefitsText || null,
             noteText || null,
             req.user?.name || req.user?.id || 'staff'
         ]);
@@ -346,6 +431,10 @@ router.put('/sessions/:id', verifyToken, requireMenuAccess('klinik_privat'), asy
             location,
             instructor_name,
             quota,
+            learning_points,
+            items_to_bring,
+            price,
+            benefits,
             is_active,
             notes
         } = req.body || {};
@@ -353,14 +442,32 @@ router.put('/sessions/:id', verifyToken, requireMenuAccess('klinik_privat'), asy
         const classTitle = String(class_title || '').trim();
         const locationText = String(location || '').trim();
         const instructor = String(instructor_name || '').trim();
+        const learningPoints = String(learning_points || '').trim();
+        const itemsToBring = String(items_to_bring || '').trim();
+        const benefitsText = String(benefits || '').trim();
         const noteText = String(notes || '').trim();
         const quotaNumber = Number(quota || 0);
+        const priceNumber = normalizeDecimal(price, 0);
         const activeValue = is_active === true || is_active === 1 ? 1 : 0;
 
         if (!sessionId || !classTitle || !session_date || !start_time || !locationText || !quotaNumber) {
             return res.status(400).json({
                 success: false,
                 message: 'Data sesi belum lengkap'
+            });
+        }
+
+        if (Number.isNaN(quotaNumber) || quotaNumber < 1 || quotaNumber > 200) {
+            return res.status(400).json({
+                success: false,
+                message: 'Quota harus antara 1 hingga 200'
+            });
+        }
+
+        if (Number.isNaN(priceNumber) || priceNumber < 0 || priceNumber > 1000000000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Harga kelas tidak valid'
             });
         }
 
@@ -373,6 +480,10 @@ router.put('/sessions/:id', verifyToken, requireMenuAccess('klinik_privat'), asy
                 location = ?,
                 instructor_name = ?,
                 quota = ?,
+                learning_points = ?,
+                items_to_bring = ?,
+                price = ?,
+                benefits = ?,
                 is_active = ?,
                 notes = ?
             WHERE id = ?
@@ -384,6 +495,10 @@ router.put('/sessions/:id', verifyToken, requireMenuAccess('klinik_privat'), asy
             locationText,
             instructor || null,
             quotaNumber,
+            learningPoints || null,
+            itemsToBring || null,
+            priceNumber,
+            benefitsText || null,
             activeValue,
             noteText || null,
             sessionId
