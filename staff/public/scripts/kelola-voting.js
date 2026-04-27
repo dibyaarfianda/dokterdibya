@@ -4,6 +4,8 @@
     const API_URL = window.location.hostname === 'localhost'
         ? 'http://localhost:3000/api'
         : 'https://dokterdibya.com/api';
+    const MIN_OPTIONS = 2;
+    const MAX_OPTIONS = 10;
 
     let socket = null;
     let initialized = false;
@@ -34,12 +36,115 @@
         });
     }
 
-    function parseOptions(input) {
-        return String(input || '')
-            .split('\n')
-            .map((line) => line.trim())
-            .filter((line, index, arr) => line.length > 0 && arr.indexOf(line) === index)
-            .slice(0, 10);
+    function getOptionsListEl() {
+        return document.getElementById('voting-options-list');
+    }
+
+    function updateOptionRowsUI() {
+        const listEl = getOptionsListEl();
+        if (!listEl) return;
+
+        const rows = Array.from(listEl.querySelectorAll('.voting-option-row'));
+        rows.forEach((row, index) => {
+            const indexEl = row.querySelector('.voting-option-index');
+            const inputEl = row.querySelector('.voting-option-input');
+            const removeBtn = row.querySelector('.btn-remove-voting-option');
+
+            if (indexEl) {
+                indexEl.textContent = String(index + 1);
+            }
+
+            if (inputEl) {
+                inputEl.placeholder = `Isi jawaban ${index + 1}`;
+            }
+
+            if (removeBtn) {
+                removeBtn.style.display = rows.length > MIN_OPTIONS ? 'inline-flex' : 'none';
+            }
+        });
+
+        const addBtn = document.getElementById('btn-add-voting-option');
+        if (addBtn) {
+            addBtn.disabled = rows.length >= MAX_OPTIONS;
+        }
+    }
+
+    function addOptionRow(value = '') {
+        const listEl = getOptionsListEl();
+        if (!listEl) return;
+
+        const totalRows = listEl.querySelectorAll('.voting-option-row').length;
+        if (totalRows >= MAX_OPTIONS) {
+            toastr.warning(`Maksimal ${MAX_OPTIONS} opsi jawaban`);
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'input-group input-group-sm mb-2 voting-option-row';
+        row.innerHTML = `
+            <div class="input-group-prepend">
+                <span class="input-group-text" style="min-width: 66px;">
+                    <input type="radio" name="voting-option-preview" class="mr-1" ${totalRows === 0 ? 'checked' : ''}>
+                    <span class="voting-option-index">${totalRows + 1}</span>
+                </span>
+            </div>
+            <input type="text" class="form-control voting-option-input" maxlength="255" placeholder="Isi jawaban ${totalRows + 1}" value="${escapeHtml(value)}">
+            <div class="input-group-append">
+                <button class="btn btn-outline-danger btn-remove-voting-option" type="button" title="Hapus opsi">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        const removeBtn = row.querySelector('.btn-remove-voting-option');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                row.remove();
+                updateOptionRowsUI();
+            });
+        }
+
+        listEl.appendChild(row);
+        updateOptionRowsUI();
+    }
+
+    function collectOptions() {
+        const listEl = getOptionsListEl();
+        if (!listEl) return [];
+
+        const raw = Array.from(listEl.querySelectorAll('.voting-option-input'))
+            .map((input) => String(input.value || '').trim())
+            .filter((value) => value.length > 0);
+
+        return raw.filter((value, index) => raw.indexOf(value) === index).slice(0, MAX_OPTIONS);
+    }
+
+    function resetOptionRows() {
+        const listEl = getOptionsListEl();
+        if (!listEl) return;
+
+        listEl.innerHTML = '';
+        addOptionRow('');
+        addOptionRow('');
+    }
+
+    function initOptionEditor() {
+        const addBtn = document.getElementById('btn-add-voting-option');
+        if (addBtn && !addBtn.dataset.boundVoting) {
+            addBtn.addEventListener('click', () => addOptionRow(''));
+            addBtn.dataset.boundVoting = 'true';
+        }
+
+        const listEl = getOptionsListEl();
+        if (listEl && !listEl.dataset.readyVoting) {
+            resetOptionRows();
+            listEl.dataset.readyVoting = 'true';
+            return;
+        }
+
+        if (listEl && !listEl.querySelector('.voting-option-row')) {
+            resetOptionRows();
+        }
     }
 
     function setupSocket() {
@@ -109,17 +214,16 @@
 
         const titleEl = document.getElementById('voting-title');
         const descriptionEl = document.getElementById('voting-description');
-        const optionsEl = document.getElementById('voting-options');
         const showOnOpenEl = document.getElementById('voting-show-on-open');
         const submitBtn = document.getElementById('btn-create-voting');
 
-        if (!titleEl || !optionsEl || !submitBtn) {
+        if (!titleEl || !submitBtn) {
             return;
         }
 
         const title = titleEl.value.trim();
         const description = descriptionEl ? descriptionEl.value.trim() : '';
-        const options = parseOptions(optionsEl.value);
+        const options = collectOptions();
         const showOnOpen = showOnOpenEl ? showOnOpenEl.checked : true;
 
         if (!title) {
@@ -127,7 +231,7 @@
             return;
         }
 
-        if (options.length < 2) {
+        if (options.length < MIN_OPTIONS) {
             toastr.warning('Minimal 2 opsi jawaban');
             return;
         }
@@ -159,7 +263,7 @@
             toastr.success('Voting baru berhasil dibuat');
             titleEl.value = '';
             if (descriptionEl) descriptionEl.value = '';
-            optionsEl.value = '';
+            resetOptionRows();
             await loadVotingList();
         } catch (error) {
             toastr.error(error.message || 'Gagal membuat voting');
@@ -245,6 +349,7 @@
 
     function initKelolaVoting() {
         setupSocket();
+        initOptionEditor();
 
         const formEl = document.getElementById('voting-create-form');
         const refreshBtn = document.getElementById('btn-refresh-voting');
