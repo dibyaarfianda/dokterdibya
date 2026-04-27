@@ -36,6 +36,38 @@
         });
     }
 
+    async function parseApiResult(response) {
+        const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+
+        const rawText = await response.text();
+        const isHtml = /<\s*html|<\s*!doctype/i.test(rawText);
+        if (!response.ok) {
+            if (response.status >= 502 && response.status <= 504) {
+                return {
+                    success: false,
+                    message: 'Server sedang sibuk. Silakan coba lagi beberapa detik.'
+                };
+            }
+
+            return {
+                success: false,
+                message: isHtml
+                    ? 'Respons server tidak valid. Silakan refresh halaman lalu coba lagi.'
+                    : `Gagal memproses permintaan (HTTP ${response.status})`
+            };
+        }
+
+        return {
+            success: false,
+            message: isHtml
+                ? 'Respons server tidak valid. Silakan refresh halaman lalu coba lagi.'
+                : 'Respons server tidak valid'
+        };
+    }
+
     function ensureModal() {
         if (document.getElementById('patient-voting-modal')) {
             return;
@@ -462,7 +494,7 @@
                 }
             });
 
-            const result = await response.json();
+            const result = await parseApiResult(response);
             if (!response.ok || !result.success) {
                 throw new Error(result.message || 'Gagal memproses like');
             }
