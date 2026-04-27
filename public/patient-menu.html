@@ -2530,7 +2530,22 @@
         async function loadBirthData() {
             const token = getToken();
             try {
-                // 1. Check for pending (staff marked but patient hasn't filled data yet)
+                // 1. Load published, non-dismissed birth card first.
+                // This ensures cards re-shown from Settings appear immediately.
+                const response = await fetch('/api/patients/birth-record?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.birth) {
+                        const data = result.birth;
+                        _birthCardId = data.id;
+                        renderBirthCard(data);
+                        return;
+                    }
+                }
+
+                // 2. If there is no active card, then show pending input popup (if any).
                 const pendingResp = await fetch('/api/patient/birth-pending?_t=' + Date.now(), {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -2538,21 +2553,8 @@
                     const pendingResult = await pendingResp.json();
                     if (pendingResult.success && pendingResult.pending) {
                         showBirthInputPopup(pendingResult.pending);
-                        return;
                     }
                 }
-
-                // 2. Load published, non-dismissed birth card
-                const response = await fetch('/api/patients/birth-record', {
-                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
-                });
-                if (!response.ok) return;
-                const result = await response.json();
-                if (!result.success || !result.birth) return;
-
-                const data = result.birth;
-                _birthCardId = data.id;
-                renderBirthCard(data);
 
             } catch (error) {
                 console.error('Error loading birth congratulations:', error);
