@@ -250,6 +250,7 @@
 
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
                 <div style="font-size:12px;color:#d6d6d6;font-weight:700;margin-bottom:8px;">Komentar Pasien</div>
+                <div style="font-size:11px;color:#9a9a9a;margin-bottom:8px;">Nama pada komentar disamarkan untuk menjaga privasi pasien.</div>
                 ${renderCommentSortControls(commentSortMode)}
                 <div id="patient-voting-comments-list">${renderComments(data.comments || [])}</div>
                 ${renderCommentComposer(data)}
