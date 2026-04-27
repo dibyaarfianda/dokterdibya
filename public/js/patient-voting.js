@@ -1,0 +1,265 @@
+(function() {
+    'use strict';
+
+    const API_URL = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000/api'
+        : 'https://dokterdibya.com/api';
+
+    let socket = null;
+    let currentPoll = null;
+    let initialized = false;
+
+    function getToken() {
+        return localStorage.getItem('vps_auth_token') ||
+            sessionStorage.getItem('vps_auth_token') ||
+            localStorage.getItem('patient_token');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = String(text || '');
+        return div.innerHTML;
+    }
+
+    function ensureModal() {
+        if (document.getElementById('patient-voting-modal')) {
+            return;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.id = 'patient-voting-modal';
+        wrapper.style.cssText = 'display:none;position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);';
+        wrapper.innerHTML = `
+            <div style="max-width:520px;margin:8vh auto;background:#111;border:1px solid #333;border-radius:14px;color:#eee;box-shadow:0 20px 45px rgba(0,0,0,.45);overflow:hidden;">
+                <div style="padding:14px 16px;border-bottom:1px solid #2a2a2a;display:flex;justify-content:space-between;align-items:center;">
+                    <strong style="font-size:16px;"><i class="fa fa-bar-chart"></i> Voting Pasien</strong>
+                    <button type="button" id="patient-voting-close" style="background:transparent;border:0;color:#bbb;font-size:20px;line-height:1;cursor:pointer;">&times;</button>
+                </div>
+                <div id="patient-voting-content" style="padding:16px;"></div>
+            </div>
+        `;
+
+        document.body.appendChild(wrapper);
+
+        const closeBtn = document.getElementById('patient-voting-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', hideModal);
+        }
+
+        wrapper.addEventListener('click', function(event) {
+            if (event.target === wrapper) hideModal();
+        });
+    }
+
+    function showModal() {
+        ensureModal();
+        const modal = document.getElementById('patient-voting-modal');
+        if (modal) modal.style.display = 'block';
+    }
+
+    function hideModal() {
+        const modal = document.getElementById('patient-voting-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function renderOptions(options, selectedOptionId) {
+        return (options || []).map((option) => {
+            const checked = selectedOptionId === option.id;
+            return `
+                <label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #2f2f2f;border-radius:10px;margin-bottom:8px;cursor:pointer;">
+                    <input type="radio" name="patient-voting-option" value="${option.id}" ${checked ? 'checked' : ''} style="margin-top:3px;">
+                    <span>${escapeHtml(option.option_text)}</span>
+                </label>
+            `;
+        }).join('');
+    }
+
+    function renderResults(options, totalVotes) {
+        return (options || []).map((option) => {
+            const percent = Number(option.vote_percent || 0);
+            return `
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+                        <span>${escapeHtml(option.option_text)}</span>
+                        <strong>${option.vote_count} (${percent.toFixed(2)}%)</strong>
+                    </div>
+                    <div style="height:7px;background:#2b2b2b;border-radius:7px;overflow:hidden;">
+                        <div style="height:100%;width:${Math.min(100, Math.max(0, percent))}%;background:linear-gradient(90deg,#f59e0b,#f97316);"></div>
+                    </div>
+                </div>
+            `;
+        }).join('') + `<div style="font-size:12px;color:#aaa;margin-top:8px;">Total vote: ${totalVotes}</div>`;
+    }
+
+    function renderPollContent(data, forceOpen) {
+        const contentEl = document.getElementById('patient-voting-content');
+        if (!contentEl) return;
+
+        if (!data) {
+            contentEl.innerHTML = `
+                <div style="text-align:center;color:#bbb;padding:14px;">
+                    <i class="fa fa-info-circle" style="font-size:24px;margin-bottom:8px;"></i>
+                    <p style="margin:0;">Saat ini belum ada voting aktif.</p>
+                </div>
+            `;
+            if (forceOpen) showModal();
+            return;
+        }
+
+        const hasVoted = !!data.has_voted;
+        const bodyHtml = `
+            <h4 style="margin:0 0 8px 0;font-size:17px;color:#fff;">${escapeHtml(data.title)}</h4>
+            ${data.description ? `<p style="margin:0 0 12px 0;color:#bdbdbd;font-size:13px;">${escapeHtml(data.description)}</p>` : ''}
+            ${!hasVoted ? `
+                <div id="patient-voting-options-wrap">${renderOptions(data.options, null)}</div>
+                <button id="patient-voting-submit" style="width:100%;margin-top:8px;background:#f59e0b;border:0;color:#111;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer;">
+                    Kirim Pilihan
+                </button>
+            ` : `
+                <div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:#a7f3d0;padding:10px 12px;border-radius:10px;margin-bottom:10px;">
+                    Anda sudah memilih pada voting ini.
+                </div>
+                ${renderResults(data.options, data.total_votes || 0)}
+            `}
+        `;
+
+        contentEl.innerHTML = bodyHtml;
+
+        if (!hasVoted) {
+            const submitBtn = document.getElementById('patient-voting-submit');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', submitVote);
+            }
+        }
+
+        if (!hasVoted || forceOpen) {
+            showModal();
+        }
+    }
+
+    async function loadActivePoll(forceOpen) {
+        const token = getToken();
+        if (!token) return;
+
+        try {
+            const response = await fetch(`${API_URL}/polls/patient/active?_t=${Date.now()}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) return;
+
+            currentPoll = result.data;
+            renderPollContent(result.data, !!forceOpen);
+        } catch (error) {
+            // Silently fail to avoid blocking portal load
+        }
+    }
+
+    async function submitVote() {
+        if (!currentPoll || !currentPoll.id) return;
+
+        const selected = document.querySelector('input[name="patient-voting-option"]:checked');
+        if (!selected) {
+            alert('Silakan pilih salah satu opsi terlebih dahulu.');
+            return;
+        }
+
+        const optionId = Number(selected.value);
+        if (!Number.isInteger(optionId)) {
+            return;
+        }
+
+        const submitBtn = document.getElementById('patient-voting-submit');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Menyimpan...';
+        }
+
+        try {
+            const token = getToken();
+            const response = await fetch(`${API_URL}/polls/patient/${currentPoll.id}/vote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ option_id: optionId })
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal menyimpan pilihan');
+            }
+
+            currentPoll = result.data;
+            renderPollContent(result.data, true);
+            if (typeof window.loadNotificationCount === 'function') {
+                window.loadNotificationCount();
+            }
+        } catch (error) {
+            alert(error.message || 'Gagal menyimpan pilihan');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Kirim Pilihan';
+            }
+        }
+    }
+
+    function setupSocket() {
+        if (socket || typeof io === 'undefined') {
+            return;
+        }
+
+        const socketUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
+            : 'https://dokterdibya.com';
+
+        socket = io(socketUrl, {
+            transports: ['polling'],
+            upgrade: false
+        });
+
+        socket.on('poll:created', () => loadActivePoll(true));
+        socket.on('poll:voted', () => {
+            if (currentPoll && currentPoll.id) {
+                loadActivePoll(false);
+            }
+        });
+        socket.on('poll:closed', () => loadActivePoll(false));
+    }
+
+    function init() {
+        if (initialized) {
+            loadActivePoll(window.location.hash === '#voting');
+            return;
+        }
+
+        initialized = true;
+        ensureModal();
+        setupSocket();
+
+        setTimeout(() => {
+            loadActivePoll(window.location.hash === '#voting');
+        }, 800);
+
+        window.addEventListener('hashchange', function() {
+            if (window.location.hash === '#voting') {
+                loadActivePoll(true);
+            }
+        });
+
+        window.addEventListener('focus', function() {
+            loadActivePoll(false);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

@@ -34,6 +34,7 @@ const io = new Server(server, {
 
 // Make io globally available for routes to emit events
 global.io = io;
+app.set('io', io);
 
 const PORT = process.env.PORT || 3000;
 
@@ -186,6 +187,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/hospital-appointments', // Hospital booking
     '/api/articles',           // Public articles
     '/api/patient-notifications', // Patient notifications
+    '/api/polls',              // Patient voting
     '/api/announcements',      // Public announcements
     '/api/greeting-cards/active', // Greeting cards (active only)
     '/api/fertility-calendar', // Fertility cycle tracking
@@ -394,6 +396,10 @@ app.use('/api/notifications', notificationsRoutes);
 // Patient Notifications routes (for patient portal)
 const patientNotificationsRoutes = require('./routes/patient-notifications');
 app.use('/api/patient-notifications', patientNotificationsRoutes);
+
+// Poll/Voting routes (staff + patient portal)
+const pollsRoutes = require('./routes/polls');
+app.use('/api/polls', pollsRoutes);
 
 // Patient Activity routes (aggregated patient activities for admin dashboard)
 const patientActivityRoutes = require('./routes/patient-activity');

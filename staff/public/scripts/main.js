@@ -81,6 +81,7 @@ function initPages() {
     pages.kelolaPasien = grab('manage-patients-page') || grab('kelola-pasien-page');
     pages.kelolaPasienLegacy = grab('kelola-pasien-page');
     pages.kelolaPengumuman = grab('kelola-pengumuman-page');
+    pages.voting = grab('voting-page');
     pages.kelolaAppointment = grab('kelola-appointment-page');
     pages.kelolaJadwal = grab('kelola-jadwal-page');
     pages.kelolaTindakan = grab('kelola-tindakan-page');
@@ -1769,6 +1770,22 @@ function showKelolaPengumumanPage() {
         }
     }).catch(error => {
         console.error('Failed to load kelola-announcement.js:', error);
+    });
+}
+
+function showVotingPage() {
+    hideAllPages();
+    pages.voting?.classList.remove('d-none');
+    setTitleAndActive('Voting Pasien', 'nav-voting', 'voting');
+
+    importWithVersion('./kelola-voting.js').then(() => {
+        if (typeof window.initKelolaVoting === 'function') {
+            window.initKelolaVoting();
+        } else {
+            console.error('Kelola Voting module loaded, but initKelolaVoting function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelola-voting.js:', error);
     });
 }
 
@@ -5164,6 +5181,7 @@ window.showAnalyticsPage = showAnalyticsPage;
 window.showFinancePage = showFinancePage;
 window.showKelolaPasienPage = showKelolaPasienPage;
 window.showKelolaPengumumanPage = showKelolaPengumumanPage;
+window.showVotingPage = showVotingPage;
 window.showKelolaAppointmentPage = showKelolaAppointmentPage;
 window.showKelolaJadwalPage = showKelolaJadwalPage;
 window.showDocboardPage = showDocboardPage;
