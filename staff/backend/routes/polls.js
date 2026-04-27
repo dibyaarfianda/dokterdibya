@@ -271,7 +271,7 @@ async function getPollResultById(pollId) {
     };
 }
 
-async function notifyPatientsForNewPoll(poll) {
+async function notifyPatientsForPoll(poll, mode = 'new') {
     try {
         const [patients] = await db.query(`
             SELECT id
@@ -283,11 +283,22 @@ async function notifyPatientsForNewPoll(poll) {
             return;
         }
 
-        const title = `Voting Baru: ${String(poll.title || '').substring(0, 80)}`;
+        let titlePrefix = 'Voting Baru';
+        let defaultMessage = 'Buka portal pasien untuk ikut voting terbaru.';
+
+        if (mode === 'reminder') {
+            titlePrefix = 'Reminder Voting';
+            defaultMessage = 'Yuk cek voting terbaru di portal pasien.';
+        } else if (mode === 'update') {
+            titlePrefix = 'Voting Diperbarui';
+            defaultMessage = 'Ada pembaruan voting, cek detailnya di portal pasien.';
+        }
+
+        const title = `${titlePrefix}: ${String(poll.title || '').substring(0, 80)}`;
         const description = String(poll.description || '').trim();
         const message = description.length
             ? description.substring(0, 180)
-            : 'Buka portal pasien untuk ikut voting terbaru.';
+            : defaultMessage;
 
         const values = patients.map((patient) => [
             patient.id,
@@ -316,7 +327,7 @@ async function notifyPatientsForNewPoll(poll) {
         try {
             const pushService = require('../services/pushNotificationService');
             await pushService.sendToAll(
-                'Voting Baru',
+                titlePrefix,
                 String(poll.title || '').substring(0, 100),
                 {
                     type: 'poll',
@@ -325,11 +336,12 @@ async function notifyPatientsForNewPoll(poll) {
                 }
             );
         } catch (pushError) {
-            logger.warn('Poll push broadcast failed', { error: pushError.message, pollId: poll.id });
+            logger.warn('Poll push broadcast failed', { error: pushError.message, pollId: poll.id, mode });
         }
     } catch (error) {
-        logger.error('Failed to notify patients for new poll', {
+        logger.error('Failed to notify patients for poll', {
             pollId: poll.id,
+            mode,
             error: error.message
         });
     }
@@ -460,7 +472,7 @@ router.post('/staff/create', verifyToken, async (req, res) => {
             });
         }
 
-        notifyPatientsForNewPoll(poll).catch(() => {});
+        notifyPatientsForPoll(poll, 'new').catch(() => {});
 
         res.json({
             success: true,
@@ -617,6 +629,33 @@ router.put('/staff/:id/update', verifyToken, async (req, res) => {
         if (connection) {
             connection.release();
         }
+    }
+});
+
+router.post('/staff/:id/notify', verifyToken, async (req, res) => {
+    try {
+        await ensureVotingTables();
+
+        const pollId = Number(req.params.id);
+        if (!Number.isInteger(pollId) || pollId <= 0) {
+            return res.status(400).json({ success: false, message: 'ID voting tidak valid' });
+        }
+
+        const poll = await getPollResultById(pollId);
+        if (!poll) {
+            return res.status(404).json({ success: false, message: 'Voting tidak ditemukan' });
+        }
+
+        await notifyPatientsForPoll(poll, 'reminder');
+
+        return res.json({
+            success: true,
+            message: 'Push notifikasi voting berhasil dikirim',
+            data: { poll_id: pollId }
+        });
+    } catch (error) {
+        logger.error('Failed to send poll reminder', { error: error.message });
+        return res.status(500).json({ success: false, message: 'Gagal mengirim push notifikasi voting' });
     }
 });
 
