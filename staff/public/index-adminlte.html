@@ -3357,9 +3357,12 @@
                                             <textarea class="form-control" id="voting-description" rows="3" maxlength="1000" placeholder="Tambahkan konteks singkat untuk pasien..."></textarea>
                                         </div>
                                         <div class="form-group">
-                                            <label for="voting-options">Opsi Jawaban (1 baris = 1 opsi)</label>
-                                            <textarea class="form-control" id="voting-options" rows="6" placeholder="Contoh:\nNutrisi Trimester 1\nPersiapan Persalinan\nMenyusui untuk Ibu Baru" required></textarea>
-                                            <small class="form-text text-muted">Minimal 2 opsi, maksimal 10 opsi.</small>
+                                            <label>Opsi Jawaban</label>
+                                            <div id="voting-options-list" class="mb-2"></div>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-add-voting-option">
+                                                <i class="fas fa-plus mr-1"></i>Tambah Opsi
+                                            </button>
+                                            <small class="form-text text-muted">Klik Tambah Opsi untuk membuat jawaban ke-2, ke-3, dan seterusnya (maksimal 10).</small>
                                         </div>
                                         <div class="form-group mb-3">
                                             <div class="custom-control custom-switch">
