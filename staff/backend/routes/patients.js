@@ -807,14 +807,28 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                 p.id as patient_id,
                 p.full_name,
                 p.whatsapp,
+                p.phone,
+                u.email,
                 latest.mr_id,
                 latest.visit_location,
                 latest.hpht,
                 DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
                 FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
                 DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
-                latest.last_activity_at as last_visit
+                latest.last_activity_at as last_visit,
+                (
+                    SELECT COALESCE(
+                        NULLIF(JSON_UNQUOTE(JSON_EXTRACT(md.record_data, '$.diagnosis_utama')), ''),
+                        NULLIF(JSON_UNQUOTE(JSON_EXTRACT(md.record_data, '$.diagnosis')), '')
+                    )
+                    FROM medical_records md
+                    WHERE md.mr_id = latest.mr_id
+                      AND md.record_type = 'diagnosis'
+                    ORDER BY md.created_at DESC
+                    LIMIT 1
+                ) as last_diagnosis
             FROM patients p
+            LEFT JOIN users u ON u.new_id = p.id AND u.user_type = 'patient'
             JOIN (
                 SELECT
                     scr.patient_id,
@@ -849,6 +863,9 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                 patient_id: row.patient_id,
                 full_name: row.full_name,
                 whatsapp: row.whatsapp,
+                phone: row.phone,
+                contact_phone: row.whatsapp || row.phone || null,
+                email: row.email || null,
                 mr_id: row.mr_id,
                 visit_location: row.visit_location,
                 hpht: row.hpht,
@@ -857,7 +874,8 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                 days_pregnant: row.days_pregnant,
                 gestational_age: `${weeksPregnant} minggu ${daysExtra} hari`,
                 days_until_due: daysUntilDue,
-                last_visit: row.last_visit
+                last_visit: row.last_visit,
+                last_diagnosis: row.last_diagnosis || null
             };
         });
 
@@ -886,14 +904,28 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                 p.id as patient_id,
                 p.full_name,
                 p.whatsapp,
+                p.phone,
+                u.email,
                 latest.mr_id,
                 latest.visit_location,
                 latest.hpht,
                 DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
                 FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
                 DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
-                latest.last_activity_at as last_visit
+                latest.last_activity_at as last_visit,
+                (
+                    SELECT COALESCE(
+                        NULLIF(JSON_UNQUOTE(JSON_EXTRACT(md.record_data, '$.diagnosis_utama')), ''),
+                        NULLIF(JSON_UNQUOTE(JSON_EXTRACT(md.record_data, '$.diagnosis')), '')
+                    )
+                    FROM medical_records md
+                    WHERE md.mr_id = latest.mr_id
+                      AND md.record_type = 'diagnosis'
+                    ORDER BY md.created_at DESC
+                    LIMIT 1
+                ) as last_diagnosis
             FROM patients p
+            LEFT JOIN users u ON u.new_id = p.id AND u.user_type = 'patient'
             JOIN (
                 SELECT
                     scr.patient_id,
@@ -927,6 +959,9 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                 patient_id: row.patient_id,
                 full_name: row.full_name,
                 whatsapp: row.whatsapp,
+                phone: row.phone,
+                contact_phone: row.whatsapp || row.phone || null,
+                email: row.email || null,
                 mr_id: row.mr_id,
                 visit_location: row.visit_location,
                 hpht: row.hpht,
@@ -935,7 +970,8 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                 days_pregnant: row.days_pregnant,
                 gestational_age: `${weeksPregnant} minggu ${daysExtra} hari`,
                 days_overdue: daysOverdue,
-                last_visit: row.last_visit
+                last_visit: row.last_visit,
+                last_diagnosis: row.last_diagnosis || null
             };
         });
 
