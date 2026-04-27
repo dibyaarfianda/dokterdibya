@@ -808,7 +808,6 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                 p.full_name,
                 p.whatsapp,
                 p.phone,
-                u.email,
                 latest.mr_id,
                 latest.visit_location,
                 latest.hpht,
@@ -828,7 +827,6 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                     LIMIT 1
                 ) as last_diagnosis
             FROM patients p
-            LEFT JOIN users u ON u.new_id = p.id AND u.user_type = 'patient'
             JOIN (
                 SELECT
                     scr.patient_id,
@@ -865,7 +863,6 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
                 whatsapp: row.whatsapp,
                 phone: row.phone,
                 contact_phone: row.whatsapp || row.phone || null,
-                email: row.email || null,
                 mr_id: row.mr_id,
                 visit_location: row.visit_location,
                 hpht: row.hpht,
@@ -905,7 +902,6 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                 p.full_name,
                 p.whatsapp,
                 p.phone,
-                u.email,
                 latest.mr_id,
                 latest.visit_location,
                 latest.hpht,
@@ -925,7 +921,6 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                     LIMIT 1
                 ) as last_diagnosis
             FROM patients p
-            LEFT JOIN users u ON u.new_id = p.id AND u.user_type = 'patient'
             JOIN (
                 SELECT
                     scr.patient_id,
@@ -961,7 +956,6 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
                 whatsapp: row.whatsapp,
                 phone: row.phone,
                 contact_phone: row.whatsapp || row.phone || null,
-                email: row.email || null,
                 mr_id: row.mr_id,
                 visit_location: row.visit_location,
                 hpht: row.hpht,

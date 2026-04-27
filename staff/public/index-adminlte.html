@@ -5398,9 +5398,9 @@ Contoh Markdown:
                                                 <tr>
                                                     <th>Nama</th>
                                                     <th>No. Telp</th>
-                                                    <th>Email</th>
                                                     <th>Diagnosis Kontrol Terakhir</th>
                                                     <th>Tanggal Kontrol Terakhir</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="near-hpl-patients-tbody">
@@ -5429,9 +5429,9 @@ Contoh Markdown:
                                                 <tr>
                                                     <th>Nama</th>
                                                     <th>No. Telp</th>
-                                                    <th>Email</th>
                                                     <th>Diagnosis Kontrol Terakhir</th>
                                                     <th>Tanggal Kontrol Terakhir</th>
+                                                    <th>Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="overdue-hpl-patients-tbody">
@@ -8204,10 +8204,12 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
 
         tbody.innerHTML = items.map(patient => {
-            const patientName = escapeHtmlSafe(patient.full_name || '-');
+            const fullNameRaw = String(patient.full_name || '-');
+            const patientName = escapeHtmlSafe(fullNameRaw);
             const patientId = escapeHtmlSafe(patient.patient_id || '');
+            const patientIdRaw = String(patient.patient_id || '');
+            const patientNameJs = fullNameRaw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             const phone = escapeHtmlSafe(patient.contact_phone || patient.whatsapp || patient.phone || '-');
-            const email = escapeHtmlSafe(patient.email || '-');
             const diagnosis = escapeHtmlSafe(patient.last_diagnosis || '-');
             const diagnosisShort = diagnosis.length > 90 ? `${diagnosis.slice(0, 90)}...` : diagnosis;
             const lastControlDate = formatControlDate(patient.last_visit);
@@ -8215,6 +8217,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             const riskBadge = riskType === 'overdue'
                 ? `<span class="badge badge-danger ml-1">Lewat HPL ${hplDate}</span>`
                 : `<span class="badge badge-warning ml-1">Mendekati HPL ${hplDate}</span>`;
+            const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="markAsDelivered('${patientIdRaw}', '${patientNameJs}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`;
 
             return `
                 <tr>
@@ -8223,9 +8226,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
                         ${riskBadge}
                     </td>
                     <td>${phone}</td>
-                    <td>${email}</td>
                     <td title="${diagnosis}">${diagnosisShort}</td>
                     <td>${lastControlDate}</td>
+                    <td class="text-nowrap">${actionButton}</td>
                 </tr>
             `;
         }).join('');
