@@ -1663,6 +1663,12 @@
                             <p>Pengumuman</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-voting">
+                        <a href="#" class="nav-link" onclick="showVotingPage(); return false;">
+                            <i class="nav-icon fas fa-poll"></i>
+                            <p>Voting</p>
+                        </a>
+                    </li>
                     <li class="nav-item d-none" id="nav-birth-congrats">
                         <a href="#" class="nav-link" onclick="showBirthCongratsPage(); return false;">
                             <i class="nav-icon fas fa-baby" style="color: #007bff;"></i>
@@ -3327,6 +3333,63 @@
                             <div class="col-12 text-center py-5">
                                 <i class="fas fa-spinner fa-spin fa-2x"></i>
                                 <p class="mt-2">Memuat pengumuman...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VOTING PAGE -->
+                <div id="voting-page" class="d-none">
+                    <div class="row">
+                        <div class="col-lg-4 mb-3 mb-lg-0">
+                            <div class="card card-warning card-outline h-100">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-plus-circle mr-2"></i>Buat Voting Baru</h3>
+                                </div>
+                                <div class="card-body">
+                                    <form id="voting-create-form">
+                                        <div class="form-group">
+                                            <label for="voting-title">Judul Voting</label>
+                                            <input type="text" class="form-control" id="voting-title" maxlength="180" placeholder="Contoh: Edukasi apa yang ingin dibahas minggu ini?" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="voting-description">Deskripsi (Opsional)</label>
+                                            <textarea class="form-control" id="voting-description" rows="3" maxlength="1000" placeholder="Tambahkan konteks singkat untuk pasien..."></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="voting-options">Opsi Jawaban (1 baris = 1 opsi)</label>
+                                            <textarea class="form-control" id="voting-options" rows="6" placeholder="Contoh:\nNutrisi Trimester 1\nPersiapan Persalinan\nMenyusui untuk Ibu Baru" required></textarea>
+                                            <small class="form-text text-muted">Minimal 2 opsi, maksimal 10 opsi.</small>
+                                        </div>
+                                        <div class="form-group mb-3">
+                                            <div class="custom-control custom-switch">
+                                                <input type="checkbox" class="custom-control-input" id="voting-show-on-open" checked>
+                                                <label class="custom-control-label" for="voting-show-on-open">Tampilkan popup saat pasien membuka portal</label>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning" id="btn-create-voting">
+                                            <i class="fas fa-plus mr-1"></i>Buat Voting
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="card card-primary card-outline h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title mb-0">
+                                        <i class="fas fa-chart-bar mr-2"></i>Hasil Voting (Live)
+                                        <span class="badge badge-warning ml-2" id="voting-active-count">0</span>
+                                    </h3>
+                                    <button class="btn btn-sm btn-outline-primary" id="btn-refresh-voting">
+                                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                                    </button>
+                                </div>
+                                <div class="card-body" id="voting-list-container">
+                                    <div class="text-center text-muted py-4">
+                                        <i class="fas fa-spinner fa-spin"></i> Memuat voting...
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
