@@ -10,6 +10,7 @@
     let initialized = false;
     let submittingVote = false;
     let submittingComment = false;
+    let commentSortMode = 'recent';
 
     function getToken() {
         return localStorage.getItem('vps_auth_token') ||
@@ -105,13 +106,64 @@
         }).join('');
     }
 
+    function sortComments(comments, mode) {
+        const rows = Array.isArray(comments) ? comments.slice() : [];
+        if (mode === 'popular') {
+            rows.sort((a, b) => {
+                const likeA = Number((a && a.like_count) || 0);
+                const likeB = Number((b && b.like_count) || 0);
+                if (likeB !== likeA) {
+                    return likeB - likeA;
+                }
+
+                const dateA = new Date(a && a.created_at).getTime();
+                const dateB = new Date(b && b.created_at).getTime();
+                return (Number.isNaN(dateB) ? 0 : dateB) - (Number.isNaN(dateA) ? 0 : dateA);
+            });
+            return rows;
+        }
+
+        rows.sort((a, b) => {
+            const dateA = new Date(a && a.created_at).getTime();
+            const dateB = new Date(b && b.created_at).getTime();
+            return (Number.isNaN(dateB) ? 0 : dateB) - (Number.isNaN(dateA) ? 0 : dateA);
+        });
+        return rows;
+    }
+
+    function renderCommentSortControls(mode) {
+        const isRecent = mode !== 'popular';
+        return `
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                <button
+                    type="button"
+                    class="btn-comment-sort"
+                    data-sort="recent"
+                    style="border:1px solid ${isRecent ? 'rgba(245,158,11,.65)' : 'rgba(255,255,255,.15)'};background:${isRecent ? 'rgba(245,158,11,.15)' : 'transparent'};color:${isRecent ? '#f4d392' : '#bdbdbd'};font-size:11px;border-radius:999px;padding:4px 10px;cursor:pointer;"
+                >
+                    Terbaru
+                </button>
+                <button
+                    type="button"
+                    class="btn-comment-sort"
+                    data-sort="popular"
+                    style="border:1px solid ${!isRecent ? 'rgba(245,158,11,.65)' : 'rgba(255,255,255,.15)'};background:${!isRecent ? 'rgba(245,158,11,.15)' : 'transparent'};color:${!isRecent ? '#f4d392' : '#bdbdbd'};font-size:11px;border-radius:999px;padding:4px 10px;cursor:pointer;"
+                >
+                    Terbanyak Like
+                </button>
+            </div>
+        `;
+    }
+
     function renderComments(comments) {
         const rows = Array.isArray(comments) ? comments : [];
         if (!rows.length) {
             return '<div style="font-size:12px;color:#aaa;">Belum ada komentar.</div>';
         }
 
-        return rows.map((comment) => `
+        const sortedRows = sortComments(rows, commentSortMode);
+
+        return sortedRows.map((comment) => `
             <div style="padding:10px 12px;border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
                     <strong style="font-size:12px;color:#f4d392;">${escapeHtml(comment.commenter_name || 'P*****')}</strong>
@@ -140,6 +192,16 @@
     }
 
     function bindCommentActions() {
+        document.querySelectorAll('.btn-comment-sort').forEach((button) => {
+            button.addEventListener('click', function() {
+                const mode = this.getAttribute('data-sort') === 'popular' ? 'popular' : 'recent';
+                if (commentSortMode === mode) return;
+                commentSortMode = mode;
+                renderVotingCard(currentPoll);
+                renderPollContent(currentPoll, false, false);
+            });
+        });
+
         const commentSubmitBtn = document.getElementById('patient-voting-comment-submit');
         if (commentSubmitBtn) {
             commentSubmitBtn.addEventListener('click', submitComment);
@@ -189,6 +251,7 @@
 
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
                 <div style="font-size:12px;color:#d6d6d6;font-weight:700;margin-bottom:8px;">Komentar Pasien</div>
+                ${renderCommentSortControls(commentSortMode)}
                 <div id="patient-voting-comments-list">${renderComments(data.comments || [])}</div>
                 ${renderCommentComposer(data)}
             </div>
