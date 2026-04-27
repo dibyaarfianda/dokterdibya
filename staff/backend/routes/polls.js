@@ -66,6 +66,34 @@ async function ensureVotingTables() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS poll_comments (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                poll_id INT NOT NULL,
+                patient_id VARCHAR(64) NOT NULL,
+                comment_text TEXT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_poll_comments_poll (poll_id),
+                CONSTRAINT fk_poll_comments_poll
+                    FOREIGN KEY (poll_id) REFERENCES polls(id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS poll_comment_likes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                comment_id INT NOT NULL,
+                patient_id VARCHAR(64) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_comment_patient (comment_id, patient_id),
+                INDEX idx_poll_comment_likes_comment (comment_id),
+                CONSTRAINT fk_poll_comment_likes_comment
+                    FOREIGN KEY (comment_id) REFERENCES poll_comments(id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
         tablesReady = true;
     })();
 
@@ -95,6 +123,53 @@ function extractUserId(payload) {
 function extractUserName(payload) {
     if (!payload || typeof payload !== 'object') return null;
     return payload.name || payload.displayName || payload.fullName || payload.email || null;
+}
+
+function maskCommenterName(fullName) {
+    const raw = String(fullName || '').trim();
+    if (!raw) return 'P*****';
+
+    return raw
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => {
+            const first = word.charAt(0).toUpperCase();
+            return first + '*'.repeat(Math.max(1, word.length - 1));
+        })
+        .join(' ');
+}
+
+async function getPollComments(pollId, currentPatientId = null, limit = 30) {
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 30));
+    const [rows] = await db.query(`
+        SELECT
+            c.id,
+            c.poll_id,
+            c.patient_id,
+            c.comment_text,
+            c.created_at,
+            p.full_name,
+            COUNT(l.id) AS like_count,
+            MAX(CASE WHEN l.patient_id = ? THEN 1 ELSE 0 END) AS liked_by_me
+        FROM poll_comments c
+        LEFT JOIN patients p ON p.id = c.patient_id
+        LEFT JOIN poll_comment_likes l ON l.comment_id = c.id
+        WHERE c.poll_id = ?
+        GROUP BY c.id
+        ORDER BY c.created_at DESC
+        LIMIT ?
+    `, [currentPatientId || '', pollId, safeLimit]);
+
+    return rows.map((row) => ({
+        id: row.id,
+        poll_id: row.poll_id,
+        patient_id: row.patient_id,
+        comment_text: row.comment_text,
+        created_at: row.created_at,
+        commenter_name: maskCommenterName(row.full_name),
+        like_count: Number(row.like_count || 0),
+        liked_by_me: Number(row.liked_by_me || 0) === 1
+    }));
 }
 
 async function getPollResultById(pollId) {
@@ -426,13 +501,15 @@ router.get('/patient/active', verifyPatientToken, async (req, res) => {
         );
 
         const selectedOptionId = voteRows.length ? Number(voteRows[0].option_id) : null;
+        const comments = await getPollComments(poll.id, patientId, 30);
 
         res.json({
             success: true,
             data: {
                 ...fullResult,
                 has_voted: selectedOptionId !== null,
-                selected_option_id: selectedOptionId
+                selected_option_id: selectedOptionId,
+                comments
             }
         });
     } catch (error) {
@@ -488,6 +565,7 @@ router.post('/patient/:id/vote', verifyPatientToken, async (req, res) => {
         }
 
         const resultData = await getPollResultById(pollId);
+        const comments = await getPollComments(pollId, patientId, 30);
 
         if (global.io) {
             global.io.emit('poll:voted', {
@@ -507,12 +585,133 @@ router.post('/patient/:id/vote', verifyPatientToken, async (req, res) => {
             data: {
                 ...resultData,
                 has_voted: true,
-                selected_option_id: optionId
+                selected_option_id: optionId,
+                comments
             }
         });
     } catch (error) {
         logger.error('Failed to submit poll vote', { error: error.message });
         res.status(500).json({ success: false, message: 'Gagal menyimpan vote' });
+    }
+});
+
+router.post('/patient/:id/comment', verifyPatientToken, async (req, res) => {
+    try {
+        await ensureVotingTables();
+
+        const pollId = Number(req.params.id);
+        const patientId = req.patient?.patientId || req.patient?.id;
+        const commentText = String(req.body?.comment || '').trim();
+
+        if (!Number.isInteger(pollId) || pollId <= 0) {
+            return res.status(400).json({ success: false, message: 'ID voting tidak valid' });
+        }
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        if (!commentText) {
+            return res.status(400).json({ success: false, message: 'Komentar tidak boleh kosong' });
+        }
+
+        if (commentText.length > 800) {
+            return res.status(400).json({ success: false, message: 'Komentar maksimal 800 karakter' });
+        }
+
+        const [pollRows] = await db.query(
+            'SELECT id FROM polls WHERE id = ? LIMIT 1',
+            [pollId]
+        );
+
+        if (!pollRows.length) {
+            return res.status(404).json({ success: false, message: 'Voting tidak ditemukan' });
+        }
+
+        await db.query(
+            'INSERT INTO poll_comments (poll_id, patient_id, comment_text) VALUES (?, ?, ?)',
+            [pollId, patientId, commentText]
+        );
+
+        const comments = await getPollComments(pollId, patientId, 30);
+
+        if (global.io) {
+            global.io.emit('poll:comment', { poll_id: pollId });
+        }
+
+        res.json({
+            success: true,
+            message: 'Komentar berhasil dikirim',
+            data: comments
+        });
+    } catch (error) {
+        logger.error('Failed to submit poll comment', { error: error.message });
+        res.status(500).json({ success: false, message: 'Gagal mengirim komentar' });
+    }
+});
+
+router.post('/patient/:id/comments/:commentId/like', verifyPatientToken, async (req, res) => {
+    try {
+        await ensureVotingTables();
+
+        const pollId = Number(req.params.id);
+        const commentId = Number(req.params.commentId);
+        const patientId = req.patient?.patientId || req.patient?.id;
+
+        if (!Number.isInteger(pollId) || pollId <= 0 || !Number.isInteger(commentId) || commentId <= 0) {
+            return res.status(400).json({ success: false, message: 'ID tidak valid' });
+        }
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        const [commentRows] = await db.query(
+            'SELECT id FROM poll_comments WHERE id = ? AND poll_id = ? LIMIT 1',
+            [commentId, pollId]
+        );
+
+        if (!commentRows.length) {
+            return res.status(404).json({ success: false, message: 'Komentar tidak ditemukan' });
+        }
+
+        const [existingLike] = await db.query(
+            'SELECT id FROM poll_comment_likes WHERE comment_id = ? AND patient_id = ? LIMIT 1',
+            [commentId, patientId]
+        );
+
+        let liked = false;
+        if (existingLike.length) {
+            await db.query(
+                'DELETE FROM poll_comment_likes WHERE comment_id = ? AND patient_id = ?',
+                [commentId, patientId]
+            );
+            liked = false;
+        } else {
+            await db.query(
+                'INSERT INTO poll_comment_likes (comment_id, patient_id) VALUES (?, ?)',
+                [commentId, patientId]
+            );
+            liked = true;
+        }
+
+        const comments = await getPollComments(pollId, patientId, 30);
+
+        if (global.io) {
+            global.io.emit('poll:comment-like', {
+                poll_id: pollId,
+                comment_id: commentId
+            });
+        }
+
+        res.json({
+            success: true,
+            liked,
+            data: comments
+        });
+    } catch (error) {
+        logger.error('Failed to toggle poll comment like', { error: error.message });
+        res.status(500).json({ success: false, message: 'Gagal memproses like komentar' });
     }
 });
 

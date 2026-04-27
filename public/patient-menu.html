@@ -1659,6 +1659,20 @@
                     </div>
                 </div>
 
+                <!-- Voting Card -->
+                <div class="dashboard-card" id="voting-section" style="margin-bottom: 20px; border: 1px solid rgba(245, 158, 11, 0.55); box-shadow: 0 0 8px rgba(245, 158, 11, 0.15);">
+                    <h3 class="collapsible-header" onclick="toggleVotingSection()">
+                        <span><i class="fa fa-bar-chart"></i> VOTING PASIEN</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="voting-toggle-icon"></i>
+                    </h3>
+                    <div id="voting-content" style="display: block;">
+                        <div id="voting-card-container" style="text-align: center; padding: 16px; color: #999;">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            <p style="margin-top: 8px;">Memuat voting...</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tanya Dokter - Collapsible Card -->
                 <div class="dashboard-card" id="tanya-dokter-section" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(218, 165, 32, 0.1), rgba(184, 134, 11, 0.1)); border: 1px solid rgba(218, 165, 32, 0.6); box-shadow: 0 0 8px rgba(218, 165, 32, 0.15);">
                     <h3 class="collapsible-header" onclick="toggleTanyaDokterSection()">
@@ -2199,6 +2213,22 @@
         function toggleAnnouncementsSection() {
             const wrapper = document.getElementById('announcements-content');
             const icon = document.getElementById('announcements-toggle-icon');
+            if (!wrapper || !icon) return;
+
+            if (wrapper.style.display === 'none') {
+                wrapper.style.display = 'block';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                wrapper.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        function toggleVotingSection() {
+            const wrapper = document.getElementById('voting-content');
+            const icon = document.getElementById('voting-toggle-icon');
             if (!wrapper || !icon) return;
 
             if (wrapper.style.display === 'none') {
