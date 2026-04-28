@@ -1254,10 +1254,14 @@
         let startY = 0;
         let triggered = false;
         let tracking = false;
+        let dragX = 0;
 
         const resetSwipeState = () => {
             tracking = false;
+            dragX = 0;
             node.classList.remove('quote-active');
+            node.style.transition = 'transform 0.18s ease';
+            node.style.transform = 'translateX(0px)';
         };
 
         node.classList.add('quote-ready');
@@ -1269,7 +1273,10 @@
             startY = touch.clientY;
             triggered = false;
             tracking = true;
+            dragX = 0;
             node.classList.remove('quote-active');
+            node.style.transition = 'none';
+            node.style.transform = 'translateX(0px)';
         }, { passive: true });
 
         node.addEventListener('touchmove', (event) => {
@@ -1286,13 +1293,18 @@
 
             if (triggered) return;
 
-            if (dx < -16) {
+            if (dx < 0 && Math.abs(dy) < 44) {
+                dragX = Math.max(dx, -64);
+                node.style.transform = `translateX(${dragX}px)`;
+            }
+
+            if (dragX < -16) {
                 node.classList.add('quote-active');
             } else {
                 node.classList.remove('quote-active');
             }
 
-            if (dx < -48 && Math.abs(dy) < 44) {
+            if (dragX < -48) {
                 triggered = true;
                 setQuotedMessage(messageMeta);
                 resetSwipeState();
