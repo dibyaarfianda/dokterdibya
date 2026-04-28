@@ -1214,8 +1214,11 @@
             : 'radial-gradient(circle at 1px 1px, rgba(32, 84, 129, 0.06) 1px, transparent 0)';
 
         if (uiSettings.wallpaperDataUrl) {
+            const wallpaperTint = isDark
+                ? 'linear-gradient(180deg, rgba(12, 22, 33, 0.56) 0%, rgba(12, 22, 33, 0.56) 100%)'
+                : 'linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.34) 100%)';
             return {
-                image: `${overlay}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
+                image: `${wallpaperTint}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
                 size: '100% 100%, cover, 22px 22px',
                 position: '0 0, center top, 0 0',
                 repeat: 'no-repeat, no-repeat, repeat'
