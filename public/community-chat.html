@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Chat - dokterDIBYA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        :root {
+            --bg: #0a0f1d;
+            --card: #121a2d;
+            --line: rgba(255,255,255,0.12);
+            --text: #eef3ff;
+            --muted: #9fb0d9;
+            --accent: #4f9bff;
+            --accent-2: #3b82f6;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: radial-gradient(circle at 20% 10%, #1b2d52 0%, var(--bg) 40%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 0.4px;
+        }
+
+        .role-chip {
+            background: rgba(79,155,255,0.2);
+            border: 1px solid rgba(79,155,255,0.45);
+            color: #cde0ff;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 16px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25);
+        }
+
+        .panel {
+            padding: 14px;
+        }
+
+        .room-create {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 16px;
+        }
+
+        input, textarea, select, button {
+            font: inherit;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: #0f1528;
+            color: var(--text);
+            padding: 10px;
+            outline: none;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: white;
+            font-weight: bold;
+            padding: 10px 12px;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--line);
+        }
+
+        .rooms {
+            max-height: 56vh;
+            overflow: auto;
+            display: grid;
+            gap: 8px;
+        }
+
+        .room-item {
+            border: 1px solid var(--line);
+            border-left-width: 4px;
+            border-radius: 10px;
+            padding: 10px;
+            background: #0f162b;
+            cursor: pointer;
+        }
+
+        .room-item.active {
+            background: #172242;
+        }
+
+        .room-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .room-meta {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .chat-wrapper {
+            display: grid;
+            grid-template-rows: auto auto 1fr auto;
+            min-height: 78vh;
+        }
+
+        .chat-head {
+            padding: 14px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .profile-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .messages {
+            overflow: auto;
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+            align-content: start;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 35%);
+        }
+
+        .msg {
+            max-width: 78%;
+            border-radius: 12px;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            background: #0f172e;
+        }
+
+        .msg.me {
+            justify-self: end;
+            background: #17315f;
+        }
+
+        .msg-head {
+            font-size: 12px;
+            color: #9fc6ff;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .msg-user {
+            color: #ffffff;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .msg-user:hover { text-decoration: underline; }
+
+        .msg-time {
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .msg-body {
+            white-space: pre-wrap;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .composer {
+            border-top: 1px solid var(--line);
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+            position: relative;
+        }
+
+        .emoji-panel {
+            position: absolute;
+            bottom: 58px;
+            right: 96px;
+            background: #0f1528;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px;
+            width: 240px;
+            display: none;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .emoji-panel.show { display: grid; }
+
+        .emoji-btn {
+            border: 1px solid transparent;
+            background: rgba(255,255,255,0.04);
+            border-radius: 6px;
+            padding: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .typing {
+            color: #8bb6ff;
+            font-size: 12px;
+            padding: 0 14px 8px;
+            min-height: 18px;
+        }
+
+        .moderator-panel {
+            border-top: 1px solid var(--line);
+            padding: 12px 14px;
+            display: none;
+        }
+
+        .moderator-panel.show { display: block; }
+
+        .staff-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            max-height: 150px;
+            overflow: auto;
+            margin-bottom: 10px;
+        }
+
+        .staff-item {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 8px;
+            background: #0f1528;
+            font-size: 13px;
+        }
+
+        .back-link {
+            color: #cce0ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        @media (max-width: 1000px) {
+            .layout { grid-template-columns: 1fr; }
+            .chat-wrapper { min-height: 70vh; }
+            .profile-box { grid-template-columns: 1fr; }
+            .composer { grid-template-columns: 1fr auto; }
+            .emoji-panel { right: 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="topbar">
+        <div>
+            <a class="back-link" href="/patient-menu.html"><i class="fa fa-arrow-left"></i> Kembali ke Menu</a>
+            <h1 class="title">Community Chat</h1>
+        </div>
+        <span class="role-chip" id="role-chip">Memuat...</span>
+    </div>
+
+    <div class="layout">
+        <aside class="card panel">
+            <strong>Lobby & Room</strong>
+            <div class="room-create">
+                <input id="room-name" placeholder="Nama room custom">
+                <input id="room-desc" placeholder="Deskripsi singkat room">
+                <input id="room-color" placeholder="#2563eb (warna room)">
+                <button id="create-room-btn"><i class="fa fa-plus"></i> Buat Room</button>
+            </div>
+            <div class="rooms" id="rooms"></div>
+        </aside>
+
+        <main class="card chat-wrapper">
+            <div class="chat-head">
+                <div>
+                    <div id="active-room-name" style="font-weight:bold; font-size:18px;">-</div>
+                    <div id="active-room-desc" style="color:#9fb0d9; font-size:13px;"></div>
+                </div>
+                <div id="active-room-color" style="width:16px;height:16px;border-radius:50%;background:#2563eb;"></div>
+            </div>
+
+            <div class="profile-box">
+                <input id="nickname-input" maxlength="30" placeholder="Nickname untuk chat">
+                <input id="bio-input" maxlength="120" placeholder="Bio singkat (opsional)">
+                <button id="save-profile-btn" class="secondary"><i class="fa fa-save"></i> Simpan Profil</button>
+            </div>
+
+            <div class="typing" id="typing-indicator"></div>
+
+            <div id="messages" class="messages"></div>
+
+            <div class="composer">
+                <textarea id="message-input" rows="2" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
+                <button type="button" id="emoji-toggle" class="secondary"><i class="fa fa-smile-o"></i></button>
+                <button type="button" id="send-btn"><i class="fa fa-paper-plane"></i> Kirim</button>
+
+                <div class="emoji-panel" id="emoji-panel"></div>
+            </div>
+
+            <section class="moderator-panel" id="moderator-panel">
+                <strong>Moderator Room (khusus staff/admin)</strong>
+                <p style="color:#9fb0d9; margin:6px 0 10px; font-size:13px;">Admin chat = semua staff. Moderator room dipilih oleh staff.</p>
+                <div class="staff-grid" id="staff-grid"></div>
+                <button id="save-moderators-btn" class="secondary"><i class="fa fa-shield"></i> Simpan Moderator</button>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script type="module">
+    import { showToast } from '/scripts/patient-utils.js';
+
+    const TOKEN_KEYS = ['vps_auth_token', 'token', 'idToken', 'patient_token'];
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+    const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
+
+    let socket = null;
+    let token = null;
+    let currentUser = null;
+    let activeRoom = null;
+    let rooms = [];
+    let typingTimeout = null;
+    let isStaff = false;
+
+    const el = {
+        roleChip: document.getElementById('role-chip'),
+        rooms: document.getElementById('rooms'),
+        activeRoomName: document.getElementById('active-room-name'),
+        activeRoomDesc: document.getElementById('active-room-desc'),
+        activeRoomColor: document.getElementById('active-room-color'),
+        messages: document.getElementById('messages'),
+        nicknameInput: document.getElementById('nickname-input'),
+        bioInput: document.getElementById('bio-input'),
+        saveProfileBtn: document.getElementById('save-profile-btn'),
+        messageInput: document.getElementById('message-input'),
+        sendBtn: document.getElementById('send-btn'),
+        emojiToggle: document.getElementById('emoji-toggle'),
+        emojiPanel: document.getElementById('emoji-panel'),
+        typingIndicator: document.getElementById('typing-indicator'),
+        roomName: document.getElementById('room-name'),
+        roomDesc: document.getElementById('room-desc'),
+        roomColor: document.getElementById('room-color'),
+        createRoomBtn: document.getElementById('create-room-btn'),
+        moderatorPanel: document.getElementById('moderator-panel'),
+        staffGrid: document.getElementById('staff-grid'),
+        saveModeratorsBtn: document.getElementById('save-moderators-btn')
+    };
+
+    function getToken() {
+        for (const key of TOKEN_KEYS) {
+            const fromLocal = localStorage.getItem(key);
+            const fromSession = sessionStorage.getItem(key);
+            if (fromLocal) return fromLocal;
+            if (fromSession) return fromSession;
+        }
+        return null;
+    }
+
+    function decodeToken(value) {
+        try {
+            const payload = JSON.parse(atob(value.split('.')[1] || ''));
+            return payload;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function api(path, options = {}) {
+        const response = await fetch(`${API_BASE}/api/community-chat${path}`, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...(options.headers || {})
+            }
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            throw new Error(data.message || 'Request gagal');
+        }
+        return data;
+    }
+
+    function renderRooms() {
+        el.rooms.innerHTML = rooms.map((room) => {
+            const active = activeRoom && activeRoom.slug === room.slug ? 'active' : '';
+            return `
+                <div class="room-item ${active}" data-room="${room.slug}" style="border-left-color:${room.color || '#2563eb'}">
+                    <div class="room-name">${room.name}</div>
+                    <div class="room-meta">${room.description || 'Tanpa deskripsi'}</div>
+                </div>
+            `;
+        }).join('');
+
+        el.rooms.querySelectorAll('.room-item').forEach((item) => {
+            item.addEventListener('click', async () => {
+                const slug = item.getAttribute('data-room');
+                await openRoom(slug);
+            });
+        });
+    }
+
+    function formatTime(value) {
+        return new Date(value).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderMessages(messages) {
+        el.messages.innerHTML = messages.map((msg) => {
+            const mine = String(msg.sender_id) === String(currentUser.id);
+            const displayName = msg.sender_nickname || msg.sender_name || 'User';
+            return `
+                <div class="msg ${mine ? 'me' : ''}" data-id="${msg.id}">
+                    <div class="msg-head">
+                        <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
+                        <span class="msg-time">${formatTime(msg.created_at)}</span>
+                    </div>
+                    <div class="msg-body">${escapeHtml(msg.message)}</div>
+                </div>
+            `;
+        }).join('');
+
+        el.messages.scrollTop = el.messages.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    async function openRoom(slug) {
+        const data = await api(`/rooms/${encodeURIComponent(slug)}/messages?limit=120`);
+        activeRoom = data.room;
+
+        el.activeRoomName.textContent = data.room.name;
+        el.activeRoomDesc.textContent = data.room.description || 'Room chat komunitas';
+        el.activeRoomColor.style.background = data.room.color || '#2563eb';
+
+        renderMessages(data.messages || []);
+        renderRooms();
+
+        if (socket) {
+            socket.emit('community:join', { room: data.room.slug, token });
+        }
+
+        if (isStaff) {
+            el.moderatorPanel.classList.add('show');
+            await loadStaffModerators();
+        }
+    }
+
+    function appendMessage(message) {
+        if (!activeRoom) return;
+        const mine = String(message.sender_id) === String(currentUser.id);
+        const displayName = message.sender_nickname || message.sender_name || 'User';
+
+        const node = document.createElement('div');
+        node.className = `msg ${mine ? 'me' : ''}`;
+        node.dataset.id = message.id;
+        node.innerHTML = `
+            <div class="msg-head">
+                <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(message.sender_type)}&userId=${encodeURIComponent(message.sender_id)}">${displayName}</a>
+                <span class="msg-time">${formatTime(message.created_at)}</span>
+            </div>
+            <div class="msg-body">${escapeHtml(message.message)}</div>
+        `;
+
+        el.messages.appendChild(node);
+        el.messages.scrollTop = el.messages.scrollHeight;
+    }
+
+    async function sendMessage() {
+        if (!activeRoom) {
+            showToast('Pilih room dulu', 'warning');
+            return;
+        }
+
+        const message = el.messageInput.value.trim();
+        if (!message) return;
+
+        try {
+            const payload = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({ message })
+            });
+
+            el.messageInput.value = '';
+            appendMessage(payload.message);
+
+            if (socket) {
+                socket.emit('community:stop-typing', {
+                    room: activeRoom.slug,
+                    user_id: currentUser.id
+                });
+            }
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function createRoom() {
+        const name = el.roomName.value.trim();
+        const description = el.roomDesc.value.trim();
+        const color = el.roomColor.value.trim();
+
+        if (!name) {
+            showToast('Nama room wajib diisi', 'warning');
+            return;
+        }
+
+        try {
+            await api('/rooms', {
+                method: 'POST',
+                body: JSON.stringify({ name, description, color })
+            });
+            el.roomName.value = '';
+            el.roomDesc.value = '';
+            el.roomColor.value = '';
+            await loadRooms();
+            showToast('Room berhasil dibuat', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function saveProfile() {
+        try {
+            await api('/me/profile', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    nickname: el.nicknameInput.value.trim(),
+                    bio: el.bioInput.value.trim(),
+                    profile_visible: true
+                })
+            });
+            showToast('Profil chat disimpan', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function loadProfile() {
+        const data = await api('/me/profile');
+        el.nicknameInput.value = data.profile.nickname || '';
+        el.bioInput.value = data.profile.bio || '';
+    }
+
+    async function loadRooms() {
+        const data = await api('/rooms');
+        rooms = data.rooms || [];
+        renderRooms();
+
+        if (!activeRoom && rooms.length > 0) {
+            const lobby = rooms.find((r) => r.slug === 'lobby');
+            await openRoom((lobby || rooms[0]).slug);
+        }
+    }
+
+    function initEmojiPicker() {
+        el.emojiPanel.innerHTML = EMOJIS.map((emoji) => `<button class="emoji-btn" type="button">${emoji}</button>`).join('');
+        el.emojiPanel.querySelectorAll('.emoji-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                el.messageInput.value += button.textContent;
+                el.messageInput.focus();
+                el.emojiPanel.classList.remove('show');
+            });
+        });
+
+        el.emojiToggle.addEventListener('click', () => {
+            el.emojiPanel.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!el.emojiPanel.contains(event.target) && event.target !== el.emojiToggle) {
+                el.emojiPanel.classList.remove('show');
+            }
+        });
+    }
+
+    function initSocket() {
+        const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin;
+        socket = window.io(socketUrl, { transports: ['polling'] });
+
+        socket.on('connect', () => {
+            if (activeRoom) {
+                socket.emit('community:join', { room: activeRoom.slug, token });
+            }
+        });
+
+        socket.on('community:message:new', (payload) => {
+            if (!activeRoom || payload.room !== activeRoom.slug) return;
+            appendMessage(payload.message);
+        });
+
+        socket.on('community:message:deleted', (payload) => {
+            if (!activeRoom || payload.room !== activeRoom.slug) return;
+            const node = el.messages.querySelector(`[data-id="${payload.message_id}"]`);
+            if (node) node.remove();
+        });
+
+        socket.on('community:typing', (payload) => {
+            if (!activeRoom || payload.room !== activeRoom.slug) return;
+            if (String(payload.user_id) === String(currentUser.id)) return;
+            el.typingIndicator.textContent = `${payload.user_name || 'User'} sedang mengetik...`;
+        });
+
+        socket.on('community:stop-typing', (payload) => {
+            if (!activeRoom || payload.room !== activeRoom.slug) return;
+            el.typingIndicator.textContent = '';
+        });
+
+        socket.on('community:rooms:changed', async () => {
+            await loadRooms();
+        });
+    }
+
+    async function loadStaffModerators() {
+        if (!isStaff || !activeRoom) return;
+
+        try {
+            const [staffData, modData] = await Promise.all([
+                api('/admin/staff-users'),
+                api(`/rooms/${encodeURIComponent(activeRoom.slug)}/moderators`)
+            ]);
+
+            const selectedIds = new Set((modData.moderators || []).map((m) => String(m.staff_user_id)));
+
+            el.staffGrid.innerHTML = (staffData.staff_users || []).map((user) => {
+                const checked = selectedIds.has(String(user.new_id)) ? 'checked' : '';
+                const roleName = user.role_display_name || user.role || 'Staff';
+                return `
+                    <label class="staff-item">
+                        <input type="checkbox" value="${user.new_id}" ${checked}> ${user.name || user.email}
+                        <div style="color:#9fb0d9; margin-top:4px;">${roleName}</div>
+                    </label>
+                `;
+            }).join('');
+        } catch (error) {
+            el.staffGrid.innerHTML = `<div style="color:#fca5a5;">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    async function saveModerators() {
+        if (!isStaff || !activeRoom) return;
+
+        const moderatorIds = Array.from(el.staffGrid.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+
+        try {
+            await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/moderators`, {
+                method: 'PUT',
+                body: JSON.stringify({ moderator_user_ids: moderatorIds })
+            });
+            showToast('Moderator room diperbarui', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    function initTypingHandler() {
+        el.messageInput.addEventListener('input', () => {
+            if (!socket || !activeRoom) return;
+
+            socket.emit('community:typing', {
+                room: activeRoom.slug,
+                user_id: currentUser.id,
+                user_name: currentUser.name || currentUser.email || 'User'
+            });
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                socket.emit('community:stop-typing', {
+                    room: activeRoom.slug,
+                    user_id: currentUser.id
+                });
+            }, 800);
+        });
+    }
+
+    async function init() {
+        token = getToken();
+        if (!token) {
+            window.location.href = '/patient-login.html';
+            return;
+        }
+
+        currentUser = decodeToken(token);
+        if (!currentUser || !currentUser.id) {
+            showToast('Token tidak valid. Silakan login ulang.', 'error');
+            window.location.href = '/patient-login.html';
+            return;
+        }
+
+        isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
+        el.roleChip.textContent = isStaff ? 'Admin Chat (Staff)' : 'User';
+
+        initEmojiPicker();
+        initSocket();
+        initTypingHandler();
+
+        el.sendBtn.addEventListener('click', sendMessage);
+        el.messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        el.createRoomBtn.addEventListener('click', createRoom);
+        el.saveProfileBtn.addEventListener('click', saveProfile);
+        el.saveModeratorsBtn.addEventListener('click', saveModerators);
+
+        await loadProfile();
+        await loadRooms();
+    }
+
+    init().catch((error) => {
+        console.error(error);
+        showToast(error.message || 'Gagal memuat community chat', 'error');
+    });
+</script>
+</body>
+</html>

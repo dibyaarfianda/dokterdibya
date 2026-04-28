@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Profile - dokterDIBYA</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: radial-gradient(circle at top, #14284b, #070b14 45%);
+            color: #eef4ff;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 16px;
+        }
+
+        .card {
+            width: min(560px, 100%);
+            background: rgba(18, 27, 48, 0.95);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 18px;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+            overflow: hidden;
+        }
+
+        .head {
+            padding: 16px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-link {
+            color: #d6e7ff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .body {
+            padding: 20px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .profile-top {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: linear-gradient(135deg, #3b82f6, #22d3ee);
+            object-fit: cover;
+            display: none;
+        }
+
+        .avatar-fallback {
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: linear-gradient(135deg, #3b82f6, #22d3ee);
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .name {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .chip {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(59,130,246,0.18);
+            border: 1px solid rgba(59,130,246,0.45);
+            color: #d6e7ff;
+        }
+
+        .label {
+            color: #9fb0d9;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .box {
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            background: rgba(8, 14, 27, 0.6);
+            padding: 12px;
+            line-height: 1.5;
+        }
+
+        .status {
+            color: #bcd0f7;
+            font-size: 14px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="head">
+        <a class="back-link" href="/community-chat.html">← Kembali ke Community Chat</a>
+        <span id="status" class="status"></span>
+    </div>
+
+    <div class="body">
+        <div class="profile-top">
+            <img id="avatar" class="avatar" alt="Avatar">
+            <div id="avatar-fallback" class="avatar-fallback">U</div>
+            <div>
+                <h1 id="name" class="name">Memuat...</h1>
+                <span id="user-type" class="chip">-</span>
+            </div>
+        </div>
+
+        <div>
+            <div class="label">Bio</div>
+            <div id="bio" class="box">-</div>
+        </div>
+
+        <div>
+            <div class="label">Nickname</div>
+            <div id="nickname" class="box">-</div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    const TOKEN_KEYS = ['vps_auth_token', 'token', 'idToken', 'patient_token'];
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+
+    const avatar = document.getElementById('avatar');
+    const avatarFallback = document.getElementById('avatar-fallback');
+    const nameEl = document.getElementById('name');
+    const typeEl = document.getElementById('user-type');
+    const bioEl = document.getElementById('bio');
+    const nicknameEl = document.getElementById('nickname');
+    const statusEl = document.getElementById('status');
+
+    function getToken() {
+        for (const key of TOKEN_KEYS) {
+            const local = localStorage.getItem(key);
+            const session = sessionStorage.getItem(key);
+            if (local) return local;
+            if (session) return session;
+        }
+        return null;
+    }
+
+    function initials(name) {
+        return String(name || 'U').trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase() || 'U';
+    }
+
+    async function loadProfile() {
+        const params = new URLSearchParams(window.location.search);
+        const userType = params.get('userType') || 'patient';
+        const userId = params.get('userId') || '';
+
+        if (!userId) {
+            statusEl.textContent = 'Parameter profile tidak valid';
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            window.location.href = '/patient-login.html';
+            return;
+        }
+
+        statusEl.textContent = 'Memuat...';
+
+        const response = await fetch(`${API_BASE}/api/community-chat/profiles/${encodeURIComponent(userType)}/${encodeURIComponent(userId)}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || data.success === false || !data.profile) {
+            statusEl.textContent = data.message || 'Profile tidak tersedia';
+            return;
+        }
+
+        const profile = data.profile;
+
+        nameEl.textContent = profile.display_name || '-';
+        typeEl.textContent = profile.user_type === 'staff' ? 'Staff' : 'Patient';
+        bioEl.textContent = profile.bio || 'Belum ada bio.';
+        nicknameEl.textContent = profile.nickname || 'Belum diset.';
+        avatarFallback.textContent = initials(profile.display_name || 'U');
+
+        if (profile.avatar_url) {
+            avatar.src = profile.avatar_url;
+            avatar.style.display = 'block';
+            avatarFallback.style.display = 'none';
+        }
+
+        statusEl.textContent = 'Profile publik';
+    }
+
+    loadProfile().catch((error) => {
+        statusEl.textContent = error.message || 'Gagal memuat profile';
+    });
+</script>
+</body>
+</html>
