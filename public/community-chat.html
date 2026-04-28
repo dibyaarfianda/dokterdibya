@@ -773,6 +773,11 @@
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
+    const userAgent = navigator.userAgent || '';
+    const isAndroidDevice = /Android/i.test(userAgent);
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const isAndroidWebView = isAndroidDevice && (userAgent.includes(' wv') || userAgent.includes('; wv)') || userAgent.includes('Version/'));
+    const useAndroidBottomNavFallback = isAndroidDevice && (isAndroidWebView || isStandaloneMode);
 
     let socket = null;
     let token = null;
@@ -1304,12 +1309,17 @@
 
         const viewport = window.visualViewport;
         if (!viewport) {
-            document.documentElement.style.setProperty('--mobile-bottom-offset', '0px');
+            const fallbackInset = useAndroidBottomNavFallback ? 52 : 0;
+            document.documentElement.style.setProperty('--mobile-bottom-offset', `${fallbackInset}px`);
             return;
         }
 
-        const inset = Math.max(0, Math.round(window.innerHeight - (viewport.height + viewport.offsetTop)));
-        document.documentElement.style.setProperty('--mobile-bottom-offset', `${inset}px`);
+        const viewportInset = Math.max(0, Math.round(window.innerHeight - (viewport.height + viewport.offsetTop)));
+        const keyboardLikelyOpen = viewport.height < (window.innerHeight * 0.78);
+        const fallbackInset = useAndroidBottomNavFallback && !keyboardLikelyOpen ? 52 : 0;
+        const nextInset = Math.max(viewportInset, fallbackInset);
+
+        document.documentElement.style.setProperty('--mobile-bottom-offset', `${nextInset}px`);
     }
 
     function initMobileViewportGuard() {
@@ -1319,6 +1329,8 @@
             window.visualViewport.addEventListener('resize', updateMobileBottomOffset);
             window.visualViewport.addEventListener('scroll', updateMobileBottomOffset);
         }
+        el.messageInput.addEventListener('focus', updateMobileBottomOffset);
+        el.messageInput.addEventListener('blur', updateMobileBottomOffset);
     }
 
     async function init() {
