@@ -38,11 +38,13 @@
         }
 
         .page {
-            max-width: 1300px;
-            margin: 0 auto;
-            padding: 20px;
-            padding-top: calc(20px + env(safe-area-inset-top));
-            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            min-height: 100svh;
         }
 
         body.embed-staff .page {
@@ -56,7 +58,7 @@
         }
 
         body.embed-staff .layout {
-            gap: 12px;
+            gap: 0;
         }
 
         body.embed-staff .card {
@@ -73,9 +75,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin: 0;
             gap: 12px;
             flex-wrap: wrap;
+            padding: 12px 16px;
+            border-bottom: 1px solid #d7e0e8;
+            background: #eaf4fb;
         }
 
         .title {
@@ -97,18 +102,21 @@
         .layout {
             display: grid;
             grid-template-columns: 330px 1fr;
-            gap: 16px;
+            gap: 0;
+            min-height: calc(100svh - 74px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         }
 
         .card {
             background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(17, 27, 33, 0.12);
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
         }
 
         .panel {
             padding: 14px;
+            border-right: 1px solid #d7e0e8;
+            background: #ffffff;
         }
 
         .room-create {
@@ -149,7 +157,8 @@
         }
 
         .rooms {
-            max-height: 520px;
+            max-height: none;
+            height: calc(100svh - 220px);
             overflow: auto;
             display: grid;
             gap: 0;
@@ -215,7 +224,9 @@
         .chat-wrapper {
             display: grid;
             grid-template-rows: auto auto auto 1fr auto;
-            min-height: 640px;
+            min-height: 0;
+            height: 100%;
+            background: #fff;
         }
 
         .chat-head {
@@ -445,23 +456,39 @@
             }
 
             .page {
-                padding: 10px;
-                padding-top: calc(10px + env(safe-area-inset-top));
-                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+                padding: 0;
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
             }
 
-            .layout { grid-template-columns: 1fr; }
+            .topbar {
+                padding: 10px 12px;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                min-height: calc(100svh - 66px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            }
+
+            .panel {
+                border-right: 0;
+                border-bottom: 1px solid #d7e0e8;
+            }
+
             .chat-wrapper {
-                min-height: 560px;
+                min-height: 0;
+                height: 100%;
             }
 
             .rooms {
-                max-height: 240px;
+                max-height: 220px;
+                height: auto;
             }
 
             .messages {
-                min-height: 260px;
-                max-height: 420px;
+                min-height: 0;
+                max-height: none;
             }
 
             .profile-box { grid-template-columns: 1fr; }

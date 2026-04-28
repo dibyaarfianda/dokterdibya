@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429d'; // 2026-04-29 - lobby-first + VIP-only room creation in community chat
+const CACHE_VERSION = '20260429e'; // 2026-04-29 - full-screen no-card community chat layout
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
