@@ -41,6 +41,8 @@
             max-width: 1300px;
             margin: 0 auto;
             padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
         }
 
         body.embed-staff .page {
@@ -147,7 +149,7 @@
         }
 
         .rooms {
-            max-height: 62vh;
+            max-height: 520px;
             overflow: auto;
             display: grid;
             gap: 0;
@@ -213,7 +215,7 @@
         .chat-wrapper {
             display: grid;
             grid-template-rows: auto auto auto 1fr auto;
-            min-height: 78vh;
+            min-height: 640px;
         }
 
         .chat-head {
@@ -438,11 +440,38 @@
         }
 
         @media (max-width: 1000px) {
+            body {
+                min-height: 100svh;
+            }
+
+            .page {
+                padding: 10px;
+                padding-top: calc(10px + env(safe-area-inset-top));
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            }
+
             .layout { grid-template-columns: 1fr; }
-            .chat-wrapper { min-height: 70vh; }
+            .chat-wrapper {
+                min-height: 560px;
+            }
+
+            .rooms {
+                max-height: 240px;
+            }
+
+            .messages {
+                min-height: 260px;
+                max-height: 420px;
+            }
+
             .profile-box { grid-template-columns: 1fr; }
             .composer { grid-template-columns: 1fr auto; }
             .emoji-panel { right: 10px; }
+
+            .composer {
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            }
+
             #send-btn,
             #emoji-toggle {
                 width: 40px;
