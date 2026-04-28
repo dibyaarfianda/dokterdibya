@@ -357,24 +357,47 @@
             border-top: 1px solid var(--line);
             padding: 10px;
             display: grid;
-            grid-template-columns: 1fr auto auto;
+            grid-template-columns: 1fr auto;
             gap: 8px;
             align-items: center;
             position: relative;
             background: #f0f2f5;
         }
 
+        .composer-input-wrap {
+            position: relative;
+            width: 100%;
+        }
+
         #message-input {
             border-radius: 22px;
-            padding: 11px 14px;
+            padding: 11px 52px 11px 14px;
             min-height: 44px;
             max-height: 120px;
             resize: vertical;
             border-color: #d0d7dc;
         }
 
-        #send-btn,
         #emoji-toggle {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 1px solid #d0d7dc;
+            background: #f6f8f9;
+            color: #4d5d66;
+            z-index: 2;
+        }
+
+        #send-btn {
+            font-size: 0;
             width: 44px;
             height: 44px;
             border-radius: 50%;
@@ -384,10 +407,6 @@
             justify-content: center;
         }
 
-        #send-btn {
-            font-size: 0;
-        }
-
         #send-btn i {
             font-size: 16px;
         }
@@ -395,7 +414,7 @@
         .emoji-panel {
             position: absolute;
             bottom: 58px;
-            right: 96px;
+            right: 64px;
             background: #fff;
             border: 1px solid var(--line);
             border-radius: 10px;
@@ -499,10 +518,15 @@
                 padding-bottom: calc(10px + env(safe-area-inset-bottom));
             }
 
-            #send-btn,
-            #emoji-toggle {
+            #send-btn {
                 width: 40px;
                 height: 40px;
+            }
+
+            #emoji-toggle {
+                width: 32px;
+                height: 32px;
+                right: 6px;
             }
         }
     </style>
@@ -552,8 +576,10 @@
             <div id="messages" class="messages"></div>
 
             <div class="composer">
-                <textarea id="message-input" rows="2" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
-                <button type="button" id="emoji-toggle" class="secondary" title="Pilih emoji"><i class="fa fa-smile-o"></i></button>
+                <div class="composer-input-wrap">
+                    <textarea id="message-input" rows="2" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
+                    <button type="button" id="emoji-toggle" title="Pilih emoji"><i class="fa fa-smile-o"></i></button>
+                </div>
                 <button type="button" id="send-btn" title="Kirim pesan"><i class="fa fa-paper-plane"></i></button>
 
                 <div class="emoji-panel" id="emoji-panel"></div>
