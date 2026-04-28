@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429v'; // 2026-04-29 - community chat: hide empty typing strip to remove top dark bar
+const CACHE_VERSION = '20260429w'; // 2026-04-29 - community chat: lock layout height to prevent bottom wallpaper cut
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
