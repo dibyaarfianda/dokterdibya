@@ -74,37 +74,44 @@
 
         .topbar {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             margin: 0;
-            gap: 12px;
-            flex-wrap: wrap;
-            padding: 12px 16px;
+            gap: 8px;
+            padding: 10px 12px;
             border-bottom: 1px solid #d7e0e8;
             background: #eaf4fb;
         }
 
-        .title {
-            margin: 0;
-            font-size: 24px;
-            letter-spacing: 0.4px;
+        .status-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
         }
 
-        .role-chip {
-            background: #dcf8c6;
-            border: 1px solid #b8e5b5;
-            color: #1b5e20;
+        .status-chip {
+            border: 1px solid #c8d3dd;
+            background: #ffffff;
+            color: #5e7380;
             padding: 4px 10px;
             border-radius: 999px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .status-chip.active {
+            background: #dcf8c6;
+            border-color: #b8e5b5;
+            color: #1b5e20;
         }
 
         .layout {
             display: grid;
-            grid-template-columns: 330px 1fr;
+            grid-template-columns: 1fr;
             gap: 0;
-            min-height: calc(100svh - 74px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            min-height: calc(100svh - 58px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         }
 
         .card {
@@ -115,16 +122,7 @@
         }
 
         .panel {
-            padding: 14px;
-            border-right: 1px solid #d7e0e8;
-            background: #ffffff;
-        }
-
-        .room-create {
-            display: grid;
-            gap: 8px;
-            margin-top: 10px;
-            margin-bottom: 16px;
+            display: none;
         }
 
         input, textarea, select, button {
@@ -362,6 +360,14 @@
             box-shadow: 0 1px 0 rgba(0,0,0,0.05);
         }
 
+        .msg.quote-ready {
+            transition: transform 0.18s ease;
+        }
+
+        .msg.quote-ready.quote-active {
+            transform: translateX(-10px);
+        }
+
         .msg.me {
             justify-self: end;
             background: #dcf8c6;
@@ -423,6 +429,33 @@
             color: #111b21;
         }
 
+        .msg-quote {
+            border-left: 3px solid #16a085;
+            background: rgba(22, 160, 133, 0.1);
+            border-radius: 6px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+        }
+
+        .msg-quote-user {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f766e;
+            margin-bottom: 2px;
+        }
+
+        .msg-quote-text {
+            font-size: 12px;
+            color: #405b66;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .msg-body-text {
+            display: block;
+        }
+
         .composer {
             border-top: 1px solid var(--line);
             padding: 10px;
@@ -432,6 +465,52 @@
             align-items: center;
             position: relative;
             background: #f0f2f5;
+        }
+
+        .quote-preview {
+            display: none;
+            grid-column: 1 / -1;
+            border-left: 3px solid #16a085;
+            background: #eaf5f3;
+            border-radius: 8px;
+            padding: 7px 10px;
+            margin-bottom: 2px;
+            grid-template-columns: 1fr auto;
+            align-items: start;
+            gap: 8px;
+        }
+
+        .quote-preview.show {
+            display: grid;
+        }
+
+        .quote-preview-meta {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f766e;
+        }
+
+        .quote-preview-text {
+            font-size: 13px;
+            color: #3f5762;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .quote-cancel {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid #bed2cf;
+            background: #ffffff;
+            color: #4b616c;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
         }
 
         .composer-input-wrap {
@@ -563,6 +642,35 @@
             gap: 8px;
         }
 
+        .room-picker-current {
+            border: 1px solid #d9e1e7;
+            border-radius: 10px;
+            padding: 9px 10px;
+            background: #f7fafc;
+            margin-bottom: 8px;
+        }
+
+        .room-picker-current-title {
+            font-size: 11px;
+            color: #60717a;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+
+        .room-picker-current-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1d2c34;
+        }
+
+        .room-picker-list {
+            height: auto;
+            max-height: 55vh;
+            border: 1px solid #d9e1e7;
+            border-radius: 10px;
+            overflow: auto;
+        }
+
         .setting-note {
             color: #51636d;
             font-size: 14px;
@@ -624,30 +732,17 @@
                 padding-bottom: 0;
             }
 
-            .topbar {
-                padding: 10px 12px;
-            }
+            .topbar { padding: 10px 10px; }
 
             .layout {
                 grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr;
-                min-height: calc(100svh - 66px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-            }
-
-            .panel {
-                border-right: 0;
-                border-bottom: 1px solid #d7e0e8;
+                min-height: calc(100svh - 57px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
             }
 
             .chat-wrapper {
                 min-height: 0;
                 height: 100%;
                 padding-bottom: calc(64px + var(--mobile-bottom-offset));
-            }
-
-            .rooms {
-                max-height: 220px;
-                height: auto;
             }
 
             .messages {
@@ -677,25 +772,31 @@
                 height: 32px;
                 right: 6px;
             }
+
+            .status-chip {
+                padding: 4px 9px;
+                font-size: 11px;
+            }
         }
     </style>
 </head>
 <body>
 <div class="page">
     <div class="topbar">
-        <div>
-            <a class="back-link" href="/patient-menu.html"><i class="fa fa-arrow-left"></i> Kembali ke Menu</a>
-            <h1 class="title">Community Chat</h1>
+        <div class="status-wrap">
+            <span class="status-chip" id="status-user">User</span>
+            <button type="button" id="chat-menu-btn" class="chat-menu-btn" title="Menu"><i class="fa fa-ellipsis-v"></i></button>
+            <span class="status-chip" id="status-moderator">Moderator</span>
+            <span class="status-chip" id="status-admin">Admin</span>
+            <div class="chat-menu" id="chat-menu">
+                <button type="button" class="chat-menu-item" id="menu-room-picker"><i class="fa fa-comments"></i> Pilih Room</button>
+                <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
+                <button type="button" class="chat-menu-item" id="menu-setting"><i class="fa fa-cog"></i> Setting</button>
+            </div>
         </div>
-        <span class="role-chip" id="role-chip">Memuat...</span>
     </div>
 
     <div class="layout">
-        <aside class="card panel">
-            <strong>Lobby & Room</strong>
-            <div class="rooms" id="rooms"></div>
-        </aside>
-
         <main class="card chat-wrapper">
             <div class="chat-head">
                 <div>
@@ -704,11 +805,6 @@
                 </div>
                 <div class="chat-head-meta">
                     <div id="active-room-color" class="active-room-color"></div>
-                    <button type="button" id="chat-menu-btn" class="chat-menu-btn" title="Menu"><i class="fa fa-ellipsis-v"></i></button>
-                    <div class="chat-menu" id="chat-menu">
-                        <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
-                        <button type="button" class="chat-menu-item" id="menu-setting"><i class="fa fa-cog"></i> Setting</button>
-                    </div>
                 </div>
             </div>
 
@@ -717,8 +813,15 @@
             <div id="messages" class="messages"></div>
 
             <div class="composer">
+                <div class="quote-preview" id="quote-preview">
+                    <div>
+                        <div class="quote-preview-meta" id="quote-preview-meta"></div>
+                        <div class="quote-preview-text" id="quote-preview-text"></div>
+                    </div>
+                    <button type="button" class="quote-cancel" id="quote-cancel" title="Batal quote"><i class="fa fa-times"></i></button>
+                </div>
                 <div class="composer-input-wrap">
-                    <textarea id="message-input" rows="1" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
+                    <textarea id="message-input" rows="1" maxlength="2000" placeholder="ketik disini"></textarea>
                     <button type="button" id="emoji-toggle" title="Pilih emoji"><i class="fa fa-smile-o"></i></button>
                 </div>
                 <button type="button" id="send-btn" title="Kirim pesan"><i class="fa fa-paper-plane"></i></button>
@@ -764,6 +867,17 @@
     </div>
 </div>
 
+<div class="menu-modal" id="room-picker-modal">
+    <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="room-picker-title">
+        <div class="menu-modal-head">
+            <h2 class="menu-modal-title" id="room-picker-title">Pilih Room</h2>
+            <button type="button" class="menu-modal-close" id="room-picker-close" title="Tutup"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="room-picker-current" id="room-picker-current"></div>
+        <div class="rooms room-picker-list" id="room-picker-list"></div>
+    </div>
+</div>
+
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script type="module">
     import { showToast } from '/scripts/patient-utils.js';
@@ -788,22 +902,33 @@
     let isStaff = false;
     let canCreateRoomPermission = false;
     let renderedMessageIds = new Set();
+    let quotedMessage = null;
 
     const el = {
-        roleChip: document.getElementById('role-chip'),
-        rooms: document.getElementById('rooms'),
+        statusUser: document.getElementById('status-user'),
+        statusModerator: document.getElementById('status-moderator'),
+        statusAdmin: document.getElementById('status-admin'),
         activeRoomName: document.getElementById('active-room-name'),
         activeRoomDesc: document.getElementById('active-room-desc'),
         activeRoomColor: document.getElementById('active-room-color'),
         chatMenuBtn: document.getElementById('chat-menu-btn'),
         chatMenu: document.getElementById('chat-menu'),
+        menuRoomPicker: document.getElementById('menu-room-picker'),
         menuCreateRoom: document.getElementById('menu-create-room'),
         menuSetting: document.getElementById('menu-setting'),
         createRoomModal: document.getElementById('create-room-modal'),
         settingModal: document.getElementById('setting-modal'),
+        roomPickerModal: document.getElementById('room-picker-modal'),
         createRoomClose: document.getElementById('create-room-close'),
         settingClose: document.getElementById('setting-close'),
+        roomPickerClose: document.getElementById('room-picker-close'),
+        roomPickerCurrent: document.getElementById('room-picker-current'),
+        roomPickerList: document.getElementById('room-picker-list'),
         messages: document.getElementById('messages'),
+        quotePreview: document.getElementById('quote-preview'),
+        quotePreviewMeta: document.getElementById('quote-preview-meta'),
+        quotePreviewText: document.getElementById('quote-preview-text'),
+        quoteCancel: document.getElementById('quote-cancel'),
         messageInput: document.getElementById('message-input'),
         sendBtn: document.getElementById('send-btn'),
         emojiToggle: document.getElementById('emoji-toggle'),
@@ -822,6 +947,9 @@
 
     function applyCreateRoomPermission() {
         const allowed = !!canCreateRoomPermission;
+        if (el.menuRoomPicker) {
+            el.menuRoomPicker.disabled = rooms.length === 0;
+        }
         if (el.menuCreateRoom) {
             el.menuCreateRoom.disabled = !allowed;
             el.menuCreateRoom.title = allowed ? 'Buat room baru' : 'Fitur ini khusus user VIP';
@@ -854,6 +982,36 @@
         modal.classList.toggle('show', !!open);
     }
 
+    function updateStatusChips() {
+        el.statusUser.classList.toggle('active', !isStaff);
+        el.statusAdmin.classList.toggle('active', isStaff);
+        el.statusModerator.classList.toggle('active', false);
+    }
+
+    function renderRoomPickerCurrent() {
+        const lobbyRoom = rooms.find((room) => room.slug === 'lobby');
+        const lobbyName = lobbyRoom ? lobbyRoom.name : 'Lobby';
+
+        if (!activeRoom) {
+            el.roomPickerCurrent.innerHTML = `
+                <div class="room-picker-current-title">Pilih Room</div>
+                <div class="room-picker-current-name">Room aktif: -</div>
+                <div class="room-picker-current-name">Lobby: ${escapeHtml(lobbyName)}</div>
+            `;
+            return;
+        }
+
+        el.roomPickerCurrent.innerHTML = `
+            <div class="room-picker-current-title">Pilih Room</div>
+            <div class="room-picker-current-name">Room aktif: ${escapeHtml(activeRoom.name)}</div>
+            <div class="room-picker-current-name">Lobby: ${escapeHtml(lobbyName)}</div>
+        `;
+    }
+
+    function openRoomPickerModal() {
+        setModalOpen(el.roomPickerModal, true);
+    }
+
     function openCreateRoomModal() {
         if (!canCreateRoomPermission) {
             showToast('Fitur buat room hanya untuk user VIP', 'warning');
@@ -871,6 +1029,11 @@
             toggleChatMenu();
         });
 
+        el.menuRoomPicker.addEventListener('click', () => {
+            toggleChatMenu(false);
+            openRoomPickerModal();
+        });
+
         el.menuCreateRoom.addEventListener('click', () => {
             toggleChatMenu(false);
             openCreateRoomModal();
@@ -883,8 +1046,9 @@
 
         el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
         el.settingClose.addEventListener('click', () => setModalOpen(el.settingModal, false));
+        el.roomPickerClose.addEventListener('click', () => setModalOpen(el.roomPickerModal, false));
 
-        [el.createRoomModal, el.settingModal].forEach((modal) => {
+        [el.createRoomModal, el.settingModal, el.roomPickerModal].forEach((modal) => {
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) setModalOpen(modal, false);
             });
@@ -895,11 +1059,12 @@
                 toggleChatMenu(false);
                 setModalOpen(el.createRoomModal, false);
                 setModalOpen(el.settingModal, false);
+                setModalOpen(el.roomPickerModal, false);
             }
         });
 
         document.addEventListener('click', (event) => {
-            if (!el.chatMenu.contains(event.target) && event.target !== el.chatMenuBtn) {
+            if (!el.chatMenu.contains(event.target) && !el.chatMenuBtn.contains(event.target)) {
                 toggleChatMenu(false);
             }
         });
@@ -947,7 +1112,13 @@
     }
 
     function renderRooms() {
-        el.rooms.innerHTML = rooms.map((room) => {
+        const orderedRooms = [...rooms].sort((a, b) => {
+            if (a.slug === 'lobby') return -1;
+            if (b.slug === 'lobby') return 1;
+            return 0;
+        });
+
+        el.roomPickerList.innerHTML = orderedRooms.map((room) => {
             const active = activeRoom && activeRoom.slug === room.slug ? 'active' : '';
             const roomColor = room.color || '#2563eb';
             const roomTime = formatRoomTime(room.last_message_at || room.created_at);
@@ -965,12 +1136,149 @@
             `;
         }).join('');
 
-        el.rooms.querySelectorAll('.room-item').forEach((item) => {
+        el.roomPickerList.querySelectorAll('.room-item').forEach((item) => {
             item.addEventListener('click', async () => {
                 const slug = item.getAttribute('data-room');
                 await openRoom(slug);
+                setModalOpen(el.roomPickerModal, false);
             });
         });
+
+        renderRoomPickerCurrent();
+    }
+
+    function toBase64Unicode(value) {
+        const bytes = new TextEncoder().encode(String(value || ''));
+        let binary = '';
+        bytes.forEach((byte) => {
+            binary += String.fromCharCode(byte);
+        });
+        return btoa(binary);
+    }
+
+    function fromBase64Unicode(value) {
+        const binary = atob(String(value || ''));
+        const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    }
+
+    function parseMessagePayload(rawMessage) {
+        const source = String(rawMessage || '');
+        const quoteMatch = source.match(/^\[\[q:([A-Za-z0-9+/=]+)\]\]\n?/);
+        if (!quoteMatch) {
+            return { quote: null, body: source };
+        }
+
+        const encoded = quoteMatch[1];
+        const body = source.slice(quoteMatch[0].length);
+
+        try {
+            const quote = JSON.parse(fromBase64Unicode(encoded));
+            return {
+                quote: {
+                    sender: String(quote.sender || 'User'),
+                    text: String(quote.text || '')
+                },
+                body
+            };
+        } catch (_) {
+            return { quote: null, body: source };
+        }
+    }
+
+    function buildQuotedMessage(rawMessage) {
+        const payload = parseMessagePayload(rawMessage);
+        const quoteHtml = payload.quote
+            ? `<div class="msg-quote"><div class="msg-quote-user">${escapeHtml(payload.quote.sender)}</div><div class="msg-quote-text">${escapeHtml(payload.quote.text)}</div></div>`
+            : '';
+
+        return {
+            bodyText: payload.body,
+            html: `${quoteHtml}<span class="msg-body-text">${escapeHtml(payload.body)}</span>`
+        };
+    }
+
+    function setQuotedMessage(data) {
+        quotedMessage = {
+            sender: String(data.sender || 'User').slice(0, 40),
+            text: String(data.text || '').trim().slice(0, 180)
+        };
+
+        el.quotePreviewMeta.textContent = `Quote: ${quotedMessage.sender}`;
+        el.quotePreviewText.textContent = quotedMessage.text;
+        el.quotePreview.classList.add('show');
+    }
+
+    function clearQuotedMessage() {
+        quotedMessage = null;
+        el.quotePreview.classList.remove('show');
+        el.quotePreviewMeta.textContent = '';
+        el.quotePreviewText.textContent = '';
+    }
+
+    function attachQuoteGesture(node, messageMeta) {
+        let holdTimer = null;
+        let holdReady = false;
+        let startX = 0;
+        let startY = 0;
+        let triggered = false;
+
+        const clearHold = () => {
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+            holdReady = false;
+            node.classList.remove('quote-active');
+        };
+
+        node.classList.add('quote-ready');
+
+        node.addEventListener('touchstart', (event) => {
+            if (!event.touches || event.touches.length !== 1) return;
+            const touch = event.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            triggered = false;
+
+            clearHold();
+            holdTimer = setTimeout(() => {
+                holdReady = true;
+                node.classList.add('quote-active');
+            }, 280);
+        }, { passive: true });
+
+        node.addEventListener('touchmove', (event) => {
+            if (!event.touches || event.touches.length !== 1) return;
+            const touch = event.touches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+
+            if (!holdReady && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) {
+                clearHold();
+                return;
+            }
+
+            if (!holdReady || triggered) return;
+
+            if (dx < -48 && Math.abs(dy) < 44) {
+                triggered = true;
+                setQuotedMessage(messageMeta);
+                clearHold();
+            }
+        }, { passive: true });
+
+        node.addEventListener('touchend', clearHold, { passive: true });
+        node.addEventListener('touchcancel', clearHold, { passive: true });
+    }
+
+    function packOutgoingMessage(rawText) {
+        if (!quotedMessage) return rawText;
+        const quotePayload = toBase64Unicode(JSON.stringify({
+            sender: quotedMessage.sender,
+            text: quotedMessage.text
+        }));
+        return `[[q:${quotePayload}]]\n${rawText}`;
     }
 
     function formatTime(value) {
@@ -1011,6 +1319,7 @@
     function buildMessageNode(msg) {
         const mine = String(msg.sender_id) === String(currentUser.id);
         const displayName = msg.sender_nickname || msg.sender_name || 'User';
+        const builtMessage = buildQuotedMessage(msg.message);
         const node = document.createElement('div');
         node.className = `msg ${mine ? 'me' : ''}`;
         node.dataset.id = msg.id;
@@ -1020,8 +1329,14 @@
                 <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
                 <span class="msg-time">${formatTime(msg.created_at)}</span>
             </div>
-            <div class="msg-body">${escapeHtml(msg.message)}</div>
+            <div class="msg-body">${builtMessage.html}</div>
         `;
+
+        attachQuoteGesture(node, {
+            sender: displayName,
+            text: builtMessage.bodyText
+        });
+
         return node;
     }
 
@@ -1062,6 +1377,7 @@
     async function openRoom(slug) {
         const data = await api(`/rooms/${encodeURIComponent(slug)}/messages?limit=120`);
         activeRoom = data.room;
+        clearQuotedMessage();
 
         el.activeRoomName.textContent = data.room.name;
         el.activeRoomDesc.textContent = data.room.description || 'Room chat komunitas';
@@ -1112,10 +1428,11 @@
         try {
             const payload = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages`, {
                 method: 'POST',
-                body: JSON.stringify({ message })
+                body: JSON.stringify({ message: packOutgoingMessage(message) })
             });
 
             el.messageInput.value = '';
+            clearQuotedMessage();
             appendMessage(payload.message);
 
             if (socket) {
@@ -1350,7 +1667,7 @@
         }
 
         isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
-        el.roleChip.textContent = isStaff ? 'Admin Chat (Staff)' : 'User';
+        updateStatusChips();
 
         initEmojiPicker();
         initSocket();
@@ -1367,6 +1684,7 @@
         });
         el.createRoomBtn.addEventListener('click', createRoom);
         el.saveModeratorsBtn.addEventListener('click', saveModerators);
+        el.quoteCancel.addEventListener('click', clearQuotedMessage);
         await loadRooms(true);
     }
 
