@@ -365,6 +365,34 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.08);
         }
 
+        .msg-row {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr);
+            gap: 8px;
+            align-items: end;
+        }
+
+        .msg-row.me {
+            grid-template-columns: minmax(0, 1fr);
+            justify-items: end;
+        }
+
+        .msg-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid #d7e3ea;
+            object-fit: cover;
+            background: #dce9f1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #4d6470;
+            overflow: hidden;
+        }
+
         .msg {
             max-width: 78%;
             border-radius: 8px;
@@ -539,10 +567,10 @@
             padding: 11px 52px 11px 14px;
             min-height: 44px;
             height: 44px;
-            max-height: 44px;
+            max-height: 132px;
             resize: none;
-            overflow-y: hidden;
-            white-space: nowrap;
+            overflow-y: auto;
+            line-height: 1.35;
             border-color: #d0d7dc;
         }
 
@@ -1363,24 +1391,51 @@
         const mine = String(msg.sender_id) === String(currentUser.id);
         const displayName = msg.sender_nickname || msg.sender_name || 'User';
         const builtMessage = buildQuotedMessage(msg.message);
-        const node = document.createElement('div');
-        node.className = `msg ${mine ? 'me' : ''}`;
-        node.dataset.id = msg.id;
-        node.dataset.dateKey = getDateKey(msg.created_at);
-        node.innerHTML = `
-            <div class="msg-head">
-                <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
-                <span class="msg-time">${formatTime(msg.created_at)}</span>
+        const row = document.createElement('div');
+        row.className = `msg-row ${mine ? 'me' : ''}`;
+        row.dataset.id = msg.id;
+        row.dataset.dateKey = getDateKey(msg.created_at);
+
+        const avatarHtml = !mine
+            ? (msg.sender_avatar
+                ? `<img class="msg-avatar" src="${escapeHtml(msg.sender_avatar)}" alt="${escapeHtml(displayName)}">`
+                : `<div class="msg-avatar">${escapeHtml(getInitials(displayName))}</div>`)
+            : '';
+
+        row.innerHTML = `
+            ${avatarHtml}
+            <div class="msg ${mine ? 'me' : ''}">
+                <div class="msg-head">
+                    <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
+                    <span class="msg-time">${formatTime(msg.created_at)}</span>
+                </div>
+                <div class="msg-body">${builtMessage.html}</div>
             </div>
-            <div class="msg-body">${builtMessage.html}</div>
         `;
 
-        attachQuoteGesture(node, {
+        const bubble = row.querySelector('.msg');
+        attachQuoteGesture(bubble, {
             sender: displayName,
             text: builtMessage.bodyText
         });
 
-        return node;
+        return row;
+    }
+
+    function autoResizeMessageInput(reset) {
+        if (!el.messageInput) return;
+        const minHeight = 44;
+        const maxHeight = 132;
+
+        if (reset) {
+            el.messageInput.style.height = `${minHeight}px`;
+            el.messageInput.scrollTop = 0;
+            return;
+        }
+
+        el.messageInput.style.height = 'auto';
+        const nextHeight = Math.max(minHeight, Math.min(el.messageInput.scrollHeight, maxHeight));
+        el.messageInput.style.height = `${nextHeight}px`;
     }
 
     function buildDateDivider(dateValue) {
@@ -1475,6 +1530,7 @@
             });
 
             el.messageInput.value = '';
+            autoResizeMessageInput(true);
             clearQuotedMessage();
             appendMessage(payload.message);
 
@@ -1545,6 +1601,7 @@
         el.emojiPanel.querySelectorAll('.emoji-btn').forEach((button) => {
             button.addEventListener('click', () => {
                 el.messageInput.value += button.textContent;
+                autoResizeMessageInput();
                 el.messageInput.focus();
                 el.emojiPanel.classList.remove('show');
             });
@@ -1643,6 +1700,7 @@
 
     function initTypingHandler() {
         el.messageInput.addEventListener('input', () => {
+            autoResizeMessageInput();
             if (!socket || !activeRoom) return;
 
             socket.emit('community:typing', {
@@ -1717,6 +1775,7 @@
         initTypingHandler();
         initChatMenu();
         initMobileViewportGuard();
+        autoResizeMessageInput(true);
 
         el.sendBtn.addEventListener('click', sendMessage);
         el.messageInput.addEventListener('keydown', (event) => {
