@@ -74,13 +74,29 @@
 
         .topbar {
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             align-items: center;
             margin: 0;
             gap: 8px;
             padding: 10px 12px;
             border-bottom: 1px solid #d7e0e8;
             background: #eaf4fb;
+        }
+
+        .topbar-room {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .topbar-room-title {
+            font-size: 23px;
+            line-height: 1.1;
+            font-weight: 800;
+            color: #0f2029;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
         .status-wrap {
@@ -734,6 +750,10 @@
 
             .topbar { padding: 10px 10px; }
 
+            .topbar-room-title {
+                font-size: 20px;
+            }
+
             .layout {
                 grid-template-columns: 1fr;
                 min-height: calc(100svh - 57px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -783,11 +803,12 @@
 <body>
 <div class="page">
     <div class="topbar">
+        <div class="topbar-room">
+            <div id="active-room-name" class="topbar-room-title">-</div>
+        </div>
         <div class="status-wrap">
-            <span class="status-chip" id="status-user">User</span>
+            <span class="status-chip" id="status-badge">User</span>
             <button type="button" id="chat-menu-btn" class="chat-menu-btn" title="Menu"><i class="fa fa-ellipsis-v"></i></button>
-            <span class="status-chip" id="status-moderator">Moderator</span>
-            <span class="status-chip" id="status-admin">Admin</span>
             <div class="chat-menu" id="chat-menu">
                 <button type="button" class="chat-menu-item" id="menu-room-picker"><i class="fa fa-comments"></i> Pilih Room</button>
                 <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
@@ -800,7 +821,6 @@
         <main class="card chat-wrapper">
             <div class="chat-head">
                 <div>
-                    <div id="active-room-name" class="active-room-title">-</div>
                     <div id="active-room-desc" class="active-room-desc"></div>
                 </div>
                 <div class="chat-head-meta">
@@ -905,9 +925,7 @@
     let quotedMessage = null;
 
     const el = {
-        statusUser: document.getElementById('status-user'),
-        statusModerator: document.getElementById('status-moderator'),
-        statusAdmin: document.getElementById('status-admin'),
+        statusBadge: document.getElementById('status-badge'),
         activeRoomName: document.getElementById('active-room-name'),
         activeRoomDesc: document.getElementById('active-room-desc'),
         activeRoomColor: document.getElementById('active-room-color'),
@@ -982,10 +1000,25 @@
         modal.classList.toggle('show', !!open);
     }
 
+    function getUserStatusLabel() {
+        if (!isStaff) return 'User';
+
+        const roleName = String(currentUser?.role || '').toLowerCase();
+        if (roleName.includes('admin') || roleName === 'dokter' || roleName === 'superadmin') {
+            return 'Admin';
+        }
+
+        if (roleName.includes('moderator')) {
+            return 'Moderator';
+        }
+
+        return 'Moderator';
+    }
+
     function updateStatusChips() {
-        el.statusUser.classList.toggle('active', !isStaff);
-        el.statusAdmin.classList.toggle('active', isStaff);
-        el.statusModerator.classList.toggle('active', false);
+        const label = getUserStatusLabel();
+        el.statusBadge.textContent = label;
+        el.statusBadge.classList.add('active');
     }
 
     function renderRoomPickerCurrent() {
