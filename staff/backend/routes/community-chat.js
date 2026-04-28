@@ -320,15 +320,26 @@ router.get('/rooms', verifyToken, async (req, res) => {
                 r.is_system,
                 r.created_by,
                 r.created_by_type,
+                r.created_at,
                 r.updated_at,
                 MAX(m.created_at) AS last_message_at,
-                COUNT(DISTINCT mod.staff_user_id) AS member_count,
+                COUNT(DISTINCT room_mod.staff_user_id) AS member_count,
                 ? AS current_user_id
             FROM community_chat_rooms r
             LEFT JOIN community_chat_messages m ON m.room_id = r.id
-            LEFT JOIN community_chat_room_moderators mod ON mod.room_id = r.id
+            LEFT JOIN community_chat_room_moderators room_mod ON room_mod.room_id = r.id
             WHERE r.is_archived = 0
-            GROUP BY r.id
+            GROUP BY
+                r.id,
+                r.slug,
+                r.name,
+                r.description,
+                r.color,
+                r.is_system,
+                r.created_by,
+                r.created_by_type,
+                r.created_at,
+                r.updated_at
             ORDER BY (r.slug = ?) DESC, COALESCE(MAX(m.created_at), r.created_at) DESC`,
             [userId, DEFAULT_LOBBY_SLUG]
         );
