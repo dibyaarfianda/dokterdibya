@@ -16,6 +16,8 @@
             --accent-2: #128c7e;
             --danger: #ef4444;
             --mobile-bottom-offset: 0px;
+            --chat-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            --chat-font-size: 16px;
         }
 
         * { box-sizing: border-box; }
@@ -31,6 +33,14 @@
             background-position: 0 0, 0 0;
             color: var(--text);
             min-height: 100vh;
+        }
+
+        body.theme-dark {
+            color: #e5eef7;
+            background-color: #0f1823;
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(138, 175, 211, 0.08) 1px, transparent 0),
+                linear-gradient(180deg, rgba(20, 32, 46, 0.95) 0%, rgba(12, 21, 32, 0.96) 100%);
         }
 
         body.embed-staff {
@@ -292,6 +302,12 @@
             color: #41525d;
         }
 
+        body.theme-dark .chat-menu-btn {
+            border-color: #304861;
+            background: #1a2d40;
+            color: #d8e6f2;
+        }
+
         .chat-menu {
             position: absolute;
             right: 0;
@@ -304,6 +320,11 @@
             display: none;
             z-index: 20;
             padding: 6px;
+        }
+
+        body.theme-dark .chat-menu {
+            background: #102133;
+            border-color: #2f465d;
         }
 
         .chat-menu.show {
@@ -327,6 +348,15 @@
             background: #f3f6f8;
         }
 
+        body.theme-dark .chat-menu-item {
+            background: #102133;
+            color: #d6e4f1;
+        }
+
+        body.theme-dark .chat-menu-item:hover {
+            background: #193044;
+        }
+
         .chat-menu-item[disabled] {
             color: #90a4ae;
             background: #f8f9fb;
@@ -341,6 +371,11 @@
             background: #f7f8fa;
         }
 
+        body.theme-dark .typing {
+            background: #0f1f2f;
+            color: #6de4c6;
+        }
+
         .messages {
             overflow: auto;
             padding: 14px;
@@ -352,6 +387,8 @@
                 linear-gradient(180deg, rgba(224, 242, 255, 0.6) 0%, rgba(248, 252, 255, 0.9) 34%, rgba(255, 255, 255, 1) 100%),
                 radial-gradient(circle at 1px 1px, rgba(32, 84, 129, 0.06) 1px, transparent 0);
             background-size: 100% 100%, 22px 22px;
+            font-family: var(--chat-font-family);
+            font-size: var(--chat-font-size);
         }
 
         .date-divider {
@@ -471,6 +508,41 @@
             line-height: 1.45;
             word-break: break-word;
             color: #111b21;
+            font-family: var(--chat-font-family);
+            font-size: var(--chat-font-size);
+        }
+
+        body.theme-dark .msg {
+            background: #182a3d;
+            border-color: #2f465d;
+        }
+
+        body.theme-dark .msg.me {
+            background: #1c5a47;
+            border-color: #2f7a64;
+        }
+
+        body.theme-dark .msg::before {
+            background: #182a3d;
+            border-left-color: #2f465d;
+            border-top-color: #2f465d;
+        }
+
+        body.theme-dark .msg.me::before {
+            background: #1c5a47;
+            border-right-color: #2f7a64;
+            border-top-color: #2f7a64;
+        }
+
+        body.theme-dark .msg-body,
+        body.theme-dark .msg-time,
+        body.theme-dark .msg-quote-text {
+            color: #d4e4f3;
+        }
+
+        body.theme-dark .date-divider {
+            background: rgba(20, 36, 53, 0.95);
+            color: #c9daea;
         }
 
         .msg-quote {
@@ -572,6 +644,14 @@
             overflow-y: auto;
             line-height: 1.35;
             border-color: #d0d7dc;
+            font-family: var(--chat-font-family);
+            font-size: var(--chat-font-size);
+        }
+
+        body.theme-dark #message-input {
+            background: #1a2e43;
+            border-color: #355069;
+            color: #e2edf7;
         }
 
         #emoji-toggle {
@@ -660,6 +740,11 @@
             gap: 10px;
         }
 
+        body.theme-dark .menu-modal-card {
+            background: #102133;
+            border-color: #304861;
+        }
+
         .menu-modal-head {
             display: flex;
             align-items: center;
@@ -679,6 +764,11 @@
             padding: 0;
             background: #f2f4f6;
             color: #30414b;
+        }
+
+        body.theme-dark .menu-modal-close {
+            background: #1c3145;
+            color: #d4e4f2;
         }
 
         .room-form {
@@ -720,6 +810,46 @@
             font-size: 14px;
             line-height: 1.5;
             margin: 0;
+        }
+
+        .setting-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .setting-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #3b4e58;
+        }
+
+        .setting-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .setting-pill {
+            border: 1px solid #cfdae1;
+            background: #f7fafc;
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: 12px;
+            color: #3d5565;
+            min-width: 54px;
+            text-align: center;
+        }
+
+        body.theme-dark .setting-note,
+        body.theme-dark .setting-label {
+            color: #b5cada;
+        }
+
+        body.theme-dark .setting-pill {
+            border-color: #3c566e;
+            background: #1a3147;
+            color: #d8e6f3;
         }
 
         .room-create-note {
@@ -841,6 +971,7 @@
                 <button type="button" class="chat-menu-item" id="menu-room-picker"><i class="fa fa-comments"></i> Pilih Room</button>
                 <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
                 <button type="button" class="chat-menu-item" id="menu-setting"><i class="fa fa-cog"></i> Setting</button>
+                <button type="button" class="chat-menu-item" id="menu-exit"><i class="fa fa-sign-out"></i> Keluar</button>
             </div>
         </div>
     </div>
@@ -911,7 +1042,37 @@
             <h2 class="menu-modal-title" id="setting-title">Setting</h2>
             <button type="button" class="menu-modal-close" id="setting-close" title="Tutup"><i class="fa fa-times"></i></button>
         </div>
-        <p class="setting-note">Nickname dan bio singkat dinonaktifkan. Nama pengguna chat mengikuti data akun agar konsisten.</p>
+        <div class="setting-group">
+            <label class="setting-label" for="setting-theme">Tema</label>
+            <select id="setting-theme">
+                <option value="light">Terang</option>
+                <option value="dark">Gelap</option>
+            </select>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label" for="setting-wallpaper">Wallpaper</label>
+            <div class="setting-inline">
+                <input type="file" id="setting-wallpaper" accept="image/*">
+                <button type="button" class="secondary" id="setting-wallpaper-clear"><i class="fa fa-trash"></i> Hapus</button>
+            </div>
+            <p class="setting-note">Upload wallpaper untuk background chat.</p>
+        </div>
+
+        <div class="setting-group">
+            <label class="setting-label" for="setting-font-family">Tulisan</label>
+            <select id="setting-font-family">
+                <option value="segoe">Segoe UI</option>
+                <option value="trebuchet">Trebuchet MS</option>
+                <option value="verdana">Verdana</option>
+                <option value="georgia">Georgia</option>
+            </select>
+            <div class="setting-inline">
+                <label class="setting-label" for="setting-font-size">Ukuran</label>
+                <input type="range" id="setting-font-size" min="13" max="22" step="1" value="16">
+                <span class="setting-pill" id="setting-font-size-value">16px</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -932,6 +1093,7 @@
 
     const TOKEN_KEYS = ['vps_auth_token', 'token', 'idToken', 'patient_token'];
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+    const UI_SETTINGS_KEY = 'community_chat_ui_settings_v1';
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
@@ -951,6 +1113,12 @@
     let canCreateRoomPermission = false;
     let renderedMessageIds = new Set();
     let quotedMessage = null;
+    let uiSettings = {
+        theme: 'light',
+        wallpaperDataUrl: '',
+        fontFamily: 'segoe',
+        fontSize: 16
+    };
 
     const el = {
         statusBadge: document.getElementById('status-badge'),
@@ -962,12 +1130,19 @@
         menuRoomPicker: document.getElementById('menu-room-picker'),
         menuCreateRoom: document.getElementById('menu-create-room'),
         menuSetting: document.getElementById('menu-setting'),
+        menuExit: document.getElementById('menu-exit'),
         createRoomModal: document.getElementById('create-room-modal'),
         settingModal: document.getElementById('setting-modal'),
         roomPickerModal: document.getElementById('room-picker-modal'),
         createRoomClose: document.getElementById('create-room-close'),
         settingClose: document.getElementById('setting-close'),
         roomPickerClose: document.getElementById('room-picker-close'),
+        settingTheme: document.getElementById('setting-theme'),
+        settingWallpaper: document.getElementById('setting-wallpaper'),
+        settingWallpaperClear: document.getElementById('setting-wallpaper-clear'),
+        settingFontFamily: document.getElementById('setting-font-family'),
+        settingFontSize: document.getElementById('setting-font-size'),
+        settingFontSizeValue: document.getElementById('setting-font-size-value'),
         roomPickerCurrent: document.getElementById('room-picker-current'),
         roomPickerList: document.getElementById('room-picker-list'),
         messages: document.getElementById('messages'),
@@ -1015,6 +1190,78 @@
         }
         if (el.roomCreateNote) {
             el.roomCreateNote.style.display = allowed ? 'none' : 'block';
+        }
+    }
+
+    function getFontFamilyByKey(key) {
+        const fonts = {
+            segoe: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
+            trebuchet: '"Trebuchet MS", "Segoe UI", sans-serif',
+            verdana: 'Verdana, "Segoe UI", sans-serif',
+            georgia: 'Georgia, serif'
+        };
+        return fonts[key] || fonts.segoe;
+    }
+
+    function composeMessageBackground() {
+        const isDark = uiSettings.theme === 'dark';
+        const overlay = isDark
+            ? 'linear-gradient(180deg, rgba(21, 34, 51, 0.68) 0%, rgba(15, 27, 41, 0.9) 48%, rgba(12, 22, 33, 0.95) 100%)'
+            : 'linear-gradient(180deg, rgba(224, 242, 255, 0.6) 0%, rgba(248, 252, 255, 0.9) 34%, rgba(255, 255, 255, 1) 100%)';
+        const dots = isDark
+            ? 'radial-gradient(circle at 1px 1px, rgba(117, 169, 219, 0.09) 1px, transparent 0)'
+            : 'radial-gradient(circle at 1px 1px, rgba(32, 84, 129, 0.06) 1px, transparent 0)';
+
+        if (uiSettings.wallpaperDataUrl) {
+            return {
+                image: `${overlay}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
+                size: '100% 100%, cover, 22px 22px',
+                position: '0 0, center center, 0 0'
+            };
+        }
+
+        return {
+            image: `${overlay}, ${dots}`,
+            size: '100% 100%, 22px 22px',
+            position: '0 0, 0 0'
+        };
+    }
+
+    function applyUiSettings() {
+        document.body.classList.toggle('theme-dark', uiSettings.theme === 'dark');
+        document.documentElement.style.setProperty('--chat-font-family', getFontFamilyByKey(uiSettings.fontFamily));
+        document.documentElement.style.setProperty('--chat-font-size', `${uiSettings.fontSize}px`);
+
+        if (el.settingTheme) el.settingTheme.value = uiSettings.theme;
+        if (el.settingFontFamily) el.settingFontFamily.value = uiSettings.fontFamily;
+        if (el.settingFontSize) el.settingFontSize.value = String(uiSettings.fontSize);
+        if (el.settingFontSizeValue) el.settingFontSizeValue.textContent = `${uiSettings.fontSize}px`;
+
+        const bg = composeMessageBackground();
+        el.messages.style.backgroundImage = bg.image;
+        el.messages.style.backgroundSize = bg.size;
+        el.messages.style.backgroundPosition = bg.position;
+
+        autoResizeMessageInput();
+    }
+
+    function persistUiSettings() {
+        localStorage.setItem(UI_SETTINGS_KEY, JSON.stringify(uiSettings));
+    }
+
+    function loadUiSettings() {
+        try {
+            const raw = localStorage.getItem(UI_SETTINGS_KEY);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            uiSettings = {
+                theme: parsed.theme === 'dark' ? 'dark' : 'light',
+                wallpaperDataUrl: typeof parsed.wallpaperDataUrl === 'string' ? parsed.wallpaperDataUrl : '',
+                fontFamily: ['segoe', 'trebuchet', 'verdana', 'georgia'].includes(parsed.fontFamily) ? parsed.fontFamily : 'segoe',
+                fontSize: Math.max(13, Math.min(Number(parsed.fontSize) || 16, 22))
+            };
+        } catch (_) {
+            // Ignore invalid cached settings and use defaults.
         }
     }
 
@@ -1105,9 +1352,63 @@
             setModalOpen(el.settingModal, true);
         });
 
+        el.menuExit.addEventListener('click', () => {
+            toggleChatMenu(false);
+            window.location.href = '/patient-menu.html';
+        });
+
         el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
         el.settingClose.addEventListener('click', () => setModalOpen(el.settingModal, false));
         el.roomPickerClose.addEventListener('click', () => setModalOpen(el.roomPickerModal, false));
+
+        el.settingTheme.addEventListener('change', (event) => {
+            uiSettings.theme = event.target.value === 'dark' ? 'dark' : 'light';
+            applyUiSettings();
+            persistUiSettings();
+        });
+
+        el.settingFontFamily.addEventListener('change', (event) => {
+            uiSettings.fontFamily = event.target.value;
+            applyUiSettings();
+            persistUiSettings();
+        });
+
+        el.settingFontSize.addEventListener('input', (event) => {
+            uiSettings.fontSize = Math.max(13, Math.min(Number(event.target.value) || 16, 22));
+            applyUiSettings();
+            persistUiSettings();
+        });
+
+        el.settingWallpaper.addEventListener('change', (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            if (!file.type || !file.type.startsWith('image/')) {
+                showToast('File wallpaper harus gambar.', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const result = typeof reader.result === 'string' ? reader.result : '';
+                uiSettings.wallpaperDataUrl = result;
+                applyUiSettings();
+                persistUiSettings();
+                showToast('Wallpaper berhasil diterapkan', 'success');
+            };
+            reader.onerror = () => {
+                showToast('Gagal membaca file wallpaper', 'error');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        el.settingWallpaperClear.addEventListener('click', () => {
+            uiSettings.wallpaperDataUrl = '';
+            el.settingWallpaper.value = '';
+            applyUiSettings();
+            persistUiSettings();
+            showToast('Wallpaper dihapus', 'success');
+        });
 
         [el.createRoomModal, el.settingModal, el.roomPickerModal].forEach((modal) => {
             modal.addEventListener('click', (event) => {
@@ -1769,6 +2070,9 @@
 
         isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
         updateStatusChips();
+
+        loadUiSettings();
+        applyUiSettings();
 
         initEmojiPicker();
         initSocket();
