@@ -43,7 +43,7 @@
             margin: 0;
             padding: 0;
             padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
+            padding-bottom: 0;
             min-height: 100svh;
         }
 
@@ -442,8 +442,11 @@
             border-radius: 22px;
             padding: 11px 52px 11px 14px;
             min-height: 44px;
-            max-height: 120px;
-            resize: vertical;
+            height: 44px;
+            max-height: 44px;
+            resize: none;
+            overflow-y: hidden;
+            white-space: nowrap;
             border-color: #d0d7dc;
         }
 
@@ -617,7 +620,7 @@
             .page {
                 padding: 0;
                 padding-top: env(safe-area-inset-top);
-                padding-bottom: env(safe-area-inset-bottom);
+                padding-bottom: 0;
             }
 
             .topbar {
@@ -638,6 +641,7 @@
             .chat-wrapper {
                 min-height: 0;
                 height: 100%;
+                padding-bottom: 64px;
             }
 
             .rooms {
@@ -654,7 +658,12 @@
             .emoji-panel { right: 10px; }
 
             .composer {
-                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 15;
+                padding: 8px 10px 2px;
             }
 
             #send-btn {
@@ -708,7 +717,7 @@
 
             <div class="composer">
                 <div class="composer-input-wrap">
-                    <textarea id="message-input" rows="2" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
+                    <textarea id="message-input" rows="1" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
                     <button type="button" id="emoji-toggle" title="Pilih emoji"><i class="fa fa-smile-o"></i></button>
                 </div>
                 <button type="button" id="send-btn" title="Kirim pesan"><i class="fa fa-paper-plane"></i></button>
