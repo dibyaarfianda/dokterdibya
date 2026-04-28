@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260428g'; // 2026-04-28 - Staff embed mode for community chat page
+const CACHE_VERSION = '20260429a'; // 2026-04-29 - WhatsApp-style patient community chat refresh
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
