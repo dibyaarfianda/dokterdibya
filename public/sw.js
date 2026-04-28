@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429f'; // 2026-04-29 - composer layout: send right, emoji inside textbox
+const CACHE_VERSION = '20260429g'; // 2026-04-29 - community chat: kebab menu + remove nickname/bio editor
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

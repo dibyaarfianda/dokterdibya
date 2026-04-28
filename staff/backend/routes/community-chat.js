@@ -8,7 +8,6 @@ const router = express.Router();
 const DEFAULT_LOBBY_SLUG = 'lobby';
 const DEFAULT_ROOM_COLOR = '#2563eb';
 const MAX_ROOM_NAME = 80;
-const MAX_NICKNAME = 30;
 const MAX_MESSAGE_LENGTH = 2000;
 
 let ioRef = null;
@@ -549,9 +548,16 @@ router.put('/me/profile', verifyToken, async (req, res) => {
     try {
         const userId = String(req.user.id);
         const userType = isPatientUser(req.user) ? 'patient' : 'staff';
-        const nickname = normalizeText(req.body.nickname).slice(0, MAX_NICKNAME);
-        const bio = normalizeText(req.body.bio).slice(0, 255);
+        const nickname = normalizeText(req.body.nickname);
+        const bio = normalizeText(req.body.bio);
         const profileVisible = req.body.profile_visible === false ? 0 : 1;
+
+        if (nickname || bio) {
+            return res.status(403).json({
+                success: false,
+                message: 'Nickname dan bio tidak dapat diubah.'
+            });
+        }
 
         await db.query(
             `INSERT INTO community_chat_profiles (user_id, user_type, nickname, bio, profile_visible)
@@ -561,7 +567,7 @@ router.put('/me/profile', verifyToken, async (req, res) => {
                 bio = VALUES(bio),
                 profile_visible = VALUES(profile_visible),
                 updated_at = CURRENT_TIMESTAMP`,
-            [userId, userType, nickname || null, bio || null, profileVisible]
+            [userId, userType, null, null, profileVisible]
         );
 
         const profile = await resolveUserIdentity(req.user);
