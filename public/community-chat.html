@@ -16,6 +16,7 @@
             --accent-2: #128c7e;
             --danger: #ef4444;
             --mobile-bottom-offset: 0px;
+            --app-height: 100vh;
             --chat-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
             --chat-font-size: 16px;
         }
@@ -32,7 +33,9 @@
             background-size: 20px 20px, 100% 100%;
             background-position: 0 0, 0 0;
             color: var(--text);
-            min-height: 100vh;
+            min-height: var(--app-height);
+            height: var(--app-height);
+            overflow: hidden;
         }
 
         body.theme-dark {
@@ -45,7 +48,8 @@
 
         body.embed-staff {
             background: transparent;
-            min-height: 100%;
+            min-height: var(--app-height);
+            height: var(--app-height);
         }
 
         .page {
@@ -55,7 +59,10 @@
             padding: 0;
             padding-top: env(safe-area-inset-top);
             padding-bottom: 0;
-            min-height: 100svh;
+            min-height: var(--app-height);
+            height: var(--app-height);
+            display: flex;
+            flex-direction: column;
         }
 
         body.embed-staff .page {
@@ -137,8 +144,8 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 0;
-            min-height: calc(100svh - 58px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-            height: calc(100svh - 58px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            flex: 1;
+            min-height: 0;
         }
 
         .card {
@@ -902,7 +909,8 @@
 
         @media (max-width: 1000px) {
             body {
-                min-height: 100svh;
+                min-height: var(--app-height);
+                height: var(--app-height);
             }
 
             .page {
@@ -919,8 +927,7 @@
 
             .layout {
                 grid-template-columns: 1fr;
-                min-height: calc(100svh - 57px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-                height: calc(100svh - 57px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+                min-height: 0;
             }
 
             .chat-wrapper {
@@ -1120,6 +1127,7 @@
     let canCreateRoomPermission = false;
     let renderedMessageIds = new Set();
     let quotedMessage = null;
+    let stableAppHeight = 0;
     let uiSettings = {
         theme: 'light',
         wallpaperDataUrl: '',
@@ -2034,12 +2042,22 @@
     }
 
     function updateMobileBottomOffset() {
+        const baseHeight = Math.round(window.innerHeight || document.documentElement.clientHeight || 0);
+        const viewport = window.visualViewport;
+        const visualHeight = viewport ? Math.round(viewport.height + viewport.offsetTop) : baseHeight;
+        const candidateHeight = Math.max(baseHeight, visualHeight);
+        if (candidateHeight > 0) {
+            if (!stableAppHeight || candidateHeight > stableAppHeight) {
+                stableAppHeight = candidateHeight;
+            }
+            document.documentElement.style.setProperty('--app-height', `${stableAppHeight}px`);
+        }
+
         if (!window.matchMedia('(max-width: 1000px)').matches) {
             document.documentElement.style.setProperty('--mobile-bottom-offset', '0px');
             return;
         }
 
-        const viewport = window.visualViewport;
         if (!viewport) {
             const fallbackInset = useAndroidBottomNavFallback ? 52 : 0;
             document.documentElement.style.setProperty('--mobile-bottom-offset', `${fallbackInset}px`);
