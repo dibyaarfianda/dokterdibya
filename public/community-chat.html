@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
         :root {
-            --bg: #0a0f1d;
-            --card: #121a2d;
-            --line: rgba(255,255,255,0.12);
-            --text: #eef3ff;
-            --muted: #9fb0d9;
-            --accent: #4f9bff;
-            --accent-2: #3b82f6;
+            --bg: #efeae2;
+            --card: #ffffff;
+            --line: #d9d9d9;
+            --text: #111b21;
+            --muted: #667781;
+            --accent: #25d366;
+            --accent-2: #128c7e;
             --danger: #ef4444;
         }
 
@@ -21,8 +21,14 @@
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: radial-gradient(circle at 20% 10%, #1b2d52 0%, var(--bg) 40%);
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(17, 27, 33, 0.05) 1px, transparent 0),
+                linear-gradient(135deg, rgba(17, 27, 33, 0.03) 25%, transparent 25%),
+                linear-gradient(225deg, rgba(17, 27, 33, 0.03) 25%, transparent 25%);
+            background-size: 22px 22px, 28px 28px, 28px 28px;
+            background-position: 0 0, 0 0, 14px 14px;
             color: var(--text);
             min-height: 100vh;
         }
@@ -55,7 +61,7 @@
         body.embed-staff .card {
             border-radius: 0;
             box-shadow: none;
-            border-color: rgba(255,255,255,0.08);
+            border-color: rgba(0,0,0,0.08);
         }
 
         body.embed-staff .messages {
@@ -73,14 +79,14 @@
 
         .title {
             margin: 0;
-            font-size: 22px;
+            font-size: 24px;
             letter-spacing: 0.4px;
         }
 
         .role-chip {
-            background: rgba(79,155,255,0.2);
-            border: 1px solid rgba(79,155,255,0.45);
-            color: #cde0ff;
+            background: #dcf8c6;
+            border: 1px solid #b8e5b5;
+            color: #1b5e20;
             padding: 4px 10px;
             border-radius: 999px;
             font-size: 12px;
@@ -89,15 +95,15 @@
 
         .layout {
             display: grid;
-            grid-template-columns: 320px 1fr;
+            grid-template-columns: 330px 1fr;
             gap: 16px;
         }
 
         .card {
             background: var(--card);
             border: 1px solid var(--line);
-            border-radius: 16px;
-            box-shadow: 0 14px 28px rgba(0,0,0,0.25);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(17, 27, 33, 0.12);
         }
 
         .panel {
@@ -119,7 +125,7 @@
             width: 100%;
             border-radius: 10px;
             border: 1px solid var(--line);
-            background: #0f1528;
+            background: #fff;
             color: var(--text);
             padding: 10px;
             outline: none;
@@ -136,43 +142,78 @@
         }
 
         button.secondary {
-            background: rgba(255,255,255,0.08);
+            background: #f1f3f4;
             border: 1px solid var(--line);
+            color: #1f2c34;
         }
 
         .rooms {
-            max-height: 56vh;
+            max-height: 62vh;
             overflow: auto;
             display: grid;
-            gap: 8px;
+            gap: 0;
         }
 
         .room-item {
-            border: 1px solid var(--line);
-            border-left-width: 4px;
-            border-radius: 10px;
-            padding: 10px;
-            background: #0f162b;
+            border: 0;
+            border-bottom: 1px solid #eef0f2;
+            border-left: 4px solid transparent;
+            border-radius: 0;
+            padding: 10px 8px;
+            background: #fff;
             cursor: pointer;
+            display: grid;
+            grid-template-columns: 46px 1fr;
+            gap: 10px;
+            align-items: center;
         }
 
         .room-item.active {
-            background: #172242;
+            background: #f0f2f5;
+        }
+
+        .room-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .room-row-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: baseline;
         }
 
         .room-name {
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            font-size: 15px;
         }
 
         .room-meta {
             color: var(--muted);
             font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .room-time {
+            color: #8696a0;
+            font-size: 11px;
+            white-space: nowrap;
         }
 
         .chat-wrapper {
             display: grid;
-            grid-template-rows: auto auto 1fr auto;
+            grid-template-rows: auto auto auto 1fr auto;
             min-height: 78vh;
         }
 
@@ -184,6 +225,7 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
+            background: #f0f2f5;
         }
 
         .profile-box {
@@ -192,6 +234,15 @@
             gap: 8px;
             padding: 12px 14px;
             border-bottom: 1px solid var(--line);
+            background: #f7f8fa;
+        }
+
+        .typing {
+            color: #00a884;
+            font-size: 12px;
+            padding: 0 14px 8px;
+            min-height: 18px;
+            background: #f7f8fa;
         }
 
         .messages {
@@ -200,33 +251,76 @@
             display: grid;
             gap: 10px;
             align-content: start;
-            background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 35%);
+            background-color: #e5ddd5;
+            background-image: radial-gradient(circle at 1px 1px, rgba(17, 27, 33, 0.04) 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+
+        .date-divider {
+            justify-self: center;
+            background: rgba(255, 255, 255, 0.95);
+            color: #54656f;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 4px 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
         }
 
         .msg {
             max-width: 78%;
-            border-radius: 12px;
-            padding: 10px 12px;
-            border: 1px solid var(--line);
-            background: #0f172e;
+            border-radius: 8px;
+            border-top-left-radius: 0;
+            padding: 8px 10px 7px;
+            border: 1px solid #dfe5e7;
+            background: #ffffff;
+            position: relative;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.05);
         }
 
         .msg.me {
             justify-self: end;
-            background: #17315f;
+            background: #dcf8c6;
+            border-color: #c6e9b4;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 0;
+        }
+
+        .msg::before {
+            content: "";
+            position: absolute;
+            top: -1px;
+            left: -7px;
+            width: 8px;
+            height: 12px;
+            border-top-right-radius: 8px;
+            background: #ffffff;
+            border-left: 1px solid #dfe5e7;
+            border-top: 1px solid #dfe5e7;
+        }
+
+        .msg.me::before {
+            left: auto;
+            right: -7px;
+            border-top-right-radius: 0;
+            border-top-left-radius: 8px;
+            border-left: none;
+            border-right: 1px solid #c6e9b4;
+            border-top: 1px solid #c6e9b4;
+            background: #dcf8c6;
         }
 
         .msg-head {
             font-size: 12px;
-            color: #9fc6ff;
-            margin-bottom: 6px;
+            color: #00a884;
+            margin-bottom: 4px;
             display: flex;
             justify-content: space-between;
             gap: 10px;
         }
 
         .msg-user {
-            color: #ffffff;
+            color: #0b7a63;
             font-weight: bold;
             text-decoration: none;
         }
@@ -240,8 +334,9 @@
 
         .msg-body {
             white-space: pre-wrap;
-            line-height: 1.4;
+            line-height: 1.45;
             word-break: break-word;
+            color: #111b21;
         }
 
         .composer {
@@ -252,13 +347,42 @@
             gap: 8px;
             align-items: center;
             position: relative;
+            background: #f0f2f5;
+        }
+
+        #message-input {
+            border-radius: 22px;
+            padding: 11px 14px;
+            min-height: 44px;
+            max-height: 120px;
+            resize: vertical;
+            border-color: #d0d7dc;
+        }
+
+        #send-btn,
+        #emoji-toggle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #send-btn {
+            font-size: 0;
+        }
+
+        #send-btn i {
+            font-size: 16px;
         }
 
         .emoji-panel {
             position: absolute;
             bottom: 58px;
             right: 96px;
-            background: #0f1528;
+            background: #fff;
             border: 1px solid var(--line);
             border-radius: 10px;
             padding: 8px;
@@ -273,19 +397,12 @@
 
         .emoji-btn {
             border: 1px solid transparent;
-            background: rgba(255,255,255,0.04);
+            background: #f5f7f8;
             border-radius: 6px;
             padding: 4px;
             cursor: pointer;
             font-size: 16px;
             text-align: center;
-        }
-
-        .typing {
-            color: #8bb6ff;
-            font-size: 12px;
-            padding: 0 14px 8px;
-            min-height: 18px;
         }
 
         .moderator-panel {
@@ -309,12 +426,12 @@
             border: 1px solid var(--line);
             border-radius: 8px;
             padding: 8px;
-            background: #0f1528;
+            background: #fff;
             font-size: 13px;
         }
 
         .back-link {
-            color: #cce0ff;
+            color: #0f766e;
             text-decoration: none;
             font-size: 14px;
         }
@@ -325,6 +442,11 @@
             .profile-box { grid-template-columns: 1fr; }
             .composer { grid-template-columns: 1fr auto; }
             .emoji-panel { right: 10px; }
+            #send-btn,
+            #emoji-toggle {
+                width: 40px;
+                height: 40px;
+            }
         }
     </style>
 </head>
@@ -354,7 +476,7 @@
             <div class="chat-head">
                 <div>
                     <div id="active-room-name" style="font-weight:bold; font-size:18px;">-</div>
-                    <div id="active-room-desc" style="color:#9fb0d9; font-size:13px;"></div>
+                    <div id="active-room-desc" style="color:#667781; font-size:13px;"></div>
                 </div>
                 <div id="active-room-color" style="width:16px;height:16px;border-radius:50%;background:#2563eb;"></div>
             </div>
@@ -372,14 +494,14 @@
             <div class="composer">
                 <textarea id="message-input" rows="2" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
                 <button type="button" id="emoji-toggle" class="secondary" title="Pilih emoji"><i class="fa fa-smile-o"></i></button>
-                <button type="button" id="send-btn"><i class="fa fa-paper-plane"></i> Kirim</button>
+                <button type="button" id="send-btn" title="Kirim pesan"><i class="fa fa-paper-plane"></i></button>
 
                 <div class="emoji-panel" id="emoji-panel"></div>
             </div>
 
             <section class="moderator-panel" id="moderator-panel">
                 <strong>Moderator Room (khusus staff/admin)</strong>
-                <p style="color:#9fb0d9; margin:6px 0 10px; font-size:13px;">Admin chat = semua staff. Moderator room dipilih oleh staff.</p>
+                <p style="color:#667781; margin:6px 0 10px; font-size:13px;">Admin chat = semua staff. Moderator room dipilih oleh staff.</p>
                 <div class="staff-grid" id="staff-grid"></div>
                 <button id="save-moderators-btn" class="secondary"><i class="fa fa-shield"></i> Simpan Moderator</button>
             </section>
@@ -474,10 +596,18 @@
     function renderRooms() {
         el.rooms.innerHTML = rooms.map((room) => {
             const active = activeRoom && activeRoom.slug === room.slug ? 'active' : '';
+            const roomColor = room.color || '#2563eb';
+            const roomTime = formatRoomTime(room.last_message_at || room.created_at);
             return `
-                <div class="room-item ${active}" data-room="${room.slug}" style="border-left-color:${room.color || '#2563eb'}">
-                    <div class="room-name">${room.name}</div>
-                    <div class="room-meta">${room.description || 'Tanpa deskripsi'}</div>
+                <div class="room-item ${active}" data-room="${room.slug}" style="border-left-color:${roomColor}">
+                    <div class="room-avatar" style="background:${roomColor}">${getInitials(room.name)}</div>
+                    <div class="room-content">
+                        <div class="room-row-top">
+                            <div class="room-name">${room.name}</div>
+                            <div class="room-time">${roomTime}</div>
+                        </div>
+                        <div class="room-meta">${room.description || 'Room komunitas'}</div>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -494,21 +624,75 @@
         return new Date(value).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     }
 
+    function formatRoomTime(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        const now = new Date();
+        const sameDay = date.toDateString() === now.toDateString();
+        if (sameDay) return formatTime(value);
+        return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    }
+
+    function getInitials(name) {
+        const source = String(name || '').trim();
+        if (!source) return '#';
+        const parts = source.split(/\s+/).slice(0, 2);
+        return parts.map((part) => part.charAt(0).toUpperCase()).join('');
+    }
+
+    function getDateKey(value) {
+        const d = new Date(value);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatDateDivider(value) {
+        const d = new Date(value);
+        return d.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    function buildMessageNode(msg) {
+        const mine = String(msg.sender_id) === String(currentUser.id);
+        const displayName = msg.sender_nickname || msg.sender_name || 'User';
+        const node = document.createElement('div');
+        node.className = `msg ${mine ? 'me' : ''}`;
+        node.dataset.id = msg.id;
+        node.dataset.dateKey = getDateKey(msg.created_at);
+        node.innerHTML = `
+            <div class="msg-head">
+                <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
+                <span class="msg-time">${formatTime(msg.created_at)}</span>
+            </div>
+            <div class="msg-body">${escapeHtml(msg.message)}</div>
+        `;
+        return node;
+    }
+
+    function buildDateDivider(dateValue) {
+        const divider = document.createElement('div');
+        divider.className = 'date-divider';
+        divider.dataset.dateKey = getDateKey(dateValue);
+        divider.textContent = formatDateDivider(dateValue);
+        return divider;
+    }
+
     function renderMessages(messages) {
         renderedMessageIds = new Set((messages || []).map((msg) => String(msg.id)));
-        el.messages.innerHTML = messages.map((msg) => {
-            const mine = String(msg.sender_id) === String(currentUser.id);
-            const displayName = msg.sender_nickname || msg.sender_name || 'User';
-            return `
-                <div class="msg ${mine ? 'me' : ''}" data-id="${msg.id}">
-                    <div class="msg-head">
-                        <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
-                        <span class="msg-time">${formatTime(msg.created_at)}</span>
-                    </div>
-                    <div class="msg-body">${escapeHtml(msg.message)}</div>
-                </div>
-            `;
-        }).join('');
+        el.messages.innerHTML = '';
+
+        let currentDateKey = null;
+        (messages || []).forEach((msg) => {
+            const messageDateKey = getDateKey(msg.created_at);
+            if (messageDateKey !== currentDateKey) {
+                el.messages.appendChild(buildDateDivider(msg.created_at));
+                currentDateKey = messageDateKey;
+            }
+            el.messages.appendChild(buildMessageNode(msg));
+        });
 
         el.messages.scrollTop = el.messages.scrollHeight;
     }
@@ -550,19 +734,14 @@
 
         renderedMessageIds.add(messageId);
 
-        const mine = String(message.sender_id) === String(currentUser.id);
-        const displayName = message.sender_nickname || message.sender_name || 'User';
+        const lastDateNode = el.messages.querySelector('.date-divider:last-of-type');
+        const lastDateKey = lastDateNode ? lastDateNode.dataset.dateKey : null;
+        const messageDateKey = getDateKey(message.created_at);
+        if (lastDateKey !== messageDateKey) {
+            el.messages.appendChild(buildDateDivider(message.created_at));
+        }
 
-        const node = document.createElement('div');
-        node.className = `msg ${mine ? 'me' : ''}`;
-        node.dataset.id = message.id;
-        node.innerHTML = `
-            <div class="msg-head">
-                <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(message.sender_type)}&userId=${encodeURIComponent(message.sender_id)}">${displayName}</a>
-                <span class="msg-time">${formatTime(message.created_at)}</span>
-            </div>
-            <div class="msg-body">${escapeHtml(message.message)}</div>
-        `;
+        const node = buildMessageNode(message);
 
         el.messages.appendChild(node);
         el.messages.scrollTop = el.messages.scrollHeight;
