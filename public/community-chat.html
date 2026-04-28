@@ -1215,15 +1215,17 @@
         if (uiSettings.wallpaperDataUrl) {
             return {
                 image: `${overlay}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
-                size: '100% 100%, cover, 22px 22px',
-                position: '0 0, center center, 0 0'
+                size: '100% 100%, 100% 100%, 22px 22px',
+                position: '0 0, 0 0, 0 0',
+                repeat: 'no-repeat, no-repeat, repeat'
             };
         }
 
         return {
             image: `${overlay}, ${dots}`,
             size: '100% 100%, 22px 22px',
-            position: '0 0, 0 0'
+            position: '0 0, 0 0',
+            repeat: 'no-repeat, repeat'
         };
     }
 
@@ -1241,6 +1243,7 @@
         el.messages.style.backgroundImage = bg.image;
         el.messages.style.backgroundSize = bg.size;
         el.messages.style.backgroundPosition = bg.position;
+        el.messages.style.backgroundRepeat = bg.repeat;
 
         autoResizeMessageInput();
     }
