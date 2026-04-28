@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429l'; // 2026-04-29 - community chat: room title aligned left in top bar
+const CACHE_VERSION = '20260429m'; // 2026-04-29 - community chat: quote via direct swipe left
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

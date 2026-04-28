@@ -1250,18 +1250,13 @@
     }
 
     function attachQuoteGesture(node, messageMeta) {
-        let holdTimer = null;
-        let holdReady = false;
         let startX = 0;
         let startY = 0;
         let triggered = false;
+        let tracking = false;
 
-        const clearHold = () => {
-            if (holdTimer) {
-                clearTimeout(holdTimer);
-                holdTimer = null;
-            }
-            holdReady = false;
+        const resetSwipeState = () => {
+            tracking = false;
             node.classList.remove('quote-active');
         };
 
@@ -1273,36 +1268,39 @@
             startX = touch.clientX;
             startY = touch.clientY;
             triggered = false;
-
-            clearHold();
-            holdTimer = setTimeout(() => {
-                holdReady = true;
-                node.classList.add('quote-active');
-            }, 280);
+            tracking = true;
+            node.classList.remove('quote-active');
         }, { passive: true });
 
         node.addEventListener('touchmove', (event) => {
-            if (!event.touches || event.touches.length !== 1) return;
+            if (!tracking || !event.touches || event.touches.length !== 1) return;
             const touch = event.touches[0];
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
-            if (!holdReady && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) {
-                clearHold();
+            // Keep vertical scrolling smooth; only handle mostly horizontal swipes.
+            if (Math.abs(dy) > Math.abs(dx) + 8) {
+                resetSwipeState();
                 return;
             }
 
-            if (!holdReady || triggered) return;
+            if (triggered) return;
+
+            if (dx < -16) {
+                node.classList.add('quote-active');
+            } else {
+                node.classList.remove('quote-active');
+            }
 
             if (dx < -48 && Math.abs(dy) < 44) {
                 triggered = true;
                 setQuotedMessage(messageMeta);
-                clearHold();
+                resetSwipeState();
             }
         }, { passive: true });
 
-        node.addEventListener('touchend', clearHold, { passive: true });
-        node.addEventListener('touchcancel', clearHold, { passive: true });
+        node.addEventListener('touchend', resetSwipeState, { passive: true });
+        node.addEventListener('touchcancel', resetSwipeState, { passive: true });
     }
 
     function packOutgoingMessage(rawText) {
