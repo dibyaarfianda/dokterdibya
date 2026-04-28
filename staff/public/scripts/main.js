@@ -274,6 +274,13 @@ function showCommunityChatPage() {
     }
 }
 
+function openCommunityChatPopup() {
+    const popupUrl = '/community-chat.html';
+    const popupFeatures = 'width=1400,height=900,resizable=yes,scrollbars=yes,location=yes,status=yes,menubar=no,toolbar=no';
+    const popupWindow = window.open(popupUrl, 'communityChatWindow', popupFeatures);
+    if (popupWindow) popupWindow.focus();
+}
+
 // Dashboard New Patients
 let dashboardNewPatientsPage = 1;
 let dashboardNewPatientsTotalPages = 1;
@@ -5243,6 +5250,7 @@ export { initMain };
 // Expose page switching functions to the global scope for onclick handlers
 window.showDashboardPage = showDashboardPage;
 window.showCommunityChatPage = showCommunityChatPage;
+window.openCommunityChatPopup = openCommunityChatPopup;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.showTindakanPage = showTindakanPage;
 window.showObatPage = showObatPage;
