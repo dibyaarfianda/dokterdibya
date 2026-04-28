@@ -100,6 +100,7 @@ function initPages() {
     pages.registrasiPasien = grab('registrasi-pasien-page');
     pages.importFields = grab('import-fields-page');
     pages.notifications = grab('notifications-page');
+    pages.communityChat = grab('community-chat-page');
     pages.artikelKesehatan = grab('artikel-kesehatan-page');
     pages.penjualanObat = grab('penjualan-obat-page');
     pages.bulkUploadUSG = grab('bulk-upload-usg-page');
@@ -253,6 +254,24 @@ function showDashboardPage() {
     pages.dashboard?.classList.remove('d-none');
     setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard');
     loadDashboardNewPatients();
+}
+
+function showCommunityChatPage() {
+    hideAllPages();
+    pages.communityChat?.classList.remove('d-none');
+    setTitleAndActive('Chat', 'nav-community-chat', 'community-chat');
+
+    const chatTree = document.getElementById('nav-chat-main');
+    if (chatTree) {
+        chatTree.classList.add('menu-open');
+        const parentLink = chatTree.querySelector(':scope > .nav-link');
+        if (parentLink) parentLink.classList.add('active');
+    }
+
+    const frame = document.getElementById('staff-community-chat-frame');
+    if (frame && !frame.src) {
+        frame.src = '/community-chat.html?embed=staff';
+    }
 }
 
 // Dashboard New Patients
@@ -4002,6 +4021,7 @@ function restoreLastPage() {
             'nav-estimasi-biaya':                   () => showEstimasiBiayaPage(),
             'nav-pengumuman':                       () => showKelolaPengumumanPage(),
             'nav-voting':                           () => showVotingPage(),
+            'nav-community-chat':                   () => showCommunityChatPage(),
             'nav-penjualan-obat':                   () => showPenjualanObatPage(),
             'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
             'nav-medify-sync':                      () => showMedifySyncPage(),
@@ -5222,6 +5242,7 @@ export { initMain };
 
 // Expose page switching functions to the global scope for onclick handlers
 window.showDashboardPage = showDashboardPage;
+window.showCommunityChatPage = showCommunityChatPage;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.showTindakanPage = showTindakanPage;
 window.showObatPage = showObatPage;
