@@ -139,6 +139,7 @@ const visitInvoicesRoutes = require('./routes/visit-invoices');
 const aiRoutes = require('./routes/ai');
 const kickCounterRoutes = require('./routes/kick-counter');
 const rumRoutes = require('./routes/rum');
+const communityChatRoutes = require('./routes/community-chat');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -202,6 +203,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/kick-counter',       // Kick counter for fetal movement tracking
     '/api/doctors',            // List available doctors for Q&A
     '/api/patient-billing',    // Patient billing & online payment
+    '/api/community-chat',     // Community profile + chat rooms
 ];
 
 app.use('/api', (req, res, next) => {
@@ -286,6 +288,10 @@ app.use('/api/sunday-clinic', sundayClinicRoutes);
 // Setup Socket.io handlers for Sunday Clinic
 if (sundayClinicRoutes.setupSocketHandlers) {
     sundayClinicRoutes.setupSocketHandlers(io);
+}
+
+if (communityChatRoutes.setupSocketHandlers) {
+    communityChatRoutes.setupSocketHandlers(io);
 }
 
 // Lab results routes (upload and AI interpretation)
@@ -456,6 +462,8 @@ app.use('/api/medify-batch', medifyBatchRoutes);
 // Tanya Dokter - Patient Questions
 const patientQuestionsRoutes = require('./routes/patient-questions');
 app.use('/api/patient-questions', patientQuestionsRoutes);
+
+app.use('/api/community-chat', communityChatRoutes);
 
 // Tanya Dokter - Subscriptions & Payments
 const tanyaSubscriptionsRoutes = require('./routes/tanya-subscriptions');
