@@ -997,12 +997,17 @@
 
         /* Embedded community chat page in staff panel */
         .staff-community-chat-card {
-            min-height: calc(100vh - 210px);
+            min-height: calc(100vh - 145px);
+        }
+
+        .staff-community-chat-card .card-body {
+            min-height: calc(100vh - 230px);
         }
 
         .staff-community-chat-frame {
             width: 100%;
-            min-height: calc(100vh - 320px);
+            min-height: calc(100vh - 230px);
+            height: calc(100vh - 230px);
             border: 0;
             border-radius: 0 0 0.5rem 0.5rem;
             background: #0b1220;
@@ -6556,7 +6561,12 @@ Contoh Markdown:
                     <div class="card staff-community-chat-card">
                         <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #007bff, #3f8cff); color: #fff;">
                             <h3 class="card-title mb-0"><i class="fas fa-comments mr-2"></i>Community Chat</h3>
-                            <small>Sinkron dengan portal pasien</small>
+                            <div class="d-flex align-items-center" style="gap: 10px;">
+                                <small>Sinkron dengan portal pasien</small>
+                                <button type="button" class="btn btn-sm btn-light" onclick="openCommunityChatPopup()" title="Buka chat di jendela terpisah">
+                                    <i class="fas fa-external-link-alt"></i> Pop Up
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body p-0">
                             <iframe id="staff-community-chat-frame" class="staff-community-chat-frame" src="/community-chat.html?embed=staff" title="Community Chat"></iframe>
