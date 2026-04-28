@@ -240,13 +240,82 @@
             background: #f0f2f5;
         }
 
-        .profile-box {
-            display: grid;
-            grid-template-columns: 1fr 1fr auto;
+        .active-room-title {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .active-room-desc {
+            color: #667781;
+            font-size: 13px;
+        }
+
+        .active-room-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #2563eb;
+        }
+
+        .chat-head-meta {
+            display: flex;
+            align-items: center;
             gap: 8px;
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--line);
-            background: #f7f8fa;
+            position: relative;
+        }
+
+        .chat-menu-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d0d7dc;
+            background: #ffffff;
+            color: #41525d;
+        }
+
+        .chat-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            min-width: 180px;
+            background: #ffffff;
+            border: 1px solid #d9e1e7;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(17, 27, 33, 0.12);
+            display: none;
+            z-index: 20;
+            padding: 6px;
+        }
+
+        .chat-menu.show {
+            display: grid;
+            gap: 4px;
+        }
+
+        .chat-menu-item {
+            width: 100%;
+            text-align: left;
+            background: #ffffff;
+            color: #1f2c34;
+            border: 0;
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 9px 10px;
+            cursor: pointer;
+        }
+
+        .chat-menu-item:hover {
+            background: #f3f6f8;
+        }
+
+        .chat-menu-item[disabled] {
+            color: #90a4ae;
+            background: #f8f9fb;
+            cursor: not-allowed;
         }
 
         .typing {
@@ -438,6 +507,77 @@
             text-align: center;
         }
 
+        .menu-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(17, 27, 33, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            padding: 16px;
+        }
+
+        .menu-modal.show {
+            display: flex;
+        }
+
+        .menu-modal-card {
+            width: min(480px, 100%);
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid #dde5eb;
+            box-shadow: 0 18px 40px rgba(17, 27, 33, 0.2);
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .menu-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .menu-modal-title {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .menu-modal-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            padding: 0;
+            background: #f2f4f6;
+            color: #30414b;
+        }
+
+        .room-form {
+            display: grid;
+            gap: 8px;
+        }
+
+        .setting-note {
+            color: #51636d;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .room-create-note {
+            display: none;
+            color: #667781;
+            font-size: 13px;
+        }
+
+        .moderator-note {
+            color: #667781;
+            margin: 6px 0 10px;
+            font-size: 13px;
+        }
+
         .moderator-panel {
             border-top: 1px solid var(--line);
             padding: 12px 14px;
@@ -510,7 +650,6 @@
                 max-height: none;
             }
 
-            .profile-box { grid-template-columns: 1fr; }
             .composer { grid-template-columns: 1fr auto; }
             .emoji-panel { right: 10px; }
 
@@ -544,31 +683,23 @@
     <div class="layout">
         <aside class="card panel">
             <strong>Lobby & Room</strong>
-            <div class="room-create" id="room-create-panel">
-                <input id="room-name" placeholder="Nama room custom">
-                <input id="room-desc" placeholder="Deskripsi singkat room">
-                <input id="room-color" placeholder="#2563eb (warna room)">
-                <button id="create-room-btn"><i class="fa fa-plus"></i> Buat Room</button>
-            </div>
-            <div id="room-create-note" style="display:none; color:#667781; font-size:12px; margin: 0 0 12px;">
-                Fitur buat room khusus user VIP.
-            </div>
             <div class="rooms" id="rooms"></div>
         </aside>
 
         <main class="card chat-wrapper">
             <div class="chat-head">
                 <div>
-                    <div id="active-room-name" style="font-weight:bold; font-size:18px;">-</div>
-                    <div id="active-room-desc" style="color:#667781; font-size:13px;"></div>
+                    <div id="active-room-name" class="active-room-title">-</div>
+                    <div id="active-room-desc" class="active-room-desc"></div>
                 </div>
-                <div id="active-room-color" style="width:16px;height:16px;border-radius:50%;background:#2563eb;"></div>
-            </div>
-
-            <div class="profile-box">
-                <input id="nickname-input" maxlength="30" placeholder="Nickname untuk chat">
-                <input id="bio-input" maxlength="120" placeholder="Bio singkat (opsional)">
-                <button id="save-profile-btn" class="secondary"><i class="fa fa-save"></i> Simpan Profil</button>
+                <div class="chat-head-meta">
+                    <div id="active-room-color" class="active-room-color"></div>
+                    <button type="button" id="chat-menu-btn" class="chat-menu-btn" title="Menu"><i class="fa fa-ellipsis-v"></i></button>
+                    <div class="chat-menu" id="chat-menu">
+                        <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
+                        <button type="button" class="chat-menu-item" id="menu-setting"><i class="fa fa-cog"></i> Setting</button>
+                    </div>
+                </div>
             </div>
 
             <div class="typing" id="typing-indicator"></div>
@@ -587,11 +718,39 @@
 
             <section class="moderator-panel" id="moderator-panel">
                 <strong>Moderator Room (khusus staff/admin)</strong>
-                <p style="color:#667781; margin:6px 0 10px; font-size:13px;">Admin chat = semua staff. Moderator room dipilih oleh staff.</p>
+                <p class="moderator-note">Admin chat = semua staff. Moderator room dipilih oleh staff.</p>
                 <div class="staff-grid" id="staff-grid"></div>
                 <button id="save-moderators-btn" class="secondary"><i class="fa fa-shield"></i> Simpan Moderator</button>
             </section>
         </main>
+    </div>
+</div>
+
+<div class="menu-modal" id="create-room-modal">
+    <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="create-room-title">
+        <div class="menu-modal-head">
+            <h2 class="menu-modal-title" id="create-room-title">Buat Room</h2>
+            <button type="button" class="menu-modal-close" id="create-room-close" title="Tutup"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="room-form" id="room-create-panel">
+            <input id="room-name" placeholder="Nama room custom">
+            <input id="room-desc" placeholder="Deskripsi singkat room">
+            <input id="room-color" placeholder="#2563eb (warna room)">
+            <button id="create-room-btn"><i class="fa fa-plus"></i> Buat Room</button>
+        </div>
+        <div id="room-create-note" class="room-create-note">
+            Fitur buat room khusus user VIP.
+        </div>
+    </div>
+</div>
+
+<div class="menu-modal" id="setting-modal">
+    <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="setting-title">
+        <div class="menu-modal-head">
+            <h2 class="menu-modal-title" id="setting-title">Setting</h2>
+            <button type="button" class="menu-modal-close" id="setting-close" title="Tutup"><i class="fa fa-times"></i></button>
+        </div>
+        <p class="setting-note">Nickname dan bio singkat dinonaktifkan. Nama pengguna chat mengikuti data akun agar konsisten.</p>
     </div>
 </div>
 
@@ -621,10 +780,15 @@
         activeRoomName: document.getElementById('active-room-name'),
         activeRoomDesc: document.getElementById('active-room-desc'),
         activeRoomColor: document.getElementById('active-room-color'),
+        chatMenuBtn: document.getElementById('chat-menu-btn'),
+        chatMenu: document.getElementById('chat-menu'),
+        menuCreateRoom: document.getElementById('menu-create-room'),
+        menuSetting: document.getElementById('menu-setting'),
+        createRoomModal: document.getElementById('create-room-modal'),
+        settingModal: document.getElementById('setting-modal'),
+        createRoomClose: document.getElementById('create-room-close'),
+        settingClose: document.getElementById('setting-close'),
         messages: document.getElementById('messages'),
-        nicknameInput: document.getElementById('nickname-input'),
-        bioInput: document.getElementById('bio-input'),
-        saveProfileBtn: document.getElementById('save-profile-btn'),
         messageInput: document.getElementById('message-input'),
         sendBtn: document.getElementById('send-btn'),
         emojiToggle: document.getElementById('emoji-toggle'),
@@ -643,6 +807,10 @@
 
     function applyCreateRoomPermission() {
         const allowed = !!canCreateRoomPermission;
+        if (el.menuCreateRoom) {
+            el.menuCreateRoom.disabled = !allowed;
+            el.menuCreateRoom.title = allowed ? 'Buat room baru' : 'Fitur ini khusus user VIP';
+        }
         if (el.createRoomBtn) {
             el.createRoomBtn.disabled = !allowed;
             el.createRoomBtn.style.opacity = allowed ? '1' : '0.6';
@@ -659,6 +827,67 @@
         if (el.roomCreateNote) {
             el.roomCreateNote.style.display = allowed ? 'none' : 'block';
         }
+    }
+
+    function toggleChatMenu(force) {
+        const nextState = typeof force === 'boolean' ? force : !el.chatMenu.classList.contains('show');
+        el.chatMenu.classList.toggle('show', nextState);
+    }
+
+    function setModalOpen(modal, open) {
+        if (!modal) return;
+        modal.classList.toggle('show', !!open);
+    }
+
+    function openCreateRoomModal() {
+        if (!canCreateRoomPermission) {
+            showToast('Fitur buat room hanya untuk user VIP', 'warning');
+            return;
+        }
+        setModalOpen(el.createRoomModal, true);
+        setTimeout(() => {
+            if (el.roomName) el.roomName.focus();
+        }, 0);
+    }
+
+    function initChatMenu() {
+        el.chatMenuBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleChatMenu();
+        });
+
+        el.menuCreateRoom.addEventListener('click', () => {
+            toggleChatMenu(false);
+            openCreateRoomModal();
+        });
+
+        el.menuSetting.addEventListener('click', () => {
+            toggleChatMenu(false);
+            setModalOpen(el.settingModal, true);
+        });
+
+        el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
+        el.settingClose.addEventListener('click', () => setModalOpen(el.settingModal, false));
+
+        [el.createRoomModal, el.settingModal].forEach((modal) => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) setModalOpen(modal, false);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                toggleChatMenu(false);
+                setModalOpen(el.createRoomModal, false);
+                setModalOpen(el.settingModal, false);
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!el.chatMenu.contains(event.target) && event.target !== el.chatMenuBtn) {
+                toggleChatMenu(false);
+            }
+        });
     }
 
     function getToken() {
@@ -915,28 +1144,6 @@
         }
     }
 
-    async function saveProfile() {
-        try {
-            await api('/me/profile', {
-                method: 'PUT',
-                body: JSON.stringify({
-                    nickname: el.nicknameInput.value.trim(),
-                    bio: el.bioInput.value.trim(),
-                    profile_visible: true
-                })
-            });
-            showToast('Profil chat disimpan', 'success');
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
-    }
-
-    async function loadProfile() {
-        const data = await api('/me/profile');
-        el.nicknameInput.value = data.profile.nickname || '';
-        el.bioInput.value = data.profile.bio || '';
-    }
-
     async function loadRooms(forceLobby = false) {
         const data = await api('/rooms');
         rooms = data.rooms || [];
@@ -1101,6 +1308,7 @@
         initEmojiPicker();
         initSocket();
         initTypingHandler();
+        initChatMenu();
 
         el.sendBtn.addEventListener('click', sendMessage);
         el.messageInput.addEventListener('keydown', (event) => {
@@ -1110,10 +1318,7 @@
             }
         });
         el.createRoomBtn.addEventListener('click', createRoom);
-        el.saveProfileBtn.addEventListener('click', saveProfile);
         el.saveModeratorsBtn.addEventListener('click', saveModerators);
-
-        await loadProfile();
         await loadRooms(true);
     }
 
