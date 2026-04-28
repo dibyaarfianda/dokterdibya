@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429q'; // 2026-04-29 - community chat: fix dark wallpaper cropping
+const CACHE_VERSION = '20260429r'; // 2026-04-29 - community chat: fix messages area full-height wallpaper
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
