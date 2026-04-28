@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429h'; // 2026-04-29 - community chat: mobile composer bottom + single-line textbox
+const CACHE_VERSION = '20260429i'; // 2026-04-29 - community chat: fix composer overlap with Android bottom nav
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

@@ -15,6 +15,7 @@
             --accent: #25d366;
             --accent-2: #128c7e;
             --danger: #ef4444;
+            --mobile-bottom-offset: 0px;
         }
 
         * { box-sizing: border-box; }
@@ -641,7 +642,7 @@
             .chat-wrapper {
                 min-height: 0;
                 height: 100%;
-                padding-bottom: 64px;
+                padding-bottom: calc(64px + var(--mobile-bottom-offset));
             }
 
             .rooms {
@@ -661,7 +662,7 @@
                 position: fixed;
                 left: 0;
                 right: 0;
-                bottom: 0;
+                bottom: var(--mobile-bottom-offset);
                 z-index: 15;
                 padding: 8px 10px 2px;
             }
@@ -1295,6 +1296,31 @@
         });
     }
 
+    function updateMobileBottomOffset() {
+        if (!window.matchMedia('(max-width: 1000px)').matches) {
+            document.documentElement.style.setProperty('--mobile-bottom-offset', '0px');
+            return;
+        }
+
+        const viewport = window.visualViewport;
+        if (!viewport) {
+            document.documentElement.style.setProperty('--mobile-bottom-offset', '0px');
+            return;
+        }
+
+        const inset = Math.max(0, Math.round(window.innerHeight - (viewport.height + viewport.offsetTop)));
+        document.documentElement.style.setProperty('--mobile-bottom-offset', `${inset}px`);
+    }
+
+    function initMobileViewportGuard() {
+        updateMobileBottomOffset();
+        window.addEventListener('resize', updateMobileBottomOffset);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', updateMobileBottomOffset);
+            window.visualViewport.addEventListener('scroll', updateMobileBottomOffset);
+        }
+    }
+
     async function init() {
         applyEmbedMode();
 
@@ -1318,6 +1344,7 @@
         initSocket();
         initTypingHandler();
         initChatMenu();
+        initMobileViewportGuard();
 
         el.sendBtn.addEventListener('click', sendMessage);
         el.messageInput.addEventListener('keydown', (event) => {
