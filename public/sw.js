@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429c'; // 2026-04-29 - mobile PWA safe-area and overflow fix for chat page
+const CACHE_VERSION = '20260429d'; // 2026-04-29 - lobby-first + VIP-only room creation in community chat
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

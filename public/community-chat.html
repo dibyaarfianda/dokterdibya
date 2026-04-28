@@ -493,11 +493,14 @@
     <div class="layout">
         <aside class="card panel">
             <strong>Lobby & Room</strong>
-            <div class="room-create">
+            <div class="room-create" id="room-create-panel">
                 <input id="room-name" placeholder="Nama room custom">
                 <input id="room-desc" placeholder="Deskripsi singkat room">
                 <input id="room-color" placeholder="#2563eb (warna room)">
                 <button id="create-room-btn"><i class="fa fa-plus"></i> Buat Room</button>
+            </div>
+            <div id="room-create-note" style="display:none; color:#667781; font-size:12px; margin: 0 0 12px;">
+                Fitur buat room khusus user VIP.
             </div>
             <div class="rooms" id="rooms"></div>
         </aside>
@@ -556,6 +559,7 @@
     let rooms = [];
     let typingTimeout = null;
     let isStaff = false;
+    let canCreateRoomPermission = false;
     let renderedMessageIds = new Set();
 
     const el = {
@@ -577,10 +581,32 @@
         roomDesc: document.getElementById('room-desc'),
         roomColor: document.getElementById('room-color'),
         createRoomBtn: document.getElementById('create-room-btn'),
+        roomCreatePanel: document.getElementById('room-create-panel'),
+        roomCreateNote: document.getElementById('room-create-note'),
         moderatorPanel: document.getElementById('moderator-panel'),
         staffGrid: document.getElementById('staff-grid'),
         saveModeratorsBtn: document.getElementById('save-moderators-btn')
     };
+
+    function applyCreateRoomPermission() {
+        const allowed = !!canCreateRoomPermission;
+        if (el.createRoomBtn) {
+            el.createRoomBtn.disabled = !allowed;
+            el.createRoomBtn.style.opacity = allowed ? '1' : '0.6';
+            el.createRoomBtn.style.cursor = allowed ? 'pointer' : 'not-allowed';
+            el.createRoomBtn.title = allowed ? 'Buat room baru' : 'Fitur ini khusus user VIP';
+        }
+        if (el.roomName) el.roomName.disabled = !allowed;
+        if (el.roomDesc) el.roomDesc.disabled = !allowed;
+        if (el.roomColor) el.roomColor.disabled = !allowed;
+
+        if (el.roomCreatePanel) {
+            el.roomCreatePanel.style.display = allowed ? 'grid' : 'none';
+        }
+        if (el.roomCreateNote) {
+            el.roomCreateNote.style.display = allowed ? 'none' : 'block';
+        }
+    }
 
     function getToken() {
         for (const key of TOKEN_KEYS) {
@@ -807,6 +833,11 @@
     }
 
     async function createRoom() {
+        if (!canCreateRoomPermission) {
+            showToast('Fitur buat room hanya untuk user VIP', 'warning');
+            return;
+        }
+
         const name = el.roomName.value.trim();
         const description = el.roomDesc.value.trim();
         const color = el.roomColor.value.trim();
@@ -853,12 +884,22 @@
         el.bioInput.value = data.profile.bio || '';
     }
 
-    async function loadRooms() {
+    async function loadRooms(forceLobby = false) {
         const data = await api('/rooms');
         rooms = data.rooms || [];
+        canCreateRoomPermission = !!(data.permissions && data.permissions.can_create_room);
+        applyCreateRoomPermission();
         renderRooms();
 
-        if (!activeRoom && rooms.length > 0) {
+        if (rooms.length === 0) return;
+
+        if (forceLobby) {
+            const lobbyForced = rooms.find((r) => r.slug === 'lobby');
+            await openRoom((lobbyForced || rooms[0]).slug);
+            return;
+        }
+
+        if (!activeRoom) {
             const lobby = rooms.find((r) => r.slug === 'lobby');
             await openRoom((lobby || rooms[0]).slug);
         }
@@ -919,7 +960,7 @@
         });
 
         socket.on('community:rooms:changed', async () => {
-            await loadRooms();
+            await loadRooms(false);
         });
     }
 
@@ -1020,7 +1061,7 @@
         el.saveModeratorsBtn.addEventListener('click', saveModerators);
 
         await loadProfile();
-        await loadRooms();
+        await loadRooms(true);
     }
 
     init().catch((error) => {

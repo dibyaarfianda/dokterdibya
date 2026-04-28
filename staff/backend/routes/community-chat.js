@@ -22,6 +22,26 @@ function isStaffUser(user) {
     return !isPatientUser(user);
 }
 
+async function isVipPatient(patientId) {
+    const [rows] = await db.query(
+        `SELECT tier
+         FROM tanya_subscriptions
+         WHERE patient_id = ?
+           AND is_active = TRUE
+           AND (expires_at IS NULL OR expires_at > NOW())
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [patientId]
+    );
+
+    return rows.length > 0 && String(rows[0].tier || '').toLowerCase() === 'vip';
+}
+
+async function canCreateRoom(user) {
+    if (isStaffUser(user)) return true;
+    return isVipPatient(String(user.id));
+}
+
 function normalizeText(text) {
     return String(text || '').trim();
 }
@@ -309,6 +329,7 @@ router.get('/rooms', verifyToken, async (req, res) => {
     try {
         const userId = String(req.user.id);
         const userType = isPatientUser(req.user) ? 'patient' : 'staff';
+        const canCreate = await canCreateRoom(req.user);
 
         const [rows] = await db.query(
             `SELECT
@@ -346,7 +367,11 @@ router.get('/rooms', verifyToken, async (req, res) => {
 
         res.json({
             success: true,
-            rooms: rows.map((row) => mapRoom(row, userType))
+            rooms: rows.map((row) => mapRoom(row, userType)),
+            permissions: {
+                can_create_room: canCreate,
+                is_vip: isPatientUser(req.user) ? canCreate : null
+            }
         });
     } catch (error) {
         console.error('community rooms error:', error);
@@ -356,6 +381,14 @@ router.get('/rooms', verifyToken, async (req, res) => {
 
 router.post('/rooms', verifyToken, async (req, res) => {
     try {
+        const allowedCreate = await canCreateRoom(req.user);
+        if (!allowedCreate) {
+            return res.status(403).json({
+                success: false,
+                message: 'Fitur buat room hanya untuk user VIP'
+            });
+        }
+
         const userId = String(req.user.id);
         const userType = isPatientUser(req.user) ? 'patient' : 'staff';
 
