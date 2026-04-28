@@ -27,10 +27,39 @@
             min-height: 100vh;
         }
 
+        body.embed-staff {
+            background: transparent;
+            min-height: 100%;
+        }
+
         .page {
             max-width: 1300px;
             margin: 0 auto;
             padding: 20px;
+        }
+
+        body.embed-staff .page {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body.embed-staff .topbar {
+            display: none;
+        }
+
+        body.embed-staff .layout {
+            gap: 12px;
+        }
+
+        body.embed-staff .card {
+            border-radius: 0;
+            box-shadow: none;
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        body.embed-staff .messages {
+            min-height: calc(100vh - 360px);
         }
 
         .topbar {
@@ -342,7 +371,7 @@
 
             <div class="composer">
                 <textarea id="message-input" rows="2" maxlength="2000" placeholder="Ketik pesan... (emoticon didukung, contoh :) <3 :thumbsup:)"></textarea>
-                <button type="button" id="emoji-toggle" class="secondary"><i class="fa fa-smile-o"></i></button>
+                <button type="button" id="emoji-toggle" class="secondary" title="Pilih emoji"><i class="fa fa-smile-o"></i></button>
                 <button type="button" id="send-btn"><i class="fa fa-paper-plane"></i> Kirim</button>
 
                 <div class="emoji-panel" id="emoji-panel"></div>
@@ -365,6 +394,8 @@
     const TOKEN_KEYS = ['vps_auth_token', 'token', 'idToken', 'patient_token'];
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
+    const urlParams = new URLSearchParams(window.location.search);
+    const isStaffEmbed = urlParams.get('embed') === 'staff';
 
     let socket = null;
     let token = null;
@@ -407,6 +438,11 @@
             if (fromSession) return fromSession;
         }
         return null;
+    }
+
+    function applyEmbedMode() {
+        if (!isStaffEmbed) return;
+        document.body.classList.add('embed-staff');
     }
 
     function decodeToken(value) {
@@ -741,6 +777,8 @@
     }
 
     async function init() {
+        applyEmbedMode();
+
         token = getToken();
         if (!token) {
             window.location.href = '/patient-login.html';
