@@ -373,6 +373,7 @@
     let rooms = [];
     let typingTimeout = null;
     let isStaff = false;
+    let renderedMessageIds = new Set();
 
     const el = {
         roleChip: document.getElementById('role-chip'),
@@ -458,6 +459,7 @@
     }
 
     function renderMessages(messages) {
+        renderedMessageIds = new Set((messages || []).map((msg) => String(msg.id)));
         el.messages.innerHTML = messages.map((msg) => {
             const mine = String(msg.sender_id) === String(currentUser.id);
             const displayName = msg.sender_nickname || msg.sender_name || 'User';
@@ -507,6 +509,11 @@
 
     function appendMessage(message) {
         if (!activeRoom) return;
+        const messageId = String(message.id);
+        if (renderedMessageIds.has(messageId)) return;
+
+        renderedMessageIds.add(messageId);
+
         const mine = String(message.sender_id) === String(currentUser.id);
         const displayName = message.sender_nickname || message.sender_name || 'User';
 
@@ -652,6 +659,7 @@
             if (!activeRoom || payload.room !== activeRoom.slug) return;
             const node = el.messages.querySelector(`[data-id="${payload.message_id}"]`);
             if (node) node.remove();
+            renderedMessageIds.delete(String(payload.message_id));
         });
 
         socket.on('community:typing', (payload) => {
