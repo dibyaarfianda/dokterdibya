@@ -653,11 +653,17 @@
             height: 44px;
             max-height: 132px;
             resize: none;
-            overflow-y: auto;
+            overflow-y: hidden;
+            -ms-overflow-style: none;
             line-height: 1.35;
             border-color: #d0d7dc;
             font-family: var(--chat-font-family);
             font-size: var(--chat-font-size);
+        }
+
+        #message-input::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
 
         body.theme-dark #message-input {
@@ -1233,7 +1239,7 @@
                 : 'linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.34) 100%)';
             return {
                 image: `${wallpaperTint}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
-                size: '100% 100%, cover, 22px 22px',
+                size: '100% 100%, 100% 100%, 22px 22px',
                 position: '0 0, center top, 0 0',
                 repeat: 'no-repeat, no-repeat, repeat'
             };
@@ -1751,13 +1757,16 @@
 
         if (reset) {
             el.messageInput.style.height = `${minHeight}px`;
+            el.messageInput.style.overflowY = 'hidden';
             el.messageInput.scrollTop = 0;
             return;
         }
 
         el.messageInput.style.height = 'auto';
-        const nextHeight = Math.max(minHeight, Math.min(el.messageInput.scrollHeight, maxHeight));
+        const contentHeight = el.messageInput.scrollHeight;
+        const nextHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
         el.messageInput.style.height = `${nextHeight}px`;
+        el.messageInput.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
     }
 
     function buildDateDivider(dateValue) {
