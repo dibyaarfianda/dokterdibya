@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260429x'; // 2026-04-29 - community chat: app-height stabilization for Android/WebView layout
+const CACHE_VERSION = '20260430'; // 2026-04-30 - community chat: wallpaper fill and composer input arrow overlap fix
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
