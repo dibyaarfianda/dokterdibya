@@ -46,10 +46,22 @@
                 linear-gradient(180deg, rgba(20, 32, 46, 0.95) 0%, rgba(12, 21, 32, 0.96) 100%);
         }
 
+        html {
+            height: 100%;
+        }
+
         body.embed-staff {
             background: transparent;
             min-height: var(--app-height);
             height: var(--app-height);
+        }
+
+        body.embed-staff,
+        body.embed-staff .page,
+        body.embed-staff .layout,
+        body.embed-staff .chat-wrapper {
+            min-height: 100% !important;
+            height: 100% !important;
         }
 
         body.wallpaper-active {
@@ -114,7 +126,8 @@
         }
 
         body.embed-staff .messages {
-            min-height: calc(100vh - 360px);
+            min-height: 0;
+            flex: 1 1 auto;
         }
 
         .topbar {
@@ -1028,8 +1041,8 @@
 
         /* In staff panel iframe, keep moderator button away from send button area. */
         body.embed-staff.compact-moderator .moderator-toggle-btn {
-            right: 66px;
-            bottom: calc(12px + var(--mobile-bottom-offset));
+            right: 12px;
+            bottom: calc(64px + var(--mobile-bottom-offset));
         }
 
         body.compact-moderator .moderator-panel-close {

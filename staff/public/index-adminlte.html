@@ -998,16 +998,25 @@
         /* Embedded community chat page in staff panel */
         .staff-community-chat-card {
             min-height: calc(100vh - 145px);
+            height: calc(100vh - 145px);
+            display: flex;
+            flex-direction: column;
         }
 
         .staff-community-chat-card .card-body {
             min-height: calc(100vh - 230px);
+            height: calc(100vh - 230px);
+            flex: 1 1 auto;
+            display: flex;
+            padding: 0 !important;
+            overflow: hidden;
         }
 
         .staff-community-chat-frame {
             width: 100%;
-            min-height: calc(100vh - 230px);
-            height: calc(100vh - 230px);
+            min-height: 100%;
+            height: 100%;
+            flex: 1 1 auto;
             border: 0;
             border-radius: 0 0 0.5rem 0.5rem;
             background: #0b1220;
@@ -1488,7 +1497,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v78'; // Community chat popup: force compact moderator URL refresh
+            const CACHE_VERSION = 'v79'; // Community chat staff panel: full-height iframe + moderator icon reposition
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -7338,7 +7347,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v78';
+    window.__assetVersion = 'v79';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>

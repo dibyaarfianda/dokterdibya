@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260501g'; // 2026-05-01 - staff embed chat: move moderator button away from send button
+const CACHE_VERSION = '20260501h'; // 2026-05-01 - staff embed chat: full-height layout and moderator icon above input actions
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
