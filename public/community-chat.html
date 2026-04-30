@@ -83,6 +83,13 @@
         .topbar,
         .layout {
             position: relative;
+        }
+
+        .topbar {
+            z-index: 12;
+        }
+
+        .layout {
             z-index: 1;
         }
 
@@ -164,6 +171,7 @@
             align-items: center;
             gap: 6px;
             position: relative;
+            z-index: 13;
         }
 
         .status-chip {
@@ -369,7 +377,7 @@
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(17, 27, 33, 0.12);
             display: none;
-            z-index: 20;
+            z-index: 30;
             padding: 6px;
         }
 
