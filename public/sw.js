@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260501b'; // 2026-05-01 - community chat: make message area fill remaining height when chat is short
+const CACHE_VERSION = '20260501c'; // 2026-05-01 - community chat: ensure topbar dropdown menu renders above chat area
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
