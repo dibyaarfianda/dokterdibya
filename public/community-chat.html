@@ -76,6 +76,8 @@
             inset: 0;
             z-index: 0;
             pointer-events: none;
+            background-position: center center;
+            background-repeat: no-repeat;
         }
 
         .topbar,
@@ -636,6 +638,10 @@
             background: #f0f2f5;
         }
 
+        .composer-spacer {
+            display: none;
+        }
+
         .quote-preview {
             display: none;
             grid-column: 1 / -1;
@@ -983,6 +989,7 @@
             }
 
             .chat-wrapper {
+                grid-template-rows: auto auto minmax(0, 1fr) auto;
                 min-height: 0;
                 height: 100%;
                 padding-bottom: 0;
@@ -991,11 +998,16 @@
             .messages {
                 min-height: 0;
                 max-height: none;
-                padding-bottom: calc(116px + var(--mobile-bottom-offset));
+                padding-bottom: calc(88px + var(--mobile-bottom-offset));
             }
 
             .composer { grid-template-columns: 1fr auto; }
             .emoji-panel { right: 10px; }
+
+            .composer-spacer {
+                display: block;
+                height: calc(76px + var(--mobile-bottom-offset));
+            }
 
             .composer {
                 position: fixed;
@@ -1003,7 +1015,7 @@
                 right: 0;
                 bottom: var(--mobile-bottom-offset);
                 z-index: 15;
-                padding: 8px 10px 2px;
+                padding: 8px 10px 8px;
             }
 
             #send-btn {
@@ -1020,6 +1032,14 @@
             .status-chip {
                 padding: 4px 9px;
                 font-size: 11px;
+            }
+
+            #message-input {
+                min-height: 40px;
+                height: 40px;
+                max-height: 104px;
+                padding-top: 9px;
+                padding-bottom: 9px;
             }
         }
     </style>
@@ -1074,6 +1094,8 @@
 
                 <div class="emoji-panel" id="emoji-panel"></div>
             </div>
+
+            <div class="composer-spacer" aria-hidden="true"></div>
 
             <section class="moderator-panel" id="moderator-panel">
                 <strong>Moderator Room (khusus staff/admin)</strong>
@@ -1289,7 +1311,7 @@
                 : 'linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.34) 100%)';
             return {
                 image: `${wallpaperTint}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
-                size: '100% 100%, contain, 22px 22px',
+                size: '100% 100%, 100% 100%, 22px 22px',
                 position: '0 0, center center, 0 0',
                 repeat: 'no-repeat, no-repeat, repeat'
             };
@@ -1818,8 +1840,9 @@
 
     function autoResizeMessageInput(reset) {
         if (!el.messageInput) return;
-        const minHeight = 44;
-        const maxHeight = 132;
+        const computedStyle = window.getComputedStyle(el.messageInput);
+        const minHeight = parseFloat(computedStyle.minHeight) || 44;
+        const maxHeight = parseFloat(computedStyle.maxHeight) || 132;
 
         if (reset) {
             el.messageInput.style.height = `${minHeight}px`;
