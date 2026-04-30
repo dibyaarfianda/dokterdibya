@@ -996,10 +996,10 @@
             transform: translateY(-3px);
         }
 
-        body.embed-staff .moderator-panel {
+        body.compact-moderator .moderator-panel {
             position: absolute;
             right: 12px;
-            bottom: calc(126px + var(--mobile-bottom-offset));
+            bottom: calc(58px + var(--mobile-bottom-offset));
             width: min(320px, calc(100vw - 24px));
             max-height: min(56vh, 420px);
             overflow: auto;
@@ -1014,24 +1014,28 @@
             display: none;
         }
 
-        body.embed-staff .moderator-panel.show {
+        body.compact-moderator .moderator-panel.show {
             display: none;
         }
 
-        body.embed-staff .moderator-panel.show.expanded {
+        body.compact-moderator .moderator-panel.show.expanded {
             display: block;
         }
 
-        body.embed-staff .moderator-panel-close {
+        body.compact-moderator .moderator-toggle-btn {
+            bottom: calc(12px + var(--mobile-bottom-offset));
+        }
+
+        body.compact-moderator .moderator-panel-close {
             display: inline-flex;
         }
 
-        body.embed-staff .staff-grid {
+        body.compact-moderator .staff-grid {
             grid-template-columns: 1fr;
             max-height: 220px;
         }
 
-        body.theme-dark.embed-staff .moderator-panel {
+        body.theme-dark.compact-moderator .moderator-panel {
             background: rgba(16, 33, 51, 0.96);
             border-color: #304861;
         }
@@ -1146,7 +1150,11 @@
                 bottom: calc(88px + var(--mobile-bottom-offset));
             }
 
-            body.embed-staff .moderator-panel {
+            body.compact-moderator .moderator-toggle-btn {
+                bottom: calc(88px + var(--mobile-bottom-offset));
+            }
+
+            body.compact-moderator .moderator-panel {
                 right: 10px;
                 bottom: calc(136px + var(--mobile-bottom-offset));
                 width: min(320px, calc(100vw - 20px));
@@ -1301,6 +1309,7 @@
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
+    const useCompactModerator = isStaffEmbed || urlParams.get('moderator') === 'compact';
     const userAgent = navigator.userAgent || '';
     const isAndroidDevice = /Android/i.test(userAgent);
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1398,7 +1407,7 @@
         });
 
         document.addEventListener('click', (event) => {
-            if (!isStaffEmbed) return;
+            if (!useCompactModerator) return;
             const target = event.target;
             if (!el.moderatorPanel.classList.contains('expanded')) return;
             if (el.moderatorPanel.contains(target) || el.moderatorToggleBtn.contains(target)) return;
@@ -1705,8 +1714,12 @@
     }
 
     function applyEmbedMode() {
-        if (!isStaffEmbed) return;
-        document.body.classList.add('embed-staff');
+        if (isStaffEmbed) {
+            document.body.classList.add('embed-staff');
+        }
+        if (useCompactModerator) {
+            document.body.classList.add('compact-moderator');
+        }
     }
 
     function decodeToken(value) {
@@ -2057,10 +2070,11 @@
 
         if (isStaff) {
             el.moderatorPanel.classList.add('show');
-            if (isStaffEmbed) {
+            if (useCompactModerator) {
                 el.moderatorToggleBtn.classList.add('show');
                 setModeratorPanelExpanded(false);
             } else {
+                el.moderatorToggleBtn.classList.remove('show');
                 setModeratorPanelExpanded(true);
             }
             await loadStaffModerators();

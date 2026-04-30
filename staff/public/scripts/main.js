@@ -275,7 +275,7 @@ function showCommunityChatPage() {
 }
 
 function openCommunityChatPopup() {
-    const popupUrl = '/community-chat.html';
+    const popupUrl = '/community-chat.html?moderator=compact';
     const popupFeatures = 'width=1400,height=900,resizable=yes,scrollbars=yes,location=yes,status=yes,menubar=no,toolbar=no';
     const popupWindow = window.open(popupUrl, 'communityChatWindow', popupFeatures);
     if (popupWindow) popupWindow.focus();

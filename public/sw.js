@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260501d'; // 2026-05-01 - community chat: compact moderator picker overlay for staff embed
+const CACHE_VERSION = '20260501e'; // 2026-05-01 - community chat: compact moderator mode also applies to staff popup
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
