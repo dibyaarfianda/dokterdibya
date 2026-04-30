@@ -52,6 +52,10 @@
             height: var(--app-height);
         }
 
+        body.wallpaper-active {
+            background-image: none;
+        }
+
         .page {
             width: 100%;
             max-width: none;
@@ -98,6 +102,28 @@
             padding: 10px 12px;
             border-bottom: 1px solid #d7e0e8;
             background: #eaf4fb;
+        }
+
+        body.wallpaper-active .card,
+        body.wallpaper-active .chat-wrapper,
+        body.wallpaper-active .messages {
+            background-color: transparent;
+        }
+
+        body.wallpaper-active .topbar,
+        body.wallpaper-active .chat-head,
+        body.wallpaper-active .typing,
+        body.wallpaper-active .composer {
+            background: rgba(248, 252, 255, 0.64);
+            -webkit-backdrop-filter: blur(2px);
+            backdrop-filter: blur(2px);
+        }
+
+        body.theme-dark.wallpaper-active .topbar,
+        body.theme-dark.wallpaper-active .chat-head,
+        body.theme-dark.wallpaper-active .typing,
+        body.theme-dark.wallpaper-active .composer {
+            background: rgba(13, 24, 36, 0.62);
         }
 
         .topbar-room {
@@ -691,7 +717,7 @@
         }
 
         #emoji-toggle i {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
         #send-btn {
@@ -707,7 +733,7 @@
 
         #send-btn i {
             font-size: 16px;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
         .emoji-panel {
@@ -1147,6 +1173,7 @@
     };
 
     const el = {
+        page: document.querySelector('.page'),
         chatWrapper: document.querySelector('.chat-wrapper'),
         statusBadge: document.getElementById('status-badge'),
         activeRoomName: document.getElementById('active-room-name'),
@@ -1261,6 +1288,7 @@
 
     function applyUiSettings() {
         document.body.classList.toggle('theme-dark', uiSettings.theme === 'dark');
+        document.body.classList.toggle('wallpaper-active', !!uiSettings.wallpaperDataUrl);
         document.documentElement.style.setProperty('--chat-font-family', getFontFamilyByKey(uiSettings.fontFamily));
         document.documentElement.style.setProperty('--chat-font-size', `${uiSettings.fontSize}px`);
 
@@ -1270,16 +1298,25 @@
         if (el.settingFontSizeValue) el.settingFontSizeValue.textContent = `${uiSettings.fontSize}px`;
 
         const bg = composeMessageBackground();
-        if (el.chatWrapper) {
-            el.chatWrapper.style.backgroundImage = bg.image;
-            el.chatWrapper.style.backgroundSize = bg.size;
-            el.chatWrapper.style.backgroundPosition = bg.position;
-            el.chatWrapper.style.backgroundRepeat = bg.repeat;
+        const wallpaperTarget = el.page || el.chatWrapper;
+        if (wallpaperTarget) {
+            wallpaperTarget.style.backgroundImage = bg.image;
+            wallpaperTarget.style.backgroundSize = bg.size;
+            wallpaperTarget.style.backgroundPosition = bg.position;
+            wallpaperTarget.style.backgroundRepeat = bg.repeat;
         }
-        el.messages.style.backgroundImage = bg.image;
-        el.messages.style.backgroundSize = bg.size;
-        el.messages.style.backgroundPosition = bg.position;
-        el.messages.style.backgroundRepeat = bg.repeat;
+
+        if (el.messages && wallpaperTarget) {
+            el.messages.style.backgroundImage = 'none';
+            el.messages.style.backgroundSize = '';
+            el.messages.style.backgroundPosition = '';
+            el.messages.style.backgroundRepeat = '';
+        } else if (el.messages) {
+            el.messages.style.backgroundImage = bg.image;
+            el.messages.style.backgroundSize = bg.size;
+            el.messages.style.backgroundPosition = bg.position;
+            el.messages.style.backgroundRepeat = bg.repeat;
+        }
 
         autoResizeMessageInput();
     }
