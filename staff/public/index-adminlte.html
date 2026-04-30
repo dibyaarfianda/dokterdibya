@@ -1488,7 +1488,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v76'; // Ruang Membaca: Gangguan Kandungan renamed to Ginekologi
+            const CACHE_VERSION = 'v78'; // Community chat popup: force compact moderator URL refresh
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -7338,7 +7338,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v77';
+    window.__assetVersion = 'v78';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>

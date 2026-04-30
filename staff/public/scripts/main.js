@@ -275,10 +275,17 @@ function showCommunityChatPage() {
 }
 
 function openCommunityChatPopup() {
-    const popupUrl = '/community-chat.html?moderator=compact';
+    const popupUrl = '/community-chat.html?moderator=compact&_t=' + Date.now();
     const popupFeatures = 'width=1400,height=900,resizable=yes,scrollbars=yes,location=yes,status=yes,menubar=no,toolbar=no';
     const popupWindow = window.open(popupUrl, 'communityChatWindow', popupFeatures);
-    if (popupWindow) popupWindow.focus();
+    if (popupWindow) {
+        try {
+            popupWindow.location.href = popupUrl;
+        } catch (e) {
+            // Ignore cross-window navigation edge cases and still focus popup.
+        }
+        popupWindow.focus();
+    }
 }
 
 // Dashboard New Patients
