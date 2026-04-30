@@ -1026,6 +1026,12 @@
             bottom: calc(82px + var(--mobile-bottom-offset));
         }
 
+        /* In staff panel iframe, keep moderator button away from send button area. */
+        body.embed-staff.compact-moderator .moderator-toggle-btn {
+            right: 66px;
+            bottom: calc(12px + var(--mobile-bottom-offset));
+        }
+
         body.compact-moderator .moderator-panel-close {
             display: inline-flex;
         }
