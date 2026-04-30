@@ -67,6 +67,21 @@
             height: var(--app-height);
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-wallpaper-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .topbar,
+        .layout {
+            position: relative;
+            z-index: 1;
         }
 
         body.embed-staff .page {
@@ -717,7 +732,7 @@
         }
 
         #emoji-toggle i {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
         }
 
         #send-btn {
@@ -733,7 +748,7 @@
 
         #send-btn i {
             font-size: 16px;
-            transform: translateY(-2px);
+            transform: translateY(-3px);
         }
 
         .emoji-panel {
@@ -1011,6 +1026,7 @@
 </head>
 <body>
 <div class="page">
+    <div id="chat-wallpaper-layer" class="chat-wallpaper-layer" aria-hidden="true"></div>
     <div class="topbar">
         <div class="topbar-room">
             <div id="active-room-name" class="topbar-room-title">-</div>
@@ -1173,6 +1189,7 @@
     };
 
     const el = {
+        wallpaperLayer: document.getElementById('chat-wallpaper-layer'),
         page: document.querySelector('.page'),
         chatWrapper: document.querySelector('.chat-wrapper'),
         statusBadge: document.getElementById('status-badge'),
@@ -1272,8 +1289,8 @@
                 : 'linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.34) 100%)';
             return {
                 image: `${wallpaperTint}, url(${uiSettings.wallpaperDataUrl}), ${dots}`,
-                size: '100% 100%, 100% 100%, 22px 22px',
-                position: '0 0, center top, 0 0',
+                size: '100% 100%, contain, 22px 22px',
+                position: '0 0, center center, 0 0',
                 repeat: 'no-repeat, no-repeat, repeat'
             };
         }
@@ -1298,7 +1315,7 @@
         if (el.settingFontSizeValue) el.settingFontSizeValue.textContent = `${uiSettings.fontSize}px`;
 
         const bg = composeMessageBackground();
-        const wallpaperTarget = el.page || el.chatWrapper;
+        const wallpaperTarget = el.wallpaperLayer || el.page || el.chatWrapper;
         if (wallpaperTarget) {
             wallpaperTarget.style.backgroundImage = bg.image;
             wallpaperTarget.style.backgroundSize = bg.size;
