@@ -293,7 +293,7 @@ async function sendDailyReminders() {
       sentCount++;
 
       // Also send WhatsApp reminder if patient has phone
-      if (surgery.patient_id && whatsapp.fonnte.enabled) {
+      if (surgery.patient_id && whatsapp.canSendAutomatically()) {
         try {
           const [patients] = await db.query('SELECT phone, whatsapp FROM patients WHERE id = ?', [surgery.patient_id]);
           const p = patients[0];
