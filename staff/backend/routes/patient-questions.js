@@ -700,7 +700,7 @@ router.post('/staff/:id/reply', verifyToken, requireDokter, upload.single('image
         try {
             await db.query(
                 `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
-                 VALUES (?, 'question_reply', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
+                 VALUES (?, 'system', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
                 [question.patient_id, `${doctorName} Menjawab`, `/tanya-dokter.html?questionId=${encodeURIComponent(questionId)}`]
             );
         } catch (e) {
@@ -772,7 +772,7 @@ router.post('/staff/:id/close', verifyToken, requireDokter, async (req, res) => 
         try {
             await db.query(
                 `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
-                 VALUES (?, 'thread_closed', 'Percakapan Selesai', ?, ?, NOW())`,
+                 VALUES (?, 'system', 'Percakapan Selesai', ?, ?, NOW())`,
                 [question.patient_id, `Percakapan Anda dengan ${doctorName} telah selesai. Anda dapat mengajukan pertanyaan baru.`, `/tanya-dokter.html?questionId=${encodeURIComponent(questionId)}`]
             );
         } catch (e) {
@@ -910,7 +910,7 @@ router.post('/whatsapp/webhook', async (req, res) => {
 
         await db.query(
             `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
-             VALUES (?, 'question_reply', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
+             VALUES (?, 'system', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
             [question.patient_id, `${doctor.name || 'Dokter'} Menjawab`, `/tanya-dokter.html?questionId=${encodeURIComponent(questionId)}`]
         );
 
