@@ -10,6 +10,13 @@ const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 const multer = require('multer');
 const r2Storage = require('../services/r2Storage');
 const { generateId } = require('../utils/idGenerator');
+const whatsappService = require('../services/whatsappService');
+
+const TANYA_WA_NOTIFY_ENABLED = process.env.TANYA_WA_NOTIFY_ENABLED === 'true';
+const TANYA_WA_DOCTOR_PHONE = process.env.TANYA_WA_DOCTOR_PHONE || '';
+const TANYA_WA_DOCTOR_USER_ID = process.env.TANYA_WA_DOCTOR_USER_ID || '';
+const TANYA_WA_WEBHOOK_SECRET = process.env.TANYA_WA_WEBHOOK_SECRET || '';
+const STAFF_PANEL_URL = process.env.STAFF_PANEL_URL || 'https://dokterdibya.com/staff/public/index-adminlte.html';
 
 // Multer setup for image upload
 const upload = multer({
@@ -40,6 +47,13 @@ function generateQuestionId() {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     return `QST${timestamp}${random}`;
+}
+
+function truncateForWhatsApp(text, maxLen = 700) {
+    const content = String(text || '').trim();
+    if (!content) return '-';
+    if (content.length <= maxLen) return content;
+    return `${content.slice(0, maxLen - 3)}...`;
 }
 
 // Helper: Check if patient can ask new question
@@ -290,11 +304,36 @@ router.post('/', verifyPatientToken, upload.single('image'), async (req, res) =>
         // Send notification to assigned doctor
         try {
             const [patient] = await db.query(
-                'SELECT name FROM patients WHERE id = ?',
+                'SELECT COALESCE(full_name, name) as patient_name FROM patients WHERE id = ?',
                 [patientId]
             );
+            const patientName = patient[0]?.patient_name || `Patient ${patientId}`;
 
-            console.log(`New question from ${patient[0]?.name}: ${questionId} -> Doctor: ${assignedDoctorId}`);
+            console.log(`New question from ${patientName}: ${questionId} -> Doctor: ${assignedDoctorId}`);
+
+            if (TANYA_WA_NOTIFY_ENABLED && TANYA_WA_DOCTOR_PHONE) {
+                const [doctorRows] = await db.query(
+                    'SELECT name FROM users WHERE new_id = ? LIMIT 1',
+                    [assignedDoctorId]
+                );
+                const doctorName = doctorRows[0]?.name || 'Dokter';
+                const questionPreview = truncateForWhatsApp(question_text, 650);
+
+                const waMessage = `📩 *Tanya Dokter Baru*\n\n` +
+                    `ID: ${questionId}\n` +
+                    `Pasien: ${patientName}\n` +
+                    `Dokter: ${doctorName}\n\n` +
+                    `Pertanyaan:\n${questionPreview}\n\n` +
+                    `Balas dari WhatsApp dengan format:\n` +
+                    `${questionId}: [jawaban Anda]\n\n` +
+                    `Buka panel staff:\n${STAFF_PANEL_URL}`;
+
+                const waResult = await whatsappService.sendViaFonnte(TANYA_WA_DOCTOR_PHONE, waMessage);
+                if (!waResult.success) {
+                    const waLink = whatsappService.generateWaLink(TANYA_WA_DOCTOR_PHONE, waMessage);
+                    console.warn('Tanya Dokter WhatsApp auto-send failed, use manual link:', waLink || '(link unavailable)');
+                }
+            }
         } catch (e) {
             console.error('Error sending notification:', e);
         }
@@ -746,6 +785,119 @@ router.post('/staff/:id/close', verifyToken, requireDokter, async (req, res) => 
         });
     } catch (error) {
         console.error('Error closing thread:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+/**
+ * POST /api/patient-questions/whatsapp/webhook
+ * Inbound WhatsApp webhook for doctor reply.
+ * Expected message format: QSTXXXX: isi jawaban
+ */
+router.post('/whatsapp/webhook', async (req, res) => {
+    try {
+        if (!TANYA_WA_NOTIFY_ENABLED) {
+            return res.status(503).json({ success: false, message: 'WhatsApp integration disabled' });
+        }
+
+        if (TANYA_WA_WEBHOOK_SECRET) {
+            const incomingSecret = req.headers['x-tanya-wa-secret'] || req.query.secret || req.body.secret;
+            if (incomingSecret !== TANYA_WA_WEBHOOK_SECRET) {
+                return res.status(401).json({ success: false, message: 'Invalid webhook secret' });
+            }
+        }
+
+        const rawFrom = req.body.sender || req.body.from || req.body.number || req.body.phone || '';
+        const rawText = req.body.message || req.body.text || req.body.body || req.body.chat || '';
+        const text = String(rawText || '').trim();
+
+        if (!text) {
+            return res.status(400).json({ success: false, message: 'Empty message payload' });
+        }
+
+        const expectedPhone = whatsappService.formatPhoneNumber(TANYA_WA_DOCTOR_PHONE || '');
+        const incomingPhone = whatsappService.formatPhoneNumber(String(rawFrom || ''));
+        if (expectedPhone && incomingPhone && expectedPhone !== incomingPhone) {
+            return res.status(403).json({ success: false, message: 'Sender phone not allowed' });
+        }
+
+        const match = text.match(/(QST[A-Z0-9]+)\s*[:\-]\s*([\s\S]+)/i);
+        if (!match) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid format. Use: QSTXXXX: isi jawaban'
+            });
+        }
+
+        const questionId = match[1].toUpperCase();
+        const replyMessage = String(match[2] || '').trim();
+        if (!replyMessage) {
+            return res.status(400).json({ success: false, message: 'Reply message is empty' });
+        }
+
+        const [questions] = await db.query(
+            `SELECT pq.id, pq.patient_id, pq.status, pq.assigned_doctor_id,
+                    u.name as assigned_doctor_name
+             FROM patient_questions pq
+             LEFT JOIN users u ON pq.assigned_doctor_id = u.new_id
+             WHERE pq.id = ?`,
+            [questionId]
+        );
+
+        if (questions.length === 0) {
+            return res.status(404).json({ success: false, message: 'Question not found' });
+        }
+
+        const question = questions[0];
+        if (question.status === 'closed') {
+            return res.status(400).json({ success: false, message: 'Thread already closed' });
+        }
+
+        const senderDoctorId = question.assigned_doctor_id || TANYA_WA_DOCTOR_USER_ID;
+        if (!senderDoctorId) {
+            return res.status(400).json({ success: false, message: 'No doctor mapping found for this question' });
+        }
+
+        const [doctorRows] = await db.query(
+            `SELECT new_id, name
+             FROM users
+             WHERE new_id = ? AND role = 'dokter'
+             LIMIT 1`,
+            [senderDoctorId]
+        );
+
+        if (doctorRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Doctor user not found' });
+        }
+
+        const doctor = doctorRows[0];
+
+        await db.query(
+            `INSERT INTO question_replies (question_id, sender_type, sender_id, message, image_url, created_at)
+             VALUES (?, 'doctor', ?, ?, NULL, NOW())`,
+            [questionId, doctor.new_id, replyMessage]
+        );
+
+        if (question.status === 'open') {
+            await db.query(
+                `UPDATE patient_questions SET status = 'answered' WHERE id = ?`,
+                [questionId]
+            );
+        }
+
+        await db.query(
+            `INSERT INTO patient_notifications (patient_id, type, title, message, data, created_at)
+             VALUES (?, 'question_reply', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
+            [question.patient_id, `${doctor.name || 'Dokter'} Menjawab`, JSON.stringify({ questionId })]
+        );
+
+        res.json({
+            success: true,
+            message: 'Reply accepted from WhatsApp webhook',
+            questionId
+        });
+    } catch (error) {
+        console.error('Error processing WhatsApp webhook:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
