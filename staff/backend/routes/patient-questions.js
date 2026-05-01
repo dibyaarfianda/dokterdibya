@@ -380,8 +380,12 @@ router.get('/:id', verifyPatientToken, async (req, res) => {
  */
 router.get('/staff/all', verifyToken, async (req, res) => {
     try {
-        const { status, search, doctor_id, page = 1, limit = 20 } = req.query;
-        const offset = (page - 1) * limit;
+        const { status, search, doctor_id, page = 1, limit } = req.query;
+        const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+        const parsedLimit = (limit === undefined || limit === null || limit === '' || String(limit).toLowerCase() === 'all')
+            ? null
+            : Math.max(1, parseInt(limit, 10) || 1);
+        const offset = parsedLimit ? (parsedPage - 1) * parsedLimit : 0;
         const currentUser = req.user;
 
         let whereClause = '1=1';
@@ -408,8 +412,7 @@ router.get('/staff/all', verifyToken, async (req, res) => {
         }
 
         // Get questions with patient info, subscription tier, and doctor info
-        const [questions] = await db.query(
-            `SELECT pq.*,
+        const questionsQuery = `SELECT pq.*,
                     p.full_name as patient_name,
                     p.birth_date,
                     COALESCE(ts.tier, 'free') as subscription_tier,
@@ -429,10 +432,17 @@ router.get('/staff/all', verifyToken, async (req, res) => {
                      WHEN 'answered' THEN 2
                      WHEN 'closed' THEN 3
                  END,
-                 pq.created_at DESC
-             LIMIT ? OFFSET ?`,
-            [...params, parseInt(limit), parseInt(offset)]
-        );
+                 pq.created_at DESC`;
+
+        const questionsQueryWithLimit = parsedLimit
+            ? `${questionsQuery}\n             LIMIT ? OFFSET ?`
+            : questionsQuery;
+
+        const questionsParams = parsedLimit
+            ? [...params, parsedLimit, offset]
+            : params;
+
+        const [questions] = await db.query(questionsQueryWithLimit, questionsParams);
 
         // Get total count
         const [countResult] = await db.query(
@@ -447,10 +457,10 @@ router.get('/staff/all', verifyToken, async (req, res) => {
             success: true,
             questions,
             pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
+                page: parsedPage,
+                limit: parsedLimit,
                 total: countResult[0].total,
-                totalPages: Math.ceil(countResult[0].total / limit)
+                totalPages: parsedLimit ? Math.ceil(countResult[0].total / parsedLimit) : 1
             }
         });
     } catch (error) {
