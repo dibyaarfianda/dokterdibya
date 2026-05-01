@@ -3295,7 +3295,7 @@ Klinik Privat Dr. Dibya
 RSIA Melinda, Kediri`;
 
         // Send via WhatsApp
-        const result = await whatsappService.sendViaFonnte(phone, message);
+        const result = await whatsappService.sendAuto(phone, message);
 
         if (result.success) {
             res.json({

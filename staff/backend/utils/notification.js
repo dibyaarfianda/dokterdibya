@@ -73,6 +73,20 @@ class NotificationService {
         this.fonnteEnabled = process.env.FONNTE_ENABLED === 'true';
         this.fonnteToken = process.env.FONNTE_TOKEN || '';
         this.fonnteApiUrl = process.env.FONNTE_API_URL || 'https://api.fonnte.com/send';
+        this.whatsappProvider = (process.env.WA_PROVIDER || 'fonnte').toLowerCase();
+
+        // Meta WhatsApp Cloud API configuration
+        this.metaEnabled = process.env.WHATSAPP_CLOUD_ENABLED === 'true';
+        this.metaAccessToken = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN || '';
+        this.metaPhoneNumberId = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID || '';
+        this.metaApiVersion = process.env.WHATSAPP_CLOUD_API_VERSION || 'v21.0';
+
+        if (this.metaEnabled && this.metaAccessToken && this.metaPhoneNumberId) {
+            logger.info('Meta WhatsApp Cloud API configured', {
+                phoneNumberId: this.metaPhoneNumberId,
+                apiVersion: this.metaApiVersion
+            });
+        }
 
         if (this.fonnteEnabled && this.fonnteToken) {
             logger.info('Fonnte WhatsApp API configured');
@@ -410,6 +424,80 @@ class NotificationService {
         }
     }
 
+    normalizeWhatsAppPhone(to) {
+        let formattedTo = String(to || '').replace(/[^0-9]/g, '');
+        if (formattedTo.startsWith('0')) {
+            formattedTo = '62' + formattedTo.substring(1);
+        } else if (!formattedTo.startsWith('62')) {
+            formattedTo = '62' + formattedTo;
+        }
+        return formattedTo;
+    }
+
+    /**
+     * Send WhatsApp message via Meta Cloud API
+     */
+    async sendMetaCloud(to, message, options = {}) {
+        if (!this.metaEnabled) {
+            logger.warn('Meta WhatsApp Cloud API disabled');
+            return { success: false, method: 'meta', message: 'Meta Cloud API disabled' };
+        }
+
+        if (!this.metaAccessToken || !this.metaPhoneNumberId) {
+            logger.error('Meta Cloud API credentials not configured');
+            return { success: false, method: 'meta', message: 'Meta Cloud credentials not configured' };
+        }
+
+        try {
+            const formattedTo = this.normalizeWhatsAppPhone(to);
+            const endpoint = `https://graph.facebook.com/${this.metaApiVersion}/${this.metaPhoneNumberId}/messages`;
+
+            const payload = options.templateName
+                ? {
+                    messaging_product: 'whatsapp',
+                    to: formattedTo,
+                    type: 'template',
+                    template: {
+                        name: options.templateName,
+                        language: { code: options.templateLanguage || 'id' },
+                        ...(options.templateComponents ? { components: options.templateComponents } : {})
+                    }
+                }
+                : {
+                    messaging_product: 'whatsapp',
+                    to: formattedTo,
+                    type: 'text',
+                    text: {
+                        preview_url: !!options.previewUrl,
+                        body: message
+                    }
+                };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.metaAccessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (response.ok && result.messages && result.messages.length > 0) {
+                const messageId = result.messages[0].id;
+                logger.info('Meta WhatsApp sent successfully', { to: formattedTo, messageId });
+                return { success: true, method: 'meta', messageId };
+            }
+
+            const errorMessage = result?.error?.message || 'Failed to send via Meta Cloud API';
+            logger.error('Meta WhatsApp send failed', { to: formattedTo, error: errorMessage });
+            return { success: false, method: 'meta', error: errorMessage };
+        } catch (error) {
+            logger.error('Failed to send Meta WhatsApp', { to, error: error.message });
+            return { success: false, method: 'meta', error: error.message };
+        }
+    }
+
     /**
      * Send WhatsApp message via Fonnte API
      */
@@ -426,12 +514,7 @@ class NotificationService {
 
         try {
             // Normalize phone number (ensure starts with 62, no +)
-            let formattedTo = to.replace(/[^0-9]/g, '');
-            if (formattedTo.startsWith('0')) {
-                formattedTo = '62' + formattedTo.substring(1);
-            } else if (!formattedTo.startsWith('62')) {
-                formattedTo = '62' + formattedTo;
-            }
+            const formattedTo = this.normalizeWhatsAppPhone(to);
 
             const payload = {
                 target: formattedTo,
@@ -490,31 +573,38 @@ class NotificationService {
      * Send WhatsApp message - tries Fonnte first, then Twilio, then manual link
      */
     async sendWhatsAppAuto(to, message, options = {}) {
-        // Try Fonnte first
-        if (this.fonnteEnabled && this.fonnteToken) {
-            const fonnteResult = await this.sendFonnte(to, message, options);
-            if (fonnteResult.success) {
-                return fonnteResult;
-            }
-            logger.warn('Fonnte failed, trying fallback', { error: fonnteResult.error });
-        }
+        const providerOrder = this.whatsappProvider === 'meta'
+            ? ['meta', 'fonnte', 'twilio']
+            : ['fonnte', 'meta', 'twilio'];
 
-        // Try Twilio if configured
-        if (this.whatsappEnabled && this.twilioClient) {
-            const twilioResult = await this.sendWhatsApp(to, message);
-            if (twilioResult.success) {
-                return { ...twilioResult, method: 'twilio' };
+        for (const provider of providerOrder) {
+            if (provider === 'meta' && this.metaEnabled && this.metaAccessToken && this.metaPhoneNumberId) {
+                const metaResult = await this.sendMetaCloud(to, message, options);
+                if (metaResult.success) {
+                    return metaResult;
+                }
+                logger.warn('Meta Cloud failed, trying fallback', { error: metaResult.error });
             }
-            logger.warn('Twilio failed, returning manual link', { error: twilioResult.error });
+
+            if (provider === 'fonnte' && this.fonnteEnabled && this.fonnteToken) {
+                const fonnteResult = await this.sendFonnte(to, message, options);
+                if (fonnteResult.success) {
+                    return fonnteResult;
+                }
+                logger.warn('Fonnte failed, trying fallback', { error: fonnteResult.error });
+            }
+
+            if (provider === 'twilio' && this.whatsappEnabled && this.twilioClient) {
+                const twilioResult = await this.sendWhatsApp(to, message);
+                if (twilioResult.success) {
+                    return { ...twilioResult, method: 'twilio' };
+                }
+                logger.warn('Twilio failed, trying fallback', { error: twilioResult.error });
+            }
         }
 
         // Return manual wa.me link as last resort
-        let formattedTo = to.replace(/[^0-9]/g, '');
-        if (formattedTo.startsWith('0')) {
-            formattedTo = '62' + formattedTo.substring(1);
-        } else if (!formattedTo.startsWith('62')) {
-            formattedTo = '62' + formattedTo;
-        }
+        const formattedTo = this.normalizeWhatsAppPhone(to);
 
         const encodedMessage = encodeURIComponent(message);
         const waLink = `https://wa.me/${formattedTo}?text=${encodedMessage}`;

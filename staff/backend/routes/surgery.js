@@ -641,7 +641,7 @@ router.patch('/:id/status', async (req, res) => {
     });
 
     // WhatsApp: send confirmation to patient when surgery is confirmed (fire-and-forget)
-    if (status === 'confirmed' && surgery.patient_id && whatsapp.fonnte.enabled) {
+    if (status === 'confirmed' && surgery.patient_id && whatsapp.canSendAutomatically()) {
       const pool = require('../db');
       pool.query('SELECT phone, whatsapp FROM patients WHERE id = ?', [surgery.patient_id])
         .then(([rows]) => {

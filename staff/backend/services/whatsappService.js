@@ -1,15 +1,27 @@
 /**
  * WhatsApp Service
  * Supports multiple methods:
- * 1. wa.me links (free, manual click)
- * 2. Fonnte API (automatic, requires API key)
- * 3. Twilio (automatic, requires account)
+ * 1. Meta WhatsApp Cloud API (automatic, official)
+ * 2. wa.me links (free, manual click)
+ * 3. Fonnte API (automatic, requires API key)
+ * 4. Twilio (automatic, requires account)
  */
 
 const logger = require('../utils/logger');
 
 class WhatsAppService {
     constructor() {
+        this.provider = (process.env.WA_PROVIDER || 'fonnte').toLowerCase();
+
+        this.meta = {
+            enabled: process.env.WHATSAPP_CLOUD_ENABLED === 'true' &&
+                !!process.env.WHATSAPP_CLOUD_ACCESS_TOKEN &&
+                !!process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID,
+            accessToken: process.env.WHATSAPP_CLOUD_ACCESS_TOKEN,
+            phoneNumberId: process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID,
+            apiVersion: process.env.WHATSAPP_CLOUD_API_VERSION || 'v21.0'
+        };
+
         this.fonnte = {
             enabled: process.env.FONNTE_ENABLED === 'true' && !!process.env.FONNTE_TOKEN,
             token: process.env.FONNTE_TOKEN,
@@ -48,6 +60,10 @@ class WhatsAppService {
         return cleaned;
     }
 
+    canSendAutomatically() {
+        return !!(this.meta.enabled || this.fonnte.enabled || this.twilio.enabled);
+    }
+
     /**
      * Generate wa.me link (click to open WhatsApp with pre-filled message)
      */
@@ -76,6 +92,66 @@ ${portalUrl}
 
 Terima kasih,
 ${this.clinicName}`;
+    }
+
+    /**
+     * Send via Meta WhatsApp Cloud API (automatic, official)
+     */
+    async sendViaMetaCloud(phone, message, options = {}) {
+        if (!this.meta.enabled) {
+            logger.warn('Meta WhatsApp Cloud API not configured');
+            return { success: false, method: 'meta', error: 'Meta WhatsApp Cloud API not configured' };
+        }
+
+        try {
+            const formattedPhone = this.formatPhoneNumber(phone);
+            const endpoint = `https://graph.facebook.com/${this.meta.apiVersion}/${this.meta.phoneNumberId}/messages`;
+
+            const payload = options.templateName
+                ? {
+                    messaging_product: 'whatsapp',
+                    to: formattedPhone,
+                    type: 'template',
+                    template: {
+                        name: options.templateName,
+                        language: { code: options.templateLanguage || 'id' },
+                        ...(options.templateComponents ? { components: options.templateComponents } : {})
+                    }
+                }
+                : {
+                    messaging_product: 'whatsapp',
+                    to: formattedPhone,
+                    type: 'text',
+                    text: {
+                        preview_url: !!options.previewUrl,
+                        body: message
+                    }
+                };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.meta.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.messages && result.messages.length > 0) {
+                const messageId = result.messages[0].id;
+                logger.info('WhatsApp sent via Meta Cloud API successfully', { phone: formattedPhone, messageId });
+                return { success: true, method: 'meta', messageId };
+            }
+
+            const errorMessage = result?.error?.message || 'Meta WhatsApp Cloud API error';
+            logger.warn('Meta WhatsApp Cloud API returned error', { phone: formattedPhone, error: errorMessage });
+            return { success: false, method: 'meta', error: errorMessage };
+        } catch (error) {
+            logger.error('Meta Cloud API send failed', { phone, error: error.message });
+            return { success: false, method: 'meta', error: error.message };
+        }
     }
 
     /**
@@ -124,6 +200,33 @@ ${this.clinicName}`;
     }
 
     /**
+     * Auto-send based on configured provider with safe fallbacks
+     */
+    async sendAuto(phone, message, options = {}) {
+        const attempts = this.provider === 'meta'
+            ? ['meta', 'fonnte']
+            : ['fonnte', 'meta'];
+
+        for (const method of attempts) {
+            const result = method === 'meta'
+                ? await this.sendViaMetaCloud(phone, message, options)
+                : await this.sendViaFonnte(phone, message);
+
+            if (result.success) {
+                return result;
+            }
+        }
+
+        const waLink = this.generateWaLink(phone, message);
+        return {
+            success: true,
+            method: 'manual',
+            waLink,
+            note: 'Klik link untuk membuka WhatsApp dan kirim pesan'
+        };
+    }
+
+    /**
      * Send document notification to patient
      */
     async sendDocumentNotification({ phone, patientName, documents, shareToken }) {
@@ -139,12 +242,10 @@ ${this.clinicName}`;
         // Generate message
         const message = this.generateDocumentMessage(patientName, documents, portalUrl);
 
-        // Try automatic sending first (Fonnte)
-        if (this.fonnte.enabled) {
-            const result = await this.sendViaFonnte(phone, message);
-            if (result.success) {
-                return result;
-            }
+        // Try automatic sending first (Meta/Fonnte based on provider)
+        const autoResult = await this.sendAuto(phone, message);
+        if (autoResult.success && autoResult.method !== 'manual') {
+            return autoResult;
         }
 
         // Fallback to wa.me link (manual)
@@ -164,6 +265,12 @@ ${this.clinicName}`;
      */
     getStatus() {
         return {
+            provider: this.provider,
+            meta: {
+                enabled: this.meta.enabled,
+                configured: !!(this.meta.accessToken && this.meta.phoneNumberId),
+                apiVersion: this.meta.apiVersion
+            },
             fonnte: {
                 enabled: this.fonnte.enabled,
                 configured: !!this.fonnte.token
@@ -206,7 +313,7 @@ ${this.clinicName}`;
             `Mohon hadir 1 jam sebelum jadwal operasi.\n\n` +
             `_${this.clinicName}_`;
 
-        return this.sendViaFonnte(phone, message);
+        return this.sendAuto(phone, message);
     }
 
     /**
@@ -224,7 +331,7 @@ ${this.clinicName}`;
             `Mohon hadir 1 jam sebelum jadwal.\n\n` +
             `_${this.clinicName}_`;
 
-        return this.sendViaFonnte(phone, message);
+        return this.sendAuto(phone, message);
     }
 }
 

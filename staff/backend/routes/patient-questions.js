@@ -328,7 +328,7 @@ router.post('/', verifyPatientToken, upload.single('image'), async (req, res) =>
                     `${questionId}: [jawaban Anda]\n\n` +
                     `Buka panel staff:\n${STAFF_PANEL_URL}`;
 
-                const waResult = await whatsappService.sendViaFonnte(TANYA_WA_DOCTOR_PHONE, waMessage);
+                const waResult = await whatsappService.sendAuto(TANYA_WA_DOCTOR_PHONE, waMessage);
                 if (!waResult.success) {
                     const waLink = whatsappService.generateWaLink(TANYA_WA_DOCTOR_PHONE, waMessage);
                     console.warn('Tanya Dokter WhatsApp auto-send failed, use manual link:', waLink || '(link unavailable)');
