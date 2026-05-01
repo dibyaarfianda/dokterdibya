@@ -794,6 +794,29 @@ router.post('/staff/:id/close', verifyToken, requireDokter, async (req, res) => 
  * Inbound WhatsApp webhook for doctor reply.
  * Expected message format: QSTXXXX: isi jawaban
  */
+router.get('/whatsapp/webhook', async (req, res) => {
+    try {
+        if (!TANYA_WA_NOTIFY_ENABLED) {
+            return res.status(503).json({ success: false, message: 'WhatsApp integration disabled' });
+        }
+
+        if (TANYA_WA_WEBHOOK_SECRET) {
+            const incomingSecret = req.headers['x-tanya-wa-secret'] || req.query.secret;
+            if (incomingSecret !== TANYA_WA_WEBHOOK_SECRET) {
+                return res.status(401).json({ success: false, message: 'Invalid webhook secret' });
+            }
+        }
+
+        return res.json({
+            success: true,
+            message: 'WhatsApp webhook endpoint active. Use POST with payload message format: QSTXXXX: isi jawaban.'
+        });
+    } catch (error) {
+        console.error('Error checking WhatsApp webhook:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 router.post('/whatsapp/webhook', async (req, res) => {
     try {
         if (!TANYA_WA_NOTIFY_ENABLED) {
