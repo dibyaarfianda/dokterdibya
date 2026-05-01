@@ -83,6 +83,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Smart rate limiting — IP-keyed, endpoint-tiered
 const { authLimiter, expensiveLimiter, standardLimiter, coalesce, getCoalesceStats } = require('./middleware/rateLimiter');
