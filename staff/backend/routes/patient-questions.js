@@ -699,9 +699,9 @@ router.post('/staff/:id/reply', verifyToken, requireDokter, upload.single('image
         const doctorName = question.doctor_name || currentUser.name || 'Dokter';
         try {
             await db.query(
-                `INSERT INTO patient_notifications (patient_id, type, title, message, data, created_at)
+                `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
                  VALUES (?, 'question_reply', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
-                [question.patient_id, `${doctorName} Menjawab`, JSON.stringify({ questionId })]
+                [question.patient_id, `${doctorName} Menjawab`, `/tanya-dokter.html?questionId=${encodeURIComponent(questionId)}`]
             );
         } catch (e) {
             console.error('Error creating notification:', e);
@@ -771,9 +771,9 @@ router.post('/staff/:id/close', verifyToken, requireDokter, async (req, res) => 
         const doctorName = question.doctor_name || currentUser.name || 'Dokter';
         try {
             await db.query(
-                `INSERT INTO patient_notifications (patient_id, type, title, message, data, created_at)
+                `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
                  VALUES (?, 'thread_closed', 'Percakapan Selesai', ?, ?, NOW())`,
-                [question.patient_id, `Percakapan Anda dengan ${doctorName} telah selesai. Anda dapat mengajukan pertanyaan baru.`, JSON.stringify({ questionId })]
+                [question.patient_id, `Percakapan Anda dengan ${doctorName} telah selesai. Anda dapat mengajukan pertanyaan baru.`, `/tanya-dokter.html?questionId=${encodeURIComponent(questionId)}`]
             );
         } catch (e) {
             console.error('Error creating notification:', e);
@@ -909,9 +909,9 @@ router.post('/whatsapp/webhook', async (req, res) => {
         }
 
         await db.query(
-            `INSERT INTO patient_notifications (patient_id, type, title, message, data, created_at)
+            `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
              VALUES (?, 'question_reply', ?, 'Pertanyaan Anda telah dijawab. Tap untuk melihat.', ?, NOW())`,
-            [question.patient_id, `${doctor.name || 'Dokter'} Menjawab`, JSON.stringify({ questionId })]
+            [question.patient_id, `${doctor.name || 'Dokter'} Menjawab`, `/tanya-dokter.html?questionId=${encodeURIComponent(questionId)}`]
         );
 
         res.json({
