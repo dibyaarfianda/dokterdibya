@@ -61,6 +61,39 @@ function applyCacheHeaders(res, { bypassCache, cacheKey, hit }) {
     });
 }
 
+let birthTestimonialColumnsReady = false;
+
+async function ensureBirthTestimonialColumns() {
+    if (birthTestimonialColumnsReady) return;
+
+    const hasColumn = async (columnName) => {
+        const [rows] = await db.query(
+            `SELECT 1
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = 'birth_congratulations'
+               AND column_name = ?
+             LIMIT 1`,
+            [columnName]
+        );
+        return rows.length > 0;
+    };
+
+    if (!(await hasColumn('patient_testimonial'))) {
+        await db.query(
+            'ALTER TABLE birth_congratulations ADD COLUMN patient_testimonial TEXT NULL AFTER message'
+        );
+    }
+
+    if (!(await hasColumn('patient_testimonial_submitted_at'))) {
+        await db.query(
+            'ALTER TABLE birth_congratulations ADD COLUMN patient_testimonial_submitted_at DATETIME NULL AFTER patient_testimonial'
+        );
+    }
+
+    birthTestimonialColumnsReady = true;
+}
+
 // ==================== PUBLIC ENDPOINTS (no auth required) ====================
 
 const pushService = require('../services/pushNotificationService');
@@ -1783,6 +1816,72 @@ router.post('/api/patient/birth-extra/:id', verifyPatientToken, async (req, res)
     }
 });
 
+// POST patient submits testimonial once for birth card
+router.post('/api/patient/birth-testimonial/:id', verifyPatientToken, async (req, res) => {
+    try {
+        await ensureBirthTestimonialColumns();
+
+        const birthId = req.params.id;
+        const patientId = req.patient.id;
+        const testimonial = String(req.body?.testimonial || '').trim();
+
+        if (!testimonial) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kesan dan pesan wajib diisi'
+            });
+        }
+
+        if (testimonial.length > 2000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kesan dan pesan maksimal 2000 karakter'
+            });
+        }
+
+        const [rows] = await db.query(
+            `SELECT id, patient_testimonial
+             FROM birth_congratulations
+             WHERE id = ? AND patient_id = ? AND is_published = 1
+             LIMIT 1`,
+            [birthId, patientId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Kartu kelahiran tidak ditemukan'
+            });
+        }
+
+        if (rows[0].patient_testimonial && String(rows[0].patient_testimonial).trim()) {
+            return res.status(409).json({
+                success: false,
+                message: 'Testimoni sudah pernah dikirim'
+            });
+        }
+
+        await db.query(
+            `UPDATE birth_congratulations
+             SET patient_testimonial = ?,
+                 patient_testimonial_submitted_at = NOW()
+             WHERE id = ? AND patient_id = ?`,
+            [testimonial, birthId, patientId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Terima kasih, testimoni berhasil dikirim'
+        });
+    } catch (error) {
+        console.error('Error submitting patient birth testimonial:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengirim testimoni'
+        });
+    }
+});
+
 // POST patient dismisses birth card (close)
 router.post('/api/patient/birth-dismiss/:id', verifyPatientToken, async (req, res) => {
     try {
@@ -2076,6 +2175,8 @@ router.post('/api/patient/birth-photo/:id', verifyPatientToken, birthPhotoUpload
 // GET all birth congratulations (Staff only - for admin panel)
 router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, res) => {
     try {
+        await ensureBirthTestimonialColumns();
+
         const [rows] = await db.query(`
             SELECT bc.*, p.full_name as patient_name
             FROM birth_congratulations bc
@@ -2100,6 +2201,54 @@ router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, r
         res.status(500).json({
             success: false,
             message: 'Failed to fetch birth congratulations',
+            error: error.message
+        });
+    }
+});
+
+// GET patient testimonials from birth cards (Staff only)
+router.get('/api/patients/birth-testimonials', verifyToken, async (req, res) => {
+    try {
+        await ensureBirthTestimonialColumns();
+
+        const [rows] = await db.query(`
+            SELECT
+                bc.id,
+                bc.patient_id,
+                p.full_name AS patient_name,
+                bc.child_number,
+                bc.baby_name,
+                bc.gender,
+                bc.birth_date,
+                bc.birth_time,
+                bc.patient_testimonial,
+                bc.patient_testimonial_submitted_at,
+                bc.photo_url,
+                bc.photo_r2_key
+            FROM birth_congratulations bc
+            JOIN patients p ON p.id = bc.patient_id
+            WHERE bc.patient_testimonial IS NOT NULL
+              AND TRIM(bc.patient_testimonial) <> ''
+            ORDER BY bc.patient_testimonial_submitted_at DESC, bc.created_at DESC
+        `);
+
+        for (const row of rows) {
+            if (row.photo_r2_key) {
+                try {
+                    row.photo_url = await r2Storage.getSignedDownloadUrl(row.photo_r2_key, 3600);
+                } catch (r2Error) {
+                    console.error('Error generating signed URL for testimonial list:', r2Error);
+                }
+            }
+            delete row.photo_r2_key;
+        }
+
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error('Error fetching birth testimonials:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch birth testimonials',
             error: error.message
         });
     }

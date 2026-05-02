@@ -1719,6 +1719,12 @@
                             <p>Ucapan Kelahiran</p>
                         </a>
                     </li>
+                    <li class="nav-item d-none" id="nav-birth-testimonials">
+                        <a href="#" class="nav-link" onclick="showBirthTestimonialsPage(); return false;">
+                            <i class="nav-icon fas fa-comment-dots" style="color: #17a2b8;"></i>
+                            <p>Testimoni Pasien</p>
+                        </a>
+                    </li>
                     <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
                         <a href="#" class="nav-link" onclick="showArtikelKesehatanPage(); markBadgeRead('artikel'); return false;">
                             <i class="nav-icon fas fa-book-reader"></i>
@@ -4727,6 +4733,29 @@
                                     </div>
                                     <div class="card-body">
                                         <div id="birth-congrats-list">
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                                <p>Memuat data...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BIRTH TESTIMONIALS PAGE (Dokter/Staff) -->
+                <div id="birth-testimonials-page" class="d-none">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card card-info">
+                                    <div class="card-header" style="background: linear-gradient(135deg, #17a2b8, #117a8b);">
+                                        <h3 class="card-title"><i class="fas fa-comment-dots mr-2"></i>Testimoni Pasien</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="birth-testimonials-list">
                                             <div class="text-center text-muted py-5">
                                                 <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
                                                 <p>Memuat data...</p>

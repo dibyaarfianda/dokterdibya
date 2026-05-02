@@ -1760,6 +1760,19 @@
                                 <p class="birth-message" id="birth-message"></p>
                             </div>
 
+                            <div class="birth-message-container" id="birth-testimonial-container" style="margin-top: 12px;">
+                                <div class="birth-message-label">
+                                    <i class="fa fa-comment-dots" style="margin-right: 5px;"></i> Kesan dan pesan dr. Dibya, SpOG
+                                </div>
+                                <textarea id="birth-testimonial-input" class="form-control" rows="3" placeholder="Tulis kesan dan pesan Anda..."></textarea>
+                                <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                                    <button type="button" id="birth-testimonial-submit" onclick="submitBirthTestimonial()" style="border:none; border-radius:8px; padding:8px 12px; background:linear-gradient(135deg,#007bff,#0056b3); color:#fff; font-size:12px; cursor:pointer;">
+                                        Kirim Testimoni
+                                    </button>
+                                    <span id="birth-testimonial-status" style="font-size:12px; color:#d1fae5; display:none;">Testimoni sudah terkirim</span>
+                                </div>
+                            </div>
+
                             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
                                 <button type="button" onclick="openBirthExtraEdit()" style="border:none; border-radius:8px; padding:9px 12px; background:rgba(168,85,247,0.2); border:1px solid rgba(168,85,247,0.4); color:#fff; font-size:12px; cursor:pointer;">
                                     Edit Keterangan Tambahan
@@ -2889,6 +2902,73 @@
             }
         }
 
+        async function submitBirthTestimonial() {
+            if (!_birthCardId) {
+                alert('Kartu kelahiran belum tersedia.');
+                return;
+            }
+
+            const token = getToken();
+            const input = document.getElementById('birth-testimonial-input');
+            const submitBtn = document.getElementById('birth-testimonial-submit');
+            const statusEl = document.getElementById('birth-testimonial-status');
+            const text = input?.value?.trim() || '';
+
+            if (!text) {
+                alert('Silakan isi kesan dan pesan terlebih dahulu.');
+                return;
+            }
+
+            try {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Mengirim...';
+                }
+
+                const resp = await fetch('/api/patient/birth-testimonial/' + _birthCardId, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ testimonial: text })
+                });
+
+                const result = await resp.json().catch(() => null);
+                if (!resp.ok || !result?.success) {
+                    alert(result?.message || 'Gagal mengirim testimoni.');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Kirim Testimoni';
+                    }
+                    return;
+                }
+
+                if (input) {
+                    input.disabled = true;
+                }
+                if (submitBtn) {
+                    submitBtn.style.display = 'none';
+                }
+                if (statusEl) {
+                    statusEl.style.display = 'inline';
+                    statusEl.textContent = 'Terima kasih, testimoni sudah terkirim.';
+                }
+
+                if (_currentBirthData) {
+                    _currentBirthData.patient_testimonial = text;
+                    _currentBirthData.patient_testimonial_submitted_at = new Date().toISOString();
+                }
+            } catch (error) {
+                console.error('submitBirthTestimonial error:', error);
+                alert('Terjadi kesalahan saat mengirim testimoni.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Kirim Testimoni';
+                }
+            }
+        }
+
         function renderBirthCard(data) {
             const card = document.getElementById('birth-congrats-card');
             if (!card) return;
@@ -2959,6 +3039,37 @@
             }
             const msgLabel = msgContainer?.querySelector('.birth-message-label');
             if (msgLabel) msgLabel.style.color = theme.accent;
+
+            const testimonialContainer = document.getElementById('birth-testimonial-container');
+            const testimonialLabel = testimonialContainer?.querySelector('.birth-message-label');
+            if (testimonialContainer) {
+                testimonialContainer.style.background = 'rgba(30,30,40,0.9)';
+                testimonialContainer.style.borderLeft = `3px solid ${theme.accent}`;
+            }
+            if (testimonialLabel) testimonialLabel.style.color = theme.accent;
+
+            const testimonialInput = document.getElementById('birth-testimonial-input');
+            const testimonialSubmit = document.getElementById('birth-testimonial-submit');
+            const testimonialStatus = document.getElementById('birth-testimonial-status');
+            const submittedTestimonial = (data.patient_testimonial || '').trim();
+
+            if (testimonialInput) {
+                testimonialInput.value = submittedTestimonial || '';
+                testimonialInput.disabled = !!submittedTestimonial;
+            }
+
+            if (testimonialSubmit) {
+                testimonialSubmit.disabled = false;
+                testimonialSubmit.textContent = 'Kirim Testimoni';
+                testimonialSubmit.style.display = submittedTestimonial ? 'none' : 'inline-block';
+            }
+
+            if (testimonialStatus) {
+                testimonialStatus.style.display = submittedTestimonial ? 'inline' : 'none';
+                testimonialStatus.textContent = submittedTestimonial
+                    ? 'Testimoni sudah terkirim. Terima kasih.'
+                    : '';
+            }
 
             document.querySelectorAll('.birth-corner-accent').forEach(corner => {
                 corner.style.borderColor = theme.accent;

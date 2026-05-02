@@ -55,6 +55,39 @@ function getNotificationService() {
     return notificationService;
 }
 
+let birthTestimonialColumnsReady = false;
+
+async function ensureBirthTestimonialColumns() {
+    if (birthTestimonialColumnsReady) return;
+
+    const hasColumn = async (columnName) => {
+        const [rows] = await db.query(
+            `SELECT 1
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = 'birth_congratulations'
+               AND column_name = ?
+             LIMIT 1`,
+            [columnName]
+        );
+        return rows.length > 0;
+    };
+
+    if (!(await hasColumn('patient_testimonial'))) {
+        await db.query(
+            'ALTER TABLE birth_congratulations ADD COLUMN patient_testimonial TEXT NULL AFTER message'
+        );
+    }
+
+    if (!(await hasColumn('patient_testimonial_submitted_at'))) {
+        await db.query(
+            'ALTER TABLE birth_congratulations ADD COLUMN patient_testimonial_submitted_at DATETIME NULL AFTER patient_testimonial'
+        );
+    }
+
+    birthTestimonialColumnsReady = true;
+}
+
 /**
  * Generate unique patient ID in format P{year}{sequence}
  * Example: P2025001, P2025002, etc.
@@ -2330,6 +2363,8 @@ router.get('/medications', verifyToken, async (req, res) => {
  */
 router.get('/birth-record', verifyToken, async (req, res) => {
     try {
+        await ensureBirthTestimonialColumns();
+
         const patientId = req.user.id;
 
         // Get published, non-dismissed birth congratulations for this patient
@@ -2346,6 +2381,8 @@ router.get('/birth-record', verifyToken, async (req, res) => {
                 photo_url,
                 photo_r2_key,
                 message,
+                patient_testimonial,
+                patient_testimonial_submitted_at,
                 doctor_name,
                 theme_color,
                 patient_dismissed
