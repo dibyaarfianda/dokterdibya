@@ -281,6 +281,128 @@
             gap: 12px;
         }
 
+        .birth-self-card {
+            background: rgba(236, 72, 153, 0.12);
+            border: 1px solid rgba(236, 72, 153, 0.35);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .birth-self-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #f472b6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .birth-self-card p {
+            margin: 0 0 12px 0;
+            color: #ddd;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .birth-self-btn {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 11px 14px;
+            background: linear-gradient(135deg, #ec4899, #f97316);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .birth-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            padding: 16px;
+        }
+
+        .birth-modal-box {
+            width: 100%;
+            max-width: 440px;
+            background: #111;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .birth-modal-box h3 {
+            margin: 0 0 6px 0;
+            font-size: 17px;
+            color: #f472b6;
+        }
+
+        .birth-modal-box p {
+            margin: 0 0 14px 0;
+            color: #ccc;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .birth-field {
+            margin-bottom: 10px;
+        }
+
+        .birth-field label {
+            display: block;
+            color: #ddd;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .birth-field input,
+        .birth-field select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .birth-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .birth-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .birth-actions button {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .birth-actions .submit {
+            background: linear-gradient(135deg, #ec4899, #f97316);
+            color: #fff;
+        }
+
+        .birth-actions .cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ddd;
+        }
+
         .action-btn {
             display: flex;
             flex-direction: column;
@@ -411,6 +533,43 @@
         </div>
     </main>
 
+    <div class="birth-modal" id="birth-self-modal">
+        <div class="birth-modal-box">
+            <h3>Konfirmasi Kelahiran</h3>
+            <p>Isi data bayi untuk membuat kartu ucapan kelahiran.</p>
+
+            <div class="birth-field">
+                <label>Nama Bayi</label>
+                <input type="text" id="birth-self-baby-name" placeholder="Nama si kecil">
+            </div>
+
+            <div class="birth-row">
+                <div class="birth-field">
+                    <label>Jenis Kelamin</label>
+                    <select id="birth-self-gender">
+                        <option value="">-- Pilih --</option>
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                </div>
+                <div class="birth-field">
+                    <label>Tanggal Persalinan</label>
+                    <input type="date" id="birth-self-date">
+                </div>
+            </div>
+
+            <div class="birth-field">
+                <label>Berat Badan</label>
+                <input type="text" id="birth-self-weight" placeholder="3.1 kg">
+            </div>
+
+            <div class="birth-actions">
+                <button class="cancel" id="birth-self-cancel">Batal</button>
+                <button class="submit" id="birth-self-submit">Simpan</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <a href="/patient-menu.html" class="nav-item">
@@ -436,6 +595,17 @@
         }
 
         const token = getToken();
+        let trackerData = null;
+
+        const birthSelfModal = document.getElementById('birth-self-modal');
+        const birthSelfCancel = document.getElementById('birth-self-cancel');
+        const birthSelfSubmit = document.getElementById('birth-self-submit');
+
+        birthSelfCancel.addEventListener('click', closeBirthSelfModal);
+        birthSelfModal.addEventListener('click', (e) => {
+            if (e.target === birthSelfModal) closeBirthSelfModal();
+        });
+        birthSelfSubmit.addEventListener('click', submitBirthSelfReport);
 
         // Load pregnancy data
         loadPregnancyData();
@@ -464,6 +634,7 @@
                 }
 
                 const data = result.data;
+                trackerData = data;
                 renderPregnancyTracker(data);
 
             } catch (error) {
@@ -479,6 +650,7 @@
 
         function renderPregnancyTracker(data) {
             const container = document.getElementById('main-content');
+            const showBirthSelfCard = data.daysUntilEdd <= 30;
 
             container.innerHTML = `
                 <!-- Week Counter Hero -->
@@ -522,6 +694,14 @@
                         </div>
                     </div>
                 </div>
+
+                ${showBirthSelfCard ? `
+                    <div class="birth-self-card">
+                        <h4><i class="fa fa-baby"></i> Sudah Melahirkan?</h4>
+                        <p>Jika persalinan sudah terjadi, konfirmasi di sini untuk membuat kartu ucapan kelahiran Anda.</p>
+                        <button class="birth-self-btn" id="pregnancy-birth-self-btn">Saya Sudah Melahirkan</button>
+                    </div>
+                ` : ''}
 
                 <!-- Weekly Tip -->
                 <div class="tip-card">
@@ -567,6 +747,81 @@
                     </a>
                 </div>
             `;
+
+            const birthSelfBtn = document.getElementById('pregnancy-birth-self-btn');
+            if (birthSelfBtn) {
+                birthSelfBtn.addEventListener('click', openBirthSelfModal);
+            }
+        }
+
+        function openBirthSelfModal() {
+            const dateInput = document.getElementById('birth-self-date');
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const defaultDate = `${today.getFullYear()}-${mm}-${dd}`;
+
+            document.getElementById('birth-self-baby-name').value = '';
+            document.getElementById('birth-self-gender').value = '';
+            document.getElementById('birth-self-weight').value = '';
+            dateInput.value = defaultDate;
+
+            // If EDD already passed, default to EDD date for convenience
+            if (trackerData && trackerData.daysUntilEdd === 0 && trackerData.edd) {
+                dateInput.value = trackerData.edd;
+            }
+
+            birthSelfModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBirthSelfModal() {
+            birthSelfModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        async function submitBirthSelfReport() {
+            const payload = {
+                baby_name: document.getElementById('birth-self-baby-name').value.trim(),
+                gender: document.getElementById('birth-self-gender').value,
+                birth_date: document.getElementById('birth-self-date').value,
+                birth_weight: document.getElementById('birth-self-weight').value.trim()
+            };
+
+            if (!payload.baby_name || !payload.gender || !payload.birth_date || !payload.birth_weight) {
+                alert('Mohon lengkapi nama bayi, tanggal persalinan, jenis kelamin, dan berat badan.');
+                return;
+            }
+
+            try {
+                birthSelfSubmit.disabled = true;
+                birthSelfSubmit.textContent = 'Menyimpan...';
+
+                const response = await fetch('/api/patient/birth-self-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!result.success) {
+                    alert(result.message || 'Gagal menyimpan data kelahiran');
+                    return;
+                }
+
+                closeBirthSelfModal();
+                alert('Data kelahiran tersimpan. Kartu ucapan sudah dibuat dan dapat dilihat di Beranda.');
+                window.location.href = '/patient-menu.html';
+            } catch (error) {
+                console.error('Birth self report error:', error);
+                alert('Terjadi kesalahan saat menyimpan data kelahiran.');
+            } finally {
+                birthSelfSubmit.disabled = false;
+                birthSelfSubmit.textContent = 'Simpan';
+            }
         }
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
