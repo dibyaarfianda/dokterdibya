@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260502f'; // 2026-05-02 - birth extra edit and inline upload button using R2 signed URL
+const CACHE_VERSION = '20260502g'; // 2026-05-02 - remove optional text from birth time/length labels
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
