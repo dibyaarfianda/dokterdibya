@@ -1798,6 +1798,10 @@
                             <label>Berat Badan (cth: 3.2 kg)</label>
                             <input type="text" id="popup-birth-weight" placeholder="3.2 kg">
                         </div>
+                        <div class="birth-popup-field">
+                            <label>Foto Bayi (opsional)</label>
+                            <input type="file" id="popup-birth-photo" accept="image/*">
+                        </div>
                         <div class="birth-popup-btn-row">
                             <button class="birth-popup-submit" onclick="submitBirthData()">Simpan & Tampilkan Kartu</button>
                             <button class="birth-popup-skip" onclick="skipBirthPopup()">Nanti</button>
@@ -2666,6 +2670,8 @@
             document.getElementById('popup-gender').value = '';
             document.getElementById('popup-birth-date').value = today.getFullYear() + '-' + mm + '-' + dd;
             document.getElementById('popup-birth-weight').value = '';
+            const photoInput = document.getElementById('popup-birth-photo');
+            if (photoInput) photoInput.value = '';
         }
 
         async function loadBirthData() {
@@ -2735,6 +2741,7 @@
         async function submitBirthData() {
             const entryId = document.getElementById('birth-entry-id').value;
             const token = getToken();
+            const photoFile = document.getElementById('popup-birth-photo')?.files?.[0] || null;
             const payload = {
                 baby_name: document.getElementById('popup-baby-name').value.trim() || null,
                 gender: document.getElementById('popup-gender').value || null,
@@ -2760,6 +2767,26 @@
                 });
                 const result = await resp.json();
                 if (result.success) {
+                    const createdBirthId = result?.data?.birth_id || null;
+                    const targetBirthId = entryId || createdBirthId;
+
+                    // Optional photo upload after main birth data is saved.
+                    if (photoFile && targetBirthId) {
+                        const formData = new FormData();
+                        formData.append('photo', photoFile);
+
+                        const uploadResp = await fetch('/api/patient/birth-photo/' + targetBirthId, {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + token },
+                            body: formData
+                        });
+
+                        const uploadJson = await uploadResp.json().catch(() => null);
+                        if (!uploadResp.ok || !uploadJson?.success) {
+                            alert('Data kelahiran tersimpan, tetapi upload foto gagal. Anda bisa upload lagi nanti.');
+                        }
+                    }
+
                     document.getElementById('birth-input-popup').style.display = 'none';
                     await loadBirthData();
                 } else {
@@ -2832,15 +2859,17 @@
             const photoContainer = document.getElementById('birth-photo-container');
             const photoImg = document.getElementById('birth-photo');
             if (data.photo_url) {
+                photoContainer.style.display = 'block';
                 photoImg.src = data.photo_url;
                 photoImg.onerror = function() {
-                    photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                    photoContainer.style.display = 'none';
                 };
+                photoContainer.style.border = `3px solid ${theme.accentLight}`;
+                photoContainer.style.boxShadow = `0 8px 25px ${theme.shadow}`;
             } else {
-                photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                photoContainer.style.display = 'none';
+                photoImg.removeAttribute('src');
             }
-            photoContainer.style.border = `3px solid ${theme.accentLight}`;
-            photoContainer.style.boxShadow = `0 8px 25px ${theme.shadow}`;
 
             const cardTitle = document.getElementById('birth-card-title');
             const cardIcon  = document.getElementById('birth-card-icon');
