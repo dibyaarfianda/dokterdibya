@@ -2207,7 +2207,7 @@ router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, r
 });
 
 // GET patient testimonials from birth cards (Staff only)
-router.get('/api/patients/birth-testimonials', verifyToken, async (req, res) => {
+router.get('/api/birth-testimonials', verifyToken, async (req, res) => {
     try {
         await ensureBirthTestimonialColumns();
 

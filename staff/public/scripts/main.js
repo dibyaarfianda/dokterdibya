@@ -2310,7 +2310,7 @@ async function loadBirthTestimonialsList() {
 
     try {
         const token = getAuthToken();
-        const response = await fetch('/api/patients/birth-testimonials', {
+        const response = await fetch('/api/birth-testimonials', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
