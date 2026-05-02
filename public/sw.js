@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260502c'; // 2026-05-02 - home shows pregnancy tracker card under welcome section
+const CACHE_VERSION = '20260502d'; // 2026-05-02 - merge birth action into home pregnancy tracker card
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
