@@ -1770,20 +1770,6 @@
                     <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
                 </div>
 
-                <div class="dashboard-card" id="birth-self-report-cta" style="display:none; margin-bottom: 20px; border: 1px solid rgba(236, 72, 153, 0.45); box-shadow: 0 0 10px rgba(236, 72, 153, 0.15);">
-                    <h3 class="collapsible-header" style="cursor: default;">
-                        <span><i class="fa fa-baby"></i> KELAHIRAN SI KECIL</span>
-                    </h3>
-                    <div style="padding: 14px 16px 16px 16px;">
-                        <p style="margin: 0 0 12px 0; color: #cfcfcf; font-size: 13px; line-height: 1.6;">
-                            Jika Anda sudah melahirkan, silakan isi data bayi untuk menampilkan kartu ucapan dari dr. Dibya.
-                        </p>
-                        <button onclick="startBirthSelfReport()" style="width: 100%; border: none; border-radius: 10px; padding: 11px 14px; background: linear-gradient(135deg, #ec4899, #f97316); color: #fff; font-weight: 600; cursor: pointer;">
-                            Saya Sudah Melahirkan
-                        </button>
-                    </div>
-                </div>
-
                 <!-- Birth Data Input Popup -->
                 <div class="birth-popup-overlay" id="birth-input-popup" style="display:none;">
                     <div class="birth-popup-box">
@@ -2211,7 +2197,9 @@
                             <div style="font-size: 13px; margin-bottom: 10px;">Data kehamilan belum tersedia.</div>
                             <a href="/pregnancy-tracker.html" style="display:inline-block; padding: 8px 12px; border-radius: 8px; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.35); color:#fff; text-decoration:none; font-size: 12px;">Buka Pregnancy Tracker</a>
                         </div>
+                        <div id="pregnancy-birth-action" style="margin-top: 12px;"></div>
                     `;
+                    renderPregnancyBirthAction();
                     return;
                 }
 
@@ -2234,7 +2222,9 @@
                     <div style="margin-top: 12px; text-align: center;">
                         <a href="/pregnancy-tracker.html" style="display:inline-block; padding: 9px 14px; border-radius: 8px; background: rgba(168,85,247,0.2); border: 1px solid rgba(168,85,247,0.4); color:#fff; text-decoration:none; font-size: 12px;">Lihat Detail Pregnancy Tracker</a>
                     </div>
+                    <div id="pregnancy-birth-action" style="margin-top: 12px;"></div>
                 `;
+                renderPregnancyBirthAction();
             } catch (error) {
                 console.error('Error loading pregnancy tracker home:', error);
                 container.innerHTML = `
@@ -2242,8 +2232,47 @@
                         <div style="font-size: 13px; margin-bottom: 10px;">Tidak dapat memuat tracker saat ini.</div>
                         <a href="/pregnancy-tracker.html" style="display:inline-block; padding: 8px 12px; border-radius: 8px; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.35); color:#fff; text-decoration:none; font-size: 12px;">Buka Pregnancy Tracker</a>
                     </div>
+                    <div id="pregnancy-birth-action" style="margin-top: 12px;"></div>
                 `;
+                renderPregnancyBirthAction();
             }
+        }
+
+        function renderPregnancyBirthAction() {
+            const slot = document.getElementById('pregnancy-birth-action');
+            if (!slot) return;
+
+            if (_birthFlowState === 'active') {
+                slot.innerHTML = `
+                    <div style="background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); border-radius: 10px; padding: 10px 12px; color: #d9ffe6; font-size: 12px; text-align: center;">
+                        <i class="fa fa-check-circle"></i> Kartu Kelahiran Si Kecil sudah aktif.
+                    </div>
+                `;
+                return;
+            }
+
+            if (_birthFlowState === 'pending') {
+                slot.innerHTML = `
+                    <div style="background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.35); border-radius: 10px; padding: 12px;">
+                        <p style="margin: 0 0 9px 0; color:#ffe7c7; font-size: 12px; text-align: center;">Lengkapi data kelahiran untuk menampilkan kartu ucapan.</p>
+                        <button id="pregnancy-birth-pending-btn" style="width:100%; border:none; border-radius:8px; padding:10px 12px; background: linear-gradient(135deg,#f59e0b,#f97316); color:#fff; font-weight:600; cursor:pointer;">Lengkapi Data Kelahiran</button>
+                    </div>
+                `;
+                const btn = document.getElementById('pregnancy-birth-pending-btn');
+                if (btn && _birthPendingEntry) {
+                    btn.addEventListener('click', function() { showBirthInputPopup(_birthPendingEntry); });
+                }
+                return;
+            }
+
+            slot.innerHTML = `
+                <div style="background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.35); border-radius: 10px; padding: 12px;">
+                    <p style="margin: 0 0 9px 0; color:#ffd8e8; font-size: 12px; text-align: center;">Kelahiran Si Kecil: jika sudah melahirkan, isi data bayi di sini.</p>
+                    <button id="pregnancy-birth-self-btn" style="width:100%; border:none; border-radius:8px; padding:10px 12px; background: linear-gradient(135deg,#ec4899,#f97316); color:#fff; font-weight:600; cursor:pointer;">Saya Sudah Melahirkan</button>
+                </div>
+            `;
+            const btn = document.getElementById('pregnancy-birth-self-btn');
+            if (btn) btn.addEventListener('click', startBirthSelfReport);
         }
 
         window.addEventListener('pageshow', function(event) {
@@ -2625,16 +2654,8 @@
 
         // ==================== BIRTH CONGRATULATIONS ====================
         let _birthCardId = null;
-
-        function showBirthSelfReportCta() {
-            const cta = document.getElementById('birth-self-report-cta');
-            if (cta) cta.style.display = 'block';
-        }
-
-        function hideBirthSelfReportCta() {
-            const cta = document.getElementById('birth-self-report-cta');
-            if (cta) cta.style.display = 'none';
-        }
+        let _birthFlowState = 'none'; // none | pending | active
+        let _birthPendingEntry = null;
 
         function setBirthPopupDefaults() {
             const today = new Date();
@@ -2650,7 +2671,6 @@
         async function loadBirthData() {
             const token = getToken();
             try {
-                hideBirthSelfReportCta();
                 // 1. Load published, non-dismissed birth card first.
                 // This ensures cards re-shown from Settings appear immediately.
                 const response = await fetch('/api/patients/birth-record?_t=' + Date.now(), {
@@ -2661,8 +2681,10 @@
                     if (result.success && result.birth) {
                         const data = result.birth;
                         _birthCardId = data.id;
+                        _birthFlowState = 'active';
+                        _birthPendingEntry = null;
                         renderBirthCard(data);
-                        hideBirthSelfReportCta();
+                        renderPregnancyBirthAction();
                         return;
                     }
                 }
@@ -2677,13 +2699,17 @@
                 if (pendingResp.ok) {
                     const pendingResult = await pendingResp.json();
                     if (pendingResult.success && pendingResult.pending) {
+                        _birthFlowState = 'pending';
+                        _birthPendingEntry = pendingResult.pending;
                         showBirthInputPopup(pendingResult.pending);
-                        hideBirthSelfReportCta();
+                        renderPregnancyBirthAction();
                         return;
                     }
                 }
 
-                showBirthSelfReportCta();
+                _birthFlowState = 'none';
+                _birthPendingEntry = null;
+                renderPregnancyBirthAction();
 
             } catch (error) {
                 console.error('Error loading birth congratulations:', error);
@@ -2735,7 +2761,6 @@
                 const result = await resp.json();
                 if (result.success) {
                     document.getElementById('birth-input-popup').style.display = 'none';
-                    hideBirthSelfReportCta();
                     await loadBirthData();
                 } else {
                     alert('Gagal menyimpan: ' + (result.message || 'Coba lagi'));
