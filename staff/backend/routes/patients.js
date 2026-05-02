@@ -1630,7 +1630,7 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
     try {
         const patientId = req.patient.id;
         const patientName = req.patient.full_name || req.patient.name || '';
-        const { baby_name, gender, birth_date, birth_weight } = req.body;
+        const { baby_name, gender, birth_date, birth_time, birth_weight, birth_length } = req.body;
 
         const normalizedBabyName = (baby_name || '').trim();
         const normalizedBirthWeight = (birth_weight || '').trim();
@@ -1660,16 +1660,18 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
 
         const [insertResult] = await db.query(
             `INSERT INTO birth_congratulations (
-                patient_id, child_number, baby_name, gender, birth_date, birth_weight,
+                patient_id, child_number, baby_name, gender, birth_date, birth_time, birth_weight, birth_length,
                 message, doctor_name, is_published, patient_data_submitted, patient_dismissed, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.', 1, 1, 0, NOW())`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.', 1, 1, 0, NOW())`,
             [
                 patientId,
                 nextChildNumber,
                 normalizedBabyName,
                 normalizedGender,
                 birth_date,
+                birth_time || null,
                 normalizedBirthWeight,
+                birth_length || null,
                 hardcodedMessage
             ]
         );
@@ -1747,6 +1749,37 @@ router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) 
     } catch (error) {
         console.error('Error saving patient birth data:', error);
         res.status(500).json({ success: false, message: 'Gagal menyimpan data kelahiran' });
+    }
+});
+
+// POST patient edits additional birth details after publish (time and length)
+router.post('/api/patient/birth-extra/:id', verifyPatientToken, async (req, res) => {
+    try {
+        const entryId = req.params.id;
+        const patientId = req.patient.id;
+        const { birth_time, birth_length } = req.body;
+
+        const [rows] = await db.query(
+            'SELECT id FROM birth_congratulations WHERE id = ? AND patient_id = ? LIMIT 1',
+            [entryId, patientId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ success: false, message: 'Data kelahiran tidak ditemukan' });
+        }
+
+        await db.query(
+            `UPDATE birth_congratulations
+             SET birth_time = COALESCE(?, birth_time),
+                 birth_length = COALESCE(?, birth_length)
+             WHERE id = ? AND patient_id = ?`,
+            [birth_time || null, birth_length || null, entryId, patientId]
+        );
+
+        res.json({ success: true, message: 'Keterangan tambahan berhasil disimpan' });
+    } catch (error) {
+        console.error('Error saving patient birth extra details:', error);
+        res.status(500).json({ success: false, message: 'Gagal menyimpan keterangan tambahan' });
     }
 });
 
