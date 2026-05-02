@@ -89,6 +89,7 @@ function initPages() {
     pages.estimasiBiaya = grab('estimasi-biaya-page');
     pages.financeAnalysis = grab('finance-analysis-page');
     pages.birthCongrats = grab('birth-congrats-page');
+    pages.birthTestimonials = grab('birth-testimonials-page');
     pages.kelolaRoles = grab('kelola-roles-page');
     pages.bookingSettings = grab('booking-settings-page');
     pages.birthClass = grab('birth-class-page');
@@ -2183,6 +2184,13 @@ function showBirthCongratsPage() {
     loadBirthCongratsList();
 }
 
+function showBirthTestimonialsPage() {
+    hideAllPages();
+    pages.birthTestimonials?.classList.remove('d-none');
+    setTitleAndActive('Testimoni Pasien', 'nav-birth-testimonials', 'birth-testimonials');
+    loadBirthTestimonialsList();
+}
+
 async function loadBirthCongratsList() {
     const container = document.getElementById('birth-congrats-list');
     if (!container) return;
@@ -2288,6 +2296,81 @@ async function loadBirthCongratsList() {
     } catch (error) {
         console.error('Error loading birth congratulations:', error);
         container.innerHTML = `<div class="alert alert-danger">Gagal memuat data: ${error.message}</div>`;
+    }
+}
+
+async function loadBirthTestimonialsList() {
+    const container = document.getElementById('birth-testimonials-list');
+    if (!container) return;
+
+    container.innerHTML = `<div class="text-center text-muted py-5">
+        <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+        <p>Memuat testimoni...</p>
+    </div>`;
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch('/api/patients/birth-testimonials', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch testimonials');
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'API error');
+
+        if (!Array.isArray(result.data) || result.data.length === 0) {
+            container.innerHTML = `<div class="text-center text-muted py-5">
+                <i class="fas fa-comment-slash fa-3x mb-3" style="opacity: 0.5;"></i>
+                <p>Belum ada testimoni pasien.</p>
+            </div>`;
+            return;
+        }
+
+        const cards = result.data.map((item) => {
+            const submittedAt = item.patient_testimonial_submitted_at
+                ? new Date(item.patient_testimonial_submitted_at).toLocaleString('id-ID', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                    timeZone: 'Asia/Jakarta'
+                }) + ' WIB'
+                : '-';
+
+            const birthDate = item.birth_date
+                ? new Date(item.birth_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                })
+                : '-';
+
+            const babyName = item.baby_name || 'Si Kecil';
+
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 border-info">
+                        <div class="card-header bg-info text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${item.patient_name || '-'}</strong>
+                                <span class="badge badge-light text-info">Anak ke-${item.child_number || '-'}</span>
+                            </div>
+                            <small>${babyName} • ${birthDate}</small>
+                        </div>
+                        <div class="card-body">
+                            ${item.photo_url ? `<div class="mb-3 text-center"><img src="${item.photo_url}" alt="Foto bayi" style="max-width:100%; max-height:140px; border-radius:10px; object-fit:cover;"></div>` : ''}
+                            <p class="mb-2" style="font-size: 13px; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(item.patient_testimonial || '')}</p>
+                            <div class="small text-muted">Dikirim: ${submittedAt}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = `<div class="row">${cards}</div>`;
+    } catch (error) {
+        console.error('Error loading birth testimonials:', error);
+        container.innerHTML = `<div class="alert alert-danger">Gagal memuat testimoni: ${error.message}</div>`;
     }
 }
 
@@ -3579,7 +3662,7 @@ async function applyMenuVisibility(user) {
         'keuangan': ['nav-invoice-history'],
         'kelola_roles': ['management-nav-kelola-roles'],
         'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
-        'ucapan_kelahiran': ['nav-birth-congrats']
+        'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials']
     };
 
     // Superadmin/dokter sees everything - show all hidden menus
@@ -3595,6 +3678,8 @@ async function applyMenuVisibility(user) {
         // Show birth congrats menu for dokter
         const birthCongratsNav = document.getElementById('nav-birth-congrats');
         if (birthCongratsNav) birthCongratsNav.classList.remove('d-none');
+        const birthTestimonialsNav = document.getElementById('nav-birth-testimonials');
+        if (birthTestimonialsNav) birthTestimonialsNav.classList.remove('d-none');
         return; // All menus visible
     }
 
@@ -4044,6 +4129,7 @@ function restoreLastPage() {
             'nav-staff-activity':                   () => showStaffActivityPage(),
             'finance-analysis-nav':                 () => showFinanceAnalysisPage(),
             'nav-birth-congrats':                   () => showBirthCongratsPage(),
+            'nav-birth-testimonials':               () => showBirthTestimonialsPage(),
             'nav-invoice-history':                  () => showInvoiceHistoryPage(),
             'nav-booking-settings':                 () => showBookingSettingsPage(),
             'nav-birth-class':                      () => showBirthClassPage(),
@@ -5285,6 +5371,8 @@ window.reloadEstimasiBiayaConfig = reloadEstimasiBiayaConfig;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showBirthCongratsPage = showBirthCongratsPage;
 window.loadBirthCongratsList = loadBirthCongratsList;
+window.showBirthTestimonialsPage = showBirthTestimonialsPage;
+window.loadBirthTestimonialsList = loadBirthTestimonialsList;
 window.showAddBirthCongratsModal = showAddBirthCongratsModal;
 window.saveBirthCongrats = saveBirthCongrats;
 window.editBirthCongrats = editBirthCongrats;
