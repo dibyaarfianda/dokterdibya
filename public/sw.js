@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260501h'; // 2026-05-01 - staff embed chat: full-height layout and moderator icon above input actions
+const CACHE_VERSION = '20260502a'; // 2026-05-02 - patient proactive birth self-report flow
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

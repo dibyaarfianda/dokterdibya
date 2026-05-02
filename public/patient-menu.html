@@ -1759,14 +1759,28 @@
                     <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
                 </div>
 
+                <div class="dashboard-card" id="birth-self-report-cta" style="display:none; margin-bottom: 20px; border: 1px solid rgba(236, 72, 153, 0.45); box-shadow: 0 0 10px rgba(236, 72, 153, 0.15);">
+                    <h3 class="collapsible-header" style="cursor: default;">
+                        <span><i class="fa fa-baby"></i> KELAHIRAN SI KECIL</span>
+                    </h3>
+                    <div style="padding: 14px 16px 16px 16px;">
+                        <p style="margin: 0 0 12px 0; color: #cfcfcf; font-size: 13px; line-height: 1.6;">
+                            Jika Anda sudah melahirkan, silakan isi data bayi untuk menampilkan kartu ucapan dari dr. Dibya.
+                        </p>
+                        <button onclick="startBirthSelfReport()" style="width: 100%; border: none; border-radius: 10px; padding: 11px 14px; background: linear-gradient(135deg, #ec4899, #f97316); color: #fff; font-weight: 600; cursor: pointer;">
+                            Saya Sudah Melahirkan
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Birth Data Input Popup -->
                 <div class="birth-popup-overlay" id="birth-input-popup" style="display:none;">
                     <div class="birth-popup-box">
-                        <h3>🍼 Si Kecil Telah Lahir!</h3>
-                        <p>dr. Dibya menandai bahwa Anda telah melahirkan. Isi data si kecil untuk menampilkan kartu ucapan dari dokter.</p>
+                        <h3 id="birth-popup-title">🍼 Si Kecil Telah Lahir!</h3>
+                        <p id="birth-popup-desc">Isi data si kecil untuk menampilkan kartu ucapan dari dokter.</p>
                         <input type="hidden" id="birth-entry-id">
                         <div class="birth-popup-field">
-                            <label>Nama Bayi (opsional)</label>
+                            <label>Nama Bayi</label>
                             <input type="text" id="popup-baby-name" placeholder="Nama si kecil">
                         </div>
                         <div class="birth-popup-row">
@@ -1779,23 +1793,13 @@
                                 </select>
                             </div>
                             <div class="birth-popup-field">
-                                <label>Tanggal Lahir</label>
+                                <label>Tanggal Persalinan</label>
                                 <input type="date" id="popup-birth-date">
                             </div>
                         </div>
-                        <div class="birth-popup-row">
-                            <div class="birth-popup-field">
-                                <label>Jam Lahir</label>
-                                <input type="time" id="popup-birth-time">
-                            </div>
-                            <div class="birth-popup-field">
-                                <label>Berat (cth: 3.2 kg)</label>
-                                <input type="text" id="popup-birth-weight" placeholder="3.2 kg">
-                            </div>
-                        </div>
                         <div class="birth-popup-field">
-                            <label>Panjang Badan (cth: 50 cm)</label>
-                            <input type="text" id="popup-birth-length" placeholder="50 cm">
+                            <label>Berat Badan (cth: 3.2 kg)</label>
+                            <input type="text" id="popup-birth-weight" placeholder="3.2 kg">
                         </div>
                         <div class="birth-popup-btn-row">
                             <button class="birth-popup-submit" onclick="submitBirthData()">Simpan & Tampilkan Kartu</button>
@@ -2555,9 +2559,31 @@
         // ==================== BIRTH CONGRATULATIONS ====================
         let _birthCardId = null;
 
+        function showBirthSelfReportCta() {
+            const cta = document.getElementById('birth-self-report-cta');
+            if (cta) cta.style.display = 'block';
+        }
+
+        function hideBirthSelfReportCta() {
+            const cta = document.getElementById('birth-self-report-cta');
+            if (cta) cta.style.display = 'none';
+        }
+
+        function setBirthPopupDefaults() {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+
+            document.getElementById('popup-baby-name').value = '';
+            document.getElementById('popup-gender').value = '';
+            document.getElementById('popup-birth-date').value = today.getFullYear() + '-' + mm + '-' + dd;
+            document.getElementById('popup-birth-weight').value = '';
+        }
+
         async function loadBirthData() {
             const token = getToken();
             try {
+                hideBirthSelfReportCta();
                 // 1. Load published, non-dismissed birth card first.
                 // This ensures cards re-shown from Settings appear immediately.
                 const response = await fetch('/api/patients/birth-record?_t=' + Date.now(), {
@@ -2569,9 +2595,13 @@
                         const data = result.birth;
                         _birthCardId = data.id;
                         renderBirthCard(data);
+                        hideBirthSelfReportCta();
                         return;
                     }
                 }
+
+                const card = document.getElementById('birth-congrats-card');
+                if (card) card.style.display = 'none';
 
                 // 2. If there is no active card, then show pending input popup (if any).
                 const pendingResp = await fetch('/api/patient/birth-pending?_t=' + Date.now(), {
@@ -2581,39 +2611,56 @@
                     const pendingResult = await pendingResp.json();
                     if (pendingResult.success && pendingResult.pending) {
                         showBirthInputPopup(pendingResult.pending);
+                        hideBirthSelfReportCta();
+                        return;
                     }
                 }
+
+                showBirthSelfReportCta();
 
             } catch (error) {
                 console.error('Error loading birth congratulations:', error);
             }
         }
 
+        function startBirthSelfReport() {
+            document.getElementById('birth-entry-id').value = '';
+            document.getElementById('birth-popup-title').textContent = '🍼 Selamat atas Kelahiran Si Kecil!';
+            document.getElementById('birth-popup-desc').textContent = 'Silakan isi data bayi untuk menampilkan kartu ucapan dari dr. Dibya.';
+            setBirthPopupDefaults();
+            document.getElementById('birth-input-popup').style.display = 'flex';
+        }
+
         function showBirthInputPopup(pending) {
             document.getElementById('birth-entry-id').value = pending.id;
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2,'0');
-            const mm = String(today.getMonth()+1).padStart(2,'0');
-            document.getElementById('popup-birth-date').value = today.getFullYear()+'-'+mm+'-'+dd;
+            document.getElementById('birth-popup-title').textContent = '🍼 Si Kecil Telah Lahir!';
+            document.getElementById('birth-popup-desc').textContent = 'dr. Dibya menandai bahwa Anda telah melahirkan. Isi data si kecil untuk menampilkan kartu ucapan dari dokter.';
+            setBirthPopupDefaults();
             document.getElementById('birth-input-popup').style.display = 'flex';
         }
 
         async function submitBirthData() {
             const entryId = document.getElementById('birth-entry-id').value;
-            if (!entryId) return;
             const token = getToken();
             const payload = {
                 baby_name: document.getElementById('popup-baby-name').value.trim() || null,
                 gender: document.getElementById('popup-gender').value || null,
                 birth_date: document.getElementById('popup-birth-date').value || null,
-                birth_time: document.getElementById('popup-birth-time').value || null,
                 birth_weight: document.getElementById('popup-birth-weight').value.trim() || null,
-                birth_length: document.getElementById('popup-birth-length').value.trim() || null,
             };
+
+            if (!payload.baby_name || !payload.gender || !payload.birth_date || !payload.birth_weight) {
+                alert('Mohon lengkapi nama bayi, tanggal persalinan, jenis kelamin, dan berat badan.');
+                return;
+            }
+
             const submitBtn = document.querySelector('.birth-popup-submit');
             try {
                 if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...'; }
-                const resp = await fetch('/api/patient/birth-data/' + entryId, {
+                const endpoint = entryId
+                    ? '/api/patient/birth-data/' + entryId
+                    : '/api/patient/birth-self-report';
+                const resp = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -2621,6 +2668,7 @@
                 const result = await resp.json();
                 if (result.success) {
                     document.getElementById('birth-input-popup').style.display = 'none';
+                    hideBirthSelfReportCta();
                     await loadBirthData();
                 } else {
                     alert('Gagal menyimpan: ' + (result.message || 'Coba lagi'));

@@ -1625,6 +1625,66 @@ router.get('/api/patients/medications', verifyPatientToken, async (req, res) => 
 
 // ==================== BIRTH CONGRATULATIONS ====================
 
+// POST patient proactively reports childbirth (no staff pre-mark required)
+router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient.id;
+        const patientName = req.patient.full_name || req.patient.name || '';
+        const { baby_name, gender, birth_date, birth_weight } = req.body;
+
+        const normalizedBabyName = (baby_name || '').trim();
+        const normalizedBirthWeight = (birth_weight || '').trim();
+
+        if (!normalizedBabyName || !birth_date || !gender || !normalizedBirthWeight) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nama bayi, tanggal persalinan, jenis kelamin, dan berat badan wajib diisi'
+            });
+        }
+
+        let normalizedGender = null;
+        if (gender === 'Laki-laki' || gender === 'male') normalizedGender = 'male';
+        if (gender === 'Perempuan' || gender === 'female') normalizedGender = 'female';
+
+        if (!normalizedGender) {
+            return res.status(400).json({ success: false, message: 'Jenis kelamin tidak valid' });
+        }
+
+        const [existingBirths] = await db.query(
+            'SELECT MAX(child_number) as max_child FROM birth_congratulations WHERE patient_id = ?',
+            [patientId]
+        );
+        const nextChildNumber = (existingBirths[0].max_child || 0) + 1;
+
+        const hardcodedMessage = `Selamat atas kelahiran buah hati Ibu ${patientName} dan suami. Turut berbahagia melihat proses persalinan berjalan lancar dan si kecil lahir ke dunia dengan sehat. Terima kasih telah mempercayakan perjalanan kehamilan dan persalinan Ibu kepada saya dan tim. Semoga Ibu lekas pulih dan selamat menikmati momen bersama si kecil dan keluarga.`;
+
+        await db.query(
+            `INSERT INTO birth_congratulations (
+                patient_id, child_number, baby_name, gender, birth_date, birth_weight,
+                message, doctor_name, is_published, patient_data_submitted, patient_dismissed, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.', 1, 1, 0, NOW())`,
+            [
+                patientId,
+                nextChildNumber,
+                normalizedBabyName,
+                normalizedGender,
+                birth_date,
+                normalizedBirthWeight,
+                hardcodedMessage
+            ]
+        );
+
+        res.json({
+            success: true,
+            message: 'Data kelahiran berhasil disimpan',
+            data: { child_number: nextChildNumber }
+        });
+    } catch (error) {
+        console.error('Error saving proactive patient birth data:', error);
+        res.status(500).json({ success: false, message: 'Gagal menyimpan data kelahiran' });
+    }
+});
+
 // GET pending birth entry (patient needs to fill data)
 router.get('/api/patient/birth-pending', verifyPatientToken, async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
