@@ -1658,7 +1658,7 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
 
         const hardcodedMessage = `Selamat atas kelahiran buah hati Ibu ${patientName} dan suami. Turut berbahagia melihat proses persalinan berjalan lancar dan si kecil lahir ke dunia dengan sehat. Terima kasih telah mempercayakan perjalanan kehamilan dan persalinan Ibu kepada saya dan tim. Semoga Ibu lekas pulih dan selamat menikmati momen bersama si kecil dan keluarga.`;
 
-        await db.query(
+        const [insertResult] = await db.query(
             `INSERT INTO birth_congratulations (
                 patient_id, child_number, baby_name, gender, birth_date, birth_weight,
                 message, doctor_name, is_published, patient_data_submitted, patient_dismissed, created_at
@@ -1677,7 +1677,10 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
         res.json({
             success: true,
             message: 'Data kelahiran berhasil disimpan',
-            data: { child_number: nextChildNumber }
+            data: {
+                child_number: nextChildNumber,
+                birth_id: insertResult.insertId || null
+            }
         });
     } catch (error) {
         console.error('Error saving proactive patient birth data:', error);
@@ -1956,6 +1959,79 @@ router.post('/api/patients/:patientId/birth-congratulations/photo', verifyToken,
         });
     } catch (error) {
         console.error('Error uploading birth photo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload photo',
+            error: error.message
+        });
+    }
+});
+
+// Upload birth photo (Patient self upload)
+router.post('/api/patient/birth-photo/:id', verifyPatientToken, birthPhotoUpload.single('photo'), async (req, res) => {
+    try {
+        const birthId = req.params.id;
+        const patientId = req.patient.id;
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No photo uploaded' });
+        }
+
+        const [rows] = await db.query(
+            'SELECT id, photo_r2_key FROM birth_congratulations WHERE id = ? AND patient_id = ? LIMIT 1',
+            [birthId, patientId]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ success: false, message: 'Data kelahiran tidak ditemukan' });
+        }
+
+        // Resize image to max 1024px (width or height)
+        const resizedBuffer = await sharp(req.file.buffer)
+            .resize(1024, 1024, {
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+        // Upload to R2
+        const dateFolder = new Date().toLocaleDateString('en-GB').replace(/\//g, '');
+        const filename = `${patientId}_birth_${Date.now()}.jpg`;
+        const folder = `birth-photos/${dateFolder}`;
+
+        const uploadResult = await r2Storage.uploadFile(
+            resizedBuffer,
+            filename,
+            'image/jpeg',
+            folder
+        );
+
+        // Best effort cleanup old key if exists
+        const oldKey = rows[0].photo_r2_key;
+        if (oldKey) {
+            try {
+                await r2Storage.deleteFile(oldKey);
+            } catch (deleteError) {
+                console.error('Error deleting old birth photo from R2:', deleteError);
+            }
+        }
+
+        // Get signed URL for the photo (7 days)
+        const signedUrl = await r2Storage.getSignedDownloadUrl(uploadResult.key, 604800);
+
+        await db.query(
+            'UPDATE birth_congratulations SET photo_url = ?, photo_r2_key = ? WHERE id = ? AND patient_id = ?',
+            [signedUrl, uploadResult.key, birthId, patientId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Photo uploaded successfully',
+            photo_url: signedUrl
+        });
+    } catch (error) {
+        console.error('Error uploading patient birth photo:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to upload photo',
