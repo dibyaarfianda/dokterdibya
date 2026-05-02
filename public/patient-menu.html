@@ -1759,6 +1759,16 @@
                                 </div>
                                 <p class="birth-message" id="birth-message"></p>
                             </div>
+
+                            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+                                <button type="button" onclick="openBirthExtraEdit()" style="border:none; border-radius:8px; padding:9px 12px; background:rgba(168,85,247,0.2); border:1px solid rgba(168,85,247,0.4); color:#fff; font-size:12px; cursor:pointer;">
+                                    Edit Keterangan Tambahan
+                                </button>
+                                <button type="button" onclick="triggerBirthPhotoUpload()" style="border:none; border-radius:8px; padding:9px 12px; background:rgba(34,197,94,0.2); border:1px solid rgba(34,197,94,0.4); color:#fff; font-size:12px; cursor:pointer;">
+                                    Upload Foto
+                                </button>
+                                <input type="file" id="birth-photo-upload-inline" accept="image/*" style="display:none;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1797,6 +1807,16 @@
                         <div class="birth-popup-field">
                             <label>Berat Badan (cth: 3.2 kg)</label>
                             <input type="text" id="popup-birth-weight" placeholder="3.2 kg">
+                        </div>
+                        <div class="birth-popup-row">
+                            <div class="birth-popup-field">
+                                <label>Jam Lahir (opsional)</label>
+                                <input type="time" id="popup-birth-time">
+                            </div>
+                            <div class="birth-popup-field">
+                                <label>Panjang Bayi (opsional)</label>
+                                <input type="text" id="popup-birth-length" placeholder="50 cm">
+                            </div>
                         </div>
                         <div class="birth-popup-field">
                             <label>Foto Bayi (opsional)</label>
@@ -2244,9 +2264,11 @@
 
         function renderPregnancyBirthAction() {
             const slot = document.getElementById('pregnancy-birth-action');
+            const trackerCard = document.getElementById('pregnancy-tracker-home-card');
             if (!slot) return;
 
             if (_birthFlowState === 'active') {
+                if (trackerCard) trackerCard.style.display = 'none';
                 slot.innerHTML = `
                     <div style="background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.35); border-radius: 10px; padding: 10px 12px; color: #d9ffe6; font-size: 12px; text-align: center;">
                         <i class="fa fa-check-circle"></i> Kartu Kelahiran Si Kecil sudah aktif.
@@ -2254,6 +2276,8 @@
                 `;
                 return;
             }
+
+            if (trackerCard) trackerCard.style.display = 'block';
 
             if (_birthFlowState === 'pending') {
                 slot.innerHTML = `
@@ -2660,6 +2684,8 @@
         let _birthCardId = null;
         let _birthFlowState = 'none'; // none | pending | active
         let _birthPendingEntry = null;
+        let _birthPopupMode = 'create'; // create | edit-extra
+        let _currentBirthData = null;
 
         function setBirthPopupDefaults() {
             const today = new Date();
@@ -2670,6 +2696,8 @@
             document.getElementById('popup-gender').value = '';
             document.getElementById('popup-birth-date').value = today.getFullYear() + '-' + mm + '-' + dd;
             document.getElementById('popup-birth-weight').value = '';
+            document.getElementById('popup-birth-time').value = '';
+            document.getElementById('popup-birth-length').value = '';
             const photoInput = document.getElementById('popup-birth-photo');
             if (photoInput) photoInput.value = '';
         }
@@ -2687,6 +2715,7 @@
                     if (result.success && result.birth) {
                         const data = result.birth;
                         _birthCardId = data.id;
+                        _currentBirthData = data;
                         _birthFlowState = 'active';
                         _birthPendingEntry = null;
                         renderBirthCard(data);
@@ -2715,6 +2744,7 @@
 
                 _birthFlowState = 'none';
                 _birthPendingEntry = null;
+                _currentBirthData = null;
                 renderPregnancyBirthAction();
 
             } catch (error) {
@@ -2723,6 +2753,7 @@
         }
 
         function startBirthSelfReport() {
+            _birthPopupMode = 'create';
             document.getElementById('birth-entry-id').value = '';
             document.getElementById('birth-popup-title').textContent = '🍼 Selamat atas Kelahiran Si Kecil!';
             document.getElementById('birth-popup-desc').textContent = 'Silakan isi data bayi untuk menampilkan kartu ucapan dari dr. Dibya.';
@@ -2731,10 +2762,35 @@
         }
 
         function showBirthInputPopup(pending) {
+            _birthPopupMode = 'create';
             document.getElementById('birth-entry-id').value = pending.id;
             document.getElementById('birth-popup-title').textContent = '🍼 Si Kecil Telah Lahir!';
             document.getElementById('birth-popup-desc').textContent = 'dr. Dibya menandai bahwa Anda telah melahirkan. Isi data si kecil untuk menampilkan kartu ucapan dari dokter.';
             setBirthPopupDefaults();
+            document.getElementById('birth-input-popup').style.display = 'flex';
+        }
+
+        function openBirthExtraEdit() {
+            if (!_birthCardId || !_currentBirthData) {
+                alert('Data kelahiran belum tersedia.');
+                return;
+            }
+
+            _birthPopupMode = 'edit-extra';
+            document.getElementById('birth-entry-id').value = _birthCardId;
+            document.getElementById('birth-popup-title').textContent = '📝 Edit Keterangan Tambahan';
+            document.getElementById('birth-popup-desc').textContent = 'Perbarui jam lahir dan panjang bayi.';
+
+            document.getElementById('popup-baby-name').value = _currentBirthData.baby_name || '';
+            document.getElementById('popup-gender').value = (_currentBirthData.gender === 'male') ? 'Laki-laki' : ((_currentBirthData.gender === 'female') ? 'Perempuan' : '');
+            document.getElementById('popup-birth-date').value = _currentBirthData.birth_date || '';
+            document.getElementById('popup-birth-weight').value = (_currentBirthData.weight || _currentBirthData.birth_weight || '') || '';
+            document.getElementById('popup-birth-time').value = _currentBirthData.birth_time || '';
+            document.getElementById('popup-birth-length').value = (_currentBirthData.length || _currentBirthData.birth_length || '') || '';
+
+            const photoInput = document.getElementById('popup-birth-photo');
+            if (photoInput) photoInput.value = '';
+
             document.getElementById('birth-input-popup').style.display = 'flex';
         }
 
@@ -2747,19 +2803,31 @@
                 gender: document.getElementById('popup-gender').value || null,
                 birth_date: document.getElementById('popup-birth-date').value || null,
                 birth_weight: document.getElementById('popup-birth-weight').value.trim() || null,
+                birth_time: document.getElementById('popup-birth-time').value || null,
+                birth_length: document.getElementById('popup-birth-length').value.trim() || null,
             };
 
-            if (!payload.baby_name || !payload.gender || !payload.birth_date || !payload.birth_weight) {
+            if (_birthPopupMode !== 'edit-extra' && (!payload.baby_name || !payload.gender || !payload.birth_date || !payload.birth_weight)) {
                 alert('Mohon lengkapi nama bayi, tanggal persalinan, jenis kelamin, dan berat badan.');
+                return;
+            }
+
+            if (_birthPopupMode === 'edit-extra' && !entryId) {
+                alert('Data kelahiran tidak ditemukan untuk diedit.');
                 return;
             }
 
             const submitBtn = document.querySelector('.birth-popup-submit');
             try {
                 if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Menyimpan...'; }
-                const endpoint = entryId
-                    ? '/api/patient/birth-data/' + entryId
-                    : '/api/patient/birth-self-report';
+                let endpoint = '';
+                if (_birthPopupMode === 'edit-extra') {
+                    endpoint = '/api/patient/birth-extra/' + entryId;
+                } else {
+                    endpoint = entryId
+                        ? '/api/patient/birth-data/' + entryId
+                        : '/api/patient/birth-self-report';
+                }
                 const resp = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -2771,7 +2839,7 @@
                     const targetBirthId = entryId || createdBirthId;
 
                     // Optional photo upload after main birth data is saved.
-                    if (photoFile && targetBirthId) {
+                    if (photoFile && targetBirthId && _birthPopupMode !== 'edit-extra') {
                         const formData = new FormData();
                         formData.append('photo', photoFile);
 
@@ -2824,6 +2892,7 @@
         function renderBirthCard(data) {
             const card = document.getElementById('birth-congrats-card');
             if (!card) return;
+            _currentBirthData = data;
 
             document.getElementById('birth-baby-name').textContent = data.baby_name || 'Si Kecil';
             document.getElementById('birth-congrats-doctor').textContent = 'Dari dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
@@ -2896,6 +2965,58 @@
             });
 
             card.style.display = 'block';
+        }
+
+        function triggerBirthPhotoUpload() {
+            const input = document.getElementById('birth-photo-upload-inline');
+            if (!input) return;
+            input.value = '';
+            input.click();
+        }
+
+        async function uploadBirthPhotoInline() {
+            const token = getToken();
+            const input = document.getElementById('birth-photo-upload-inline');
+            const file = input?.files?.[0];
+            if (!file) return;
+            if (!_birthCardId) {
+                alert('Data kelahiran belum tersedia.');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('photo', file);
+
+                const response = await fetch('/api/patient/birth-photo/' + _birthCardId, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                const result = await response.json().catch(() => null);
+                if (!response.ok || !result?.success) {
+                    alert(result?.message || 'Upload foto gagal.');
+                    return;
+                }
+
+                const photoContainer = document.getElementById('birth-photo-container');
+                const photoImg = document.getElementById('birth-photo');
+                if (result.photo_url && photoContainer && photoImg) {
+                    photoImg.src = result.photo_url;
+                    photoContainer.style.display = 'block';
+                }
+
+                await loadBirthData();
+            } catch (error) {
+                console.error('uploadBirthPhotoInline error:', error);
+                alert('Terjadi kesalahan saat upload foto.');
+            }
+        }
+
+        const birthPhotoInlineInput = document.getElementById('birth-photo-upload-inline');
+        if (birthPhotoInlineInput) {
+            birthPhotoInlineInput.addEventListener('change', uploadBirthPhotoInline);
         }
 
         // Birth Photo Modal Functions
