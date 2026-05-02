@@ -1690,6 +1690,17 @@
                     </div>
                 </div>
 
+                <div class="dashboard-card pregnancy-tracker-card" id="pregnancy-tracker-home-card" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header" style="cursor: default;">
+                        <span><i class="fa fa-heartbeat"></i> Pregnancy Tracker</span>
+                    </h3>
+                    <div class="tracker-content" id="pregnancy-tracker-home-content" style="padding: 12px;">
+                        <div style="text-align:center; color: rgba(255,255,255,0.7); padding: 14px;">
+                            <i class="fa fa-spinner fa-spin"></i> Memuat data kehamilan...
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Birth Congratulations Card - Hidden by default, matching patient-dashboard.html -->
                 <div class="dashboard-card birth-congrats-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px; position: relative;">
                     <!-- Close Button -->
@@ -2157,6 +2168,7 @@
             // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
             loadBirthData();
+            loadPregnancyTrackerHome();
             // loadGreetingCard(); // Hidden - Hari Raya greeting period ended
 
             // Show download banner only on web browser (not Capacitor)
@@ -2177,6 +2189,61 @@
             if (now - _lastBirthRefreshAt < 1200) return;
             _lastBirthRefreshAt = now;
             loadBirthData();
+        }
+
+        async function loadPregnancyTrackerHome() {
+            const token = getToken();
+            const container = document.getElementById('pregnancy-tracker-home-content');
+            if (!container) return;
+
+            try {
+                const response = await fetch('/api/patients/pregnancy-tracker?_t=' + Date.now(), {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                const result = await response.json();
+                if (!result.success || !result.data) {
+                    container.innerHTML = `
+                        <div style="text-align:center; color: rgba(255,255,255,0.75); padding: 12px;">
+                            <div style="font-size: 13px; margin-bottom: 10px;">Data kehamilan belum tersedia.</div>
+                            <a href="/pregnancy-tracker.html" style="display:inline-block; padding: 8px 12px; border-radius: 8px; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.35); color:#fff; text-decoration:none; font-size: 12px;">Buka Pregnancy Tracker</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const data = result.data;
+                container.innerHTML = `
+                    <div class="tracker-week">
+                        <div class="week-number">${data.weeksPregnant || 0}</div>
+                        <div class="week-label">minggu ${data.daysExtra || 0} hari</div>
+                    </div>
+                    <div class="tracker-info">
+                        <div class="tracker-info-item">
+                            <div class="label">HPL</div>
+                            <div class="value">${data.eddFormatted || '-'}</div>
+                        </div>
+                        <div class="tracker-info-item">
+                            <div class="label">Countdown</div>
+                            <div class="value">${typeof data.daysUntilEdd === 'number' ? data.daysUntilEdd : '-'} hari</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px; text-align: center;">
+                        <a href="/pregnancy-tracker.html" style="display:inline-block; padding: 9px 14px; border-radius: 8px; background: rgba(168,85,247,0.2); border: 1px solid rgba(168,85,247,0.4); color:#fff; text-decoration:none; font-size: 12px;">Lihat Detail Pregnancy Tracker</a>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading pregnancy tracker home:', error);
+                container.innerHTML = `
+                    <div style="text-align:center; color: rgba(255,255,255,0.75); padding: 12px;">
+                        <div style="font-size: 13px; margin-bottom: 10px;">Tidak dapat memuat tracker saat ini.</div>
+                        <a href="/pregnancy-tracker.html" style="display:inline-block; padding: 8px 12px; border-radius: 8px; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.35); color:#fff; text-decoration:none; font-size: 12px;">Buka Pregnancy Tracker</a>
+                    </div>
+                `;
+            }
         }
 
         window.addEventListener('pageshow', function(event) {
