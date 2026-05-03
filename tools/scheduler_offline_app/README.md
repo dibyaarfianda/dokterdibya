@@ -17,6 +17,7 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
   - `M -> P` next day
   - At least one `M-L-L` per staff
   - Distribusi libur dan malam per rank
+  - Cek monotonic libur (rank atas tidak boleh kurang libur dari rank bawah)
 - Policy warna:
   - Kuning untuk back duty (rank tertentu)
   - Polos/no-fill untuk front duty
@@ -57,3 +58,4 @@ cd .\tools\scheduler_offline_app
 - Jika coverage awal di file input tidak sesuai (`P/S/M/L`), engine akan rebuild assignment harian lalu optimasi.
 - Untuk workflow aman, simpan output ke file baru (jangan overwrite file sumber).
 - Report export folder bisa dipilih terpisah; jika kosong, report disimpan di folder file output.
+- Target libur otomatis disesuaikan dengan jumlah hari aktif (misalnya 27 hari vs 30 hari) agar total libur tetap konsisten tanpa melanggar hirarki rank.

@@ -155,6 +155,22 @@ class OfflineSchedulerEngine:
             if not mll:
                 mll_missing.append(s.name)
 
+        off_monotonic_bad = []
+        for i in range(len(off_by_rank) - 1):
+            a = off_by_rank[i]
+            b = off_by_rank[i + 1]
+            if a["L"] < b["L"]:
+                off_monotonic_bad.append(
+                    {
+                        "higher_rank": a["rank"],
+                        "higher_name": a["name"],
+                        "higher_off": a["L"],
+                        "lower_rank": b["rank"],
+                        "lower_name": b["name"],
+                        "lower_off": b["L"],
+                    }
+                )
+
         color_errors = []
         if config.assign_colors:
             for day in active_days:
@@ -197,10 +213,12 @@ class OfflineSchedulerEngine:
             "group_together_bad_count": len(group_together_bad),
             "m_to_p_count": len(m_to_p_pairs),
             "mll_missing_count": len(mll_missing),
+            "off_monotonic_bad_count": len(off_monotonic_bad),
             "color_errors_count": len(color_errors),
             "off_by_rank": off_by_rank,
             "m_by_rank": m_by_rank,
             "coverage_bad_preview": coverage_bad[:5],
+            "off_monotonic_bad_preview": off_monotonic_bad[:5],
             "color_errors_preview": color_errors[:5],
         }
 
@@ -270,8 +288,14 @@ class OfflineSchedulerEngine:
             ):
                 self._randomize_day(schedule, core_names, d, config)
 
-        off_targets = self._resolve_off_targets(config, core_staff)
         uniform_group = self._resolve_uniform_group(config, core_staff)
+        total_off_required = expected_l * len(active_days)
+        off_targets = self._resolve_off_targets(
+            config,
+            core_staff,
+            total_off_required=total_off_required,
+            uniform_group=uniform_group,
+        )
 
         # Simulated annealing with same-day swaps.
         current = copy.deepcopy(schedule)
@@ -458,21 +482,110 @@ class OfflineSchedulerEngine:
         self,
         config: SchedulerConfig,
         core_staff: List[StaffMember],
+        total_off_required: int,
+        uniform_group: List[int],
     ) -> Dict[str, int]:
-        if config.off_targets_by_rank and len(config.off_targets_by_rank) >= len(core_staff):
-            return {
-                s.name: int(config.off_targets_by_rank[s.no - 1])
-                for s in core_staff
-                if s.no - 1 < len(config.off_targets_by_rank)
-            }
+        ordered_staff = sorted(core_staff, key=lambda s: s.no)
 
-        # Default profile used in the recent schedule iterations.
-        default_14 = [12, 12, 11, 11, 10, 10, 9, 9, 9, 9, 9, 8, 8, 8]
-        values = default_14[: len(core_staff)]
-        if len(values) < len(core_staff):
-            values += [values[-1]] * (len(core_staff) - len(values))
+        if config.off_targets_by_rank and len(config.off_targets_by_rank) >= len(ordered_staff):
+            base_values = []
+            for s in ordered_staff:
+                idx = s.no - 1
+                if 0 <= idx < len(config.off_targets_by_rank):
+                    base_values.append(int(config.off_targets_by_rank[idx]))
+                else:
+                    base_values.append(int(config.off_targets_by_rank[-1]))
+        else:
+            # Default profile used in the recent schedule iterations for 27 active days.
+            default_14 = [12, 12, 11, 11, 10, 10, 9, 9, 9, 9, 9, 8, 8, 8]
+            base_values = []
+            for s in ordered_staff:
+                idx = s.no - 1
+                if 0 <= idx < len(default_14):
+                    base_values.append(int(default_14[idx]))
+                else:
+                    base_values.append(int(default_14[-1]))
 
-        return {s.name: int(values[s.no - 1]) for s in core_staff if s.no - 1 < len(values)}
+        adjusted_values = self._rebalance_off_targets(
+            ordered_staff=ordered_staff,
+            base_values=base_values,
+            total_off_required=total_off_required,
+            uniform_group=uniform_group,
+        )
+
+        return {staff.name: adjusted_values[i] for i, staff in enumerate(ordered_staff)}
+
+    def _rebalance_off_targets(
+        self,
+        ordered_staff: List[StaffMember],
+        base_values: List[int],
+        total_off_required: int,
+        uniform_group: List[int],
+    ) -> List[int]:
+        targets = [max(0, int(v)) for v in base_values]
+        if not targets:
+            return targets
+
+        group_set = set(uniform_group)
+        non_group_indices = [i for i, s in enumerate(ordered_staff) if s.no not in group_set]
+        group_indices = [i for i, s in enumerate(ordered_staff) if s.no in group_set]
+
+        diff = int(total_off_required - sum(targets))
+
+        # Add extra off-days by prioritizing higher ranks outside the uniform group.
+        if diff > 0:
+            priority = non_group_indices if non_group_indices else list(range(len(targets)))
+            cursor = 0
+            while diff > 0 and priority:
+                idx = priority[cursor % len(priority)]
+                targets[idx] += 1
+                diff -= 1
+                cursor += 1
+
+        # Remove off-days from lower ranks first outside the uniform group.
+        elif diff < 0:
+            need = -diff
+            priority = list(reversed(non_group_indices)) if non_group_indices else list(reversed(range(len(targets))))
+            cursor = 0
+            guard = 0
+            while need > 0 and priority and guard < 200000:
+                idx = priority[cursor % len(priority)]
+                if targets[idx] > 0:
+                    targets[idx] -= 1
+                    need -= 1
+                cursor += 1
+                guard += 1
+
+            # If still needed and uniform group exists, reduce them evenly.
+            while need > 0 and group_indices and all(targets[idx] > 0 for idx in group_indices):
+                for idx in group_indices:
+                    if need <= 0:
+                        break
+                    targets[idx] -= 1
+                    need -= 1
+
+        # Ensure group equality by aligning all group ranks to the minimum in group.
+        if group_indices:
+            group_min = min(targets[idx] for idx in group_indices)
+            for idx in group_indices:
+                targets[idx] = group_min
+
+        # Enforce monotonic seniority: higher rank index should not have fewer off-days.
+        for i in range(1, len(targets)):
+            if targets[i - 1] < targets[i]:
+                targets[i] = targets[i - 1]
+
+        # Re-add any remaining required total (from clamping) to top ranks.
+        remain = int(total_off_required - sum(targets))
+        add_priority = non_group_indices if non_group_indices else list(range(len(targets)))
+        cursor = 0
+        while remain > 0 and add_priority:
+            idx = add_priority[cursor % len(add_priority)]
+            targets[idx] += 1
+            remain -= 1
+            cursor += 1
+
+        return targets
 
     def _resolve_uniform_group(
         self,
@@ -580,8 +693,8 @@ class OfflineSchedulerEngine:
                 if off[a] < off[b]:
                     off_mono_bad += 1
                     off_mono_mag += off[b] - off[a]
-            penalties += off_mono_bad * 70000
-            penalties += off_mono_mag * 10000
+            penalties += off_mono_bad * 260000
+            penalties += off_mono_mag * 40000
 
         if config.enforce_night_monotonic:
             night_mono_bad = 0
@@ -600,7 +713,7 @@ class OfflineSchedulerEngine:
         if config.enforce_uniform_group_off and uniform_group:
             group_off = [off[name_by_no[r]] for r in uniform_group if r in name_by_no]
             if group_off:
-                penalties += (max(group_off) - min(group_off)) * 130000
+                penalties += (max(group_off) - min(group_off)) * 240000
 
         if config.enforce_uniform_group_night and uniform_group:
             group_night = [nights[name_by_no[r]] for r in uniform_group if r in name_by_no]
