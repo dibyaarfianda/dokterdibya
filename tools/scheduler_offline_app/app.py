@@ -24,6 +24,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "header_subtitle": "Tema visual Staff Panel dokterDIBYA",
         "header_badge": "STAFF PANEL STYLE",
         "footer_developed_by": "Developed by dokterDIBYA",
+        "status_badge_idle": "SIAP",
+        "status_badge_preparing": "MENYIAPKAN",
+        "status_badge_optimizing": "OPTIMASI",
+        "status_badge_saving": "MENYIMPAN",
+        "status_badge_done": "SELESAI",
+        "status_badge_error": "ERROR",
         "frame_files": "Berkas",
         "frame_config": "Konfigurasi",
         "frame_rules": "Aturan",
@@ -118,6 +124,12 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "header_subtitle": "Staff Panel visual theme by dokterDIBYA",
         "header_badge": "STAFF PANEL STYLE",
         "footer_developed_by": "Developed by dokterDIBYA",
+        "status_badge_idle": "IDLE",
+        "status_badge_preparing": "PREPARING",
+        "status_badge_optimizing": "OPTIMIZING",
+        "status_badge_saving": "SAVING",
+        "status_badge_done": "DONE",
+        "status_badge_error": "ERROR",
         "frame_files": "Files",
         "frame_config": "Config",
         "frame_rules": "Rules",
@@ -289,6 +301,14 @@ class SchedulerApp:
         self.progress_text_var = tk.StringVar(value="")
         self._is_generating = False
         self._progress_queue: queue.Queue = queue.Queue()
+        self._progress_target = 0.0
+        self._progress_anim_job: str | None = None
+
+        self._status_badge_key = "idle"
+        self._status_badge_color = "#6c757d"
+        self._status_badge_pulse = False
+        self._status_badge_pulse_job: str | None = None
+        self._status_badge_pulse_on = False
 
         self.config_label_widgets: Dict[str, ttk.Label] = {}
         self.rule_check_widgets: Dict[str, ttk.Checkbutton] = {}
@@ -448,6 +468,100 @@ class SchedulerApp:
             thickness=14,
         )
 
+    @staticmethod
+    def _hex_to_rgb(color: str) -> tuple[int, int, int]:
+        value = color.strip().lstrip("#")
+        if len(value) != 6:
+            return (0, 0, 0)
+        return int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16)
+
+    @staticmethod
+    def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
+        r, g, b = rgb
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _mix_color(self, base_color: str, target_color: str, ratio: float) -> str:
+        ratio = max(0.0, min(1.0, ratio))
+        br, bg, bb = self._hex_to_rgb(base_color)
+        tr, tg, tb = self._hex_to_rgb(target_color)
+        out = (
+            int(br + (tr - br) * ratio),
+            int(bg + (tg - bg) * ratio),
+            int(bb + (tb - bb) * ratio),
+        )
+        return self._rgb_to_hex(out)
+
+    def _set_progress_target(self, percent: float, immediate: bool = False) -> None:
+        self._progress_target = max(0.0, min(100.0, float(percent)))
+        if immediate:
+            self.progress_var.set(self._progress_target)
+            return
+        if self._progress_anim_job is None:
+            self._animate_progress_step()
+
+    def _animate_progress_step(self) -> None:
+        current = float(self.progress_var.get())
+        delta = self._progress_target - current
+        if abs(delta) <= 0.15:
+            self.progress_var.set(self._progress_target)
+            self._progress_anim_job = None
+            return
+
+        step = delta * 0.3
+        if delta > 0:
+            step = max(step, 0.22)
+        else:
+            step = min(step, -0.22)
+
+        self.progress_var.set(max(0.0, min(100.0, current + step)))
+        self._progress_anim_job = self.root.after(24, self._animate_progress_step)
+
+    def _pulse_status_badge(self) -> None:
+        if not self._status_badge_pulse:
+            self._status_badge_pulse_job = None
+            return
+
+        self._status_badge_pulse_on = not self._status_badge_pulse_on
+        if self._status_badge_pulse_on:
+            pulsed = self._mix_color(self._status_badge_color, "#ffffff", 0.28)
+        else:
+            pulsed = self._status_badge_color
+
+        self.status_badge_label.configure(bg=pulsed)
+        self._status_badge_pulse_job = self.root.after(260, self._pulse_status_badge)
+
+    def _set_status_badge(self, key: str, pulse: bool = False) -> None:
+        badge_map = {
+            "idle": ("status_badge_idle", "#6c757d"),
+            "preparing": ("status_badge_preparing", "#17a2b8"),
+            "optimizing": ("status_badge_optimizing", "#0d6efd"),
+            "saving": ("status_badge_saving", "#fd7e14"),
+            "done": ("status_badge_done", "#28a745"),
+            "error": ("status_badge_error", "#dc3545"),
+        }
+        text_key, color = badge_map.get(key, badge_map["idle"])
+
+        self._status_badge_key = key
+        self._status_badge_color = color
+        self._status_badge_pulse = pulse
+        self._status_badge_pulse_on = False
+
+        self.status_badge_label.configure(
+            text=self._tr(text_key),
+            bg=self._status_badge_color,
+            fg="#ffffff",
+        )
+
+        if self._status_badge_pulse_job is not None:
+            try:
+                self.root.after_cancel(self._status_badge_pulse_job)
+            except Exception:
+                pass
+            self._status_badge_pulse_job = None
+
+        if self._status_badge_pulse:
+            self._status_badge_pulse_job = self.root.after(260, self._pulse_status_badge)
+
     def _build_ui(self) -> None:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
@@ -494,7 +608,17 @@ class SchedulerApp:
             padx=10,
             pady=4,
         )
-        self.theme_badge_label.grid(row=0, column=1, rowspan=2, sticky="e", padx=14)
+        self.theme_badge_label.grid(row=0, column=1, rowspan=2, sticky="e", padx=(14, 8))
+
+        self.status_badge_label = tk.Label(
+            self.topbar_frame,
+            bg="#6c757d",
+            fg="#ffffff",
+            font=("Segoe UI", 9, "bold"),
+            padx=10,
+            pady=4,
+        )
+        self.status_badge_label.grid(row=0, column=2, rowspan=2, sticky="e", padx=(0, 14))
 
         self.path_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
         self.path_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=8)
@@ -785,12 +909,12 @@ class SchedulerApp:
 
         self.welcome_title_label.configure(text=self._tr("welcome_title"))
         self.welcome_subtitle_label.configure(text=self._tr("welcome_subtitle"))
-        self.welcome_vk_btn.configure(text=self._tr("welcome_option_vk"))
-        self.welcome_neonatus_btn.configure(text=self._tr("welcome_option_neonatus"))
+        self.welcome_vk_btn.configure(text=f"🏥 {self._tr('welcome_option_vk')}")
+        self.welcome_neonatus_btn.configure(text=f"👶 {self._tr('welcome_option_neonatus')}")
 
-        self.path_frame.configure(text=self._tr("frame_files"))
-        self.config_frame.configure(text=self._tr("frame_config"))
-        self.flags_frame.configure(text=self._tr("frame_rules"))
+        self.path_frame.configure(text=f"📁 {self._tr('frame_files')}")
+        self.config_frame.configure(text=f"⚙ {self._tr('frame_config')}")
+        self.flags_frame.configure(text=f"🛡 {self._tr('frame_rules')}")
 
         self.label_input_excel.configure(text=self._tr("label_input_excel"))
         self.label_output_excel.configure(text=self._tr("label_output_excel"))
@@ -811,13 +935,14 @@ class SchedulerApp:
         for key, check_widget in self.rule_check_widgets.items():
             check_widget.configure(text=self._tr(key))
 
-        self.preset_btn.configure(text=self._tr("btn_apply_preset"))
-        self.save_config_btn.configure(text=self._tr("btn_save_config"))
-        self.load_config_btn.configure(text=self._tr("btn_load_config"))
-        self.reset_config_btn.configure(text=self._tr("btn_reset_config"))
-        self.analyze_btn.configure(text=self._tr("btn_analyze"))
-        self.generate_btn.configure(text=self._tr("btn_generate"))
-        self.copy_btn.configure(text=self._tr("btn_copy"))
+        self.preset_btn.configure(text=f"🎯 {self._tr('btn_apply_preset')}")
+        self.save_config_btn.configure(text=f"💾 {self._tr('btn_save_config')}")
+        self.load_config_btn.configure(text=f"📂 {self._tr('btn_load_config')}")
+        self.reset_config_btn.configure(text=f"♻ {self._tr('btn_reset_config')}")
+        self.analyze_btn.configure(text=f"🔍 {self._tr('btn_analyze')}")
+        self.generate_btn.configure(text=f"⚡ {self._tr('btn_generate')}")
+        self.copy_btn.configure(text=f"📋 {self._tr('btn_copy')}")
+        self._set_status_badge(self._status_badge_key, pulse=self._status_badge_pulse)
 
         if refresh_progress and not self._is_generating:
             if self.progress_var.get() >= 100:
@@ -1151,15 +1276,26 @@ class SchedulerApp:
             "auto_export_csv": True,
         }
         self._apply_config_state(defaults)
-        self.progress_var.set(0.0)
+        self._set_progress_target(0.0, immediate=True)
         self.progress_text_var.set(
             self._tr("progress_percent_fmt", percent=0, text=self._tr("progress_idle"))
         )
+        self._set_status_badge("idle", pulse=False)
         self._persist_last_config_silent()
         self._append_report(self._tr("report_title_config"), self._tr("config_reset_msg"))
         messagebox.showinfo(self._tr("info_title"), self._tr("config_reset_msg"))
 
     def _on_app_close(self) -> None:
+        if self._progress_anim_job is not None:
+            try:
+                self.root.after_cancel(self._progress_anim_job)
+            except Exception:
+                pass
+        if self._status_badge_pulse_job is not None:
+            try:
+                self.root.after_cancel(self._status_badge_pulse_job)
+            except Exception:
+                pass
         self._persist_last_config_silent()
         self.root.destroy()
 
@@ -1248,8 +1384,9 @@ class SchedulerApp:
         self.enforce_off_monotonic_var.set(True)
         self.assign_colors_var.set(True)
 
-        self.progress_var.set(0.0)
+        self._set_progress_target(0.0, immediate=True)
         self.progress_text_var.set(self._tr("preset_applied_status"))
+        self._set_status_badge("idle", pulse=False)
         self._append_report(self._tr("report_title_preset"), self._tr("preset_report_message"))
         self._persist_last_config_silent()
 
@@ -1258,7 +1395,7 @@ class SchedulerApp:
         self._is_generating = generate_mode
         if generate_mode:
             self._clear_progress_queue()
-            self.progress_var.set(0.0)
+            self._set_progress_target(0.0, immediate=True)
             self.progress_text_var.set(
                 self._tr(
                     "progress_percent_fmt",
@@ -1266,6 +1403,9 @@ class SchedulerApp:
                     text=self._tr("progress_starting"),
                 )
             )
+            self._set_status_badge("preparing", pulse=True)
+        else:
+            self._set_status_badge("optimizing", pulse=True)
 
         def runner() -> None:
             try:
@@ -1281,6 +1421,7 @@ class SchedulerApp:
         self._drain_progress_queue_once()
         self._set_busy(False)
         self._is_generating = False
+        self._set_status_badge("done", pulse=False)
 
         if isinstance(result, dict) and "kind" in result and "report" in result:
             report = result["report"]
@@ -1301,7 +1442,7 @@ class SchedulerApp:
                     messagebox.showwarning(self._tr("save_fallback_warning_title"), notice)
 
                 self._auto_export_report(report)
-                self.progress_var.set(100.0)
+                self._set_progress_target(100.0)
                 self.progress_text_var.set(
                     self._tr(
                         "progress_percent_fmt",
@@ -1318,6 +1459,7 @@ class SchedulerApp:
         self._drain_progress_queue_once()
         self._set_busy(False)
         self._is_generating = False
+        self._set_status_badge("error", pulse=False)
         self.progress_text_var.set(
             self._tr(
                 "progress_percent_fmt",
@@ -1372,7 +1514,7 @@ class SchedulerApp:
 
     def _apply_progress_payload(self, payload: dict) -> None:
         progress = max(0.0, min(1.0, float(payload.get("progress", 0.0))))
-        self.progress_var.set(progress * 100.0)
+        self._set_progress_target(progress * 100.0)
         percent = int(round(progress * 100.0))
 
         phase = str(payload.get("phase", "optimize"))
@@ -1382,6 +1524,7 @@ class SchedulerApp:
         eta = self._format_seconds(payload.get("eta_sec"))
 
         if phase == "optimize" and iteration is not None and total_iterations is not None:
+            self._set_status_badge("optimizing", pulse=True)
             text = self._tr(
                 "progress_optimizing_fmt",
                 iteration=iteration,
@@ -1390,10 +1533,13 @@ class SchedulerApp:
                 eta=eta,
             )
         elif phase == "prepare":
+            self._set_status_badge("preparing", pulse=True)
             text = self._tr("progress_preparing")
         elif phase == "save":
+            self._set_status_badge("saving", pulse=True)
             text = self._tr("progress_saving_fmt", elapsed=elapsed)
         elif phase == "done":
+            self._set_status_badge("done", pulse=False)
             text = self._tr("progress_done_fmt", elapsed=elapsed)
         else:
             text = str(payload.get("message", self._tr("progress_working")))
