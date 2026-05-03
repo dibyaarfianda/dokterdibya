@@ -1589,7 +1589,18 @@ class SchedulerApp:
             self._set_status_badge("preparing", pulse=True)
             self.root.update_idletasks()
         else:
+            self._clear_progress_queue()
+            self._set_progress_target(1.0, immediate=True)
+            self.progress_text_var.set(
+                self._tr(
+                    "progress_percent_fmt",
+                    percent=1,
+                    text=self._tr("progress_working"),
+                )
+            )
+            self._start_progress_bootstrap()
             self._set_status_badge("optimizing", pulse=True)
+            self.root.update_idletasks()
 
         def runner() -> None:
             try:
@@ -1637,6 +1648,15 @@ class SchedulerApp:
                     )
                 )
                 self._persist_last_config_silent()
+            else:
+                self._set_progress_target(100.0)
+                self.progress_text_var.set(
+                    self._tr(
+                        "progress_percent_fmt",
+                        percent=100,
+                        text=self._tr("progress_done_fmt", elapsed="-"),
+                    )
+                )
             return
 
         self._append_report(self._tr("report_title_result"), result)
