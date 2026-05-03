@@ -100,6 +100,71 @@ class OfflineSchedulerEngine:
         return out
 
     @staticmethod
+    def _default_magang_duty_target(active_day_count: int) -> int:
+        if active_day_count <= 0:
+            return 0
+        # Baseline from operational note: around 6 duties per 28 active days.
+        target = int(round(active_day_count * (6.0 / 28.0)))
+        return max(1, min(active_day_count, target))
+
+    def _apply_magang_schedule(
+        self,
+        schedule: Dict[str, Dict[str, object]],
+        magang_staff: List[StaffMember],
+        active_days: List[int],
+    ) -> None:
+        if not magang_staff or not active_days:
+            return
+
+        target_duties = self._default_magang_duty_target(len(active_days))
+        if target_duties <= 0:
+            return
+
+        shift_cycle = ["P", "S", "M"]
+        total_days = len(active_days)
+
+        for idx, staff in enumerate(sorted(magang_staff, key=lambda s: s.no)):
+            name = staff.name
+            if name not in schedule:
+                continue
+
+            codes = schedule[name]["codes"]
+            for d in active_days:
+                codes[d] = "L"
+
+            picked_positions = set()
+            for k in range(target_duties):
+                base_pos = int(round(((k + 0.5) * total_days / target_duties) - 0.5))
+                base_pos = max(0, min(total_days - 1, base_pos))
+                pos = (base_pos + idx) % total_days
+                guard = 0
+                while pos in picked_positions and guard < total_days:
+                    pos = (pos + 1) % total_days
+                    guard += 1
+                picked_positions.add(pos)
+
+            for order, pos in enumerate(sorted(picked_positions)):
+                d = active_days[pos]
+                codes[d] = shift_cycle[(idx + order) % len(shift_cycle)]
+
+    def _clear_note_rows(self, ws, day_cols: Dict[int, int]) -> None:
+        for r in range(3, ws.max_row + 1):
+            no_value = ws.cell(r, 1).value
+            if self._parse_rank_no(no_value) is not None:
+                continue
+
+            note_text = str(ws.cell(r, 2).value or "").strip()
+            if not note_text or not self._looks_like_note_line(note_text):
+                continue
+
+            for d in sorted(day_cols):
+                col = day_cols[d]
+                cell = ws.cell(r, col)
+                cell.value = None
+                cell.fill = self.fill_plain
+                self._set_readable_font(cell)
+
+    @staticmethod
     def _is_magang_name(name: str, keywords: Optional[List[str]] = None) -> bool:
         name_l = str(name or "").strip().lower()
         if not name_l:
@@ -121,7 +186,12 @@ class OfflineSchedulerEngine:
                 continue
             if parsed > 0:
                 rank_set.add(parsed)
+
         if rank_set and staff.no in rank_set:
+            return True
+
+        # Fallback for common template where MAGANG is the immediate rank after core team.
+        if not rank_set and staff.no == config.max_core_rank + 1:
             return True
 
         return self._is_magang_name(staff.name, config.magang_keywords)
@@ -164,6 +234,19 @@ class OfflineSchedulerEngine:
                 return None
 
         return None
+
+    @staticmethod
+    def _looks_like_note_line(text: str) -> bool:
+        t = str(text or "").strip().lower()
+        if not t:
+            return False
+        if any(ch in t for ch in [":", "|", "="]):
+            return True
+        if len(t.split()) >= 7:
+            return True
+        if re.search(r"\b(keterangan|kuning|polos|libur|tandem|hitungan|jadwal terpisah)\b", t):
+            return True
+        return False
 
     @staticmethod
     def _set_readable_font(cell) -> None:
@@ -508,6 +591,9 @@ class OfflineSchedulerEngine:
             config=config,
         )
 
+        magang_staff = [s for s in core_staff if self._is_magang_staff(s, config)]
+        self._apply_magang_schedule(best, magang_staff, active_days)
+
         # Write optimized codes.
         for n in core_names:
             r = row_by_name[n]
@@ -531,6 +617,9 @@ class OfflineSchedulerEngine:
                 cell.value = "L"
                 cell.fill = self.fill_plain
                 self._set_readable_font(cell)
+
+        # Keep explanatory note rows clean from stale day values.
+        self._clear_note_rows(ws, day_cols)
 
         # Optional coloring policy.
         if config.assign_colors:
@@ -651,6 +740,8 @@ class OfflineSchedulerEngine:
 
             keywords = config.magang_keywords if config else None
             if self._is_magang_name(name_clean, keywords):
+                if self._looks_like_note_line(name_clean):
+                    continue
                 if config is not None and not config.process_magang:
                     continue
                 magang_rows.append((r, name_clean))
