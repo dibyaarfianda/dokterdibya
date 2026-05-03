@@ -103,7 +103,10 @@ class OfflineSchedulerEngine:
     def _default_magang_duty_target(active_day_count: int) -> int:
         if active_day_count <= 0:
             return 0
-        # Baseline from operational note: around 6 duties per 28 active days.
+        # Operational rule: keep MAGANG duty fixed to 6 for common monthly ranges.
+        if 28 <= active_day_count <= 31:
+            return 6
+        # Fallback for shorter custom ranges.
         target = int(round(active_day_count * (6.0 / 28.0)))
         return max(1, min(active_day_count, target))
 
