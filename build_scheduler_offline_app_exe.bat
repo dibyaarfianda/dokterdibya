@@ -53,6 +53,9 @@ for /f "delims=" %%I in ('dir /b /a "%DEPLOY_DIR%" 2^>nul') do (
 
 echo [6/9] Syncing EXE and README to Desktop Scheduler...
 
+taskkill /f /im "%APP_NAME%.exe" >nul 2>nul
+timeout /t 1 /nobreak >nul
+
 copy /y "dist\%APP_NAME%.exe" "%DEPLOY_DIR%\%APP_NAME%.exe" >nul
 if errorlevel 1 (
   echo Failed to copy EXE to "%DEPLOY_DIR%". Close the app if it is still running.
