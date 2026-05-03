@@ -69,9 +69,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "report_title_result": "Hasil",
         "report_title_error": "Error",
         "report_title_export": "Ekspor",
+        "report_title_notice": "Info",
         "report_title_ready": "Siap",
         "report_title_language": "Bahasa",
         "report_language_changed": "Bahasa aplikasi diubah ke {language}.",
+        "save_fallback_notice_fmt": "Output utama tidak bisa ditulis.\nPermintaan awal: {requested}\nDisimpan otomatis ke: {actual}",
+        "save_fallback_warning_title": "Output Dialihkan",
+        "permission_error_hint": "Tidak bisa menulis file output. Pastikan file tidak sedang dibuka di Excel, lalu pilih nama atau folder output lain.",
         "ready_message": "Pilih file input Excel, cek konfigurasi, lalu klik Analisa Input atau Generate + Simpan.",
         "dialog_select_input": "Pilih file jadwal input",
         "dialog_save_output": "Simpan file jadwal output",
@@ -134,9 +138,13 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "report_title_result": "Result",
         "report_title_error": "Error",
         "report_title_export": "Export",
+        "report_title_notice": "Notice",
         "report_title_ready": "Ready",
         "report_title_language": "Language",
         "report_language_changed": "Application language switched to {language}.",
+        "save_fallback_notice_fmt": "Primary output path could not be written.\nRequested: {requested}\nSaved automatically to: {actual}",
+        "save_fallback_warning_title": "Output Redirected",
+        "permission_error_hint": "Cannot write output file. Make sure it is not open in Excel, then choose another output name or folder.",
         "ready_message": "Select an input Excel, review config, then click Analyze Input or Generate + Save.",
         "dialog_select_input": "Select input schedule file",
         "dialog_save_output": "Save output schedule as",
@@ -504,6 +512,34 @@ class SchedulerApp:
         path = Path(input_path)
         return str(path.with_name(path.stem + " - generated.xlsx"))
 
+    def _build_save_fallback_paths(self, output_path: str, input_path: str) -> List[str]:
+        requested = Path(output_path)
+        input_file = Path(input_path)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        suffix = requested.suffix if requested.suffix else ".xlsx"
+        stem = requested.stem if requested.stem else "jadwal-generated"
+
+        same_dir_fallback = requested.with_name(f"{stem} - autosave-{stamp}{suffix}")
+
+        candidates = [same_dir_fallback]
+        input_dir = input_file.parent
+        if input_dir != requested.parent:
+            candidates.append(input_dir / f"{stem} - autosave-{stamp}{suffix}")
+
+        desktop_dir = Path.home() / "Desktop"
+        if desktop_dir.exists() and desktop_dir != requested.parent and desktop_dir != input_dir:
+            candidates.append(desktop_dir / f"{stem} - autosave-{stamp}{suffix}")
+
+        out: List[str] = []
+        seen = {str(requested)}
+        for cand in candidates:
+            s = str(cand)
+            if s in seen:
+                continue
+            seen.add(s)
+            out.append(s)
+        return out
+
     def _set_busy(self, busy: bool) -> None:
         state = "disabled" if busy else "normal"
         self.language_combo.configure(state="disabled" if busy else "readonly")
@@ -617,6 +653,18 @@ class SchedulerApp:
             self._append_report(self._tr("report_title_result"), report_text)
 
             if result["kind"] == "generate":
+                requested_output = str(report.get("_requested_output_file") or "")
+                actual_output = str(report.get("output_file") or requested_output)
+                if report.get("_save_fallback_used"):
+                    notice = self._tr(
+                        "save_fallback_notice_fmt",
+                        requested=requested_output,
+                        actual=actual_output,
+                    )
+                    self.output_path_var.set(actual_output)
+                    self._append_report(self._tr("report_title_notice"), notice)
+                    messagebox.showwarning(self._tr("save_fallback_warning_title"), notice)
+
                 self._auto_export_report(report)
                 self.progress_var.set(100.0)
                 self.progress_text_var.set(self._tr("progress_generate_complete"))
@@ -628,6 +676,8 @@ class SchedulerApp:
         self._set_busy(False)
         self._is_generating = False
         self.progress_text_var.set(self._tr("progress_error"))
+        if "Permission denied" in err or "Failed to save workbook" in err:
+            err = f"{err}\n\n{self._tr('permission_error_hint')}"
         self._append_report(self._tr("report_title_error"), err)
         messagebox.showerror(self._tr("error_title"), err)
 
@@ -768,11 +818,13 @@ class SchedulerApp:
         config = self._build_config()
 
         def work():
+            fallback_paths = self._build_save_fallback_paths(output_path, input_path)
             report = self.engine.generate_schedule(
                 input_path,
                 output_path,
                 config,
                 progress_callback=self._on_progress,
+                save_fallback_paths=fallback_paths,
             )
             return {"kind": "generate", "report": report}
 
