@@ -9,7 +9,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260503v1';
+            var PAGE_VERSION = '20260503v2';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -594,7 +594,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260307';
+            const SC_CACHE_VERSION = 'v20260503';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1467,16 +1467,26 @@ PLAN
             const urlParams = new URLSearchParams(window.location.search);
             const mobileFromUrl = urlParams.get('mobile') === '1';
 
-            // Persist mobile mode in sessionStorage (use both keys for cross-page consistency)
-            if (mobileFromUrl) {
+            const standaloneDisplayMode = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+            const iosStandaloneMode = window.navigator.standalone === true;
+            const isStandalonePWA = standaloneDisplayMode || iosStandaloneMode;
+            const isAndroidWebView = /Android.*(?:; wv\)|Version\/)/i.test(navigator.userAgent);
+
+            const persistedMobileMode =
+                sessionStorage.getItem('sunday_clinic_mobile') === '1' ||
+                sessionStorage.getItem('mobileAppMode') === '1' ||
+                localStorage.getItem('sunday_clinic_mobile') === '1' ||
+                localStorage.getItem('mobileAppMode') === '1';
+
+            const isMobileApp = mobileFromUrl || persistedMobileMode || isStandalonePWA || isAndroidWebView;
+
+            if (isMobileApp) {
+                // Persist mobile mode in both storages for cross-session consistency.
                 sessionStorage.setItem('sunday_clinic_mobile', '1');
                 sessionStorage.setItem('mobileAppMode', '1');
+                localStorage.setItem('sunday_clinic_mobile', '1');
+                localStorage.setItem('mobileAppMode', '1');
             }
-
-            // Check URL param or sessionStorage (check both keys)
-            const isMobileApp = mobileFromUrl ||
-                sessionStorage.getItem('sunday_clinic_mobile') === '1' ||
-                sessionStorage.getItem('mobileAppMode') === '1';
 
             if (isMobileApp) {
                 // Add mobile mode class immediately (before DOMContentLoaded for flash prevention)
@@ -1487,18 +1497,22 @@ PLAN
             window.isMobileAppMode = function() {
                 return sessionStorage.getItem('mobileAppMode') === '1' ||
                        sessionStorage.getItem('sunday_clinic_mobile') === '1' ||
-                       document.body.classList.contains('mobile-app-mode');
+                       localStorage.getItem('mobileAppMode') === '1' ||
+                       localStorage.getItem('sunday_clinic_mobile') === '1' ||
+                       document.documentElement.classList.contains('mobile-app-mode') ||
+                       !!(document.body && document.body.classList.contains('mobile-app-mode'));
             };
 
             window.buildMobileUrl = function(baseUrl) {
                 if (!window.isMobileAppMode()) return baseUrl;
+                if (typeof baseUrl !== 'string' || baseUrl.includes('mobile=1')) return baseUrl;
                 const separator = baseUrl.includes('?') ? '&' : '?';
                 return baseUrl + separator + 'mobile=1';
             };
 
             document.addEventListener('DOMContentLoaded', function() {
                 // Mobile app mode setup
-                if (isMobileApp) {
+                if (window.isMobileAppMode()) {
                     document.body.classList.add('mobile-app-mode');
                     initMobileAppMode();
                 }

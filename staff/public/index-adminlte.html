@@ -1188,12 +1188,21 @@
     
     <!-- Mobile App Mode Detection -->
     <script>
-        // Detect ?mobile=1 parameter and add mobile-app-mode class
+        // Detect mobile app context and add mobile-app-mode class
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const isMobileApp = urlParams.get('mobile') === '1';
+            const mobileFromUrl = urlParams.get('mobile') === '1';
+            const standaloneDisplayMode = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+            const iosStandaloneMode = window.navigator.standalone === true;
+            const isStandalonePWA = standaloneDisplayMode || iosStandaloneMode;
+            const isAndroidWebView = /Android.*(?:; wv\)|Version\/)/i.test(navigator.userAgent);
+            const persistedMobileMode =
+                sessionStorage.getItem('mobileAppMode') === '1' ||
+                localStorage.getItem('mobileAppMode') === '1';
 
-            if (isMobileApp) {
+            const isMobileApp = mobileFromUrl || persistedMobileMode || isStandalonePWA || isAndroidWebView;
+
+            function applyMobileModeClass() {
                 // Add class immediately to prevent flash
                 document.documentElement.classList.add('mobile-app-mode');
 
@@ -1205,30 +1214,27 @@
                         document.body.classList.add('mobile-app-mode');
                     });
                 }
+            }
 
-                // Store in sessionStorage to persist across page navigations
+            if (isMobileApp) {
+                applyMobileModeClass();
+                // Persist in both storages so mobile mode survives browser/session differences.
                 sessionStorage.setItem('mobileAppMode', '1');
-            } else if (sessionStorage.getItem('mobileAppMode') === '1') {
-                // Restore mobile mode from session
-                document.documentElement.classList.add('mobile-app-mode');
-                if (document.body) {
-                    document.body.classList.add('mobile-app-mode');
-                } else {
-                    document.addEventListener('DOMContentLoaded', function() {
-                        document.body.classList.add('mobile-app-mode');
-                    });
-                }
+                localStorage.setItem('mobileAppMode', '1');
             }
 
             // Global helper to check mobile mode and build URLs
             window.isMobileAppMode = function() {
                 return sessionStorage.getItem('mobileAppMode') === '1' ||
-                       document.body.classList.contains('mobile-app-mode');
+                       localStorage.getItem('mobileAppMode') === '1' ||
+                       document.documentElement.classList.contains('mobile-app-mode') ||
+                       !!(document.body && document.body.classList.contains('mobile-app-mode'));
             };
 
             // Helper to add mobile=1 to URL if in mobile mode
             window.buildMobileUrl = function(baseUrl) {
                 if (!window.isMobileAppMode()) return baseUrl;
+                if (typeof baseUrl !== 'string' || baseUrl.includes('mobile=1')) return baseUrl;
                 const separator = baseUrl.includes('?') ? '&' : '?';
                 return baseUrl + separator + 'mobile=1';
             };
@@ -1497,7 +1503,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v79'; // Community chat staff panel: full-height iframe + moderator icon reposition
+            const CACHE_VERSION = 'v80'; // Mobile mode detection: standalone/webview + persistent storage fallback
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -7376,7 +7382,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v79';
+    window.__assetVersion = 'v80';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
