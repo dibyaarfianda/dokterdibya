@@ -4,13 +4,14 @@ import copy
 import json
 import math
 import random
+import re
 import time
 from collections import Counter
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Tuple
 
 import openpyxl
-from openpyxl.styles import PatternFill
+from openpyxl.styles import Color, PatternFill
 
 
 @dataclass
@@ -74,13 +75,47 @@ class OfflineSchedulerEngine:
         self.fill_gray = PatternFill(fill_type="solid", fgColor="FFA6A6A6")
         self.fill_green = PatternFill(fill_type="solid", fgColor="FFE2EFDA")
 
+    @staticmethod
+    def _is_magang_name(name: str) -> bool:
+        name_l = str(name or "").strip().lower()
+        return "magang" in name_l or "intern" in name_l
+
+    @staticmethod
+    def _parse_rank_no(value) -> Optional[int]:
+        if isinstance(value, (int, float)):
+            return int(value)
+
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return None
+            m = re.search(r"\d+", text)
+            if m:
+                try:
+                    return int(m.group(0))
+                except Exception:
+                    return None
+
+        return None
+
+    @staticmethod
+    def _set_readable_font(cell) -> None:
+        # Preserve existing font shape while forcing readable dark text.
+        f = copy.copy(cell.font)
+        f.color = Color(rgb="FF000000")
+        cell.font = f
+
     def analyze_workbook(self, input_path: str, config: SchedulerConfig) -> Dict[str, object]:
         wb = openpyxl.load_workbook(input_path, data_only=True)
         ws = wb[config.sheet_name]
 
         day_cols = self._parse_day_columns(ws)
         staff_all = self._parse_staff(ws)
-        core_staff = [s for s in staff_all if s.no <= config.max_core_rank]
+        core_staff = [
+            s
+            for s in staff_all
+            if s.no <= config.max_core_rank or self._is_magang_name(s.name)
+        ]
         core_names = [s.name for s in core_staff]
         row_by_name = {s.name: s.row for s in core_staff}
         no_by_name = {s.name: s.no for s in core_staff}
@@ -251,7 +286,11 @@ class OfflineSchedulerEngine:
 
         day_cols = self._parse_day_columns(ws)
         all_staff = self._parse_staff(ws)
-        core_staff = [s for s in all_staff if s.no <= config.max_core_rank]
+        core_staff = [
+            s
+            for s in all_staff
+            if s.no <= config.max_core_rank or self._is_magang_name(s.name)
+        ]
         core_staff = sorted(core_staff, key=lambda s: s.no)
 
         core_names = [s.name for s in core_staff]
@@ -387,7 +426,9 @@ class OfflineSchedulerEngine:
         for n in core_names:
             r = row_by_name[n]
             for d in active_days:
-                ws.cell(r, day_cols[d]).value = best[n]["codes"][d]
+                cell = ws.cell(r, day_cols[d])
+                cell.value = best[n]["codes"][d]
+                self._set_readable_font(cell)
 
         # Optional coloring policy.
         if config.assign_colors:
@@ -482,11 +523,30 @@ class OfflineSchedulerEngine:
 
     def _parse_staff(self, ws) -> List[StaffMember]:
         staff = []
+        magang_rows: List[Tuple[int, str]] = []
+        max_no = 0
+
         for r in range(3, ws.max_row + 1):
-            no = ws.cell(r, 1).value
             name = ws.cell(r, 2).value
-            if isinstance(no, (int, float)) and str(name or "").strip():
-                staff.append(StaffMember(no=int(no), name=str(name).strip(), row=r))
+            name_clean = str(name or "").strip()
+            if not name_clean:
+                continue
+
+            no_value = ws.cell(r, 1).value
+            parsed_no = self._parse_rank_no(no_value)
+            if parsed_no is not None:
+                staff.append(StaffMember(no=parsed_no, name=name_clean, row=r))
+                if parsed_no > max_no:
+                    max_no = parsed_no
+                continue
+
+            if self._is_magang_name(name_clean):
+                magang_rows.append((r, name_clean))
+
+        for r, name_clean in magang_rows:
+            max_no += 1
+            staff.append(StaffMember(no=max_no, name=name_clean, row=r))
+
         if not staff:
             raise ValueError("No staff rows found (expects NO in col A and NAMA in col B)")
         return sorted(staff, key=lambda s: s.no)
@@ -846,14 +906,20 @@ class OfflineSchedulerEngine:
                 for n in polos:
                     ws.cell(row_by_name[n], col).fill = self.fill_plain
 
-        # Optional style for rank >= 15 if present (magang row from current template style).
-        higher_rows = [s for s in all_staff if s.no > config.max_core_rank]
+        # Optional style for non-core non-magang rows if present in template.
+        higher_rows = [
+            s
+            for s in all_staff
+            if s.no > config.max_core_rank and not self._is_magang_name(s.name)
+        ]
         for s in higher_rows:
             for day in active_days:
                 col = day_cols[day]
                 code = self._norm_code(ws.cell(s.row, col).value)
                 if code in {"P", "S", "M", "L"}:
-                    ws.cell(s.row, col).fill = self.fill_green
+                    cell = ws.cell(s.row, col)
+                    cell.fill = self.fill_green
+                    self._set_readable_font(cell)
 
     @staticmethod
     def _emit_progress(
