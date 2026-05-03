@@ -306,6 +306,8 @@ class SchedulerApp:
         self._progress_target = 0.0
         self._progress_anim_job: str | None = None
         self._progress_spinner_on = False
+        self._progress_bootstrap_job: str | None = None
+        self._progress_bootstrap_tick = 0
 
         self._status_badge_key = "idle"
         self._status_badge_color = "#6c757d"
@@ -616,6 +618,36 @@ class SchedulerApp:
             except Exception:
                 pass
             self._progress_spinner_on = False
+
+    def _start_progress_bootstrap(self) -> None:
+        self._stop_progress_bootstrap()
+        self._progress_bootstrap_tick = 0
+        self._set_progress_spinner(False)
+        self._progress_bootstrap_step()
+
+    def _stop_progress_bootstrap(self) -> None:
+        if self._progress_bootstrap_job is None:
+            return
+        try:
+            self.root.after_cancel(self._progress_bootstrap_job)
+        except Exception:
+            pass
+        self._progress_bootstrap_job = None
+
+    def _progress_bootstrap_step(self) -> None:
+        if not self._is_generating:
+            self._progress_bootstrap_job = None
+            return
+
+        pattern = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0]
+        value = pattern[self._progress_bootstrap_tick % len(pattern)]
+
+        # Only drive the fake heartbeat until real payload progress takes over.
+        if self._progress_target <= 7.0:
+            self.progress_var.set(value)
+
+        self._progress_bootstrap_tick += 1
+        self._progress_bootstrap_job = self.root.after(120, self._progress_bootstrap_step)
 
     def _animate_progress_step(self) -> None:
         current = float(self.progress_var.get())
@@ -1432,6 +1464,7 @@ class SchedulerApp:
         messagebox.showinfo(self._tr("info_title"), self._tr("config_reset_msg"))
 
     def _on_app_close(self) -> None:
+        self._stop_progress_bootstrap()
         self._set_progress_spinner(False)
         if self._progress_anim_job is not None:
             try:
@@ -1534,6 +1567,7 @@ class SchedulerApp:
         self._set_progress_target(0.0, immediate=True)
         self.progress_text_var.set(self._tr("preset_applied_status"))
         self._set_progress_spinner(False)
+        self._stop_progress_bootstrap()
         self._set_status_badge("idle", pulse=False)
         self._append_report(self._tr("report_title_preset"), self._tr("preset_report_message"))
         self._persist_last_config_silent()
@@ -1543,15 +1577,15 @@ class SchedulerApp:
         self._is_generating = generate_mode
         if generate_mode:
             self._clear_progress_queue()
-            self._set_progress_target(0.0, immediate=True)
+            self._set_progress_target(1.0, immediate=True)
             self.progress_text_var.set(
                 self._tr(
                     "progress_percent_fmt",
-                    percent=0,
+                    percent=1,
                     text=self._tr("progress_starting"),
                 )
             )
-            self._set_progress_spinner(True)
+            self._start_progress_bootstrap()
             self._set_status_badge("preparing", pulse=True)
             self.root.update_idletasks()
         else:
@@ -1569,6 +1603,7 @@ class SchedulerApp:
 
     def _on_worker_success(self, result: object) -> None:
         self._drain_progress_queue_once()
+        self._stop_progress_bootstrap()
         self._set_progress_spinner(False)
         self._set_busy(False)
         self._is_generating = False
@@ -1608,6 +1643,7 @@ class SchedulerApp:
 
     def _on_worker_error(self, err: str) -> None:
         self._drain_progress_queue_once()
+        self._stop_progress_bootstrap()
         self._set_progress_spinner(False)
         self._set_busy(False)
         self._is_generating = False
@@ -1665,6 +1701,7 @@ class SchedulerApp:
         self.root.after(60, self._drain_progress_queue)
 
     def _apply_progress_payload(self, payload: dict) -> None:
+        self._stop_progress_bootstrap()
         progress = max(0.0, min(1.0, float(payload.get("progress", 0.0))))
         phase = str(payload.get("phase", "optimize"))
 
