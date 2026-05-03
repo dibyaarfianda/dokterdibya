@@ -55,6 +55,8 @@ class SchedulerConfig:
     magang_keywords: Optional[List[str]] = None
     # Optional explicit rank numbers to force as MAGANG participants.
     magang_ranks: Optional[List[int]] = None
+    # Optional MAGANG off-day target; duty count is derived from active days - off target.
+    magang_off_target: Optional[int] = None
 
     enforce_no_m_to_p: bool = True
     enforce_mll_each: bool = True
@@ -110,18 +112,34 @@ class OfflineSchedulerEngine:
         target = int(round(active_day_count * (6.0 / 28.0)))
         return max(1, min(active_day_count, target))
 
+    def _resolve_magang_duty_target(
+        self,
+        active_day_count: int,
+        magang_off_target: Optional[int],
+    ) -> int:
+        if active_day_count <= 0:
+            return 0
+
+        if magang_off_target is None:
+            return self._default_magang_duty_target(active_day_count)
+
+        off = max(0, min(active_day_count, int(magang_off_target)))
+        return max(0, active_day_count - off)
+
     def _apply_magang_schedule(
         self,
         schedule: Dict[str, Dict[str, object]],
         magang_staff: List[StaffMember],
         active_days: List[int],
+        config: SchedulerConfig,
     ) -> None:
         if not magang_staff or not active_days:
             return
 
-        target_duties = self._default_magang_duty_target(len(active_days))
-        if target_duties <= 0:
-            return
+        target_duties = self._resolve_magang_duty_target(
+            len(active_days),
+            config.magang_off_target,
+        )
 
         shift_cycle = ["P", "S", "M"]
         total_days = len(active_days)
@@ -134,6 +152,9 @@ class OfflineSchedulerEngine:
             codes = schedule[name]["codes"]
             for d in active_days:
                 codes[d] = "L"
+
+            if target_duties <= 0:
+                continue
 
             picked_positions = set()
             for k in range(target_duties):
@@ -595,7 +616,7 @@ class OfflineSchedulerEngine:
         )
 
         magang_staff = [s for s in core_staff if self._is_magang_staff(s, config)]
-        self._apply_magang_schedule(best, magang_staff, active_days)
+        self._apply_magang_schedule(best, magang_staff, active_days, config)
 
         # Write optimized codes.
         for n in core_names:

@@ -27,6 +27,7 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
   - Toggle `Proses Jadwal MAGANG` (default: OFF)
   - Kata kunci MAGANG kustom (CSV)
   - Daftar rank MAGANG eksplisit (CSV, opsional)
+  - Target libur MAGANG (opsional): jika diisi, jumlah duty MAGANG otomatis = hari aktif - target libur
 - Saat fitur MAGANG dimatikan, baris MAGANG tidak akan diproses untuk jaga
 - Baris non-core yang tidak diproses dipaksa tetap `L` agar tidak muncul jaga liar
 - Validasi otomatis:

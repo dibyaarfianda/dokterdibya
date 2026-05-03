@@ -68,6 +68,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "field_uniform_group": "Rank Grup Seragam (CSV)",
         "field_magang_keywords": "Kata Kunci MAGANG (CSV)",
         "field_magang_ranks": "Rank MAGANG (CSV, opsional)",
+        "field_magang_off_target": "Target Libur MAGANG (opsional)",
         "rule_no_m_to_p": "Tanpa M -> P",
         "rule_each_mll": "Semua Staff Punya M-L-L",
         "rule_group_not_together": "Rank Grup Tidak Bersamaan",
@@ -171,6 +172,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "field_uniform_group": "Uniform Group Ranks (CSV)",
         "field_magang_keywords": "MAGANG Keywords (CSV)",
         "field_magang_ranks": "MAGANG Ranks (CSV, optional)",
+        "field_magang_off_target": "MAGANG Off Target (optional)",
         "rule_no_m_to_p": "No M->P",
         "rule_each_mll": "Each Staff Has M-L-L",
         "rule_group_not_together": "Rank Group Not Together",
@@ -292,6 +294,7 @@ class SchedulerApp:
         self.uniform_group_var = tk.StringVar(value="12,13,14")
         self.magang_keywords_var = tk.StringVar(value="magang,intern,koas,praktek")
         self.magang_ranks_var = tk.StringVar(value="")
+        self.magang_off_target_var = tk.StringVar(value="")
 
         self.enforce_no_m_to_p_var = tk.BooleanVar(value=True)
         self.enforce_mll_each_var = tk.BooleanVar(value=True)
@@ -968,6 +971,9 @@ class SchedulerApp:
         self.config_label_widgets["field_magang_ranks"] = self._add_labeled_entry(
             self.config_frame, "", self.magang_ranks_var, 7, 0, span=5
         )
+        self.config_label_widgets["field_magang_off_target"] = self._add_labeled_entry(
+            self.config_frame, "", self.magang_off_target_var, 8, 0, span=5
+        )
 
         self.flags_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
         self.flags_frame.grid(row=3, column=0, sticky="ew", padx=10, pady=6)
@@ -1436,6 +1442,7 @@ class SchedulerApp:
             "uniform_group": self.uniform_group_var.get().strip(),
             "magang_keywords": self.magang_keywords_var.get().strip(),
             "magang_ranks": self.magang_ranks_var.get().strip(),
+            "magang_off_target": self.magang_off_target_var.get().strip(),
             "enforce_no_m_to_p": self.enforce_no_m_to_p_var.get(),
             "enforce_mll_each": self.enforce_mll_each_var.get(),
             "enforce_rank_group_not_together": self.enforce_rank_group_not_together_var.get(),
@@ -1486,6 +1493,8 @@ class SchedulerApp:
             self.uniform_group_var.set(str(state.get("uniform_group", self.uniform_group_var.get())).strip() or "12,13,14")
             self.magang_keywords_var.set(str(state.get("magang_keywords", self.magang_keywords_var.get())).strip() or "magang,intern,koas,praktek")
             self.magang_ranks_var.set(str(state.get("magang_ranks", self.magang_ranks_var.get())).strip())
+            magang_off_target = state.get("magang_off_target", self.magang_off_target_var.get())
+            self.magang_off_target_var.set("" if magang_off_target is None else str(magang_off_target).strip())
 
             self.enforce_no_m_to_p_var.set(self._to_bool(state.get("enforce_no_m_to_p"), True))
             self.enforce_mll_each_var.set(self._to_bool(state.get("enforce_mll_each"), True))
@@ -1613,6 +1622,7 @@ class SchedulerApp:
             "uniform_group": "12,13,14",
             "magang_keywords": "magang,intern,koas,praktek",
             "magang_ranks": "",
+            "magang_off_target": "",
             "enforce_no_m_to_p": True,
             "enforce_mll_each": True,
             "enforce_rank_group_not_together": True,
@@ -1687,6 +1697,12 @@ class SchedulerApp:
                 values.append(token)
         return values
 
+    def _parse_optional_int(self, text: str) -> int | None:
+        token = str(text or "").strip()
+        if not token:
+            return None
+        return int(token)
+
     def _build_config(self) -> SchedulerConfig:
         return SchedulerConfig(
             sheet_name=self.sheet_name_var.get().strip() or "JADWAL BARU",
@@ -1706,6 +1722,7 @@ class SchedulerApp:
             process_magang=self.process_magang_var.get(),
             magang_keywords=self._parse_str_list(self.magang_keywords_var.get()),
             magang_ranks=self._parse_int_list(self.magang_ranks_var.get()),
+            magang_off_target=self._parse_optional_int(self.magang_off_target_var.get()),
             enforce_no_m_to_p=self.enforce_no_m_to_p_var.get(),
             enforce_mll_each=self.enforce_mll_each_var.get(),
             enforce_rank_group_not_together=self.enforce_rank_group_not_together_var.get(),
@@ -1739,6 +1756,7 @@ class SchedulerApp:
         self.uniform_group_var.set("12,13,14")
         self.magang_keywords_var.set("magang,intern,koas,praktek")
         self.magang_ranks_var.set("")
+        self.magang_off_target_var.set("")
 
         self.enforce_no_m_to_p_var.set(True)
         self.enforce_mll_each_var.set(True)
