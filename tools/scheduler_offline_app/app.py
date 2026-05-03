@@ -1405,7 +1405,7 @@ class SchedulerApp:
             self.enforce_uniform_group_night_var.set(self._to_bool(state.get("enforce_uniform_group_night"), True))
             self.enforce_night_monotonic_var.set(self._to_bool(state.get("enforce_night_monotonic"), True))
             self.enforce_off_monotonic_var.set(self._to_bool(state.get("enforce_off_monotonic"), True))
-            self.process_magang_var.set(self._to_bool(state.get("process_magang"), True))
+            self.process_magang_var.set(self._to_bool(state.get("process_magang"), False))
             self.assign_colors_var.set(self._to_bool(state.get("assign_colors"), True))
 
             self.export_json_var.set(self._to_bool(state.get("auto_export_json"), True))
@@ -1531,7 +1531,7 @@ class SchedulerApp:
             "enforce_uniform_group_night": True,
             "enforce_night_monotonic": True,
             "enforce_off_monotonic": True,
-            "process_magang": True,
+            "process_magang": False,
             "assign_colors": True,
             "auto_export_json": True,
             "auto_export_csv": True,
@@ -1658,7 +1658,7 @@ class SchedulerApp:
         self.enforce_uniform_group_night_var.set(True)
         self.enforce_night_monotonic_var.set(True)
         self.enforce_off_monotonic_var.set(True)
-        self.process_magang_var.set(True)
+        self.process_magang_var.set(False)
         self.assign_colors_var.set(True)
 
         self._set_progress_target(0.0, immediate=True)
