@@ -1,4 +1,4 @@
-# Offline Jadwal Jaga Builder
+# Generator Jadwal Jaga RSIA MELINDA
 
 Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rule engine.
 
@@ -6,10 +6,13 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 
 - 100% offline (Python + Tkinter)
 - Load file template jadwal yang sudah ada
+- Welcome screen dengan pilihan:
+  - Jadwal Jaga VK / Ruangan
+  - Jadwal Jaga Neonatus (coming soon)
 - Setting alih bahasa aplikasi: Indonesia <-> English
 - Generate jadwal otomatis dengan optimasi swap per hari
 - Tombol preset cepat: `Apply Preset: Final VK`
-- Progress bar + status realtime (iterasi, elapsed, ETA)
+- Progress bar 0-100% + status realtime (fase kerja, iterasi, elapsed, ETA)
 - Validasi otomatis:
   - Coverage harian (`P/S/M/L`)
   - Tandem rank
@@ -34,7 +37,7 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 
 ## Cara Menjalankan
 
-Dari root repo:
+Dari root repo (Python):
 
 ```powershell
 .\.venv\Scripts\python.exe .\tools\scheduler_offline_app\app.py
@@ -46,6 +49,24 @@ Atau dari folder ini:
 cd .\tools\scheduler_offline_app
 ..\..\.venv\Scripts\python.exe .\app.py
 ```
+
+Atau jalankan launcher:
+
+```powershell
+.\run_scheduler_offline_app.bat
+```
+
+## Build EXE
+
+Untuk membuat file `.exe` (Windows), jalankan:
+
+```powershell
+.\build_scheduler_offline_app_exe.bat
+```
+
+Hasil build:
+
+- `dist\Generator Jadwal Jaga RSIA MELINDA.exe`
 
 ## Input yang Diharapkan
 
