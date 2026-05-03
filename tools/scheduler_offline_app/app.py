@@ -1189,7 +1189,7 @@ class SchedulerApp:
             "auto_export_csv": self.export_csv_var.get(),
         }
 
-    def _apply_config_state(self, state: Dict[str, Any]) -> None:
+    def _apply_config_state(self, state: Dict[str, Any], switch_mode_view: bool = True) -> None:
         if not isinstance(state, dict):
             raise ValueError(self._tr("config_invalid_format"))
 
@@ -1242,10 +1242,11 @@ class SchedulerApp:
 
             self._apply_language(refresh_progress=True)
 
-            if mode == "vk_ruangan":
-                self._show_main_screen()
-            else:
-                self._show_welcome_screen()
+            if switch_mode_view:
+                if mode == "vk_ruangan":
+                    self._show_main_screen()
+                else:
+                    self._show_welcome_screen()
         finally:
             self._suspend_auto_persist = False
 
@@ -1268,11 +1269,12 @@ class SchedulerApp:
         try:
             with self._last_config_path.open("r", encoding="utf-8") as f:
                 state = json.load(f)
-            self._apply_config_state(state)
+            self._apply_config_state(state, switch_mode_view=False)
             self._append_report(
                 self._tr("report_title_config"),
                 self._tr("config_autoload_report_fmt", path=str(self._last_config_path)),
             )
+            self._show_welcome_screen()
         except Exception:
             pass
 
