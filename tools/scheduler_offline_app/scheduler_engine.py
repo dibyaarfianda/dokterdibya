@@ -362,6 +362,8 @@ class OfflineSchedulerEngine:
         active_days = [d for d in sorted(day_cols) if config.start_day <= d <= config.end_day]
         if not active_days:
             raise ValueError("No active days found in selected day range")
+        all_days = sorted(day_cols)
+        inactive_days = [d for d in all_days if d not in active_days]
 
         expected_l = len(core_staff) - (config.p_count + config.s_count + config.m_count)
         if expected_l < 0:
@@ -505,13 +507,20 @@ class OfflineSchedulerEngine:
                 cell.value = best[n]["codes"][d]
                 self._set_readable_font(cell)
 
+            # Clear stale highlight on days outside selected generation range.
+            for d in inactive_days:
+                cell = ws.cell(r, day_cols[d])
+                cell.fill = self.fill_plain
+                self._set_readable_font(cell)
+
         # Any row excluded from core processing must remain off-duty.
         core_rows = {s.row for s in core_staff}
         inactive_rows = [s for s in all_staff if s.row not in core_rows]
         for s in inactive_rows:
-            for d in active_days:
+            for d in all_days:
                 cell = ws.cell(s.row, day_cols[d])
                 cell.value = "L"
+                cell.fill = self.fill_plain
                 self._set_readable_font(cell)
 
         # Optional coloring policy.
@@ -1138,8 +1147,9 @@ class OfflineSchedulerEngine:
         # Keep every row excluded from core generation visually off-duty.
         core_rows = {s.row for s in core_staff}
         inactive_rows = [s for s in all_staff if s.row not in core_rows]
+        all_days = sorted(day_cols)
         for s in inactive_rows:
-            for day in active_days:
+            for day in all_days:
                 col = day_cols[day]
                 cell = ws.cell(s.row, col)
                 cell.value = "L"
