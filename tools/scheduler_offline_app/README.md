@@ -14,6 +14,7 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 - Badge status berwarna real-time (idle, preparing, optimizing, saving, done, error)
 - Animasi transisi progress yang lebih halus saat generate berjalan
 - Branding logo dari `tools/scheduler_offline_app/assets/jadwaljaga.png` (topbar + welcome)
+- Icon logo multi-size otomatis (`16,24,32,48,64,96,128,256,512` + `.ico`) untuk app dan EXE
 - Setting alih bahasa aplikasi: Indonesia <-> English
 - Simpan/Muat konfigurasi ke file JSON
 - Reset konfigurasi ke default
