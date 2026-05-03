@@ -308,6 +308,8 @@ class SchedulerApp:
         self._progress_spinner_on = False
         self._progress_bootstrap_job: str | None = None
         self._progress_bootstrap_tick = 0
+        self._progress_fill_id: int | None = None
+        self._progress_text_id: int | None = None
 
         self._status_badge_key = "idle"
         self._status_badge_color = "#6c757d"
@@ -370,6 +372,12 @@ class SchedulerApp:
             background="#f4f6f9",
             foreground="#6c757d",
             font=("Segoe UI", 9),
+        )
+        style.configure(
+            "ProgressText.TLabel",
+            background="#f4f6f9",
+            foreground="#1f2937",
+            font=("Segoe UI", 9, "bold"),
         )
         style.configure(
             "WelcomeTitle.TLabel",
@@ -594,9 +602,33 @@ class SchedulerApp:
         self._progress_target = max(0.0, min(100.0, float(percent)))
         if immediate:
             self.progress_var.set(self._progress_target)
+            self._draw_progress_canvas()
             return
         if self._progress_anim_job is None:
             self._animate_progress_step()
+
+    def _draw_progress_canvas(self) -> None:
+        if not hasattr(self, "progress_canvas"):
+            return
+        if self._progress_fill_id is None or self._progress_text_id is None:
+            return
+
+        width = max(2, self.progress_canvas.winfo_width())
+        height = max(2, self.progress_canvas.winfo_height())
+        percent = max(0.0, min(100.0, float(self.progress_var.get())))
+        fill_width = int(round(width * (percent / 100.0)))
+
+        self.progress_canvas.coords(self._progress_fill_id, 0, 0, fill_width, height)
+        text_color = "#ffffff" if fill_width >= width * 0.35 else "#2f3b52"
+        self.progress_canvas.itemconfigure(
+            self._progress_text_id,
+            text=f"{int(round(percent))}%",
+            fill=text_color,
+        )
+        self.progress_canvas.coords(self._progress_text_id, width / 2, height / 2)
+
+    def _on_progress_canvas_configure(self, _event=None) -> None:
+        self._draw_progress_canvas()
 
     def _set_progress_spinner(self, enabled: bool) -> None:
         if enabled and not self._progress_spinner_on:
@@ -645,6 +677,7 @@ class SchedulerApp:
         # Only drive the fake heartbeat until real payload progress takes over.
         if self._progress_target <= 7.0:
             self.progress_var.set(value)
+            self._draw_progress_canvas()
 
         self._progress_bootstrap_tick += 1
         self._progress_bootstrap_job = self.root.after(120, self._progress_bootstrap_step)
@@ -654,6 +687,7 @@ class SchedulerApp:
         delta = self._progress_target - current
         if abs(delta) <= 0.15:
             self.progress_var.set(self._progress_target)
+            self._draw_progress_canvas()
             self._progress_anim_job = None
             return
 
@@ -664,6 +698,7 @@ class SchedulerApp:
             step = min(step, -0.22)
 
         self.progress_var.set(max(0.0, min(100.0, current + step)))
+        self._draw_progress_canvas()
         self._progress_anim_job = self.root.after(24, self._animate_progress_step)
 
     def _pulse_status_badge(self) -> None:
@@ -920,7 +955,7 @@ class SchedulerApp:
         action_frame = ttk.Frame(self.main_container, style="App.TFrame")
         action_frame.grid(row=4, column=0, sticky="nsew", padx=10, pady=8)
         action_frame.columnconfigure(0, weight=1)
-        action_frame.rowconfigure(1, weight=1)
+        action_frame.rowconfigure(2, weight=1)
 
         button_bar = ttk.Frame(action_frame, style="App.TFrame")
         button_bar.grid(row=0, column=0, sticky="ew")
@@ -954,6 +989,27 @@ class SchedulerApp:
         progress_frame.grid(row=1, column=0, sticky="ew", pady=(6, 2))
         progress_frame.columnconfigure(0, weight=1)
 
+        self.progress_canvas = tk.Canvas(
+            progress_frame,
+            height=18,
+            bg="#dfe3e8",
+            highlightthickness=1,
+            highlightbackground="#c8d0da",
+            bd=0,
+        )
+        self.progress_canvas.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=(0, 4))
+        self.progress_canvas.bind("<Configure>", self._on_progress_canvas_configure)
+        self._progress_fill_id = self.progress_canvas.create_rectangle(
+            0, 0, 0, 18, fill="#0d6efd", outline=""
+        )
+        self._progress_text_id = self.progress_canvas.create_text(
+            0,
+            0,
+            text="0%",
+            fill="#2f3b52",
+            font=("Segoe UI", 8, "bold"),
+        )
+
         self.progress_bar = ttk.Progressbar(
             progress_frame,
             style="Brand.Horizontal.TProgressbar",
@@ -962,18 +1018,20 @@ class SchedulerApp:
             maximum=100,
             variable=self.progress_var,
         )
-        self.progress_bar.grid(row=0, column=0, sticky="ew", padx=(0, 8))
+        self.progress_bar.grid(row=1, column=0, sticky="ew", padx=(0, 8))
 
         self.progress_label = ttk.Label(
             progress_frame,
-            style="Muted.TLabel",
+            style="ProgressText.TLabel",
             textvariable=self.progress_text_var,
-            width=56,
+            width=72,
             anchor="w",
         )
         self.progress_label.grid(
-            row=0, column=1, sticky="w"
+            row=0, column=1, rowspan=2, sticky="w"
         )
+
+        self._draw_progress_canvas()
 
         self.output_text = tk.Text(action_frame, wrap="word")
         self.output_text.grid(row=2, column=0, sticky="nsew", pady=6)
