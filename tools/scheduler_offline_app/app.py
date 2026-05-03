@@ -760,10 +760,37 @@ class SchedulerApp:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-        self.main_container = ttk.Frame(self.root, style="App.TFrame")
-        self.main_container.grid(row=0, column=0, sticky="nsew")
+        self.main_scroll_host = ttk.Frame(self.root, style="App.TFrame")
+        self.main_scroll_host.grid(row=0, column=0, sticky="nsew")
+        self.main_scroll_host.columnconfigure(0, weight=1)
+        self.main_scroll_host.rowconfigure(0, weight=1)
+
+        self.main_canvas = tk.Canvas(
+            self.main_scroll_host,
+            bg="#f4f6f9",
+            highlightthickness=0,
+            bd=0,
+        )
+        self.main_canvas.grid(row=0, column=0, sticky="nsew")
+
+        self.main_canvas_vscroll = ttk.Scrollbar(
+            self.main_scroll_host,
+            orient="vertical",
+            command=self.main_canvas.yview,
+        )
+        self.main_canvas_vscroll.grid(row=0, column=1, sticky="ns")
+        self.main_canvas.configure(yscrollcommand=self.main_canvas_vscroll.set)
+
+        self.main_container = ttk.Frame(self.main_canvas, style="App.TFrame")
+        self._main_canvas_window_id = self.main_canvas.create_window(
+            (0, 0),
+            window=self.main_container,
+            anchor="nw",
+        )
         self.main_container.columnconfigure(0, weight=1)
         self.main_container.rowconfigure(4, weight=1)
+        self.main_container.bind("<Configure>", self._on_main_container_configure)
+        self.main_canvas.bind("<Configure>", self._on_main_canvas_configure)
 
         self.topbar_frame = tk.Frame(
             self.main_container,
@@ -1117,6 +1144,12 @@ class SchedulerApp:
         self.welcome_footer_label = ttk.Label(self.welcome_frame, style="Footer.TLabel")
         self.welcome_footer_label.grid(row=1, column=0, sticky="s", pady=(0, 10))
 
+        self.root.bind_all("<MouseWheel>", self._on_main_mousewheel, add="+")
+        self.root.bind_all("<Button-4>", self._on_main_mousewheel, add="+")
+        self.root.bind_all("<Button-5>", self._on_main_mousewheel, add="+")
+        self._on_main_container_configure()
+        self._on_main_canvas_configure()
+
     def _add_labeled_entry(
         self,
         parent: ttk.Widget,
@@ -1212,13 +1245,71 @@ class SchedulerApp:
                     )
                 )
 
+    def _is_descendant(self, widget, ancestor) -> bool:
+        current = widget
+        while current is not None:
+            if current == ancestor:
+                return True
+            parent_name = current.winfo_parent()
+            if not parent_name:
+                break
+            try:
+                current = current.nametowidget(parent_name)
+            except Exception:
+                break
+        return False
+
+    def _on_main_container_configure(self, _event=None) -> None:
+        try:
+            bbox = self.main_canvas.bbox("all")
+            if bbox is not None:
+                self.main_canvas.configure(scrollregion=bbox)
+        except Exception:
+            pass
+
+    def _on_main_canvas_configure(self, _event=None) -> None:
+        try:
+            width = max(1, self.main_canvas.winfo_width())
+            self.main_canvas.itemconfigure(self._main_canvas_window_id, width=width)
+        except Exception:
+            pass
+
+    def _on_main_mousewheel(self, event) -> None:
+        if not self.main_scroll_host.winfo_ismapped():
+            return
+
+        widget = self.root.winfo_containing(event.x_root, event.y_root)
+        if widget is None:
+            return
+        if self._is_descendant(widget, self.output_text):
+            return
+        if not self._is_descendant(widget, self.main_scroll_host):
+            return
+
+        delta_units = 0
+        mouse_num = getattr(event, "num", None)
+        if mouse_num == 4:
+            delta_units = -1
+        elif mouse_num == 5:
+            delta_units = 1
+        else:
+            wheel_delta = getattr(event, "delta", 0)
+            if wheel_delta:
+                delta_units = -int(wheel_delta / 120)
+                if delta_units == 0:
+                    delta_units = -1 if wheel_delta > 0 else 1
+
+        if delta_units != 0:
+            self.main_canvas.yview_scroll(delta_units, "units")
+
     def _show_welcome_screen(self) -> None:
-        self.main_container.grid_remove()
+        self.main_scroll_host.grid_remove()
         self.welcome_frame.grid()
 
     def _show_main_screen(self) -> None:
         self.welcome_frame.grid_remove()
-        self.main_container.grid()
+        self.main_scroll_host.grid()
+        self._on_main_container_configure()
 
     def _select_mode_vk(self) -> None:
         self.schedule_mode_var.set("vk_ruangan")
