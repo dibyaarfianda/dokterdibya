@@ -49,6 +49,13 @@ class SchedulerConfig:
     # Example for rank 12,13,14: [12, 13, 14]
     uniform_group_ranks: Optional[List[int]] = None
 
+    # MAGANG processing controls.
+    process_magang: bool = True
+    # Example keywords: ["magang", "intern", "koas", "praktek"]
+    magang_keywords: Optional[List[str]] = None
+    # Optional explicit rank numbers to force as MAGANG participants.
+    magang_ranks: Optional[List[int]] = None
+
     enforce_no_m_to_p: bool = True
     enforce_mll_each: bool = True
     enforce_rank_group_not_together: bool = True
@@ -76,9 +83,57 @@ class OfflineSchedulerEngine:
         self.fill_green = PatternFill(fill_type="solid", fgColor="FFE2EFDA")
 
     @staticmethod
-    def _is_magang_name(name: str) -> bool:
+    def _default_magang_keywords() -> List[str]:
+        return ["magang", "intern", "koas", "praktek"]
+
+    @staticmethod
+    def _normalize_magang_keywords(keywords: Optional[List[str]]) -> List[str]:
+        src = keywords if keywords else OfflineSchedulerEngine._default_magang_keywords()
+        out: List[str] = []
+        seen = set()
+        for item in src:
+            token = str(item or "").strip().lower()
+            if not token or token in seen:
+                continue
+            seen.add(token)
+            out.append(token)
+        return out
+
+    @staticmethod
+    def _is_magang_name(name: str, keywords: Optional[List[str]] = None) -> bool:
         name_l = str(name or "").strip().lower()
-        return "magang" in name_l or "intern" in name_l
+        if not name_l:
+            return False
+        for token in OfflineSchedulerEngine._normalize_magang_keywords(keywords):
+            if token in name_l:
+                return True
+        return False
+
+    def _is_magang_staff(self, staff: StaffMember, config: SchedulerConfig) -> bool:
+        if not config.process_magang:
+            return False
+
+        rank_set = set()
+        for r in config.magang_ranks or []:
+            try:
+                parsed = int(r)
+            except Exception:
+                continue
+            if parsed > 0:
+                rank_set.add(parsed)
+        if rank_set and staff.no in rank_set:
+            return True
+
+        return self._is_magang_name(staff.name, config.magang_keywords)
+
+    def _is_core_staff(self, staff: StaffMember, config: SchedulerConfig) -> bool:
+        magang_by_name = self._is_magang_name(staff.name, config.magang_keywords)
+
+        if config.process_magang:
+            return staff.no <= config.max_core_rank or self._is_magang_staff(staff, config)
+
+        # When MAGANG processing is disabled, exclude MAGANG rows from duty generation.
+        return staff.no <= config.max_core_rank and not magang_by_name
 
     @staticmethod
     def _parse_rank_no(value) -> Optional[int]:
@@ -99,7 +154,7 @@ class OfflineSchedulerEngine:
             text = value.strip()
             if not text:
                 return None
-            m = re.fullmatch(r"(\d+)(?:\.0+)?", text)
+            m = re.fullmatch(r"(\d+)(?:(?:[\.,]0*)?)", text)
             if not m:
                 return None
             try:
@@ -122,12 +177,8 @@ class OfflineSchedulerEngine:
         ws = wb[config.sheet_name]
 
         day_cols = self._parse_day_columns(ws)
-        staff_all = self._parse_staff(ws)
-        core_staff = [
-            s
-            for s in staff_all
-            if s.no <= config.max_core_rank or self._is_magang_name(s.name)
-        ]
+        staff_all = self._parse_staff(ws, config)
+        core_staff = [s for s in staff_all if self._is_core_staff(s, config)]
         core_names = [s.name for s in core_staff]
         row_by_name = {s.name: s.row for s in core_staff}
         no_by_name = {s.name: s.no for s in core_staff}
@@ -299,12 +350,8 @@ class OfflineSchedulerEngine:
         ws = wb[config.sheet_name]
 
         day_cols = self._parse_day_columns(ws)
-        all_staff = self._parse_staff(ws)
-        core_staff = [
-            s
-            for s in all_staff
-            if s.no <= config.max_core_rank or self._is_magang_name(s.name)
-        ]
+        all_staff = self._parse_staff(ws, config)
+        core_staff = [s for s in all_staff if self._is_core_staff(s, config)]
         core_staff = sorted(core_staff, key=lambda s: s.no)
 
         core_names = [s.name for s in core_staff]
@@ -446,13 +493,10 @@ class OfflineSchedulerEngine:
                 cell.value = best[n]["codes"][d]
                 self._set_readable_font(cell)
 
-        # Non-core (rank > max_core_rank) and non-magang rows must stay off-duty.
-        non_core_rows = [
-            s
-            for s in all_staff
-            if s.no > config.max_core_rank and not self._is_magang_name(s.name)
-        ]
-        for s in non_core_rows:
+        # Any row excluded from core processing must remain off-duty.
+        core_rows = {s.row for s in core_staff}
+        inactive_rows = [s for s in all_staff if s.row not in core_rows]
+        for s in inactive_rows:
             for d in active_days:
                 cell = ws.cell(s.row, day_cols[d])
                 cell.value = "L"
@@ -549,7 +593,7 @@ class OfflineSchedulerEngine:
             raise ValueError("Day columns not found in header row 2")
         return out
 
-    def _parse_staff(self, ws) -> List[StaffMember]:
+    def _parse_staff(self, ws, config: Optional[SchedulerConfig] = None) -> List[StaffMember]:
         staff = []
         magang_rows: List[Tuple[int, str]] = []
         max_no = 0
@@ -574,7 +618,10 @@ class OfflineSchedulerEngine:
                     max_no = assigned_no
                 continue
 
-            if self._is_magang_name(name_clean):
+            keywords = config.magang_keywords if config else None
+            if self._is_magang_name(name_clean, keywords):
+                if config is not None and not config.process_magang:
+                    continue
                 magang_rows.append((r, name_clean))
 
         for r, name_clean in magang_rows:
@@ -674,12 +721,15 @@ class OfflineSchedulerEngine:
 
         add_priority = list(reversed(non_group_indices)) if non_group_indices else list(reversed(range(len(targets))))
         remove_priority = list(reversed(non_group_indices)) if non_group_indices else list(reversed(range(len(targets))))
+        add_priority_non_top = [idx for idx in add_priority if idx != 0]
+        if not add_priority_non_top:
+            add_priority_non_top = add_priority[:]
 
         def _add_with_monotonic(need: int) -> int:
             guard = 0
             while need > 0 and guard < 200000:
                 progressed = False
-                for idx in add_priority:
+                for idx in add_priority_non_top:
                     prev_limit = targets[idx - 1] if idx > 0 else None
                     if prev_limit is None or targets[idx] < prev_limit:
                         targets[idx] += 1
@@ -689,9 +739,12 @@ class OfflineSchedulerEngine:
                             break
 
                 if not progressed:
-                    # Entire chain is flat; lift the top rank to open headroom.
-                    targets[0] += 1
-                    need -= 1
+                    # Only lift top rank as a last resort when lower ranks cannot absorb more.
+                    if 0 in add_priority:
+                        targets[0] += 1
+                        need -= 1
+                    else:
+                        break
 
                 guard += 1
             return need
@@ -883,8 +936,10 @@ class OfflineSchedulerEngine:
         # Off target proximity.
         off_target_pen = 0
         for n in core_names:
-            off_target_pen += abs(off[n] - off_targets.get(n, off[n]))
-        penalties += off_target_pen * 22000
+            rank = no_by_name.get(n, config.max_core_rank)
+            rank_weight = 1.0 + max(0.0, (config.max_core_rank - rank) * 0.3)
+            off_target_pen += abs(off[n] - off_targets.get(n, off[n])) * rank_weight
+        penalties += off_target_pen * 60000
 
         if config.enforce_mll_each:
             missing = 0
@@ -962,13 +1017,10 @@ class OfflineSchedulerEngine:
                 for n in polos:
                     ws.cell(row_by_name[n], col).fill = self.fill_plain
 
-        # Keep non-core non-magang rows visually off-duty as plain L.
-        higher_rows = [
-            s
-            for s in all_staff
-            if s.no > config.max_core_rank and not self._is_magang_name(s.name)
-        ]
-        for s in higher_rows:
+        # Keep every row excluded from core generation visually off-duty.
+        core_rows = {s.row for s in core_staff}
+        inactive_rows = [s for s in all_staff if s.row not in core_rows]
+        for s in inactive_rows:
             for day in active_days:
                 col = day_cols[day]
                 cell = ws.cell(s.row, col)

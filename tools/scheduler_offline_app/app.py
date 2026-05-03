@@ -66,6 +66,8 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "field_max_core_rank": "Max Core Rank",
         "field_off_targets": "Target Libur (CSV)",
         "field_uniform_group": "Rank Grup Seragam (CSV)",
+        "field_magang_keywords": "Kata Kunci MAGANG (CSV)",
+        "field_magang_ranks": "Rank MAGANG (CSV, opsional)",
         "rule_no_m_to_p": "Tanpa M -> P",
         "rule_each_mll": "Semua Staff Punya M-L-L",
         "rule_group_not_together": "Rank Grup Tidak Bersamaan",
@@ -75,6 +77,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "rule_uniform_night": "Malam Grup Seragam",
         "rule_night_monotonic": "Malam Monotonik",
         "rule_off_monotonic": "Libur Monotonik",
+        "rule_process_magang": "Proses Jadwal MAGANG",
         "rule_apply_colors": "Terapkan Warna",
         "progress_idle": "Siap",
         "progress_starting": "Memulai optimasi...",
@@ -166,6 +169,8 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "field_max_core_rank": "Max Core Rank",
         "field_off_targets": "Off Targets (CSV)",
         "field_uniform_group": "Uniform Group Ranks (CSV)",
+        "field_magang_keywords": "MAGANG Keywords (CSV)",
+        "field_magang_ranks": "MAGANG Ranks (CSV, optional)",
         "rule_no_m_to_p": "No M->P",
         "rule_each_mll": "Each Staff Has M-L-L",
         "rule_group_not_together": "Rank Group Not Together",
@@ -175,6 +180,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "rule_uniform_night": "Uniform Group Night",
         "rule_night_monotonic": "Night Monotonic",
         "rule_off_monotonic": "Off Monotonic",
+        "rule_process_magang": "Process MAGANG Schedule",
         "rule_apply_colors": "Apply Colors",
         "progress_idle": "Idle",
         "progress_starting": "Starting optimization...",
@@ -284,6 +290,8 @@ class SchedulerApp:
             value="12,12,11,11,10,10,9,9,9,9,9,8,8,8"
         )
         self.uniform_group_var = tk.StringVar(value="12,13,14")
+        self.magang_keywords_var = tk.StringVar(value="magang,intern,koas,praktek")
+        self.magang_ranks_var = tk.StringVar(value="")
 
         self.enforce_no_m_to_p_var = tk.BooleanVar(value=True)
         self.enforce_mll_each_var = tk.BooleanVar(value=True)
@@ -294,6 +302,7 @@ class SchedulerApp:
         self.enforce_uniform_group_night_var = tk.BooleanVar(value=True)
         self.enforce_night_monotonic_var = tk.BooleanVar(value=True)
         self.enforce_off_monotonic_var = tk.BooleanVar(value=True)
+        self.process_magang_var = tk.BooleanVar(value=True)
         self.assign_colors_var = tk.BooleanVar(value=True)
 
         self.export_json_var = tk.BooleanVar(value=True)
@@ -926,6 +935,12 @@ class SchedulerApp:
         self.config_label_widgets["field_uniform_group"] = self._add_labeled_entry(
             self.config_frame, "", self.uniform_group_var, 5, 0, span=5
         )
+        self.config_label_widgets["field_magang_keywords"] = self._add_labeled_entry(
+            self.config_frame, "", self.magang_keywords_var, 6, 0, span=5
+        )
+        self.config_label_widgets["field_magang_ranks"] = self._add_labeled_entry(
+            self.config_frame, "", self.magang_ranks_var, 7, 0, span=5
+        )
 
         self.flags_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
         self.flags_frame.grid(row=3, column=0, sticky="ew", padx=10, pady=6)
@@ -940,6 +955,7 @@ class SchedulerApp:
             ("rule_uniform_night", self.enforce_uniform_group_night_var),
             ("rule_night_monotonic", self.enforce_night_monotonic_var),
             ("rule_off_monotonic", self.enforce_off_monotonic_var),
+            ("rule_process_magang", self.process_magang_var),
             ("rule_apply_colors", self.assign_colors_var),
         ]
 
@@ -1327,6 +1343,8 @@ class SchedulerApp:
             "max_core_rank": self.max_core_rank_var.get().strip(),
             "off_targets": self.off_targets_var.get().strip(),
             "uniform_group": self.uniform_group_var.get().strip(),
+            "magang_keywords": self.magang_keywords_var.get().strip(),
+            "magang_ranks": self.magang_ranks_var.get().strip(),
             "enforce_no_m_to_p": self.enforce_no_m_to_p_var.get(),
             "enforce_mll_each": self.enforce_mll_each_var.get(),
             "enforce_rank_group_not_together": self.enforce_rank_group_not_together_var.get(),
@@ -1336,6 +1354,7 @@ class SchedulerApp:
             "enforce_uniform_group_night": self.enforce_uniform_group_night_var.get(),
             "enforce_night_monotonic": self.enforce_night_monotonic_var.get(),
             "enforce_off_monotonic": self.enforce_off_monotonic_var.get(),
+            "process_magang": self.process_magang_var.get(),
             "assign_colors": self.assign_colors_var.get(),
             "auto_export_json": self.export_json_var.get(),
             "auto_export_csv": self.export_csv_var.get(),
@@ -1374,6 +1393,8 @@ class SchedulerApp:
 
             self.off_targets_var.set(str(state.get("off_targets", self.off_targets_var.get())).strip() or "12,12,11,11,10,10,9,9,9,9,9,8,8,8")
             self.uniform_group_var.set(str(state.get("uniform_group", self.uniform_group_var.get())).strip() or "12,13,14")
+            self.magang_keywords_var.set(str(state.get("magang_keywords", self.magang_keywords_var.get())).strip() or "magang,intern,koas,praktek")
+            self.magang_ranks_var.set(str(state.get("magang_ranks", self.magang_ranks_var.get())).strip())
 
             self.enforce_no_m_to_p_var.set(self._to_bool(state.get("enforce_no_m_to_p"), True))
             self.enforce_mll_each_var.set(self._to_bool(state.get("enforce_mll_each"), True))
@@ -1384,6 +1405,7 @@ class SchedulerApp:
             self.enforce_uniform_group_night_var.set(self._to_bool(state.get("enforce_uniform_group_night"), True))
             self.enforce_night_monotonic_var.set(self._to_bool(state.get("enforce_night_monotonic"), True))
             self.enforce_off_monotonic_var.set(self._to_bool(state.get("enforce_off_monotonic"), True))
+            self.process_magang_var.set(self._to_bool(state.get("process_magang"), True))
             self.assign_colors_var.set(self._to_bool(state.get("assign_colors"), True))
 
             self.export_json_var.set(self._to_bool(state.get("auto_export_json"), True))
@@ -1498,6 +1520,8 @@ class SchedulerApp:
             "max_core_rank": "14",
             "off_targets": "12,12,11,11,10,10,9,9,9,9,9,8,8,8",
             "uniform_group": "12,13,14",
+            "magang_keywords": "magang,intern,koas,praktek",
+            "magang_ranks": "",
             "enforce_no_m_to_p": True,
             "enforce_mll_each": True,
             "enforce_rank_group_not_together": True,
@@ -1507,6 +1531,7 @@ class SchedulerApp:
             "enforce_uniform_group_night": True,
             "enforce_night_monotonic": True,
             "enforce_off_monotonic": True,
+            "process_magang": True,
             "assign_colors": True,
             "auto_export_json": True,
             "auto_export_csv": True,
@@ -1563,6 +1588,14 @@ class SchedulerApp:
             values.append(int(item))
         return values
 
+    def _parse_str_list(self, text: str) -> List[str]:
+        values: List[str] = []
+        for item in text.split(","):
+            token = item.strip()
+            if token:
+                values.append(token)
+        return values
+
     def _build_config(self) -> SchedulerConfig:
         return SchedulerConfig(
             sheet_name=self.sheet_name_var.get().strip() or "JADWAL BARU",
@@ -1579,6 +1612,9 @@ class SchedulerApp:
             top_rank_max_night=int(self.top_rank_max_night_var.get().strip()),
             off_targets_by_rank=self._parse_int_list(self.off_targets_var.get()),
             uniform_group_ranks=self._parse_int_list(self.uniform_group_var.get()),
+            process_magang=self.process_magang_var.get(),
+            magang_keywords=self._parse_str_list(self.magang_keywords_var.get()),
+            magang_ranks=self._parse_int_list(self.magang_ranks_var.get()),
             enforce_no_m_to_p=self.enforce_no_m_to_p_var.get(),
             enforce_mll_each=self.enforce_mll_each_var.get(),
             enforce_rank_group_not_together=self.enforce_rank_group_not_together_var.get(),
@@ -1610,6 +1646,8 @@ class SchedulerApp:
         self.top_rank_max_night_var.set("3")
         self.off_targets_var.set("12,12,11,11,10,10,9,9,9,9,9,8,8,8")
         self.uniform_group_var.set("12,13,14")
+        self.magang_keywords_var.set("magang,intern,koas,praktek")
+        self.magang_ranks_var.set("")
 
         self.enforce_no_m_to_p_var.set(True)
         self.enforce_mll_each_var.set(True)
@@ -1620,6 +1658,7 @@ class SchedulerApp:
         self.enforce_uniform_group_night_var.set(True)
         self.enforce_night_monotonic_var.set(True)
         self.enforce_off_monotonic_var.set(True)
+        self.process_magang_var.set(True)
         self.assign_colors_var.set(True)
 
         self._set_progress_target(0.0, immediate=True)
