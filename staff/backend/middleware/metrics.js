@@ -46,9 +46,22 @@ const trimArrayToMax = (arr, max) => {
 };
 
 const normalizePath = (routePath) => {
-    if (!routePath || !isProduction) return routePath || 'unknown';
+    if (!routePath) return 'unknown';
 
-    return routePath
+    let normalizedPath;
+    if (typeof routePath === 'string') {
+        normalizedPath = routePath;
+    } else if (routePath instanceof RegExp) {
+        normalizedPath = routePath.toString();
+    } else {
+        normalizedPath = String(routePath);
+    }
+
+    if (!isProduction) {
+        return normalizedPath;
+    }
+
+    return normalizedPath
         .replace(/\/\d+(?=\/|$)/g, '/:id')
         .replace(/\/[A-Za-z]{2,}\d+(?=\/|$)/g, '/:id')
         .replace(/\/[0-9a-fA-F-]{8,}(?=\/|$)/g, '/:id');
@@ -122,61 +135,69 @@ const metricsMiddleware = (req, res, next) => {
     }
 
     res.on('finish', () => {
-        const responseTime = Number(process.hrtime.bigint() - startNs) / 1e6;
-        const statusCode = res.statusCode;
-        const statusCategory = `${Math.floor(statusCode / 100)}xx`;
-        const endpoint = getEndpointKey(req);
+        try {
+            const responseTime = Number(process.hrtime.bigint() - startNs) / 1e6;
+            const statusCode = res.statusCode;
+            const statusCategory = `${Math.floor(statusCode / 100)}xx`;
+            const endpoint = getEndpointKey(req);
 
-        metrics.requests.byStatusCode[statusCode] = (metrics.requests.byStatusCode[statusCode] || 0) + 1;
-        metrics.requests.byStatus[statusCategory] = (metrics.requests.byStatus[statusCategory] || 0) + 1;
+            metrics.requests.byStatusCode[statusCode] = (metrics.requests.byStatusCode[statusCode] || 0) + 1;
+            metrics.requests.byStatus[statusCategory] = (metrics.requests.byStatus[statusCategory] || 0) + 1;
 
-        if (statusCode >= 400) {
-            metrics.errors.total++;
-            const errorType = statusCode >= 500 ? 'server' : 'client';
-            metrics.errors.byType[errorType] = (metrics.errors.byType[errorType] || 0) + 1;
-            metrics.errors.byStatus[statusCode] = (metrics.errors.byStatus[statusCode] || 0) + 1;
-        }
-
-        const shouldTrackDetailed = ENABLE_DETAILED_METRICS &&
-            (METRICS_SAMPLE_RATE >= 1 || Math.random() <= METRICS_SAMPLE_RATE);
-
-        if (shouldTrackDetailed) {
-            metrics.responseTimes.total += responseTime;
-            metrics.responseTimes.count++;
-            metrics.responseTimes.all.push(responseTime);
-            trimArrayToMax(metrics.responseTimes.all, MAX_GLOBAL_SAMPLES);
-
-            if (trackEndpointAllowed(metrics.requests.byEndpoint, endpoint)) {
-                metrics.requests.byEndpoint[endpoint] = (metrics.requests.byEndpoint[endpoint] || 0) + 1;
+            if (statusCode >= 400) {
+                metrics.errors.total++;
+                const errorType = statusCode >= 500 ? 'server' : 'client';
+                metrics.errors.byType[errorType] = (metrics.errors.byType[errorType] || 0) + 1;
+                metrics.errors.byStatus[statusCode] = (metrics.errors.byStatus[statusCode] || 0) + 1;
             }
 
-            if (trackEndpointAllowed(metrics.responseTimes.byEndpoint, endpoint)) {
-                if (!metrics.responseTimes.byEndpoint[endpoint]) {
-                    metrics.responseTimes.byEndpoint[endpoint] = {
-                        total: 0,
-                        count: 0,
-                        min: Infinity,
-                        max: 0,
-                        times: []
-                    };
+            const shouldTrackDetailed = ENABLE_DETAILED_METRICS &&
+                (METRICS_SAMPLE_RATE >= 1 || Math.random() <= METRICS_SAMPLE_RATE);
+
+            if (shouldTrackDetailed) {
+                metrics.responseTimes.total += responseTime;
+                metrics.responseTimes.count++;
+                metrics.responseTimes.all.push(responseTime);
+                trimArrayToMax(metrics.responseTimes.all, MAX_GLOBAL_SAMPLES);
+
+                if (trackEndpointAllowed(metrics.requests.byEndpoint, endpoint)) {
+                    metrics.requests.byEndpoint[endpoint] = (metrics.requests.byEndpoint[endpoint] || 0) + 1;
                 }
 
-                const endpointMetrics = metrics.responseTimes.byEndpoint[endpoint];
-                endpointMetrics.total += responseTime;
-                endpointMetrics.count++;
-                endpointMetrics.min = Math.min(endpointMetrics.min, responseTime);
-                endpointMetrics.max = Math.max(endpointMetrics.max, responseTime);
-                endpointMetrics.times.push(responseTime);
-                trimArrayToMax(endpointMetrics.times, MAX_ENDPOINT_SAMPLES);
-            }
-        }
+                if (trackEndpointAllowed(metrics.responseTimes.byEndpoint, endpoint)) {
+                    if (!metrics.responseTimes.byEndpoint[endpoint]) {
+                        metrics.responseTimes.byEndpoint[endpoint] = {
+                            total: 0,
+                            count: 0,
+                            min: Infinity,
+                            max: 0,
+                            times: []
+                        };
+                    }
 
-        if (ENABLE_METRICS_SLOW_LOG && responseTime > METRICS_SLOW_REQUEST_MS) {
-            logger.warn('Slow request detected', {
-                endpoint,
-                responseTime: `${Math.round(responseTime)}ms`,
-                statusCode,
-                userId: req.user?.id
+                    const endpointMetrics = metrics.responseTimes.byEndpoint[endpoint];
+                    endpointMetrics.total += responseTime;
+                    endpointMetrics.count++;
+                    endpointMetrics.min = Math.min(endpointMetrics.min, responseTime);
+                    endpointMetrics.max = Math.max(endpointMetrics.max, responseTime);
+                    endpointMetrics.times.push(responseTime);
+                    trimArrayToMax(endpointMetrics.times, MAX_ENDPOINT_SAMPLES);
+                }
+            }
+
+            if (ENABLE_METRICS_SLOW_LOG && responseTime > METRICS_SLOW_REQUEST_MS) {
+                logger.warn('Slow request detected', {
+                    endpoint,
+                    responseTime: `${Math.round(responseTime)}ms`,
+                    statusCode,
+                    userId: req.user?.id
+                });
+            }
+        } catch (error) {
+            logger.error('Metrics middleware failed on response finish', {
+                error: error?.message || String(error),
+                method: req.method,
+                path: req.originalUrl || req.url
             });
         }
     });
