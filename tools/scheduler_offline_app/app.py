@@ -316,6 +316,7 @@ class SchedulerApp:
         self.logo_image_topbar: tk.PhotoImage | None = None
         self.logo_image_welcome: tk.PhotoImage | None = None
         self.logo_image_icon: tk.PhotoImage | None = None
+        self.logo_image_variants: List[tk.PhotoImage] = []
         self.logo_image_raw: tk.PhotoImage | None = None
 
         self.config_label_widgets: Dict[str, ttk.Label] = {}
@@ -476,22 +477,47 @@ class SchedulerApp:
             thickness=14,
         )
 
-    def _find_logo_path(self) -> Path | None:
-        candidates: List[Path] = [
-            Path(r"C:\Users\nanda\Downloads\jadwaljaga.png"),
-            Path(__file__).resolve().parent / "assets" / "jadwaljaga.png",
-        ]
+    def _asset_path_candidates(self, relative_path: str) -> List[Path]:
+        base_dir = Path(__file__).resolve().parent
+        candidates: List[Path] = [base_dir / relative_path]
 
         meipass = getattr(sys, "_MEIPASS", None)
         if meipass:
             meipass_path = Path(str(meipass))
-            candidates.append(meipass_path / "tools" / "scheduler_offline_app" / "assets" / "jadwaljaga.png")
-            candidates.append(meipass_path / "assets" / "jadwaljaga.png")
+            candidates.append(meipass_path / "tools" / "scheduler_offline_app" / relative_path)
+            candidates.append(meipass_path / relative_path)
+
+        return candidates
+
+    def _find_logo_path(self) -> Path | None:
+        candidates: List[Path] = []
+        candidates.extend(self._asset_path_candidates("assets/jadwaljaga.png"))
+        candidates.extend(
+            [
+                Path(r"C:\Users\nanda\Downloads\JadwalJaga.png"),
+                Path(r"C:\Users\nanda\Downloads\jadwaljaga.png"),
+            ]
+        )
 
         for path in candidates:
             if path.exists() and path.is_file():
                 return path
         return None
+
+    def _find_logo_variant_path(self, size: int) -> Path | None:
+        relative = f"assets/icons/jadwaljaga-{size}.png"
+        for path in self._asset_path_candidates(relative):
+            if path.exists() and path.is_file():
+                return path
+        return None
+
+    def _load_photo_image(self, path: Path | None) -> tk.PhotoImage | None:
+        if path is None:
+            return None
+        try:
+            return tk.PhotoImage(file=str(path))
+        except Exception:
+            return None
 
     def _resize_photo_image(self, source: tk.PhotoImage, max_width: int, max_height: int) -> tk.PhotoImage:
         if max_width <= 0 or max_height <= 0:
@@ -507,20 +533,34 @@ class SchedulerApp:
         if not logo_path:
             return
 
-        try:
-            raw = tk.PhotoImage(file=str(logo_path))
-        except Exception:
+        raw = self._load_photo_image(logo_path)
+        if raw is None:
             return
 
         self.logo_image_raw = raw
-        self.logo_image_topbar = self._resize_photo_image(raw, max_width=148, max_height=52)
-        self.logo_image_welcome = self._resize_photo_image(raw, max_width=260, max_height=112)
-        self.logo_image_icon = self._resize_photo_image(raw, max_width=48, max_height=48)
+
+        topbar_variant = self._load_photo_image(self._find_logo_variant_path(48))
+        welcome_variant = self._load_photo_image(self._find_logo_variant_path(256))
+        icon_variant = self._load_photo_image(self._find_logo_variant_path(64))
+
+        self.logo_image_topbar = topbar_variant or self._resize_photo_image(raw, max_width=148, max_height=52)
+        self.logo_image_welcome = welcome_variant or self._resize_photo_image(raw, max_width=260, max_height=112)
+        self.logo_image_icon = icon_variant or self._resize_photo_image(raw, max_width=64, max_height=64)
+
+        self.logo_image_variants = []
+        for size in [16, 24, 32, 48, 64, 96, 128, 256]:
+            variant = self._load_photo_image(self._find_logo_variant_path(size))
+            if variant is not None:
+                self.logo_image_variants.append(variant)
+
+        if not self.logo_image_variants and self.logo_image_icon is not None:
+            self.logo_image_variants = [self.logo_image_icon]
+
         self._logo_source_path = str(logo_path)
 
-        if self.logo_image_icon is not None:
+        if self.logo_image_variants:
             try:
-                self.root.iconphoto(True, self.logo_image_icon)
+                self.root.iconphoto(True, *self.logo_image_variants)
             except Exception:
                 pass
 

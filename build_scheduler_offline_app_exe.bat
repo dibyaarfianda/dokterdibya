@@ -11,26 +11,33 @@ if exist .venv\Scripts\python.exe (
   set "PY_CMD=python"
 )
 
-echo [1/4] Installing PyInstaller...
-%PY_CMD% -m pip install --upgrade pyinstaller
+echo [1/5] Installing build dependencies...
+%PY_CMD% -m pip install --upgrade pyinstaller pillow
 if errorlevel 1 (
-  echo Failed to install PyInstaller.
+  echo Failed to install build dependencies.
   exit /b 1
 )
 
-echo [2/4] Cleaning old build artifacts...
+echo [2/5] Generating multi-size logo icons...
+%PY_CMD% tools\scheduler_offline_app\generate_logo_icons.py
+if errorlevel 1 (
+  echo Failed to generate logo icons.
+  exit /b 1
+)
+
+echo [3/5] Cleaning old build artifacts...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 if exist "%APP_NAME%.spec" del /f /q "%APP_NAME%.spec"
 
-echo [3/4] Building EXE...
-%PY_CMD% -m PyInstaller --noconfirm --clean --onefile --windowed --name "%APP_NAME%" --collect-all openpyxl --add-data "tools\scheduler_offline_app\assets\jadwaljaga.png;tools\scheduler_offline_app\assets" "%ENTRY_FILE%"
+echo [4/5] Building EXE...
+%PY_CMD% -m PyInstaller --noconfirm --clean --onefile --windowed --name "%APP_NAME%" --icon "tools\scheduler_offline_app\assets\icons\jadwaljaga.ico" --collect-all openpyxl --add-data "tools\scheduler_offline_app\assets\jadwaljaga.png;tools\scheduler_offline_app\assets" --add-data "tools\scheduler_offline_app\assets\icons;tools\scheduler_offline_app\assets\icons" "%ENTRY_FILE%"
 if errorlevel 1 (
   echo EXE build failed.
   exit /b 1
 )
 
-echo [4/4] Done.
+echo [5/5] Done.
 echo EXE location: %cd%\dist\%APP_NAME%.exe
 pause
 endlocal
