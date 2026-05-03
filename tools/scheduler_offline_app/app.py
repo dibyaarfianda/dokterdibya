@@ -4,6 +4,7 @@ import csv
 import json
 import os
 import queue
+import sys
 import threading
 import traceback
 from datetime import datetime
@@ -246,6 +247,7 @@ class SchedulerApp:
 
         self._configure_styles()
         self._build_vars()
+        self._load_brand_logo()
         self._build_ui()
         self._apply_language(refresh_progress=True)
         self._show_welcome_screen()
@@ -309,6 +311,12 @@ class SchedulerApp:
         self._status_badge_pulse = False
         self._status_badge_pulse_job: str | None = None
         self._status_badge_pulse_on = False
+
+        self._logo_source_path: str = ""
+        self.logo_image_topbar: tk.PhotoImage | None = None
+        self.logo_image_welcome: tk.PhotoImage | None = None
+        self.logo_image_icon: tk.PhotoImage | None = None
+        self.logo_image_raw: tk.PhotoImage | None = None
 
         self.config_label_widgets: Dict[str, ttk.Label] = {}
         self.rule_check_widgets: Dict[str, ttk.Checkbutton] = {}
@@ -468,6 +476,54 @@ class SchedulerApp:
             thickness=14,
         )
 
+    def _find_logo_path(self) -> Path | None:
+        candidates: List[Path] = [
+            Path(r"C:\Users\nanda\Downloads\jadwaljaga.png"),
+            Path(__file__).resolve().parent / "assets" / "jadwaljaga.png",
+        ]
+
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            meipass_path = Path(str(meipass))
+            candidates.append(meipass_path / "tools" / "scheduler_offline_app" / "assets" / "jadwaljaga.png")
+            candidates.append(meipass_path / "assets" / "jadwaljaga.png")
+
+        for path in candidates:
+            if path.exists() and path.is_file():
+                return path
+        return None
+
+    def _resize_photo_image(self, source: tk.PhotoImage, max_width: int, max_height: int) -> tk.PhotoImage:
+        if max_width <= 0 or max_height <= 0:
+            return source
+
+        factor_w = (source.width() + max_width - 1) // max_width
+        factor_h = (source.height() + max_height - 1) // max_height
+        factor = max(1, factor_w, factor_h)
+        return source.subsample(factor, factor) if factor > 1 else source
+
+    def _load_brand_logo(self) -> None:
+        logo_path = self._find_logo_path()
+        if not logo_path:
+            return
+
+        try:
+            raw = tk.PhotoImage(file=str(logo_path))
+        except Exception:
+            return
+
+        self.logo_image_raw = raw
+        self.logo_image_topbar = self._resize_photo_image(raw, max_width=148, max_height=52)
+        self.logo_image_welcome = self._resize_photo_image(raw, max_width=260, max_height=112)
+        self.logo_image_icon = self._resize_photo_image(raw, max_width=48, max_height=48)
+        self._logo_source_path = str(logo_path)
+
+        if self.logo_image_icon is not None:
+            try:
+                self.root.iconphoto(True, self.logo_image_icon)
+            except Exception:
+                pass
+
     @staticmethod
     def _hex_to_rgb(color: str) -> tuple[int, int, int]:
         value = color.strip().lstrip("#")
@@ -580,7 +636,21 @@ class SchedulerApp:
         )
         self.topbar_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
         self.topbar_frame.grid_propagate(False)
-        self.topbar_frame.columnconfigure(0, weight=1)
+        self.topbar_frame.columnconfigure(1, weight=1)
+
+        self.brand_logo_topbar_label = tk.Label(self.topbar_frame, bg="#343a40")
+        if self.logo_image_topbar is not None:
+            self.brand_logo_topbar_label.configure(image=self.logo_image_topbar)
+        else:
+            self.brand_logo_topbar_label.configure(
+                text="DD",
+                fg="#ffffff",
+                bg="#0d6efd",
+                font=("Segoe UI", 10, "bold"),
+                padx=8,
+                pady=4,
+            )
+        self.brand_logo_topbar_label.grid(row=0, column=0, rowspan=2, sticky="w", padx=(14, 8), pady=6)
 
         self.brand_title_label = tk.Label(
             self.topbar_frame,
@@ -589,7 +659,7 @@ class SchedulerApp:
             font=("Segoe UI", 14, "bold"),
             anchor="w",
         )
-        self.brand_title_label.grid(row=0, column=0, sticky="sw", padx=14, pady=(6, 0))
+        self.brand_title_label.grid(row=0, column=1, sticky="sw", padx=2, pady=(6, 0))
 
         self.brand_subtitle_label = tk.Label(
             self.topbar_frame,
@@ -598,7 +668,7 @@ class SchedulerApp:
             font=("Segoe UI", 9),
             anchor="w",
         )
-        self.brand_subtitle_label.grid(row=1, column=0, sticky="nw", padx=14, pady=(0, 8))
+        self.brand_subtitle_label.grid(row=1, column=1, sticky="nw", padx=2, pady=(0, 8))
 
         self.theme_badge_label = tk.Label(
             self.topbar_frame,
@@ -608,7 +678,7 @@ class SchedulerApp:
             padx=10,
             pady=4,
         )
-        self.theme_badge_label.grid(row=0, column=1, rowspan=2, sticky="e", padx=(14, 8))
+        self.theme_badge_label.grid(row=0, column=2, rowspan=2, sticky="e", padx=(14, 8))
 
         self.status_badge_label = tk.Label(
             self.topbar_frame,
@@ -618,7 +688,7 @@ class SchedulerApp:
             padx=10,
             pady=4,
         )
-        self.status_badge_label.grid(row=0, column=2, rowspan=2, sticky="e", padx=(0, 14))
+        self.status_badge_label.grid(row=0, column=3, rowspan=2, sticky="e", padx=(0, 14))
 
         self.path_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
         self.path_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=8)
@@ -842,11 +912,23 @@ class SchedulerApp:
         self.welcome_card.grid(row=0, column=0, sticky="n", pady=(42, 0))
         self.welcome_card.columnconfigure(0, weight=1)
 
+        self.brand_logo_welcome_label = tk.Label(self.welcome_card, bg="#ffffff")
+        if self.logo_image_welcome is not None:
+            self.brand_logo_welcome_label.configure(image=self.logo_image_welcome)
+        else:
+            self.brand_logo_welcome_label.configure(
+                text="dokterDIBYA",
+                fg="#0d6efd",
+                bg="#ffffff",
+                font=("Segoe UI", 18, "bold"),
+            )
+        self.brand_logo_welcome_label.grid(row=0, column=0, sticky="n", pady=(0, 8))
+
         self.welcome_title_label = ttk.Label(self.welcome_card, style="WelcomeTitle.TLabel")
-        self.welcome_title_label.grid(row=0, column=0, sticky="n", pady=(4, 10))
+        self.welcome_title_label.grid(row=1, column=0, sticky="n", pady=(4, 10))
 
         self.welcome_subtitle_label = ttk.Label(self.welcome_card, style="WelcomeSubtitle.TLabel")
-        self.welcome_subtitle_label.grid(row=1, column=0, sticky="n", pady=(0, 24))
+        self.welcome_subtitle_label.grid(row=2, column=0, sticky="n", pady=(0, 24))
 
         self.welcome_vk_btn = ttk.Button(
             self.welcome_card,
@@ -854,7 +936,7 @@ class SchedulerApp:
             width=36,
             command=self._select_mode_vk,
         )
-        self.welcome_vk_btn.grid(row=2, column=0, pady=8)
+        self.welcome_vk_btn.grid(row=3, column=0, pady=8)
 
         self.welcome_neonatus_btn = ttk.Button(
             self.welcome_card,
@@ -862,7 +944,7 @@ class SchedulerApp:
             width=36,
             command=self._select_mode_neonatus,
         )
-        self.welcome_neonatus_btn.grid(row=3, column=0, pady=8)
+        self.welcome_neonatus_btn.grid(row=4, column=0, pady=8)
 
         self.welcome_footer_label = ttk.Label(self.welcome_frame, style="Footer.TLabel")
         self.welcome_footer_label.grid(row=1, column=0, sticky="s", pady=(0, 10))

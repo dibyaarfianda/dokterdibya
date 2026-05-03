@@ -24,7 +24,7 @@ if exist dist rmdir /s /q dist
 if exist "%APP_NAME%.spec" del /f /q "%APP_NAME%.spec"
 
 echo [3/4] Building EXE...
-%PY_CMD% -m PyInstaller --noconfirm --clean --onefile --windowed --name "%APP_NAME%" --collect-all openpyxl "%ENTRY_FILE%"
+%PY_CMD% -m PyInstaller --noconfirm --clean --onefile --windowed --name "%APP_NAME%" --collect-all openpyxl --add-data "tools\scheduler_offline_app\assets\jadwaljaga.png;tools\scheduler_offline_app\assets" "%ENTRY_FILE%"
 if errorlevel 1 (
   echo EXE build failed.
   exit /b 1
