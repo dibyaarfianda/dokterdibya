@@ -7,6 +7,8 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 - 100% offline (Python + Tkinter)
 - Load file template jadwal yang sudah ada
 - Generate jadwal otomatis dengan optimasi swap per hari
+- Tombol preset cepat: `Apply Preset: Final VK`
+- Progress bar + status realtime (iterasi, elapsed, ETA)
 - Validasi otomatis:
   - Coverage harian (`P/S/M/L`)
   - Tandem rank
@@ -18,6 +20,9 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
   - Kuning untuk back duty (rank tertentu)
   - Polos/no-fill untuk front duty
 - Export hasil ke file Excel baru
+- Auto export report setelah generate:
+  - JSON detail
+  - CSV ringkas (summary + off_by_rank + m_by_rank)
 
 ## Struktur
 
@@ -50,3 +55,4 @@ cd .\tools\scheduler_offline_app
 
 - Jika coverage awal di file input tidak sesuai (`P/S/M/L`), engine akan rebuild assignment harian lalu optimasi.
 - Untuk workflow aman, simpan output ke file baru (jangan overwrite file sumber).
+- Report export folder bisa dipilih terpisah; jika kosong, report disimpan di folder file output.

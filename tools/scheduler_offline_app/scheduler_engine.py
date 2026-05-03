@@ -4,9 +4,10 @@ import copy
 import json
 import math
 import random
+import time
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import openpyxl
 from openpyxl.styles import PatternFill
@@ -208,7 +209,22 @@ class OfflineSchedulerEngine:
         input_path: str,
         output_path: str,
         config: SchedulerConfig,
+        progress_callback: Optional[Callable[[Dict[str, object]], None]] = None,
     ) -> Dict[str, object]:
+        started = time.perf_counter()
+        self._emit_progress(
+            progress_callback,
+            phase="prepare",
+            progress=0.0,
+            message="Preparing workbook and initial schedule",
+            elapsed_sec=0.0,
+            eta_sec=None,
+            iteration=0,
+            total_iterations=config.iterations,
+            best_score=None,
+            temperature=config.initial_temperature,
+        )
+
         random.seed(config.random_seed)
 
         wb = openpyxl.load_workbook(input_path)
@@ -273,6 +289,7 @@ class OfflineSchedulerEngine:
         best_score = current_score
 
         t = max(config.initial_temperature, 0.01)
+        progress_step = max(1, min(2000, max(config.iterations, 1) // 120))
 
         for it in range(config.iterations):
             day = random.choice(active_days)
@@ -307,6 +324,40 @@ class OfflineSchedulerEngine:
             if it > 0 and it % max(config.cooling_step, 1) == 0:
                 t *= config.cooling_rate
 
+            if it % progress_step == 0 or it == config.iterations - 1:
+                elapsed = time.perf_counter() - started
+                current_iter = it + 1
+                progress = current_iter / max(config.iterations, 1)
+                eta = None
+                if progress > 0:
+                    eta = max(0.0, (elapsed / progress) - elapsed)
+
+                self._emit_progress(
+                    progress_callback,
+                    phase="optimize",
+                    progress=progress,
+                    message="Optimizing schedule",
+                    elapsed_sec=elapsed,
+                    eta_sec=eta,
+                    iteration=current_iter,
+                    total_iterations=config.iterations,
+                    best_score=best_score,
+                    temperature=t,
+                )
+
+        self._emit_progress(
+            progress_callback,
+            phase="save",
+            progress=0.995,
+            message="Writing output file and running final analysis",
+            elapsed_sec=time.perf_counter() - started,
+            eta_sec=0.0,
+            iteration=config.iterations,
+            total_iterations=config.iterations,
+            best_score=best_score,
+            temperature=t,
+        )
+
         # Write optimized codes.
         for n in core_names:
             r = row_by_name[n]
@@ -331,6 +382,20 @@ class OfflineSchedulerEngine:
         report["source_file"] = input_path
         report["output_file"] = output_path
         report["solver_score"] = best_score
+
+        self._emit_progress(
+            progress_callback,
+            phase="done",
+            progress=1.0,
+            message="Done",
+            elapsed_sec=time.perf_counter() - started,
+            eta_sec=0.0,
+            iteration=config.iterations,
+            total_iterations=config.iterations,
+            best_score=best_score,
+            temperature=t,
+        )
+
         return report
 
     def _parse_day_columns(self, ws) -> Dict[int, int]:
@@ -632,6 +697,19 @@ class OfflineSchedulerEngine:
                 code = self._norm_code(ws.cell(s.row, col).value)
                 if code in {"P", "S", "M", "L"}:
                     ws.cell(s.row, col).fill = self.fill_green
+
+    @staticmethod
+    def _emit_progress(
+        progress_callback: Optional[Callable[[Dict[str, object]], None]],
+        **payload: object,
+    ) -> None:
+        if not progress_callback:
+            return
+        try:
+            progress_callback(payload)
+        except Exception:
+            # Progress updates must never interrupt optimization.
+            pass
 
     @staticmethod
     def report_to_pretty_json(report: Dict[str, object]) -> str:
