@@ -179,9 +179,11 @@ class OfflineSchedulerEngine:
         day_cols = self._parse_day_columns(ws)
         staff_all = self._parse_staff(ws, config)
         core_staff = [s for s in staff_all if self._is_core_staff(s, config)]
+        team_staff = [s for s in core_staff if not self._is_magang_staff(s, config)]
         core_names = [s.name for s in core_staff]
+        team_names = [s.name for s in team_staff]
         row_by_name = {s.name: s.row for s in core_staff}
-        no_by_name = {s.name: s.no for s in core_staff}
+        no_by_name = {s.name: s.no for s in team_staff}
 
         active_days = [d for d in sorted(day_cols) if config.start_day <= d <= config.end_day]
 
@@ -194,10 +196,10 @@ class OfflineSchedulerEngine:
         group_together_bad = []
         m_to_p_pairs = []
 
-        expected_l = len(core_staff) - (config.p_count + config.s_count + config.m_count)
+        expected_l = len(team_staff) - (config.p_count + config.s_count + config.m_count)
 
         for day in active_days:
-            cnt = Counter(code_of(n, day) for n in core_names)
+            cnt = Counter(code_of(n, day) for n in team_names)
             if not (
                 cnt["P"] == config.p_count
                 and cnt["S"] == config.s_count
@@ -215,7 +217,7 @@ class OfflineSchedulerEngine:
                 )
 
             for sh in ["P", "S", "M"]:
-                participants = [n for n in core_names if code_of(n, day) == sh]
+                participants = [n for n in team_names if code_of(n, day) == sh]
                 juniors = [n for n in participants if no_by_name[n] > config.tandem_senior_max_rank]
                 seniors = [n for n in participants if no_by_name[n] <= config.tandem_senior_max_rank]
 
@@ -231,7 +233,7 @@ class OfflineSchedulerEngine:
                             {"day": day, "shift": sh, "rank_group": in_group}
                         )
 
-        for n in core_names:
+        for n in team_names:
             for day in active_days[:-1]:
                 a = code_of(n, day)
                 b = code_of(n, day + 1)
@@ -242,7 +244,7 @@ class OfflineSchedulerEngine:
         m_by_rank = []
         mll_missing = []
 
-        for s in core_staff:
+        for s in team_staff:
             codes = {d: code_of(s.name, d) for d in active_days}
             off = sum(1 for d in active_days if codes[d] == "L")
             night = sum(1 for d in active_days if codes[d] == "M")
@@ -274,7 +276,7 @@ class OfflineSchedulerEngine:
             for day in active_days:
                 col = day_cols[day]
                 for sh in ["P", "S", "M"]:
-                    participants = [n for n in core_names if code_of(n, day) == sh]
+                    participants = [n for n in team_names if code_of(n, day) == sh]
                     yellow_count = 0
                     nofill_count = 0
                     yellow_not_senior = []
@@ -353,11 +355,16 @@ class OfflineSchedulerEngine:
         all_staff = self._parse_staff(ws, config)
         core_staff = [s for s in all_staff if self._is_core_staff(s, config)]
         core_staff = sorted(core_staff, key=lambda s: s.no)
+        team_staff = [s for s in core_staff if not self._is_magang_staff(s, config)]
+        team_staff = sorted(team_staff, key=lambda s: s.no)
+        if not team_staff:
+            raise ValueError("No non-MAGANG team rows found for coverage generation")
 
         core_names = [s.name for s in core_staff]
+        team_names = [s.name for s in team_staff]
         row_by_name = {s.name: s.row for s in core_staff}
-        no_by_name = {s.name: s.no for s in core_staff}
-        name_by_no = {s.no: s.name for s in core_staff}
+        no_by_name = {s.name: s.no for s in team_staff}
+        name_by_no = {s.no: s.name for s in team_staff}
 
         active_days = [d for d in sorted(day_cols) if config.start_day <= d <= config.end_day]
         if not active_days:
@@ -365,7 +372,7 @@ class OfflineSchedulerEngine:
         all_days = sorted(day_cols)
         inactive_days = [d for d in all_days if d not in active_days]
 
-        expected_l = len(core_staff) - (config.p_count + config.s_count + config.m_count)
+        expected_l = len(team_staff) - (config.p_count + config.s_count + config.m_count)
         if expected_l < 0:
             raise ValueError("Coverage is larger than available core staff count")
 
@@ -382,20 +389,20 @@ class OfflineSchedulerEngine:
             schedule[s.name] = {"no": s.no, "codes": codes}
 
         for d in active_days:
-            cnt = Counter(schedule[n]["codes"][d] for n in core_names)
+            cnt = Counter(schedule[n]["codes"][d] for n in team_names)
             if not (
                 cnt["P"] == config.p_count
                 and cnt["S"] == config.s_count
                 and cnt["M"] == config.m_count
                 and cnt["L"] == expected_l
             ):
-                self._randomize_day(schedule, core_names, d, config)
+                self._randomize_day(schedule, team_names, d, config)
 
-        uniform_group = self._resolve_uniform_group(config, core_staff)
+        uniform_group = self._resolve_uniform_group(config, team_staff)
         total_off_required = expected_l * len(active_days)
         off_targets = self._resolve_off_targets(
             config,
-            core_staff,
+            team_staff,
             total_off_required=total_off_required,
             uniform_group=uniform_group,
         )
@@ -404,7 +411,7 @@ class OfflineSchedulerEngine:
         current = copy.deepcopy(schedule)
         current_score = self._score(
             current,
-            core_names,
+            team_names,
             name_by_no,
             no_by_name,
             active_days,
@@ -420,7 +427,9 @@ class OfflineSchedulerEngine:
 
         for it in range(config.iterations):
             day = random.choice(active_days)
-            a, b = random.sample(core_names, 2)
+            if len(team_names) < 2:
+                break
+            a, b = random.sample(team_names, 2)
             ca = current[a]["codes"][day]
             cb = current[b]["codes"][day]
             if ca == cb:
@@ -430,7 +439,7 @@ class OfflineSchedulerEngine:
 
             new_score = self._score(
                 current,
-                core_names,
+                team_names,
                 name_by_no,
                 no_by_name,
                 active_days,
@@ -490,7 +499,7 @@ class OfflineSchedulerEngine:
         best, best_score = self._repair_top_off_targets(
             schedule=best,
             current_score=best_score,
-            core_names=core_names,
+            team_names=team_names,
             name_by_no=name_by_no,
             no_by_name=no_by_name,
             active_days=active_days,
@@ -531,6 +540,7 @@ class OfflineSchedulerEngine:
                 active_days,
                 all_staff,
                 core_staff,
+                team_staff,
                 best,
                 config,
             )
@@ -843,7 +853,7 @@ class OfflineSchedulerEngine:
     def _score(
         self,
         schedule: Dict[str, Dict[str, object]],
-        core_names: List[str],
+        team_names: List[str],
         name_by_no: Dict[int, str],
         no_by_name: Dict[str, int],
         active_days: List[int],
@@ -851,7 +861,7 @@ class OfflineSchedulerEngine:
         uniform_group: List[int],
         config: SchedulerConfig,
     ) -> float:
-        expected_l = len(core_names) - (config.p_count + config.s_count + config.m_count)
+        expected_l = len(team_names) - (config.p_count + config.s_count + config.m_count)
 
         # Hard counters.
         coverage_bad = 0
@@ -859,11 +869,11 @@ class OfflineSchedulerEngine:
         group_together_bad = 0
         m_to_p_bad = 0
 
-        off = {n: 0 for n in core_names}
-        nights = {n: 0 for n in core_names}
+        off = {n: 0 for n in team_names}
+        nights = {n: 0 for n in team_names}
 
         for day in active_days:
-            cnt = Counter(schedule[n]["codes"][day] for n in core_names)
+            cnt = Counter(schedule[n]["codes"][day] for n in team_names)
             if not (
                 cnt["P"] == config.p_count
                 and cnt["S"] == config.s_count
@@ -873,7 +883,7 @@ class OfflineSchedulerEngine:
                 coverage_bad += 1
 
             for sh in ["P", "S", "M"]:
-                participants = [n for n in core_names if schedule[n]["codes"][day] == sh]
+                participants = [n for n in team_names if schedule[n]["codes"][day] == sh]
                 if config.enforce_tandem:
                     juniors = [n for n in participants if no_by_name[n] > config.tandem_senior_max_rank]
                     seniors = [n for n in participants if no_by_name[n] <= config.tandem_senior_max_rank]
@@ -885,7 +895,7 @@ class OfflineSchedulerEngine:
                     if len(in_group) > 1:
                         group_together_bad += 1
 
-            for n in core_names:
+            for n in team_names:
                 code = schedule[n]["codes"][day]
                 if code == "L":
                     off[n] += 1
@@ -893,7 +903,7 @@ class OfflineSchedulerEngine:
                     nights[n] += 1
 
         if config.enforce_no_m_to_p:
-            for n in core_names:
+            for n in team_names:
                 for day in active_days[:-1]:
                     if (
                         schedule[n]["codes"][day] == "M"
@@ -919,7 +929,7 @@ class OfflineSchedulerEngine:
         if config.enforce_off_monotonic:
             off_mono_bad = 0
             off_mono_mag = 0
-            for rank in range(1, len(core_names)):
+            for rank in range(1, len(team_names)):
                 if rank not in name_by_no or rank + 1 not in name_by_no:
                     continue
                 a = name_by_no[rank]
@@ -933,7 +943,7 @@ class OfflineSchedulerEngine:
         if config.enforce_night_monotonic:
             night_mono_bad = 0
             night_mono_mag = 0
-            for rank in range(1, len(core_names)):
+            for rank in range(1, len(team_names)):
                 if rank not in name_by_no or rank + 1 not in name_by_no:
                     continue
                 a = name_by_no[rank]
@@ -956,7 +966,7 @@ class OfflineSchedulerEngine:
 
         # Off target proximity.
         off_target_pen = 0
-        for n in core_names:
+        for n in team_names:
             rank = no_by_name.get(n, config.max_core_rank)
             rank_weight = 1.0 + max(0.0, (config.max_core_rank - rank) * 0.3)
             off_target_pen += abs(off[n] - off_targets.get(n, off[n])) * rank_weight
@@ -979,7 +989,7 @@ class OfflineSchedulerEngine:
 
         if config.enforce_mll_each:
             missing = 0
-            for n in core_names:
+            for n in team_names:
                 hits = self._mll_hits(schedule[n]["codes"], active_days)
                 if not hits:
                     missing += 1
@@ -987,7 +997,7 @@ class OfflineSchedulerEngine:
 
         # Optional max consecutive work soft penalty.
         streak_over = 0
-        for n in core_names:
+        for n in team_names:
             max_streak = 0
             cur = 0
             for day in active_days:
@@ -1005,7 +1015,7 @@ class OfflineSchedulerEngine:
         self,
         schedule: Dict[str, Dict[str, object]],
         current_score: float,
-        core_names: List[str],
+        team_names: List[str],
         name_by_no: Dict[int, str],
         no_by_name: Dict[str, int],
         active_days: List[int],
@@ -1020,11 +1030,11 @@ class OfflineSchedulerEngine:
 
         off = {
             n: sum(1 for d in active_days if repaired[n]["codes"][d] == "L")
-            for n in core_names
+            for n in team_names
         }
 
         top_ranks = [r for r in range(1, config.top_rank_count + 1) if r in name_by_no]
-        donor_order = sorted(core_names, key=lambda x: no_by_name[x], reverse=True)
+        donor_order = sorted(team_names, key=lambda x: no_by_name[x], reverse=True)
 
         guard = 0
         while guard < 800:
@@ -1057,7 +1067,7 @@ class OfflineSchedulerEngine:
 
                         candidate_score = self._score(
                             repaired,
-                            core_names,
+                            team_names,
                             name_by_no,
                             no_by_name,
                             active_days,
@@ -1099,12 +1109,16 @@ class OfflineSchedulerEngine:
         active_days: List[int],
         all_staff: List[StaffMember],
         core_staff: List[StaffMember],
+        team_staff: List[StaffMember],
         best_schedule: Dict[str, Dict[str, object]],
         config: SchedulerConfig,
     ) -> None:
         core_names = [s.name for s in core_staff]
+        team_names = [s.name for s in team_staff]
+        team_set = set(team_names)
+        non_team_names = [n for n in core_names if n not in team_set]
         row_by_name = {s.name: s.row for s in core_staff}
-        no_by_name = {s.name: s.no for s in core_staff}
+        no_by_name = {s.name: s.no for s in team_staff}
 
         # Keep X as gray on days 1-4.
         if config.keep_x_gray:
@@ -1127,8 +1141,12 @@ class OfflineSchedulerEngine:
                 if best_schedule[n]["codes"][day] == "L":
                     ws.cell(row_by_name[n], col).fill = self.fill_plain
 
+            # MAGANG rows are not part of team coloring.
+            for n in non_team_names:
+                ws.cell(row_by_name[n], col).fill = self.fill_plain
+
             for sh in ["P", "S", "M"]:
-                participants = [n for n in core_names if best_schedule[n]["codes"][day] == sh]
+                participants = [n for n in team_names if best_schedule[n]["codes"][day] == sh]
                 if not participants:
                     continue
 
