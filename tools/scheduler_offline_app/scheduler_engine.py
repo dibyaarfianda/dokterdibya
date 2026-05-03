@@ -378,6 +378,22 @@ class OfflineSchedulerEngine:
                     }
                 )
 
+        night_monotonic_bad = []
+        for i in range(len(m_by_rank) - 1):
+            a = m_by_rank[i]
+            b = m_by_rank[i + 1]
+            if a["M"] > b["M"]:
+                night_monotonic_bad.append(
+                    {
+                        "higher_rank": a["rank"],
+                        "higher_name": a["name"],
+                        "higher_night": a["M"],
+                        "lower_rank": b["rank"],
+                        "lower_name": b["name"],
+                        "lower_night": b["M"],
+                    }
+                )
+
         color_errors = []
         if config.assign_colors:
             for day in active_days:
@@ -421,11 +437,13 @@ class OfflineSchedulerEngine:
             "m_to_p_count": len(m_to_p_pairs),
             "mll_missing_count": len(mll_missing),
             "off_monotonic_bad_count": len(off_monotonic_bad),
+            "night_monotonic_bad_count": len(night_monotonic_bad),
             "color_errors_count": len(color_errors),
             "off_by_rank": off_by_rank,
             "m_by_rank": m_by_rank,
             "coverage_bad_preview": coverage_bad[:5],
             "off_monotonic_bad_preview": off_monotonic_bad[:5],
+            "night_monotonic_bad_preview": night_monotonic_bad[:5],
             "color_errors_preview": color_errors[:5],
         }
 
@@ -604,6 +622,18 @@ class OfflineSchedulerEngine:
         )
 
         best, best_score = self._repair_top_off_targets(
+            schedule=best,
+            current_score=best_score,
+            team_names=team_names,
+            name_by_no=name_by_no,
+            no_by_name=no_by_name,
+            active_days=active_days,
+            off_targets=off_targets,
+            uniform_group=uniform_group,
+            config=config,
+        )
+
+        best, best_score = self._repair_night_monotonic(
             schedule=best,
             current_score=best_score,
             team_names=team_names,
@@ -965,6 +995,35 @@ class OfflineSchedulerEngine:
                 hits.append(day)
         return hits
 
+    @staticmethod
+    def _adjacent_rank_pairs(name_by_no: Dict[int, str]) -> List[Tuple[int, int]]:
+        ranks = sorted(name_by_no)
+        if len(ranks) < 2:
+            return []
+        return [(ranks[i], ranks[i + 1]) for i in range(len(ranks) - 1)]
+
+    def _night_monotonic_metric(
+        self,
+        schedule: Dict[str, Dict[str, object]],
+        name_by_no: Dict[int, str],
+        active_days: List[int],
+    ) -> Tuple[int, int]:
+        nights_by_rank = {}
+        for rank, name in name_by_no.items():
+            nights_by_rank[rank] = sum(
+                1 for d in active_days if schedule[name]["codes"][d] == "M"
+            )
+
+        bad = 0
+        mag = 0
+        for rank_a, rank_b in self._adjacent_rank_pairs(name_by_no):
+            na = nights_by_rank.get(rank_a, 0)
+            nb = nights_by_rank.get(rank_b, 0)
+            if na > nb:
+                bad += 1
+                mag += na - nb
+        return bad, mag
+
     def _score(
         self,
         schedule: Dict[str, Dict[str, object]],
@@ -1041,14 +1100,14 @@ class OfflineSchedulerEngine:
                 top_over += max(0, nights[n] - config.top_rank_max_night)
             penalties += top_over * 140000
 
+        rank_pairs = self._adjacent_rank_pairs(name_by_no)
+
         if config.enforce_off_monotonic:
             off_mono_bad = 0
             off_mono_mag = 0
-            for rank in range(1, len(team_names)):
-                if rank not in name_by_no or rank + 1 not in name_by_no:
-                    continue
-                a = name_by_no[rank]
-                b = name_by_no[rank + 1]
+            for rank_a, rank_b in rank_pairs:
+                a = name_by_no[rank_a]
+                b = name_by_no[rank_b]
                 if off[a] < off[b]:
                     off_mono_bad += 1
                     off_mono_mag += off[b] - off[a]
@@ -1058,16 +1117,14 @@ class OfflineSchedulerEngine:
         if config.enforce_night_monotonic:
             night_mono_bad = 0
             night_mono_mag = 0
-            for rank in range(1, len(team_names)):
-                if rank not in name_by_no or rank + 1 not in name_by_no:
-                    continue
-                a = name_by_no[rank]
-                b = name_by_no[rank + 1]
+            for rank_a, rank_b in rank_pairs:
+                a = name_by_no[rank_a]
+                b = name_by_no[rank_b]
                 if nights[a] > nights[b]:
                     night_mono_bad += 1
                     night_mono_mag += nights[a] - nights[b]
-            penalties += night_mono_bad * 60000
-            penalties += night_mono_mag * 9000
+            penalties += night_mono_bad * 300000
+            penalties += night_mono_mag * 60000
 
         if config.enforce_uniform_group_off and uniform_group:
             group_off = [off[name_by_no[r]] for r in uniform_group if r in name_by_no]
@@ -1214,6 +1271,90 @@ class OfflineSchedulerEngine:
 
             if not moved:
                 break
+
+        return repaired, current_score
+
+    def _repair_night_monotonic(
+        self,
+        schedule: Dict[str, Dict[str, object]],
+        current_score: float,
+        team_names: List[str],
+        name_by_no: Dict[int, str],
+        no_by_name: Dict[str, int],
+        active_days: List[int],
+        off_targets: Dict[str, int],
+        uniform_group: List[int],
+        config: SchedulerConfig,
+    ) -> Tuple[Dict[str, Dict[str, object]], float]:
+        if not config.enforce_night_monotonic:
+            return schedule, current_score
+
+        repaired = copy.deepcopy(schedule)
+
+        guard = 0
+        while guard < 1200:
+            guard += 1
+            cur_bad, cur_mag = self._night_monotonic_metric(repaired, name_by_no, active_days)
+            if cur_bad <= 0:
+                break
+
+            best_move = None
+            best_score = current_score
+            best_bad = cur_bad
+            best_mag = cur_mag
+
+            for rank_a, rank_b in self._adjacent_rank_pairs(name_by_no):
+                name_a = name_by_no[rank_a]
+                name_b = name_by_no[rank_b]
+
+                nights_a = sum(1 for d in active_days if repaired[name_a]["codes"][d] == "M")
+                nights_b = sum(1 for d in active_days if repaired[name_b]["codes"][d] == "M")
+                if nights_a <= nights_b:
+                    continue
+
+                for day in active_days:
+                    code_a = repaired[name_a]["codes"][day]
+                    code_b = repaired[name_b]["codes"][day]
+
+                    if code_a != "M" or code_b == "M":
+                        continue
+
+                    repaired[name_a]["codes"][day] = code_b
+                    repaired[name_b]["codes"][day] = "M"
+
+                    cand_bad, cand_mag = self._night_monotonic_metric(repaired, name_by_no, active_days)
+                    cand_score = self._score(
+                        repaired,
+                        team_names,
+                        name_by_no,
+                        no_by_name,
+                        active_days,
+                        off_targets,
+                        uniform_group,
+                        config,
+                    )
+
+                    repaired[name_a]["codes"][day] = code_a
+                    repaired[name_b]["codes"][day] = code_b
+
+                    better_monotonic = (cand_bad < best_bad) or (
+                        cand_bad == best_bad and cand_mag < best_mag
+                    )
+                    better_score = cand_bad == best_bad and cand_mag == best_mag and cand_score > best_score
+
+                    if better_monotonic or better_score:
+                        best_bad = cand_bad
+                        best_mag = cand_mag
+                        best_score = cand_score
+                        best_move = (name_a, name_b, day, code_b)
+
+            if best_move is None:
+                break
+
+            name_a, name_b, day, code_b = best_move
+            repaired[name_a]["codes"][day] = code_b
+            repaired[name_b]["codes"][day] = "M"
+            current_score = best_score
 
         return repaired, current_score
 
