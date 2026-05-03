@@ -23,7 +23,12 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 - Tombol preset cepat: `Apply Preset: Final VK`
 - Progress bar 0-100% + status realtime (fase kerja, iterasi, elapsed, ETA)
 - Font hasil generate dipaksa hitam agar tetap terbaca (termasuk tanggal awal)
-- Staff magang/intern otomatis ikut generate (termasuk jika NO di kolom A non-angka)
+- Fitur MAGANG bisa diatur langsung di UI:
+  - Toggle `Proses Jadwal MAGANG` (default: OFF)
+  - Kata kunci MAGANG kustom (CSV)
+  - Daftar rank MAGANG eksplisit (CSV, opsional)
+- Saat fitur MAGANG dimatikan, baris MAGANG tidak akan diproses untuk jaga
+- Baris non-core yang tidak diproses dipaksa tetap `L` agar tidak muncul jaga liar
 - Validasi otomatis:
   - Coverage harian (`P/S/M/L`)
   - Tandem rank

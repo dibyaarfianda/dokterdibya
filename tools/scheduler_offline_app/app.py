@@ -302,7 +302,7 @@ class SchedulerApp:
         self.enforce_uniform_group_night_var = tk.BooleanVar(value=True)
         self.enforce_night_monotonic_var = tk.BooleanVar(value=True)
         self.enforce_off_monotonic_var = tk.BooleanVar(value=True)
-        self.process_magang_var = tk.BooleanVar(value=True)
+        self.process_magang_var = tk.BooleanVar(value=False)
         self.assign_colors_var = tk.BooleanVar(value=True)
 
         self.export_json_var = tk.BooleanVar(value=True)
