@@ -50,7 +50,7 @@ class SchedulerConfig:
     uniform_group_ranks: Optional[List[int]] = None
 
     # MAGANG processing controls.
-    process_magang: bool = True
+    process_magang: bool = False
     # Example keywords: ["magang", "intern", "koas", "praktek"]
     magang_keywords: Optional[List[str]] = None
     # Optional explicit rank numbers to force as MAGANG participants.
@@ -483,6 +483,18 @@ class OfflineSchedulerEngine:
             total_iterations=config.iterations,
             best_score=best_score,
             temperature=t,
+        )
+
+        best, best_score = self._repair_top_off_targets(
+            schedule=best,
+            current_score=best_score,
+            core_names=core_names,
+            name_by_no=name_by_no,
+            no_by_name=no_by_name,
+            active_days=active_days,
+            off_targets=off_targets,
+            uniform_group=uniform_group,
+            config=config,
         )
 
         # Write optimized codes.
@@ -941,6 +953,21 @@ class OfflineSchedulerEngine:
             off_target_pen += abs(off[n] - off_targets.get(n, off[n])) * rank_weight
         penalties += off_target_pen * 60000
 
+        # Strongly discourage top ranks from exceeding their off-day targets.
+        if config.top_rank_count > 0:
+            over_pen = 0
+            for r in range(1, config.top_rank_count + 1):
+                if r not in name_by_no:
+                    continue
+                n = name_by_no[r]
+                target = off_targets.get(n, off[n])
+                over = max(0, off[n] - target)
+                if over <= 0:
+                    continue
+                rank_boost = 2.0 if r == 1 else 1.0
+                over_pen += over * rank_boost
+            penalties += over_pen * 2500000
+
         if config.enforce_mll_each:
             missing = 0
             for n in core_names:
@@ -964,6 +991,97 @@ class OfflineSchedulerEngine:
         penalties += streak_over * 500
 
         return -penalties
+
+    def _repair_top_off_targets(
+        self,
+        schedule: Dict[str, Dict[str, object]],
+        current_score: float,
+        core_names: List[str],
+        name_by_no: Dict[int, str],
+        no_by_name: Dict[str, int],
+        active_days: List[int],
+        off_targets: Dict[str, int],
+        uniform_group: List[int],
+        config: SchedulerConfig,
+    ) -> Tuple[Dict[str, Dict[str, object]], float]:
+        if config.top_rank_count <= 0:
+            return schedule, current_score
+
+        repaired = copy.deepcopy(schedule)
+
+        off = {
+            n: sum(1 for d in active_days if repaired[n]["codes"][d] == "L")
+            for n in core_names
+        }
+
+        top_ranks = [r for r in range(1, config.top_rank_count + 1) if r in name_by_no]
+        donor_order = sorted(core_names, key=lambda x: no_by_name[x], reverse=True)
+
+        guard = 0
+        while guard < 800:
+            guard += 1
+            moved = False
+
+            for r in top_ranks:
+                top_name = name_by_no[r]
+                target = off_targets.get(top_name, off[top_name])
+                if off[top_name] <= target:
+                    continue
+
+                best_move = None
+                best_move_score = current_score
+
+                for day in active_days:
+                    if repaired[top_name]["codes"][day] != "L":
+                        continue
+
+                    for donor in donor_order:
+                        if donor == top_name:
+                            continue
+
+                        donor_code = repaired[donor]["codes"][day]
+                        if donor_code not in {"P", "S", "M"}:
+                            continue
+
+                        repaired[top_name]["codes"][day] = donor_code
+                        repaired[donor]["codes"][day] = "L"
+
+                        candidate_score = self._score(
+                            repaired,
+                            core_names,
+                            name_by_no,
+                            no_by_name,
+                            active_days,
+                            off_targets,
+                            uniform_group,
+                            config,
+                        )
+
+                        repaired[top_name]["codes"][day] = "L"
+                        repaired[donor]["codes"][day] = donor_code
+
+                        if candidate_score > best_move_score:
+                            best_move_score = candidate_score
+                            best_move = (day, donor, donor_code)
+
+                    if best_move is not None:
+                        break
+
+                if best_move is None:
+                    continue
+
+                day, donor, donor_code = best_move
+                repaired[top_name]["codes"][day] = donor_code
+                repaired[donor]["codes"][day] = "L"
+                off[top_name] -= 1
+                off[donor] += 1
+                current_score = best_move_score
+                moved = True
+
+            if not moved:
+                break
+
+        return repaired, current_score
 
     def _apply_coloring_policy(
         self,
