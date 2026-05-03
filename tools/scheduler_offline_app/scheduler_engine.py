@@ -82,19 +82,31 @@ class OfflineSchedulerEngine:
 
     @staticmethod
     def _parse_rank_no(value) -> Optional[int]:
-        if isinstance(value, (int, float)):
-            return int(value)
+        if isinstance(value, bool):
+            return None
+
+        if isinstance(value, int):
+            return value if value > 0 else None
+
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                return None
+            if float(value).is_integer() and value > 0:
+                return int(value)
+            return None
 
         if isinstance(value, str):
             text = value.strip()
             if not text:
                 return None
-            m = re.search(r"\d+", text)
-            if m:
-                try:
-                    return int(m.group(0))
-                except Exception:
-                    return None
+            m = re.fullmatch(r"(\d+)(?:\.0+)?", text)
+            if not m:
+                return None
+            try:
+                parsed = int(m.group(1))
+                return parsed if parsed > 0 else None
+            except Exception:
+                return None
 
         return None
 
@@ -434,6 +446,18 @@ class OfflineSchedulerEngine:
                 cell.value = best[n]["codes"][d]
                 self._set_readable_font(cell)
 
+        # Non-core (rank > max_core_rank) and non-magang rows must stay off-duty.
+        non_core_rows = [
+            s
+            for s in all_staff
+            if s.no > config.max_core_rank and not self._is_magang_name(s.name)
+        ]
+        for s in non_core_rows:
+            for d in active_days:
+                cell = ws.cell(s.row, day_cols[d])
+                cell.value = "L"
+                self._set_readable_font(cell)
+
         # Optional coloring policy.
         if config.assign_colors:
             self._apply_coloring_policy(
@@ -529,6 +553,7 @@ class OfflineSchedulerEngine:
         staff = []
         magang_rows: List[Tuple[int, str]] = []
         max_no = 0
+        used_nos = set()
 
         for r in range(3, ws.max_row + 1):
             name = ws.cell(r, 2).value
@@ -539,17 +564,26 @@ class OfflineSchedulerEngine:
             no_value = ws.cell(r, 1).value
             parsed_no = self._parse_rank_no(no_value)
             if parsed_no is not None:
-                staff.append(StaffMember(no=parsed_no, name=name_clean, row=r))
-                if parsed_no > max_no:
-                    max_no = parsed_no
+                assigned_no = parsed_no
+                if assigned_no in used_nos:
+                    assigned_no = max_no + 1
+
+                staff.append(StaffMember(no=assigned_no, name=name_clean, row=r))
+                used_nos.add(assigned_no)
+                if assigned_no > max_no:
+                    max_no = assigned_no
                 continue
 
             if self._is_magang_name(name_clean):
                 magang_rows.append((r, name_clean))
 
         for r, name_clean in magang_rows:
-            max_no += 1
+            next_no = max_no + 1
+            while next_no in used_nos:
+                next_no += 1
+            max_no = next_no
             staff.append(StaffMember(no=max_no, name=name_clean, row=r))
+            used_nos.add(max_no)
 
         if not staff:
             raise ValueError("No staff rows found (expects NO in col A and NAMA in col B)")
@@ -595,7 +629,7 @@ class OfflineSchedulerEngine:
     ) -> Dict[str, int]:
         ordered_staff = sorted(core_staff, key=lambda s: s.no)
 
-        if config.off_targets_by_rank and len(config.off_targets_by_rank) >= len(ordered_staff):
+        if config.off_targets_by_rank:
             base_values = []
             for s in ordered_staff:
                 idx = s.no - 1
@@ -638,31 +672,52 @@ class OfflineSchedulerEngine:
         non_group_indices = [i for i, s in enumerate(ordered_staff) if s.no not in group_set]
         group_indices = [i for i, s in enumerate(ordered_staff) if s.no in group_set]
 
+        add_priority = list(reversed(non_group_indices)) if non_group_indices else list(reversed(range(len(targets))))
+        remove_priority = list(reversed(non_group_indices)) if non_group_indices else list(reversed(range(len(targets))))
+
+        def _add_with_monotonic(need: int) -> int:
+            guard = 0
+            while need > 0 and guard < 200000:
+                progressed = False
+                for idx in add_priority:
+                    prev_limit = targets[idx - 1] if idx > 0 else None
+                    if prev_limit is None or targets[idx] < prev_limit:
+                        targets[idx] += 1
+                        need -= 1
+                        progressed = True
+                        if need <= 0:
+                            break
+
+                if not progressed:
+                    # Entire chain is flat; lift the top rank to open headroom.
+                    targets[0] += 1
+                    need -= 1
+
+                guard += 1
+            return need
+
+        def _remove(need: int) -> int:
+            guard = 0
+            while need > 0 and remove_priority and guard < 200000:
+                progressed = False
+                for idx in remove_priority:
+                    if targets[idx] > 0:
+                        targets[idx] -= 1
+                        need -= 1
+                        progressed = True
+                        if need <= 0:
+                            break
+                if not progressed:
+                    break
+                guard += 1
+            return need
+
         diff = int(total_off_required - sum(targets))
-
-        # Add extra off-days by prioritizing higher ranks outside the uniform group.
         if diff > 0:
-            priority = non_group_indices if non_group_indices else list(range(len(targets)))
-            cursor = 0
-            while diff > 0 and priority:
-                idx = priority[cursor % len(priority)]
-                targets[idx] += 1
-                diff -= 1
-                cursor += 1
-
-        # Remove off-days from lower ranks first outside the uniform group.
+            _add_with_monotonic(diff)
         elif diff < 0:
             need = -diff
-            priority = list(reversed(non_group_indices)) if non_group_indices else list(reversed(range(len(targets))))
-            cursor = 0
-            guard = 0
-            while need > 0 and priority and guard < 200000:
-                idx = priority[cursor % len(priority)]
-                if targets[idx] > 0:
-                    targets[idx] -= 1
-                    need -= 1
-                cursor += 1
-                guard += 1
+            need = _remove(need)
 
             # If still needed and uniform group exists, reduce them evenly.
             while need > 0 and group_indices and all(targets[idx] > 0 for idx in group_indices):
@@ -683,15 +738,12 @@ class OfflineSchedulerEngine:
             if targets[i - 1] < targets[i]:
                 targets[i] = targets[i - 1]
 
-        # Re-add any remaining required total (from clamping) to top ranks.
+        # Rebalance any remaining delta introduced by clamping.
         remain = int(total_off_required - sum(targets))
-        add_priority = non_group_indices if non_group_indices else list(range(len(targets)))
-        cursor = 0
-        while remain > 0 and add_priority:
-            idx = add_priority[cursor % len(add_priority)]
-            targets[idx] += 1
-            remain -= 1
-            cursor += 1
+        if remain > 0:
+            _add_with_monotonic(remain)
+        elif remain < 0:
+            _remove(-remain)
 
         return targets
 
@@ -832,7 +884,7 @@ class OfflineSchedulerEngine:
         off_target_pen = 0
         for n in core_names:
             off_target_pen += abs(off[n] - off_targets.get(n, off[n]))
-        penalties += off_target_pen * 3500
+        penalties += off_target_pen * 22000
 
         if config.enforce_mll_each:
             missing = 0
@@ -910,7 +962,7 @@ class OfflineSchedulerEngine:
                 for n in polos:
                     ws.cell(row_by_name[n], col).fill = self.fill_plain
 
-        # Optional style for non-core non-magang rows if present in template.
+        # Keep non-core non-magang rows visually off-duty as plain L.
         higher_rows = [
             s
             for s in all_staff
@@ -919,11 +971,10 @@ class OfflineSchedulerEngine:
         for s in higher_rows:
             for day in active_days:
                 col = day_cols[day]
-                code = self._norm_code(ws.cell(s.row, col).value)
-                if code in {"P", "S", "M", "L"}:
-                    cell = ws.cell(s.row, col)
-                    cell.fill = self.fill_green
-                    self._set_readable_font(cell)
+                cell = ws.cell(s.row, col)
+                cell.value = "L"
+                cell.fill = self.fill_plain
+                self._set_readable_font(cell)
 
     @staticmethod
     def _emit_progress(

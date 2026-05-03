@@ -1308,3 +1308,60 @@ User confirmed with "oke good" after 24-hour monitoring was activated successful
 
 **Lesson:**
 - For post-optimization stability checks, prefer low-overhead periodic sampling (5 minutes) over heavy continuous probing; it preserves production performance while still capturing p95 drift, restart deltas, and endpoint health over a full work cycle.
+
+### 38. Session Log - 3 May 2026
+
+**VK Duty Schedule Optimization (Approved by User)**
+
+User confirmed with "sudah oke" and "okay" while iterating constraints for May VK shifts.
+
+**What worked:**
+
+1. **Constraint-safe optimization loop with real workbook output**
+    - Read Excel directly from Desktop and optimized schedule via automated same-day swap search.
+    - Saved each validated variant to a new output workbook for traceability.
+
+2. **Core invariants preserved in every accepted variant**
+    - Coverage held per active day with no on-call mode: `3P + 3S + 3M + 5L`.
+    - Tandem safety held: rank `12-14` never alone in a shift without rank `1-11`.
+    - Fatigue guard held: no `M -> P` next-day transitions.
+
+3. **MLL recovery pattern successfully enforced**
+    - Ensured every core staff (rank `1-14`) had at least one `M-L-L` sequence.
+    - This remained true after subsequent seniority and night-distribution adjustments.
+
+4. **Seniority fairness tuned from aggressive to moderate**
+    - Initial result was too steep (`6-13` style gap), then rebalanced to moderated monotonic off-days.
+    - Final approved fairness target included equal off-days for same cohort ranks `12,13,14`.
+
+5. **Night-distribution rule successfully added**
+    - Top two ranks capped at maximum 3 night shifts each per month.
+    - Night count made monotonic by rank (lower rank gets equal or more nights).
+
+**Final approved distribution example (no on-call):**
+- Off-days by rank: `12, 12, 11, 11, 10, 10, 9, 9, 9, 9, 9, 8, 8, 8`
+- Night shifts by rank: top-2 at `3`, then non-decreasing down the ranks.
+
+**Lesson:**
+- For scheduling changes with multiple human constraints, use staged optimization:
+  1) lock hard safety constraints,
+  2) satisfy fairness structure,
+  3) then tune distribution targets (off-days/night load) with minimal extra swaps.
+
+### 39. Session Log - 4 May 2026
+
+**VK Schedule Rule Stack (User Confirmed Excellent)**
+
+User confirmed with strong positive feedback that the final rule stack was already good.
+
+**Final accepted rule stack:**
+- No on-call mode with daily coverage fixed at `3P + 3S + 3M + 5L`.
+- Safety constraints preserved: no `M -> P` next-day transition.
+- Tandem constraints preserved for rank `12-14` with rank `1-11`.
+- Cohort equality for rank `12,13,14` on off-days and night load.
+- Senior-night guard: top-2 ranks capped to low night count.
+- Visual assignment policy: yellow only for rank `1-11`; front/plain prioritized to juniors.
+
+**What to keep for future revisions:**
+- Treat constraints in strict order: coverage/safety -> rank constraints -> fairness -> visual policy.
+- Validate after every batch using explicit rule checks instead of only visual inspection.
