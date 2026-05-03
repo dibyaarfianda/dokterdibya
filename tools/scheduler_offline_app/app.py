@@ -18,10 +18,17 @@ except ModuleNotFoundError:
 
 TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "id": {
-        "app_title": "Pembuat Jadwal Jaga Offline",
+        "app_title": "Generator Jadwal Jaga RSIA MELINDA",
         "frame_files": "Berkas",
         "frame_config": "Konfigurasi",
         "frame_rules": "Aturan",
+        "welcome_title": "Generator Jadwal Jaga RSIA MELINDA",
+        "welcome_subtitle": "Pilih jenis jadwal yang ingin dibuat",
+        "welcome_option_vk": "Jadwal Jaga VK / Ruangan",
+        "welcome_option_neonatus": "Jadwal Jaga Neonatus",
+        "welcome_neonatus_coming_soon": "Neonatus: Coming Soon",
+        "welcome_mode_selected_vk": "Mode aktif: Jadwal Jaga VK / Ruangan",
+        "welcome_mode_selected_neonatus": "Mode Neonatus belum tersedia (coming soon).",
         "label_input_excel": "Excel Input",
         "label_output_excel": "Excel Output",
         "label_report_folder": "Folder Laporan",
@@ -58,6 +65,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "progress_starting": "Memulai optimasi...",
         "progress_preparing": "Menyiapkan workbook dan jadwal awal...",
         "progress_working": "Sedang memproses...",
+        "progress_percent_fmt": "{percent}% | {text}",
         "progress_optimizing_fmt": "Optimasi {iteration}/{total} | berjalan {elapsed} | sisa {eta}",
         "progress_saving_fmt": "Menyimpan output | berjalan {elapsed}",
         "progress_done_fmt": "Selesai | berjalan {elapsed}",
@@ -73,6 +81,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "report_title_ready": "Siap",
         "report_title_language": "Bahasa",
         "report_language_changed": "Bahasa aplikasi diubah ke {language}.",
+        "report_title_mode": "Mode",
         "save_fallback_notice_fmt": "Output utama tidak bisa ditulis.\nPermintaan awal: {requested}\nDisimpan otomatis ke: {actual}",
         "save_fallback_warning_title": "Output Dialihkan",
         "permission_error_hint": "Tidak bisa menulis file output. Pastikan file tidak sedang dibuka di Excel, lalu pilih nama atau folder output lain.",
@@ -85,12 +94,20 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "info_copied_title": "Tersalin",
         "info_copied_msg": "Laporan berhasil disalin ke clipboard.",
         "error_title": "Error",
+        "info_title": "Info",
     },
     "en": {
-        "app_title": "Offline Duty Scheduler Builder",
+        "app_title": "Generator Jadwal Jaga RSIA MELINDA",
         "frame_files": "Files",
         "frame_config": "Config",
         "frame_rules": "Rules",
+        "welcome_title": "Generator Jadwal Jaga RSIA MELINDA",
+        "welcome_subtitle": "Choose the schedule type to generate",
+        "welcome_option_vk": "VK / Ward Duty Schedule",
+        "welcome_option_neonatus": "Neonatus Duty Schedule",
+        "welcome_neonatus_coming_soon": "Neonatus: Coming Soon",
+        "welcome_mode_selected_vk": "Active mode: VK / Ward Duty Schedule",
+        "welcome_mode_selected_neonatus": "Neonatus mode is not available yet (coming soon).",
         "label_input_excel": "Input Excel",
         "label_output_excel": "Output Excel",
         "label_report_folder": "Report Folder",
@@ -127,6 +144,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "progress_starting": "Starting optimization...",
         "progress_preparing": "Preparing workbook and initial schedule...",
         "progress_working": "Working...",
+        "progress_percent_fmt": "{percent}% | {text}",
         "progress_optimizing_fmt": "Optimizing {iteration}/{total} | elapsed {elapsed} | eta {eta}",
         "progress_saving_fmt": "Saving output | elapsed {elapsed}",
         "progress_done_fmt": "Done | elapsed {elapsed}",
@@ -142,6 +160,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "report_title_ready": "Ready",
         "report_title_language": "Language",
         "report_language_changed": "Application language switched to {language}.",
+        "report_title_mode": "Mode",
         "save_fallback_notice_fmt": "Primary output path could not be written.\nRequested: {requested}\nSaved automatically to: {actual}",
         "save_fallback_warning_title": "Output Redirected",
         "permission_error_hint": "Cannot write output file. Make sure it is not open in Excel, then choose another output name or folder.",
@@ -154,6 +173,7 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "info_copied_title": "Copied",
         "info_copied_msg": "Report copied to clipboard.",
         "error_title": "Error",
+        "info_title": "Info",
     },
 }
 
@@ -176,10 +196,12 @@ class SchedulerApp:
         self._build_vars()
         self._build_ui()
         self._apply_language(refresh_progress=True)
+        self._show_welcome_screen()
 
     def _build_vars(self) -> None:
         self.language_code_var = tk.StringVar(value="id")
         self.language_name_var = tk.StringVar(value=LANGUAGE_CODE_TO_NAME["id"])
+        self.schedule_mode_var = tk.StringVar(value="")
 
         self.input_path_var = tk.StringVar()
         self.output_path_var = tk.StringVar()
@@ -229,9 +251,14 @@ class SchedulerApp:
 
     def _build_ui(self) -> None:
         self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(3, weight=1)
+        self.root.rowconfigure(0, weight=1)
 
-        self.path_frame = ttk.LabelFrame(self.root)
+        self.main_container = ttk.Frame(self.root)
+        self.main_container.grid(row=0, column=0, sticky="nsew")
+        self.main_container.columnconfigure(0, weight=1)
+        self.main_container.rowconfigure(3, weight=1)
+
+        self.path_frame = ttk.LabelFrame(self.main_container)
         self.path_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
         self.path_frame.columnconfigure(1, weight=1)
 
@@ -286,7 +313,7 @@ class SchedulerApp:
         self.language_combo.grid(row=4, column=1, sticky="w", padx=6, pady=4)
         self.language_combo.bind("<<ComboboxSelected>>", self._on_language_selected)
 
-        self.config_frame = ttk.LabelFrame(self.root)
+        self.config_frame = ttk.LabelFrame(self.main_container)
         self.config_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=6)
 
         self.config_label_widgets["field_sheet"] = self._add_labeled_entry(
@@ -330,7 +357,7 @@ class SchedulerApp:
             self.config_frame, "", self.uniform_group_var, 5, 0, span=5
         )
 
-        self.flags_frame = ttk.LabelFrame(self.root)
+        self.flags_frame = ttk.LabelFrame(self.main_container)
         self.flags_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=6)
 
         flags = [
@@ -355,7 +382,7 @@ class SchedulerApp:
             )
             self.rule_check_widgets[label_key] = cb
 
-        action_frame = ttk.Frame(self.root)
+        action_frame = ttk.Frame(self.main_container)
         action_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=8)
         action_frame.columnconfigure(0, weight=1)
         action_frame.rowconfigure(1, weight=1)
@@ -403,6 +430,31 @@ class SchedulerApp:
         self.output_text.configure(yscrollcommand=scroll.set)
         action_frame.rowconfigure(2, weight=1)
 
+        self.welcome_frame = ttk.Frame(self.root, padding=24)
+        self.welcome_frame.grid(row=0, column=0, sticky="nsew")
+        self.welcome_frame.columnconfigure(0, weight=1)
+        self.welcome_frame.rowconfigure(4, weight=1)
+
+        self.welcome_title_label = ttk.Label(self.welcome_frame, font=("Segoe UI", 20, "bold"))
+        self.welcome_title_label.grid(row=0, column=0, sticky="n", pady=(8, 10))
+
+        self.welcome_subtitle_label = ttk.Label(self.welcome_frame, font=("Segoe UI", 11))
+        self.welcome_subtitle_label.grid(row=1, column=0, sticky="n", pady=(0, 24))
+
+        self.welcome_vk_btn = ttk.Button(
+            self.welcome_frame,
+            width=36,
+            command=self._select_mode_vk,
+        )
+        self.welcome_vk_btn.grid(row=2, column=0, pady=8)
+
+        self.welcome_neonatus_btn = ttk.Button(
+            self.welcome_frame,
+            width=36,
+            command=self._select_mode_neonatus,
+        )
+        self.welcome_neonatus_btn.grid(row=3, column=0, pady=8)
+
     def _add_labeled_entry(
         self,
         parent: ttk.Widget,
@@ -438,6 +490,11 @@ class SchedulerApp:
     def _apply_language(self, refresh_progress: bool = False) -> None:
         self.root.title(self._tr("app_title"))
 
+        self.welcome_title_label.configure(text=self._tr("welcome_title"))
+        self.welcome_subtitle_label.configure(text=self._tr("welcome_subtitle"))
+        self.welcome_vk_btn.configure(text=self._tr("welcome_option_vk"))
+        self.welcome_neonatus_btn.configure(text=self._tr("welcome_option_neonatus"))
+
         self.path_frame.configure(text=self._tr("frame_files"))
         self.config_frame.configure(text=self._tr("frame_config"))
         self.flags_frame.configure(text=self._tr("frame_rules"))
@@ -468,9 +525,40 @@ class SchedulerApp:
 
         if refresh_progress and not self._is_generating:
             if self.progress_var.get() >= 100:
-                self.progress_text_var.set(self._tr("progress_generate_complete"))
+                self.progress_text_var.set(
+                    self._tr(
+                        "progress_percent_fmt",
+                        percent=100,
+                        text=self._tr("progress_generate_complete"),
+                    )
+                )
             elif self.progress_var.get() <= 0:
-                self.progress_text_var.set(self._tr("progress_idle"))
+                self.progress_text_var.set(
+                    self._tr(
+                        "progress_percent_fmt",
+                        percent=0,
+                        text=self._tr("progress_idle"),
+                    )
+                )
+
+    def _show_welcome_screen(self) -> None:
+        self.main_container.grid_remove()
+        self.welcome_frame.grid()
+
+    def _show_main_screen(self) -> None:
+        self.welcome_frame.grid_remove()
+        self.main_container.grid()
+
+    def _select_mode_vk(self) -> None:
+        self.schedule_mode_var.set("vk_ruangan")
+        self._show_main_screen()
+        self._append_report(self._tr("report_title_mode"), self._tr("welcome_mode_selected_vk"))
+
+    def _select_mode_neonatus(self) -> None:
+        self.schedule_mode_var.set("neonatus")
+        msg = self._tr("welcome_mode_selected_neonatus")
+        self._append_report(self._tr("report_title_mode"), msg)
+        messagebox.showinfo(self._tr("info_title"), self._tr("welcome_neonatus_coming_soon"))
 
     def _on_language_selected(self, _event=None) -> None:
         selected = self.language_name_var.get().strip()
@@ -631,7 +719,13 @@ class SchedulerApp:
         self._is_generating = generate_mode
         if generate_mode:
             self.progress_var.set(0.0)
-            self.progress_text_var.set(self._tr("progress_starting"))
+            self.progress_text_var.set(
+                self._tr(
+                    "progress_percent_fmt",
+                    percent=0,
+                    text=self._tr("progress_starting"),
+                )
+            )
 
         def runner() -> None:
             try:
@@ -667,7 +761,13 @@ class SchedulerApp:
 
                 self._auto_export_report(report)
                 self.progress_var.set(100.0)
-                self.progress_text_var.set(self._tr("progress_generate_complete"))
+                self.progress_text_var.set(
+                    self._tr(
+                        "progress_percent_fmt",
+                        percent=100,
+                        text=self._tr("progress_generate_complete"),
+                    )
+                )
             return
 
         self._append_report(self._tr("report_title_result"), result)
@@ -675,7 +775,13 @@ class SchedulerApp:
     def _on_worker_error(self, err: str) -> None:
         self._set_busy(False)
         self._is_generating = False
-        self.progress_text_var.set(self._tr("progress_error"))
+        self.progress_text_var.set(
+            self._tr(
+                "progress_percent_fmt",
+                percent=int(self.progress_var.get()),
+                text=self._tr("progress_error"),
+            )
+        )
         if "Permission denied" in err or "Failed to save workbook" in err:
             err = f"{err}\n\n{self._tr('permission_error_hint')}"
         self._append_report(self._tr("report_title_error"), err)
@@ -701,6 +807,7 @@ class SchedulerApp:
         def apply_progress() -> None:
             progress = max(0.0, min(1.0, float(payload.get("progress", 0.0))))
             self.progress_var.set(progress * 100.0)
+            percent = int(round(progress * 100.0))
 
             phase = str(payload.get("phase", "optimize"))
             iteration = payload.get("iteration")
@@ -725,7 +832,9 @@ class SchedulerApp:
             else:
                 text = str(payload.get("message", self._tr("progress_working")))
 
-            self.progress_text_var.set(text)
+            self.progress_text_var.set(
+                self._tr("progress_percent_fmt", percent=percent, text=text)
+            )
 
         self.root.after(0, apply_progress)
 

@@ -2,7 +2,11 @@
 setlocal
 cd /d %~dp0
 
-if exist .venv\Scripts\python.exe (
+set "EXE_PATH=dist\Generator Jadwal Jaga RSIA MELINDA.exe"
+
+if exist "%EXE_PATH%" (
+  start "" "%EXE_PATH%"
+) else if exist .venv\Scripts\python.exe (
   .venv\Scripts\python.exe tools\scheduler_offline_app\app.py
 ) else (
   echo Python venv not found at .venv\Scripts\python.exe
