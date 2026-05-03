@@ -9,7 +9,11 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 - Welcome screen dengan pilihan:
   - Jadwal Jaga VK / Ruangan
   - Jadwal Jaga Neonatus (coming soon)
+- Tema UI modern ala Staff Panel dokterDIBYA (topbar gelap, card putih, aksen biru)
 - Setting alih bahasa aplikasi: Indonesia <-> English
+- Simpan/Muat konfigurasi ke file JSON
+- Reset konfigurasi ke default
+- Otomatis mengingat konfigurasi terakhir saat aplikasi dibuka lagi
 - Generate jadwal otomatis dengan optimasi swap per hari
 - Tombol preset cepat: `Apply Preset: Final VK`
 - Progress bar 0-100% + status realtime (fase kerja, iterasi, elapsed, ETA)

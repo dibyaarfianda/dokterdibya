@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import queue
 import threading
 import traceback
@@ -9,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from typing import Dict, List
+from typing import Any, Dict, List
 
 try:
     from scheduler_engine import OfflineSchedulerEngine, SchedulerConfig
@@ -20,6 +21,9 @@ except ModuleNotFoundError:
 TRANSLATIONS: Dict[str, Dict[str, str]] = {
     "id": {
         "app_title": "Generator Jadwal Jaga RSIA MELINDA",
+        "header_subtitle": "Tema visual Staff Panel dokterDIBYA",
+        "header_badge": "STAFF PANEL STYLE",
+        "footer_developed_by": "Developed by dokterDIBYA",
         "frame_files": "Berkas",
         "frame_config": "Konfigurasi",
         "frame_rules": "Aturan",
@@ -38,6 +42,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "cb_auto_export_json": "Ekspor Otomatis JSON",
         "cb_auto_export_csv": "Ekspor Otomatis CSV",
         "btn_apply_preset": "Terapkan Preset: Final VK",
+        "btn_save_config": "Simpan Konfigurasi",
+        "btn_load_config": "Muat Konfigurasi",
+        "btn_reset_config": "Reset Default",
         "btn_analyze": "Analisa Input",
         "btn_generate": "Generate + Simpan",
         "btn_copy": "Salin Laporan",
@@ -83,9 +90,18 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "report_title_language": "Bahasa",
         "report_language_changed": "Bahasa aplikasi diubah ke {language}.",
         "report_title_mode": "Mode",
+        "report_title_config": "Konfigurasi",
         "save_fallback_notice_fmt": "Output utama tidak bisa ditulis.\nPermintaan awal: {requested}\nDisimpan otomatis ke: {actual}",
         "save_fallback_warning_title": "Output Dialihkan",
         "permission_error_hint": "Tidak bisa menulis file output. Pastikan file tidak sedang dibuka di Excel, lalu pilih nama atau folder output lain.",
+        "dialog_save_config": "Simpan konfigurasi sebagai",
+        "dialog_load_config": "Pilih file konfigurasi",
+        "config_saved_msg_fmt": "Konfigurasi disimpan ke:\n{path}",
+        "config_loaded_msg_fmt": "Konfigurasi dimuat dari:\n{path}",
+        "config_reset_msg": "Konfigurasi direset ke default.",
+        "config_invalid_format": "File konfigurasi tidak valid.",
+        "config_apply_failed": "Gagal menerapkan konfigurasi.",
+        "config_autoload_report_fmt": "Konfigurasi terakhir dimuat otomatis dari:\n{path}",
         "ready_message": "Pilih file input Excel, cek konfigurasi, lalu klik Analisa Input atau Generate + Simpan.",
         "dialog_select_input": "Pilih file jadwal input",
         "dialog_save_output": "Simpan file jadwal output",
@@ -99,6 +115,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
     },
     "en": {
         "app_title": "Generator Jadwal Jaga RSIA MELINDA",
+        "header_subtitle": "Staff Panel visual theme by dokterDIBYA",
+        "header_badge": "STAFF PANEL STYLE",
+        "footer_developed_by": "Developed by dokterDIBYA",
         "frame_files": "Files",
         "frame_config": "Config",
         "frame_rules": "Rules",
@@ -117,6 +136,9 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "cb_auto_export_json": "Auto Export JSON",
         "cb_auto_export_csv": "Auto Export CSV",
         "btn_apply_preset": "Apply Preset: Final VK",
+        "btn_save_config": "Save Config",
+        "btn_load_config": "Load Config",
+        "btn_reset_config": "Reset Defaults",
         "btn_analyze": "Analyze Input",
         "btn_generate": "Generate + Save",
         "btn_copy": "Copy Report",
@@ -162,9 +184,18 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "report_title_language": "Language",
         "report_language_changed": "Application language switched to {language}.",
         "report_title_mode": "Mode",
+        "report_title_config": "Config",
         "save_fallback_notice_fmt": "Primary output path could not be written.\nRequested: {requested}\nSaved automatically to: {actual}",
         "save_fallback_warning_title": "Output Redirected",
         "permission_error_hint": "Cannot write output file. Make sure it is not open in Excel, then choose another output name or folder.",
+        "dialog_save_config": "Save configuration as",
+        "dialog_load_config": "Select configuration file",
+        "config_saved_msg_fmt": "Configuration saved to:\n{path}",
+        "config_loaded_msg_fmt": "Configuration loaded from:\n{path}",
+        "config_reset_msg": "Configuration reset to defaults.",
+        "config_invalid_format": "Configuration file format is invalid.",
+        "config_apply_failed": "Failed to apply configuration.",
+        "config_autoload_report_fmt": "Last configuration auto-loaded from:\n{path}",
         "ready_message": "Select an input Excel, review config, then click Analyze Input or Generate + Save.",
         "dialog_select_input": "Select input schedule file",
         "dialog_save_output": "Save output schedule as",
@@ -186,18 +217,28 @@ LANGUAGE_NAME_TO_CODE: Dict[str, str] = {
 
 LANGUAGE_CODE_TO_NAME: Dict[str, str] = {code: name for name, code in LANGUAGE_NAME_TO_CODE.items()}
 
+CONFIG_SCHEMA_VERSION = 1
+CONFIG_DIR_NAME = "RSIA-MELINDA-Scheduler"
+LAST_CONFIG_FILE_NAME = "last-config.json"
+
 
 class SchedulerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.geometry("1150x760")
+        self.root.geometry("1220x820")
+        self.root.minsize(1060, 700)
+        self._last_config_path = self._get_last_config_path()
+        self._suspend_auto_persist = False
 
         self.engine = OfflineSchedulerEngine()
 
+        self._configure_styles()
         self._build_vars()
         self._build_ui()
         self._apply_language(refresh_progress=True)
         self._show_welcome_screen()
+        self._load_last_config_silent()
+        self.root.protocol("WM_DELETE_WINDOW", self._on_app_close)
         self.root.after(120, self._drain_progress_queue)
 
     def _build_vars(self) -> None:
@@ -252,62 +293,265 @@ class SchedulerApp:
         self.config_label_widgets: Dict[str, ttk.Label] = {}
         self.rule_check_widgets: Dict[str, ttk.Checkbutton] = {}
 
+    def _configure_styles(self) -> None:
+        self.root.configure(bg="#f4f6f9")
+
+        style = ttk.Style(self.root)
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+
+        self.style = style
+
+        style.configure("App.TFrame", background="#f4f6f9")
+        style.configure("WelcomeCard.TFrame", background="#ffffff")
+
+        style.configure(
+            "Card.TLabelframe",
+            background="#ffffff",
+            borderwidth=1,
+            relief="solid",
+            padding=4,
+        )
+        style.configure(
+            "Card.TLabelframe.Label",
+            background="#ffffff",
+            foreground="#2f3b52",
+            font=("Segoe UI", 10, "bold"),
+        )
+
+        style.configure(
+            "App.TLabel",
+            background="#f4f6f9",
+            foreground="#2f3b52",
+            font=("Segoe UI", 9),
+        )
+        style.configure(
+            "Card.TLabel",
+            background="#ffffff",
+            foreground="#2f3b52",
+            font=("Segoe UI", 9),
+        )
+        style.configure(
+            "Muted.TLabel",
+            background="#f4f6f9",
+            foreground="#6c757d",
+            font=("Segoe UI", 9),
+        )
+        style.configure(
+            "WelcomeTitle.TLabel",
+            background="#ffffff",
+            foreground="#2f3b52",
+            font=("Segoe UI", 22, "bold"),
+        )
+        style.configure(
+            "WelcomeSubtitle.TLabel",
+            background="#ffffff",
+            foreground="#6c757d",
+            font=("Segoe UI", 11),
+        )
+        style.configure(
+            "Footer.TLabel",
+            background="#f4f6f9",
+            foreground="#6c757d",
+            font=("Segoe UI", 9, "italic"),
+        )
+
+        style.configure("App.TEntry", padding=(8, 6))
+        style.configure("App.TCombobox", padding=(7, 5))
+
+        style.configure(
+            "Card.TCheckbutton",
+            background="#ffffff",
+            foreground="#2f3b52",
+            font=("Segoe UI", 9),
+        )
+        style.map(
+            "Card.TCheckbutton",
+            background=[("active", "#ffffff"), ("selected", "#ffffff")],
+        )
+
+        style.configure(
+            "Primary.TButton",
+            padding=(12, 8),
+            background="#0d6efd",
+            foreground="#ffffff",
+            borderwidth=0,
+            relief="flat",
+            font=("Segoe UI", 9, "bold"),
+        )
+        style.map(
+            "Primary.TButton",
+            background=[
+                ("active", "#0b5ed7"),
+                ("pressed", "#0a58ca"),
+                ("disabled", "#a9c6fa"),
+            ],
+            foreground=[("disabled", "#eef4ff")],
+        )
+
+        style.configure(
+            "Outline.TButton",
+            padding=(12, 8),
+            background="#ffffff",
+            foreground="#0d6efd",
+            borderwidth=1,
+            relief="solid",
+            font=("Segoe UI", 9, "bold"),
+        )
+        style.map(
+            "Outline.TButton",
+            background=[
+                ("active", "#eef5ff"),
+                ("pressed", "#dbeafe"),
+                ("disabled", "#f1f3f5"),
+            ],
+            foreground=[("disabled", "#9db7ef")],
+        )
+
+        style.configure(
+            "PrimaryLarge.TButton",
+            padding=(18, 12),
+            background="#0d6efd",
+            foreground="#ffffff",
+            borderwidth=0,
+            relief="flat",
+            font=("Segoe UI", 10, "bold"),
+        )
+        style.map(
+            "PrimaryLarge.TButton",
+            background=[("active", "#0b5ed7"), ("pressed", "#0a58ca")],
+        )
+
+        style.configure(
+            "OutlineLarge.TButton",
+            padding=(18, 12),
+            background="#ffffff",
+            foreground="#0d6efd",
+            borderwidth=1,
+            relief="solid",
+            font=("Segoe UI", 10, "bold"),
+        )
+        style.map(
+            "OutlineLarge.TButton",
+            background=[("active", "#eef5ff"), ("pressed", "#dbeafe")],
+        )
+
+        style.configure(
+            "Brand.Horizontal.TProgressbar",
+            troughcolor="#dee2e6",
+            background="#0d6efd",
+            lightcolor="#0d6efd",
+            darkcolor="#0d6efd",
+            bordercolor="#dee2e6",
+            thickness=14,
+        )
+
     def _build_ui(self) -> None:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-        self.main_container = ttk.Frame(self.root)
+        self.main_container = ttk.Frame(self.root, style="App.TFrame")
         self.main_container.grid(row=0, column=0, sticky="nsew")
         self.main_container.columnconfigure(0, weight=1)
-        self.main_container.rowconfigure(3, weight=1)
+        self.main_container.rowconfigure(4, weight=1)
 
-        self.path_frame = ttk.LabelFrame(self.main_container)
-        self.path_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
+        self.topbar_frame = tk.Frame(
+            self.main_container,
+            bg="#343a40",
+            height=78,
+            highlightthickness=1,
+            highlightbackground="#2b3035",
+        )
+        self.topbar_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
+        self.topbar_frame.grid_propagate(False)
+        self.topbar_frame.columnconfigure(0, weight=1)
+
+        self.brand_title_label = tk.Label(
+            self.topbar_frame,
+            bg="#343a40",
+            fg="#f8f9fa",
+            font=("Segoe UI", 14, "bold"),
+            anchor="w",
+        )
+        self.brand_title_label.grid(row=0, column=0, sticky="sw", padx=14, pady=(6, 0))
+
+        self.brand_subtitle_label = tk.Label(
+            self.topbar_frame,
+            bg="#343a40",
+            fg="#ced4da",
+            font=("Segoe UI", 9),
+            anchor="w",
+        )
+        self.brand_subtitle_label.grid(row=1, column=0, sticky="nw", padx=14, pady=(0, 8))
+
+        self.theme_badge_label = tk.Label(
+            self.topbar_frame,
+            bg="#0d6efd",
+            fg="#ffffff",
+            font=("Segoe UI", 9, "bold"),
+            padx=10,
+            pady=4,
+        )
+        self.theme_badge_label.grid(row=0, column=1, rowspan=2, sticky="e", padx=14)
+
+        self.path_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
+        self.path_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=8)
         self.path_frame.columnconfigure(1, weight=1)
 
-        self.label_input_excel = ttk.Label(self.path_frame)
+        self.label_input_excel = ttk.Label(self.path_frame, style="Card.TLabel")
         self.label_input_excel.grid(row=0, column=0, sticky="w", padx=6, pady=4)
-        ttk.Entry(self.path_frame, textvariable=self.input_path_var).grid(
+        ttk.Entry(self.path_frame, textvariable=self.input_path_var, style="App.TEntry").grid(
             row=0, column=1, sticky="ew", padx=6, pady=4
         )
-        self.btn_browse_input = ttk.Button(self.path_frame, command=self._browse_input)
+        self.btn_browse_input = ttk.Button(self.path_frame, command=self._browse_input, style="Outline.TButton")
         self.btn_browse_input.grid(
             row=0, column=2, padx=6, pady=4
         )
 
-        self.label_output_excel = ttk.Label(self.path_frame)
+        self.label_output_excel = ttk.Label(self.path_frame, style="Card.TLabel")
         self.label_output_excel.grid(row=1, column=0, sticky="w", padx=6, pady=4)
-        ttk.Entry(self.path_frame, textvariable=self.output_path_var).grid(
+        ttk.Entry(self.path_frame, textvariable=self.output_path_var, style="App.TEntry").grid(
             row=1, column=1, sticky="ew", padx=6, pady=4
         )
-        self.btn_browse_output = ttk.Button(self.path_frame, command=self._browse_output)
+        self.btn_browse_output = ttk.Button(self.path_frame, command=self._browse_output, style="Outline.TButton")
         self.btn_browse_output.grid(
             row=1, column=2, padx=6, pady=4
         )
 
-        self.label_report_folder = ttk.Label(self.path_frame)
+        self.label_report_folder = ttk.Label(self.path_frame, style="Card.TLabel")
         self.label_report_folder.grid(row=2, column=0, sticky="w", padx=6, pady=4)
-        ttk.Entry(self.path_frame, textvariable=self.export_folder_var).grid(
+        ttk.Entry(self.path_frame, textvariable=self.export_folder_var, style="App.TEntry").grid(
             row=2, column=1, sticky="ew", padx=6, pady=4
         )
-        self.btn_browse_report_folder = ttk.Button(self.path_frame, command=self._browse_export_folder)
+        self.btn_browse_report_folder = ttk.Button(self.path_frame, command=self._browse_export_folder, style="Outline.TButton")
         self.btn_browse_report_folder.grid(
             row=2, column=2, padx=6, pady=4
         )
 
-        self.cb_export_json = ttk.Checkbutton(self.path_frame, variable=self.export_json_var)
+        self.cb_export_json = ttk.Checkbutton(
+            self.path_frame,
+            variable=self.export_json_var,
+            style="Card.TCheckbutton",
+        )
         self.cb_export_json.grid(
             row=3, column=1, sticky="w", padx=6, pady=4
         )
-        self.cb_export_csv = ttk.Checkbutton(self.path_frame, variable=self.export_csv_var)
+        self.cb_export_csv = ttk.Checkbutton(
+            self.path_frame,
+            variable=self.export_csv_var,
+            style="Card.TCheckbutton",
+        )
         self.cb_export_csv.grid(
             row=3, column=1, sticky="e", padx=6, pady=4
         )
 
-        self.label_language = ttk.Label(self.path_frame)
+        self.label_language = ttk.Label(self.path_frame, style="Card.TLabel")
         self.label_language.grid(row=4, column=0, sticky="w", padx=6, pady=4)
         self.language_combo = ttk.Combobox(
             self.path_frame,
+            style="App.TCombobox",
             state="readonly",
             textvariable=self.language_name_var,
             values=list(LANGUAGE_NAME_TO_CODE.keys()),
@@ -316,8 +560,8 @@ class SchedulerApp:
         self.language_combo.grid(row=4, column=1, sticky="w", padx=6, pady=4)
         self.language_combo.bind("<<ComboboxSelected>>", self._on_language_selected)
 
-        self.config_frame = ttk.LabelFrame(self.main_container)
-        self.config_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=6)
+        self.config_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
+        self.config_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=6)
 
         self.config_label_widgets["field_sheet"] = self._add_labeled_entry(
             self.config_frame, "", self.sheet_name_var, 0, 0
@@ -360,8 +604,8 @@ class SchedulerApp:
             self.config_frame, "", self.uniform_group_var, 5, 0, span=5
         )
 
-        self.flags_frame = ttk.LabelFrame(self.main_container)
-        self.flags_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=6)
+        self.flags_frame = ttk.LabelFrame(self.main_container, style="Card.TLabelframe")
+        self.flags_frame.grid(row=3, column=0, sticky="ew", padx=10, pady=6)
 
         flags = [
             ("rule_no_m_to_p", self.enforce_no_m_to_p_var),
@@ -379,41 +623,52 @@ class SchedulerApp:
         for idx, (label_key, var) in enumerate(flags):
             r = idx // 5
             c = idx % 5
-            cb = ttk.Checkbutton(self.flags_frame, variable=var)
+            cb = ttk.Checkbutton(self.flags_frame, variable=var, style="Card.TCheckbutton")
             cb.grid(
                 row=r, column=c, sticky="w", padx=10, pady=4
             )
             self.rule_check_widgets[label_key] = cb
 
-        action_frame = ttk.Frame(self.main_container)
-        action_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=8)
+        action_frame = ttk.Frame(self.main_container, style="App.TFrame")
+        action_frame.grid(row=4, column=0, sticky="nsew", padx=10, pady=8)
         action_frame.columnconfigure(0, weight=1)
         action_frame.rowconfigure(1, weight=1)
 
-        button_bar = ttk.Frame(action_frame)
+        button_bar = ttk.Frame(action_frame, style="App.TFrame")
         button_bar.grid(row=0, column=0, sticky="ew")
 
         self.preset_btn = ttk.Button(
             button_bar,
+            style="Outline.TButton",
             command=self._apply_preset_final_vk,
         )
         self.preset_btn.pack(side="left", padx=4)
 
-        self.analyze_btn = ttk.Button(button_bar, command=self._on_analyze)
+        self.save_config_btn = ttk.Button(button_bar, command=self._on_save_config, style="Outline.TButton")
+        self.save_config_btn.pack(side="left", padx=4)
+
+        self.load_config_btn = ttk.Button(button_bar, command=self._on_load_config, style="Outline.TButton")
+        self.load_config_btn.pack(side="left", padx=4)
+
+        self.reset_config_btn = ttk.Button(button_bar, command=self._on_reset_config, style="Outline.TButton")
+        self.reset_config_btn.pack(side="left", padx=4)
+
+        self.analyze_btn = ttk.Button(button_bar, command=self._on_analyze, style="Primary.TButton")
         self.analyze_btn.pack(side="left", padx=4)
 
-        self.generate_btn = ttk.Button(button_bar, command=self._on_generate)
+        self.generate_btn = ttk.Button(button_bar, command=self._on_generate, style="Primary.TButton")
         self.generate_btn.pack(side="left", padx=4)
 
-        self.copy_btn = ttk.Button(button_bar, command=self._copy_report)
+        self.copy_btn = ttk.Button(button_bar, command=self._copy_report, style="Outline.TButton")
         self.copy_btn.pack(side="left", padx=4)
 
-        progress_frame = ttk.Frame(action_frame)
+        progress_frame = ttk.Frame(action_frame, style="App.TFrame")
         progress_frame.grid(row=1, column=0, sticky="ew", pady=(6, 2))
         progress_frame.columnconfigure(0, weight=1)
 
         self.progress_bar = ttk.Progressbar(
             progress_frame,
+            style="Brand.Horizontal.TProgressbar",
             orient="horizontal",
             mode="determinate",
             maximum=100,
@@ -421,42 +676,72 @@ class SchedulerApp:
         )
         self.progress_bar.grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
-        self.progress_label = ttk.Label(progress_frame, textvariable=self.progress_text_var, width=56, anchor="w")
+        self.progress_label = ttk.Label(
+            progress_frame,
+            style="Muted.TLabel",
+            textvariable=self.progress_text_var,
+            width=56,
+            anchor="w",
+        )
         self.progress_label.grid(
             row=0, column=1, sticky="w"
         )
 
         self.output_text = tk.Text(action_frame, wrap="word")
         self.output_text.grid(row=2, column=0, sticky="nsew", pady=6)
+        self.output_text.configure(
+            bg="#ffffff",
+            fg="#243447",
+            insertbackground="#243447",
+            relief="flat",
+            padx=12,
+            pady=10,
+            font=("Consolas", 10),
+            highlightthickness=1,
+            highlightbackground="#d9dee5",
+            highlightcolor="#0d6efd",
+        )
         scroll = ttk.Scrollbar(action_frame, command=self.output_text.yview)
         scroll.grid(row=2, column=1, sticky="ns")
         self.output_text.configure(yscrollcommand=scroll.set)
         action_frame.rowconfigure(2, weight=1)
 
-        self.welcome_frame = ttk.Frame(self.root, padding=24)
+        self.footer_label = ttk.Label(self.main_container, style="Footer.TLabel")
+        self.footer_label.grid(row=5, column=0, sticky="e", padx=12, pady=(0, 8))
+
+        self.welcome_frame = ttk.Frame(self.root, padding=24, style="App.TFrame")
         self.welcome_frame.grid(row=0, column=0, sticky="nsew")
         self.welcome_frame.columnconfigure(0, weight=1)
-        self.welcome_frame.rowconfigure(4, weight=1)
+        self.welcome_frame.rowconfigure(1, weight=1)
 
-        self.welcome_title_label = ttk.Label(self.welcome_frame, font=("Segoe UI", 20, "bold"))
-        self.welcome_title_label.grid(row=0, column=0, sticky="n", pady=(8, 10))
+        self.welcome_card = ttk.Frame(self.welcome_frame, style="WelcomeCard.TFrame", padding=(32, 28))
+        self.welcome_card.grid(row=0, column=0, sticky="n", pady=(42, 0))
+        self.welcome_card.columnconfigure(0, weight=1)
 
-        self.welcome_subtitle_label = ttk.Label(self.welcome_frame, font=("Segoe UI", 11))
+        self.welcome_title_label = ttk.Label(self.welcome_card, style="WelcomeTitle.TLabel")
+        self.welcome_title_label.grid(row=0, column=0, sticky="n", pady=(4, 10))
+
+        self.welcome_subtitle_label = ttk.Label(self.welcome_card, style="WelcomeSubtitle.TLabel")
         self.welcome_subtitle_label.grid(row=1, column=0, sticky="n", pady=(0, 24))
 
         self.welcome_vk_btn = ttk.Button(
-            self.welcome_frame,
+            self.welcome_card,
+            style="PrimaryLarge.TButton",
             width=36,
             command=self._select_mode_vk,
         )
         self.welcome_vk_btn.grid(row=2, column=0, pady=8)
 
         self.welcome_neonatus_btn = ttk.Button(
-            self.welcome_frame,
+            self.welcome_card,
+            style="OutlineLarge.TButton",
             width=36,
             command=self._select_mode_neonatus,
         )
         self.welcome_neonatus_btn.grid(row=3, column=0, pady=8)
+
+        self.welcome_footer_label = ttk.Label(self.welcome_frame, style="Footer.TLabel")
+        self.welcome_footer_label.grid(row=1, column=0, sticky="s", pady=(0, 10))
 
     def _add_labeled_entry(
         self,
@@ -467,9 +752,9 @@ class SchedulerApp:
         col: int,
         span: int = 1,
     ) -> ttk.Label:
-        label_widget = ttk.Label(parent, text=label)
+        label_widget = ttk.Label(parent, text=label, style="Card.TLabel")
         label_widget.grid(row=row, column=col, sticky="w", padx=6, pady=4)
-        entry = ttk.Entry(parent, textvariable=var)
+        entry = ttk.Entry(parent, textvariable=var, style="App.TEntry")
         entry.grid(row=row, column=col + 1, sticky="ew", padx=6, pady=4, columnspan=span)
         parent.columnconfigure(col + 1, weight=1)
         return label_widget
@@ -492,6 +777,11 @@ class SchedulerApp:
 
     def _apply_language(self, refresh_progress: bool = False) -> None:
         self.root.title(self._tr("app_title"))
+        self.brand_title_label.configure(text=self._tr("app_title"))
+        self.brand_subtitle_label.configure(text=self._tr("header_subtitle"))
+        self.theme_badge_label.configure(text=self._tr("header_badge"))
+        self.footer_label.configure(text=self._tr("footer_developed_by"))
+        self.welcome_footer_label.configure(text=self._tr("footer_developed_by"))
 
         self.welcome_title_label.configure(text=self._tr("welcome_title"))
         self.welcome_subtitle_label.configure(text=self._tr("welcome_subtitle"))
@@ -522,6 +812,9 @@ class SchedulerApp:
             check_widget.configure(text=self._tr(key))
 
         self.preset_btn.configure(text=self._tr("btn_apply_preset"))
+        self.save_config_btn.configure(text=self._tr("btn_save_config"))
+        self.load_config_btn.configure(text=self._tr("btn_load_config"))
+        self.reset_config_btn.configure(text=self._tr("btn_reset_config"))
         self.analyze_btn.configure(text=self._tr("btn_analyze"))
         self.generate_btn.configure(text=self._tr("btn_generate"))
         self.copy_btn.configure(text=self._tr("btn_copy"))
@@ -556,12 +849,14 @@ class SchedulerApp:
         self.schedule_mode_var.set("vk_ruangan")
         self._show_main_screen()
         self._append_report(self._tr("report_title_mode"), self._tr("welcome_mode_selected_vk"))
+        self._persist_last_config_silent()
 
     def _select_mode_neonatus(self) -> None:
         self.schedule_mode_var.set("neonatus")
         msg = self._tr("welcome_mode_selected_neonatus")
         self._append_report(self._tr("report_title_mode"), msg)
         messagebox.showinfo(self._tr("info_title"), self._tr("welcome_neonatus_coming_soon"))
+        self._persist_last_config_silent()
 
     def _on_language_selected(self, _event=None) -> None:
         selected = self.language_name_var.get().strip()
@@ -572,6 +867,7 @@ class SchedulerApp:
             self._tr("report_title_language"),
             self._tr("report_language_changed", language=selected),
         )
+        self._persist_last_config_silent()
 
     def _browse_input(self) -> None:
         p = filedialog.askopenfilename(
@@ -584,6 +880,7 @@ class SchedulerApp:
                 self.output_path_var.set(self._suggest_output_path(p))
             if not self.export_folder_var.get().strip():
                 self.export_folder_var.set(str(Path(p).parent))
+            self._persist_last_config_silent()
 
     def _browse_output(self) -> None:
         p = filedialog.asksaveasfilename(
@@ -593,11 +890,13 @@ class SchedulerApp:
         )
         if p:
             self.output_path_var.set(p)
+            self._persist_last_config_silent()
 
     def _browse_export_folder(self) -> None:
         p = filedialog.askdirectory(title=self._tr("dialog_select_report_folder"))
         if p:
             self.export_folder_var.set(p)
+            self._persist_last_config_silent()
 
     def _suggest_output_path(self, input_path: str) -> str:
         path = Path(input_path)
@@ -631,10 +930,246 @@ class SchedulerApp:
             out.append(s)
         return out
 
+    def _get_last_config_path(self) -> Path:
+        local_appdata = os.getenv("LOCALAPPDATA")
+        if local_appdata:
+            return Path(local_appdata) / CONFIG_DIR_NAME / LAST_CONFIG_FILE_NAME
+        return Path.home() / f".{CONFIG_DIR_NAME}" / LAST_CONFIG_FILE_NAME
+
+    @staticmethod
+    def _to_bool(value: object, default: bool = False) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+        return default
+
+    def _collect_current_config(self) -> Dict[str, Any]:
+        return {
+            "schema_version": CONFIG_SCHEMA_VERSION,
+            "language_code": self._language_code(),
+            "schedule_mode": self.schedule_mode_var.get().strip(),
+            "input_path": self.input_path_var.get().strip(),
+            "output_path": self.output_path_var.get().strip(),
+            "export_folder": self.export_folder_var.get().strip(),
+            "sheet_name": self.sheet_name_var.get().strip(),
+            "start_day": self.start_day_var.get().strip(),
+            "end_day": self.end_day_var.get().strip(),
+            "p_count": self.p_count_var.get().strip(),
+            "s_count": self.s_count_var.get().strip(),
+            "m_count": self.m_count_var.get().strip(),
+            "iterations": self.iterations_var.get().strip(),
+            "seed": self.seed_var.get().strip(),
+            "temperature": self.temperature_var.get().strip(),
+            "top_rank_count": self.top_rank_count_var.get().strip(),
+            "top_rank_max_night": self.top_rank_max_night_var.get().strip(),
+            "max_core_rank": self.max_core_rank_var.get().strip(),
+            "off_targets": self.off_targets_var.get().strip(),
+            "uniform_group": self.uniform_group_var.get().strip(),
+            "enforce_no_m_to_p": self.enforce_no_m_to_p_var.get(),
+            "enforce_mll_each": self.enforce_mll_each_var.get(),
+            "enforce_rank_group_not_together": self.enforce_rank_group_not_together_var.get(),
+            "enforce_tandem": self.enforce_tandem_var.get(),
+            "enforce_top_rank_night_cap": self.enforce_top_rank_night_cap_var.get(),
+            "enforce_uniform_group_off": self.enforce_uniform_group_off_var.get(),
+            "enforce_uniform_group_night": self.enforce_uniform_group_night_var.get(),
+            "enforce_night_monotonic": self.enforce_night_monotonic_var.get(),
+            "enforce_off_monotonic": self.enforce_off_monotonic_var.get(),
+            "assign_colors": self.assign_colors_var.get(),
+            "auto_export_json": self.export_json_var.get(),
+            "auto_export_csv": self.export_csv_var.get(),
+        }
+
+    def _apply_config_state(self, state: Dict[str, Any]) -> None:
+        if not isinstance(state, dict):
+            raise ValueError(self._tr("config_invalid_format"))
+
+        self._suspend_auto_persist = True
+        try:
+            lang_code = str(state.get("language_code", self._language_code())).strip().lower()
+            if lang_code in LANGUAGE_CODE_TO_NAME:
+                self.language_code_var.set(lang_code)
+                self.language_name_var.set(LANGUAGE_CODE_TO_NAME[lang_code])
+
+            self.input_path_var.set(str(state.get("input_path", self.input_path_var.get())).strip())
+            self.output_path_var.set(str(state.get("output_path", self.output_path_var.get())).strip())
+            self.export_folder_var.set(str(state.get("export_folder", self.export_folder_var.get())).strip())
+
+            self.sheet_name_var.set(str(state.get("sheet_name", self.sheet_name_var.get())).strip() or "JADWAL BARU")
+            self.start_day_var.set(str(state.get("start_day", self.start_day_var.get())).strip() or "1")
+            self.end_day_var.set(str(state.get("end_day", self.end_day_var.get())).strip() or "31")
+
+            self.p_count_var.set(str(state.get("p_count", self.p_count_var.get())).strip() or "3")
+            self.s_count_var.set(str(state.get("s_count", self.s_count_var.get())).strip() or "3")
+            self.m_count_var.set(str(state.get("m_count", self.m_count_var.get())).strip() or "3")
+
+            self.iterations_var.set(str(state.get("iterations", self.iterations_var.get())).strip() or "60000")
+            self.seed_var.set(str(state.get("seed", self.seed_var.get())).strip() or "707")
+            self.temperature_var.set(str(state.get("temperature", self.temperature_var.get())).strip() or "4.5")
+
+            self.top_rank_count_var.set(str(state.get("top_rank_count", self.top_rank_count_var.get())).strip() or "2")
+            self.top_rank_max_night_var.set(str(state.get("top_rank_max_night", self.top_rank_max_night_var.get())).strip() or "3")
+            self.max_core_rank_var.set(str(state.get("max_core_rank", self.max_core_rank_var.get())).strip() or "14")
+
+            self.off_targets_var.set(str(state.get("off_targets", self.off_targets_var.get())).strip() or "12,12,11,11,10,10,9,9,9,9,9,8,8,8")
+            self.uniform_group_var.set(str(state.get("uniform_group", self.uniform_group_var.get())).strip() or "12,13,14")
+
+            self.enforce_no_m_to_p_var.set(self._to_bool(state.get("enforce_no_m_to_p"), True))
+            self.enforce_mll_each_var.set(self._to_bool(state.get("enforce_mll_each"), True))
+            self.enforce_rank_group_not_together_var.set(self._to_bool(state.get("enforce_rank_group_not_together"), True))
+            self.enforce_tandem_var.set(self._to_bool(state.get("enforce_tandem"), True))
+            self.enforce_top_rank_night_cap_var.set(self._to_bool(state.get("enforce_top_rank_night_cap"), True))
+            self.enforce_uniform_group_off_var.set(self._to_bool(state.get("enforce_uniform_group_off"), True))
+            self.enforce_uniform_group_night_var.set(self._to_bool(state.get("enforce_uniform_group_night"), True))
+            self.enforce_night_monotonic_var.set(self._to_bool(state.get("enforce_night_monotonic"), True))
+            self.enforce_off_monotonic_var.set(self._to_bool(state.get("enforce_off_monotonic"), True))
+            self.assign_colors_var.set(self._to_bool(state.get("assign_colors"), True))
+
+            self.export_json_var.set(self._to_bool(state.get("auto_export_json"), True))
+            self.export_csv_var.set(self._to_bool(state.get("auto_export_csv"), True))
+
+            mode = str(state.get("schedule_mode", self.schedule_mode_var.get())).strip()
+            self.schedule_mode_var.set(mode)
+
+            self._apply_language(refresh_progress=True)
+
+            if mode == "vk_ruangan":
+                self._show_main_screen()
+            else:
+                self._show_welcome_screen()
+        finally:
+            self._suspend_auto_persist = False
+
+    def _write_config_file(self, path: Path, state: Dict[str, Any]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=True)
+
+    def _persist_last_config_silent(self) -> None:
+        if self._suspend_auto_persist:
+            return
+        try:
+            self._write_config_file(self._last_config_path, self._collect_current_config())
+        except Exception:
+            pass
+
+    def _load_last_config_silent(self) -> None:
+        if not self._last_config_path.exists():
+            return
+        try:
+            with self._last_config_path.open("r", encoding="utf-8") as f:
+                state = json.load(f)
+            self._apply_config_state(state)
+            self._append_report(
+                self._tr("report_title_config"),
+                self._tr("config_autoload_report_fmt", path=str(self._last_config_path)),
+            )
+        except Exception:
+            pass
+
+    def _on_save_config(self) -> None:
+        default_file = f"scheduler-config-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
+        p = filedialog.asksaveasfilename(
+            title=self._tr("dialog_save_config"),
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            initialfile=default_file,
+        )
+        if not p:
+            return
+
+        path = Path(p)
+        try:
+            self._write_config_file(path, self._collect_current_config())
+        except Exception as exc:
+            messagebox.showerror(self._tr("error_title"), f"{self._tr('config_apply_failed')}\n\n{exc}")
+            return
+
+        msg = self._tr("config_saved_msg_fmt", path=str(path))
+        self._append_report(self._tr("report_title_config"), msg)
+        messagebox.showinfo(self._tr("info_title"), msg)
+
+    def _on_load_config(self) -> None:
+        p = filedialog.askopenfilename(
+            title=self._tr("dialog_load_config"),
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        )
+        if not p:
+            return
+
+        path = Path(p)
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                state = json.load(f)
+            self._apply_config_state(state)
+            self._persist_last_config_silent()
+        except ValueError as exc:
+            messagebox.showerror(self._tr("error_title"), str(exc))
+            return
+        except Exception as exc:
+            messagebox.showerror(self._tr("error_title"), f"{self._tr('config_apply_failed')}\n\n{exc}")
+            return
+
+        msg = self._tr("config_loaded_msg_fmt", path=str(path))
+        self._append_report(self._tr("report_title_config"), msg)
+        messagebox.showinfo(self._tr("info_title"), msg)
+
+    def _on_reset_config(self) -> None:
+        defaults = {
+            "language_code": "id",
+            "schedule_mode": "",
+            "input_path": "",
+            "output_path": "",
+            "export_folder": "",
+            "sheet_name": "JADWAL BARU",
+            "start_day": "1",
+            "end_day": "31",
+            "p_count": "3",
+            "s_count": "3",
+            "m_count": "3",
+            "iterations": "60000",
+            "seed": "707",
+            "temperature": "4.5",
+            "top_rank_count": "2",
+            "top_rank_max_night": "3",
+            "max_core_rank": "14",
+            "off_targets": "12,12,11,11,10,10,9,9,9,9,9,8,8,8",
+            "uniform_group": "12,13,14",
+            "enforce_no_m_to_p": True,
+            "enforce_mll_each": True,
+            "enforce_rank_group_not_together": True,
+            "enforce_tandem": True,
+            "enforce_top_rank_night_cap": True,
+            "enforce_uniform_group_off": True,
+            "enforce_uniform_group_night": True,
+            "enforce_night_monotonic": True,
+            "enforce_off_monotonic": True,
+            "assign_colors": True,
+            "auto_export_json": True,
+            "auto_export_csv": True,
+        }
+        self._apply_config_state(defaults)
+        self.progress_var.set(0.0)
+        self.progress_text_var.set(
+            self._tr("progress_percent_fmt", percent=0, text=self._tr("progress_idle"))
+        )
+        self._persist_last_config_silent()
+        self._append_report(self._tr("report_title_config"), self._tr("config_reset_msg"))
+        messagebox.showinfo(self._tr("info_title"), self._tr("config_reset_msg"))
+
+    def _on_app_close(self) -> None:
+        self._persist_last_config_silent()
+        self.root.destroy()
+
     def _set_busy(self, busy: bool) -> None:
         state = "disabled" if busy else "normal"
         self.language_combo.configure(state="disabled" if busy else "readonly")
         self.preset_btn.configure(state=state)
+        self.save_config_btn.configure(state=state)
+        self.load_config_btn.configure(state=state)
+        self.reset_config_btn.configure(state=state)
         self.analyze_btn.configure(state=state)
         self.generate_btn.configure(state=state)
         self.copy_btn.configure(state=state)
@@ -716,6 +1251,7 @@ class SchedulerApp:
         self.progress_var.set(0.0)
         self.progress_text_var.set(self._tr("preset_applied_status"))
         self._append_report(self._tr("report_title_preset"), self._tr("preset_report_message"))
+        self._persist_last_config_silent()
 
     def _run_background(self, worker, generate_mode: bool = False) -> None:
         self._set_busy(True)
@@ -773,6 +1309,7 @@ class SchedulerApp:
                         text=self._tr("progress_generate_complete"),
                     )
                 )
+                self._persist_last_config_silent()
             return
 
         self._append_report(self._tr("report_title_result"), result)
