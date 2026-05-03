@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import queue
 import threading
 import traceback
 from datetime import datetime
@@ -197,6 +198,7 @@ class SchedulerApp:
         self._build_ui()
         self._apply_language(refresh_progress=True)
         self._show_welcome_screen()
+        self.root.after(120, self._drain_progress_queue)
 
     def _build_vars(self) -> None:
         self.language_code_var = tk.StringVar(value="id")
@@ -245,6 +247,7 @@ class SchedulerApp:
         self.progress_var = tk.DoubleVar(value=0.0)
         self.progress_text_var = tk.StringVar(value="")
         self._is_generating = False
+        self._progress_queue: queue.Queue = queue.Queue()
 
         self.config_label_widgets: Dict[str, ttk.Label] = {}
         self.rule_check_widgets: Dict[str, ttk.Checkbutton] = {}
@@ -718,6 +721,7 @@ class SchedulerApp:
         self._set_busy(True)
         self._is_generating = generate_mode
         if generate_mode:
+            self._clear_progress_queue()
             self.progress_var.set(0.0)
             self.progress_text_var.set(
                 self._tr(
@@ -738,6 +742,7 @@ class SchedulerApp:
         threading.Thread(target=runner, daemon=True).start()
 
     def _on_worker_success(self, result: object) -> None:
+        self._drain_progress_queue_once()
         self._set_busy(False)
         self._is_generating = False
 
@@ -773,6 +778,7 @@ class SchedulerApp:
         self._append_report(self._tr("report_title_result"), result)
 
     def _on_worker_error(self, err: str) -> None:
+        self._drain_progress_queue_once()
         self._set_busy(False)
         self._is_generating = False
         self.progress_text_var.set(
@@ -803,40 +809,61 @@ class SchedulerApp:
     def _on_progress(self, payload: dict) -> None:
         if not self._is_generating:
             return
+        try:
+            self._progress_queue.put_nowait(dict(payload or {}))
+        except Exception:
+            pass
 
-        def apply_progress() -> None:
-            progress = max(0.0, min(1.0, float(payload.get("progress", 0.0))))
-            self.progress_var.set(progress * 100.0)
-            percent = int(round(progress * 100.0))
+    def _clear_progress_queue(self) -> None:
+        while True:
+            try:
+                self._progress_queue.get_nowait()
+            except queue.Empty:
+                break
 
-            phase = str(payload.get("phase", "optimize"))
-            iteration = payload.get("iteration")
-            total_iterations = payload.get("total_iterations")
-            elapsed = self._format_seconds(payload.get("elapsed_sec"))
-            eta = self._format_seconds(payload.get("eta_sec"))
+    def _drain_progress_queue_once(self) -> None:
+        while True:
+            try:
+                payload = self._progress_queue.get_nowait()
+            except queue.Empty:
+                break
+            self._apply_progress_payload(payload)
 
-            if phase == "optimize" and iteration is not None and total_iterations is not None:
-                text = self._tr(
-                    "progress_optimizing_fmt",
-                    iteration=iteration,
-                    total=total_iterations,
-                    elapsed=elapsed,
-                    eta=eta,
-                )
-            elif phase == "prepare":
-                text = self._tr("progress_preparing")
-            elif phase == "save":
-                text = self._tr("progress_saving_fmt", elapsed=elapsed)
-            elif phase == "done":
-                text = self._tr("progress_done_fmt", elapsed=elapsed)
-            else:
-                text = str(payload.get("message", self._tr("progress_working")))
+    def _drain_progress_queue(self) -> None:
+        self._drain_progress_queue_once()
+        self.root.after(120, self._drain_progress_queue)
 
-            self.progress_text_var.set(
-                self._tr("progress_percent_fmt", percent=percent, text=text)
+    def _apply_progress_payload(self, payload: dict) -> None:
+        progress = max(0.0, min(1.0, float(payload.get("progress", 0.0))))
+        self.progress_var.set(progress * 100.0)
+        percent = int(round(progress * 100.0))
+
+        phase = str(payload.get("phase", "optimize"))
+        iteration = payload.get("iteration")
+        total_iterations = payload.get("total_iterations")
+        elapsed = self._format_seconds(payload.get("elapsed_sec"))
+        eta = self._format_seconds(payload.get("eta_sec"))
+
+        if phase == "optimize" and iteration is not None and total_iterations is not None:
+            text = self._tr(
+                "progress_optimizing_fmt",
+                iteration=iteration,
+                total=total_iterations,
+                elapsed=elapsed,
+                eta=eta,
             )
+        elif phase == "prepare":
+            text = self._tr("progress_preparing")
+        elif phase == "save":
+            text = self._tr("progress_saving_fmt", elapsed=elapsed)
+        elif phase == "done":
+            text = self._tr("progress_done_fmt", elapsed=elapsed)
+        else:
+            text = str(payload.get("message", self._tr("progress_working")))
 
-        self.root.after(0, apply_progress)
+        self.progress_text_var.set(
+            self._tr("progress_percent_fmt", percent=percent, text=text)
+        )
 
     def _write_report_csv(self, path: Path, report: dict) -> None:
         with path.open("w", newline="", encoding="utf-8") as f:
