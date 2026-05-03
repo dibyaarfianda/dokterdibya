@@ -6,6 +6,7 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 
 - 100% offline (Python + Tkinter)
 - Load file template jadwal yang sudah ada
+- Setting alih bahasa aplikasi: Indonesia <-> English
 - Generate jadwal otomatis dengan optimasi swap per hari
 - Tombol preset cepat: `Apply Preset: Final VK`
 - Progress bar + status realtime (iterasi, elapsed, ETA)

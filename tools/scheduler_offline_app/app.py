@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from typing import Dict, List
 
 try:
     from scheduler_engine import OfflineSchedulerEngine, SchedulerConfig
@@ -15,18 +16,163 @@ except ModuleNotFoundError:
     from .scheduler_engine import OfflineSchedulerEngine, SchedulerConfig
 
 
+TRANSLATIONS: Dict[str, Dict[str, str]] = {
+    "id": {
+        "app_title": "Pembuat Jadwal Jaga Offline",
+        "frame_files": "Berkas",
+        "frame_config": "Konfigurasi",
+        "frame_rules": "Aturan",
+        "label_input_excel": "Excel Input",
+        "label_output_excel": "Excel Output",
+        "label_report_folder": "Folder Laporan",
+        "label_language": "Bahasa",
+        "btn_browse": "Pilih",
+        "cb_auto_export_json": "Ekspor Otomatis JSON",
+        "cb_auto_export_csv": "Ekspor Otomatis CSV",
+        "btn_apply_preset": "Terapkan Preset: Final VK",
+        "btn_analyze": "Analisa Input",
+        "btn_generate": "Generate + Simpan",
+        "btn_copy": "Salin Laporan",
+        "field_sheet": "Sheet",
+        "field_start_day": "Hari Mulai",
+        "field_end_day": "Hari Akhir",
+        "field_iterations": "Iterasi",
+        "field_seed": "Seed",
+        "field_temp": "Suhu",
+        "field_top_rank_count": "Jumlah Rank Atas",
+        "field_top_rank_max_night": "Malam Maks Rank Atas",
+        "field_max_core_rank": "Max Core Rank",
+        "field_off_targets": "Target Libur (CSV)",
+        "field_uniform_group": "Rank Grup Seragam (CSV)",
+        "rule_no_m_to_p": "Tanpa M -> P",
+        "rule_each_mll": "Semua Staff Punya M-L-L",
+        "rule_group_not_together": "Rank Grup Tidak Bersamaan",
+        "rule_tandem": "Tandem Wajib",
+        "rule_top_night_cap": "Batas Malam Rank Atas",
+        "rule_uniform_off": "Libur Grup Seragam",
+        "rule_uniform_night": "Malam Grup Seragam",
+        "rule_night_monotonic": "Malam Monotonik",
+        "rule_off_monotonic": "Libur Monotonik",
+        "rule_apply_colors": "Terapkan Warna",
+        "progress_idle": "Siap",
+        "progress_starting": "Memulai optimasi...",
+        "progress_preparing": "Menyiapkan workbook dan jadwal awal...",
+        "progress_working": "Sedang memproses...",
+        "progress_optimizing_fmt": "Optimasi {iteration}/{total} | berjalan {elapsed} | sisa {eta}",
+        "progress_saving_fmt": "Menyimpan output | berjalan {elapsed}",
+        "progress_done_fmt": "Selesai | berjalan {elapsed}",
+        "progress_error": "Error",
+        "progress_generate_complete": "Generate selesai",
+        "preset_applied_status": "Preset Final VK diterapkan",
+        "report_title_preset": "Preset",
+        "preset_report_message": "Preset Final VK sudah diterapkan.",
+        "report_title_result": "Hasil",
+        "report_title_error": "Error",
+        "report_title_export": "Ekspor",
+        "report_title_ready": "Siap",
+        "report_title_language": "Bahasa",
+        "report_language_changed": "Bahasa aplikasi diubah ke {language}.",
+        "ready_message": "Pilih file input Excel, cek konfigurasi, lalu klik Analisa Input atau Generate + Simpan.",
+        "dialog_select_input": "Pilih file jadwal input",
+        "dialog_save_output": "Simpan file jadwal output",
+        "dialog_select_report_folder": "Pilih folder ekspor laporan",
+        "warn_input_required_title": "Input dibutuhkan",
+        "warn_input_required_msg": "Silakan pilih file Excel input terlebih dahulu.",
+        "info_copied_title": "Tersalin",
+        "info_copied_msg": "Laporan berhasil disalin ke clipboard.",
+        "error_title": "Error",
+    },
+    "en": {
+        "app_title": "Offline Duty Scheduler Builder",
+        "frame_files": "Files",
+        "frame_config": "Config",
+        "frame_rules": "Rules",
+        "label_input_excel": "Input Excel",
+        "label_output_excel": "Output Excel",
+        "label_report_folder": "Report Folder",
+        "label_language": "Language",
+        "btn_browse": "Browse",
+        "cb_auto_export_json": "Auto Export JSON",
+        "cb_auto_export_csv": "Auto Export CSV",
+        "btn_apply_preset": "Apply Preset: Final VK",
+        "btn_analyze": "Analyze Input",
+        "btn_generate": "Generate + Save",
+        "btn_copy": "Copy Report",
+        "field_sheet": "Sheet",
+        "field_start_day": "Start Day",
+        "field_end_day": "End Day",
+        "field_iterations": "Iterations",
+        "field_seed": "Seed",
+        "field_temp": "Temp",
+        "field_top_rank_count": "Top Rank Count",
+        "field_top_rank_max_night": "Top Rank Max Night",
+        "field_max_core_rank": "Max Core Rank",
+        "field_off_targets": "Off Targets (CSV)",
+        "field_uniform_group": "Uniform Group Ranks (CSV)",
+        "rule_no_m_to_p": "No M->P",
+        "rule_each_mll": "Each Staff Has M-L-L",
+        "rule_group_not_together": "Rank Group Not Together",
+        "rule_tandem": "Tandem Required",
+        "rule_top_night_cap": "Top Rank Night Cap",
+        "rule_uniform_off": "Uniform Group Off",
+        "rule_uniform_night": "Uniform Group Night",
+        "rule_night_monotonic": "Night Monotonic",
+        "rule_off_monotonic": "Off Monotonic",
+        "rule_apply_colors": "Apply Colors",
+        "progress_idle": "Idle",
+        "progress_starting": "Starting optimization...",
+        "progress_preparing": "Preparing workbook and initial schedule...",
+        "progress_working": "Working...",
+        "progress_optimizing_fmt": "Optimizing {iteration}/{total} | elapsed {elapsed} | eta {eta}",
+        "progress_saving_fmt": "Saving output | elapsed {elapsed}",
+        "progress_done_fmt": "Done | elapsed {elapsed}",
+        "progress_error": "Error",
+        "progress_generate_complete": "Generate complete",
+        "preset_applied_status": "Final VK preset applied",
+        "report_title_preset": "Preset",
+        "preset_report_message": "Final VK preset has been applied.",
+        "report_title_result": "Result",
+        "report_title_error": "Error",
+        "report_title_export": "Export",
+        "report_title_ready": "Ready",
+        "report_title_language": "Language",
+        "report_language_changed": "Application language switched to {language}.",
+        "ready_message": "Select an input Excel, review config, then click Analyze Input or Generate + Save.",
+        "dialog_select_input": "Select input schedule file",
+        "dialog_save_output": "Save output schedule as",
+        "dialog_select_report_folder": "Select report export folder",
+        "warn_input_required_title": "Input required",
+        "warn_input_required_msg": "Please choose an input Excel file first.",
+        "info_copied_title": "Copied",
+        "info_copied_msg": "Report copied to clipboard.",
+        "error_title": "Error",
+    },
+}
+
+
+LANGUAGE_NAME_TO_CODE: Dict[str, str] = {
+    "Indonesia": "id",
+    "English": "en",
+}
+
+LANGUAGE_CODE_TO_NAME: Dict[str, str] = {code: name for name, code in LANGUAGE_NAME_TO_CODE.items()}
+
+
 class SchedulerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Offline Jadwal Jaga Builder")
         self.root.geometry("1150x760")
 
         self.engine = OfflineSchedulerEngine()
 
         self._build_vars()
         self._build_ui()
+        self._apply_language(refresh_progress=True)
 
     def _build_vars(self) -> None:
+        self.language_code_var = tk.StringVar(value="id")
+        self.language_name_var = tk.StringVar(value=LANGUAGE_CODE_TO_NAME["id"])
+
         self.input_path_var = tk.StringVar()
         self.output_path_var = tk.StringVar()
         self.export_folder_var = tk.StringVar()
@@ -67,92 +213,139 @@ class SchedulerApp:
         self.export_csv_var = tk.BooleanVar(value=True)
 
         self.progress_var = tk.DoubleVar(value=0.0)
-        self.progress_text_var = tk.StringVar(value="Idle")
+        self.progress_text_var = tk.StringVar(value="")
         self._is_generating = False
+
+        self.config_label_widgets: Dict[str, ttk.Label] = {}
+        self.rule_check_widgets: Dict[str, ttk.Checkbutton] = {}
 
     def _build_ui(self) -> None:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(3, weight=1)
 
-        path_frame = ttk.LabelFrame(self.root, text="Files")
-        path_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
-        path_frame.columnconfigure(1, weight=1)
+        self.path_frame = ttk.LabelFrame(self.root)
+        self.path_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
+        self.path_frame.columnconfigure(1, weight=1)
 
-        ttk.Label(path_frame, text="Input Excel").grid(row=0, column=0, sticky="w", padx=6, pady=4)
-        ttk.Entry(path_frame, textvariable=self.input_path_var).grid(
+        self.label_input_excel = ttk.Label(self.path_frame)
+        self.label_input_excel.grid(row=0, column=0, sticky="w", padx=6, pady=4)
+        ttk.Entry(self.path_frame, textvariable=self.input_path_var).grid(
             row=0, column=1, sticky="ew", padx=6, pady=4
         )
-        ttk.Button(path_frame, text="Browse", command=self._browse_input).grid(
+        self.btn_browse_input = ttk.Button(self.path_frame, command=self._browse_input)
+        self.btn_browse_input.grid(
             row=0, column=2, padx=6, pady=4
         )
 
-        ttk.Label(path_frame, text="Output Excel").grid(row=1, column=0, sticky="w", padx=6, pady=4)
-        ttk.Entry(path_frame, textvariable=self.output_path_var).grid(
+        self.label_output_excel = ttk.Label(self.path_frame)
+        self.label_output_excel.grid(row=1, column=0, sticky="w", padx=6, pady=4)
+        ttk.Entry(self.path_frame, textvariable=self.output_path_var).grid(
             row=1, column=1, sticky="ew", padx=6, pady=4
         )
-        ttk.Button(path_frame, text="Browse", command=self._browse_output).grid(
+        self.btn_browse_output = ttk.Button(self.path_frame, command=self._browse_output)
+        self.btn_browse_output.grid(
             row=1, column=2, padx=6, pady=4
         )
 
-        ttk.Label(path_frame, text="Report Folder").grid(row=2, column=0, sticky="w", padx=6, pady=4)
-        ttk.Entry(path_frame, textvariable=self.export_folder_var).grid(
+        self.label_report_folder = ttk.Label(self.path_frame)
+        self.label_report_folder.grid(row=2, column=0, sticky="w", padx=6, pady=4)
+        ttk.Entry(self.path_frame, textvariable=self.export_folder_var).grid(
             row=2, column=1, sticky="ew", padx=6, pady=4
         )
-        ttk.Button(path_frame, text="Browse", command=self._browse_export_folder).grid(
+        self.btn_browse_report_folder = ttk.Button(self.path_frame, command=self._browse_export_folder)
+        self.btn_browse_report_folder.grid(
             row=2, column=2, padx=6, pady=4
         )
 
-        ttk.Checkbutton(path_frame, text="Auto Export JSON", variable=self.export_json_var).grid(
+        self.cb_export_json = ttk.Checkbutton(self.path_frame, variable=self.export_json_var)
+        self.cb_export_json.grid(
             row=3, column=1, sticky="w", padx=6, pady=4
         )
-        ttk.Checkbutton(path_frame, text="Auto Export CSV", variable=self.export_csv_var).grid(
+        self.cb_export_csv = ttk.Checkbutton(self.path_frame, variable=self.export_csv_var)
+        self.cb_export_csv.grid(
             row=3, column=1, sticky="e", padx=6, pady=4
         )
 
-        config_frame = ttk.LabelFrame(self.root, text="Config")
-        config_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=6)
+        self.label_language = ttk.Label(self.path_frame)
+        self.label_language.grid(row=4, column=0, sticky="w", padx=6, pady=4)
+        self.language_combo = ttk.Combobox(
+            self.path_frame,
+            state="readonly",
+            textvariable=self.language_name_var,
+            values=list(LANGUAGE_NAME_TO_CODE.keys()),
+            width=14,
+        )
+        self.language_combo.grid(row=4, column=1, sticky="w", padx=6, pady=4)
+        self.language_combo.bind("<<ComboboxSelected>>", self._on_language_selected)
 
-        self._add_labeled_entry(config_frame, "Sheet", self.sheet_name_var, 0, 0)
-        self._add_labeled_entry(config_frame, "Start Day", self.start_day_var, 0, 2)
-        self._add_labeled_entry(config_frame, "End Day", self.end_day_var, 0, 4)
+        self.config_frame = ttk.LabelFrame(self.root)
+        self.config_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=6)
 
-        self._add_labeled_entry(config_frame, "P", self.p_count_var, 1, 0)
-        self._add_labeled_entry(config_frame, "S", self.s_count_var, 1, 2)
-        self._add_labeled_entry(config_frame, "M", self.m_count_var, 1, 4)
+        self.config_label_widgets["field_sheet"] = self._add_labeled_entry(
+            self.config_frame, "", self.sheet_name_var, 0, 0
+        )
+        self.config_label_widgets["field_start_day"] = self._add_labeled_entry(
+            self.config_frame, "", self.start_day_var, 0, 2
+        )
+        self.config_label_widgets["field_end_day"] = self._add_labeled_entry(
+            self.config_frame, "", self.end_day_var, 0, 4
+        )
 
-        self._add_labeled_entry(config_frame, "Iterations", self.iterations_var, 2, 0)
-        self._add_labeled_entry(config_frame, "Seed", self.seed_var, 2, 2)
-        self._add_labeled_entry(config_frame, "Temp", self.temperature_var, 2, 4)
+        self._add_labeled_entry(self.config_frame, "P", self.p_count_var, 1, 0)
+        self._add_labeled_entry(self.config_frame, "S", self.s_count_var, 1, 2)
+        self._add_labeled_entry(self.config_frame, "M", self.m_count_var, 1, 4)
 
-        self._add_labeled_entry(config_frame, "Top Rank Count", self.top_rank_count_var, 3, 0)
-        self._add_labeled_entry(config_frame, "Top Rank Max Night", self.top_rank_max_night_var, 3, 2)
-        self._add_labeled_entry(config_frame, "Max Core Rank", self.max_core_rank_var, 3, 4)
+        self.config_label_widgets["field_iterations"] = self._add_labeled_entry(
+            self.config_frame, "", self.iterations_var, 2, 0
+        )
+        self.config_label_widgets["field_seed"] = self._add_labeled_entry(
+            self.config_frame, "", self.seed_var, 2, 2
+        )
+        self.config_label_widgets["field_temp"] = self._add_labeled_entry(
+            self.config_frame, "", self.temperature_var, 2, 4
+        )
 
-        self._add_labeled_entry(config_frame, "Off Targets (CSV)", self.off_targets_var, 4, 0, span=5)
-        self._add_labeled_entry(config_frame, "Uniform Group Ranks (CSV)", self.uniform_group_var, 5, 0, span=5)
+        self.config_label_widgets["field_top_rank_count"] = self._add_labeled_entry(
+            self.config_frame, "", self.top_rank_count_var, 3, 0
+        )
+        self.config_label_widgets["field_top_rank_max_night"] = self._add_labeled_entry(
+            self.config_frame, "", self.top_rank_max_night_var, 3, 2
+        )
+        self.config_label_widgets["field_max_core_rank"] = self._add_labeled_entry(
+            self.config_frame, "", self.max_core_rank_var, 3, 4
+        )
 
-        flags_frame = ttk.LabelFrame(self.root, text="Rules")
-        flags_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=6)
+        self.config_label_widgets["field_off_targets"] = self._add_labeled_entry(
+            self.config_frame, "", self.off_targets_var, 4, 0, span=5
+        )
+        self.config_label_widgets["field_uniform_group"] = self._add_labeled_entry(
+            self.config_frame, "", self.uniform_group_var, 5, 0, span=5
+        )
+
+        self.flags_frame = ttk.LabelFrame(self.root)
+        self.flags_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=6)
 
         flags = [
-            ("No M->P", self.enforce_no_m_to_p_var),
-            ("Each Staff Has M-L-L", self.enforce_mll_each_var),
-            ("Rank Group Not Together", self.enforce_rank_group_not_together_var),
-            ("Tandem Required", self.enforce_tandem_var),
-            ("Top Rank Night Cap", self.enforce_top_rank_night_cap_var),
-            ("Uniform Group Off", self.enforce_uniform_group_off_var),
-            ("Uniform Group Night", self.enforce_uniform_group_night_var),
-            ("Night Monotonic", self.enforce_night_monotonic_var),
-            ("Off Monotonic", self.enforce_off_monotonic_var),
-            ("Apply Colors", self.assign_colors_var),
+            ("rule_no_m_to_p", self.enforce_no_m_to_p_var),
+            ("rule_each_mll", self.enforce_mll_each_var),
+            ("rule_group_not_together", self.enforce_rank_group_not_together_var),
+            ("rule_tandem", self.enforce_tandem_var),
+            ("rule_top_night_cap", self.enforce_top_rank_night_cap_var),
+            ("rule_uniform_off", self.enforce_uniform_group_off_var),
+            ("rule_uniform_night", self.enforce_uniform_group_night_var),
+            ("rule_night_monotonic", self.enforce_night_monotonic_var),
+            ("rule_off_monotonic", self.enforce_off_monotonic_var),
+            ("rule_apply_colors", self.assign_colors_var),
         ]
 
-        for idx, (label, var) in enumerate(flags):
+        for idx, (label_key, var) in enumerate(flags):
             r = idx // 5
             c = idx % 5
-            ttk.Checkbutton(flags_frame, text=label, variable=var).grid(
+            cb = ttk.Checkbutton(self.flags_frame, variable=var)
+            cb.grid(
                 row=r, column=c, sticky="w", padx=10, pady=4
             )
+            self.rule_check_widgets[label_key] = cb
 
         action_frame = ttk.Frame(self.root)
         action_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=8)
@@ -164,18 +357,17 @@ class SchedulerApp:
 
         self.preset_btn = ttk.Button(
             button_bar,
-            text="Apply Preset: Final VK",
             command=self._apply_preset_final_vk,
         )
         self.preset_btn.pack(side="left", padx=4)
 
-        self.analyze_btn = ttk.Button(button_bar, text="Analyze Input", command=self._on_analyze)
+        self.analyze_btn = ttk.Button(button_bar, command=self._on_analyze)
         self.analyze_btn.pack(side="left", padx=4)
 
-        self.generate_btn = ttk.Button(button_bar, text="Generate + Save", command=self._on_generate)
+        self.generate_btn = ttk.Button(button_bar, command=self._on_generate)
         self.generate_btn.pack(side="left", padx=4)
 
-        self.copy_btn = ttk.Button(button_bar, text="Copy Report", command=self._copy_report)
+        self.copy_btn = ttk.Button(button_bar, command=self._copy_report)
         self.copy_btn.pack(side="left", padx=4)
 
         progress_frame = ttk.Frame(action_frame)
@@ -191,7 +383,8 @@ class SchedulerApp:
         )
         self.progress_bar.grid(row=0, column=0, sticky="ew", padx=(0, 8))
 
-        ttk.Label(progress_frame, textvariable=self.progress_text_var, width=56, anchor="w").grid(
+        self.progress_label = ttk.Label(progress_frame, textvariable=self.progress_text_var, width=56, anchor="w")
+        self.progress_label.grid(
             row=0, column=1, sticky="w"
         )
 
@@ -210,15 +403,80 @@ class SchedulerApp:
         row: int,
         col: int,
         span: int = 1,
-    ) -> None:
-        ttk.Label(parent, text=label).grid(row=row, column=col, sticky="w", padx=6, pady=4)
+    ) -> ttk.Label:
+        label_widget = ttk.Label(parent, text=label)
+        label_widget.grid(row=row, column=col, sticky="w", padx=6, pady=4)
         entry = ttk.Entry(parent, textvariable=var)
         entry.grid(row=row, column=col + 1, sticky="ew", padx=6, pady=4, columnspan=span)
         parent.columnconfigure(col + 1, weight=1)
+        return label_widget
+
+    def _language_code(self) -> str:
+        code = self.language_code_var.get().strip().lower()
+        return code if code in TRANSLATIONS else "id"
+
+    def _tr(self, key: str, **kwargs: object) -> str:
+        code = self._language_code()
+        text = TRANSLATIONS.get(code, TRANSLATIONS["id"]).get(key)
+        if text is None:
+            text = TRANSLATIONS["en"].get(key, key)
+        if kwargs:
+            try:
+                text = text.format(**kwargs)
+            except Exception:
+                pass
+        return text
+
+    def _apply_language(self, refresh_progress: bool = False) -> None:
+        self.root.title(self._tr("app_title"))
+
+        self.path_frame.configure(text=self._tr("frame_files"))
+        self.config_frame.configure(text=self._tr("frame_config"))
+        self.flags_frame.configure(text=self._tr("frame_rules"))
+
+        self.label_input_excel.configure(text=self._tr("label_input_excel"))
+        self.label_output_excel.configure(text=self._tr("label_output_excel"))
+        self.label_report_folder.configure(text=self._tr("label_report_folder"))
+        self.label_language.configure(text=self._tr("label_language"))
+
+        browse_text = self._tr("btn_browse")
+        self.btn_browse_input.configure(text=browse_text)
+        self.btn_browse_output.configure(text=browse_text)
+        self.btn_browse_report_folder.configure(text=browse_text)
+
+        self.cb_export_json.configure(text=self._tr("cb_auto_export_json"))
+        self.cb_export_csv.configure(text=self._tr("cb_auto_export_csv"))
+
+        for key, label_widget in self.config_label_widgets.items():
+            label_widget.configure(text=self._tr(key))
+
+        for key, check_widget in self.rule_check_widgets.items():
+            check_widget.configure(text=self._tr(key))
+
+        self.preset_btn.configure(text=self._tr("btn_apply_preset"))
+        self.analyze_btn.configure(text=self._tr("btn_analyze"))
+        self.generate_btn.configure(text=self._tr("btn_generate"))
+        self.copy_btn.configure(text=self._tr("btn_copy"))
+
+        if refresh_progress and not self._is_generating:
+            if self.progress_var.get() >= 100:
+                self.progress_text_var.set(self._tr("progress_generate_complete"))
+            elif self.progress_var.get() <= 0:
+                self.progress_text_var.set(self._tr("progress_idle"))
+
+    def _on_language_selected(self, _event=None) -> None:
+        selected = self.language_name_var.get().strip()
+        code = LANGUAGE_NAME_TO_CODE.get(selected, "id")
+        self.language_code_var.set(code)
+        self._apply_language(refresh_progress=True)
+        self._append_report(
+            self._tr("report_title_language"),
+            self._tr("report_language_changed", language=selected),
+        )
 
     def _browse_input(self) -> None:
         p = filedialog.askopenfilename(
-            title="Select input schedule file",
+            title=self._tr("dialog_select_input"),
             filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
         )
         if p:
@@ -230,7 +488,7 @@ class SchedulerApp:
 
     def _browse_output(self) -> None:
         p = filedialog.asksaveasfilename(
-            title="Save output schedule as",
+            title=self._tr("dialog_save_output"),
             defaultextension=".xlsx",
             filetypes=[("Excel files", "*.xlsx")],
         )
@@ -238,7 +496,7 @@ class SchedulerApp:
             self.output_path_var.set(p)
 
     def _browse_export_folder(self) -> None:
-        p = filedialog.askdirectory(title="Select report export folder")
+        p = filedialog.askdirectory(title=self._tr("dialog_select_report_folder"))
         if p:
             self.export_folder_var.set(p)
 
@@ -248,6 +506,7 @@ class SchedulerApp:
 
     def _set_busy(self, busy: bool) -> None:
         state = "disabled" if busy else "normal"
+        self.language_combo.configure(state="disabled" if busy else "readonly")
         self.preset_btn.configure(state=state)
         self.analyze_btn.configure(state=state)
         self.generate_btn.configure(state=state)
@@ -328,15 +587,15 @@ class SchedulerApp:
         self.assign_colors_var.set(True)
 
         self.progress_var.set(0.0)
-        self.progress_text_var.set("Preset Final VK applied")
-        self._append_report("Preset", "Final VK preset has been applied.")
+        self.progress_text_var.set(self._tr("preset_applied_status"))
+        self._append_report(self._tr("report_title_preset"), self._tr("preset_report_message"))
 
     def _run_background(self, worker, generate_mode: bool = False) -> None:
         self._set_busy(True)
         self._is_generating = generate_mode
         if generate_mode:
             self.progress_var.set(0.0)
-            self.progress_text_var.set("Starting optimization...")
+            self.progress_text_var.set(self._tr("progress_starting"))
 
         def runner() -> None:
             try:
@@ -355,22 +614,22 @@ class SchedulerApp:
         if isinstance(result, dict) and "kind" in result and "report" in result:
             report = result["report"]
             report_text = OfflineSchedulerEngine.report_to_pretty_json(report)
-            self._append_report("Result", report_text)
+            self._append_report(self._tr("report_title_result"), report_text)
 
             if result["kind"] == "generate":
                 self._auto_export_report(report)
                 self.progress_var.set(100.0)
-                self.progress_text_var.set("Generate complete")
+                self.progress_text_var.set(self._tr("progress_generate_complete"))
             return
 
-        self._append_report("Result", result)
+        self._append_report(self._tr("report_title_result"), result)
 
     def _on_worker_error(self, err: str) -> None:
         self._set_busy(False)
         self._is_generating = False
-        self.progress_text_var.set("Error")
-        self._append_report("Error", err)
-        messagebox.showerror("Error", err)
+        self.progress_text_var.set(self._tr("progress_error"))
+        self._append_report(self._tr("report_title_error"), err)
+        messagebox.showerror(self._tr("error_title"), err)
 
     def _format_seconds(self, seconds: object) -> str:
         if seconds is None:
@@ -400,13 +659,21 @@ class SchedulerApp:
             eta = self._format_seconds(payload.get("eta_sec"))
 
             if phase == "optimize" and iteration is not None and total_iterations is not None:
-                text = f"Optimizing {iteration}/{total_iterations} | elapsed {elapsed} | eta {eta}"
+                text = self._tr(
+                    "progress_optimizing_fmt",
+                    iteration=iteration,
+                    total=total_iterations,
+                    elapsed=elapsed,
+                    eta=eta,
+                )
+            elif phase == "prepare":
+                text = self._tr("progress_preparing")
             elif phase == "save":
-                text = f"Saving output | elapsed {elapsed}"
+                text = self._tr("progress_saving_fmt", elapsed=elapsed)
             elif phase == "done":
-                text = f"Done | elapsed {elapsed}"
+                text = self._tr("progress_done_fmt", elapsed=elapsed)
             else:
-                text = str(payload.get("message", "Working..."))
+                text = str(payload.get("message", self._tr("progress_working")))
 
             self.progress_text_var.set(text)
 
@@ -465,12 +732,15 @@ class SchedulerApp:
             exported.append(str(csv_path))
 
         if exported:
-            self._append_report("Export", "\n".join(exported))
+            self._append_report(self._tr("report_title_export"), "\n".join(exported))
 
     def _on_analyze(self) -> None:
         input_path = self.input_path_var.get().strip()
         if not input_path:
-            messagebox.showwarning("Input required", "Please choose an input Excel file first.")
+            messagebox.showwarning(
+                self._tr("warn_input_required_title"),
+                self._tr("warn_input_required_msg"),
+            )
             return
 
         config = self._build_config()
@@ -484,7 +754,10 @@ class SchedulerApp:
     def _on_generate(self) -> None:
         input_path = self.input_path_var.get().strip()
         if not input_path:
-            messagebox.showwarning("Input required", "Please choose an input Excel file first.")
+            messagebox.showwarning(
+                self._tr("warn_input_required_title"),
+                self._tr("warn_input_required_msg"),
+            )
             return
 
         output_path = self.output_path_var.get().strip()
@@ -511,15 +784,15 @@ class SchedulerApp:
             return
         self.root.clipboard_clear()
         self.root.clipboard_append(content)
-        messagebox.showinfo("Copied", "Report copied to clipboard.")
+        messagebox.showinfo(self._tr("info_copied_title"), self._tr("info_copied_msg"))
 
 
 def main() -> None:
     root = tk.Tk()
     app = SchedulerApp(root)
     app._append_report(
-        "Ready",
-        "Select an input Excel, review config, then click Analyze Input or Generate + Save.",
+        app._tr("report_title_ready"),
+        app._tr("ready_message"),
     )
     root.mainloop()
 
