@@ -228,6 +228,7 @@ class OfflineSchedulerEngine:
         output_path: str,
         config: SchedulerConfig,
         progress_callback: Optional[Callable[[Dict[str, object]], None]] = None,
+        save_fallback_paths: Optional[List[str]] = None,
     ) -> Dict[str, object]:
         started = time.perf_counter()
         self._emit_progress(
@@ -400,11 +401,54 @@ class OfflineSchedulerEngine:
                 config,
             )
 
-        wb.save(output_path)
+        save_targets = [str(output_path)]
+        if save_fallback_paths:
+            for p in save_fallback_paths:
+                if not p:
+                    continue
+                sp = str(p)
+                if sp not in save_targets:
+                    save_targets.append(sp)
 
-        report = self.analyze_workbook(output_path, config)
+        save_errors: List[str] = []
+        actual_output_path: Optional[str] = None
+
+        for idx, target in enumerate(save_targets):
+            try:
+                if idx > 0:
+                    self._emit_progress(
+                        progress_callback,
+                        phase="save",
+                        progress=0.997,
+                        message=f"Retry saving output: {target}",
+                        elapsed_sec=time.perf_counter() - started,
+                        eta_sec=0.0,
+                        iteration=config.iterations,
+                        total_iterations=config.iterations,
+                        best_score=best_score,
+                        temperature=t,
+                    )
+                wb.save(target)
+                actual_output_path = target
+                break
+            except PermissionError as exc:
+                save_errors.append(f"{target}: {exc}")
+
+        if actual_output_path is None:
+            joined = "\n".join(save_errors)
+            raise PermissionError(
+                "Failed to save workbook to any output path.\n"
+                f"Requested output: {output_path}\n"
+                f"Tried paths:\n{joined}"
+            )
+
+        report = self.analyze_workbook(actual_output_path, config)
         report["source_file"] = input_path
-        report["output_file"] = output_path
+        report["output_file"] = actual_output_path
+        report["_requested_output_file"] = output_path
+        report["_save_fallback_used"] = actual_output_path != str(output_path)
+        if save_errors:
+            report["_save_errors"] = save_errors
         report["solver_score"] = best_score
 
         self._emit_progress(

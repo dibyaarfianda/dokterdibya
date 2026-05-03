@@ -25,6 +25,7 @@ Desktop app offline untuk meramu jadwal jaga berbasis Excel (`.xlsx`) dengan rul
 - Auto export report setelah generate:
   - JSON detail
   - CSV ringkas (summary + off_by_rank + m_by_rank)
+- Jika output utama terkunci/tidak bisa ditulis (misalnya file masih terbuka di Excel), aplikasi otomatis menyimpan ke nama file cadangan (`autosave`) dan menampilkan notifikasi lokasi file.
 
 ## Struktur
 
