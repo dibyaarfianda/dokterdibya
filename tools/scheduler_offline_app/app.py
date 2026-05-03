@@ -210,7 +210,7 @@ class SchedulerApp:
         self.export_folder_var = tk.StringVar()
 
         self.sheet_name_var = tk.StringVar(value="JADWAL BARU")
-        self.start_day_var = tk.StringVar(value="5")
+        self.start_day_var = tk.StringVar(value="1")
         self.end_day_var = tk.StringVar(value="31")
 
         self.p_count_var = tk.StringVar(value="3")
@@ -685,7 +685,7 @@ class SchedulerApp:
     def _apply_preset_final_vk(self) -> None:
         # Fast preset based on the latest approved VK constraints.
         self.sheet_name_var.set("JADWAL BARU")
-        self.start_day_var.set("5")
+        self.start_day_var.set("1")
         self.end_day_var.set("31")
 
         self.max_core_rank_var.set("14")
