@@ -78,6 +78,7 @@ Untuk membuat file `.exe` (Windows), jalankan:
 Hasil build:
 
 - `dist\Generator Jadwal Jaga RSIA MELINDA.exe`
+- Otomatis disalin ke `Desktop\Scheduler` (root folder dibersihkan agar hanya berisi `Generator Jadwal Jaga RSIA MELINDA.exe` dan `README.md`)
 
 ## Input yang Diharapkan
 

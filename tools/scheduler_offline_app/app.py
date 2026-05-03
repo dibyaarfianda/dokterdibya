@@ -253,7 +253,7 @@ class SchedulerApp:
         self._show_welcome_screen()
         self._load_last_config_silent()
         self.root.protocol("WM_DELETE_WINDOW", self._on_app_close)
-        self.root.after(120, self._drain_progress_queue)
+        self.root.after(60, self._drain_progress_queue)
 
     def _build_vars(self) -> None:
         self.language_code_var = tk.StringVar(value="id")
@@ -305,6 +305,7 @@ class SchedulerApp:
         self._progress_queue: queue.Queue = queue.Queue()
         self._progress_target = 0.0
         self._progress_anim_job: str | None = None
+        self._progress_spinner_on = False
 
         self._status_badge_key = "idle"
         self._status_badge_color = "#6c757d"
@@ -594,6 +595,27 @@ class SchedulerApp:
             return
         if self._progress_anim_job is None:
             self._animate_progress_step()
+
+    def _set_progress_spinner(self, enabled: bool) -> None:
+        if enabled and not self._progress_spinner_on:
+            try:
+                self.progress_bar.configure(mode="indeterminate")
+                self.progress_bar.start(12)
+                self._progress_spinner_on = True
+            except Exception:
+                self._progress_spinner_on = False
+            return
+
+        if not enabled and self._progress_spinner_on:
+            try:
+                self.progress_bar.stop()
+            except Exception:
+                pass
+            try:
+                self.progress_bar.configure(mode="determinate")
+            except Exception:
+                pass
+            self._progress_spinner_on = False
 
     def _animate_progress_step(self) -> None:
         current = float(self.progress_var.get())
@@ -1410,6 +1432,7 @@ class SchedulerApp:
         messagebox.showinfo(self._tr("info_title"), self._tr("config_reset_msg"))
 
     def _on_app_close(self) -> None:
+        self._set_progress_spinner(False)
         if self._progress_anim_job is not None:
             try:
                 self.root.after_cancel(self._progress_anim_job)
@@ -1510,6 +1533,7 @@ class SchedulerApp:
 
         self._set_progress_target(0.0, immediate=True)
         self.progress_text_var.set(self._tr("preset_applied_status"))
+        self._set_progress_spinner(False)
         self._set_status_badge("idle", pulse=False)
         self._append_report(self._tr("report_title_preset"), self._tr("preset_report_message"))
         self._persist_last_config_silent()
@@ -1527,7 +1551,9 @@ class SchedulerApp:
                     text=self._tr("progress_starting"),
                 )
             )
+            self._set_progress_spinner(True)
             self._set_status_badge("preparing", pulse=True)
+            self.root.update_idletasks()
         else:
             self._set_status_badge("optimizing", pulse=True)
 
@@ -1543,6 +1569,7 @@ class SchedulerApp:
 
     def _on_worker_success(self, result: object) -> None:
         self._drain_progress_queue_once()
+        self._set_progress_spinner(False)
         self._set_busy(False)
         self._is_generating = False
         self._set_status_badge("done", pulse=False)
@@ -1581,6 +1608,7 @@ class SchedulerApp:
 
     def _on_worker_error(self, err: str) -> None:
         self._drain_progress_queue_once()
+        self._set_progress_spinner(False)
         self._set_busy(False)
         self._is_generating = False
         self._set_status_badge("error", pulse=False)
@@ -1634,14 +1662,24 @@ class SchedulerApp:
 
     def _drain_progress_queue(self) -> None:
         self._drain_progress_queue_once()
-        self.root.after(120, self._drain_progress_queue)
+        self.root.after(60, self._drain_progress_queue)
 
     def _apply_progress_payload(self, payload: dict) -> None:
         progress = max(0.0, min(1.0, float(payload.get("progress", 0.0))))
+        phase = str(payload.get("phase", "optimize"))
+
+        # Keep first stage visibly alive so users see immediate movement while preparing.
+        if phase == "prepare" and progress <= 0.0:
+            progress = 0.01
+
+        if self._progress_spinner_on and (
+            phase in {"optimize", "save", "done"} or progress >= 0.02
+        ):
+            self._set_progress_spinner(False)
+
         self._set_progress_target(progress * 100.0)
         percent = int(round(progress * 100.0))
 
-        phase = str(payload.get("phase", "optimize"))
         iteration = payload.get("iteration")
         total_iterations = payload.get("total_iterations")
         elapsed = self._format_seconds(payload.get("elapsed_sec"))
