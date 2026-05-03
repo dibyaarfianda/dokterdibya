@@ -32,6 +32,27 @@ const SECTION_DEFS = [
 
 const SECTION_LOOKUP = new Map(SECTION_DEFS.map(section => [section.id, section]));
 
+function getAuthToken() {
+    return localStorage.getItem('vps_auth_token')
+        || sessionStorage.getItem('vps_auth_token')
+        || localStorage.getItem('token')
+        || sessionStorage.getItem('token');
+}
+
+function redirectToLogin() {
+    const currentUrl = window.location.href;
+    const isMobileMode = new URLSearchParams(window.location.search).get('mobile') === '1'
+        || sessionStorage.getItem('mobileAppMode') === '1'
+        || sessionStorage.getItem('sunday_clinic_mobile') === '1';
+    const loginUrl = new URL('/staff/public/login.html', window.location.origin);
+
+    if (isMobileMode) {
+        loginUrl.searchParams.set('mobile', '1');
+    }
+    loginUrl.searchParams.set('redirect', currentUrl);
+    window.location.href = loginUrl.toString();
+}
+
 // ============================================================================
 // ROLE HELPERS
 // ============================================================================
@@ -133,9 +154,9 @@ function applyStaffIdentityToUI() {
 
 // Expose getToken globally for planning-helpers.js
 window.getToken = function() {
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    const token = getAuthToken();
     if (!token) {
-        window.location.href = '/staff/public/login.html';
+        redirectToLogin();
         return null;
     }
     return token;
@@ -302,11 +323,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ============================================================================
 
 async function checkAuthentication() {
-    const token = localStorage.getItem('vps_auth_token');
+    const token = getAuthToken();
 
     if (!token) {
         console.warn('[SundayClinic] No auth token found, redirecting to login');
-        window.location.href = '/staff/public/login.html';
+        redirectToLogin();
         return false;
     }
 
@@ -334,7 +355,8 @@ async function checkAuthentication() {
     } catch (error) {
         console.error('[SundayClinic] Authentication failed:', error);
         localStorage.removeItem('vps_auth_token');
-        window.location.href = '/staff/public/login.html';
+        sessionStorage.removeItem('vps_auth_token');
+        redirectToLogin();
         return false;
     }
 }
@@ -363,7 +385,7 @@ async function handlePatientFromUrl(patientId, appointmentId, location) {
     }
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = getAuthToken();
 
         // Check if patient already has a record today at this location
         const checkUrl = `/api/sunday-clinic/check-existing?patient_id=${patientId}${location ? `&location=${location}` : ''}`;

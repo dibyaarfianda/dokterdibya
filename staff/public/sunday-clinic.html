@@ -1384,7 +1384,14 @@ PLAN
         // Initialize Xendit with public key (loaded from server)
         (async function() {
             try {
-                const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+                const token = window.getToken
+                    ? window.getToken()
+                    : (
+                        localStorage.getItem('vps_auth_token')
+                        || sessionStorage.getItem('vps_auth_token')
+                        || localStorage.getItem('token')
+                        || sessionStorage.getItem('token')
+                    );
                 if (!token) return;
 
                 const mrId = window.routeMrSlug || 'TEMP';
