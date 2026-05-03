@@ -23,7 +23,7 @@ class StaffMember:
 @dataclass
 class SchedulerConfig:
     sheet_name: str = "JADWAL BARU"
-    start_day: int = 5
+    start_day: int = 1
     end_day: int = 31
 
     max_core_rank: int = 14
