@@ -278,6 +278,8 @@ class OfflineSchedulerEngine:
             best_score=None,
             temperature=config.initial_temperature,
         )
+        # Yield once so GUI thread can render initial progress text/spinner immediately.
+        time.sleep(0)
 
         random.seed(config.random_seed)
 
@@ -353,7 +355,7 @@ class OfflineSchedulerEngine:
         best_score = current_score
 
         t = max(config.initial_temperature, 0.01)
-        progress_step = max(1, min(2000, max(config.iterations, 1) // 120))
+        progress_step = max(1, min(1000, max(config.iterations, 1) // 240))
 
         for it in range(config.iterations):
             day = random.choice(active_days)
@@ -408,6 +410,8 @@ class OfflineSchedulerEngine:
                     best_score=best_score,
                     temperature=t,
                 )
+                # Release GIL periodically so UI updates are not starved by CPU-heavy loops.
+                time.sleep(0)
 
         self._emit_progress(
             progress_callback,
