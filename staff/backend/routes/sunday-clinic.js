@@ -217,6 +217,54 @@ function getGmt7DayWindow(baseDate = new Date()) {
     };
 }
 
+function summarizeMedifySyncStatus(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        return null;
+    }
+
+    const hasPending = rows.some(row => ['queued', 'processing', 'retrying'].includes(row.status));
+    const hasFailed = rows.some(row => row.status === 'failed');
+    const hasCompleted = rows.some(row => row.status === 'completed');
+    const hasSkipped = rows.some(row => row.status === 'skipped');
+
+    let status = null;
+    let label = null;
+    if (hasPending) {
+        status = 'pending';
+        label = 'Sync pending';
+    } else if (hasFailed) {
+        status = 'failed';
+        label = 'Sync gagal';
+    } else if (hasCompleted) {
+        status = 'completed';
+        label = 'Sync selesai';
+    } else if (hasSkipped) {
+        status = 'skipped';
+        label = 'Sync dilewati';
+    }
+
+    if (!status) {
+        return null;
+    }
+
+    const latestRow = rows.reduce((latest, row) => {
+        if (!latest) {
+            return row;
+        }
+        return new Date(row.updated_at) > new Date(latest.updated_at) ? row : latest;
+    }, null);
+
+    return {
+        status,
+        label,
+        updated_at: latestRow?.updated_at || null,
+        hasFailed,
+        hasPending,
+        hasCompleted,
+        hasSkipped
+    };
+}
+
 const QUEUE_CACHE_TTL_MS = 10000;
 const queueTodayCache = {
     key: null,
@@ -533,6 +581,7 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
                 sa.status,
                 COALESCE(scr1.mr_id, scr2.mr_id) as mr_id,
                 COALESCE(scr1.mr_category, scr2.mr_category) as mr_category,
+                     COALESCE(scr1.visit_location, scr2.visit_location) as visit_location,
                 COALESCE(scr1.status, scr2.status) as record_status
              FROM sunday_appointments sa
              LEFT JOIN sunday_clinic_records scr1
@@ -560,6 +609,45 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
                         [todayStart, tomorrowStart, todayStr]
         );
 
+        const mrIds = appointments
+            .map(apt => normalizeMrId(apt.mr_id))
+            .filter(Boolean);
+
+        const medifySyncByMrId = new Map();
+
+        if (mrIds.length > 0) {
+            try {
+                const placeholders = mrIds.map(() => '?').join(',');
+                const [syncRows] = await db.query(
+                    `SELECT mr_id, status, updated_at
+                     FROM sunday_clinic_medify_sync_jobs
+                     WHERE mr_id IN (${placeholders})`,
+                    mrIds
+                );
+
+                for (const row of syncRows) {
+                    const normalizedMrId = normalizeMrId(row.mr_id);
+                    if (!normalizedMrId) {
+                        continue;
+                    }
+
+                    if (!medifySyncByMrId.has(normalizedMrId)) {
+                        medifySyncByMrId.set(normalizedMrId, []);
+                    }
+
+                    medifySyncByMrId.get(normalizedMrId).push(row);
+                }
+            } catch (syncError) {
+                if (syncError.code !== 'ER_NO_SUCH_TABLE') {
+                    throw syncError;
+                }
+
+                logger.warn('Medify sync table not ready while loading queue', {
+                    error: syncError.message
+                });
+            }
+        }
+
         // Enrich with session labels and slot times
         const enriched = appointments.map(apt => ({
             id: apt.id,
@@ -576,8 +664,12 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
             status: apt.status,
             mr_id: apt.mr_id || null,
             mr_category: apt.mr_category || null,
+            visit_location: apt.visit_location || null,
             record_status: apt.record_status || null,
-            has_record: !!apt.mr_id
+            has_record: !!apt.mr_id,
+            medify_sync: apt.visit_location === 'rsia_melinda' && apt.mr_id
+                ? summarizeMedifySyncStatus(medifySyncByMrId.get(normalizeMrId(apt.mr_id)) || [])
+                : null
         }));
 
         const payload = {
