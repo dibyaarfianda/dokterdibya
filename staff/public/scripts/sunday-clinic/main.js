@@ -117,6 +117,8 @@ class SundayClinicApp {
             console.log('[SundayClinic] Location detected:', this.currentLocation);
             console.log('[SundayClinic] Import source:', this.importSource);
 
+            await this.applyMedifyPrefillIfNeeded(mrId);
+
             // Update sidebar based on category
             this.updateSidebarForCategory();
 
@@ -381,6 +383,108 @@ class SundayClinicApp {
         const staffNameDisplay = document.getElementById('staff-name-display');
         if (staffNameDisplay && patientName) {
             staffNameDisplay.textContent = patientName;
+        }
+    }
+
+    hasMeaningfulData(sectionData) {
+        if (!sectionData || typeof sectionData !== 'object') {
+            return false;
+        }
+
+        const ignoredKeys = new Set(['record_datetime', 'record_date', 'record_time', 'saved_at', 'updated_at']);
+
+        for (const [key, value] of Object.entries(sectionData)) {
+            if (ignoredKeys.has(key)) {
+                continue;
+            }
+
+            if (Array.isArray(value) && value.length > 0) {
+                return true;
+            }
+
+            if (value && typeof value === 'object' && Object.keys(value).length > 0) {
+                return true;
+            }
+
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    async applyMedifyPrefillIfNeeded(mrId) {
+        if (this.currentLocation !== 'rsia_melinda') {
+            return;
+        }
+
+        const stateBefore = stateManager.getState();
+        const existingRecordData = stateBefore.recordData || {};
+
+        const token = window.getToken();
+        if (!token) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/sunday-clinic/records/${encodeURIComponent(mrId)}/prefill/medify`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const result = await response.json();
+            const prefill = result?.data;
+
+            if (!result?.success || !prefill?.hasData || !prefill?.sections) {
+                return;
+            }
+
+            const sectionMap = [
+                { stateKey: 'anamnesa', payloadKey: 'anamnesa' },
+                { stateKey: 'physical_exam', payloadKey: 'physical_exam' },
+                { stateKey: 'pemeriksaan_obstetri', payloadKey: 'pemeriksaan_obstetri' },
+                { stateKey: 'usg', payloadKey: 'usg' }
+            ];
+
+            const appliedSections = [];
+
+            for (const mapItem of sectionMap) {
+                const currentSection = existingRecordData[mapItem.stateKey] || {};
+                const incomingSection = prefill.sections[mapItem.payloadKey] || {};
+
+                if (!this.hasMeaningfulData(incomingSection)) {
+                    continue;
+                }
+
+                if (this.hasMeaningfulData(currentSection)) {
+                    continue;
+                }
+
+                const mergedData = {
+                    ...incomingSection,
+                    record_datetime: incomingSection.record_datetime || this.getCurrentDateTimeLocal()
+                };
+
+                stateManager.updateSectionData(mapItem.stateKey, mergedData);
+                appliedSections.push(mapItem.stateKey);
+            }
+
+            if (appliedSections.length > 0) {
+                console.log('[SundayClinic] Medify prefill applied:', appliedSections);
+                if (typeof window.showToast === 'function') {
+                    window.showToast('info', `Prefill Medify diterapkan: ${appliedSections.join(', ')}`);
+                }
+            }
+        } catch (error) {
+            console.warn('[SundayClinic] Failed to apply Medify prefill:', error.message);
         }
     }
 
