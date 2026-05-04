@@ -10,12 +10,21 @@ const MEDIFY_LOCATION_CONFIG = {
     rsia_melinda: {
         label: 'RSIA Melinda',
         batchPrefix: 'melinda-open',
-        clinicLabel: 'Poli Obgyn'
+        clinicLabel: 'Poli Obgyn',
+        queueRequest: {
+            poliId: '1',
+            groupId: '0',
+            showId: '0',
+            byDokter: '0'
+        }
     },
     rsud_gambiran: {
         label: 'RSUD Gambiran',
         batchPrefix: 'gambiran-open',
-        clinicLabel: 'Poli Obgyn'
+        clinicLabel: 'Poli Obgyn',
+        queueRequest: {
+            queueUrl: 'https://simrsg.kedirikota.go.id/rawatjalan/poliklinik/5'
+        }
     }
 };
 const medifyLiveQueueCache = {
@@ -453,10 +462,7 @@ async function fetchMedifyLiveQueuePayload(location, { useCache = true } = {}) {
     try {
         await session.login();
         const queueData = await session.getPolyclinicQueue({
-            poliId: '1',
-            groupId: '0',
-            showId: '0',
-            byDokter: '0',
+            ...(locationConfig.queueRequest || {}),
             clinicLabel: locationConfig.clinicLabel,
             doctorFilter: 'Semua Dokter',
             onlyToday: false

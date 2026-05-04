@@ -384,9 +384,17 @@ class MedifyHttpSession {
 
     _parsePolyclinicQueue(html, meta = {}) {
         const text = this._htmlToText(html);
+        const queueNumberPattern = '[A-Z]{2,4}-[A-Z]-\\d+';
         const medIdByQueueNumber = new Map();
+        const supplementalByQueueNumber = this._extractTransaksiQueueSupplemental(html);
 
-        for (const match of html.matchAll(/<h5[^>]*>\s*(DAF-[A-Z]-\d+)\s*<\/h5>[\s\S]*?data-nomor_kasus="([^"]+)"/gi)) {
+        for (const [queueNumber, supplemental] of supplementalByQueueNumber.entries()) {
+            if (supplemental.medId) {
+                medIdByQueueNumber.set(queueNumber, supplemental.medId);
+            }
+        }
+
+        for (const match of html.matchAll(new RegExp(`<h5[^>]*>\\s*(${queueNumberPattern})\\s*<\\/h5>[\\s\\S]*?data-nomor_kasus="([^"]+)"`, 'gi'))) {
             medIdByQueueNumber.set((match[1] || '').trim(), (match[2] || '').trim());
         }
 
@@ -410,9 +418,10 @@ class MedifyHttpSession {
         const waiting = extractStat('BELUM DILAYANI');
         const serving = extractStat('DILAYANI');
 
+        const queueBlockRegex = new RegExp(`^${queueNumberPattern}`, 'i');
         const queueBlocks = text
-            .split(/(?=DAF-[A-Z]-\d+)/g)
-            .filter(block => /^DAF-[A-Z]-\d+/i.test(block.trim()));
+            .split(new RegExp(`(?=${queueNumberPattern})`, 'g'))
+            .filter(block => queueBlockRegex.test(block.trim()));
 
         let items = queueBlocks.map((block) => {
             const blockLines = block
@@ -421,6 +430,7 @@ class MedifyHttpSession {
                 .filter(Boolean);
 
             const queueNumber = blockLines[0] || '';
+            const supplemental = supplementalByQueueNumber.get(queueNumber) || {};
             const patientName = blockLines[1] || '-';
             const medicalRecordLine = blockLines.find(line => /^NO\.RM:/i.test(line)) || '';
             const medicalRecordNo = medicalRecordLine.replace(/^NO\.RM:\s*/i, '').trim();
@@ -433,23 +443,25 @@ class MedifyHttpSession {
 
             const doctorName = blockLines.find(line => /^DR\./i.test(line) || /^dr\./i.test(line)) || '-';
             const registeredAtIndex = blockLines.findIndex(line => /WAKTU PENDAFTARAN/i.test(line));
-            const registeredAt = registeredAtIndex >= 0 ? (blockLines[registeredAtIndex + 1] || '-') : '-';
+            const registeredAt = registeredAtIndex >= 0
+                ? (blockLines[registeredAtIndex + 1] || '-')
+                : (supplemental.registeredAt || '-');
 
             const paymentStatus = /BELUM LUNAS/i.test(block)
                 ? 'Belum Lunas'
-                : (/\bLUNAS\b/i.test(block) ? 'Lunas' : '-');
+                : (/\bLUNAS\b/i.test(block) ? 'Lunas' : (supplemental.paymentStatus || '-'));
 
             return {
                 queueNumber,
                 medId: medIdByQueueNumber.get(queueNumber) || null,
                 patientName,
                 medicalRecordNo,
-                gender: genderAgeMatch ? genderAgeMatch[1] : '-',
-                age: genderAgeMatch ? parseInt(genderAgeMatch[2], 10) : null,
+                gender: genderAgeMatch ? genderAgeMatch[1] : (supplemental.gender || '-'),
+                age: genderAgeMatch ? parseInt(genderAgeMatch[2], 10) : (supplemental.age ?? null),
                 doctorName,
                 registeredAt,
                 paymentStatus,
-                hasCppt: /\bCPPT\b/i.test(block)
+                hasCppt: /\bCPPT\b/i.test(block) || Boolean(supplemental.hasCppt)
             };
         }).filter(item => item.queueNumber && item.patientName);
 
@@ -474,6 +486,152 @@ class MedifyHttpSession {
             },
             items
         };
+    }
+
+    _extractTransaksiQueueSupplemental(html) {
+        const transaksiJson = this._extractAssignedObjectLiteral(html, 'transaksi_data');
+        if (!transaksiJson) {
+            return new Map();
+        }
+
+        try {
+            const transaksiData = JSON.parse(transaksiJson);
+            const queueSupplemental = new Map();
+
+            for (const transaksi of Object.values(transaksiData || {})) {
+                const queueNumber = (transaksi?.nomor_antrian || '').trim();
+                if (!queueNumber) {
+                    continue;
+                }
+
+                const patientDetail = transaksi?.pasien_detail || {};
+                const kasus = transaksi?.kasus || {};
+
+                queueSupplemental.set(queueNumber, {
+                    medId: typeof kasus.nomor_kasus === 'string' ? kasus.nomor_kasus.trim() : null,
+                    gender: patientDetail.jenis_kelamin || this._normalizePatientGender(patientDetail.gender),
+                    age: Number.isFinite(patientDetail.age)
+                        ? patientDetail.age
+                        : this._parsePatientAge(patientDetail.detailed_age_short || patientDetail.detailed_long_age),
+                    registeredAt: this._formatQueueTimestamp(
+                        transaksi?.ordered_at || transaksi?.waktu_masuk || patientDetail.antrian_at
+                    ),
+                    paymentStatus: this._normalizeQueuePaymentStatus(transaksi?.status_pembayaran),
+                    hasCppt: Array.isArray(kasus.cppt_all) && kasus.cppt_all.length > 0
+                });
+            }
+
+            return queueSupplemental;
+        } catch (error) {
+            console.log(`[HTTP] Failed to parse transaksi_data queue supplemental: ${error.message}`);
+            return new Map();
+        }
+    }
+
+    _extractAssignedObjectLiteral(source, variableName) {
+        const marker = `var ${variableName}`;
+        const markerIndex = source.indexOf(marker);
+        if (markerIndex === -1) {
+            return null;
+        }
+
+        const objectStart = source.indexOf('{', markerIndex);
+        if (objectStart === -1) {
+            return null;
+        }
+
+        let depth = 0;
+        let quote = null;
+        let escaped = false;
+
+        for (let index = objectStart; index < source.length; index += 1) {
+            const char = source[index];
+
+            if (quote) {
+                if (escaped) {
+                    escaped = false;
+                } else if (char === '\\') {
+                    escaped = true;
+                } else if (char === quote) {
+                    quote = null;
+                }
+                continue;
+            }
+
+            if (char === '"' || char === "'") {
+                quote = char;
+                continue;
+            }
+
+            if (char === '{') {
+                depth += 1;
+                continue;
+            }
+
+            if (char === '}') {
+                depth -= 1;
+                if (depth === 0) {
+                    return source.slice(objectStart, index + 1);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    _normalizePatientGender(genderValue) {
+        if (genderValue === 1 || genderValue === '1') {
+            return 'Laki-Laki';
+        }
+
+        if (genderValue === 2 || genderValue === '2') {
+            return 'Perempuan';
+        }
+
+        return '-';
+    }
+
+    _parsePatientAge(ageText) {
+        const match = String(ageText || '').match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    _formatQueueTimestamp(value) {
+        if (!value) {
+            return '-';
+        }
+
+        const normalized = String(value).trim().replace(' ', 'T');
+        const parsed = new Date(normalized);
+        if (Number.isNaN(parsed.getTime())) {
+            return String(value).trim() || '-';
+        }
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const day = String(parsed.getDate()).padStart(2, '0');
+        const month = months[parsed.getMonth()];
+        const year = String(parsed.getFullYear()).slice(-2);
+        const hours = String(parsed.getHours()).padStart(2, '0');
+        const minutes = String(parsed.getMinutes()).padStart(2, '0');
+
+        return `${day} ${month} ${year} ${hours}:${minutes}`;
+    }
+
+    _normalizeQueuePaymentStatus(status) {
+        const normalized = String(status || '').trim();
+        if (!normalized) {
+            return '-';
+        }
+
+        if (/belum/i.test(normalized)) {
+            return 'Belum Lunas';
+        }
+
+        if (/lunas|paid|bayar/i.test(normalized)) {
+            return 'Lunas';
+        }
+
+        return normalized;
     }
 
     _getMedifyTodayPrefix() {
