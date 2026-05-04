@@ -1394,7 +1394,13 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             });
         }
 
-        if (recordRow.visit_location !== 'rsia_melinda') {
+        const medifyPrefillSourceByLocation = {
+            rsia_melinda: 'medify_melinda',
+            rsud_gambiran: 'medify_gambiran'
+        };
+        const medifySource = medifyPrefillSourceByLocation[recordRow.visit_location] || null;
+
+        if (!medifySource) {
             return res.json({
                 success: true,
                 data: {
@@ -1416,12 +1422,12 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             `SELECT cppt_data, simrs_med_id, completed_at, created_at
              FROM medify_import_jobs
              WHERE patient_id = ?
-               AND simrs_source = 'rsia_melinda'
+                             AND simrs_source = ?
                AND status = 'success'
                AND cppt_data IS NOT NULL
              ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
              LIMIT 1`,
-            [recordRow.patient_id]
+                        [recordRow.patient_id, recordRow.visit_location]
         );
 
         if (!rows.length) {
@@ -1429,7 +1435,7 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
                 success: true,
                 data: {
                     mrId: normalizedMrId,
-                    source: 'medify_melinda',
+                    source: medifySource,
                     hasData: false,
                     sections: {
                         anamnesa: {},
@@ -1486,7 +1492,7 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             success: true,
             data: {
                 mrId: normalizedMrId,
-                source: 'medify_melinda',
+                source: medifySource,
                 hasData: true,
                 simrsMedId: rows[0].simrs_med_id,
                 fetchedAt: rows[0].completed_at || rows[0].created_at,

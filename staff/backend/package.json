@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "robot:melinda": "node scripts/melinda-queue-robot.js --location rsia_melinda",
+    "robot:gambiran": "node scripts/melinda-queue-robot.js --location rsud_gambiran",
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=unit",

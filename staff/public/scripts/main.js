@@ -385,7 +385,10 @@ function showHospitalAppointmentsPage(location) {
 
     const hospitalName = hospitalNames[location] || location;
     const navId = `nav-${location.replace(/_/g, '-')}`;
-    setTitleAndActive(hospitalName + ' - Janji Temu', navId, 'hospital-appointments');
+    const pageTitle = location === 'rsud_gambiran'
+        ? 'GAMBIRAN - Janji Temu'
+        : hospitalName + ' - Janji Temu';
+    setTitleAndActive(pageTitle, navId, 'hospital-appointments');
 
     loadHospitalAppointments(location);
 }
@@ -610,7 +613,7 @@ async function loadHospitalAppointments(location) {
 
     try {
         const token = getAuthToken();
-        if (location === 'rsia_melinda') {
+        if (location === 'rsia_melinda' || location === 'rsud_gambiran') {
             const liveResponse = await fetch(`/api/appointments/hospital/${location}/live-queue`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -619,10 +622,10 @@ async function loadHospitalAppointments(location) {
 
             const liveData = await liveResponse.json();
             if (!liveData.success || !liveData.queue) {
-                throw new Error(liveData.message || 'Data antrian Melinda tidak tersedia');
+                throw new Error(liveData.message || `Data antrian ${hospitalName} tidak tersedia`);
             }
 
-            renderMelindaLiveQueue(liveData.queue, hospitalName, hospitalColor);
+            renderMedifyLiveQueue(liveData.queue, hospitalName, hospitalColor, location);
             return;
         }
 
@@ -645,7 +648,7 @@ async function loadHospitalAppointments(location) {
     }
 }
 
-function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
+function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location) {
     const container = document.getElementById('hospital-appointments-container');
     if (!container) return;
 
@@ -662,9 +665,14 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
                         <h3 class="card-title mb-1"><i class="fas fa-hospital-user mr-2"></i>Antrian Live Medify</h3>
                         <div class="text-white-50 small">${dateLabel} • ${escapeHtml(queueData.clinicLabel || 'Poli Obgyn')}</div>
                     </div>
-                    <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('rsia_melinda')">
-                        <i class="fas fa-sync-alt mr-1"></i>Refresh
-                    </button>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-warning mr-2" onclick="runMedifyQueueRobot(this, '${location}')">
+                            <i class="fas fa-play mr-1"></i>Aktifkan Robot
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('${location}')">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body text-center py-5 text-muted">
                     <i class="fas fa-calendar-times fa-2x mb-2"></i>
@@ -678,12 +686,13 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
     const rows = items.map((item) => {
         const safeMedId = String(item.medId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safePatientName = String(item.patientName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeMedicalRecordNo = String(item.medicalRecordNo || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const ageArg = Number.isFinite(item.age) ? item.age : 'null';
         const actionHtml = `
                 <button type="button"
                         class="btn btn-sm ${item.medId ? 'btn-primary' : 'btn-outline-primary'}"
-                        title="${item.medId ? 'Proses DRD menggunakan nomor kasus Medify' : 'Proses DRD menggunakan fallback nama dan usia'}"
-                        onclick="openMelindaQueueRecord(this, '${safeMedId}', '${safePatientName}', ${ageArg})">
+                        title="${item.medId ? 'Proses DRD dan auto-create pasien lokal bila belum ada' : 'Proses DRD dengan fallback nama/usia dan auto-create pasien lokal'}"
+                        onclick="openMedifyQueueRecord(this, '${location}', '${safeMedId}', '${safePatientName}', ${ageArg}, '${safeMedicalRecordNo}')">
                     <i class="fas ${item.medId ? 'fa-file-medical' : 'fa-user-check'} mr-1"></i>Proses DRD
                 </button>
             `;
@@ -722,7 +731,10 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
                     <span class="badge badge-light mr-2">Belum Dilayani: ${stats.waiting || 0}</span>
                     <span class="badge badge-light mr-2">Dilayani: ${stats.serving || 0}</span>
                     <span class="badge badge-warning mr-3">Total: ${stats.total || items.length}</span>
-                    <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('rsia_melinda')">
+                    <button class="btn btn-sm btn-warning mr-2" onclick="runMedifyQueueRobot(this, '${location}')">
+                        <i class="fas fa-play mr-1"></i>Aktifkan Robot
+                    </button>
+                    <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('${location}')">
                         <i class="fas fa-sync-alt mr-1"></i>Refresh
                     </button>
                 </div>
@@ -770,7 +782,7 @@ async function openHospitalRecordByMrId(patientId, patientName, location, mrId) 
     window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
 }
 
-async function openMelindaQueueRecord(button, medId, patientName, age = null) {
+async function openMedifyQueueRecord(button, location, medId, patientName, age = null, medicalRecordNo = '') {
     const token = getAuthToken();
     if (!token) {
         alert('Sesi login berakhir. Silakan login ulang.');
@@ -785,13 +797,19 @@ async function openMelindaQueueRecord(button, medId, patientName, age = null) {
             button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memproses';
         }
 
-        const response = await fetch('/api/appointments/hospital/rsia_melinda/resolve-queue-patient', {
+        const response = await fetch(`/api/appointments/hospital/${location}/resolve-queue-patient`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ medId, patientName, age })
+            body: JSON.stringify({
+                medId,
+                patientName,
+                age,
+                medicalRecordNo,
+                autoCreatePatient: true
+            })
         });
 
         const data = await response.json().catch(() => ({}));
@@ -799,15 +817,78 @@ async function openMelindaQueueRecord(button, medId, patientName, age = null) {
             throw new Error(data.message || 'Pasien belum berhasil dicocokkan ke database lokal.');
         }
 
+        if (data.patientAutoCreated) {
+            console.info('[MedifyQueue] Auto-created local patient placeholder', {
+                patientId: data.patientId,
+                patientName: data.patientName || patientName,
+                location,
+                medicalRecordNo: medicalRecordNo || null
+            });
+        }
+
         if (data.existingMrId) {
-            await openHospitalRecordByMrId(data.patientId, data.patientName || patientName, 'rsia_melinda', data.existingMrId);
+            await openHospitalRecordByMrId(data.patientId, data.patientName || patientName, location, data.existingMrId);
             return;
         }
 
         await startHospitalExam(null, data.patientId, data.patientName || patientName);
     } catch (error) {
-        console.error('Error resolving Melinda queue patient:', error);
-        alert(error.message || 'Gagal memproses pasien Melinda.');
+        console.error('Error resolving Medify queue patient:', error);
+        alert(error.message || 'Gagal memproses pasien Medify.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
+}
+
+async function runMedifyQueueRobot(button, location) {
+    const token = getAuthToken();
+    if (!token) {
+        alert('Sesi login berakhir. Silakan login ulang.');
+        return;
+    }
+
+    const originalHtml = button ? button.innerHTML : '';
+
+    try {
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Robot Aktif';
+        }
+
+        const response = await fetch(`/api/appointments/hospital/${location}/run-robot`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                autoCreatePatient: true,
+                useCache: true
+            })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Gagal menjalankan robot Melinda.');
+        }
+
+        const summary = data.summary || {};
+        alert(
+            `Robot ${hospitalNames[location] || 'Medify'} selesai.\n\n`
+            + `Total queue: ${summary.queueCount || 0}\n`
+            + `Berhasil diproses: ${summary.resolved || 0}\n`
+            + `Auto-create pasien: ${summary.autoCreated || 0}\n`
+            + `DRD existing: ${summary.existingDrd || 0}\n`
+            + `Gagal: ${summary.unresolved || 0}`
+        );
+
+        await showHospitalAppointmentsPage(location);
+    } catch (error) {
+        console.error('Error running Medify robot:', error);
+        alert(error.message || 'Gagal menjalankan robot Medify.');
     } finally {
         if (button) {
             button.disabled = false;
@@ -5597,7 +5678,10 @@ window.confirmHospitalAppointment = confirmHospitalAppointment;
 window.completeHospitalAppointment = completeHospitalAppointment;
 window.cancelHospitalAppointment = cancelHospitalAppointment;
 window.startHospitalExam = startHospitalExam;
-window.openMelindaQueueRecord = openMelindaQueueRecord;
+window.openMelindaQueueRecord = openMedifyQueueRecord;
+window.openMedifyQueueRecord = openMedifyQueueRecord;
+window.runMelindaQueueRobot = runMedifyQueueRobot;
+window.runMedifyQueueRobot = runMedifyQueueRobot;
 
 // Utility functions used by external modules (tanya-dokter.js, etc)
 window.hideAllPages = hideAllPages;

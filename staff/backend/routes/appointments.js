@@ -5,12 +5,34 @@ const pool = require('../db');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 const { createSession, countMatchingFactors } = require('../services/medifyHttpService');
 
-const MELINDA_LIVE_QUEUE_CACHE_TTL_MS = 30000;
-const melindaLiveQueueCache = {
-    payload: null,
-    expiresAt: 0
+const MEDIFY_LIVE_QUEUE_CACHE_TTL_MS = 30000;
+const MEDIFY_LOCATION_CONFIG = {
+    rsia_melinda: {
+        label: 'RSIA Melinda',
+        batchPrefix: 'melinda-open',
+        clinicLabel: 'Poli Obgyn'
+    },
+    rsud_gambiran: {
+        label: 'RSUD Gambiran',
+        batchPrefix: 'gambiran-open',
+        clinicLabel: 'Poli Obgyn'
+    }
+};
+const medifyLiveQueueCache = {
+    rsia_melinda: {
+        payload: null,
+        expiresAt: 0
+    },
+    rsud_gambiran: {
+        payload: null,
+        expiresAt: 0
+    }
 };
 let patientsHasNikColumn = null;
+
+function getMedifyLocationConfig(location) {
+    return MEDIFY_LOCATION_CONFIG[location] || null;
+}
 
 function normalizePatientName(name) {
     if (!name) return '';
@@ -131,7 +153,85 @@ async function getMelindaResolverPatients() {
     return patients;
 }
 
-async function cacheMelindaCpptForPrefill({ patient, queueItem, createdBy, session }) {
+async function generateMelindaPlaceholderPatientId(connection) {
+    const year = new Date().getFullYear();
+    const [rows] = await connection.query(
+        `SELECT id
+         FROM patients
+         WHERE id LIKE ?
+         ORDER BY id DESC
+         LIMIT 1`,
+        [`P${year}%`]
+    );
+
+    let nextNumber = 1;
+    if (rows.length > 0) {
+        const match = String(rows[0].id || '').match(/^P\d{4}(\d+)$/);
+        if (match) {
+            nextNumber = parseInt(match[1], 10) + 1;
+        }
+    }
+
+    return `P${year}${String(nextNumber).padStart(3, '0')}`;
+}
+
+async function createMelindaPlaceholderPatient(queueItem) {
+    const patientName = String(queueItem?.patientName || '').trim();
+    if (!patientName) {
+        throw new Error('Nama pasien wajib diisi untuk membuat placeholder lokal');
+    }
+
+    const patientAge = Number.isFinite(Number(queueItem?.age)) ? Number(queueItem.age) : null;
+    const maxRetries = 3;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const connection = await pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            const patientId = await generateMelindaPlaceholderPatientId(connection);
+            await connection.query(
+                `INSERT INTO patients (id, full_name, age, patient_type)
+                 VALUES (?, ?, ?, ?)`,
+                [patientId, patientName, patientAge, 'walk-in']
+            );
+
+            await connection.commit();
+            connection.release();
+
+            return {
+                id: patientId,
+                full_name: patientName,
+                age: patientAge,
+                patient_type: 'walk-in'
+            };
+        } catch (error) {
+            await connection.rollback();
+            connection.release();
+            lastError = error;
+
+            if (error.code === 'ER_DUP_ENTRY' && attempt < maxRetries) {
+                continue;
+            }
+
+            throw error;
+        }
+    }
+
+    throw lastError || new Error('Gagal membuat placeholder pasien Medify');
+}
+
+async function cacheMedifyCpptForPrefill({ location, patient, queueItem, createdBy, session }) {
+    const locationConfig = getMedifyLocationConfig(location);
+    if (!locationConfig) {
+        return {
+            status: 'unavailable',
+            reason: 'unsupported_location'
+        };
+    }
+
     if (!patient?.id || !queueItem?.medId) {
         return {
             status: 'unavailable',
@@ -143,11 +243,11 @@ async function cacheMelindaCpptForPrefill({ patient, queueItem, createdBy, sessi
         `SELECT id, status, cppt_data
          FROM medify_import_jobs
          WHERE patient_id = ?
-           AND simrs_source = 'rsia_melinda'
+                     AND simrs_source = ?
            AND simrs_med_id = ?
          ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
          LIMIT 1`,
-        [patient.id, queueItem.medId]
+                [patient.id, location, queueItem.medId]
     );
 
     const existingJob = existingRows[0] || null;
@@ -187,12 +287,13 @@ async function cacheMelindaCpptForPrefill({ patient, queueItem, createdBy, sessi
             await pool.query(
                 `INSERT INTO medify_import_jobs
                  (batch_id, patient_id, patient_name, patient_age, simrs_source, status, created_by, simrs_med_id, cppt_data, error_message, completed_at)
-                 VALUES (?, ?, ?, ?, 'rsia_melinda', ?, ?, ?, ?, ?, NOW())`,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
                 [
-                    `melinda-open-${patient.id}-${Date.now()}`,
+                    `${locationConfig.batchPrefix}-${patient.id}-${Date.now()}`,
                     patient.id,
                     patient.full_name,
                     patient.age || queueItem.age || null,
+                    location,
                     jobStatus,
                     createdBy || null,
                     queueItem.medId,
@@ -220,12 +321,13 @@ async function cacheMelindaCpptForPrefill({ patient, queueItem, createdBy, sessi
             await pool.query(
                 `INSERT INTO medify_import_jobs
                  (batch_id, patient_id, patient_name, patient_age, simrs_source, status, created_by, simrs_med_id, error_message, completed_at)
-                 VALUES (?, ?, ?, ?, 'rsia_melinda', 'failed', ?, ?, ?, NOW())`,
+                 VALUES (?, ?, ?, ?, ?, 'failed', ?, ?, ?, NOW())`,
                 [
-                    `melinda-open-${patient.id}-${Date.now()}`,
+                    `${locationConfig.batchPrefix}-${patient.id}-${Date.now()}`,
                     patient.id,
                     patient.full_name,
                     patient.age || queueItem.age || null,
+                    location,
                     createdBy || null,
                     queueItem.medId,
                     error.message
@@ -240,11 +342,16 @@ async function cacheMelindaCpptForPrefill({ patient, queueItem, createdBy, sessi
     }
 }
 
-async function resolveMelindaQueuePatient(queueItem, options = {}) {
+async function resolveMedifyQueuePatient(location, queueItem, options = {}) {
+    const locationConfig = getMedifyLocationConfig(location);
+    if (!locationConfig) {
+        throw new Error(`Unsupported Medify location: ${location}`);
+    }
+
     const patients = await getMelindaResolverPatients();
 
     const patientByNik = buildPatientByNikMap(patients);
-    const session = createSession('rsia_melinda');
+    const session = createSession(location);
 
     try {
         await session.login();
@@ -261,6 +368,7 @@ async function resolveMelindaQueuePatient(queueItem, options = {}) {
 
         let patient = null;
         let matchedBy = null;
+        let patientAutoCreated = false;
 
         if (identityNik) {
             patient = patientByNik.get(identityNik) || null;
@@ -270,6 +378,12 @@ async function resolveMelindaQueuePatient(queueItem, options = {}) {
         if (!patient) {
             patient = resolveLocalPatient(queueItem, patients);
             matchedBy = patient ? 'name_age' : matchedBy;
+        }
+
+        if (!patient?.id && options.autoCreatePatient) {
+            patient = await createMelindaPlaceholderPatient(queueItem);
+            matchedBy = 'auto_created';
+            patientAutoCreated = true;
         }
 
         if (!patient?.id) {
@@ -286,7 +400,8 @@ async function resolveMelindaQueuePatient(queueItem, options = {}) {
             };
         }
 
-        const prefillSync = await cacheMelindaCpptForPrefill({
+        const prefillSync = await cacheMedifyCpptForPrefill({
+            location,
             patient,
             queueItem,
             createdBy: options.createdBy || null,
@@ -303,7 +418,7 @@ async function resolveMelindaQueuePatient(queueItem, options = {}) {
                AND created_at < ?
              ORDER BY created_at DESC, id DESC
              LIMIT 1`,
-            [patient.id, 'rsia_melinda', startDateTime, endDateTime]
+                        [patient.id, location, startDateTime, endDateTime]
         );
 
         return {
@@ -314,12 +429,133 @@ async function resolveMelindaQueuePatient(queueItem, options = {}) {
             existingMrId: recordRows[0]?.mr_id || null,
             existingRecordStatus: recordRows[0]?.status || null,
             identityNik,
+            patientAutoCreated,
             prefillStatus: prefillSync.status,
             prefillReason: prefillSync.reason || null
         };
     } finally {
         await session.close();
     }
+}
+
+async function fetchMedifyLiveQueuePayload(location, { useCache = true } = {}) {
+    const locationConfig = getMedifyLocationConfig(location);
+    if (!locationConfig) {
+        throw new Error(`Unsupported Medify location: ${location}`);
+    }
+
+    const cacheEntry = medifyLiveQueueCache[location];
+    if (useCache && cacheEntry && cacheEntry.payload && cacheEntry.expiresAt > Date.now()) {
+        return cacheEntry.payload;
+    }
+
+    const session = createSession(location);
+    try {
+        await session.login();
+        const queueData = await session.getPolyclinicQueue({
+            poliId: '1',
+            groupId: '0',
+            showId: '0',
+            byDokter: '0',
+            clinicLabel: locationConfig.clinicLabel,
+            doctorFilter: 'Semua Dokter',
+            onlyToday: false
+        });
+
+        const payload = {
+            success: true,
+            source: 'medify_live',
+            location,
+            queue: queueData
+        };
+
+        if (cacheEntry) {
+            cacheEntry.payload = payload;
+            cacheEntry.expiresAt = Date.now() + MEDIFY_LIVE_QUEUE_CACHE_TTL_MS;
+        }
+
+        return payload;
+    } finally {
+        await session.close();
+    }
+}
+
+async function runMedifyQueueRobot(location, options = {}) {
+    const queuePayload = await fetchMedifyLiveQueuePayload(location, {
+        useCache: options.useCache !== false
+    });
+
+    let items = Array.isArray(queuePayload.queue?.items) ? queuePayload.queue.items : [];
+    if (Number.isFinite(options.limit) && options.limit > 0) {
+        items = items.slice(0, options.limit);
+    }
+
+    const summary = {
+        queueCount: Array.isArray(queuePayload.queue?.items) ? queuePayload.queue.items.length : 0,
+        selectedCount: items.length,
+        resolved: 0,
+        unresolved: 0,
+        autoCreated: 0,
+        existingDrd: 0,
+        prefillReady: 0,
+        prefillSkipped: 0,
+        prefillUnavailable: 0,
+        matchedByNik: 0,
+        matchedByNameAge: 0,
+        failures: []
+    };
+
+    for (const item of items) {
+        const resolution = await resolveMedifyQueuePatient(location, {
+            medId: item.medId || null,
+            patientName: item.patientName || '',
+            age: Number.isFinite(item.age) ? item.age : null,
+            medicalRecordNo: item.medicalRecordNo || null
+        }, {
+            createdBy: options.createdBy || null,
+            autoCreatePatient: options.autoCreatePatient === true
+        });
+
+        if (!resolution.success) {
+            summary.unresolved++;
+            summary.failures.push({
+                queueNumber: item.queueNumber || null,
+                patientName: item.patientName || null,
+                message: resolution.message || 'Failed to resolve patient'
+            });
+            continue;
+        }
+
+        summary.resolved++;
+
+        if (resolution.patientAutoCreated) {
+            summary.autoCreated++;
+        }
+
+        if (resolution.matchedBy === 'nik') {
+            summary.matchedByNik++;
+        } else if (resolution.matchedBy === 'name_age') {
+            summary.matchedByNameAge++;
+        }
+
+        if (resolution.existingMrId) {
+            summary.existingDrd++;
+        }
+
+        if (resolution.prefillStatus === 'success' || resolution.prefillStatus === 'existing') {
+            summary.prefillReady++;
+        } else if (resolution.prefillStatus === 'skipped') {
+            summary.prefillSkipped++;
+        } else {
+            summary.prefillUnavailable++;
+        }
+    }
+
+    return {
+        success: true,
+        location,
+        summary
+    };
 }
 
 // ==================== PUBLIC ROUTES ====================
@@ -426,50 +662,53 @@ router.get('/hospital/:location', verifyToken, requirePermission('booking.view')
 router.get('/hospital/:location/live-queue', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const { location } = req.params;
+        const locationConfig = getMedifyLocationConfig(location);
 
-        if (location !== 'rsia_melinda') {
+        if (!locationConfig) {
             return res.status(400).json({
                 success: false,
-                message: 'Live queue hanya tersedia untuk RSIA Melinda'
+                message: 'Live queue hanya tersedia untuk RSIA Melinda dan RSUD Gambiran'
             });
         }
 
-        if (melindaLiveQueueCache.payload && melindaLiveQueueCache.expiresAt > Date.now()) {
-            return res.json(melindaLiveQueueCache.payload);
-        }
-
-        const session = createSession('rsia_melinda');
-        try {
-            await session.login();
-            const queueData = await session.getPolyclinicQueue({
-                poliId: '1',
-                groupId: '0',
-                showId: '0',
-                byDokter: '0',
-                clinicLabel: 'Poli Obgyn',
-                doctorFilter: 'Semua Dokter',
-                onlyToday: false
-            });
-
-            const payload = {
-                success: true,
-                source: 'medify_live',
-                location,
-                queue: queueData
-            };
-
-            melindaLiveQueueCache.payload = payload;
-            melindaLiveQueueCache.expiresAt = Date.now() + MELINDA_LIVE_QUEUE_CACHE_TTL_MS;
-
-            res.json(payload);
-        } finally {
-            await session.close();
-        }
+        const payload = await fetchMedifyLiveQueuePayload(location);
+        res.json(payload);
     } catch (error) {
-        console.error('Error fetching RSIA Melinda live queue:', error);
+        console.error(`Error fetching Medify live queue for ${req.params.location}:`, error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch RSIA Melinda live queue',
+            message: 'Failed to fetch Medify live queue',
+            error: error.message
+        });
+    }
+});
+
+router.post('/hospital/:location/run-robot', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    try {
+        const { location } = req.params;
+        const { limit, useCache, autoCreatePatient } = req.body || {};
+        const locationConfig = getMedifyLocationConfig(location);
+
+        if (!locationConfig) {
+            return res.status(400).json({
+                success: false,
+                message: 'Robot hanya tersedia untuk RSIA Melinda dan RSUD Gambiran'
+            });
+        }
+
+        const result = await runMedifyQueueRobot(location, {
+            createdBy: req.user?.id || null,
+            limit: Number.isFinite(Number(limit)) ? Number(limit) : null,
+            useCache: useCache !== false,
+            autoCreatePatient: autoCreatePatient !== false
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error(`Error running Medify robot for ${req.params.location}:`, error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to run Medify robot',
             error: error.message
         });
     }
@@ -478,12 +717,13 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
 router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const { location } = req.params;
-        const { medId, patientName, age } = req.body || {};
+        const { medId, patientName, age, medicalRecordNo, autoCreatePatient } = req.body || {};
+        const locationConfig = getMedifyLocationConfig(location);
 
-        if (location !== 'rsia_melinda') {
+        if (!locationConfig) {
             return res.status(400).json({
                 success: false,
-                message: 'Resolve queue patient hanya tersedia untuk RSIA Melinda'
+                message: 'Resolve queue patient hanya tersedia untuk RSIA Melinda dan RSUD Gambiran'
             });
         }
 
@@ -494,12 +734,14 @@ router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePer
             });
         }
 
-        const resolution = await resolveMelindaQueuePatient({
+        const resolution = await resolveMedifyQueuePatient(location, {
             medId: medId || null,
             patientName: patientName || '',
-            age: Number.isFinite(Number(age)) ? Number(age) : null
+            age: Number.isFinite(Number(age)) ? Number(age) : null,
+            medicalRecordNo: medicalRecordNo || null
         }, {
-            createdBy: req.user?.id || null
+            createdBy: req.user?.id || null,
+            autoCreatePatient: autoCreatePatient === true || autoCreatePatient === 'true'
         });
 
         if (!resolution.success) {
@@ -508,10 +750,10 @@ router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePer
 
         res.json(resolution);
     } catch (error) {
-        console.error('Error resolving RSIA Melinda queue patient:', error);
+        console.error(`Error resolving Medify queue patient for ${req.params.location}:`, error);
         res.status(500).json({
             success: false,
-            message: 'Failed to resolve RSIA Melinda queue patient',
+            message: 'Failed to resolve Medify queue patient',
             error: error.message
         });
     }
