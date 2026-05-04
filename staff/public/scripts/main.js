@@ -679,20 +679,12 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
         const safeMedId = String(item.medId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safePatientName = String(item.patientName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const ageArg = Number.isFinite(item.age) ? item.age : 'null';
-        const actionHtml = item.medId
-            ? `
+        const actionHtml = `
                 <button type="button"
-                        class="btn btn-sm btn-primary"
+                        class="btn btn-sm ${item.medId ? 'btn-primary' : 'btn-outline-primary'}"
+                        title="${item.medId ? 'Proses DRD menggunakan nomor kasus Medify' : 'Proses DRD menggunakan fallback nama dan usia'}"
                         onclick="openMelindaQueueRecord(this, '${safeMedId}', '${safePatientName}', ${ageArg})">
-                    <i class="fas fa-file-medical mr-1"></i>Proses DRD
-                </button>
-            `
-            : `
-                <button type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        disabled
-                        title="Nomor kasus Medify tidak ditemukan pada antrian ini">
-                    <i class="fas fa-ban mr-1"></i>Tidak Tersedia
+                    <i class="fas ${item.medId ? 'fa-file-medical' : 'fa-user-check'} mr-1"></i>Proses DRD
                 </button>
             `;
 
@@ -779,11 +771,6 @@ async function openHospitalRecordByMrId(patientId, patientName, location, mrId) 
 }
 
 async function openMelindaQueueRecord(button, medId, patientName, age = null) {
-    if (!medId) {
-        alert('Nomor kasus Medify tidak ditemukan untuk pasien ini.');
-        return;
-    }
-
     const token = getAuthToken();
     if (!token) {
         alert('Sesi login berakhir. Silakan login ulang.');
