@@ -3,6 +3,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
+const { createSession } = require('../services/medifyHttpService');
+
+const MELINDA_LIVE_QUEUE_CACHE_TTL_MS = 30000;
+const melindaLiveQueueCache = {
+    payload: null,
+    expiresAt: 0
+};
 
 // ==================== PUBLIC ROUTES ====================
 
@@ -100,6 +107,57 @@ router.get('/hospital/:location', verifyToken, requirePermission('booking.view')
         res.status(500).json({
             success: false,
             message: 'Failed to fetch hospital appointments',
+            error: error.message
+        });
+    }
+});
+
+router.get('/hospital/:location/live-queue', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    try {
+        const { location } = req.params;
+
+        if (location !== 'rsia_melinda') {
+            return res.status(400).json({
+                success: false,
+                message: 'Live queue hanya tersedia untuk RSIA Melinda'
+            });
+        }
+
+        if (melindaLiveQueueCache.payload && melindaLiveQueueCache.expiresAt > Date.now()) {
+            return res.json(melindaLiveQueueCache.payload);
+        }
+
+        const session = createSession('rsia_melinda');
+        try {
+            await session.login();
+            const queueData = await session.getPolyclinicQueue({
+                poliId: '1',
+                groupId: '0',
+                showId: '0',
+                byDokter: '0',
+                clinicLabel: 'Poli Obgyn',
+                doctorFilter: 'Semua Dokter'
+            });
+
+            const payload = {
+                success: true,
+                source: 'medify_live',
+                location,
+                queue: queueData
+            };
+
+            melindaLiveQueueCache.payload = payload;
+            melindaLiveQueueCache.expiresAt = Date.now() + MELINDA_LIVE_QUEUE_CACHE_TTL_MS;
+
+            res.json(payload);
+        } finally {
+            await session.close();
+        }
+    } catch (error) {
+        console.error('Error fetching RSIA Melinda live queue:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch RSIA Melinda live queue',
             error: error.message
         });
     }

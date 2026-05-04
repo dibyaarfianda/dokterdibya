@@ -345,6 +345,107 @@ class MedifyHttpSession {
     }
 
     /**
+     * Fetch current polyclinic queue for the source.
+     * Returns stats and current queue items parsed from the live Medify page.
+     */
+    async getPolyclinicQueue(options = {}) {
+        if (!this.isLoggedIn) throw new Error('Not authenticated - call login() first');
+
+        const queueUrl = options.queueUrl || this._buildPolyclinicUrl(options);
+        const response = await this.request(queueUrl, {
+            headers: {
+                'Referer': this.config.historyUrl
+            }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`Failed to fetch polyclinic queue (${response.status})`);
+        }
+
+        return this._parsePolyclinicQueue(response.body, {
+            queueUrl,
+            doctorFilter: options.doctorFilter || 'Semua Dokter',
+            clinicLabel: options.clinicLabel || 'Poli Obgyn'
+        });
+    }
+
+    _buildPolyclinicUrl(options = {}) {
+        const baseUrl = new URL(this.config.historyUrl);
+        const queueUrl = new URL('/rawatjalan/poliklinik', `${baseUrl.protocol}//${baseUrl.host}`);
+
+        queueUrl.searchParams.set('poli_id', options.poliId || '1');
+        queueUrl.searchParams.set('group_id', options.groupId || '0');
+        queueUrl.searchParams.set('show_id', options.showId || '0');
+        queueUrl.searchParams.set('by_dokter', options.byDokter || '0');
+
+        return queueUrl.toString();
+    }
+
+    _parsePolyclinicQueue(html, meta = {}) {
+        const text = this._htmlToText(html);
+
+        const extractStat = (label) => {
+            const regex = new RegExp(`${label}\\s+(\\d+)`, 'i');
+            const match = text.match(regex);
+            return match ? parseInt(match[1], 10) : 0;
+        };
+
+        const total = extractStat('TOTAL ANTRIAN');
+        const waiting = extractStat('BELUM DILAYANI');
+        const serving = extractStat('DILAYANI');
+
+        const itemRegex = /(DAF-[A-Z]-\d+)[\s\S]*?NO\.RM:\s*([^\n]+)[\s\S]*?(LAKI-LAKI|PEREMPUAN)\s*,\s*(\d+)[\s\S]*?\n([^\n]+?)(?:\nTunai|\nBPJS|\nAsuransi|\nWaktu Pendaftaran)[\s\S]*?Waktu Pendaftaran\s+([^\n]+)[\s\S]*?(?=(?:DAF-[A-Z]-\d+)|$)/gi;
+
+        const items = [];
+        let match;
+        while ((match = itemRegex.exec(text)) !== null) {
+            const queueNumber = (match[1] || '').trim();
+            const recordNo = (match[2] || '').trim();
+            const gender = (match[3] || '').trim();
+            const age = parseInt(match[4], 10);
+            const trailingText = match[0];
+
+            const lines = trailingText
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean);
+
+            const patientName = lines[1] || '-';
+            const doctorLine = (match[5] || '').trim();
+            const registeredAt = (match[6] || '').trim();
+            const hasCppt = /\bCPPT\b/i.test(trailingText);
+            const paymentStatus = /Belum Lunas/i.test(trailingText)
+                ? 'Belum Lunas'
+                : (/Lunas/i.test(trailingText) ? 'Lunas' : '-');
+
+            items.push({
+                queueNumber,
+                patientName,
+                medicalRecordNo: recordNo,
+                gender,
+                age: Number.isFinite(age) ? age : null,
+                doctorName: doctorLine,
+                registeredAt,
+                paymentStatus,
+                hasCppt
+            });
+        }
+
+        return {
+            source: this.source,
+            queueUrl: meta.queueUrl || '',
+            clinicLabel: meta.clinicLabel || 'Poliklinik',
+            doctorFilter: meta.doctorFilter || 'Semua Dokter',
+            stats: {
+                waiting,
+                serving,
+                total
+            },
+            items
+        };
+    }
+
+    /**
      * Try to fetch patient data via DataTables AJAX endpoint
      */
     async _tryDataTablesAjax(dateFrom, dateTo) {

@@ -610,6 +610,22 @@ async function loadHospitalAppointments(location) {
 
     try {
         const token = getAuthToken();
+        if (location === 'rsia_melinda') {
+            const liveResponse = await fetch(`/api/appointments/hospital/${location}/live-queue`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!liveResponse.ok) throw new Error('Gagal memuat antrian live Medify');
+
+            const liveData = await liveResponse.json();
+            if (!liveData.success || !liveData.queue) {
+                throw new Error(liveData.message || 'Data antrian Melinda tidak tersedia');
+            }
+
+            renderMelindaLiveQueue(liveData.queue, hospitalName, hospitalColor);
+            return;
+        }
+
         const response = await fetch(`/api/appointments/hospital/${location}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -627,6 +643,95 @@ async function loadHospitalAppointments(location) {
             </div>
         `;
     }
+}
+
+function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
+    const container = document.getElementById('hospital-appointments-container');
+    if (!container) return;
+
+    const items = Array.isArray(queueData.items) ? queueData.items : [];
+    const stats = queueData.stats || { waiting: items.length, serving: 0, total: items.length };
+    const today = new Date();
+    const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    if (!items.length) {
+        container.innerHTML = `
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: ${hospitalColor}; color: white;">
+                    <div>
+                        <h3 class="card-title mb-1"><i class="fas fa-hospital-user mr-2"></i>Antrian Live Medify</h3>
+                        <div class="text-white-50 small">${dateLabel} • ${escapeHtml(queueData.clinicLabel || 'Poli Obgyn')}</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('rsia_melinda')">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                    <p class="mb-0">Belum ada antrian live di ${hospitalName}</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const rows = items.map((item) => `
+        <tr>
+            <td class="text-center">
+                <span class="badge badge-primary">${escapeHtml(item.queueNumber || '-')}</span>
+            </td>
+            <td>
+                <div class="font-weight-bold">${escapeHtml(item.patientName || '-')}</div>
+                <div class="small text-muted">No. RM: ${escapeHtml(item.medicalRecordNo || '-')}</div>
+            </td>
+            <td>${item.age ?? '-'}</td>
+            <td>${escapeHtml(item.gender || '-')}</td>
+            <td>${escapeHtml(item.doctorName || '-')}</td>
+            <td>${escapeHtml(item.registeredAt || '-')}</td>
+            <td>
+                ${item.hasCppt
+                    ? '<span class="badge badge-success">CPPT</span>'
+                    : '<span class="badge badge-secondary">Belum CPPT</span>'}
+            </td>
+        </tr>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: ${hospitalColor}; color: white;">
+                <div>
+                    <h3 class="card-title mb-1"><i class="fas fa-hospital-user mr-2"></i>Antrian Live Medify</h3>
+                    <div class="text-white-50 small">${dateLabel} • ${escapeHtml(queueData.clinicLabel || 'Poli Obgyn')} • ${escapeHtml(queueData.doctorFilter || 'Semua Dokter')}</div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge badge-light mr-2">Belum Dilayani: ${stats.waiting || 0}</span>
+                    <span class="badge badge-light mr-2">Dilayani: ${stats.serving || 0}</span>
+                    <span class="badge badge-warning mr-3">Total: ${stats.total || items.length}</span>
+                    <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('rsia_melinda')">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width: 10%;" class="text-center">Antrian</th>
+                                <th style="width: 24%;">Nama Pasien</th>
+                                <th style="width: 8%;">Usia</th>
+                                <th style="width: 10%;">Gender</th>
+                                <th style="width: 24%;">Dokter</th>
+                                <th style="width: 16%;">Waktu Daftar</th>
+                                <th style="width: 8%;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalColor) {
