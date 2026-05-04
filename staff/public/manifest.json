@@ -1,7 +1,7 @@
 {
   "name": "Dokter Dibya Staff",
   "short_name": "Staff Panel",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Aplikasi manajemen klinik Dokter Dibya untuk staff",
   "start_url": "/staff/public/index-adminlte.html?mobile=1",
   "display": "standalone",
@@ -11,49 +11,49 @@
   "scope": "/staff/",
   "icons": [
     {
-      "src": "icons/icon-72x72.png?v=v82",
+      "src": "icons/icon-72x72.png?v=v83",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-96x96.png?v=v82",
+      "src": "icons/icon-96x96.png?v=v83",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-128x128.png?v=v82",
+      "src": "icons/icon-128x128.png?v=v83",
       "sizes": "128x128",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-144x144.png?v=v82",
+      "src": "icons/icon-144x144.png?v=v83",
       "sizes": "144x144",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-152x152.png?v=v82",
+      "src": "icons/icon-152x152.png?v=v83",
       "sizes": "152x152",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-192x192.png?v=v82",
+      "src": "icons/icon-192x192.png?v=v83",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-384x384.png?v=v82",
+      "src": "icons/icon-384x384.png?v=v83",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "icons/icon-512x512.png?v=v82",
+      "src": "icons/icon-512x512.png?v=v83",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
