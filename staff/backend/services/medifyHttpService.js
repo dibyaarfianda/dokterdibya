@@ -384,6 +384,11 @@ class MedifyHttpSession {
 
     _parsePolyclinicQueue(html, meta = {}) {
         const text = this._htmlToText(html);
+        const medIdByQueueNumber = new Map();
+
+        for (const match of html.matchAll(/<h5[^>]*>\s*(DAF-[A-Z]-\d+)\s*<\/h5>[\s\S]*?data-nomor_kasus="([^"]+)"/gi)) {
+            medIdByQueueNumber.set((match[1] || '').trim(), (match[2] || '').trim());
+        }
 
         const lines = text
             .split('\n')
@@ -436,6 +441,7 @@ class MedifyHttpSession {
 
             return {
                 queueNumber,
+                medId: medIdByQueueNumber.get(queueNumber) || null,
                 patientName,
                 medicalRecordNo,
                 gender: genderAgeMatch ? genderAgeMatch[1] : '-',
