@@ -39,6 +39,15 @@ const medifyLiveQueueCache = {
 };
 let patientsHasNikColumn = null;
 
+async function ensurePatientsHasNikColumn() {
+    if (patientsHasNikColumn === null) {
+        const [columns] = await pool.query(`SHOW COLUMNS FROM patients LIKE 'nik'`);
+        patientsHasNikColumn = Array.isArray(columns) && columns.length > 0;
+    }
+
+    return patientsHasNikColumn;
+}
+
 function getMedifyLocationConfig(location) {
     return MEDIFY_LOCATION_CONFIG[location] || null;
 }
@@ -147,10 +156,7 @@ function buildPatientByNikMap(patients) {
 }
 
 async function getMelindaResolverPatients() {
-    if (patientsHasNikColumn === null) {
-        const [columns] = await pool.query(`SHOW COLUMNS FROM patients LIKE 'nik'`);
-        patientsHasNikColumn = Array.isArray(columns) && columns.length > 0;
-    }
+    await ensurePatientsHasNikColumn();
 
     const nikSelect = patientsHasNikColumn ? 'nik' : 'NULL AS nik';
     const [patients] = await pool.query(`
@@ -191,8 +197,11 @@ async function createMelindaPlaceholderPatient(queueItem) {
     }
 
     const patientAge = Number.isFinite(Number(queueItem?.age)) ? Number(queueItem.age) : null;
+    const patientNik = normalizeNik(queueItem?.identityNik);
     const maxRetries = 3;
     let lastError = null;
+
+    await ensurePatientsHasNikColumn();
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         const connection = await pool.getConnection();
@@ -201,11 +210,19 @@ async function createMelindaPlaceholderPatient(queueItem) {
             await connection.beginTransaction();
 
             const patientId = await generateMelindaPlaceholderPatientId(connection);
-            await connection.query(
-                `INSERT INTO patients (id, full_name, age, patient_type)
-                 VALUES (?, ?, ?, ?)`,
-                [patientId, patientName, patientAge, 'walk-in']
-            );
+            if (patientsHasNikColumn) {
+                await connection.query(
+                    `INSERT INTO patients (id, full_name, age, patient_type, nik)
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [patientId, patientName, patientAge, 'walk-in', patientNik || null]
+                );
+            } else {
+                await connection.query(
+                    `INSERT INTO patients (id, full_name, age, patient_type)
+                     VALUES (?, ?, ?, ?)`,
+                    [patientId, patientName, patientAge, 'walk-in']
+                );
+            }
 
             await connection.commit();
             connection.release();
@@ -214,6 +231,7 @@ async function createMelindaPlaceholderPatient(queueItem) {
                 id: patientId,
                 full_name: patientName,
                 age: patientAge,
+                nik: patientNik || null,
                 patient_type: 'walk-in'
             };
         } catch (error) {
@@ -365,8 +383,8 @@ async function resolveMedifyQueuePatient(location, queueItem, options = {}) {
     try {
         await session.login();
 
-        let identityNik = null;
-        if (queueItem.medId) {
+        let identityNik = normalizeNik(queueItem.identityNik);
+        if (!identityNik && queueItem.medId) {
             try {
                 const identity = await session.extractPatientIdentity(queueItem.medId);
                 identityNik = normalizeNik(identity.no_identitas);
@@ -514,6 +532,7 @@ async function runMedifyQueueRobot(location, options = {}) {
     for (const item of items) {
         const resolution = await resolveMedifyQueuePatient(location, {
             medId: item.medId || null,
+            identityNik: item.identityNik || null,
             patientName: item.patientName || '',
             age: Number.isFinite(item.age) ? item.age : null,
             medicalRecordNo: item.medicalRecordNo || null
@@ -723,7 +742,7 @@ router.post('/hospital/:location/run-robot', verifyToken, requirePermission('boo
 router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const { location } = req.params;
-        const { medId, patientName, age, medicalRecordNo, autoCreatePatient } = req.body || {};
+        const { medId, identityNik, patientName, age, medicalRecordNo, autoCreatePatient } = req.body || {};
         const locationConfig = getMedifyLocationConfig(location);
 
         if (!locationConfig) {
@@ -742,6 +761,7 @@ router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePer
 
         const resolution = await resolveMedifyQueuePatient(location, {
             medId: medId || null,
+            identityNik: identityNik || null,
             patientName: patientName || '',
             age: Number.isFinite(Number(age)) ? Number(age) : null,
             medicalRecordNo: medicalRecordNo || null

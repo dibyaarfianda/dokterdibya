@@ -454,6 +454,8 @@ class MedifyHttpSession {
             return {
                 queueNumber,
                 medId: medIdByQueueNumber.get(queueNumber) || null,
+                identityNik: supplemental.identityNik || null,
+                birthDate: supplemental.birthDate || null,
                 patientName,
                 medicalRecordNo,
                 gender: genderAgeMatch ? genderAgeMatch[1] : (supplemental.gender || '-'),
@@ -509,6 +511,8 @@ class MedifyHttpSession {
 
                 queueSupplemental.set(queueNumber, {
                     medId: typeof kasus.nomor_kasus === 'string' ? kasus.nomor_kasus.trim() : null,
+                    identityNik: String(patientDetail.no_identitas || '').replace(/\D/g, '').trim() || null,
+                    birthDate: patientDetail.date_of_birth || null,
                     gender: patientDetail.jenis_kelamin || this._normalizePatientGender(patientDetail.gender),
                     age: Number.isFinite(patientDetail.age)
                         ? patientDetail.age

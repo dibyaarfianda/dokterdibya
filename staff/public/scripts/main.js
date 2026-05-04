@@ -685,6 +685,7 @@ function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location)
 
     const rows = items.map((item) => {
         const safeMedId = String(item.medId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeIdentityNik = String(item.identityNik || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safePatientName = String(item.patientName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeMedicalRecordNo = String(item.medicalRecordNo || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const ageArg = Number.isFinite(item.age) ? item.age : 'null';
@@ -692,7 +693,7 @@ function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location)
                 <button type="button"
                         class="btn btn-sm ${item.medId ? 'btn-primary' : 'btn-outline-primary'}"
                         title="${item.medId ? 'Proses DRD dan auto-create pasien lokal bila belum ada' : 'Proses DRD dengan fallback nama/usia dan auto-create pasien lokal'}"
-                        onclick="openMedifyQueueRecord(this, '${location}', '${safeMedId}', '${safePatientName}', ${ageArg}, '${safeMedicalRecordNo}')">
+                        onclick="openMedifyQueueRecord(this, '${location}', '${safeMedId}', '${safePatientName}', ${ageArg}, '${safeMedicalRecordNo}', '${safeIdentityNik}')">
                     <i class="fas ${item.medId ? 'fa-file-medical' : 'fa-user-check'} mr-1"></i>Proses DRD
                 </button>
             `;
@@ -782,7 +783,7 @@ async function openHospitalRecordByMrId(patientId, patientName, location, mrId) 
     window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
 }
 
-async function openMedifyQueueRecord(button, location, medId, patientName, age = null, medicalRecordNo = '') {
+async function openMedifyQueueRecord(button, location, medId, patientName, age = null, medicalRecordNo = '', identityNik = '') {
     const token = getAuthToken();
     if (!token) {
         alert('Sesi login berakhir. Silakan login ulang.');
@@ -805,6 +806,7 @@ async function openMedifyQueueRecord(button, location, medId, patientName, age =
             },
             body: JSON.stringify({
                 medId,
+                identityNik,
                 patientName,
                 age,
                 medicalRecordNo,

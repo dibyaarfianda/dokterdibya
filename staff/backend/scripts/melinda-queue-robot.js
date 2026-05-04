@@ -169,6 +169,7 @@ async function resolveQueueItem(apiBase, token, location, item) {
         'POST',
         {
             medId: item.medId || null,
+            identityNik: item.identityNik || null,
             patientName: item.patientName || '',
             age: Number.isFinite(item.age) ? item.age : null,
             medicalRecordNo: item.medicalRecordNo || null,
