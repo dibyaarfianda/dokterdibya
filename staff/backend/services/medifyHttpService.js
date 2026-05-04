@@ -365,7 +365,8 @@ class MedifyHttpSession {
         return this._parsePolyclinicQueue(response.body, {
             queueUrl,
             doctorFilter: options.doctorFilter || 'Semua Dokter',
-            clinicLabel: options.clinicLabel || 'Poli Obgyn'
+            clinicLabel: options.clinicLabel || 'Poli Obgyn',
+            onlyToday: options.onlyToday !== false
         });
     }
 
@@ -408,7 +409,7 @@ class MedifyHttpSession {
             .split(/(?=DAF-[A-Z]-\d+)/g)
             .filter(block => /^DAF-[A-Z]-\d+/i.test(block.trim()));
 
-        const items = queueBlocks.map((block) => {
+        let items = queueBlocks.map((block) => {
             const blockLines = block
                 .split('\n')
                 .map(line => line.trim())
@@ -419,8 +420,11 @@ class MedifyHttpSession {
             const medicalRecordLine = blockLines.find(line => /^NO\.RM:/i.test(line)) || '';
             const medicalRecordNo = medicalRecordLine.replace(/^NO\.RM:\s*/i, '').trim();
 
-            const genderAgeLine = blockLines.find(line => /^(LAKI-LAKI|PEREMPUAN)\b/i.test(line)) || '';
-            const genderAgeMatch = genderAgeLine.match(/^(LAKI-LAKI|PEREMPUAN)\s*,\s*(\d+)/i);
+            const genderAgeIndex = blockLines.findIndex(line => /^(LAKI-LAKI|PEREMPUAN)\b/i.test(line));
+            const genderAgeLine = genderAgeIndex >= 0
+                ? `${blockLines[genderAgeIndex]} ${blockLines[genderAgeIndex + 1] || ''}`.trim()
+                : '';
+            const genderAgeMatch = genderAgeLine.match(/(LAKI-LAKI|PEREMPUAN)\s*,?\s*(\d+)?/i);
 
             const doctorName = blockLines.find(line => /^DR\./i.test(line) || /^dr\./i.test(line)) || '-';
             const registeredAtIndex = blockLines.findIndex(line => /WAKTU PENDAFTARAN/i.test(line));
@@ -443,18 +447,36 @@ class MedifyHttpSession {
             };
         }).filter(item => item.queueNumber && item.patientName);
 
+        if (meta.onlyToday) {
+            const todayPrefix = this._getMedifyTodayPrefix();
+            items = items.filter(item => item.registeredAt.startsWith(todayPrefix));
+        }
+
+        const normalizedServing = Number.isFinite(serving) ? serving : 0;
+        const normalizedWaiting = items.length;
+        const normalizedTotal = normalizedWaiting + normalizedServing;
+
         return {
             source: this.source,
             queueUrl: meta.queueUrl || '',
             clinicLabel: meta.clinicLabel || 'Poliklinik',
             doctorFilter: meta.doctorFilter || 'Semua Dokter',
             stats: {
-                waiting,
-                serving,
-                total
+                waiting: normalizedWaiting,
+                serving: normalizedServing,
+                total: normalizedTotal
             },
             items
         };
+    }
+
+    _getMedifyTodayPrefix() {
+        const date = new Date();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = months[date.getMonth()];
+        const year = String(date.getFullYear()).slice(-2);
+        return `${day} ${month} ${year}`;
     }
 
     /**
