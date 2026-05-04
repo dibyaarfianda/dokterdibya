@@ -295,6 +295,7 @@ class PatientHistorySidebar {
             const isActive = apt.mr_id === this.currentMrId || apt.patient_id === this.currentPatientId;
             const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 30) + (apt.chief_complaint.length > 30 ? '...' : '') : '-';
             const selesaiClass = apt.record_status === 'finalized' ? 'patient-selesai' : '';
+            const medifySyncBadge = this.renderMedifySyncBadge(apt.medify_sync);
 
             return `
                 <div class="header-queue-item ${isActive ? 'active' : ''}"
@@ -306,6 +307,7 @@ class PatientHistorySidebar {
                     <div class="queue-info">
                         <div class="queue-name ${selesaiClass}">${this.escapeHtml(apt.patient_name)}</div>
                         <div class="queue-meta">${apt.slot_time || apt.session_label} • ${chiefComplaint}</div>
+                        ${medifySyncBadge ? `<div class="mt-1">${medifySyncBadge}</div>` : ''}
                     </div>
                     <div class="queue-status">
                         ${apt.has_record ? '<i class="fas fa-check-circle text-success" title="Sudah ada rekam medis"></i>' : '<i class="far fa-circle text-muted" title="Belum diisi"></i>'}
@@ -313,6 +315,50 @@ class PatientHistorySidebar {
                 </div>
             `;
         }).join('');
+    }
+
+    renderMedifySyncBadge(syncInfo) {
+        if (!syncInfo || !syncInfo.status) {
+            return '';
+        }
+
+        const config = {
+            pending: {
+                icon: 'fa-sync-alt',
+                badgeClass: 'badge-warning',
+                label: syncInfo.label || 'Sync pending'
+            },
+            failed: {
+                icon: 'fa-exclamation-circle',
+                badgeClass: 'badge-danger',
+                label: syncInfo.label || 'Sync gagal'
+            },
+            completed: {
+                icon: 'fa-cloud-upload-alt',
+                badgeClass: 'badge-success',
+                label: syncInfo.label || 'Sync selesai'
+            },
+            skipped: {
+                icon: 'fa-minus-circle',
+                badgeClass: 'badge-secondary',
+                label: syncInfo.label || 'Sync dilewati'
+            }
+        };
+
+        const selected = config[syncInfo.status];
+        if (!selected) {
+            return '';
+        }
+
+        const titleText = syncInfo.updated_at
+            ? `${selected.label} • ${new Date(syncInfo.updated_at).toLocaleString('id-ID')}`
+            : selected.label;
+
+        return `
+            <span class="badge ${selected.badgeClass}" title="${this.escapeHtml(titleText)}">
+                <i class="fas ${selected.icon} mr-1"></i>${this.escapeHtml(selected.label)}
+            </span>
+        `;
     }
 
     /**
