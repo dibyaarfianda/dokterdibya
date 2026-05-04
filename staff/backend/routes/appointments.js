@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
-const { createSession, countMatchingFactors } = require('../services/medifyHttpService');
+const { createSession, countMatchingFactors, pLimit } = require('../services/medifyHttpService');
 
 const MELINDA_LIVE_QUEUE_CACHE_TTL_MS = 30000;
 const melindaLiveQueueCache = {
@@ -19,6 +19,10 @@ function normalizePatientName(name) {
         .replace(/[.,]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function normalizeNik(nik) {
+    return String(nik || '').replace(/\D/g, '').trim();
 }
 
 function formatUtcYmd(date) {
@@ -90,20 +94,77 @@ function resolveLocalPatient(queueItem, patients) {
     return bestMatches[0].patient;
 }
 
-async function enrichMelindaQueueItems(items, location) {
+function buildPatientByNikMap(patients) {
+    const patientByNik = new Map();
+
+    for (const patient of patients) {
+        const normalizedNik = normalizeNik(patient.nik);
+        if (!normalizedNik) {
+            continue;
+        }
+
+        if (!patientByNik.has(normalizedNik)) {
+            patientByNik.set(normalizedNik, patient);
+            continue;
+        }
+
+        patientByNik.set(normalizedNik, null);
+    }
+
+    return patientByNik;
+}
+
+async function enrichMelindaQueueItems(items, location, session) {
     if (!Array.isArray(items) || !items.length) {
         return [];
     }
 
     const [patients] = await pool.query(`
-        SELECT id, full_name, birth_date, age, whatsapp, phone
+        SELECT id, full_name, birth_date, age, whatsapp, phone, nik
         FROM patients
         WHERE full_name IS NOT NULL
     `);
 
+    const patientByNik = buildPatientByNikMap(patients);
+    const limit = pLimit(4);
+    const itemsWithIdentity = await Promise.all(items.map((item) => limit(async () => {
+        if (!item.medId) {
+            return {
+                ...item,
+                identityNik: null,
+                matchedBy: null
+            };
+        }
+
+        try {
+            const identity = await session.extractPatientIdentity(item.medId);
+            return {
+                ...item,
+                identityNik: normalizeNik(identity.no_identitas),
+                matchedBy: null
+            };
+        } catch (error) {
+            return {
+                ...item,
+                identityNik: null,
+                matchedBy: null
+            };
+        }
+    })));
+
     const matchedPatientIds = new Set();
-    const matchedItems = items.map((item) => {
-        const patient = resolveLocalPatient(item, patients);
+    const matchedItems = itemsWithIdentity.map((item) => {
+        let patient = null;
+        let matchedBy = null;
+
+        if (item.identityNik) {
+            patient = patientByNik.get(item.identityNik) || null;
+            matchedBy = patient ? 'nik' : null;
+        } else {
+            patient = resolveLocalPatient(item, patients);
+            matchedBy = patient ? 'name_age' : null;
+        }
+
         if (patient?.id) {
             matchedPatientIds.add(patient.id);
         }
@@ -111,6 +172,7 @@ async function enrichMelindaQueueItems(items, location) {
         return {
             ...item,
             patientId: patient?.id || null,
+            matchedBy,
             existingMrId: null,
             existingRecordStatus: null,
             canStartExam: Boolean(patient?.id)
@@ -283,7 +345,7 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
                 doctorFilter: 'Semua Dokter'
             });
 
-            const enrichedItems = await enrichMelindaQueueItems(queueData.items, location);
+            const enrichedItems = await enrichMelindaQueueItems(queueData.items, location, session);
 
             const payload = {
                 success: true,
