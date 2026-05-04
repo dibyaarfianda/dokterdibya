@@ -10,6 +10,7 @@ const melindaLiveQueueCache = {
     payload: null,
     expiresAt: 0
 };
+let patientsHasNikColumn = null;
 
 function normalizePatientName(name) {
     if (!name) return '';
@@ -114,12 +115,133 @@ function buildPatientByNikMap(patients) {
     return patientByNik;
 }
 
-async function resolveMelindaQueuePatient(queueItem) {
+async function getMelindaResolverPatients() {
+    if (patientsHasNikColumn === null) {
+        const [columns] = await pool.query(`SHOW COLUMNS FROM patients LIKE 'nik'`);
+        patientsHasNikColumn = Array.isArray(columns) && columns.length > 0;
+    }
+
+    const nikSelect = patientsHasNikColumn ? 'nik' : 'NULL AS nik';
     const [patients] = await pool.query(`
-        SELECT id, full_name, birth_date, age, whatsapp, phone, nik
+        SELECT id, full_name, birth_date, age, whatsapp, phone, ${nikSelect}
         FROM patients
         WHERE full_name IS NOT NULL
     `);
+
+    return patients;
+}
+
+async function cacheMelindaCpptForPrefill({ patient, queueItem, createdBy, session }) {
+    if (!patient?.id || !queueItem?.medId) {
+        return {
+            status: 'unavailable',
+            reason: 'missing_med_id'
+        };
+    }
+
+    const [existingRows] = await pool.query(
+        `SELECT id, status, cppt_data
+         FROM medify_import_jobs
+         WHERE patient_id = ?
+           AND simrs_source = 'rsia_melinda'
+           AND simrs_med_id = ?
+         ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
+         LIMIT 1`,
+        [patient.id, queueItem.medId]
+    );
+
+    const existingJob = existingRows[0] || null;
+    if (existingJob?.status === 'success' && existingJob?.cppt_data) {
+        return {
+            status: 'existing',
+            reason: null
+        };
+    }
+
+    try {
+        const cpptResult = await session.extractCPPT(queueItem.medId);
+        const jobStatus = cpptResult?.skipReason ? 'skipped' : 'success';
+        const errorMessage = cpptResult?.skipReason || null;
+        const cpptPayload = cpptResult?.skipReason ? null : JSON.stringify(cpptResult);
+
+        if (existingJob?.id) {
+            await pool.query(
+                `UPDATE medify_import_jobs
+                 SET patient_name = ?,
+                     patient_age = ?,
+                     status = ?,
+                     cppt_data = ?,
+                     error_message = ?,
+                     completed_at = NOW()
+                 WHERE id = ?`,
+                [
+                    patient.full_name,
+                    patient.age || queueItem.age || null,
+                    jobStatus,
+                    cpptPayload,
+                    errorMessage,
+                    existingJob.id
+                ]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO medify_import_jobs
+                 (batch_id, patient_id, patient_name, patient_age, simrs_source, status, created_by, simrs_med_id, cppt_data, error_message, completed_at)
+                 VALUES (?, ?, ?, ?, 'rsia_melinda', ?, ?, ?, ?, ?, NOW())`,
+                [
+                    `melinda-open-${patient.id}-${Date.now()}`,
+                    patient.id,
+                    patient.full_name,
+                    patient.age || queueItem.age || null,
+                    jobStatus,
+                    createdBy || null,
+                    queueItem.medId,
+                    cpptPayload,
+                    errorMessage
+                ]
+            );
+        }
+
+        return {
+            status: jobStatus,
+            reason: errorMessage
+        };
+    } catch (error) {
+        if (existingJob?.id) {
+            await pool.query(
+                `UPDATE medify_import_jobs
+                 SET status = 'failed',
+                     error_message = ?,
+                     completed_at = NOW()
+                 WHERE id = ?`,
+                [error.message, existingJob.id]
+            );
+        } else {
+            await pool.query(
+                `INSERT INTO medify_import_jobs
+                 (batch_id, patient_id, patient_name, patient_age, simrs_source, status, created_by, simrs_med_id, error_message, completed_at)
+                 VALUES (?, ?, ?, ?, 'rsia_melinda', 'failed', ?, ?, ?, NOW())`,
+                [
+                    `melinda-open-${patient.id}-${Date.now()}`,
+                    patient.id,
+                    patient.full_name,
+                    patient.age || queueItem.age || null,
+                    createdBy || null,
+                    queueItem.medId,
+                    error.message
+                ]
+            );
+        }
+
+        return {
+            status: 'failed',
+            reason: error.message
+        };
+    }
+}
+
+async function resolveMelindaQueuePatient(queueItem, options = {}) {
+    const patients = await getMelindaResolverPatients();
 
     const patientByNik = buildPatientByNikMap(patients);
     const session = createSession('rsia_melinda');
@@ -164,6 +286,13 @@ async function resolveMelindaQueuePatient(queueItem) {
             };
         }
 
+        const prefillSync = await cacheMelindaCpptForPrefill({
+            patient,
+            queueItem,
+            createdBy: options.createdBy || null,
+            session
+        });
+
         const { startDateTime, endDateTime } = getGmt7DayWindow();
         const [recordRows] = await pool.query(
             `SELECT patient_id, mr_id, status
@@ -184,7 +313,9 @@ async function resolveMelindaQueuePatient(queueItem) {
             patientName: patient.full_name,
             existingMrId: recordRows[0]?.mr_id || null,
             existingRecordStatus: recordRows[0]?.status || null,
-            identityNik
+            identityNik,
+            prefillStatus: prefillSync.status,
+            prefillReason: prefillSync.reason || null
         };
     } finally {
         await session.close();
@@ -316,7 +447,8 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
                 showId: '0',
                 byDokter: '0',
                 clinicLabel: 'Poli Obgyn',
-                doctorFilter: 'Semua Dokter'
+                doctorFilter: 'Semua Dokter',
+                onlyToday: false
             });
 
             const payload = {
@@ -366,6 +498,8 @@ router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePer
             medId: medId || null,
             patientName: patientName || '',
             age: Number.isFinite(Number(age)) ? Number(age) : null
+        }, {
+            createdBy: req.user?.id || null
         });
 
         if (!resolution.success) {
