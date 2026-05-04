@@ -1503,7 +1503,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v80'; // Mobile mode detection: standalone/webview + persistent storage fallback
+            const CACHE_VERSION = 'v81'; // Mobile mode detection: standalone/webview + persistent storage fallback
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -1812,6 +1812,18 @@
                             <p>
                                 Janji Temu
                                 <span class="badge badge-warning right d-none" id="badge-rsia-melinda">0</span>
+                            </p>
+                        </a>
+                    </li>
+
+                    <!-- RSUD GAMBIRAN -->
+                    <li class="nav-header">RSUD GAMBIRAN</li>
+                    <li class="nav-item" id="nav-rsud-gambiran">
+                        <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); markBadgeRead('rsud_gambiran'); return false;">
+                            <i class="nav-icon fas fa-calendar-check" style="color: #2196f3;"></i>
+                            <p>
+                                Janji Temu
+                                <span class="badge badge-warning right d-none" id="badge-rsud-gambiran">0</span>
                             </p>
                         </a>
                     </li>
