@@ -13558,15 +13558,18 @@ window.isNativePlatform = function() {
 // Service Worker registration - WEB ONLY (skip on native)
 if ('serviceWorker' in navigator && !window.isNativePlatform()) {
     window.addEventListener('load', () => {
+        const pwaVersion = encodeURIComponent(window.__assetVersion || 'v1');
+
         // Unregister any old root SW that might interfere with staff panel
         navigator.serviceWorker.getRegistrations().then(registrations => {
             registrations.forEach(reg => {
-                if (reg.scope === location.origin + '/' && reg.active && reg.active.scriptURL.endsWith('/sw.js')) {
+                const activeScriptUrl = reg.active?.scriptURL ? new URL(reg.active.scriptURL) : null;
+                if (reg.scope === location.origin + '/' && activeScriptUrl && activeScriptUrl.pathname === '/sw.js') {
                     reg.unregister().then(() => console.log('[PWA] Unregistered old root SW'));
                 }
             });
         });
-        navigator.serviceWorker.register('/staff/public/sw.js')
+        navigator.serviceWorker.register('/staff/public/sw.js?v=' + pwaVersion)
             .then((registration) => {
                 console.log('[PWA] Service Worker registered:', registration.scope);
 

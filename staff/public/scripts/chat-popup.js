@@ -428,16 +428,22 @@
 
         // Ensure chat audio elements exist
         if (!document.getElementById('chat-send-sound')) {
+          const assetVersionSuffix = window.__assetVersion
+            ? `?v=${encodeURIComponent(window.__assetVersion)}`
+            : '';
             const sendAudioEl = document.createElement('audio');
             sendAudioEl.id = 'chat-send-sound';
-            sendAudioEl.src = '/staff/public/sounds/send.mp3';
+          sendAudioEl.src = `/staff/public/sounds/send.mp3${assetVersionSuffix}`;
             sendAudioEl.preload = 'auto';
             document.body.appendChild(sendAudioEl);
         }
         if (!document.getElementById('chat-incoming-sound')) {
+          const assetVersionSuffix = window.__assetVersion
+            ? `?v=${encodeURIComponent(window.__assetVersion)}`
+            : '';
             const incomingAudioEl = document.createElement('audio');
             incomingAudioEl.id = 'chat-incoming-sound';
-            incomingAudioEl.src = '/staff/public/sounds/incoming.mp3';
+          incomingAudioEl.src = `/staff/public/sounds/incoming.mp3${assetVersionSuffix}`;
             incomingAudioEl.preload = 'auto';
             document.body.appendChild(incomingAudioEl);
         }
