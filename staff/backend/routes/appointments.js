@@ -3,13 +3,157 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
-const { createSession } = require('../services/medifyHttpService');
+const { createSession, countMatchingFactors } = require('../services/medifyHttpService');
 
 const MELINDA_LIVE_QUEUE_CACHE_TTL_MS = 30000;
 const melindaLiveQueueCache = {
     payload: null,
     expiresAt: 0
 };
+
+function normalizePatientName(name) {
+    if (!name) return '';
+    return String(name)
+        .toLowerCase()
+        .replace(/^(ny\.?|tn\.?|sdr\.?|sdri\.?|dr\.?|drg\.?)\s*/i, '')
+        .replace(/[.,]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function formatUtcYmd(date) {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getGmt7DayWindow(baseDate = new Date()) {
+    const gmt7OffsetMs = 7 * 60 * 60 * 1000;
+    const gmt7Now = new Date(baseDate.getTime() + gmt7OffsetMs);
+
+    const year = gmt7Now.getUTCFullYear();
+    const monthIndex = gmt7Now.getUTCMonth();
+    const day = gmt7Now.getUTCDate();
+
+    const dayStartUtc = new Date(Date.UTC(year, monthIndex, day));
+    const dayEndUtc = new Date(dayStartUtc.getTime() + 24 * 60 * 60 * 1000);
+
+    const dateStr = formatUtcYmd(dayStartUtc);
+    const nextDateStr = formatUtcYmd(dayEndUtc);
+
+    return {
+        startDateTime: `${dateStr} 00:00:00`,
+        endDateTime: `${nextDateStr} 00:00:00`
+    };
+}
+
+function resolveLocalPatient(queueItem, patients) {
+    const queueName = normalizePatientName(queueItem.patientName);
+    if (!queueName) {
+        return null;
+    }
+
+    const candidatePatients = patients.filter((patient) => {
+        const patientName = normalizePatientName(patient.full_name);
+        if (!patientName) {
+            return false;
+        }
+
+        return patientName === queueName
+            || patientName.includes(queueName)
+            || queueName.includes(patientName);
+    });
+
+    if (!candidatePatients.length) {
+        return null;
+    }
+
+    const scoredPatients = candidatePatients.map((patient) => ({
+        patient,
+        score: countMatchingFactors({
+            name: queueItem.patientName,
+            usia: queueItem.age
+        }, patient).matchCount
+    }));
+
+    const bestScore = Math.max(...scoredPatients.map((item) => item.score));
+    if (bestScore < 2) {
+        return null;
+    }
+
+    const bestMatches = scoredPatients.filter((item) => item.score === bestScore);
+    if (bestMatches.length !== 1) {
+        return null;
+    }
+
+    return bestMatches[0].patient;
+}
+
+async function enrichMelindaQueueItems(items, location) {
+    if (!Array.isArray(items) || !items.length) {
+        return [];
+    }
+
+    const [patients] = await pool.query(`
+        SELECT id, full_name, birth_date, age, whatsapp, phone
+        FROM patients
+        WHERE full_name IS NOT NULL
+    `);
+
+    const matchedPatientIds = new Set();
+    const matchedItems = items.map((item) => {
+        const patient = resolveLocalPatient(item, patients);
+        if (patient?.id) {
+            matchedPatientIds.add(patient.id);
+        }
+
+        return {
+            ...item,
+            patientId: patient?.id || null,
+            existingMrId: null,
+            existingRecordStatus: null,
+            canStartExam: Boolean(patient?.id)
+        };
+    });
+
+    if (!matchedPatientIds.size) {
+        return matchedItems;
+    }
+
+    const { startDateTime, endDateTime } = getGmt7DayWindow();
+    const placeholders = Array.from(matchedPatientIds).map(() => '?').join(', ');
+    const [recordRows] = await pool.query(
+        `SELECT patient_id, mr_id, status
+         FROM sunday_clinic_records
+         WHERE patient_id IN (${placeholders})
+           AND visit_location = ?
+           AND created_at >= ?
+           AND created_at < ?
+         ORDER BY created_at DESC, id DESC`,
+        [...matchedPatientIds, location, startDateTime, endDateTime]
+    );
+
+    const recordByPatientId = new Map();
+    for (const row of recordRows) {
+        if (!recordByPatientId.has(row.patient_id)) {
+            recordByPatientId.set(row.patient_id, row);
+        }
+    }
+
+    return matchedItems.map((item) => {
+        if (!item.patientId) {
+            return item;
+        }
+
+        const existingRecord = recordByPatientId.get(item.patientId);
+        return {
+            ...item,
+            existingMrId: existingRecord?.mr_id || null,
+            existingRecordStatus: existingRecord?.status || null
+        };
+    });
+}
 
 // ==================== PUBLIC ROUTES ====================
 
@@ -139,11 +283,16 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
                 doctorFilter: 'Semua Dokter'
             });
 
+            const enrichedItems = await enrichMelindaQueueItems(queueData.items, location);
+
             const payload = {
                 success: true,
                 source: 'medify_live',
                 location,
-                queue: queueData
+                queue: {
+                    ...queueData,
+                    items: enrichedItems
+                }
             };
 
             melindaLiveQueueCache.payload = payload;

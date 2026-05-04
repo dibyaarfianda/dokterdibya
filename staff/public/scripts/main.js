@@ -675,7 +675,27 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
         return;
     }
 
-    const rows = items.map((item) => `
+    const rows = items.map((item) => {
+        const safePatientName = String(item.patientName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const safeExistingMrId = String(item.existingMrId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const actionHtml = item.canStartExam
+            ? `
+                <button type="button"
+                        class="btn btn-sm ${item.existingMrId ? 'btn-primary' : 'btn-success'}"
+                        onclick="openMelindaQueueRecord('${item.patientId}', '${safePatientName}', '${safeExistingMrId}')">
+                    <i class="fas ${item.existingMrId ? 'fa-folder-open' : 'fa-plus-circle'} mr-1"></i>${item.existingMrId ? 'Buka DRD' : 'Buat DRD'}
+                </button>
+            `
+            : `
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        disabled
+                        title="Pasien ini belum berhasil dicocokkan ke database pasien lokal">
+                    <i class="fas fa-ban mr-1"></i>Belum Match
+                </button>
+            `;
+
+        return `
         <tr>
             <td class="text-center">
                 <span class="badge badge-primary">${escapeHtml(item.queueNumber || '-')}</span>
@@ -683,6 +703,7 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
             <td>
                 <div class="font-weight-bold">${escapeHtml(item.patientName || '-')}</div>
                 <div class="small text-muted">No. RM: ${escapeHtml(item.medicalRecordNo || '-')}</div>
+                ${item.existingMrId ? `<div class="small text-success mt-1"><i class="fas fa-file-medical mr-1"></i>${escapeHtml(item.existingMrId)}</div>` : ''}
             </td>
             <td>${item.age ?? '-'}</td>
             <td>${escapeHtml(item.gender || '-')}</td>
@@ -693,8 +714,10 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
                     ? '<span class="badge badge-success">CPPT</span>'
                     : '<span class="badge badge-secondary">Belum CPPT</span>'}
             </td>
+            <td class="text-center">${actionHtml}</td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 
     container.innerHTML = `
         <div class="card">
@@ -718,12 +741,13 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
                         <thead class="thead-light">
                             <tr>
                                 <th style="width: 10%;" class="text-center">Antrian</th>
-                                <th style="width: 24%;">Nama Pasien</th>
+                                <th style="width: 22%;">Nama Pasien</th>
                                 <th style="width: 8%;">Usia</th>
                                 <th style="width: 10%;">Gender</th>
-                                <th style="width: 24%;">Dokter</th>
-                                <th style="width: 16%;">Waktu Daftar</th>
+                                <th style="width: 20%;">Dokter</th>
+                                <th style="width: 14%;">Waktu Daftar</th>
                                 <th style="width: 8%;">Status</th>
+                                <th style="width: 8%;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
@@ -732,6 +756,40 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
             </div>
         </div>
     `;
+}
+
+async function openHospitalRecordByMrId(patientId, patientName, location, mrId) {
+    try {
+        const { updateSessionPatient } = await import('./session-manager.js');
+        updateSessionPatient({
+            id: patientId,
+            patientId,
+            name: patientName,
+            sundayClinic: {
+                mrId,
+                location
+            }
+        });
+    } catch (sessionError) {
+        console.warn('Unable to update session:', sessionError);
+    }
+
+    const mrSlug = String(mrId).toLowerCase();
+    window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
+}
+
+async function openMelindaQueueRecord(patientId, patientName, existingMrId = '') {
+    if (!patientId) {
+        alert('Pasien ini belum berhasil dicocokkan ke database pasien lokal.');
+        return;
+    }
+
+    if (existingMrId) {
+        await openHospitalRecordByMrId(patientId, patientName, 'rsia_melinda', existingMrId);
+        return;
+    }
+
+    startHospitalExam(null, patientId, patientName);
 }
 
 function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalColor) {
@@ -989,8 +1047,7 @@ async function _startHospitalRecord(patientId, patientName, location, category) 
         }
 
         // 4. Redirect to Sunday Clinic page
-        const mrSlug = String(mrId).toLowerCase();
-        window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
+        await openHospitalRecordByMrId(patientId, patientName, location, mrId);
 
     } catch (error) {
         console.error('[HospitalExam] Error:', error);
@@ -5516,6 +5573,7 @@ window.confirmHospitalAppointment = confirmHospitalAppointment;
 window.completeHospitalAppointment = completeHospitalAppointment;
 window.cancelHospitalAppointment = cancelHospitalAppointment;
 window.startHospitalExam = startHospitalExam;
+window.openMelindaQueueRecord = openMelindaQueueRecord;
 
 // Utility functions used by external modules (tanya-dokter.js, etc)
 window.hideAllPages = hideAllPages;
