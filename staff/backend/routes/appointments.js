@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
-const { createSession, countMatchingFactors, pLimit } = require('../services/medifyHttpService');
+const { createSession, countMatchingFactors } = require('../services/medifyHttpService');
 
 const MELINDA_LIVE_QUEUE_CACHE_TTL_MS = 30000;
 const melindaLiveQueueCache = {
@@ -114,11 +114,7 @@ function buildPatientByNikMap(patients) {
     return patientByNik;
 }
 
-async function enrichMelindaQueueItems(items, location, session) {
-    if (!Array.isArray(items) || !items.length) {
-        return [];
-    }
-
+async function resolveMelindaQueuePatient(queueItem) {
     const [patients] = await pool.query(`
         SELECT id, full_name, birth_date, age, whatsapp, phone, nik
         FROM patients
@@ -126,95 +122,73 @@ async function enrichMelindaQueueItems(items, location, session) {
     `);
 
     const patientByNik = buildPatientByNikMap(patients);
-    const limit = pLimit(4);
-    const itemsWithIdentity = await Promise.all(items.map((item) => limit(async () => {
-        if (!item.medId) {
-            return {
-                ...item,
-                identityNik: null,
-                matchedBy: null
-            };
+    const session = createSession('rsia_melinda');
+
+    try {
+        await session.login();
+
+        let identityNik = null;
+        if (queueItem.medId) {
+            try {
+                const identity = await session.extractPatientIdentity(queueItem.medId);
+                identityNik = normalizeNik(identity.no_identitas);
+            } catch (error) {
+                identityNik = null;
+            }
         }
 
-        try {
-            const identity = await session.extractPatientIdentity(item.medId);
-            return {
-                ...item,
-                identityNik: normalizeNik(identity.no_identitas),
-                matchedBy: null
-            };
-        } catch (error) {
-            return {
-                ...item,
-                identityNik: null,
-                matchedBy: null
-            };
-        }
-    })));
-
-    const matchedPatientIds = new Set();
-    const matchedItems = itemsWithIdentity.map((item) => {
         let patient = null;
         let matchedBy = null;
 
-        if (item.identityNik) {
-            patient = patientByNik.get(item.identityNik) || null;
+        if (identityNik) {
+            patient = patientByNik.get(identityNik) || null;
             matchedBy = patient ? 'nik' : null;
-        } else {
-            patient = resolveLocalPatient(item, patients);
-            matchedBy = patient ? 'name_age' : null;
         }
 
-        if (patient?.id) {
-            matchedPatientIds.add(patient.id);
+        if (!patient) {
+            patient = resolveLocalPatient(queueItem, patients);
+            matchedBy = patient ? 'name_age' : matchedBy;
         }
+
+        if (!patient?.id) {
+            return {
+                success: false,
+                matchedBy,
+                patientId: null,
+                existingMrId: null,
+                existingRecordStatus: null,
+                identityNik,
+                message: identityNik
+                    ? 'Pasien tidak ditemukan dengan NIK tersebut di database lokal'
+                    : 'Pasien tidak berhasil dicocokkan ke database lokal'
+            };
+        }
+
+        const { startDateTime, endDateTime } = getGmt7DayWindow();
+        const [recordRows] = await pool.query(
+            `SELECT patient_id, mr_id, status
+             FROM sunday_clinic_records
+             WHERE patient_id = ?
+               AND visit_location = ?
+               AND created_at >= ?
+               AND created_at < ?
+             ORDER BY created_at DESC, id DESC
+             LIMIT 1`,
+            [patient.id, 'rsia_melinda', startDateTime, endDateTime]
+        );
 
         return {
-            ...item,
-            patientId: patient?.id || null,
+            success: true,
             matchedBy,
-            existingMrId: null,
-            existingRecordStatus: null,
-            canStartExam: Boolean(patient?.id)
+            patientId: patient.id,
+            patientName: patient.full_name,
+            existingMrId: recordRows[0]?.mr_id || null,
+            existingRecordStatus: recordRows[0]?.status || null,
+            identityNik
         };
-    });
-
-    if (!matchedPatientIds.size) {
-        return matchedItems;
+    } finally {
+        await session.close();
     }
-
-    const { startDateTime, endDateTime } = getGmt7DayWindow();
-    const placeholders = Array.from(matchedPatientIds).map(() => '?').join(', ');
-    const [recordRows] = await pool.query(
-        `SELECT patient_id, mr_id, status
-         FROM sunday_clinic_records
-         WHERE patient_id IN (${placeholders})
-           AND visit_location = ?
-           AND created_at >= ?
-           AND created_at < ?
-         ORDER BY created_at DESC, id DESC`,
-        [...matchedPatientIds, location, startDateTime, endDateTime]
-    );
-
-    const recordByPatientId = new Map();
-    for (const row of recordRows) {
-        if (!recordByPatientId.has(row.patient_id)) {
-            recordByPatientId.set(row.patient_id, row);
-        }
-    }
-
-    return matchedItems.map((item) => {
-        if (!item.patientId) {
-            return item;
-        }
-
-        const existingRecord = recordByPatientId.get(item.patientId);
-        return {
-            ...item,
-            existingMrId: existingRecord?.mr_id || null,
-            existingRecordStatus: existingRecord?.status || null
-        };
-    });
 }
 
 // ==================== PUBLIC ROUTES ====================
@@ -345,16 +319,11 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
                 doctorFilter: 'Semua Dokter'
             });
 
-            const enrichedItems = await enrichMelindaQueueItems(queueData.items, location, session);
-
             const payload = {
                 success: true,
                 source: 'medify_live',
                 location,
-                queue: {
-                    ...queueData,
-                    items: enrichedItems
-                }
+                queue: queueData
             };
 
             melindaLiveQueueCache.payload = payload;
@@ -369,6 +338,46 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
         res.status(500).json({
             success: false,
             message: 'Failed to fetch RSIA Melinda live queue',
+            error: error.message
+        });
+    }
+});
+
+router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    try {
+        const { location } = req.params;
+        const { medId, patientName, age } = req.body || {};
+
+        if (location !== 'rsia_melinda') {
+            return res.status(400).json({
+                success: false,
+                message: 'Resolve queue patient hanya tersedia untuk RSIA Melinda'
+            });
+        }
+
+        if (!medId && !patientName) {
+            return res.status(400).json({
+                success: false,
+                message: 'medId atau patientName wajib diisi'
+            });
+        }
+
+        const resolution = await resolveMelindaQueuePatient({
+            medId: medId || null,
+            patientName: patientName || '',
+            age: Number.isFinite(Number(age)) ? Number(age) : null
+        });
+
+        if (!resolution.success) {
+            return res.status(404).json(resolution);
+        }
+
+        res.json(resolution);
+    } catch (error) {
+        console.error('Error resolving RSIA Melinda queue patient:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to resolve RSIA Melinda queue patient',
             error: error.message
         });
     }

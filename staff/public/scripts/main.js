@@ -676,22 +676,23 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
     }
 
     const rows = items.map((item) => {
+        const safeMedId = String(item.medId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safePatientName = String(item.patientName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        const safeExistingMrId = String(item.existingMrId || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        const actionHtml = item.canStartExam
+        const ageArg = Number.isFinite(item.age) ? item.age : 'null';
+        const actionHtml = item.medId
             ? `
                 <button type="button"
-                        class="btn btn-sm ${item.existingMrId ? 'btn-primary' : 'btn-success'}"
-                        onclick="openMelindaQueueRecord('${item.patientId}', '${safePatientName}', '${safeExistingMrId}')">
-                    <i class="fas ${item.existingMrId ? 'fa-folder-open' : 'fa-plus-circle'} mr-1"></i>${item.existingMrId ? 'Buka DRD' : 'Buat DRD'}
+                        class="btn btn-sm btn-primary"
+                        onclick="openMelindaQueueRecord(this, '${safeMedId}', '${safePatientName}', ${ageArg})">
+                    <i class="fas fa-file-medical mr-1"></i>Proses DRD
                 </button>
             `
             : `
                 <button type="button"
                         class="btn btn-sm btn-outline-secondary"
                         disabled
-                        title="Pasien ini belum berhasil dicocokkan ke database pasien lokal">
-                    <i class="fas fa-ban mr-1"></i>Belum Match
+                        title="Nomor kasus Medify tidak ditemukan pada antrian ini">
+                    <i class="fas fa-ban mr-1"></i>Tidak Tersedia
                 </button>
             `;
 
@@ -703,7 +704,6 @@ function renderMelindaLiveQueue(queueData, hospitalName, hospitalColor) {
             <td>
                 <div class="font-weight-bold">${escapeHtml(item.patientName || '-')}</div>
                 <div class="small text-muted">No. RM: ${escapeHtml(item.medicalRecordNo || '-')}</div>
-                ${item.existingMrId ? `<div class="small text-success mt-1"><i class="fas fa-file-medical mr-1"></i>${escapeHtml(item.existingMrId)}</div>` : ''}
             </td>
             <td>${item.age ?? '-'}</td>
             <td>${escapeHtml(item.gender || '-')}</td>
@@ -778,18 +778,55 @@ async function openHospitalRecordByMrId(patientId, patientName, location, mrId) 
     window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
 }
 
-async function openMelindaQueueRecord(patientId, patientName, existingMrId = '') {
-    if (!patientId) {
-        alert('Pasien ini belum berhasil dicocokkan ke database pasien lokal.');
+async function openMelindaQueueRecord(button, medId, patientName, age = null) {
+    if (!medId) {
+        alert('Nomor kasus Medify tidak ditemukan untuk pasien ini.');
         return;
     }
 
-    if (existingMrId) {
-        await openHospitalRecordByMrId(patientId, patientName, 'rsia_melinda', existingMrId);
+    const token = getAuthToken();
+    if (!token) {
+        alert('Sesi login berakhir. Silakan login ulang.');
         return;
     }
 
-    startHospitalExam(null, patientId, patientName);
+    const originalHtml = button ? button.innerHTML : '';
+
+    try {
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memproses';
+        }
+
+        const response = await fetch('/api/appointments/hospital/rsia_melinda/resolve-queue-patient', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ medId, patientName, age })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Pasien belum berhasil dicocokkan ke database lokal.');
+        }
+
+        if (data.existingMrId) {
+            await openHospitalRecordByMrId(data.patientId, data.patientName || patientName, 'rsia_melinda', data.existingMrId);
+            return;
+        }
+
+        await startHospitalExam(null, data.patientId, data.patientName || patientName);
+    } catch (error) {
+        console.error('Error resolving Melinda queue patient:', error);
+        alert(error.message || 'Gagal memproses pasien Melinda.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+        }
+    }
 }
 
 function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalColor) {
