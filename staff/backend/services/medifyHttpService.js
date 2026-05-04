@@ -384,52 +384,64 @@ class MedifyHttpSession {
     _parsePolyclinicQueue(html, meta = {}) {
         const text = this._htmlToText(html);
 
+        const lines = text
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean);
+
         const extractStat = (label) => {
-            const regex = new RegExp(`${label}\\s+(\\d+)`, 'i');
-            const match = text.match(regex);
-            return match ? parseInt(match[1], 10) : 0;
+            const index = lines.findIndex(line => line.toUpperCase() === label);
+            if (index === -1) {
+                return 0;
+            }
+
+            const nextValue = lines[index + 1] || '';
+            const parsed = parseInt(nextValue, 10);
+            return Number.isFinite(parsed) ? parsed : 0;
         };
 
         const total = extractStat('TOTAL ANTRIAN');
         const waiting = extractStat('BELUM DILAYANI');
         const serving = extractStat('DILAYANI');
 
-        const itemRegex = /(DAF-[A-Z]-\d+)[\s\S]*?NO\.RM:\s*([^\n]+)[\s\S]*?(LAKI-LAKI|PEREMPUAN)\s*,\s*(\d+)[\s\S]*?\n([^\n]+?)(?:\nTunai|\nBPJS|\nAsuransi|\nWaktu Pendaftaran)[\s\S]*?Waktu Pendaftaran\s+([^\n]+)[\s\S]*?(?=(?:DAF-[A-Z]-\d+)|$)/gi;
+        const queueBlocks = text
+            .split(/(?=DAF-[A-Z]-\d+)/g)
+            .filter(block => /^DAF-[A-Z]-\d+/i.test(block.trim()));
 
-        const items = [];
-        let match;
-        while ((match = itemRegex.exec(text)) !== null) {
-            const queueNumber = (match[1] || '').trim();
-            const recordNo = (match[2] || '').trim();
-            const gender = (match[3] || '').trim();
-            const age = parseInt(match[4], 10);
-            const trailingText = match[0];
-
-            const lines = trailingText
+        const items = queueBlocks.map((block) => {
+            const blockLines = block
                 .split('\n')
                 .map(line => line.trim())
                 .filter(Boolean);
 
-            const patientName = lines[1] || '-';
-            const doctorLine = (match[5] || '').trim();
-            const registeredAt = (match[6] || '').trim();
-            const hasCppt = /\bCPPT\b/i.test(trailingText);
-            const paymentStatus = /Belum Lunas/i.test(trailingText)
-                ? 'Belum Lunas'
-                : (/Lunas/i.test(trailingText) ? 'Lunas' : '-');
+            const queueNumber = blockLines[0] || '';
+            const patientName = blockLines[1] || '-';
+            const medicalRecordLine = blockLines.find(line => /^NO\.RM:/i.test(line)) || '';
+            const medicalRecordNo = medicalRecordLine.replace(/^NO\.RM:\s*/i, '').trim();
 
-            items.push({
+            const genderAgeLine = blockLines.find(line => /^(LAKI-LAKI|PEREMPUAN)\b/i.test(line)) || '';
+            const genderAgeMatch = genderAgeLine.match(/^(LAKI-LAKI|PEREMPUAN)\s*,\s*(\d+)/i);
+
+            const doctorName = blockLines.find(line => /^DR\./i.test(line) || /^dr\./i.test(line)) || '-';
+            const registeredAtIndex = blockLines.findIndex(line => /WAKTU PENDAFTARAN/i.test(line));
+            const registeredAt = registeredAtIndex >= 0 ? (blockLines[registeredAtIndex + 1] || '-') : '-';
+
+            const paymentStatus = /BELUM LUNAS/i.test(block)
+                ? 'Belum Lunas'
+                : (/\bLUNAS\b/i.test(block) ? 'Lunas' : '-');
+
+            return {
                 queueNumber,
                 patientName,
-                medicalRecordNo: recordNo,
-                gender,
-                age: Number.isFinite(age) ? age : null,
-                doctorName: doctorLine,
+                medicalRecordNo,
+                gender: genderAgeMatch ? genderAgeMatch[1] : '-',
+                age: genderAgeMatch ? parseInt(genderAgeMatch[2], 10) : null,
+                doctorName,
                 registeredAt,
                 paymentStatus,
-                hasCppt
-            });
-        }
+                hasCppt: /\bCPPT\b/i.test(block)
+            };
+        }).filter(item => item.queueNumber && item.patientName);
 
         return {
             source: this.source,
