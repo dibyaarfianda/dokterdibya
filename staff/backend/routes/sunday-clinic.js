@@ -8,6 +8,7 @@ const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
+const sundayClinicMedifySyncQueue = require('../services/sundayClinicMedifySyncQueue');
 
 // Import realtime sync for broadcasting notifications
 let realtimeSync = null;
@@ -878,6 +879,8 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             });
         }
 
+        let medifySyncResult = null;
+
         // Check if record exists for this section and mr_id
         const [existingRows] = await db.query(
             `SELECT id FROM medical_records WHERE patient_id = ? AND mr_id = ? AND record_type = ?`,
@@ -911,6 +914,25 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
             [normalizedMrId]
         );
+
+        if (section === 'diagnosis' && recordRow.visit_location === 'rsia_melinda') {
+            try {
+                medifySyncResult = await sundayClinicMedifySyncQueue.enqueueDiagnosis({
+                    mrId: normalizedMrId,
+                    patientId: recordRow.patient_id,
+                    visitLocation: recordRow.visit_location,
+                    diagnosisData: data,
+                    eventAt: new Date().toISOString(),
+                    createdBy: req.user?.name || req.user?.id || null
+                });
+            } catch (syncError) {
+                logger.warn('Failed to enqueue diagnosis sync to Medify', {
+                    mrId: normalizedMrId,
+                    patientId: recordRow.patient_id,
+                    error: syncError.message
+                });
+            }
+        }
 
         // Auto-complete hospital appointment when resume_medis is saved
         // Only for RSIA Melinda, RSUD Gambiran, RS Bhayangkara (not Klinik Private or Sunday Clinic)
@@ -1228,14 +1250,209 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             userId: req.user.id
         });
 
-        res.json({
+        const responsePayload = {
             success: true,
             message: `Data ${section} berhasil disimpan`
-        });
+        };
+
+        if (medifySyncResult) {
+            responsePayload.sync = medifySyncResult;
+        }
+
+        res.json(responsePayload);
     } catch (error) {
         logger.error('Failed to save section data', {
             mrId: normalizedMrId,
             section,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    const convertDateFormat = (dateStr) => {
+        if (!dateStr) return null;
+        const match = String(dateStr).match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
+        if (!match) return null;
+
+        let [, day, month, year] = match;
+        if (year.length === 2) {
+            year = (parseInt(year, 10) > 50 ? '19' : '20') + year;
+        }
+
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    };
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        if (recordRow.visit_location !== 'rsia_melinda') {
+            return res.json({
+                success: true,
+                data: {
+                    mrId: normalizedMrId,
+                    source: null,
+                    hasData: false,
+                    reason: 'unsupported_location',
+                    sections: {
+                        anamnesa: {},
+                        physical_exam: {},
+                        pemeriksaan_obstetri: {},
+                        usg: {}
+                    }
+                }
+            });
+        }
+
+        const [rows] = await db.query(
+            `SELECT cppt_data, simrs_med_id, completed_at, created_at
+             FROM medify_import_jobs
+             WHERE patient_id = ?
+               AND simrs_source = 'rsia_melinda'
+               AND status = 'success'
+               AND cppt_data IS NOT NULL
+             ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
+             LIMIT 1`,
+            [recordRow.patient_id]
+        );
+
+        if (!rows.length) {
+            return res.json({
+                success: true,
+                data: {
+                    mrId: normalizedMrId,
+                    source: 'medify_melinda',
+                    hasData: false,
+                    sections: {
+                        anamnesa: {},
+                        physical_exam: {},
+                        pemeriksaan_obstetri: {},
+                        usg: {}
+                    }
+                }
+            });
+        }
+
+        const cpptPayload = parseJson(rows[0].cppt_data, 'medify_prefill_cppt_data') || {};
+        const structured = cpptPayload.structured || {};
+
+        const anamnesa = {
+            keluhan_utama: structured.subjective?.keluhan_utama || '',
+            riwayat_kehamilan_saat_ini: structured.subjective?.rps || '',
+            detail_riwayat_penyakit: structured.subjective?.rpd || '',
+            riwayat_keluarga: structured.subjective?.rpk || '',
+            hpht: convertDateFormat(structured.subjective?.hpht),
+            hpl: convertDateFormat(structured.subjective?.hpl),
+            gravida: structured.assessment?.gravida || '',
+            para: structured.assessment?.para || '',
+            abortus: structured.assessment?.abortus || '',
+            anak_hidup: structured.assessment?.anak_hidup || ''
+        };
+
+        const physicalExam = {
+            tensi: structured.objective?.tensi || '',
+            nadi: structured.objective?.nadi || '',
+            suhu: structured.objective?.suhu || '',
+            rr: structured.objective?.rr || '',
+            berat_badan: structured.objective?.berat_badan || '',
+            tinggi_badan: structured.objective?.tinggi_badan || ''
+        };
+
+        const pemeriksaanObstetri = {
+            findings: [
+                structured.objective?.tfu ? `TFU: ${structured.objective.tfu}` : '',
+                structured.objective?.djj ? `DJJ: ${structured.objective.djj}` : '',
+                structured.objective?.vt ? `VT: ${structured.objective.vt}` : ''
+            ].filter(Boolean).join('\n')
+        };
+
+        const usg = {
+            hasil_usg: structured.objective?.usg || '',
+            berat_janin: structured.objective?.berat_janin || '',
+            presentasi: structured.objective?.presentasi || structured.assessment?.presentasi || '',
+            plasenta: structured.objective?.plasenta || '',
+            ketuban: structured.objective?.ketuban || ''
+        };
+
+        res.json({
+            success: true,
+            data: {
+                mrId: normalizedMrId,
+                source: 'medify_melinda',
+                hasData: true,
+                simrsMedId: rows[0].simrs_med_id,
+                fetchedAt: rows[0].completed_at || rows[0].created_at,
+                sections: {
+                    anamnesa,
+                    physical_exam: physicalExam,
+                    pemeriksaan_obstetri: pemeriksaanObstetri,
+                    usg
+                }
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to load Medify prefill data', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+router.get('/medify-sync/jobs/:mrId', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const limit = Number(req.query.limit || 20);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    try {
+        const jobs = await sundayClinicMedifySyncQueue.getJobsByMr(normalizedMrId, limit);
+        res.json({
+            success: true,
+            data: {
+                mrId: normalizedMrId,
+                jobs
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to load Medify sync jobs by MR', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+router.get('/medify-sync/stats', verifyToken, async (req, res, next) => {
+    try {
+        const stats = await sundayClinicMedifySyncQueue.getStats();
+        res.json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        logger.error('Failed to load Medify sync stats', {
             error: error.message
         });
         next(error);
@@ -1583,6 +1800,7 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
     }
 
     let connection;
+    let medifySyncResult = null;
 
     try {
         const recordRow = await findRecordByMrId(normalizedMrId);
@@ -1714,7 +1932,26 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
 
         await connection.commit();
 
-        res.json({
+        if (recordRow.visit_location === 'rsia_melinda') {
+            try {
+                medifySyncResult = await sundayClinicMedifySyncQueue.enqueueTerapi({
+                    mrId: normalizedMrId,
+                    patientId: recordRow.patient_id,
+                    visitLocation: recordRow.visit_location,
+                    therapyItems: items,
+                    eventAt: new Date().toISOString(),
+                    createdBy: req.user?.name || req.user?.id || null
+                });
+            } catch (syncError) {
+                logger.warn('Failed to enqueue terapi sync to Medify', {
+                    mrId: normalizedMrId,
+                    patientId: recordRow.patient_id,
+                    error: syncError.message
+                });
+            }
+        }
+
+        const responsePayload = {
             success: true,
             message: 'Daftar obat berhasil diperbarui',
             data: {
@@ -1722,7 +1959,13 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
                 billingId,
                 subtotal: totals.subtotal
             }
-        });
+        };
+
+        if (medifySyncResult) {
+            responsePayload.sync = medifySyncResult;
+        }
+
+        res.json(responsePayload);
     } catch (error) {
         if (connection) {
             try {
