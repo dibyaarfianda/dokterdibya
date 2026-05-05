@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
+const { parseStructuredCPPTText, createSession } = require('../services/medifyHttpService');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
@@ -106,6 +107,55 @@ function calculateAge(dateValue) {
         age -= 1;
     }
     return age >= 0 ? age : null;
+}
+
+function convertLooseDateToIso(dateStr) {
+    if (!dateStr) {
+        return null;
+    }
+
+    const match = String(dateStr).match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
+    if (!match) {
+        return null;
+    }
+
+    let [, day, month, year] = match;
+    if (year.length === 2) {
+        year = (parseInt(year, 10) > 50 ? '19' : '20') + year;
+    }
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
+function buildMedifyIdentityPrefill(identity) {
+    if (!identity || typeof identity !== 'object') {
+        return {};
+    }
+
+    const birthDate = convertLooseDateToIso(identity.tanggal_lahir);
+    const ageNumber = parseInt(String(identity.usia || '').match(/\d+/)?.[0] || '', 10);
+    const insuranceParts = [
+        identity.pembayaran_utama,
+        identity.nomor_pembayaran,
+        identity.kelas_pembayaran
+    ].filter(Boolean);
+
+    return {
+        fullName: identity.nama || '',
+        full_name: identity.nama || '',
+        birthDate: birthDate || '',
+        date_of_birth: birthDate || '',
+        age: Number.isFinite(ageNumber) ? ageNumber : '',
+        gender: /laki/i.test(identity.jenis_kelamin || '') ? 'male' : (/perempuan/i.test(identity.jenis_kelamin || '') ? 'female' : ''),
+        gender_label: identity.jenis_kelamin || '',
+        phone: identity.no_hp || '',
+        whatsapp: identity.no_hp || '',
+        address: identity.alamat || '',
+        marital_status: identity.status_pernikahan || '',
+        occupation: identity.pekerjaan || '',
+        insurance: insuranceParts.join(' • '),
+        nik: identity.no_identitas || ''
+    };
 }
 
 function normalizePhone(phone) {
@@ -1364,6 +1414,14 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
 
 router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
+    const emptySections = {
+        anamnesa: {},
+        physical_exam: {},
+        pemeriksaan_obstetri: {},
+        usg: {},
+        diagnosis: {},
+        planning: {}
+    };
 
     if (!normalizedMrId) {
         return res.status(400).json({
@@ -1371,19 +1429,6 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             message: 'MR ID tidak valid.'
         });
     }
-
-    const convertDateFormat = (dateStr) => {
-        if (!dateStr) return null;
-        const match = String(dateStr).match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
-        if (!match) return null;
-
-        let [, day, month, year] = match;
-        if (year.length === 2) {
-            year = (parseInt(year, 10) > 50 ? '19' : '20') + year;
-        }
-
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-    };
 
     try {
         const recordRow = await findRecordByMrId(normalizedMrId);
@@ -1407,13 +1452,11 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
                     mrId: normalizedMrId,
                     source: null,
                     hasData: false,
+                    hasIdentity: false,
+                    identity: {},
+                    simrsMedId: null,
                     reason: 'unsupported_location',
-                    sections: {
-                        anamnesa: {},
-                        physical_exam: {},
-                        pemeriksaan_obstetri: {},
-                        usg: {}
-                    }
+                    sections: emptySections
                 }
             });
         }
@@ -1422,12 +1465,12 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             `SELECT cppt_data, simrs_med_id, completed_at, created_at
              FROM medify_import_jobs
              WHERE patient_id = ?
-                             AND simrs_source = ?
-               AND status = 'success'
-               AND cppt_data IS NOT NULL
+               AND simrs_source = ?
+               AND simrs_med_id IS NOT NULL
+               AND status IN ('success', 'skipped')
              ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
              LIMIT 1`,
-                        [recordRow.patient_id, recordRow.visit_location]
+            [recordRow.patient_id, recordRow.visit_location]
         );
 
         if (!rows.length) {
@@ -1437,26 +1480,50 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
                     mrId: normalizedMrId,
                     source: medifySource,
                     hasData: false,
-                    sections: {
-                        anamnesa: {},
-                        physical_exam: {},
-                        pemeriksaan_obstetri: {},
-                        usg: {}
-                    }
+                    hasIdentity: false,
+                    identity: {},
+                    simrsMedId: null,
+                    sections: emptySections
                 }
             });
         }
 
         const cpptPayload = parseJson(rows[0].cppt_data, 'medify_prefill_cppt_data') || {};
-        const structured = cpptPayload.structured || {};
+        const reparsed = cpptPayload.rawText ? parseStructuredCPPTText(cpptPayload.rawText) : null;
+        const storedStructured = cpptPayload.structured || {};
+        const structured = {
+            subjective: {
+                ...(storedStructured.subjective || {}),
+                ...(reparsed?.subjective || {})
+            },
+            objective: {
+                ...(storedStructured.objective || {}),
+                ...(reparsed?.objective || {})
+            },
+            assessment: {
+                ...(storedStructured.assessment || {}),
+                ...(reparsed?.assessment || {})
+            },
+            plan: {
+                ...(storedStructured.plan || {}),
+                ...(reparsed?.plan || {})
+            }
+        };
+
+        const usiaKehamilanMinggu = structured.assessment?.usia_kehamilan_minggu;
+        const usiaKehamilanHari = structured.assessment?.usia_kehamilan_hari;
+        const usiaKehamilan = Number.isFinite(usiaKehamilanMinggu)
+            ? `${usiaKehamilanMinggu} minggu${usiaKehamilanHari ? ` ${usiaKehamilanHari} hari` : ''}`
+            : '';
 
         const anamnesa = {
             keluhan_utama: structured.subjective?.keluhan_utama || '',
             riwayat_kehamilan_saat_ini: structured.subjective?.rps || '',
             detail_riwayat_penyakit: structured.subjective?.rpd || '',
             riwayat_keluarga: structured.subjective?.rpk || '',
-            hpht: convertDateFormat(structured.subjective?.hpht),
-            hpl: convertDateFormat(structured.subjective?.hpl),
+            hpht: convertLooseDateToIso(structured.subjective?.hpht),
+            hpl: convertLooseDateToIso(structured.subjective?.hpl),
+            usia_kehamilan: usiaKehamilan,
             gravida: structured.assessment?.gravida || '',
             para: structured.assessment?.para || '',
             abortus: structured.assessment?.abortus || '',
@@ -1488,19 +1555,72 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             ketuban: structured.objective?.ketuban || ''
         };
 
+        const diagnosis = {
+            diagnosis_utama: structured.assessment?.diagnosis || '',
+            diagnosis_sekunder: ''
+        };
+
+        const planning = {
+            tindakan: Array.isArray(structured.plan?.tindakan)
+                ? structured.plan.tindakan.join('\n')
+                : (structured.plan?.tindakan || ''),
+            terapi: Array.isArray(structured.plan?.obat)
+                ? structured.plan.obat.join('\n')
+                : (structured.plan?.obat || structured.plan?.raw || ''),
+            rencana: Array.isArray(structured.plan?.instruksi)
+                ? structured.plan.instruksi.join('\n')
+                : (structured.plan?.instruksi || '')
+        };
+
+        let identity = {};
+        if (rows[0].simrs_med_id) {
+            const medifySession = createSession(recordRow.visit_location);
+            try {
+                await medifySession.login();
+                const medifyIdentity = await medifySession.extractPatientIdentity(rows[0].simrs_med_id);
+                identity = buildMedifyIdentityPrefill(medifyIdentity);
+            } catch (identityError) {
+                logger.warn('Failed to fetch Medify identity for Sunday Clinic prefill', {
+                    mrId: normalizedMrId,
+                    patientId: recordRow.patient_id,
+                    simrsMedId: rows[0].simrs_med_id,
+                    visitLocation: recordRow.visit_location,
+                    error: identityError.message
+                });
+            } finally {
+                try {
+                    await medifySession.close();
+                } catch (closeError) {
+                    logger.warn('Failed to close Medify session after identity prefill', {
+                        mrId: normalizedMrId,
+                        simrsMedId: rows[0].simrs_med_id,
+                        error: closeError.message
+                    });
+                }
+            }
+        }
+
+        const hasSectionData = [anamnesa, physicalExam, pemeriksaanObstetri, usg, diagnosis, planning]
+            .some(section => Object.values(section).some(value => String(value || '').trim() !== ''));
+        const hasIdentity = Object.values(identity).some(value => String(value || '').trim() !== '');
+
         res.json({
             success: true,
             data: {
                 mrId: normalizedMrId,
                 source: medifySource,
-                hasData: true,
+                hasData: hasSectionData || hasIdentity,
+                hasIdentity,
                 simrsMedId: rows[0].simrs_med_id,
                 fetchedAt: rows[0].completed_at || rows[0].created_at,
+                identity,
                 sections: {
                     anamnesa,
                     physical_exam: physicalExam,
                     pemeriksaan_obstetri: pemeriksaanObstetri,
-                    usg
+                    usg,
+                    diagnosis,
+                    planning
                 }
             }
         });

@@ -6,6 +6,29 @@
 // Store parsed data for applying to forms
 let parsedImportData = null;
 
+function deriveSimrsSource(source, visitLocation) {
+    if (source) {
+        return source;
+    }
+
+    if (visitLocation && visitLocation !== 'klinik_private') {
+        return 'simrs_' + String(visitLocation).replace('rsia_', '').replace('rsud_', '');
+    }
+
+    return null;
+}
+
+function getSimrsSourceLabel(source, visitLocation) {
+    const resolvedSource = deriveSimrsSource(source, visitLocation);
+    const hospitalNames = {
+        simrs_melinda: 'SIMRS Melinda',
+        simrs_gambiran: 'SIMRS Gambiran',
+        simrs_bhayangkara: 'SIMRS Bhayangkara'
+    };
+
+    return hospitalNames[resolvedSource] || 'SIMRS';
+}
+
 /**
  * Initialize file input handler
  */
@@ -1358,13 +1381,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     console.log('[Import] SIMRS import data applied successfully');
 
     // Show notification with correct hospital name
-    const hospitalNames = {
-        'simrs_melinda': 'SIMRS Melinda',
-        'rsud_gambiran': 'RSUD Gambiran',
-        'rs_bhayangkara': 'RS Bhayangkara'
-    };
-    const source = parsedImportData?.source || 'simrs_melinda';
-    const hospitalName = hospitalNames[source] || 'SIMRS';
+    const hospitalName = getSimrsSourceLabel(parsedImportData?.source, parsedImportData?.visit_location);
 
     if (window.Swal) {
         Swal.fire({

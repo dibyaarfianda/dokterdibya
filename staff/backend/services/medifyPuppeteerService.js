@@ -594,12 +594,18 @@ async function extractCPPT(page, source, medId) {
         }
 
         if (assText) {
-            // Get ALL lines as diagnosis (join with space, not just first line)
-            // This captures full diagnosis like "G2P0101 uk 9 3/7mgg + kepala + TB"
-            const lines = assText.split('\n').filter(l => l.trim());
-            if (lines.length > 0) {
-                // Join all meaningful lines for full diagnosis
-                cpptData.assessment.diagnosis = lines.slice(0, 3).join(' ').trim();
+            const normalizeLine = (line) => String(line || '')
+                .replace(/\r/g, '')
+                .replace(/^[\s\-•*]+/, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            const isHeaderLine = (line) => /^(?:ICD\s*10(?:\s+Tipe)?|Tipe|Type|Utama|Sekunder|Differential|Diferensial|Rule\s*Out|No|Kode|Code|\-|\.)$/i.test(normalizeLine(line));
+            const diagnosisLines = assText
+                .split('\n')
+                .map(normalizeLine)
+                .filter(line => line && !isHeaderLine(line));
+            if (diagnosisLines.length > 0) {
+                cpptData.assessment.diagnosis = diagnosisLines.slice(0, 3).join(' ').trim();
             }
 
             // Parse obstetric formula (MEDIFY format: G2P0101)

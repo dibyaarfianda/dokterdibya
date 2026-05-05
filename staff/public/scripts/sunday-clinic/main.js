@@ -10,7 +10,7 @@ import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
-import patientSidebar from './components/patient-history-sidebar.js?v=2.0.2';
+import patientSidebar from './components/patient-history-sidebar.js?v=2.0.3';
 
 // Expose stateManager to window for cross-module access (used by medical-import.js)
 window.stateManager = stateManager;
@@ -82,6 +82,20 @@ class SundayClinicApp {
         this.softRefreshInFlight = false;
     }
 
+    isMedifyLocation(location = this.currentLocation) {
+        return location === 'rsia_melinda' || location === 'rsud_gambiran';
+    }
+
+    getImportSourceLabel() {
+        const importSourceLabels = {
+            simrs_melinda: 'SIMRS Melinda',
+            simrs_gambiran: 'SIMRS Gambiran',
+            simrs_bhayangkara: 'SIMRS Bhayangkara'
+        };
+
+        return importSourceLabels[this.importSource] || 'Import SIMRS';
+    }
+
     /**
      * Initialize the application
      */
@@ -112,6 +126,7 @@ class SundayClinicApp {
                                   MR_CATEGORIES.OBSTETRI;
             this.currentLocation = response.data.record.visit_location || 'klinik_private';
             this.importSource = response.data.record.import_source || null;
+            patientSidebar.setCurrentLocation(this.currentLocation);
 
             console.log('[SundayClinic] Category detected:', this.currentCategory);
             console.log('[SundayClinic] Location detected:', this.currentLocation);
@@ -414,13 +429,85 @@ class SundayClinicApp {
         return false;
     }
 
+    hasMeaningfulValue(value) {
+        if (value === null || value === undefined) {
+            return false;
+        }
+
+        if (typeof value === 'string') {
+            const normalized = value.trim();
+            return normalized !== '' && normalized !== '-';
+        }
+
+        if (Array.isArray(value)) {
+            return value.length > 0;
+        }
+
+        if (typeof value === 'object') {
+            return Object.keys(value).length > 0;
+        }
+
+        return true;
+    }
+
+    mergeMedifyPatientData(currentPatient, incomingPatient) {
+        const existingPatient = currentPatient || {};
+        const medifyPatient = incomingPatient || {};
+        const mergedPatient = { ...existingPatient };
+        let appliedCount = 0;
+
+        Object.entries(medifyPatient).forEach(([key, value]) => {
+            if (!this.hasMeaningfulValue(value)) {
+                return;
+            }
+
+            if (this.hasMeaningfulValue(mergedPatient[key])) {
+                return;
+            }
+
+            mergedPatient[key] = value;
+            appliedCount += 1;
+        });
+
+        return {
+            mergedPatient,
+            applied: appliedCount > 0
+        };
+    }
+
+    isDiagnosisHeaderArtifact(text) {
+        const normalized = String(text || '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        return /^(?:ICD\s*10(?:\s+Tipe)?|ICD\s*10\s+Tipe)\b/i.test(normalized);
+    }
+
+    shouldReplaceWithMedifyPrefill(sectionKey, currentSection, incomingSection) {
+        if (!this.hasMeaningfulData(currentSection)) {
+            return true;
+        }
+
+        if (sectionKey !== 'diagnosis') {
+            return false;
+        }
+
+        const currentDiagnosis = currentSection?.diagnosis_utama || currentSection?.diagnosis || '';
+        const incomingDiagnosis = incomingSection?.diagnosis_utama || incomingSection?.diagnosis || '';
+
+        return this.isDiagnosisHeaderArtifact(currentDiagnosis)
+            && !this.isDiagnosisHeaderArtifact(incomingDiagnosis)
+            && String(incomingDiagnosis || '').trim() !== '';
+    }
+
     async applyMedifyPrefillIfNeeded(mrId) {
-        if (this.currentLocation !== 'rsia_melinda') {
+        if (!this.isMedifyLocation()) {
             return;
         }
 
         const stateBefore = stateManager.getState();
         const existingRecordData = stateBefore.recordData || {};
+        const existingPatientData = stateBefore.patientData || {};
 
         const token = window.getToken();
         if (!token) {
@@ -443,7 +530,24 @@ class SundayClinicApp {
             const result = await response.json();
             const prefill = result?.data;
 
-            if (!result?.success || !prefill?.hasData || !prefill?.sections) {
+            if (!result?.success || !prefill) {
+                return;
+            }
+
+            const appliedSections = [];
+
+            if (prefill?.identity && typeof prefill.identity === 'object') {
+                const { mergedPatient, applied } = this.mergeMedifyPatientData(existingPatientData, prefill.identity);
+                if (applied) {
+                    stateManager.setState({ patientData: mergedPatient });
+                    appliedSections.push('identitas');
+                }
+            }
+
+            if (!prefill?.sections || !prefill.hasData) {
+                if (appliedSections.length > 0 && typeof window.showToast === 'function') {
+                    window.showToast('info', `Prefill Medify diterapkan: ${appliedSections.join(', ')}`);
+                }
                 return;
             }
 
@@ -451,10 +555,10 @@ class SundayClinicApp {
                 { stateKey: 'anamnesa', payloadKey: 'anamnesa' },
                 { stateKey: 'physical_exam', payloadKey: 'physical_exam' },
                 { stateKey: 'pemeriksaan_obstetri', payloadKey: 'pemeriksaan_obstetri' },
-                { stateKey: 'usg', payloadKey: 'usg' }
+                { stateKey: 'usg', payloadKey: 'usg' },
+                { stateKey: 'diagnosis', payloadKey: 'diagnosis' },
+                { stateKey: 'planning', payloadKey: 'planning' }
             ];
-
-            const appliedSections = [];
 
             for (const mapItem of sectionMap) {
                 const currentSection = existingRecordData[mapItem.stateKey] || {};
@@ -464,7 +568,7 @@ class SundayClinicApp {
                     continue;
                 }
 
-                if (this.hasMeaningfulData(currentSection)) {
+                if (!this.shouldReplaceWithMedifyPrefill(mapItem.stateKey, currentSection, incomingSection)) {
                     continue;
                 }
 
@@ -844,7 +948,7 @@ class SundayClinicApp {
         // Check if this is an imported record (import_source exists)
         const importSourceBadge = this.importSource
             ? `<span class="badge badge-info ml-2" style="font-size: 0.85rem;">
-                   <i class="fas fa-file-import mr-1"></i>Import SIMRS
+                   <i class="fas fa-file-import mr-1"></i>${this.getImportSourceLabel()}
                </span>`
             : '';
 
@@ -1700,6 +1804,10 @@ class SundayClinicApp {
 
             // Load record data into state manager
             await stateManager.loadRecord(response.data);
+            this.currentLocation = response.data.record?.visit_location || this.currentLocation || 'klinik_private';
+            this.importSource = response.data.record?.import_source || this.importSource || null;
+
+            await this.applyMedifyPrefillIfNeeded(normalizedMr);
 
             // Re-render only when explicitly requested by caller.
             if (rerender) {
