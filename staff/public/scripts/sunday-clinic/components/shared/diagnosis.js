@@ -10,6 +10,15 @@
  */
 
 export default {
+    sanitizeDiagnosisText(value) {
+        const text = String(value || '').replace(/\s+/g, ' ').trim();
+        if (!text) {
+            return '';
+        }
+
+        return text.replace(/^(?:ICD\s*10(?:\s+Tipe)?\s*)+/i, '').trim();
+    },
+
     /**
      * Render the Diagnosis form
      */
@@ -145,8 +154,8 @@ export default {
         // Merge with passed diagnosis parameter (fallback to savedData from medicalRecords)
         // Support both form field names (diagnosis_utama) and MEDIFY field names (diagnosis)
         const diagnosisData = {
-            diagnosis_utama: diagnosis.diagnosis_utama || diagnosis.diagnosis || savedData.diagnosis_utama || savedData.diagnosis || '',
-            diagnosis_sekunder: diagnosis.diagnosis_sekunder || savedData.diagnosis_sekunder || '',
+            diagnosis_utama: this.sanitizeDiagnosisText(diagnosis.diagnosis_utama || diagnosis.diagnosis || savedData.diagnosis_utama || savedData.diagnosis || ''),
+            diagnosis_sekunder: this.sanitizeDiagnosisText(diagnosis.diagnosis_sekunder || savedData.diagnosis_sekunder || ''),
             record_datetime: diagnosis.record_datetime || savedData.record_datetime || defaultDatetime
         };
 

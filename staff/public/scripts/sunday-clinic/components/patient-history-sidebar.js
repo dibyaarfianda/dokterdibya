@@ -11,11 +11,44 @@ class PatientHistorySidebar {
     constructor() {
         this.isOpen = false;
         this.currentPatientId = null;
+        this.currentPatientName = '';
         this.currentMrId = null;
+        this.currentLocation = 'klinik_private';
         this.todayQueue = [];
         this.visitHistory = [];
         this.selectedVisitForCopy = null;
         this.initialized = false;
+    }
+
+    setCurrentLocation(location) {
+        const normalizedLocation = location || 'klinik_private';
+        const changed = this.currentLocation !== normalizedLocation;
+        this.currentLocation = normalizedLocation;
+
+        if (this.initialized && changed) {
+            this.loadTodayQueue();
+        }
+    }
+
+    isMedifyLocation(location = this.currentLocation) {
+        return location === 'rsia_melinda' || location === 'rsud_gambiran';
+    }
+
+    normalizePatientName(name) {
+        return String(name || '')
+            .toLowerCase()
+            .replace(/^(ny\.?|tn\.?|sdr\.?|sdri\.?|dr\.?|drg\.?)\s*/i, '')
+            .replace(/[.,]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    escapeJsString(value) {
+        return String(value || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/\r/g, '')
+            .replace(/\n/g, ' ');
     }
 
     /**
@@ -236,12 +269,35 @@ class PatientHistorySidebar {
         }
 
         try {
-            console.log('[PatientSidebar] Fetching queue from API...');
-            const response = await apiClient.get('/api/sunday-clinic/queue/today');
+            const queueEndpoint = this.isMedifyLocation()
+                ? `/api/appointments/hospital/${encodeURIComponent(this.currentLocation)}/live-queue`
+                : '/api/sunday-clinic/queue/today';
+
+            console.log('[PatientSidebar] Fetching queue from API:', queueEndpoint);
+            const response = await apiClient.get(queueEndpoint);
             console.log('[PatientSidebar] Queue API response:', response);
 
             if (response.success) {
-                this.todayQueue = response.data || [];
+                this.todayQueue = this.isMedifyLocation()
+                    ? (response.queue?.items || []).map((item, index) => ({
+                        queueType: 'medify',
+                        id: item.medId || item.queueNumber || `medify-${index + 1}`,
+                        patient_name: item.patientName || '-',
+                        patient_id: null,
+                        mr_id: null,
+                        queue_number: item.queueNumber || `${index + 1}`,
+                        medicalRecordNo: item.medicalRecordNo || '',
+                        doctorName: item.doctorName || '-',
+                        registeredAt: item.registeredAt || '-',
+                        age: Number.isFinite(item.age) ? item.age : null,
+                        gender: item.gender || '-',
+                        medId: item.medId || null,
+                        identityNik: item.identityNik || null,
+                        birthDate: item.birthDate || null,
+                        hasCppt: Boolean(item.hasCppt),
+                        location: this.currentLocation
+                    }))
+                    : (response.data || []);
                 console.log('[PatientSidebar] Queue loaded:', this.todayQueue.length, 'items');
                 this.renderQueue();
 
@@ -292,6 +348,46 @@ class PatientHistorySidebar {
         }
 
         container.innerHTML = this.todayQueue.map((apt, index) => {
+            if (apt.queueType === 'medify') {
+                const currentName = this.normalizePatientName(this.currentPatientName);
+                const queueName = this.normalizePatientName(apt.patient_name);
+                const isActive = Boolean(currentName && queueName && currentName === queueName);
+                const safeLocation = this.escapeJsString(apt.location || this.currentLocation);
+                const safeMedId = this.escapeJsString(apt.medId || '');
+                const safePatientName = this.escapeJsString(apt.patient_name || '');
+                const safeMedicalRecordNo = this.escapeJsString(apt.medicalRecordNo || '');
+                const safeIdentityNik = this.escapeJsString(apt.identityNik || '');
+                const ageArg = Number.isFinite(apt.age) ? apt.age : 'null';
+                const metaParts = [
+                    apt.queue_number || null,
+                    apt.doctorName || null,
+                    apt.registeredAt || null,
+                    apt.medicalRecordNo ? `RM ${apt.medicalRecordNo}` : null
+                ].filter(Boolean);
+
+                return `
+                    <div class="header-queue-item ${isActive ? 'active' : ''}"
+                         data-patient-name="${this.escapeHtml(apt.patient_name || '')}"
+                         data-mr-id=""
+                         data-patient-id=""
+                         onclick="window.patientSidebar.openMedifyQueuePatient('${safeLocation}', '${safeMedId}', '${safePatientName}', ${ageArg}, '${safeMedicalRecordNo}', '${safeIdentityNik}')">
+                        <span class="queue-number">${index + 1}</span>
+                        <div class="queue-info">
+                            <div class="queue-name">${this.escapeHtml(apt.patient_name || '-')}</div>
+                            <div class="queue-meta">${this.escapeHtml(metaParts.join(' • ') || '-')}</div>
+                            <div class="mt-1">
+                                <span class="badge ${apt.hasCppt ? 'badge-success' : 'badge-secondary'}">
+                                    <i class="fas ${apt.hasCppt ? 'fa-check-circle' : 'fa-file-medical'} mr-1"></i>${apt.hasCppt ? 'CPPT siap' : 'Belum CPPT'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="queue-status">
+                            <i class="fas fa-chevron-right text-primary" title="Buka pasien dari antrian Gambiran/Melinda"></i>
+                        </div>
+                    </div>
+                `;
+            }
+
             const isActive = apt.mr_id === this.currentMrId || apt.patient_id === this.currentPatientId;
             const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 30) + (apt.chief_complaint.length > 30 ? '...' : '') : '-';
             const selesaiClass = apt.record_status === 'finalized' ? 'patient-selesai' : '';
@@ -301,6 +397,7 @@ class PatientHistorySidebar {
                 <div class="header-queue-item ${isActive ? 'active' : ''}"
                      data-patient-id="${apt.patient_id}"
                      data-mr-id="${apt.mr_id || ''}"
+                     data-patient-name="${this.escapeHtml(apt.patient_name || '')}"
                      data-appointment-id="${apt.id}"
                      onclick="window.patientSidebar.switchToPatient('${apt.patient_id}', '${apt.mr_id || ''}', '${apt.id}')">
                     <span class="queue-number">${index + 1}</span>
@@ -365,16 +462,63 @@ class PatientHistorySidebar {
      * Highlight current patient in queue - for header dropdown
      */
     highlightCurrentPatientInQueue() {
+        const currentName = this.normalizePatientName(this.currentPatientName);
+
         document.querySelectorAll('.header-queue-item').forEach(item => {
             const mrId = item.dataset.mrId;
             const patientId = item.dataset.patientId;
+            const patientName = this.normalizePatientName(item.dataset.patientName || '');
 
-            if (mrId === this.currentMrId || patientId === this.currentPatientId) {
+            if (mrId === this.currentMrId || patientId === this.currentPatientId || (currentName && patientName && currentName === patientName)) {
                 item.classList.add('active');
             } else {
                 item.classList.remove('active');
             }
         });
+    }
+
+    async openMedifyQueuePatient(location, medId, patientName, age = null, medicalRecordNo = '', identityNik = '') {
+        try {
+            if (stateManager.get('isDirty')) {
+                stateManager.set('isDirty', false);
+            }
+
+            const response = await apiClient.post(`/api/appointments/hospital/${encodeURIComponent(location)}/resolve-queue-patient`, {
+                medId: medId || null,
+                identityNik: identityNik || null,
+                patientName: patientName || '',
+                age: Number.isFinite(Number(age)) ? Number(age) : null,
+                medicalRecordNo: medicalRecordNo || null,
+                autoCreatePatient: true
+            });
+
+            if (!response?.success) {
+                throw new Error(response?.message || 'Pasien belum berhasil dicocokkan ke database lokal.');
+            }
+
+            if (response.existingMrId) {
+                window.location.href = `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(response.existingMrId)}`;
+                return;
+            }
+
+            if (!response.patientId) {
+                throw new Error('Pasien belum berhasil dicocokkan ke database lokal.');
+            }
+
+            const query = new URLSearchParams({
+                patient: response.patientId,
+                location: location || this.currentLocation || 'klinik_private'
+            });
+
+            window.location.href = `/staff/public/sunday-clinic.html?${query.toString()}`;
+        } catch (error) {
+            console.error('[PatientSidebar] Failed to open Medify queue patient:', error);
+            if (window.showToast) {
+                window.showToast('error', error.message || 'Gagal memproses pasien Medify.');
+            } else {
+                alert(error.message || 'Gagal memproses pasien Medify.');
+            }
+        }
     }
 
     /**
@@ -476,6 +620,7 @@ class PatientHistorySidebar {
         if (!container || !patient) return;
 
         const name = patient.full_name || patient.name || patient.fullName || '-';
+        this.currentPatientName = name;
         const phone = patient.whatsapp || patient.phone || '';
         const age = patient.age || '';
 

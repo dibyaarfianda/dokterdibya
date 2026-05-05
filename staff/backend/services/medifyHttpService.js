@@ -46,6 +46,247 @@ function pLimit(concurrency) {
     };
 }
 
+function normalizeStructuredLine(line) {
+    return String(line || '')
+        .replace(/\r/g, '')
+        .replace(/^[\s\-•*]+/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function appendStructuredText(existingValue, nextValue) {
+    const current = normalizeStructuredLine(existingValue);
+    const next = normalizeStructuredLine(nextValue);
+
+    if (!next) {
+        return current;
+    }
+
+    if (!current) {
+        return next;
+    }
+
+    return current.includes(next) ? current : `${current} ${next}`.trim();
+}
+
+function isAssessmentHeaderLine(line) {
+    const normalized = normalizeStructuredLine(line);
+    if (!normalized) {
+        return true;
+    }
+
+    return /^(?:ICD\s*10(?:\s+Tipe)?|Tipe|Type|Utama|Sekunder|Differential|Diferensial|Rule\s*Out|No|Kode|Code|\-|\.)$/i.test(normalized);
+}
+
+function buildAssessmentDiagnosisText(assessmentText) {
+    const lines = String(assessmentText || '')
+        .split('\n')
+        .map(normalizeStructuredLine)
+        .filter(line => line && !isAssessmentHeaderLine(line));
+
+    if (lines.length === 0) {
+        return '';
+    }
+
+    return lines.slice(0, 3).join(' ').trim();
+}
+
+function parseStructuredCPPTText(text) {
+    const cpptData = {
+        subjective: {},
+        objective: {},
+        assessment: {},
+        plan: {}
+    };
+
+    const subjectiveMatch = text.match(/SUBJECTIVE([\s\S]*?)(?=OBJECTIVE|$)/i);
+    if (subjectiveMatch) {
+        const subText = subjectiveMatch[1];
+        const lines = subText.split(/\n+/).map(normalizeStructuredLine).filter(Boolean);
+        const freeTextLines = [];
+
+        for (const line of lines) {
+            let match = null;
+
+            match = line.match(/^Keluhan\s*Utama\s*:?\s*(.+)$/i);
+            if (match) {
+                cpptData.subjective.keluhan_utama = appendStructuredText(cpptData.subjective.keluhan_utama, match[1]);
+                continue;
+            }
+
+            match = line.match(/^HPL\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
+            if (match) {
+                cpptData.subjective.hpl = match[1];
+                continue;
+            }
+
+            match = line.match(/^HPHT\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
+            if (match) {
+                cpptData.subjective.hpht = match[1];
+                continue;
+            }
+
+            match = line.match(/^(?:RPS|Riwayat\s*Penyakit\s*Sekarang)\s*:?\s*(.+)$/i);
+            if (match) {
+                cpptData.subjective.rps = appendStructuredText(cpptData.subjective.rps, match[1]);
+                continue;
+            }
+
+            match = line.match(/^(?:\+?\s*PBL|PBL|RPD|Riwayat\s*Penyakit\s*Dahulu)\s*:?\s*(.+)$/i);
+            if (match) {
+                cpptData.subjective.rpd = appendStructuredText(cpptData.subjective.rpd, match[1]);
+                continue;
+            }
+
+            match = line.match(/^(?:RPK|Riwayat\s*Penyakit\s*Keluarga)\s*:?\s*(.+)$/i);
+            if (match) {
+                cpptData.subjective.rpk = appendStructuredText(cpptData.subjective.rpk, match[1]);
+                continue;
+            }
+
+            freeTextLines.push(line);
+        }
+
+        const freeText = freeTextLines.join(' ').trim();
+        if (freeText) {
+            if (!cpptData.subjective.keluhan_utama) {
+                cpptData.subjective.keluhan_utama = freeText;
+            }
+
+            if (!cpptData.subjective.rps) {
+                cpptData.subjective.rps = freeText;
+            }
+        }
+    }
+
+    const objectiveMatch = text.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|ASSESMEN|$)/i);
+    if (objectiveMatch) {
+        const objText = objectiveMatch[1];
+
+        const tensiMatch = objText.match(/(?:Tensi|TD|Tekanan\s*Darah)\s*:?\s*(\d+\/\d+)/i);
+        if (tensiMatch) cpptData.objective.tensi = tensiMatch[1];
+
+        const nadiMatch = objText.match(/Nadi\s*:?\s*(\d+)/i);
+        if (nadiMatch) cpptData.objective.nadi = parseInt(nadiMatch[1], 10);
+
+        const suhuMatch = objText.match(/Suhu\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+        if (suhuMatch) cpptData.objective.suhu = parseFloat(suhuMatch[1].replace(',', '.'));
+
+        const spo2Match = objText.match(/SpO2\s*:?\s*(\d+)/i);
+        if (spo2Match) cpptData.objective.spo2 = parseInt(spo2Match[1], 10);
+
+        const rrMatch = objText.match(/(?:RR|Respirasi)\s*:?\s*(\d+)/i);
+        if (rrMatch) cpptData.objective.rr = parseInt(rrMatch[1], 10);
+
+        const bbMatch = objText.match(/(?:BB|Berat\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+        if (bbMatch) cpptData.objective.berat_badan = parseFloat(bbMatch[1].replace(',', '.'));
+
+        const tbMatch = objText.match(/(?:TB|Tinggi\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+        if (tbMatch) cpptData.objective.tinggi_badan = parseFloat(tbMatch[1].replace(',', '.'));
+
+        const gcsMatch = objText.match(/GCS\s*:?\s*E\s*:?\s*(\d)\s*V\s*:?\s*(\d)\s*M\s*:?\s*(\d)/i)
+            || objText.match(/GCS\s*:?\s*E(\d)\s*V(\d)\s*M(\d)/i);
+        if (gcsMatch) {
+            cpptData.objective.gcs = `E${gcsMatch[1]} V${gcsMatch[2]} M${gcsMatch[3]}`;
+        }
+
+        const consciousnessMatch = objText.match(/Kesadaran\s*:?\s*([^,\n]+)/i);
+        if (consciousnessMatch) {
+            cpptData.objective.kesadaran = normalizeStructuredLine(consciousnessMatch[1]);
+        }
+    }
+
+    const assessmentPatterns = [
+        /ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+        /ASSESMEN([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+        /ASSESMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+        /A\s*:\s*([\s\S]*?)(?=P\s*:|PLAN|$)/i
+    ];
+
+    let assText = null;
+    for (const pattern of assessmentPatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            assText = match[1].trim();
+            break;
+        }
+    }
+
+    if (assText) {
+        cpptData.assessment.diagnosis = buildAssessmentDiagnosisText(assText);
+
+        const medifyMatch = assText.match(/G(\d+)P(\d)(\d)(\d)(\d)/i);
+        if (medifyMatch) {
+            cpptData.assessment.gravida = parseInt(medifyMatch[1], 10);
+            cpptData.assessment.para = parseInt(medifyMatch[2], 10) + parseInt(medifyMatch[3], 10);
+            cpptData.assessment.abortus = parseInt(medifyMatch[4], 10);
+            cpptData.assessment.anak_hidup = parseInt(medifyMatch[5], 10);
+            cpptData.assessment.is_obstetric = true;
+        } else {
+            const dashMatch = assText.match(/G(\d+)\s*P(\d+)-(\d+)/i);
+            if (dashMatch) {
+                cpptData.assessment.gravida = parseInt(dashMatch[1], 10);
+                cpptData.assessment.para = parseInt(dashMatch[2], 10);
+                cpptData.assessment.abortus = 0;
+                cpptData.assessment.anak_hidup = parseInt(dashMatch[3], 10);
+                cpptData.assessment.is_obstetric = true;
+            } else {
+                const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
+                if (obsMatch) {
+                    cpptData.assessment.gravida = parseInt(obsMatch[1], 10);
+                    cpptData.assessment.para = parseInt(obsMatch[2], 10);
+                    cpptData.assessment.is_obstetric = true;
+                }
+            }
+        }
+
+        const ukMatch = assText.match(/uk\s*(\d+)\s*(?:(\d+)\/7)?\s*(?:mgg|minggu)/i);
+        if (ukMatch) {
+            cpptData.assessment.usia_kehamilan_minggu = parseInt(ukMatch[1], 10);
+            cpptData.assessment.usia_kehamilan_hari = ukMatch[2] ? parseInt(ukMatch[2], 10) : 0;
+        }
+    }
+
+    const planMatch = text.match(/(?:PLAN|PLANNING)([\s\S]*?)(?=Dibuat|TTD|$)/i);
+    if (planMatch) {
+        const rawPlan = planMatch[1].trim();
+        cpptData.plan.raw = rawPlan;
+
+        const obat = [];
+        const tindakan = [];
+        const instruksi = [];
+        const planLines = rawPlan.split(/\n+/).map(normalizeStructuredLine).filter(Boolean);
+
+        for (const line of planLines) {
+            if (/^(?:B\/|R\/)/i.test(line)) {
+                obat.push(line);
+                continue;
+            }
+
+            if (/^(?:Ruj\.?|Kontrol|Konsul|Follow\s*up|Observasi|Edukasi|Anjur|USG\s*ulang|Lab\s*ulang)/i.test(line)) {
+                instruksi.push(line);
+                continue;
+            }
+
+            tindakan.push(line);
+        }
+
+        if (obat.length > 0) {
+            cpptData.plan.obat = obat;
+        }
+
+        if (tindakan.length > 0) {
+            cpptData.plan.tindakan = tindakan;
+        }
+
+        if (instruksi.length > 0) {
+            cpptData.plan.instruksi = instruksi;
+        }
+    }
+
+    return cpptData;
+}
+
 /**
  * Get credentials from database (same as puppeteer service)
  */
@@ -793,22 +1034,40 @@ class MedifyHttpSession {
         const response = await this.request(url);
         const pageText = this._htmlToText(response.body);
 
-        // Use same regex patterns as puppeteer service
         const data = {};
-        const patterns = {
-            nama: /NAMA\s*PASIEN[\s:]+([A-Z\s.]+?)(?=\n|JENIS|STATUS|NIK)/i,
-            jenis_kelamin: /JENIS\s*KELAMIN[\s:]+(\w+)/i,
-            tanggal_lahir: /(?:TEMPAT.*?TANGGAL\s*LAHIR|TTL|TANGGAL\s*LAHIR)[\s:,]+([^\n]+)/i,
-            alamat: /ALAMAT[\s:]+([^\n]+)/i,
-            no_hp: /NO\s*HP[\s:]+(\d{10,13})/i,
-            no_identitas: /(?:NO\s*IDENTITAS|NIK)[\s:]+(\d{16})/i,
-            usia: /USIA[\s:]+(\d+)/i
+        const identityPatterns = {
+            nama: [
+                /NAMA\s*PASIEN[\s:]+([^\n]+?)(?=\n(?:JENIS|STATUS|NO\s*IDENTITAS|PEKERJAAN|USIA)\b)/i,
+                /NAMA\s*PASIEN[\s:]+([^\n]+)/i
+            ],
+            jenis_kelamin: [/JENIS\s*KELAMIN[\s:]+([^\n]+)/i],
+            status_pernikahan: [/STATUS\s*PERNIKAHAN[\s:]+([^\n]+)/i],
+            tanggal_lahir: [/(?:TEMPAT.*?TANGGAL\s*LAHIR|TTL|TANGGAL\s*LAHIR)[\s:,]+([^\n]+)/i],
+            alamat: [
+                /ALAMAT[\s:]+([\s\S]*?)(?=\n(?:ASAL\s+RUJUKAN|INFORMASI\s+PEMBAYARAN|PEMBAYARAN\s+UTAMA|INFORMASI\s+KUNJUNGAN|NO\s*HP)\b)/i,
+                /ALAMAT[\s:]+([^\n]+)/i
+            ],
+            no_hp: [/NO\s*HP[\s:]+([0-9+\-\s()]{8,20})/i],
+            no_identitas: [/(?:NO\s*IDENTITAS|NIK)[\s:]+([0-9.\-\s]{8,24})/i],
+            usia: [/USIA[\s:]+([^\n]+)/i],
+            pekerjaan: [/PEKERJAAN[\s:]+([^\n]+)/i],
+            pembayaran_utama: [/PEMBAYARAN\s*UTAMA[\s:]+([^\n]+)/i],
+            nomor_pembayaran: [/(?:NO\s*SEP|NO\s*KARTU|NO\s*PESERTA|NOMOR\s*SEP)[\s:]+([^\n]+)/i],
+            kelas_pembayaran: [/(?:KELAS(?:\s+RAWAT)?)\s*:?\s*([^\n]+)/i]
         };
 
-        for (const [field, pattern] of Object.entries(patterns)) {
-            const match = pageText.match(pattern);
-            if (match) {
-                data[field] = match[1].trim();
+        const normalizeValue = (value) => String(value || '')
+            .replace(/\s*\n\s*/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+
+        for (const [field, patterns] of Object.entries(identityPatterns)) {
+            for (const pattern of patterns) {
+                const match = pageText.match(pattern);
+                if (match && match[1]) {
+                    data[field] = normalizeValue(match[1]);
+                    break;
+                }
             }
         }
 
@@ -920,130 +1179,7 @@ class MedifyHttpSession {
      * Same logic as puppeteer service's page.evaluate callback.
      */
     _parseStructuredCPPT(text) {
-        const cpptData = {
-            subjective: {},
-            objective: {},
-            assessment: {},
-            plan: {}
-        };
-
-        // Parse SUBJECTIVE
-        const subjectiveMatch = text.match(/SUBJECTIVE([\s\S]*?)(?=OBJECTIVE|$)/i);
-        if (subjectiveMatch) {
-            const subText = subjectiveMatch[1];
-
-            const keluhanMatch = subText.match(/Keluhan\s*Utama\s*:?\s*([^\n]+)/i);
-            if (keluhanMatch) cpptData.subjective.keluhan_utama = keluhanMatch[1].trim();
-
-            const hplMatch = subText.match(/HPL\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
-            if (hplMatch) cpptData.subjective.hpl = hplMatch[1];
-
-            const hphtMatch = subText.match(/HPHT\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
-            if (hphtMatch) cpptData.subjective.hpht = hphtMatch[1];
-
-            const rpsMatch = subText.match(/(?:RPS|Riwayat\s*Penyakit\s*Sekarang)\s*:?\s*([^\n]+)/i);
-            if (rpsMatch) cpptData.subjective.rps = rpsMatch[1].trim();
-
-            const rpdMatch = subText.match(/(?:RPD|Riwayat\s*Penyakit\s*Dahulu)\s*:?\s*([^\n]+)/i);
-            if (rpdMatch) cpptData.subjective.rpd = rpdMatch[1].trim();
-
-            const rpkMatch = subText.match(/(?:RPK|Riwayat\s*Penyakit\s*Keluarga)\s*:?\s*([^\n]+)/i);
-            if (rpkMatch) cpptData.subjective.rpk = rpkMatch[1].trim();
-        }
-
-        // Parse OBJECTIVE
-        const objectiveMatch = text.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|ASSESMEN|$)/i);
-        if (objectiveMatch) {
-            const objText = objectiveMatch[1];
-
-            const tensiMatch = objText.match(/(?:Tensi|TD|Tekanan\s*Darah)\s*:?\s*(\d+\/\d+)/i);
-            if (tensiMatch) cpptData.objective.tensi = tensiMatch[1];
-
-            const nadiMatch = objText.match(/Nadi\s*:?\s*(\d+)/i);
-            if (nadiMatch) cpptData.objective.nadi = parseInt(nadiMatch[1]);
-
-            const suhuMatch = objText.match(/Suhu\s*:?\s*(\d+(?:[.,]\d+)?)/i);
-            if (suhuMatch) cpptData.objective.suhu = parseFloat(suhuMatch[1].replace(',', '.'));
-
-            const spo2Match = objText.match(/SpO2\s*:?\s*(\d+)/i);
-            if (spo2Match) cpptData.objective.spo2 = parseInt(spo2Match[1]);
-
-            const rrMatch = objText.match(/(?:RR|Respirasi)\s*:?\s*(\d+)/i);
-            if (rrMatch) cpptData.objective.rr = parseInt(rrMatch[1]);
-
-            const bbMatch = objText.match(/(?:BB|Berat\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
-            if (bbMatch) cpptData.objective.berat_badan = parseFloat(bbMatch[1].replace(',', '.'));
-
-            const tbMatch = objText.match(/(?:TB|Tinggi\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
-            if (tbMatch) cpptData.objective.tinggi_badan = parseFloat(tbMatch[1].replace(',', '.'));
-        }
-
-        // Parse ASSESSMENT (multiple pattern variants)
-        const assessmentPatterns = [
-            /ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
-            /ASSESMEN([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
-            /ASSESMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
-            /A\s*:\s*([\s\S]*?)(?=P\s*:|PLAN|$)/i
-        ];
-
-        let assText = null;
-        for (const pattern of assessmentPatterns) {
-            const match = text.match(pattern);
-            if (match) {
-                assText = match[1].trim();
-                break;
-            }
-        }
-
-        if (assText) {
-            // Diagnosis: join first 3 lines
-            const lines = assText.split('\n').filter(l => l.trim());
-            if (lines.length > 0) {
-                cpptData.assessment.diagnosis = lines.slice(0, 3).join(' ').trim();
-            }
-
-            // Obstetric formula: MEDIFY format G2P0101
-            const medifyMatch = assText.match(/G(\d+)P(\d)(\d)(\d)(\d)/i);
-            if (medifyMatch) {
-                cpptData.assessment.gravida = parseInt(medifyMatch[1]);
-                cpptData.assessment.para = parseInt(medifyMatch[2]) + parseInt(medifyMatch[3]);
-                cpptData.assessment.abortus = parseInt(medifyMatch[4]);
-                cpptData.assessment.anak_hidup = parseInt(medifyMatch[5]);
-                cpptData.assessment.is_obstetric = true;
-            } else {
-                // Dash format: G1 P0-0
-                const dashMatch = assText.match(/G(\d+)\s*P(\d+)-(\d+)/i);
-                if (dashMatch) {
-                    cpptData.assessment.gravida = parseInt(dashMatch[1]);
-                    cpptData.assessment.para = parseInt(dashMatch[2]);
-                    cpptData.assessment.abortus = 0;
-                    cpptData.assessment.anak_hidup = parseInt(dashMatch[3]);
-                    cpptData.assessment.is_obstetric = true;
-                } else {
-                    const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
-                    if (obsMatch) {
-                        cpptData.assessment.gravida = parseInt(obsMatch[1]);
-                        cpptData.assessment.para = parseInt(obsMatch[2]);
-                        cpptData.assessment.is_obstetric = true;
-                    }
-                }
-            }
-
-            // Gestational age
-            const ukMatch = assText.match(/uk\s*(\d+)\s*(?:(\d+)\/7)?\s*(?:mgg|minggu)/i);
-            if (ukMatch) {
-                cpptData.assessment.usia_kehamilan_minggu = parseInt(ukMatch[1]);
-                cpptData.assessment.usia_kehamilan_hari = ukMatch[2] ? parseInt(ukMatch[2]) : 0;
-            }
-        }
-
-        // Parse PLAN
-        const planMatch = text.match(/(?:PLAN|PLANNING)([\s\S]*?)(?=Dibuat|TTD|$)/i);
-        if (planMatch) {
-            cpptData.plan.raw = planMatch[1].trim();
-        }
-
-        return cpptData;
+        return parseStructuredCPPTText(text);
     }
 
     /**
@@ -1149,6 +1285,7 @@ module.exports = {
     delay,
     pLimit,
     SIMRS_CONFIG,
+    parseStructuredCPPTText,
     // Re-export matching functions from puppeteer service
     countMatchingFactors: puppeteerService.countMatchingFactors,
     findBestMatch: puppeteerService.findBestMatch

@@ -8,8 +8,8 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.11 - auto diagnosis adds Bekas SC markers
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.11';
+// Version 2.1.18 - Medify prefill now hydrates patient identity fields from SIMRS
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.18';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';
@@ -407,6 +407,9 @@ async function handlePatientFromUrl(patientId, appointmentId, location) {
             // Default to 'obstetri' category, can be changed by user
             const category = 'obstetri';
             const visitLocation = location || 'klinik_private';
+            const importSource = visitLocation !== 'klinik_private'
+                ? `simrs_${visitLocation.replace('rsia_', '').replace('rsud_', '')}`
+                : null;
 
             const createResponse = await fetch('/api/sunday-clinic/start-walk-in', {
                 method: 'POST',
@@ -417,7 +420,8 @@ async function handlePatientFromUrl(patientId, appointmentId, location) {
                 body: JSON.stringify({
                     patient_id: patientId,
                     category: category,
-                    location: visitLocation
+                    location: visitLocation,
+                    import_source: importSource
                 })
             });
 
