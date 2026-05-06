@@ -483,8 +483,30 @@ class SundayClinicApp {
         return /^(?:ICD\s*10(?:\s+Tipe)?|ICD\s*10\s+Tipe)\b/i.test(normalized);
     }
 
+    shouldForceReplaceMedifySection(sectionKey) {
+        const importSource = String(this.importSource || '');
+        const isLegacyMedifyImport = /^(?:simrs_|medify_|rsia_|rsud_|rs_)/i.test(importSource);
+
+        if (!this.isMedifyLocation() && !isLegacyMedifyImport) {
+            return false;
+        }
+
+        return [
+            'anamnesa',
+            'physical_exam',
+            'pemeriksaan_obstetri',
+            'usg',
+            'diagnosis',
+            'planning'
+        ].includes(sectionKey);
+    }
+
     shouldReplaceWithMedifyPrefill(sectionKey, currentSection, incomingSection) {
         if (!this.hasMeaningfulData(currentSection)) {
+            return true;
+        }
+
+        if (this.shouldForceReplaceMedifySection(sectionKey)) {
             return true;
         }
 
@@ -1878,7 +1900,8 @@ class SundayClinicApp {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'X-Skip-Medify-Sync': '1'
                 },
                 body: JSON.stringify(data)
             });

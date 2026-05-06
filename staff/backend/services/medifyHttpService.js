@@ -91,6 +91,16 @@ function buildAssessmentDiagnosisText(assessmentText) {
     return lines.slice(0, 3).join(' ').trim();
 }
 
+function cleanupObjectiveValue(value) {
+    return normalizeStructuredLine(String(value || '').replace(/[.;]+$/g, ''));
+}
+
+function normalizeBloodPressureValue(value) {
+    return String(value || '')
+        .replace(/\s*\/\s*/g, '/')
+        .trim();
+}
+
 function parseStructuredCPPTText(text) {
     const cpptData = {
         subjective: {},
@@ -159,33 +169,35 @@ function parseStructuredCPPTText(text) {
         }
     }
 
-    const objectiveMatch = text.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|ASSESMEN|$)/i);
+    const objectiveMatch = text.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|ASSESMEN|DIAGNOSA|DIAGNOSIS|$)/i);
     if (objectiveMatch) {
         const objText = objectiveMatch[1];
+        const objectiveLines = objText.split(/\n+/).map(normalizeStructuredLine).filter(Boolean);
 
-        const tensiMatch = objText.match(/(?:Tensi|TD|Tekanan\s*Darah)\s*:?\s*(\d+\/\d+)/i);
-        if (tensiMatch) cpptData.objective.tensi = tensiMatch[1];
+        const tensiMatch = objText.match(/(?:Tensi|TD|Tekanan\s*Darah)\s*[:=]?\s*(\d+\s*\/\s*\d+)/i);
+        if (tensiMatch) cpptData.objective.tensi = normalizeBloodPressureValue(tensiMatch[1]);
 
-        const nadiMatch = objText.match(/Nadi\s*:?\s*(\d+)/i);
+        const nadiMatch = objText.match(/Nadi\s*[:=]?\s*(\d+)/i);
         if (nadiMatch) cpptData.objective.nadi = parseInt(nadiMatch[1], 10);
 
-        const suhuMatch = objText.match(/Suhu\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+        const suhuMatch = objText.match(/Suhu\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
         if (suhuMatch) cpptData.objective.suhu = parseFloat(suhuMatch[1].replace(',', '.'));
 
-        const spo2Match = objText.match(/SpO2\s*:?\s*(\d+)/i);
+        const spo2Match = objText.match(/SpO2\s*[:=]?\s*(\d+)/i);
         if (spo2Match) cpptData.objective.spo2 = parseInt(spo2Match[1], 10);
 
-        const rrMatch = objText.match(/(?:RR|Respirasi)\s*:?\s*(\d+)/i);
+        const rrMatch = objText.match(/(?:RR|Respirasi)\s*[:=]?\s*(\d+)/i);
         if (rrMatch) cpptData.objective.rr = parseInt(rrMatch[1], 10);
 
-        const bbMatch = objText.match(/(?:BB|Berat\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+        const bbMatch = objText.match(/(?:BB|Berat\s*Badan)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
         if (bbMatch) cpptData.objective.berat_badan = parseFloat(bbMatch[1].replace(',', '.'));
 
-        const tbMatch = objText.match(/(?:TB|Tinggi\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+        const tbMatch = objText.match(/(?:TB|Tinggi\s*Badan)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
         if (tbMatch) cpptData.objective.tinggi_badan = parseFloat(tbMatch[1].replace(',', '.'));
 
         const gcsMatch = objText.match(/GCS\s*:?\s*E\s*:?\s*(\d)\s*V\s*:?\s*(\d)\s*M\s*:?\s*(\d)/i)
-            || objText.match(/GCS\s*:?\s*E(\d)\s*V(\d)\s*M(\d)/i);
+            || objText.match(/GCS\s*:?\s*E(\d)\s*V(\d)\s*M(\d)/i)
+            || objText.match(/GCS\s*[:=]?\s*(\d)\s*[-\/]\s*(\d)\s*[-\/]\s*(\d)/i);
         if (gcsMatch) {
             cpptData.objective.gcs = `E${gcsMatch[1]} V${gcsMatch[2]} M${gcsMatch[3]}`;
         }
@@ -194,12 +206,41 @@ function parseStructuredCPPTText(text) {
         if (consciousnessMatch) {
             cpptData.objective.kesadaran = normalizeStructuredLine(consciousnessMatch[1]);
         }
+
+        for (const line of objectiveLines) {
+            let match = null;
+
+            match = line.match(/LILA\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
+            if (match) {
+                cpptData.objective.lila = parseFloat(match[1].replace(',', '.'));
+                continue;
+            }
+
+            match = line.match(/(?:PALPASI\s*)?TFU\s*[:=]?\s*(.+)$/i);
+            if (match) {
+                cpptData.objective.tfu = cleanupObjectiveValue(match[1]);
+                continue;
+            }
+
+            match = line.match(/DJJ\s*\+?\s*[:=]?\s*(.+)$/i);
+            if (match) {
+                cpptData.objective.djj = cleanupObjectiveValue(match[1]);
+                continue;
+            }
+
+            match = line.match(/VT\s*[:=]?\s*(.+)$/i);
+            if (match) {
+                cpptData.objective.vt = cleanupObjectiveValue(match[1]);
+            }
+        }
     }
 
     const assessmentPatterns = [
         /ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
         /ASSESMEN([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
         /ASSESMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+        /DIAGNOSA([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+        /DIAGNOSIS([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
         /A\s*:\s*([\s\S]*?)(?=P\s*:|PLAN|$)/i
     ];
 
@@ -256,14 +297,30 @@ function parseStructuredCPPTText(text) {
         const tindakan = [];
         const instruksi = [];
         const planLines = rawPlan.split(/\n+/).map(normalizeStructuredLine).filter(Boolean);
+        let instructionMode = false;
 
         for (const line of planLines) {
+            if (/^INSTRUKSI\s*(?:DOKTER)?\b\s*:?$/i.test(line)) {
+                instructionMode = true;
+                continue;
+            }
+
             if (/^(?:B\/|R\/)/i.test(line)) {
                 obat.push(line);
                 continue;
             }
 
+            if (instructionMode) {
+                instruksi.push(line);
+                continue;
+            }
+
             if (/^(?:Ruj\.?|Kontrol|Konsul|Follow\s*up|Observasi|Edukasi|Anjur|USG\s*ulang|Lab\s*ulang)/i.test(line)) {
+                instruksi.push(line);
+                continue;
+            }
+
+            if (/^(?:Pro\b|Program\b|Persiapan\b|Jadwal\b|Rencana\s*(?:SC|Operasi)?\b)/i.test(line)) {
                 instruksi.push(line);
                 continue;
             }
@@ -1092,52 +1149,10 @@ class MedifyHttpSession {
 
         console.log(`[HTTP] CPPT page text length: ${pageText.length}`);
 
-        // --- Filter to Dr. Dibya's entries only (same logic as puppeteer service) ---
-        const dibyaPatterns = [
-            /dibya\s*arfianda/i,
-            /dr\.?\s*dibya/i,
-            /Dibya.*SpOG/i,
-            /Dokter\s*[-:]\s*.*dibya/i
-        ];
-
-        const entries = pageText.split(/(?:CPPT\s*\d+|Catatan\s*Perkembangan|SOAP\s*\d*)/gi);
-
-        let dibyaText = '';
-        let foundDibyaEntry = false;
-
-        // Find first (most recent) Dr. Dibya entry with SOAP content
-        for (const entry of entries) {
-            const isDibyaEntry = dibyaPatterns.some(p => p.test(entry));
-            const hasSOAPContent = /SUBJECTIVE|OBJECTIVE|Subjective|Objective|SUBYEKTIF|OBYEKTIF/i.test(entry);
-
-            if (isDibyaEntry && hasSOAPContent) {
-                foundDibyaEntry = true;
-                dibyaText = entry;
-                break;
-            }
-        }
-
-        // Fallback: find Dr. Dibya signature and extract SOAP before it
-        if (!foundDibyaEntry) {
-            const dibyaIdx = pageText.search(/dibya\s*arfianda|dr\.?\s*dibya/i);
-            if (dibyaIdx !== -1) {
-                const textBefore = pageText.substring(0, dibyaIdx);
-                const lastSubjective = Math.max(
-                    textBefore.lastIndexOf('SUBJECTIVE'),
-                    textBefore.lastIndexOf('Subjective'),
-                    textBefore.lastIndexOf('SUBYEKTIF')
-                );
-
-                if (lastSubjective !== -1) {
-                    const signatureEnd = Math.min(dibyaIdx + 100, pageText.length);
-                    dibyaText = pageText.substring(lastSubjective, signatureEnd);
-                    foundDibyaEntry = true;
-                }
-            }
-        }
+        let text = puppeteerService.extractLatestDoctorCpptText(pageText);
 
         // No Dr. Dibya entry found → skip
-        if (!foundDibyaEntry || !dibyaText.trim()) {
+        if (!text.trim()) {
             console.log(`[HTTP] No Dr. Dibya CPPT found for ${medId}`);
             return {
                 rawText: '',
@@ -1145,13 +1160,6 @@ class MedifyHttpSession {
                 skipReason: 'no_dibya_cppt'
             };
         }
-
-        // Clean up
-        let text = dibyaText
-            .replace(/\t+/g, ' ')
-            .replace(/  +/g, ' ')
-            .replace(/\n\s*\n\s*\n/g, '\n\n')
-            .trim();
 
         if (text.length > 20000) {
             text = text.substring(0, 20000);
