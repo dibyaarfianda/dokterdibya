@@ -109,6 +109,15 @@ function calculateAge(dateValue) {
     return age >= 0 ? age : null;
 }
 
+const MEDIFY_SOAP_SYNC_SECTIONS = new Set([
+    'anamnesa',
+    'physical_exam',
+    'pemeriksaan_obstetri',
+    'usg',
+    'diagnosis',
+    'planning'
+]);
+
 function convertLooseDateToIso(dateStr) {
     if (!dateStr) {
         return null;
@@ -391,6 +400,66 @@ async function findLatestIntake(patientId, phoneCandidates) {
     }
 
     return null;
+}
+
+function mergeStructuredCpptPayload(cpptPayload) {
+    const normalizedPayload = cpptPayload && typeof cpptPayload === 'object' ? cpptPayload : {};
+    const reparsed = normalizedPayload.rawText ? parseStructuredCPPTText(normalizedPayload.rawText) : null;
+    const storedStructured = normalizedPayload.structured || {};
+    const rawText = String(normalizedPayload.rawText || '');
+
+    const hasMeaningfulSectionData = (section) => {
+        if (!section || typeof section !== 'object') {
+            return false;
+        }
+
+        return Object.values(section).some((value) => {
+            if (Array.isArray(value)) {
+                return value.length > 0;
+            }
+
+            if (value && typeof value === 'object') {
+                return Object.keys(value).length > 0;
+            }
+
+            return String(value || '').trim() !== '';
+        });
+    };
+
+    const selectSection = (storedSection, reparsedSection, sectionPattern) => {
+        if (sectionPattern.test(rawText)) {
+            return hasMeaningfulSectionData(reparsedSection) ? reparsedSection : {};
+        }
+
+        if (hasMeaningfulSectionData(reparsedSection)) {
+            return reparsedSection;
+        }
+
+        return storedSection;
+    };
+
+    return {
+        subjective: selectSection(
+            storedStructured.subjective || {},
+            reparsed?.subjective || {},
+            /\bSUBJECTIVE\b/i
+        ),
+        objective: selectSection(
+            storedStructured.objective || {},
+            reparsed?.objective || {},
+            /\bOBJECTIVE\b/i
+        ),
+        assessment: selectSection(
+            storedStructured.assessment || {},
+            reparsed?.assessment || {},
+            /\b(?:ASSESSMENT|ASSESMEN|ASSESMENT|DIAGNOSA|DIAGNOSIS|A\s*:)\b/i
+        ),
+        plan: selectSection(
+            storedStructured.plan || {},
+            reparsed?.plan || {},
+            /\b(?:PLAN|PLANNING|P\s*:)\b/i
+        )
+    };
 }
 
 function buildIntakeSummary(payload) {
@@ -996,6 +1065,7 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
     const section = req.params.section;
     const data = req.body;
+    const skipMedifySync = req.get('X-Skip-Medify-Sync') === '1';
 
     if (!normalizedMrId) {
         return res.status(400).json({
@@ -1057,20 +1127,22 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             [normalizedMrId]
         );
 
-        if (section === 'diagnosis' && recordRow.visit_location === 'rsia_melinda') {
+        if (MEDIFY_SOAP_SYNC_SECTIONS.has(section) && recordRow.visit_location === 'rsia_melinda' && !skipMedifySync) {
             try {
                 medifySyncResult = await sundayClinicMedifySyncQueue.enqueueDiagnosis({
                     mrId: normalizedMrId,
                     patientId: recordRow.patient_id,
                     visitLocation: recordRow.visit_location,
-                    diagnosisData: data,
+                    diagnosisData: section === 'diagnosis' ? data : undefined,
+                    changedSection: section,
                     eventAt: new Date().toISOString(),
                     createdBy: req.user?.name || req.user?.id || null
                 });
             } catch (syncError) {
-                logger.warn('Failed to enqueue diagnosis sync to Medify', {
+                logger.warn('Failed to enqueue SOAP sync to Medify', {
                     mrId: normalizedMrId,
                     patientId: recordRow.patient_id,
+                    section,
                     error: syncError.message
                 });
             }
@@ -1488,27 +1560,83 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             });
         }
 
-        const cpptPayload = parseJson(rows[0].cppt_data, 'medify_prefill_cppt_data') || {};
-        const reparsed = cpptPayload.rawText ? parseStructuredCPPTText(cpptPayload.rawText) : null;
-        const storedStructured = cpptPayload.structured || {};
-        const structured = {
-            subjective: {
-                ...(storedStructured.subjective || {}),
-                ...(reparsed?.subjective || {})
-            },
-            objective: {
-                ...(storedStructured.objective || {}),
-                ...(reparsed?.objective || {})
-            },
-            assessment: {
-                ...(storedStructured.assessment || {}),
-                ...(reparsed?.assessment || {})
-            },
-            plan: {
-                ...(storedStructured.plan || {}),
-                ...(reparsed?.plan || {})
+        const cachedCpptPayload = parseJson(rows[0].cppt_data, 'medify_prefill_cppt_data') || {};
+        let cpptPayload = cachedCpptPayload;
+        let livePrefillFetchedAt = rows[0].completed_at || rows[0].created_at || null;
+        let identity = {};
+
+        if (rows[0].simrs_med_id) {
+            const medifySession = createSession(recordRow.visit_location);
+            try {
+                await medifySession.login();
+
+                const liveCpptPayload = await medifySession.extractCPPT(rows[0].simrs_med_id);
+                if (liveCpptPayload && !liveCpptPayload.skipReason && String(liveCpptPayload.rawText || '').trim()) {
+                    cpptPayload = liveCpptPayload;
+                    livePrefillFetchedAt = new Date().toISOString();
+
+                    try {
+                        await db.query(
+                            `UPDATE medify_import_jobs
+                             SET cppt_data = ?,
+                                 status = 'success',
+                                 error_message = NULL,
+                                 completed_at = NOW()
+                             WHERE patient_id = ?
+                               AND simrs_source = ?
+                               AND simrs_med_id = ?
+                             ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
+                             LIMIT 1`,
+                            [
+                                JSON.stringify(liveCpptPayload),
+                                recordRow.patient_id,
+                                recordRow.visit_location,
+                                rows[0].simrs_med_id
+                            ]
+                        );
+                    } catch (updateCpptError) {
+                        logger.warn('Failed to persist refreshed Medify CPPT payload for Sunday Clinic prefill', {
+                            mrId: normalizedMrId,
+                            patientId: recordRow.patient_id,
+                            simrsMedId: rows[0].simrs_med_id,
+                            visitLocation: recordRow.visit_location,
+                            error: updateCpptError.message
+                        });
+                    }
+                } else if (liveCpptPayload?.skipReason) {
+                    logger.warn('Live Medify CPPT refresh skipped for Sunday Clinic prefill, falling back to cached payload', {
+                        mrId: normalizedMrId,
+                        patientId: recordRow.patient_id,
+                        simrsMedId: rows[0].simrs_med_id,
+                        visitLocation: recordRow.visit_location,
+                        reason: liveCpptPayload.skipReason
+                    });
+                }
+
+                const medifyIdentity = await medifySession.extractPatientIdentity(rows[0].simrs_med_id);
+                identity = buildMedifyIdentityPrefill(medifyIdentity);
+            } catch (medifyRefreshError) {
+                logger.warn('Failed to refresh Medify CPPT/identity for Sunday Clinic prefill', {
+                    mrId: normalizedMrId,
+                    patientId: recordRow.patient_id,
+                    simrsMedId: rows[0].simrs_med_id,
+                    visitLocation: recordRow.visit_location,
+                    error: medifyRefreshError.message
+                });
+            } finally {
+                try {
+                    await medifySession.close();
+                } catch (closeError) {
+                    logger.warn('Failed to close Medify session after Sunday Clinic prefill refresh', {
+                        mrId: normalizedMrId,
+                        simrsMedId: rows[0].simrs_med_id,
+                        error: closeError.message
+                    });
+                }
             }
-        };
+        }
+
+        const structured = mergeStructuredCpptPayload(cpptPayload);
 
         const usiaKehamilanMinggu = structured.assessment?.usia_kehamilan_minggu;
         const usiaKehamilanHari = structured.assessment?.usia_kehamilan_hari;
@@ -1532,15 +1660,21 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
 
         const physicalExam = {
             tensi: structured.objective?.tensi || '',
+            td: structured.objective?.tensi || '',
+            tekanan_darah: structured.objective?.tensi || '',
             nadi: structured.objective?.nadi || '',
             suhu: structured.objective?.suhu || '',
             rr: structured.objective?.rr || '',
+            respirasi: structured.objective?.rr || '',
+            bb: structured.objective?.berat_badan || '',
             berat_badan: structured.objective?.berat_badan || '',
+            tb: structured.objective?.tinggi_badan || '',
             tinggi_badan: structured.objective?.tinggi_badan || ''
         };
 
         const pemeriksaanObstetri = {
             findings: [
+                structured.objective?.lila ? `LILA: ${structured.objective.lila}` : '',
                 structured.objective?.tfu ? `TFU: ${structured.objective.tfu}` : '',
                 structured.objective?.djj ? `DJJ: ${structured.objective.djj}` : '',
                 structured.objective?.vt ? `VT: ${structured.objective.vt}` : ''
@@ -1560,45 +1694,23 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
             diagnosis_sekunder: ''
         };
 
+        const hasStructuredPlanParts = Boolean(
+            (Array.isArray(structured.plan?.obat) && structured.plan.obat.length > 0)
+            || (Array.isArray(structured.plan?.tindakan) && structured.plan.tindakan.length > 0)
+            || (Array.isArray(structured.plan?.instruksi) && structured.plan.instruksi.length > 0)
+        );
+
         const planning = {
             tindakan: Array.isArray(structured.plan?.tindakan)
                 ? structured.plan.tindakan.join('\n')
                 : (structured.plan?.tindakan || ''),
             terapi: Array.isArray(structured.plan?.obat)
                 ? structured.plan.obat.join('\n')
-                : (structured.plan?.obat || structured.plan?.raw || ''),
+                : (structured.plan?.obat || (!hasStructuredPlanParts ? (structured.plan?.raw || '') : '')),
             rencana: Array.isArray(structured.plan?.instruksi)
                 ? structured.plan.instruksi.join('\n')
                 : (structured.plan?.instruksi || '')
         };
-
-        let identity = {};
-        if (rows[0].simrs_med_id) {
-            const medifySession = createSession(recordRow.visit_location);
-            try {
-                await medifySession.login();
-                const medifyIdentity = await medifySession.extractPatientIdentity(rows[0].simrs_med_id);
-                identity = buildMedifyIdentityPrefill(medifyIdentity);
-            } catch (identityError) {
-                logger.warn('Failed to fetch Medify identity for Sunday Clinic prefill', {
-                    mrId: normalizedMrId,
-                    patientId: recordRow.patient_id,
-                    simrsMedId: rows[0].simrs_med_id,
-                    visitLocation: recordRow.visit_location,
-                    error: identityError.message
-                });
-            } finally {
-                try {
-                    await medifySession.close();
-                } catch (closeError) {
-                    logger.warn('Failed to close Medify session after identity prefill', {
-                        mrId: normalizedMrId,
-                        simrsMedId: rows[0].simrs_med_id,
-                        error: closeError.message
-                    });
-                }
-            }
-        }
 
         const hasSectionData = [anamnesa, physicalExam, pemeriksaanObstetri, usg, diagnosis, planning]
             .some(section => Object.values(section).some(value => String(value || '').trim() !== ''));
@@ -1612,7 +1724,7 @@ router.get('/records/:mrId/prefill/medify', verifyToken, async (req, res, next) 
                 hasData: hasSectionData || hasIdentity,
                 hasIdentity,
                 simrsMedId: rows[0].simrs_med_id,
-                fetchedAt: rows[0].completed_at || rows[0].created_at,
+                fetchedAt: livePrefillFetchedAt,
                 identity,
                 sections: {
                     anamnesa,

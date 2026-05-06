@@ -143,36 +143,133 @@ function buildSubjective(anamnesa) {
     return lines.join('\n').trim();
 }
 
-function buildObjective(physicalExam) {
-    if (!physicalExam) {
+function buildUsgSummary(usg) {
+    if (!usg || typeof usg !== 'object') {
         return '';
     }
 
-    const lines = [];
-    const tensi = normalizeText(physicalExam.tekanan_darah || physicalExam.tensi);
-    const nadi = normalizeText(physicalExam.nadi);
-    const suhu = normalizeText(physicalExam.suhu);
-    const rr = normalizeText(physicalExam.respirasi || physicalExam.rr);
-    const bb = normalizeText(physicalExam.berat_badan);
-    const tb = normalizeText(physicalExam.tinggi_badan);
+    const flatSummaryParts = [];
+    const hasilUsg = normalizeText(usg.hasil_usg || usg.findings || usg.usg);
+    const presentasi = normalizeText(usg.presentasi);
+    const plasenta = normalizeText(usg.plasenta);
+    const ketuban = normalizeText(usg.ketuban);
+    const beratJanin = normalizeText(usg.berat_janin);
 
-    if (tensi) {
-        lines.push(`Tensi: ${tensi}`);
+    if (hasilUsg) {
+        flatSummaryParts.push(hasilUsg);
     }
-    if (nadi) {
-        lines.push(`Nadi: ${nadi}`);
+    if (presentasi) {
+        flatSummaryParts.push(`Presentasi ${presentasi}`);
     }
-    if (suhu) {
-        lines.push(`Suhu: ${suhu}`);
+    if (plasenta) {
+        flatSummaryParts.push(`Plasenta ${plasenta}`);
     }
-    if (rr) {
-        lines.push(`Respirasi: ${rr}`);
+    if (ketuban) {
+        flatSummaryParts.push(`Ketuban ${ketuban}`);
     }
-    if (bb) {
-        lines.push(`Berat badan: ${bb}`);
+    if (beratJanin) {
+        flatSummaryParts.push(`EFW ${beratJanin}`);
     }
-    if (tb) {
-        lines.push(`Tinggi badan: ${tb}`);
+
+    if (flatSummaryParts.length > 0) {
+        return `USG: ${flatSummaryParts.join(', ')}`;
+    }
+
+    const trimesterMap = {
+        first: usg.trimester_1,
+        second: usg.trimester_2,
+        third: usg.trimester_3
+    };
+    const activeTrimester = trimesterMap[usg.current_trimester] || usg.trimester_3 || usg.trimester_2 || usg.trimester_1;
+
+    if (!activeTrimester || typeof activeTrimester !== 'object') {
+        return '';
+    }
+
+    const summaryParts = [];
+    const trimesterLabel = normalizeText(usg.current_trimester);
+    const trimesterDate = normalizeText(activeTrimester.date);
+    const gaFromEdd = normalizeText(activeTrimester.ga_from_edd || activeTrimester.ga_weeks);
+    const fetusCount = normalizeText(activeTrimester.fetus_count || activeTrimester.embryo_count);
+    const gender = normalizeText(activeTrimester.gender);
+    const presentationSummary = normalizeText(activeTrimester.presentation || activeTrimester.fetus_lie);
+    const placentaSummary = normalizeText(activeTrimester.placenta || activeTrimester.placenta_previa);
+    const afi = normalizeText(activeTrimester.afi);
+    const efw = normalizeText(activeTrimester.efw);
+    const notes = normalizeText(activeTrimester.notes);
+
+    if (trimesterLabel) {
+        summaryParts.push(`Trimester ${trimesterLabel}`);
+    }
+    if (trimesterDate) {
+        summaryParts.push(`Tanggal ${trimesterDate}`);
+    }
+    if (gaFromEdd) {
+        summaryParts.push(`UK ${gaFromEdd}`);
+    }
+    if (fetusCount) {
+        summaryParts.push(`Janin ${fetusCount}`);
+    }
+    if (gender) {
+        summaryParts.push(`Gender ${gender}`);
+    }
+    if (presentationSummary) {
+        summaryParts.push(`Presentasi ${presentationSummary}`);
+    }
+    if (placentaSummary) {
+        summaryParts.push(`Plasenta ${placentaSummary}`);
+    }
+    if (afi) {
+        summaryParts.push(`AFI ${afi}`);
+    }
+    if (efw) {
+        summaryParts.push(`EFW ${efw}`);
+    }
+    if (notes) {
+        summaryParts.push(`Catatan ${notes}`);
+    }
+
+    return summaryParts.length > 0 ? `USG: ${summaryParts.join(', ')}` : '';
+}
+
+function buildObjective(physicalExam, pemeriksaanObstetri, usg) {
+    const lines = [];
+    if (physicalExam && typeof physicalExam === 'object') {
+        const tensi = normalizeText(physicalExam.tekanan_darah || physicalExam.tensi);
+        const nadi = normalizeText(physicalExam.nadi);
+        const suhu = normalizeText(physicalExam.suhu);
+        const rr = normalizeText(physicalExam.respirasi || physicalExam.rr);
+        const bb = normalizeText(physicalExam.berat_badan);
+        const tb = normalizeText(physicalExam.tinggi_badan);
+
+        if (tensi) {
+            lines.push(`Tensi: ${tensi}`);
+        }
+        if (nadi) {
+            lines.push(`Nadi: ${nadi}`);
+        }
+        if (suhu) {
+            lines.push(`Suhu: ${suhu}`);
+        }
+        if (rr) {
+            lines.push(`Respirasi: ${rr}`);
+        }
+        if (bb) {
+            lines.push(`Berat badan: ${bb}`);
+        }
+        if (tb) {
+            lines.push(`Tinggi badan: ${tb}`);
+        }
+    }
+
+    const obstetriFindings = normalizeText(pemeriksaanObstetri?.findings);
+    if (obstetriFindings) {
+        lines.push(`Pemeriksaan obstetri: ${obstetriFindings}`);
+    }
+
+    const usgSummary = buildUsgSummary(usg);
+    if (usgSummary) {
+        lines.push(usgSummary);
     }
 
     return lines.join('\n').trim();
@@ -371,6 +468,8 @@ async function buildCommPayload(jobRow) {
     const sectionData = await loadSectionDataByType(jobRow.mr_id, [
         'anamnesa',
         'physical_exam',
+        'pemeriksaan_obstetri',
+        'usg',
         'diagnosis',
         'planning'
     ]);
@@ -380,7 +479,7 @@ async function buildCommPayload(jobRow) {
     const planningRecord = sectionData.planning || {};
 
     const subjective = buildSubjective(sectionData.anamnesa);
-    const objective = buildObjective(sectionData.physical_exam);
+    const objective = buildObjective(sectionData.physical_exam, sectionData.pemeriksaan_obstetri, sectionData.usg);
 
     const diagnosisUtama = normalizeText(
         diagnosisPayload.diagnosis_utama ||
@@ -413,10 +512,10 @@ async function buildCommPayload(jobRow) {
         };
     }
 
-    const dateSource = diagnosisPayload.record_datetime ||
+    const dateSource = payload.eventAt ||
+        diagnosisPayload.record_datetime ||
         diagnosisPayload.recordDatetime ||
         planningRecord.record_datetime ||
-        payload.eventAt ||
         new Date().toISOString();
 
     const dt = nowDateTimeParts(dateSource);

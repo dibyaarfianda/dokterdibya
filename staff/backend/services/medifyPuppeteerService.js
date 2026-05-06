@@ -364,6 +364,58 @@ async function extractPatientIdentity(page, source, medId) {
     return identity;
 }
 
+function extractLatestDoctorCpptText(fullText) {
+    const sourceText = String(fullText || '');
+    if (!sourceText.trim()) {
+        return '';
+    }
+
+    const dibyaPatterns = [
+        /dibya\s*arfianda/i,
+        /dr\.?\s*dibya/i,
+        /Dibya.*SpOG/i,
+        /Dokter\s*[-:]\s*.*dibya/i
+    ];
+    const soapPattern = /SUBJECTIVE|OBJECTIVE|Subjective|Objective|SUBYEKTIF|OBYEKTIF/i;
+    const entryPattern = /((?:^|\n)\s*(?:CPPT\s*\d+|Catatan\s*Perkembangan|SOAP\s*\d*)[\s\S]*?)(?=(?:\n\s*(?:CPPT\s*\d+|Catatan\s*Perkembangan|SOAP\s*\d*))|$)/gi;
+
+    let match;
+    while ((match = entryPattern.exec(sourceText)) !== null) {
+        const entry = String(match[1] || '').trim();
+        const isDibyaEntry = dibyaPatterns.some((pattern) => pattern.test(entry));
+        if (isDibyaEntry && soapPattern.test(entry)) {
+            return entry
+                .replace(/\t+/g, ' ')
+                .replace(/  +/g, ' ')
+                .replace(/\n\s*\n\s*\n/g, '\n\n')
+                .trim();
+        }
+    }
+
+    const dibyaMatch = sourceText.match(/dibya\s*arfianda|dr\.?\s*dibya/i);
+    if (!dibyaMatch || typeof dibyaMatch.index !== 'number') {
+        return '';
+    }
+
+    const textBefore = sourceText.substring(0, dibyaMatch.index);
+    const cpptStart = Math.max(
+        textBefore.lastIndexOf('SUBJECTIVE'),
+        textBefore.lastIndexOf('Subjective'),
+        textBefore.lastIndexOf('SUBYEKTIF')
+    );
+
+    if (cpptStart === -1) {
+        return '';
+    }
+
+    return sourceText
+        .substring(cpptStart, Math.min(dibyaMatch.index + 100, sourceText.length))
+        .replace(/\t+/g, ' ')
+        .replace(/  +/g, ' ')
+        .replace(/\n\s*\n\s*\n/g, '\n\n')
+        .trim();
+}
+
 /**
  * Extract CPPT from page
  */
@@ -424,102 +476,12 @@ async function extractCPPT(page, source, medId) {
     });
     console.log(`[Medify] CPPT page info:`, pageInfo);
 
-    // Get CPPT content - ONLY from Dr. Dibya's entries, not nurses or other doctors
-    const text = await page.evaluate(() => {
-        const fullText = document.body.innerText;
+    const fullText = await page.evaluate(() => document.body.innerText);
+    let text = extractLatestDoctorCpptText(fullText);
 
-        // IMPORTANT: Filter to only Dr. Dibya's CPPT entries
-        // CPPT entries are usually in format:
-        // "CPPT 1 DD-MM-YYYY Dokter - dr. Dibya Arfianda, SpOG..."
-        // or "Dibuat Oleh\ndr. Dibya..."
-        // We need to find sections that contain "Dibya" as the author
-
-        // Split the page into individual CPPT entries
-        // Each CPPT entry typically starts with "CPPT \d+" or "Catatan Perkembangan"
-        const cpptEntryPattern = /(?:CPPT\s*\d+|Catatan\s*Perkembangan|SOAP\s*\d*)/gi;
-        const entries = fullText.split(cpptEntryPattern);
-
-        // Find entries authored by Dr. Dibya
-        // Dr. Dibya's entries contain variations like:
-        // - "dr. Dibya Arfianda"
-        // - "Dibya Arfianda, SpOG"
-        // - "Dokter - dr. Dibya"
-        const dibyaPatterns = [
-            /dibya\s*arfianda/i,
-            /dr\.?\s*dibya/i,
-            /Dibya.*SpOG/i,
-            /Dokter\s*[-:]\s*.*dibya/i
-        ];
-
-        let dibyaText = '';
-        let foundDibyaEntry = false;
-
-        // Check each segment for Dr. Dibya's authorship
-        // IMPORTANT: Only take the FIRST (most recent) Dr. Dibya entry, not all entries!
-        // CPPT entries are in reverse chronological order (newest first)
-        // CRITICAL: Entry must contain BOTH Dr. Dibya AND SOAP content (SUBJECTIVE/OBJECTIVE)
-        //           to avoid matching page header which has "DPJP Utama: dr. DIBYA"
-        for (let i = 0; i < entries.length; i++) {
-            const entry = entries[i];
-            const isDibyaEntry = dibyaPatterns.some(pattern => pattern.test(entry));
-            const hasSOAPContent = /SUBJECTIVE|OBJECTIVE|Subjective|Objective|SUBYEKTIF|OBYEKTIF/i.test(entry);
-
-            // Must have BOTH Dr. Dibya AND SOAP content - skip page header/navigation
-            if (isDibyaEntry && hasSOAPContent) {
-                foundDibyaEntry = true;
-                // Extract ONLY this entry (the most recent one) - DO NOT combine multiple entries
-                dibyaText = entry;
-                break; // Stop after finding the first (most recent) Dr. Dibya entry
-            }
-        }
-
-        // If no explicit Dr. Dibya entries found, try alternative approach:
-        // Find text blocks from SUBJECTIVE to Dr. Dibya's signature
-        if (!foundDibyaEntry) {
-            // Look for Dr. Dibya's signature in the text and extract SOAP content BEFORE it
-            const dibyaMatch = fullText.match(/dibya\s*arfianda|dr\.?\s*dibya/i);
-            if (dibyaMatch) {
-                const dibyaIdx = fullText.search(/dibya\s*arfianda|dr\.?\s*dibya/i);
-
-                // Find the SUBJECTIVE that precedes this entry
-                const textBefore = fullText.substring(0, dibyaIdx);
-                const lastSubjective = textBefore.lastIndexOf('SUBJECTIVE');
-                const lastSubjectif = textBefore.lastIndexOf('Subjective');
-                const lastSubyektif = textBefore.lastIndexOf('SUBYEKTIF');
-
-                const cpptStart = Math.max(lastSubjective, lastSubjectif, lastSubyektif);
-
-                if (cpptStart !== -1) {
-                    // End at the signature line (include a bit after "Dibya" to get full signature)
-                    // Stop before the next CPPT entry or other doctor/nurse
-                    const signatureEnd = Math.min(dibyaIdx + 100, fullText.length);
-                    dibyaText = fullText.substring(cpptStart, signatureEnd);
-                    foundDibyaEntry = true;
-                }
-            }
-        }
-
-        // NO FALLBACK - If no Dr. Dibya entry found, return empty string
-        // This will cause the patient to be skipped (no data from other doctors/nurses)
-        if (!foundDibyaEntry || !dibyaText.trim()) {
-            console.warn('[CPPT] No Dr. Dibya entry found - skipping this patient');
-            return '';
-        }
-
-        // Clean up the text
-        let text = dibyaText
-            .replace(/\t+/g, ' ')
-            .replace(/  +/g, ' ')
-            .replace(/\n\s*\n\s*\n/g, '\n\n')
-            .trim();
-
-        // Limit to 20000 chars for AI parsing
-        if (text.length > 20000) {
-            text = text.substring(0, 20000);
-        }
-
-        return text;
-    });
+    if (text.length > 20000) {
+        text = text.substring(0, 20000);
+    }
 
     console.log(`[Medify] Extracted CPPT text length: ${text.length}, contains Dibya: ${/dibya/i.test(text)}`);
 
@@ -562,18 +524,67 @@ async function extractCPPT(page, source, medId) {
         }
 
         // Parse OBJECTIVE section
-        const objectiveMatch = pageText.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|$)/i);
+        const objectiveMatch = pageText.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|ASSESMEN|DIAGNOSA|DIAGNOSIS|$)/i);
         if (objectiveMatch) {
             const objText = objectiveMatch[1];
+            const objectiveLines = objText.split(/\n+/)
+                .map(line => String(line || '').replace(/\r/g, '').replace(/^[\s\-•*]+/, '').replace(/\s+/g, ' ').trim())
+                .filter(Boolean);
 
-            const tensiMatch = objText.match(/Tensi\s*:?\s*(\d+\/\d+)/i);
-            if (tensiMatch) cpptData.objective.tensi = tensiMatch[1];
+            const tensiMatch = objText.match(/(?:Tensi|TD|Tekanan\s*Darah)\s*[:=]?\s*(\d+\s*\/\s*\d+)/i);
+            if (tensiMatch) cpptData.objective.tensi = String(tensiMatch[1]).replace(/\s*\/\s*/g, '/').trim();
 
-            const nadiMatch = objText.match(/Nadi\s*:?\s*(\d+)/i);
+            const nadiMatch = objText.match(/Nadi\s*[:=]?\s*(\d+)/i);
             if (nadiMatch) cpptData.objective.nadi = parseInt(nadiMatch[1]);
 
-            const bbMatch = objText.match(/BB\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+            const suhuMatch = objText.match(/Suhu\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
+            if (suhuMatch) cpptData.objective.suhu = parseFloat(suhuMatch[1].replace(',', '.'));
+
+            const spo2Match = objText.match(/SpO2\s*[:=]?\s*(\d+)/i);
+            if (spo2Match) cpptData.objective.spo2 = parseInt(spo2Match[1]);
+
+            const rrMatch = objText.match(/(?:RR|Respirasi)\s*[:=]?\s*(\d+)/i);
+            if (rrMatch) cpptData.objective.rr = parseInt(rrMatch[1]);
+
+            const bbMatch = objText.match(/(?:BB|Berat\s*Badan)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
             if (bbMatch) cpptData.objective.berat_badan = parseFloat(bbMatch[1].replace(',', '.'));
+
+            const tbMatch = objText.match(/(?:TB|Tinggi\s*Badan)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
+            if (tbMatch) cpptData.objective.tinggi_badan = parseFloat(tbMatch[1].replace(',', '.'));
+
+            const gcsMatch = objText.match(/GCS\s*:?\s*E\s*:?\s*(\d)\s*V\s*:?\s*(\d)\s*M\s*:?\s*(\d)/i)
+                || objText.match(/GCS\s*:?\s*E(\d)\s*V(\d)\s*M(\d)/i)
+                || objText.match(/GCS\s*[:=]?\s*(\d)\s*[-\/]\s*(\d)\s*[-\/]\s*(\d)/i);
+            if (gcsMatch) {
+                cpptData.objective.gcs = `E${gcsMatch[1]} V${gcsMatch[2]} M${gcsMatch[3]}`;
+            }
+
+            for (const line of objectiveLines) {
+                let match = null;
+
+                match = line.match(/LILA\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);
+                if (match) {
+                    cpptData.objective.lila = parseFloat(match[1].replace(',', '.'));
+                    continue;
+                }
+
+                match = line.match(/(?:PALPASI\s*)?TFU\s*[:=]?\s*(.+)$/i);
+                if (match) {
+                    cpptData.objective.tfu = match[1].replace(/[.;]+$/g, '').trim();
+                    continue;
+                }
+
+                match = line.match(/DJJ\s*\+?\s*[:=]?\s*(.+)$/i);
+                if (match) {
+                    cpptData.objective.djj = match[1].replace(/[.;]+$/g, '').trim();
+                    continue;
+                }
+
+                match = line.match(/VT\s*[:=]?\s*(.+)$/i);
+                if (match) {
+                    cpptData.objective.vt = match[1].replace(/[.;]+$/g, '').trim();
+                }
+            }
         }
 
         // Parse ASSESSMENT section - try multiple patterns (Gambiran may use different labels)
@@ -581,6 +592,8 @@ async function extractCPPT(page, source, medId) {
             /ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
             /ASSESMEN([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,      // Indonesian variant
             /ASSESMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,     // Typo variant
+            /DIAGNOSA([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+            /DIAGNOSIS([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
             /A\s*:\s*([\s\S]*?)(?=P\s*:|PLAN|$)/i                     // SOAP format A:
         ];
 
@@ -649,6 +662,55 @@ async function extractCPPT(page, source, medId) {
         if (planMatch) {
             const planText = planMatch[1].trim();
             cpptData.plan.raw = planText;
+
+            const obat = [];
+            const tindakan = [];
+            const instruksi = [];
+            const planLines = planText.split(/\n+/)
+                .map(line => String(line || '').replace(/\r/g, '').replace(/^[\s\-•*]+/, '').replace(/\s+/g, ' ').trim())
+                .filter(Boolean);
+            let instructionMode = false;
+
+            for (const line of planLines) {
+                if (/^INSTRUKSI\s*(?:DOKTER)?\b\s*:?$/i.test(line)) {
+                    instructionMode = true;
+                    continue;
+                }
+
+                if (/^(?:B\/|R\/)/i.test(line)) {
+                    obat.push(line);
+                    continue;
+                }
+
+                if (instructionMode) {
+                    instruksi.push(line);
+                    continue;
+                }
+
+                if (/^(?:Ruj\.?|Kontrol|Konsul|Follow\s*up|Observasi|Edukasi|Anjur|USG\s*ulang|Lab\s*ulang)/i.test(line)) {
+                    instruksi.push(line);
+                    continue;
+                }
+
+                if (/^(?:Pro\b|Program\b|Persiapan\b|Jadwal\b|Rencana\s*(?:SC|Operasi)?\b)/i.test(line)) {
+                    instruksi.push(line);
+                    continue;
+                }
+
+                tindakan.push(line);
+            }
+
+            if (obat.length > 0) {
+                cpptData.plan.obat = obat;
+            }
+
+            if (tindakan.length > 0) {
+                cpptData.plan.tindakan = tindakan;
+            }
+
+            if (instruksi.length > 0) {
+                cpptData.plan.instruksi = instruksi;
+            }
         }
 
         return cpptData;
@@ -1014,6 +1076,7 @@ module.exports = {
     login,
     searchPatientHistory,
     extractPatientIdentity,
+    extractLatestDoctorCpptText,
     extractCPPT,
     processPatientImport,
     saveCredentials,
