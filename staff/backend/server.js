@@ -98,6 +98,7 @@ app.use('/api/', standardLimiter);
 app.use('/api/notifications/count', coalesce);
 app.use('/api/dashboard-stats', coalesce);
 app.use('/api/patients', coalesce);
+app.use('/api/visits/stats', coalesce);
 
 // Database connection pool
 const pool = require('./db');

@@ -3888,7 +3888,7 @@ async function updateWelcomeCard(user) {
             navbarUserRole.textContent = primaryRole.display_name || primaryRole.name || 'User';
         }
 
-        // Build role descriptions HTML - elegant style for light grey card
+        // Build role descriptions HTML - deferred to idle (non-critical render)
         let descriptionsHtml = '';
         roles.forEach((role, index) => {
             const isPrimary = role.is_primary;
@@ -3905,7 +3905,12 @@ async function updateWelcomeCard(user) {
             `;
         });
 
-        rolesDescList.innerHTML = descriptionsHtml;
+        const applyRolesHtml = () => { rolesDescList.innerHTML = descriptionsHtml; };
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(applyRolesHtml, { timeout: 2000 });
+        } else {
+            setTimeout(applyRolesHtml, 0);
+        }
 
     } catch (error) {
         console.error('Error loading role descriptions:', error);

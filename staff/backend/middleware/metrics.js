@@ -39,6 +39,16 @@ const METRICS_SLOW_REQUEST_MS = Number.parseInt(
 );
 const ENABLE_METRICS_SLOW_LOG = process.env.METRICS_LOG_SLOW_REQUESTS === 'true';
 
+// p95 latency budgets per endpoint key pattern (milliseconds)
+const P95_BUDGETS = {
+    'daily-greeting': 1500,
+    'dashboard-stats': 500,
+    'visits/stats/daily': 700,
+    'visits/stats/finance': 300,
+    'notifications/count': 200,
+    'patients': 800
+};
+
 const trimArrayToMax = (arr, max) => {
     if (arr.length > max) {
         arr.splice(0, arr.length - max);
@@ -247,8 +257,22 @@ const getMetrics = () => {
     
     slowestEndpoints.sort((a, b) => b.avgMs - a.avgMs);
     fastestEndpoints.sort((a, b) => a.avgMs - b.avgMs);
-    
-    // Get system info
+
+    // Compute p95 budget violations
+    const violations = [];
+    Object.entries(endpointStats).forEach(([endpoint, stats]) => {
+        if (stats.count < 5) return; // need enough samples
+        const budgetEntry = Object.entries(P95_BUDGETS).find(([pattern]) => endpoint.includes(pattern));
+        if (budgetEntry && stats.p95Ms > budgetEntry[1]) {
+            violations.push({
+                endpoint,
+                p95Ms: Math.round(stats.p95Ms),
+                budgetMs: budgetEntry[1],
+                overageMs: Math.round(stats.p95Ms - budgetEntry[1])
+            });
+        }
+    });
+    violations.sort((a, b) => b.overageMs - a.overageMs);
     const systemInfo = {
         hostname: os.hostname(),
         platform: os.platform(),
@@ -280,7 +304,8 @@ const getMetrics = () => {
             p99Ms: p99,
             slowestEndpoints: slowestEndpoints.slice(0, 5),
             fastestEndpoints: fastestEndpoints.slice(0, 5),
-            endpoints: endpointStats
+            endpoints: endpointStats,
+            violations
         },
         errors: {
             total: metrics.errors.total,
@@ -354,6 +379,23 @@ const logMetricsSummary = () => {
 // Log metrics summary every 5 minutes in production
 if (ENABLE_METRICS_SUMMARY_LOG) {
     setInterval(logMetricsSummary, 5 * 60 * 1000);
+}
+
+// Periodic 4xx rate alarm
+if (isProduction) {
+    setInterval(() => {
+        if (metrics.requests.total < 200) return;
+        const errors4xx = metrics.requests.byStatus['4xx'] || 0;
+        const rate = errors4xx / metrics.requests.total;
+        if (rate > 0.05) {
+            logger.warn('[ALARM] 4xx error rate high', {
+                rate: `${(rate * 100).toFixed(1)}%`,
+                total401: metrics.requests.byStatusCode[401] || 0,
+                total404: metrics.requests.byStatusCode[404] || 0,
+                totalRequests: metrics.requests.total
+            });
+        }
+    }, 5 * 60 * 1000);
 }
 
 module.exports = {

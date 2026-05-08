@@ -10992,7 +10992,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         const today = new Date();
         const todayStr = formatDateLocal(today);
 
-        const url = `${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${todayStr}&end_date=${todayStr}`;
+        const url = `${VPS_API_BASE}/api/visits/stats/finance?start_date=${todayStr}&end_date=${todayStr}`;
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -11006,26 +11006,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
 
         const payload = await response.json();
-        const visits = Array.isArray(payload.data) ? payload.data : [];
-
-        let totalVisits = 0;
-        let totalRevenue = 0;
-
-        visits.forEach(visit => {
-            totalVisits += 1;
-            const total = Number(visit.grand_total ?? visit.grandTotal ?? visit.total_amount ?? 0);
-            if (Number.isFinite(total)) {
-                totalRevenue += total;
-            }
-        });
-
-        const averageBill = totalVisits > 0 ? Math.round(totalRevenue / totalVisits) : 0;
-
-        return {
-            totalVisits,
-            totalRevenue,
-            averageBill
-        };
+        return payload.data; // { totalVisits, totalRevenue, averageBill }
     }
 
     async function loadKPIStats() {
