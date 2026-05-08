@@ -182,13 +182,13 @@ class DocBoardService {
     try {
       // Get appointments for this date
       const [appointments] = await pool.query(
-        `SELECT sa.id, sa.patient_name, sa.patient_id, sa.slot_time, sa.slot_number,
+        `SELECT sa.id, sa.patient_name, sa.patient_id, sa.slot_number,
                 sa.chief_complaint, sa.status,
                 scr.mr_id
          FROM sunday_appointments sa
          LEFT JOIN sunday_clinic_records scr ON sa.id = scr.appointment_id
          WHERE sa.appointment_date = ?
-         ORDER BY sa.slot_number, sa.slot_time`,
+         ORDER BY sa.slot_number`,
         [date]
       );
 
@@ -226,8 +226,8 @@ class DocBoardService {
 
         await pool.query(
           `INSERT INTO docboard_patients (event_id, patient_name, patient_id, slot_time, slot_number, chief_complaint, visit_status, source_record_type, source_record_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'sunday_appointment', ?)`,
-          [eventId, apt.patient_name, apt.patient_id, apt.slot_time, apt.slot_number, apt.chief_complaint, visitStatus, String(apt.id)]
+           VALUES (?, ?, ?, NULL, ?, ?, ?, 'sunday_appointment', ?)`,
+          [eventId, apt.patient_name, apt.patient_id, apt.slot_number, apt.chief_complaint, visitStatus, String(apt.id)]
         );
       }
 
