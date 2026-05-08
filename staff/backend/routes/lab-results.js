@@ -10,6 +10,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
+
+// Helper: resolve key to a safe path inside uploads/lab-results; returns null on traversal attempt
+function safeLocalPath(key) {
+    const uploadDir = path.resolve(__dirname, '../../uploads/lab-results');
+    const resolved = path.resolve(uploadDir, key);
+    if (!resolved.startsWith(uploadDir + path.sep) && resolved !== uploadDir) return null;
+    return resolved;
+}
 const { OPENAI_API_KEY, OPENAI_API_URL } = require('../services/openaiService');
 const r2Storage = require('../services/r2Storage');
 
@@ -308,8 +316,11 @@ router.delete('/:key(*)', async (req, res) => {
             await r2Storage.deleteFile(key);
             logger.info('Lab result deleted from R2', { key });
         } else {
-            // Delete from local storage
-            const filePath = path.join(__dirname, '../../uploads/lab-results', key);
+            // Delete from local storage — validate path to prevent traversal
+            const filePath = safeLocalPath(key);
+            if (!filePath) {
+                return res.status(400).json({ error: 'Invalid file key' });
+            }
             await fs.unlink(filePath);
             logger.info('Lab result deleted locally', { key });
         }
@@ -365,8 +376,11 @@ router.get('/file/*', async (req, res) => {
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             res.send(fileBuffer);
         } else {
-            // Serve from local storage
-            const filePath = path.join(__dirname, '../../uploads/lab-results', key);
+            // Serve from local storage — validate path to prevent traversal
+            const filePath = safeLocalPath(key);
+            if (!filePath) {
+                return res.status(400).json({ error: 'Invalid file key' });
+            }
             res.sendFile(filePath);
         }
 
