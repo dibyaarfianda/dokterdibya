@@ -6,6 +6,7 @@ const { verifyToken, requireSuperadmin, requirePermission } = require('../middle
 const { createSession, countMatchingFactors } = require('../services/medifyHttpService');
 
 const MEDIFY_LIVE_QUEUE_CACHE_TTL_MS = 30000;
+const MEDIFY_LIVE_QUEUE_ENABLED = false; // TEMPORARY DISABLE - ubah ke true untuk mengaktifkan kembali
 const MEDIFY_LOCATION_CONFIG = {
     rsia_melinda: {
         label: 'RSIA Melinda',
@@ -685,6 +686,13 @@ router.get('/hospital/:location', verifyToken, requirePermission('booking.view')
 });
 
 router.get('/hospital/:location/live-queue', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    if (!MEDIFY_LIVE_QUEUE_ENABLED) {
+        return res.status(503).json({
+            success: false,
+            disabled: true,
+            message: 'Live queue Medify sedang dinonaktifkan sementara untuk maintenance.'
+        });
+    }
     try {
         const { location } = req.params;
         const locationConfig = getMedifyLocationConfig(location);
@@ -709,6 +717,13 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
 });
 
 router.post('/hospital/:location/run-robot', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    if (!MEDIFY_LIVE_QUEUE_ENABLED) {
+        return res.status(503).json({
+            success: false,
+            disabled: true,
+            message: 'Robot Medify sedang dinonaktifkan sementara untuk maintenance.'
+        });
+    }
     try {
         const { location } = req.params;
         const { limit, useCache, autoCreatePatient } = req.body || {};
@@ -740,6 +755,13 @@ router.post('/hospital/:location/run-robot', verifyToken, requirePermission('boo
 });
 
 router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    if (!MEDIFY_LIVE_QUEUE_ENABLED) {
+        return res.status(503).json({
+            success: false,
+            disabled: true,
+            message: 'Fitur Medify sedang dinonaktifkan sementara untuk maintenance.'
+        });
+    }
     try {
         const { location } = req.params;
         const { medId, identityNik, patientName, age, medicalRecordNo, autoCreatePatient } = req.body || {};
