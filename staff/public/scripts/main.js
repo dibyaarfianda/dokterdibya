@@ -3689,46 +3689,55 @@ const FALLBACK_GREETINGS = [
 /**
  * Get daily greeting from AI API (cached per day per user)
  * Changes once per day at midnight
- * Falls back to local greeting if API fails
+ * Falls back to stale cache or local greeting if API fails/times out
  */
 async function fetchDailyGreeting(userId) {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const storageKey = `daily_greeting_ai_${userId}`;
     const stored = localStorage.getItem(storageKey);
 
-    // Check if we have a valid cached greeting for today
+    // Return today's fresh cache immediately
     if (stored) {
         try {
             const { date, greeting } = JSON.parse(stored);
             if (date === today && greeting) {
                 return greeting;
             }
-        } catch (e) {
-            // Invalid stored data, fetch new
-        }
+        } catch (e) { /* invalid, fetch new */ }
     }
 
-    // Fetch from AI API
+    // Fetch from AI API with 3s hard timeout
     try {
         const token = getAuthToken();
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         const response = await fetch('/api/ai/daily-greeting', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 'Authorization': `Bearer ${token}` },
+            signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (response.ok) {
             const result = await response.json();
             if (result.success && result.data?.greeting) {
                 const greeting = result.data.greeting;
-                // Cache locally until midnight
                 localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting }));
                 return greeting;
             }
         }
     } catch (error) {
-        console.error('Failed to fetch AI greeting:', error);
+        console.warn('AI greeting fetch failed:', error.name);
     }
 
-    // Fallback to random local greeting
+    // Use stale cache (any date) before resorting to random fallback
+    if (stored) {
+        try {
+            const { greeting } = JSON.parse(stored);
+            if (greeting) return greeting;
+        } catch (e) { /* ignore */ }
+    }
+
+    // Final random fallback
     const fallbackIndex = Math.floor(Math.random() * FALLBACK_GREETINGS.length);
     const fallbackGreeting = FALLBACK_GREETINGS[fallbackIndex];
     localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting: fallbackGreeting }));
@@ -3737,23 +3746,47 @@ async function fetchDailyGreeting(userId) {
 
 /**
  * Update daily greeting element with AI-generated greeting
+ * Stale-while-revalidate: show cached greeting immediately, refresh in background
  */
 async function updateDailyGreeting(userId) {
     const greetingEl = document.getElementById('daily-greeting');
     if (!greetingEl) return;
 
-    // Show loading state briefly
-    greetingEl.style.opacity = '0.6';
-    greetingEl.textContent = 'Memuat ucapan hari ini...';
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `daily_greeting_ai_${userId}`;
+    const stored = localStorage.getItem(storageKey);
 
+    // Show any cached greeting immediately (no loading state)
+    let hasStale = false;
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            if (parsed.greeting) {
+                greetingEl.textContent = parsed.greeting;
+                greetingEl.style.opacity = '1';
+                hasStale = true;
+                // Today's greeting is already fresh - nothing more to do
+                if (parsed.date === today) return;
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    if (!hasStale) {
+        greetingEl.style.opacity = '0.6';
+        greetingEl.textContent = 'Memuat ucapan hari ini...';
+    }
+
+    // Background refresh (stale from yesterday or no cache)
     try {
         const greeting = await fetchDailyGreeting(userId);
         greetingEl.textContent = greeting;
+        greetingEl.style.opacity = '1';
     } catch (error) {
-        greetingEl.textContent = 'Selamat bekerja, semoga harimu menyenangkan!';
+        if (!hasStale) {
+            greetingEl.textContent = 'Selamat bekerja, semoga harimu menyenangkan!';
+            greetingEl.style.opacity = '1';
+        }
     }
-
-    greetingEl.style.opacity = '1';
 }
 
 // Update welcome card with user roles and job descriptions
@@ -3806,16 +3839,33 @@ async function updateWelcomeCard(user) {
     updateDailyGreeting(user.id);
 
     try {
-        // Fetch user's roles with descriptions
+        // Fetch user's roles with descriptions (cached 5 minutes in localStorage)
         const token = getAuthToken();
-        const response = await fetch(`/api/users/${user.id}/roles`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const rolesCacheKey = `user_roles_${user.id}`;
+        const rolesCacheTTL = 5 * 60 * 1000; // 5 minutes
+        let roles = null;
 
-        if (!response.ok) throw new Error('Failed to fetch roles');
+        const storedRoles = localStorage.getItem(rolesCacheKey);
+        if (storedRoles) {
+            try {
+                const { ts, data: cachedData } = JSON.parse(storedRoles);
+                if (Date.now() - ts < rolesCacheTTL && Array.isArray(cachedData)) {
+                    roles = cachedData;
+                }
+            } catch (e) { /* invalid cache */ }
+        }
 
-        const data = await response.json();
-        const roles = data.data || [];
+        if (!roles) {
+            const response = await fetch(`/api/users/${user.id}/roles`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch roles');
+
+            const data = await response.json();
+            roles = data.data || [];
+            localStorage.setItem(rolesCacheKey, JSON.stringify({ ts: Date.now(), data: roles }));
+        }
 
         if (roles.length === 0) {
             rolesDescList.innerHTML = '<p style="color: #6c757d;"><em>Tidak ada deskripsi role tersedia.</em></p>';
