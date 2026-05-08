@@ -206,39 +206,44 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
         const [data] = await db.query(dataQuery, dataParams);
 
         // Get stats (always for last 30 days)
-        const statsFromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const statsToDate = new Date().toISOString().split('T')[0];
+        const fromDateObj = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const statsFromDate = `${fromDateObj.getFullYear()}-${String(fromDateObj.getMonth() + 1).padStart(2, '0')}-${String(fromDateObj.getDate()).padStart(2, '0')}`;
+        // Use today's LOCAL date (GMT+7) to avoid UTC shift
+        const now = new Date();
+        const statsToDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        // Range-based date filters: avoids DATE() function on column so indexes can be used
+        const rangeEnd = `${statsToDate} 23:59:59`;
 
         const [[appointmentStats]] = await db.query(
-            'SELECT COUNT(*) as count FROM sunday_appointments WHERE DATE(created_at) BETWEEN ? AND ?',
-            [statsFromDate, statsToDate]
+            'SELECT COUNT(*) as count FROM sunday_appointments WHERE created_at >= ? AND created_at <= ?',
+            [statsFromDate, rangeEnd]
         );
 
         const [[intakeStats]] = await db.query(
-            'SELECT COUNT(*) as count FROM patient_intake_submissions WHERE DATE(created_at) BETWEEN ? AND ?',
-            [statsFromDate, statsToDate]
+            'SELECT COUNT(*) as count FROM patient_intake_submissions WHERE created_at >= ? AND created_at <= ?',
+            [statsFromDate, rangeEnd]
         );
 
         const [[regStats]] = await db.query(
-            'SELECT COUNT(*) as count FROM patients WHERE DATE(created_at) BETWEEN ? AND ?',
-            [statsFromDate, statsToDate]
+            'SELECT COUNT(*) as count FROM patients WHERE created_at >= ? AND created_at <= ?',
+            [statsFromDate, rangeEnd]
         );
 
         const [[totalPatients]] = await db.query('SELECT COUNT(*) as count FROM patients');
 
         const [[loginStats]] = await db.query(
-            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'login' AND DATE(created_at) BETWEEN ? AND ?",
-            [statsFromDate, statsToDate]
+            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'login' AND created_at >= ? AND created_at <= ?",
+            [statsFromDate, rangeEnd]
         );
 
         const [[pageViewStats]] = await db.query(
-            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND DATE(created_at) BETWEEN ? AND ?",
-            [statsFromDate, statsToDate]
+            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND created_at >= ? AND created_at <= ?",
+            [statsFromDate, rangeEnd]
         );
 
         const [[paymentStats]] = await db.query(
-            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND DATE(created_at) BETWEEN ? AND ?",
-            [statsFromDate, statsToDate]
+            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND created_at >= ? AND created_at <= ?",
+            [statsFromDate, rangeEnd]
         );
 
         res.json({
