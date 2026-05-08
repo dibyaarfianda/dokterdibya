@@ -618,9 +618,21 @@ async function loadHospitalAppointments(location) {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
+            const liveData = await liveResponse.json();
+
+            if (liveResponse.status === 503 && liveData.disabled) {
+                container.innerHTML = `
+                    <div class="card card-body text-center py-5">
+                        <i class="fas fa-tools fa-3x text-warning mb-3"></i>
+                        <h5 class="text-warning">Live Queue Sedang Dinonaktifkan</h5>
+                        <p class="text-muted mb-0">Fitur antrian live ${hospitalName} sedang dinonaktifkan sementara untuk maintenance.<br>Silakan gunakan fitur lain atau coba lagi nanti.</p>
+                    </div>
+                `;
+                return;
+            }
+
             if (!liveResponse.ok) throw new Error('Gagal memuat antrian live Medify');
 
-            const liveData = await liveResponse.json();
             if (!liveData.success || !liveData.queue) {
                 throw new Error(liveData.message || `Data antrian ${hospitalName} tidak tersedia`);
             }
