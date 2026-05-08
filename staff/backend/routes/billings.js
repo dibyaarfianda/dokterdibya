@@ -4,30 +4,34 @@ const db = require('../db');
 const { verifyToken, requireMenuAccess } = require('../middleware/auth');
 
 // Helper function to generate billing number
-async function generateBillingNumber() {
+// Uses SELECT FOR UPDATE inside a transaction to prevent duplicate numbers under concurrent requests
+async function generateBillingNumber(conn) {
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
-  
-  // Get or create sequence for today
-  const [rows] = await db.query(
-    'SELECT last_number FROM billing_sequences WHERE billing_date = CURDATE()'
+
+  // Lock the row for this date so concurrent calls wait rather than reading the same value
+  const [rows] = await conn.query(
+    'SELECT last_number FROM billing_sequences WHERE billing_date = CURDATE() FOR UPDATE'
   );
-  
+
   let nextNumber;
   if (rows.length === 0) {
-    // First billing of the day
-    await db.query(
-      'INSERT INTO billing_sequences (billing_date, last_number) VALUES (CURDATE(), 1)'
+    // First billing of the day — INSERT with ON DUPLICATE KEY to handle any slim concurrent race
+    await conn.query(
+      'INSERT INTO billing_sequences (billing_date, last_number) VALUES (CURDATE(), 1) ON DUPLICATE KEY UPDATE last_number = last_number + 1'
     );
-    nextNumber = 1;
+    const [[seq]] = await conn.query(
+      'SELECT last_number FROM billing_sequences WHERE billing_date = CURDATE()'
+    );
+    nextNumber = seq.last_number;
   } else {
     // Increment sequence
-    await db.query(
+    await conn.query(
       'UPDATE billing_sequences SET last_number = last_number + 1 WHERE billing_date = CURDATE()'
     );
     nextNumber = rows[0].last_number + 1;
   }
-  
+
   // Format: INV-YYYYMMDD-XXXX
   const billingNumber = `INV-${dateStr}-${String(nextNumber).padStart(4, '0')}`;
   return billingNumber;
@@ -89,8 +93,8 @@ router.post('/', verifyToken, requireMenuAccess('keuangan'), async (req, res) =>
     const tax_amount = subtotal_after_discount * (tax_percent / 100);
     const total_amount = subtotal_after_discount + tax_amount;
     
-    // Generate billing number
-    const billing_number = await generateBillingNumber();
+    // Generate billing number (passes the open connection so FOR UPDATE works in same transaction)
+    const billing_number = await generateBillingNumber(connection);
     
     // Insert billing record
     const [result] = await connection.query(

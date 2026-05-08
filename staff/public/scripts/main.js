@@ -332,10 +332,10 @@ async function loadDashboardNewPatients(page = 1) {
 
             return `
                 <tr>
-                    <td>${patient.full_name || '-'}</td>
+                    <td>${escapeHtml(patient.full_name || '-')}</td>
                     <td><small class="text-muted">${regDateTime}</small></td>
                     <td>
-                        <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
+                        <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${escapeHtml(patient.id)}')" title="Lihat Detail">
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>
@@ -471,16 +471,16 @@ async function loadPasienBaru() {
 
             return `
                 <tr>
-                    <td>${patient.id}</td>
-                    <td>${patient.full_name || '-'}</td>
-                    <td>${patient.whatsapp || patient.phone || '-'}</td>
+                    <td>${escapeHtml(patient.id)}</td>
+                    <td>${escapeHtml(patient.full_name || '-')}</td>
+                    <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
                     <td><span class="badge badge-warning">Belum berkunjung</span></td>
                     <td>${regDate}</td>
                     <td>${statusBadge}</td>
                     <td class="text-nowrap">
-                        <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${patient.id}" title="Detail">
+                        <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${escapeHtml(patient.id)}" title="Detail">
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>
@@ -499,7 +499,7 @@ async function loadPasienBaru() {
         });
     } catch (error) {
         console.error('Error loading pasien baru:', error);
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Gagal memuat data: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Gagal memuat data: ${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
@@ -550,16 +550,16 @@ async function loadHospitalPatients(location) {
 
             return `
                 <tr>
-                    <td>${patient.id}</td>
-                    <td>${patient.full_name || '-'}</td>
-                    <td>${patient.whatsapp || patient.phone || '-'}</td>
+                    <td>${escapeHtml(patient.id)}</td>
+                    <td>${escapeHtml(patient.full_name || '-')}</td>
+                    <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
                     <td>${lastVisit}</td>
                     <td>${regDate}</td>
                     <td>${statusBadge}</td>
                     <td class="text-nowrap">
-                        <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${patient.id}" title="Detail">
+                        <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${escapeHtml(patient.id)}" title="Detail">
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>

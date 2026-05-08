@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const dbConfig = {
     host: 'localhost',
     user: 'dibyaapp',
-    password: 'DibyaKlinik2024!',
+    password: process.env.DB_PASSWORD,
     database: 'dibyaklinik'
 };
 

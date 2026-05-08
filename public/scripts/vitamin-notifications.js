@@ -442,8 +442,11 @@ export function startWebNotificationChecker() {
         return; // Capacitor handles its own scheduling
     }
 
+    // Guard: only start one interval (prevent duplicates if called more than once)
+    if (startWebNotificationChecker._intervalId) return;
+
     // Check every minute
-    setInterval(() => {
+    startWebNotificationChecker._intervalId = setInterval(() => {
         checkWebNotifications();
     }, 60000);
 

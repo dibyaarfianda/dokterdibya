@@ -1335,9 +1335,9 @@ resetDerivedFlags();
         // Update header to show update mode
         const formTitle = document.getElementById('form-title');
         const formDescription = document.getElementById('form-description');
-        const quickIdDisplay = existingIntake.quickId ? ` (No. RM: ${existingIntake.quickId})` : '';
+        const quickIdSafe = existingIntake.quickId ? ` (No. RM: ${String(existingIntake.quickId).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')})` : '';
         if (formTitle) {
-            formTitle.innerHTML = `Form Riwayat Antenatal <span style="color: #16a34a; font-size: 0.9em;">• Mode Perbarui${quickIdDisplay}</span>`;
+            formTitle.innerHTML = `Form Riwayat Antenatal <span style="color: #16a34a; font-size: 0.9em;">• Mode Perbarui${quickIdSafe}</span>`;
         }
         if (formDescription) {
             formDescription.textContent = 'Anda sudah memiliki formulir. Perbarui informasi jika ada perubahan.';
