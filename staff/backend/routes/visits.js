@@ -89,6 +89,55 @@ router.get('/stats/daily', verifyToken, requirePermission('visits.view'), async 
     }
 });
 
+// GET /stats/finance - lightweight dashboard KPI (no item detail, index-friendly range filters)
+router.get('/stats/finance', verifyToken, requirePermission('visits.view'), async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+        const params = [];
+
+        let query = `
+            SELECT
+                COUNT(*) as total_visits,
+                COALESCE(SUM(scb.total), 0) as total_revenue
+            FROM sunday_clinic_records scr
+            LEFT JOIN (
+                SELECT b1.*
+                FROM sunday_clinic_billings b1
+                INNER JOIN (
+                    SELECT mr_id, MAX(id) AS latest_id
+                    FROM sunday_clinic_billings
+                    WHERE status IN ('paid', 'confirmed')
+                    GROUP BY mr_id
+                ) b2 ON b1.id = b2.latest_id
+            ) scb ON BINARY scb.mr_id = BINARY scr.mr_id
+            WHERE 1=1
+        `;
+
+        if (start_date) {
+            query += ' AND scr.created_at >= ?';
+            params.push(`${start_date} 00:00:00`);
+        }
+        if (end_date) {
+            query += ' AND scr.created_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            params.push(end_date);
+        }
+
+        const [rows] = await pool.query(query, params);
+        const row = rows[0] || {};
+        const totalVisits = Number(row.total_visits) || 0;
+        const totalRevenue = Number(row.total_revenue) || 0;
+        const averageBill = totalVisits > 0 ? Math.round(totalRevenue / totalVisits) : 0;
+
+        res.json({
+            success: true,
+            data: { totalVisits, totalRevenue, averageBill }
+        });
+    } catch (error) {
+        console.error('Error fetching finance stats:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch finance stats', error: error.message });
+    }
+});
+
 // GET all visits (with optional filters)
 // When exclude_dummy=true, returns actual clinic visits from sunday_clinic_records
 router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) => {
@@ -152,12 +201,12 @@ router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) 
             }
 
             if (start_date) {
-                query += ' AND DATE(scr.created_at) >= ?';
-                params.push(start_date);
+                query += ' AND scr.created_at >= ?';
+                params.push(`${start_date} 00:00:00`);
             }
 
             if (end_date) {
-                query += ' AND DATE(scr.created_at) <= ?';
+                query += ' AND scr.created_at < DATE_ADD(?, INTERVAL 1 DAY)';
                 params.push(end_date);
             }
 
