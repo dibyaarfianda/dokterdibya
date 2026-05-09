@@ -16,6 +16,10 @@ const failedAttempts = new Map();
 const MAX_FAILED_ATTEMPTS = parseInt(process.env.MAX_FAILED_LOGIN_ATTEMPTS) || 5;
 const LOCK_TIME_MS = parseInt(process.env.LOGIN_LOCK_TIME_MS) || 15 * 60 * 1000; // 15 minutes
 
+// Cache for requireMenuAccess results: key = `${role}:${menuKey}`, value = { visible, ts }
+const menuAccessCache = new Map();
+const MENU_ACCESS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Record failed login attempt
  */
@@ -599,6 +603,20 @@ function requireMenuAccess(menuKey) {
             }
 
             const userRole = req.user.role;
+
+            // Check in-memory cache first (5 minute TTL)
+            const cacheKey = `${userRole}:${menuKey}`;
+            const cached = menuAccessCache.get(cacheKey);
+            if (cached && (Date.now() - cached.ts) < MENU_ACCESS_CACHE_TTL_MS) {
+                if (!cached.visible) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Akses ditolak untuk role Anda'
+                    });
+                }
+                return next();
+            }
+
             const [rows] = await db.query(
                 'SELECT is_visible FROM role_visibility WHERE role_name = ? AND menu_key = ?',
                 [userRole, menuKey]
@@ -606,6 +624,7 @@ function requireMenuAccess(menuKey) {
 
             // If no record found, default to no access
             if (rows.length === 0) {
+                menuAccessCache.set(cacheKey, { visible: false, ts: Date.now() });
                 logger.warn('Menu access denied - no visibility record', {
                     requestId,
                     userId: req.user.id,
@@ -620,6 +639,7 @@ function requireMenuAccess(menuKey) {
             }
 
             if (!rows[0].is_visible) {
+                menuAccessCache.set(cacheKey, { visible: false, ts: Date.now() });
                 logger.warn('Menu access denied - not visible for role', {
                     requestId,
                     userId: req.user.id,
@@ -633,7 +653,8 @@ function requireMenuAccess(menuKey) {
                 });
             }
 
-            // Access granted
+            // Access granted — cache the result
+            menuAccessCache.set(cacheKey, { visible: true, ts: Date.now() });
             next();
         } catch (error) {
             logger.error('Error checking menu access', {

@@ -129,7 +129,7 @@ function updateStatusUI(data) {
 
         // Start refresh interval
         if (!refreshInterval) {
-            refreshInterval = setInterval(loadSyncStatus, 5000);
+            refreshInterval = setInterval(loadSyncStatus, 10000);
         }
 
     } else {
@@ -334,7 +334,7 @@ async function startSync(source) {
 
             // Start polling for status
             if (!refreshInterval) {
-                refreshInterval = setInterval(loadSyncStatus, 3000);
+                refreshInterval = setInterval(loadSyncStatus, 6000);
             }
 
         } else {
