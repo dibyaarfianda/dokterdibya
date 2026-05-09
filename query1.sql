@@ -1,0 +1,1 @@
+SELECT TABLE_NAME, COLUMN_NAME, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND COLUMN_NAME IN ('patient_id','id') AND TABLE_NAME IN ('patients','sunday_appointments','sunday_clinic_records','medical_records') ORDER BY TABLE_NAME, COLUMN_NAME;
