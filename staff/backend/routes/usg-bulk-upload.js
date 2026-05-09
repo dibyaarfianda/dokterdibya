@@ -132,7 +132,7 @@ async function getPatientsForDate(date, hospital) {
         WHERE p.id IN (
             -- Patients with records at this hospital on this date
             SELECT DISTINCT patient_id FROM sunday_clinic_records
-            WHERE DATE(created_at) = ? AND visit_location = ?
+            WHERE created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY) AND visit_location = ?
             UNION
             -- Patients with appointments at this hospital on this date
             SELECT DISTINCT patient_id FROM appointments
@@ -140,7 +140,7 @@ async function getPatientsForDate(date, hospital) {
             AND status IN ('confirmed', 'completed')
         )
         ORDER BY p.full_name
-    `, [date, hospital, date, hospital]);
+    `, [date, date, hospital, date, hospital]);
 
     return rows;
 }
