@@ -492,6 +492,20 @@ router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (r
       }
 
       // Deduct stock for each medication using FIFO (idempotent per reference+obat).
+      // Batch-fetch all existing deductions for this billing in ONE query (avoid N+1).
+      const obatIds = medicationItemsRaw.map(i => Number(i.obat_id));
+      const [deductionRows] = await connection.query(
+        `SELECT obat_id, ABS(COALESCE(SUM(quantity), 0)) AS deducted_qty
+         FROM stock_movements
+         WHERE reference_type = 'billing'
+           AND reference_id = ?
+           AND movement_type = 'sale'
+           AND obat_id IN (?)
+         GROUP BY obat_id`,
+        [billing_id, obatIds]
+      );
+      const deductionMap = new Map(deductionRows.map(r => [Number(r.obat_id), Number(r.deducted_qty)]));
+
       for (const item of medicationItemsRaw) {
         const requiredQty = parseInt(item.quantity, 10) || 0;
 
@@ -499,17 +513,7 @@ router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (r
           continue;
         }
 
-        const [[existingDeduction]] = await connection.query(
-          `SELECT ABS(COALESCE(SUM(quantity), 0)) AS deducted_qty
-           FROM stock_movements
-           WHERE reference_type = 'billing'
-             AND reference_id = ?
-             AND movement_type = 'sale'
-             AND obat_id = ?`,
-          [billing_id, Number(item.obat_id)]
-        );
-
-        const alreadyDeducted = Number(existingDeduction?.deducted_qty || 0);
+        const alreadyDeducted = deductionMap.get(Number(item.obat_id)) || 0;
         const remainingQty = Math.max(0, requiredQty - alreadyDeducted);
 
         if (remainingQty <= 0) {
