@@ -10,7 +10,7 @@ const NodeCache = require('node-cache');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 // Per-user notification count cache (10 second TTL — reduces DB load from 30s polling)
-const notifCountCache = new NodeCache({ stdTTL: 10, checkperiod: 5, useClones: false });
+const notifCountCache = new NodeCache({ stdTTL: 30, checkperiod: 10, useClones: false });
 
 /**
  * GET /api/notifications

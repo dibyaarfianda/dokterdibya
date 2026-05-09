@@ -6,7 +6,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const NodeCache = require('node-cache');
 const { verifyToken, verifyPatientToken } = require('../middleware/auth');
+
+// Short-lived cache for badge count (polled every ~10s by staff panel)
+const pqCountCache = new NodeCache({ stdTTL: 30, checkperiod: 10, useClones: false });
 const multer = require('multer');
 const r2Storage = require('../services/r2Storage');
 const { generateId } = require('../utils/idGenerator');
@@ -514,10 +518,15 @@ router.get('/staff/all', verifyToken, async (req, res) => {
  */
 router.get('/staff/count', verifyToken, async (req, res) => {
     try {
+        const cached = pqCountCache.get('open-count');
+        if (cached !== undefined) return res.json(cached);
+
         const [result] = await db.query(
             `SELECT COUNT(*) as count FROM patient_questions WHERE status = 'open'`
         );
-        res.json({ success: true, count: result[0].count });
+        const response = { success: true, count: result[0].count };
+        pqCountCache.set('open-count', response);
+        res.json(response);
     } catch (error) {
         console.error('Error getting count:', error);
         res.status(500).json({ success: false, message: 'Server error' });

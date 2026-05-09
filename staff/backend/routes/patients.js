@@ -688,9 +688,8 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
 
         // Debug logging
         console.log('[ADVANCED SEARCH] Query returned', rows.length, 'rows');
-        console.log('[ADVANCED SEARCH] Results:', rows.map(p => ({ id: p.id, name: p.full_name })));
 
-        // Map and deduplicate results, then fetch obstetri data
+        // Deduplicate results
         const seen = new Set();
         const uniqueRows = rows.filter(patient => {
             if (seen.has(patient.id)) return false;
@@ -698,71 +697,79 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
             return true;
         });
 
-        // Fetch obstetri/HPL data for each patient (same as main patient list)
-        const mappedRows = await Promise.all(uniqueRows.map(async (patient) => {
+        const patientIds = uniqueRows.map(p => p.id);
+
+        // Batch-enrich: 3 parallel queries instead of N×3 correlated queries
+        const lastVisitTypeMap = {};  // patient_id → mr_category
+        const obstetriMap = {};       // patient_id → hpht string
+        const birthSet = new Set();   // patient_id of those who delivered
+
+        if (patientIds.length > 0) {
+            const ph = patientIds.map(() => '?').join(',');
+
+            await Promise.all([
+                // Batch 1: latest mr_category per patient
+                db.query(`
+                    SELECT scr.patient_id, scr.mr_category
+                    FROM sunday_clinic_records scr
+                    INNER JOIN (
+                        SELECT patient_id, MAX(last_activity_at) AS max_activity
+                        FROM sunday_clinic_records
+                        WHERE patient_id IN (${ph})
+                        GROUP BY patient_id
+                    ) g ON scr.patient_id = g.patient_id AND scr.last_activity_at = g.max_activity
+                    WHERE scr.patient_id IN (${ph})
+                `, [...patientIds, ...patientIds])
+                    .then(([r]) => r.forEach(row => { lastVisitTypeMap[row.patient_id] = row.mr_category; }))
+                    .catch(() => {}),
+
+                // Batch 2: latest HPHT for obstetri patients (ROW_NUMBER)
+                db.query(`
+                    SELECT t.patient_id, t.hpht FROM (
+                        SELECT scr.patient_id,
+                            JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) AS hpht,
+                            ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) AS rn
+                        FROM sunday_clinic_records scr
+                        JOIN medical_records mr ON mr.mr_id = scr.mr_id AND mr.record_type = 'anamnesa'
+                        WHERE scr.patient_id IN (${ph})
+                          AND scr.mr_category = 'obstetri'
+                          AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) IS NOT NULL
+                          AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                    ) t WHERE t.rn = 1
+                `, patientIds)
+                    .then(([r]) => r.forEach(row => { obstetriMap[row.patient_id] = row.hpht; }))
+                    .catch(() => {}),
+
+                // Batch 3: patients who have delivered
+                db.query(`SELECT DISTINCT patient_id FROM birth_congratulations WHERE patient_id IN (${ph})`, patientIds)
+                    .then(([r]) => r.forEach(row => birthSet.add(row.patient_id)))
+                    .catch(() => {}),
+            ]);
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const mappedRows = uniqueRows.map((patient) => {
+            const last_visit_type = lastVisitTypeMap[patient.id] || null;
+            const hpht_str = obstetriMap[patient.id] || null;
+            const is_obstetri = !!hpht_str;
+            const has_delivered = birthSet.has(patient.id);
+
             let hpl = null;
             let days_pregnant = null;
-            let is_obstetri = false;
-            let has_delivered = false;
-            let last_visit_type = null;
-
-            // Get last visit type (mr_category)
-            try {
-                const [lastVisit] = await db.query(`
-                    SELECT mr_category FROM sunday_clinic_records
-                    WHERE patient_id = ?
-                    ORDER BY last_activity_at DESC LIMIT 1
-                `, [patient.id]);
-                if (lastVisit.length > 0) {
-                    last_visit_type = lastVisit[0].mr_category;
+            if (hpht_str) {
+                const hpht = new Date(hpht_str);
+                if (!isNaN(hpht.getTime())) {
+                    const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                    hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+                    days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
                 }
-            } catch (err) {
-                console.error('Error fetching last visit type:', err.message);
-            }
-
-            // Check if patient is obstetri and get HPL data
-            try {
-                const [obstetriRecord] = await db.query(`
-                    SELECT scr.mr_id, scr.mr_category,
-                        JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
-                    FROM sunday_clinic_records scr
-                    JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                        AND mr.record_type = 'anamnesa'
-                    WHERE scr.patient_id = ?
-                        AND scr.mr_category = 'obstetri'
-                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) IS NOT NULL
-                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                    ORDER BY scr.last_activity_at DESC
-                    LIMIT 1
-                `, [patient.id]);
-
-                if (obstetriRecord.length > 0 && obstetriRecord[0].hpht) {
-                    is_obstetri = true;
-                    const hpht = new Date(obstetriRecord[0].hpht);
-                    if (!isNaN(hpht.getTime())) {
-                        const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                        hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-
-                        // Check if patient has delivered
-                        const [birthRecord] = await db.query(
-                            `SELECT 1 FROM birth_congratulations WHERE patient_id = ? LIMIT 1`,
-                            [patient.id]
-                        );
-                        has_delivered = birthRecord.length > 0;
-                    }
-                }
-            } catch (err) {
-                console.error('Error fetching HPL data for patient', patient.id, err.message);
             }
 
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                // Only use anamnesa_datetime - actual examination date from anamnesa section
-                // Do NOT fallback to booking dates as those can be in the future
                 last_visit: patient.anamnesa_datetime || null,
                 last_visit_type,
                 hpl,
@@ -770,7 +777,7 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
                 is_obstetri,
                 has_delivered
             };
-        }));
+        });
 
         res.json({
             success: true,
