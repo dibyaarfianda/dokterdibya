@@ -270,6 +270,10 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
         const [year, monthNum] = targetMonth.split('-').map(Number);
         const endDate = new Date(year, monthNum, 0); // Last day of month
         const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+        // Exclusive upper bound for index-friendly range query (no DATE() wrapping)
+        const nextMonthYear = monthNum === 12 ? year + 1 : year;
+        const nextMonthNum = monthNum === 12 ? 1 : monthNum + 1;
+        const nextMonthStart = `${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
 
         // 1. Get summary data
         const [summaryRows] = await pool.query(`
@@ -282,8 +286,8 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
             FROM sunday_clinic_billings b
             LEFT JOIN sunday_clinic_billing_items bi ON b.id = bi.billing_id
             WHERE b.status IN ('paid', 'confirmed')
-            AND DATE(b.created_at) BETWEEN ? AND ?
-        `, [startDate, endDateStr]);
+            AND b.created_at >= ? AND b.created_at < ?
+        `, [startDate, nextMonthStart]);
 
         // 2. Get HPP (Cost of Goods Sold) for medications
         const [hppRows] = await pool.query(`
@@ -294,8 +298,8 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
             LEFT JOIN obat o ON bi.item_code = o.code
             WHERE bi.item_type = 'obat'
             AND b.status IN ('paid', 'confirmed')
-            AND DATE(b.created_at) BETWEEN ? AND ?
-        `, [startDate, endDateStr]);
+            AND b.created_at >= ? AND b.created_at < ?
+        `, [startDate, nextMonthStart]);
 
         // 3. Get tindakan breakdown by category
         const [tindakanByCategory] = await pool.query(`
@@ -309,10 +313,10 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
             LEFT JOIN tindakan t ON bi.item_code = t.code
             WHERE bi.item_type = 'tindakan'
             AND b.status IN ('paid', 'confirmed')
-            AND DATE(b.created_at) BETWEEN ? AND ?
+            AND b.created_at >= ? AND b.created_at < ?
             GROUP BY t.category
             ORDER BY total_pendapatan DESC
-        `, [startDate, endDateStr]);
+        `, [startDate, nextMonthStart]);
 
         // 4. Get top tindakan
         const [topTindakan] = await pool.query(`
@@ -329,11 +333,11 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
             LEFT JOIN tindakan t ON bi.item_code = t.code
             WHERE bi.item_type = 'tindakan'
             AND b.status IN ('paid', 'confirmed')
-            AND DATE(b.created_at) BETWEEN ? AND ?
+            AND b.created_at >= ? AND b.created_at < ?
             GROUP BY bi.item_code, bi.item_name, t.category
             ORDER BY total_pendapatan DESC
             LIMIT 10
-        `, [startDate, endDateStr]);
+        `, [startDate, nextMonthStart]);
 
         // 5. Get obat with profit analysis
         const [obatAnalysis] = await pool.query(`
@@ -356,10 +360,10 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
             LEFT JOIN obat o ON bi.item_code = o.code
             WHERE bi.item_type = 'obat'
             AND b.status IN ('paid', 'confirmed')
-            AND DATE(b.created_at) BETWEEN ? AND ?
+            AND b.created_at >= ? AND b.created_at < ?
             GROUP BY bi.item_code, bi.item_name, o.default_cost_price
             ORDER BY pendapatan_kotor DESC
-        `, [startDate, endDateStr]);
+        `, [startDate, nextMonthStart]);
 
         // Calculate financial metrics
         const summary = summaryRows[0];

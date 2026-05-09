@@ -165,7 +165,7 @@ router.get('/stats', verifyToken, async (req, res) => {
         // Downloads today
         const [todayResult] = await db.query(`
             SELECT COUNT(*) as count FROM app_downloads
-            WHERE DATE(downloaded_at) = CURDATE()
+            WHERE downloaded_at >= CURDATE() AND downloaded_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
         `);
 
         // Downloads this week
@@ -238,8 +238,8 @@ router.get('/logs', verifyToken, async (req, res) => {
         }
 
         if (date) {
-            query += ' AND DATE(downloaded_at) = ?';
-            params.push(date);
+            query += ' AND downloaded_at >= ? AND downloaded_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            params.push(date, date);
         }
 
         query += ' ORDER BY downloaded_at DESC LIMIT ? OFFSET ?';
@@ -257,8 +257,8 @@ router.get('/logs', verifyToken, async (req, res) => {
         }
 
         if (date) {
-            countQuery += ' AND DATE(downloaded_at) = ?';
-            countParams.push(date);
+            countQuery += ' AND downloaded_at >= ? AND downloaded_at < DATE_ADD(?, INTERVAL 1 DAY)';
+            countParams.push(date, date);
         }
 
         const [countResult] = await db.query(countQuery, countParams);
