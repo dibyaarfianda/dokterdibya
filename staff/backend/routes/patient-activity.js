@@ -32,6 +32,8 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
         const toDate = to || new Date().toISOString().split('T')[0];
 
         // Build queries for each activity type
+        // Use range scan (>= / <=) instead of DATE() to allow index usage
+        const toDateEnd = `${toDate} 23:59:59`;
         const queries = [];
 
         // Booking activities (from sunday_appointments table)
@@ -46,9 +48,9 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                     CONCAT('Booking ', DATE_FORMAT(sa.appointment_date, '%d %b %Y'), ' Sesi ', sa.session, ' - ', COALESCE(sa.chief_complaint, 'Tidak ada keluhan')) as details
                 FROM sunday_appointments sa
                 LEFT JOIN patients p ON sa.patient_id = p.id
-                WHERE DATE(sa.created_at) BETWEEN ? AND ?
+                WHERE sa.created_at >= ? AND sa.created_at <= ?
             `;
-            const bookingParams = [fromDate, toDate];
+            const bookingParams = [fromDate, toDateEnd];
 
             if (search) {
                 bookingQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR sa.patient_name LIKE ?)`;
@@ -70,9 +72,9 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                     pis.phone as patient_phone,
                     CONCAT('Intake form submitted', IF(pis.high_risk = 1, ' (HIGH RISK)', ''), ' - Status: ', pis.status) as details
                 FROM patient_intake_submissions pis
-                WHERE DATE(pis.created_at) BETWEEN ? AND ?
+                WHERE pis.created_at >= ? AND pis.created_at <= ?
             `;
-            const intakeParams = [fromDate, toDate];
+            const intakeParams = [fromDate, toDateEnd];
 
             if (search) {
                 intakeQuery += ` AND (pis.full_name LIKE ? OR pis.phone LIKE ?)`;
@@ -94,9 +96,9 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                     p.phone as patient_phone,
                     CONCAT('Pasien baru terdaftar', IF(p.google_id IS NOT NULL, ' (via Google)', '')) as details
                 FROM patients p
-                WHERE DATE(p.created_at) BETWEEN ? AND ?
+                WHERE p.created_at >= ? AND p.created_at <= ?
             `;
-            const regParams = [fromDate, toDate];
+            const regParams = [fromDate, toDateEnd];
 
             if (search) {
                 regQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR p.phone LIKE ?)`;
@@ -119,9 +121,9 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                     CONCAT('Login dari ', COALESCE(SUBSTRING(pal.user_agent, 1, 80), 'unknown')) as details
                 FROM patient_activity_log pal
                 LEFT JOIN patients p ON pal.patient_id = p.id
-                WHERE pal.event_type = 'login' AND DATE(pal.created_at) BETWEEN ? AND ?
+                WHERE pal.event_type = 'login' AND pal.created_at >= ? AND pal.created_at <= ?
             `;
-            const loginParams = [fromDate, toDate];
+            const loginParams = [fromDate, toDateEnd];
 
             if (search) {
                 loginQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ?)`;
@@ -144,9 +146,9 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                     CONCAT('Buka halaman: ', COALESCE(pal.page_name, '-')) as details
                 FROM patient_activity_log pal
                 LEFT JOIN patients p ON pal.patient_id = p.id
-                WHERE pal.event_type = 'view_halaman' AND DATE(pal.created_at) BETWEEN ? AND ?
+                WHERE pal.event_type = 'view_halaman' AND pal.created_at >= ? AND pal.created_at <= ?
             `;
-            const viewParams = [fromDate, toDate];
+            const viewParams = [fromDate, toDateEnd];
 
             if (search) {
                 viewQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ?)`;
@@ -169,9 +171,9 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                     COALESCE(pal.details, 'Pembayaran online') as details
                 FROM patient_activity_log pal
                 LEFT JOIN patients p ON pal.patient_id = p.id
-                WHERE pal.event_type = 'pembayaran' AND DATE(pal.created_at) BETWEEN ? AND ?
+                WHERE pal.event_type = 'pembayaran' AND pal.created_at >= ? AND pal.created_at <= ?
             `;
-            const payParams = [fromDate, toDate];
+            const payParams = [fromDate, toDateEnd];
 
             if (search) {
                 payQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ?)`;
@@ -214,37 +216,23 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
         // Range-based date filters: avoids DATE() function on column so indexes can be used
         const rangeEnd = `${statsToDate} 23:59:59`;
 
-        const [[appointmentStats]] = await db.query(
-            'SELECT COUNT(*) as count FROM sunday_appointments WHERE created_at >= ? AND created_at <= ?',
-            [statsFromDate, rangeEnd]
-        );
-
-        const [[intakeStats]] = await db.query(
-            'SELECT COUNT(*) as count FROM patient_intake_submissions WHERE created_at >= ? AND created_at <= ?',
-            [statsFromDate, rangeEnd]
-        );
-
-        const [[regStats]] = await db.query(
-            'SELECT COUNT(*) as count FROM patients WHERE created_at >= ? AND created_at <= ?',
-            [statsFromDate, rangeEnd]
-        );
-
-        const [[totalPatients]] = await db.query('SELECT COUNT(*) as count FROM patients');
-
-        const [[loginStats]] = await db.query(
-            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'login' AND created_at >= ? AND created_at <= ?",
-            [statsFromDate, rangeEnd]
-        );
-
-        const [[pageViewStats]] = await db.query(
-            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND created_at >= ? AND created_at <= ?",
-            [statsFromDate, rangeEnd]
-        );
-
-        const [[paymentStats]] = await db.query(
-            "SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND created_at >= ? AND created_at <= ?",
-            [statsFromDate, rangeEnd]
-        );
+        const [
+            [[appointmentStats]],
+            [[intakeStats]],
+            [[regStats]],
+            [[totalPatients]],
+            [[loginStats]],
+            [[pageViewStats]],
+            [[paymentStats]]
+        ] = await Promise.all([
+            db.query('SELECT COUNT(*) as count FROM sunday_appointments WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
+            db.query('SELECT COUNT(*) as count FROM patient_intake_submissions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
+            db.query('SELECT COUNT(*) as count FROM patients WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
+            db.query('SELECT COUNT(*) as count FROM patients'),
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'login' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd])
+        ]);
 
         res.json({
             success: true,
