@@ -171,11 +171,13 @@ router.get('/', verifyPatientToken, async (req, res) => {
                     u.name as doctor_name,
                     u.specialty as doctor_specialty,
                     u.specialty_label as doctor_specialty_label,
-                    (SELECT COUNT(*) FROM question_replies WHERE question_id = pq.id) as reply_count,
-                    (SELECT MAX(created_at) FROM question_replies WHERE question_id = pq.id) as last_reply_at
+                    COUNT(qr.id) as reply_count,
+                    MAX(qr.created_at) as last_reply_at
              FROM patient_questions pq
              LEFT JOIN users u ON pq.assigned_doctor_id = u.new_id
+             LEFT JOIN question_replies qr ON qr.question_id = pq.id
              WHERE pq.patient_id = ?
+             GROUP BY pq.id
              ORDER BY pq.created_at DESC`,
             [patientId]
         );
@@ -308,7 +310,7 @@ router.post('/', verifyPatientToken, upload.single('image'), async (req, res) =>
         // Send notification to assigned doctor
         try {
             const [patient] = await db.query(
-                'SELECT COALESCE(full_name, name) as patient_name FROM patients WHERE id = ?',
+                'SELECT full_name as patient_name FROM patients WHERE id = ?',
                 [patientId]
             );
             const patientName = patient[0]?.patient_name || `Patient ${patientId}`;
@@ -462,13 +464,15 @@ router.get('/staff/all', verifyToken, async (req, res) => {
                     u.name as doctor_name,
                     u.specialty as doctor_specialty,
                     u.specialty_label as doctor_specialty_label,
-                    (SELECT COUNT(*) FROM question_replies WHERE question_id = pq.id) as reply_count,
-                    (SELECT MAX(created_at) FROM question_replies WHERE question_id = pq.id) as last_reply_at
+                    COUNT(qr.id) as reply_count,
+                    MAX(qr.created_at) as last_reply_at
              FROM patient_questions pq
              JOIN patients p ON pq.patient_id = p.id
              LEFT JOIN tanya_subscriptions ts ON pq.patient_id = ts.patient_id AND ts.is_active = TRUE
              LEFT JOIN users u ON pq.assigned_doctor_id = u.new_id
+             LEFT JOIN question_replies qr ON qr.question_id = pq.id
              WHERE ${whereClause}
+             GROUP BY pq.id
              ORDER BY
                  CASE pq.status
                      WHEN 'open' THEN 1
