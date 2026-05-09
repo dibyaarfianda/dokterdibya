@@ -193,25 +193,22 @@ async function resolveUserIdentity(user) {
     const userType = isPatientUser(user) ? 'patient' : 'staff';
 
     let defaultName = user.name || user.full_name || user.email || 'User';
-    let photo = null;
 
     if (userType === 'patient') {
         const [rows] = await db.query(
-            'SELECT full_name, photo_url FROM patients WHERE id = ? LIMIT 1',
+            'SELECT full_name FROM patients WHERE id = ? LIMIT 1',
             [userId]
         );
         if (rows.length > 0) {
             defaultName = rows[0].full_name || defaultName;
-            photo = rows[0].photo_url || null;
         }
     } else {
         const [rows] = await db.query(
-            'SELECT name, photo_url FROM users WHERE new_id = ? LIMIT 1',
+            'SELECT name FROM users WHERE new_id = ? LIMIT 1',
             [userId]
         );
         if (rows.length > 0) {
             defaultName = rows[0].name || defaultName;
-            photo = rows[0].photo_url || null;
         }
     }
 
@@ -230,24 +227,22 @@ async function resolveUserIdentity(user) {
         defaultName,
         nickname: profile?.nickname || null,
         bio: profile?.bio || '',
-        avatarUrl: profile?.avatar_url || photo || null,
+        avatarUrl: profile?.avatar_url || null,
         profileVisible: profile ? profile.profile_visible === 1 : true
     };
 }
 
 async function getReadableProfile(userId, userType) {
     let defaultName = 'User';
-    let photo = null;
 
     if (userType === 'patient') {
-        const [rows] = await db.query('SELECT full_name, photo_url FROM patients WHERE id = ? LIMIT 1', [userId]);
+        const [rows] = await db.query('SELECT full_name FROM patients WHERE id = ? LIMIT 1', [userId]);
         if (rows.length > 0) {
             defaultName = rows[0].full_name || defaultName;
-            photo = rows[0].photo_url || null;
         }
     } else {
         const [rows] = await db.query(
-            `SELECT u.name, u.photo_url, r.display_name AS role_display_name
+            `SELECT u.name, r.display_name AS role_display_name
              FROM users u
              LEFT JOIN roles r ON r.id = u.role_id
              WHERE u.new_id = ? LIMIT 1`,
@@ -255,7 +250,6 @@ async function getReadableProfile(userId, userType) {
         );
         if (rows.length > 0) {
             defaultName = rows[0].name || defaultName;
-            photo = rows[0].photo_url || null;
         }
     }
 
@@ -275,7 +269,7 @@ async function getReadableProfile(userId, userType) {
         display_name: profile?.nickname || defaultName,
         nickname: profile?.nickname || null,
         bio: profile?.bio || '',
-        avatar_url: profile?.avatar_url || photo || null,
+        avatar_url: profile?.avatar_url || null,
         updated_at: profile?.updated_at || null
     };
 }

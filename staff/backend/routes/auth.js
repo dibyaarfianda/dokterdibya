@@ -278,7 +278,6 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
             u.email,
             u.role,
             u.role_id,
-            u.photo_url,
             u.user_type,
             u.is_superadmin,
             r.name AS resolved_role_name,
@@ -306,7 +305,7 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
         role: roleForClient,
         role_id: user.role_id || null,
         role_display_name: resolvedRoleDisplay || roleForClient,
-        photo_url: user.photo_url,
+        photo_url: null,
         user_type: user.user_type || 'staff',
         is_superadmin: user.is_superadmin || false
     });
