@@ -201,17 +201,20 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         else if (hospital) {
             query = `
                 SELECT DISTINCT p.*,
-                    (SELECT scr.mr_id FROM sunday_clinic_records scr
-                     WHERE scr.patient_id = p.id
-                     ORDER BY scr.last_activity_at DESC LIMIT 1) as mr_id,
-                    (SELECT scr.visit_location FROM sunday_clinic_records scr
-                     WHERE scr.patient_id = p.id
-                     ORDER BY scr.last_activity_at DESC LIMIT 1) as visit_location,
-                    (SELECT scr.mr_category FROM sunday_clinic_records scr
-                     WHERE scr.patient_id = p.id
-                     ORDER BY scr.last_activity_at DESC LIMIT 1) as last_visit_type
+                    latest_scr.mr_id,
+                    latest_scr.visit_location,
+                    latest_scr.mr_category as last_visit_type
                 FROM patients p
                 INNER JOIN appointments a ON p.id = a.patient_id
+                LEFT JOIN (
+                    SELECT scr.patient_id, scr.mr_id, scr.visit_location, scr.mr_category
+                    FROM sunday_clinic_records scr
+                    INNER JOIN (
+                        SELECT patient_id, MAX(last_activity_at) as max_activity
+                        FROM sunday_clinic_records
+                        GROUP BY patient_id
+                    ) g ON scr.patient_id = g.patient_id AND scr.last_activity_at = g.max_activity
+                ) latest_scr ON p.id = latest_scr.patient_id
                 WHERE a.hospital_location = ?
             `;
             params.push(hospital);
