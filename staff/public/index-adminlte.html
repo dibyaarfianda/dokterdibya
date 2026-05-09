@@ -8468,6 +8468,74 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
     };
 
+    // ─── Shared row renderer for #manage-patients-tbody ──────────────────────
+    // Used by BOTH loadWebPatients() and performAdvancedSearch() to keep the
+    // template consistent and avoid the dual-render bug (AGENTS.md rule #24).
+    function renderManagePatientRow(patient) {
+        const visitDate = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+        const visitDateSort = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
+        const resumeStatusMap = {
+            'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
+            'sudah_kirim_resume': '<span class="badge badge-info">Resume ✓</span>',
+            'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
+            'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
+        };
+        const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Pasien Baru</span>';
+        const statusBadge = patient.status === 'active' ?
+            '<span class="badge badge-success">Aktif</span>' :
+            '<span class="badge badge-secondary">Nonaktif</span>';
+        const locationLabels = { 'klinik_private': 'Prv', 'rsia_melinda': 'Mel', 'rsud_gambiran': 'Gmb', 'rs_bhayangkara': 'Bhy' };
+        const locationBadge = patient.visit_location
+            ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>` : '';
+        const escapedName = (patient.full_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const mrIdCell = patient.mr_id
+            ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
+            : `<span class="text-muted">-</span>`;
+        let hplCell = '-';
+        if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
+            const hplDate = new Date(patient.hpl);
+            const hplFormatted = `${hplDate.getDate().toString().padStart(2,'0')}/${(hplDate.getMonth()+1).toString().padStart(2,'0')}/${hplDate.getFullYear().toString().slice(-2)}`;
+            const weeksPregnant = Math.floor(patient.days_pregnant / 7);
+            let bgClass = '', textClass = '', icon = '';
+            if (patient.days_pregnant >= 280) { bgClass = 'bg-danger'; textClass = 'text-white'; icon = '<i class="fas fa-exclamation-triangle mr-1"></i>'; }
+            else if (patient.days_pregnant >= 259) { bgClass = 'bg-warning'; icon = '<i class="fas fa-clock mr-1"></i>'; }
+            hplCell = `<span class="${bgClass} ${textClass} px-1 rounded" title="Usia kehamilan: ${weeksPregnant} minggu">${icon}${hplFormatted}</span>`;
+        } else if (patient.has_delivered) {
+            hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
+        }
+        let deliveryButton = '';
+        if (patient.is_obstetri && !patient.has_delivered) {
+            deliveryButton = `<button type="button" class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+        }
+        return `
+            <tr>
+                <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
+                <td>${mrIdCell}</td>
+                <td>${patient.full_name || '-'}</td>
+                <td>${hplCell}</td>
+                <td>${formatPatientType(patient.last_visit_type)}</td>
+                <td>${resumeStatusBadge}</td>
+                <td data-order="${visitDateSort}">${visitDate}</td>
+                <td>${statusBadge}</td>
+                <td class="text-nowrap">
+                    <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${deliveryButton}
+                    <button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
+                            onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${escapedName}', this)"
+                            title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
+                        <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     async function loadWebPatients() {
         try {
             const token = localStorage.getItem('vps_auth_token');
@@ -8507,97 +8575,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 $('#manage-patients-table').DataTable().clear().destroy();
             }
 
-            tbody.innerHTML = data.data.map(patient => {
-                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-                // Format visit date for display (DD/MM/YY) and sorting (YYYYMMDD) - newest first
-                const visitDate = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
-                const visitDateSort = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
-                // Resume status badge
-                const resumeStatusMap = {
-                    'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
-                    'sudah_kirim_resume': '<span class="badge badge-info">Resume ✓</span>',
-                    'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
-                    'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
-                };
-                const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Pasien Baru</span>';
-                const statusBadge = patient.status === 'active' ?
-                    '<span class="badge badge-success">Aktif</span>' :
-                    '<span class="badge badge-secondary">Nonaktif</span>';
-
-                // MR ID with link to medical records
-                const locationLabels = {
-                    'klinik_private': 'Prv',
-                    'rsia_melinda': 'Mel',
-                    'rsud_gambiran': 'Gmb',
-                    'rs_bhayangkara': 'Bhy'
-                };
-                const locationBadge = patient.visit_location
-                    ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>`
-                    : '';
-                const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
-                const mrIdCell = patient.mr_id
-                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id.toUpperCase()}</a>${locationBadge}`
-                    : `<span class="text-muted">-</span>`;
-
-                // HPL column with color coding for obstetri patients
-                let hplCell = '-';
-                if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
-                    const hplDate = new Date(patient.hpl);
-                    const hplFormatted = `${hplDate.getDate().toString().padStart(2,'0')}/${(hplDate.getMonth()+1).toString().padStart(2,'0')}/${hplDate.getFullYear().toString().slice(-2)}`;
-                    const weeksPregnant = Math.floor(patient.days_pregnant / 7);
-
-                    // Color coding: red for >40 weeks (280+ days), yellow for 37-40 weeks (259-279 days)
-                    let bgClass = '';
-                    let textClass = '';
-                    let icon = '';
-                    if (patient.days_pregnant >= 280) {
-                        bgClass = 'bg-danger';
-                        textClass = 'text-white';
-                        icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
-                    } else if (patient.days_pregnant >= 259) {
-                        bgClass = 'bg-warning';
-                        textClass = '';
-                        icon = '<i class="fas fa-clock mr-1"></i>';
-                    }
-
-                    hplCell = `<span class="${bgClass} ${textClass} px-2 py-1 rounded" title="Usia kehamilan: ${weeksPregnant} minggu">${icon}${hplFormatted}</span>`;
-                } else if (patient.has_delivered) {
-                    hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
-                }
-
-                // Mark as delivered button (only for obstetri patients who haven't delivered)
-                let deliveryButton = '';
-                if (patient.is_obstetri && !patient.has_delivered) {
-                    deliveryButton = `<button type="button" class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
-                }
-
-                return `
-                    <tr>
-                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${(patient.full_name || '').replace(/'/g, "\\'")}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
-                        <td>${mrIdCell}</td>
-                        <td>${patient.full_name || '-'}</td>
-                        <td>${hplCell}</td>
-                        <td>${formatPatientType(patient.last_visit_type)}</td>
-                        <td>${resumeStatusBadge}</td>
-                        <td data-order="${visitDateSort}">${visitDate}</td>
-                        <td>${statusBadge}</td>
-                        <td class="text-nowrap">
-                            <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            ${deliveryButton}
-                            <button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
-                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}', this)"
-                                    title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
-                                <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${patient.full_name}')" title="Hapus">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = data.data.map(renderManagePatientRow).join('');
 
             // Initialize DataTable with fresh data (already cleared before DOM update)
             if ($.fn.DataTable) {
@@ -8775,94 +8753,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 return;
             }
 
-            // Render results
-            tbody.innerHTML = data.data.map(patient => {
-                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
-                // Format visit date for display (DD/MM/YY) and sorting (YYYYMMDD) - newest first
-                const visitDate = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
-                const visitDateSort = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
-                // Resume status badge
-                const resumeStatusMap = {
-                    'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
-                    'sudah_kirim_resume': '<span class="badge badge-info">Resume ✓</span>',
-                    'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
-                    'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
-                };
-                const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Pasien Baru</span>';
-                const statusBadge = patient.status === 'active' ?
-                    '<span class="badge badge-success">Aktif</span>' :
-                    '<span class="badge badge-secondary">Nonaktif</span>';
-
-                // MR ID with link to medical records
-                const locationLabels = {
-                    'klinik_private': 'Prv',
-                    'rsia_melinda': 'Mel',
-                    'rsud_gambiran': 'Gmb',
-                    'rs_bhayangkara': 'Bhy'
-                };
-                const locationBadge = patient.visit_location
-                    ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>`
-                    : '';
-                const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
-                const mrIdCell = patient.mr_id
-                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
-                    : `<span class="text-muted">-</span>`;
-
-                // HPL column with color coding for obstetri patients
-                let hplCell = '-';
-                if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
-                    const hplDate = new Date(patient.hpl);
-                    const hplFormatted = `${hplDate.getDate().toString().padStart(2,'0')}/${(hplDate.getMonth()+1).toString().padStart(2,'0')}/${hplDate.getFullYear().toString().slice(-2)}`;
-                    const weeksPregnant = Math.floor(patient.days_pregnant / 7);
-                    let bgClass = '';
-                    let textClass = '';
-                    let icon = '';
-                    if (patient.days_pregnant >= 280) {
-                        bgClass = 'bg-danger';
-                        textClass = 'text-white';
-                        icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
-                    } else if (patient.days_pregnant >= 259) {
-                        bgClass = 'bg-warning';
-                        icon = '<i class="fas fa-clock mr-1"></i>';
-                    }
-                    hplCell = `<span class="${bgClass} ${textClass} px-1 rounded" title="Usia kehamilan: ${weeksPregnant} minggu">${icon}${hplFormatted}</span>`;
-                } else if (patient.has_delivered) {
-                    hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Lahir</span>';
-                }
-
-                // Mark as delivered button
-                let deliveryButton = '';
-                if (patient.is_obstetri && !patient.has_delivered) {
-                    deliveryButton = `<button type="button" class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
-                }
-
-                return `
-                    <tr>
-                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
-                        <td>${mrIdCell}</td>
-                        <td>${patient.full_name || '-'}</td>
-                        <td>${hplCell}</td>
-                        <td>${formatPatientType(patient.last_visit_type)}</td>
-                        <td>${resumeStatusBadge}</td>
-                        <td data-order="${visitDateSort}">${visitDate}</td>
-                        <td>${statusBadge}</td>
-                        <td class="text-nowrap">
-                            <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            ${deliveryButton}
-                            <button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
-                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}', this)"
-                                    title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
-                                <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            // Render results - uses shared renderManagePatientRow (same template as loadWebPatients)
+            tbody.innerHTML = data.data.map(renderManagePatientRow).join('');
 
             // Reinitialize DataTable with fresh data
             $('#manage-patients-table').DataTable({
