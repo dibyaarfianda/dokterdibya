@@ -860,7 +860,7 @@ router.get('/queue/public', async (req, res, next) => {
 
         // Fetch fresh data when cache is empty
         const [rows] = await db.query(
-            \SELECT
+            `SELECT
                 sa.session,
                 sa.slot_number,
                 sa.patient_name,
@@ -884,7 +884,7 @@ router.get('/queue/public', async (req, res, next) => {
                 )
              WHERE sa.appointment_date = ?
                AND sa.status IN ('confirmed', 'completed')
-             ORDER BY sa.session ASC, sa.slot_number ASC\,
+             ORDER BY sa.session ASC, sa.slot_number ASC`,
             [todayStart, tomorrowStart, todayStr]
         );
 
