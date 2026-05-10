@@ -812,6 +812,102 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
 
 // ==================== CHECK EXISTING RECORD ====================
 
+
+// ==================== PATIENT PORTAL - PUBLIC QUEUE ====================
+
+/**
+ * Mask a patient name for privacy: first letter + ***
+ */
+function maskPatientName(name) {
+    if (!name) return 'Pasien';
+    const trimmed = name.trim();
+    return trimmed.charAt(0).toUpperCase() + '***';
+}
+
+/**
+ * Compute a simplified queue status for patient-facing display
+ */
+function computeQueueStatus(apt) {
+    if (apt.status === 'completed') return 'selesai';
+    if (apt.record_status === 'completed') return 'selesai';
+    if (apt.mr_id) return 'dilayani';
+    return 'menunggu';
+}
+
+/**
+ * GET /api/sunday-clinic/queue/public
+ * Returns today's appointment queue with masked patient names.
+ * No authentication required - safe for patient portal display.
+ */
+router.get('/queue/public', async (req, res, next) => {
+    try {
+        const { dateStr: todayStr, startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
+
+        // Reuse existing staff queue cache if available (same data, just masked)
+        if (queueTodayCache.key === todayStr && queueTodayCache.expiresAt > Date.now() && queueTodayCache.payload) {
+            const publicData = queueTodayCache.payload.data.map((apt, index) => ({
+                queue_position: index + 1,
+                session: apt.session,
+                session_label: apt.session_label,
+                slot_number: apt.slot_number,
+                slot_time: apt.slot_time,
+                masked_name: maskPatientName(apt.patient_name),
+                queue_status: computeQueueStatus(apt),
+                appointment_date: todayStr
+            }));
+            return res.json({ success: true, date: todayStr, count: publicData.length, data: publicData });
+        }
+
+        // Fetch fresh data when cache is empty
+        const [rows] = await db.query(
+            \SELECT
+                sa.session,
+                sa.slot_number,
+                sa.patient_name,
+                sa.status,
+                COALESCE(scr1.mr_id, scr2.mr_id) as mr_id,
+                COALESCE(scr1.status, scr2.status) as record_status
+             FROM sunday_appointments sa
+             LEFT JOIN sunday_clinic_records scr1
+                ON scr1.id = (
+                    SELECT scrx.id FROM sunday_clinic_records scrx
+                    WHERE scrx.appointment_id = sa.id
+                    ORDER BY scrx.created_at DESC, scrx.id DESC LIMIT 1
+                )
+             LEFT JOIN sunday_clinic_records scr2
+                ON scr2.id = (
+                    SELECT scry.id FROM sunday_clinic_records scry
+                    WHERE scry.patient_id = sa.patient_id
+                      AND scry.appointment_id IS NULL
+                      AND scry.created_at >= ? AND scry.created_at < ?
+                    ORDER BY scry.created_at DESC, scry.id DESC LIMIT 1
+                )
+             WHERE sa.appointment_date = ?
+               AND sa.status IN ('confirmed', 'completed')
+             ORDER BY sa.session ASC, sa.slot_number ASC\,
+            [todayStart, tomorrowStart, todayStr]
+        );
+
+        const publicData = rows.map((apt, index) => ({
+            queue_position: index + 1,
+            session: apt.session,
+            session_label: getSessionLabel(apt.session),
+            slot_number: apt.slot_number,
+            slot_time: getSlotTime(apt.session, apt.slot_number),
+            masked_name: maskPatientName(apt.patient_name),
+            queue_status: computeQueueStatus(apt),
+            appointment_date: todayStr
+        }));
+
+        res.json({ success: true, date: todayStr, count: publicData.length, data: publicData });
+
+    } catch (error) {
+        logger.error('Error fetching public queue:', error);
+        next(error);
+    }
+});
+
+// ==================== CHECK EXISTING RECORD ====================
 /**
  * GET /api/sunday-clinic/check-existing
  * Check if patient already has a record for today at the specified location

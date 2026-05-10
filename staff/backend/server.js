@@ -206,6 +206,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/doctors',            // List available doctors for Q&A
     '/api/patient-billing',    // Patient billing & online payment
     '/api/community-chat',     // Community profile + chat rooms
+    '/api/sunday-clinic/queue/public', // Live queue for patient portal (names masked)
 ];
 
 app.use('/api', (req, res, next) => {

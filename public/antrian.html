@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Antrian Hari Ini - Dokter Dibya</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 400;
+            min-height: 100vh;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+        }
+
+        /* ── Top bar ── */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #1a1a2e;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.25);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .top-bar a {
+            color: #28a7e9;
+            text-decoration: none;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .top-bar h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            flex: 1;
+        }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 3px 9px;
+        }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse-dot 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* ── Page body ── */
+        .page-body {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 16px 14px 16px;
+        }
+
+        /* ── Info bar ── */
+        .info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .info-date {
+            font-size: 13px;
+            color: #aaa;
+        }
+        .info-date span {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        .refresh-btn {
+            background: none;
+            border: 1px solid rgba(40, 167, 233, 0.35);
+            color: #28a7e9;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover { background: rgba(40, 167, 233, 0.1); }
+        .refresh-btn.spinning i { animation: spin 0.8s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* ── Auto-refresh counter ── */
+        .refresh-info {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        /* ── Session label ── */
+        .session-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #28a7e9;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 4px 0 8px;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.15);
+            margin: 18px 0 10px;
+        }
+        .session-label:first-of-type { margin-top: 0; }
+
+        /* ── Queue row ── */
+        .queue-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .queue-row.status-selesai {
+            opacity: 0.55;
+        }
+        .queue-row.status-dilayani {
+            background: rgba(16, 185, 129, 0.07);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        .queue-row.status-menunggu {
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* Slot number bubble */
+        .slot-num {
+            min-width: 40px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .status-menunggu .slot-num { background: rgba(40, 167, 233, 0.15); color: #28a7e9; }
+        .status-dilayani .slot-num { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-selesai  .slot-num { background: rgba(255,255,255,0.06); color: #888; }
+
+        .queue-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .queue-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .queue-time {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .queue-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 3px 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .badge-menunggu { background: rgba(40, 167, 233, 0.12); color: #28a7e9; border: 1px solid rgba(40, 167, 233, 0.25); }
+        .badge-dilayani { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
+        .badge-selesai  { background: rgba(255,255,255,0.06); color: #777; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* ── Privacy note ── */
+        .privacy-note {
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+        .privacy-note i { margin-right: 4px; }
+
+        /* ── Empty / loading states ── */
+        .state-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .state-card i {
+            font-size: 36px;
+            color: #444;
+            margin-bottom: 14px;
+            display: block;
+        }
+        .state-card p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .state-card.loading i { color: #28a7e9; animation: spin 1s linear infinite; }
+
+        /* ── Bottom nav ── */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a2e;
+            border-top: 1px solid rgba(40, 167, 233, 0.2);
+            padding: 10px 0;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            justify-content: center;
+        }
+        .nav-home {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            text-decoration: none;
+            color: #28a7e9;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .nav-home i { font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- Top bar -->
+    <div class="top-bar">
+        <a href="/patient-menu.html" aria-label="Kembali"><i class="fa fa-arrow-left"></i></a>
+        <h1>Antrian Klinik Hari Ini</h1>
+        <div class="live-badge">
+            <span class="live-dot"></span>
+            LIVE
+        </div>
+    </div>
+
+    <!-- Page body -->
+    <div class="page-body">
+        <div class="info-bar">
+            <div class="info-date">Tanggal: <span id="today-date">-</span></div>
+            <button class="refresh-btn" id="refresh-btn" onclick="loadQueue(true)">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+        </div>
+
+        <div class="refresh-info" id="refresh-info">Auto-refresh setiap 30 detik</div>
+
+        <div id="queue-container">
+            <div class="state-card loading">
+                <i class="fa fa-circle-o-notch"></i>
+                <p>Memuat data antrian...</p>
+            </div>
+        </div>
+
+        <p class="privacy-note">
+            <i class="fa fa-lock"></i>
+            Nama pasien lain disamarkan untuk menjaga privasi
+        </p>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-home">
+            <i class="fa fa-home"></i>
+            Beranda
+        </a>
+    </div>
+
+    <script>
+        const STATUS_LABELS = { menunggu: 'Menunggu', dilayani: 'Sedang Dilayani', selesai: 'Selesai' };
+        const REFRESH_INTERVAL_MS = 30000;
+        let refreshTimer = null;
+        let countdownTimer = null;
+        let countdownSec = REFRESH_INTERVAL_MS / 1000;
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function renderQueue(data, date) {
+            document.getElementById('today-date').textContent = formatDate(date);
+            const container = document.getElementById('queue-container');
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="state-card">
+                        <i class="fa fa-calendar-times-o"></i>
+                        <p>Tidak ada antrian hari ini.<br>Klinik mungkin sedang tidak buka.</p>
+                    </div>`;
+                return;
+            }
+
+            // Group by session
+            const sessions = {};
+            for (const apt of data) {
+                const key = apt.session;
+                if (!sessions[key]) sessions[key] = { label: apt.session_label, items: [] };
+                sessions[key].items.push(apt);
+            }
+
+            let html = '';
+            for (const key of Object.keys(sessions).sort((a, b) => a - b)) {
+                const sess = sessions[key];
+                html += `<div class="session-label"><i class="fa fa-clock-o"></i> Sesi ${sess.label}</div>`;
+                for (const apt of sess.items) {
+                    const st = apt.queue_status || 'menunggu';
+                    const badgeClass = `badge-${st}`;
+                    const rowClass = `status-${st}`;
+                    html += `
+                        <div class="queue-row ${rowClass}">
+                            <div class="slot-num">${apt.slot_number}</div>
+                            <div class="queue-info">
+                                <div class="queue-name">${escHtml(apt.masked_name)}</div>
+                                <div class="queue-time"><i class="fa fa-clock-o" style="font-size:10px;margin-right:3px;"></i>${apt.slot_time || '-'}</div>
+                            </div>
+                            <span class="queue-status-badge ${badgeClass}">${STATUS_LABELS[st] || st}</span>
+                        </div>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        async function loadQueue(manual) {
+            if (manual) {
+                const btn = document.getElementById('refresh-btn');
+                btn.classList.add('spinning');
+                setTimeout(() => btn.classList.remove('spinning'), 800);
+            }
+
+            try {
+                const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+
+                const res = await fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), { headers });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+
+                if (json.success) {
+                    renderQueue(json.data, json.date);
+                } else {
+                    throw new Error('Gagal memuat');
+                }
+            } catch (e) {
+                const container = document.getElementById('queue-container');
+                container.innerHTML = `
+                    <div class="state-card">
+                        <i class="fa fa-exclamation-circle"></i>
+                        <p>Gagal memuat data antrian.<br><small style="color:#555">${escHtml(e.message)}</small></p>
+                    </div>`;
+            }
+
+            // Reset countdown
+            resetCountdown();
+        }
+
+        function resetCountdown() {
+            clearInterval(countdownTimer);
+            clearTimeout(refreshTimer);
+            countdownSec = REFRESH_INTERVAL_MS / 1000;
+            updateCountdown();
+
+            countdownTimer = setInterval(() => {
+                countdownSec--;
+                updateCountdown();
+            }, 1000);
+
+            refreshTimer = setTimeout(() => {
+                clearInterval(countdownTimer);
+                loadQueue(false);
+            }, REFRESH_INTERVAL_MS);
+        }
+
+        function updateCountdown() {
+            const el = document.getElementById('refresh-info');
+            if (el) el.textContent = `Auto-refresh dalam ${countdownSec} detik`;
+        }
+
+        // Init
+        loadQueue(false);
+    </script>
+</body>
+</html>
