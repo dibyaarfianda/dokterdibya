@@ -5762,16 +5762,15 @@ Contoh Markdown:
                                         </div>
                                     </div>
 
-                                    <!-- Table List Obat -->
+                                    <!-- Table List Obat Aktif -->
                                     <div class="table-responsive">
                                         <table class="table table-bordered table-striped table-hover table-sm">
-                                            <thead class="bg-light">
+                                            <thead class="bg-success text-white">
                                                 <tr>
                                                     <th width="40">#</th>
                                                     <th>Nama Obat/Item</th>
                                                     <th width="120">Kategori</th>
                                                     <th width="120">Supplier</th>
-                                                    <th width="90">Status</th>
                                                     <th width="100">Harga Jual</th>
                                                     <th width="80">Stok</th>
                                                     <th width="240" class="text-center">Aksi</th>
@@ -5779,12 +5778,49 @@ Contoh Markdown:
                                             </thead>
                                             <tbody id="kelola-obat-list-body">
                                                 <tr>
-                                                    <td colspan="8" class="text-center text-muted py-4">
+                                                    <td colspan="7" class="text-center text-muted py-4">
                                                         <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
                                                         <p class="mb-0">Memuat data...</p>
                                                     </td>
                                                 </tr>
                                             </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Obat/Alkes Nonaktif -->
+                    <div class="row mt-3" id="kelola-obat-inactive-section" style="display:none;">
+                        <div class="col-12">
+                            <div class="card card-secondary collapsed-card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-ban mr-2"></i>Obat/Alkes Nonaktif</h3>
+                                    <div class="card-tools">
+                                        <span class="badge badge-light p-2 mr-2">
+                                            <span id="kelola-obat-inactive-count">0</span> item
+                                        </span>
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0" style="display:none;">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover table-sm mb-0">
+                                            <thead class="bg-secondary text-white">
+                                                <tr>
+                                                    <th width="40">#</th>
+                                                    <th>Nama Obat/Item</th>
+                                                    <th width="120">Kategori</th>
+                                                    <th width="120">Supplier</th>
+                                                    <th width="100">Harga Jual</th>
+                                                    <th width="80">Stok</th>
+                                                    <th width="200" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="kelola-obat-inactive-body"></tbody>
                                         </table>
                                     </div>
                                 </div>
