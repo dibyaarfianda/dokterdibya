@@ -285,9 +285,6 @@ function filterObat(searchTerm = '', category = '') {
     }
 
     renderObatTable(filtered);
-    
-    const countEl = document.getElementById('kelola-obat-total-count');
-    if (countEl) countEl.textContent = filtered.length;
 }
 
 // Render obat table
@@ -295,72 +292,104 @@ function renderObatTable(obat) {
     const tbody = document.getElementById('kelola-obat-list-body');
     if (!tbody) return;
 
-    if (obat.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center text-muted py-4">
-                    <i class="fas fa-inbox fa-2x mb-2"></i>
-                    <p class="mb-0">Tidak ada data obat</p>
-                </td>
-            </tr>
-        `;
-        return;
+    const activeItems = obat.filter(item => Number(item.is_active) === 1);
+    const inactiveItems = obat.filter(item => Number(item.is_active) !== 1);
+
+    // Helper: category badge class
+    function catBadge(cat) {
+        return cat === 'Obat-obatan' ? 'badge-primary'
+             : cat === 'Ampul & Vial' ? 'badge-info'
+             : 'badge-secondary';
     }
 
-    tbody.innerHTML = obat.map((item, index) => {
-        const stockBadge = item.stock <= item.min_stock
-            ? `<span class="badge badge-danger">${item.stock}</span>`
-            : `<span class="badge badge-success">${item.stock}</span>`;
-
-        const categoryBadge = item.category === 'Obat-obatan'
-            ? 'badge-primary'
-            : item.category === 'Ampul & Vial'
-            ? 'badge-info'
-            : 'badge-secondary';
-
-        const isActive = Number(item.is_active) === 1;
-        const statusBadge = isActive
-            ? '<span class="badge badge-success">Aktif</span>'
-            : '<span class="badge badge-secondary">Nonaktif</span>';
-
-        const rowClass = isActive ? '' : 'table-secondary';
-
-        // Supplier badge
-        const supplierBadge = item.supplier_name
+    // Helper: supplier badge
+    function supBadge(item) {
+        return item.supplier_name
             ? `<span class="badge badge-outline-info" title="${item.supplier_code || ''}">${item.supplier_name}</span>`
             : `<span class="badge badge-light text-muted">-</span>`;
+    }
 
-        return `
-            <tr class="${rowClass}">
-                <td>${index + 1}</td>
-                <td>${item.name || '-'}</td>
-                <td>
-                    <span class="badge ${categoryBadge}">${item.category || '-'}</span>
-                </td>
-                <td>${supplierBadge}</td>
-                <td class="text-center">${statusBadge}</td>
-                <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
-                <td class="text-center">${stockBadge}</td>
-                <td class="text-center">
-                    <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok" ${isActive ? '' : 'disabled'}>
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-xs btn-${isActive ? 'secondary' : 'primary'}" onclick="window.toggleObatStatus('${item.id}', ${isActive ? 0 : 1})" title="${isActive ? 'Nonaktifkan' : 'Aktifkan'}">
-                        <i class="fas fa-${isActive ? 'ban' : 'check'}"></i>
-                    </button>
-                    <button class="btn btn-xs btn-danger ml-1" onclick="window.deleteObatPermanen('${item.id}')" title="Delete Permanen" ${isActive ? 'disabled' : ''}>
-                        <i class="fas fa-trash"></i>
-                    </button>
+    // --- Render tabel AKTIF ---
+    if (activeItems.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p class="mb-0">Tidak ada data obat aktif</p>
                 </td>
             </tr>
         `;
-    }).join('');
+    } else {
+        tbody.innerHTML = activeItems.map((item, index) => {
+            const stockBadge = item.stock <= item.min_stock
+                ? `<span class="badge badge-danger">${item.stock}</span>`
+                : `<span class="badge badge-success">${item.stock}</span>`;
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name || '-'}</td>
+                    <td><span class="badge ${catBadge(item.category)}">${item.category || '-'}</span></td>
+                    <td>${supBadge(item)}</td>
+                    <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
+                    <td class="text-center">${stockBadge}</td>
+                    <td class="text-center">
+                        <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-xs btn-secondary" onclick="window.toggleObatStatus('${item.id}', 0)" title="Nonaktifkan">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // --- Render tabel NONAKTIF ---
+    const inactiveBody = document.getElementById('kelola-obat-inactive-body');
+    const inactiveSection = document.getElementById('kelola-obat-inactive-section');
+
+    if (inactiveBody && inactiveSection) {
+        if (inactiveItems.length === 0) {
+            inactiveSection.style.display = 'none';
+            inactiveBody.innerHTML = '';
+        } else {
+            inactiveSection.style.display = '';
+            inactiveBody.innerHTML = inactiveItems.map((item, index) => {
+                const stockBadge = `<span class="badge badge-secondary">${item.stock}</span>`;
+                return `
+                    <tr class="table-secondary">
+                        <td class="text-muted">${index + 1}</td>
+                        <td class="text-muted">${item.name || '-'}</td>
+                        <td><span class="badge ${catBadge(item.category)}">${item.category || '-'}</span></td>
+                        <td>${supBadge(item)}</td>
+                        <td class="text-muted">Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
+                        <td class="text-center">${stockBadge}</td>
+                        <td class="text-center">
+                            <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-xs btn-primary mr-1" onclick="window.toggleObatStatus('${item.id}', 1)" title="Aktifkan kembali">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-xs btn-danger" onclick="window.deleteObatPermanen('${item.id}')" title="Delete Permanen">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const inactiveCount = document.getElementById('kelola-obat-inactive-count');
+            if (inactiveCount) inactiveCount.textContent = inactiveItems.length;
+        }
+    }
 
     const countEl = document.getElementById('kelola-obat-total-count');
-    if (countEl) countEl.textContent = obat.length;
+    if (countEl) countEl.textContent = activeItems.length;
 }
 
 // Edit obat
