@@ -103,22 +103,10 @@
             return;
         }
 
-        // Load chat popup script if not already loaded
-        if (!document.querySelector('script[src*="chat-popup.js"]')) {
-            const script = document.createElement('script');
-            script.src = '/staff/public/scripts/chat-popup.js?v=v93';
-            script.onload = function() {
-                console.log('[GlobalChat] Chat popup loaded successfully');
-                window.chatPopupLoaded = true;
-            };
-            script.onerror = function() {
-                console.error('[GlobalChat] Failed to load chat popup');
-            };
-            document.body.appendChild(script);
-        } else {
-            window.chatPopupLoaded = true;
-            console.log('[GlobalChat] Chat popup script already present');
-        }
+        // chat-popup.js is now loaded as a static script in index-adminlte.html
+        // No dynamic loading needed here — just mark as loaded
+        window.chatPopupLoaded = true;
+        console.log('[GlobalChat] Auth ready, chat-popup.js loaded statically');
 
         // Use global Socket.IO connection from realtime-sync.js
         // DO NOT create our own socket - wait for realtime-sync to initialize it
