@@ -1352,14 +1352,21 @@ body.mobile-app-mode:not(.sidebar-collapse) .main-header {
     margin-left: 0 !important;
 }
 
-/* Override AdminLTE container margins/padding */
+/* Full-width content: no outer padding/gap */
 body.mobile-app-mode .content {
-    padding: 8px !important;
+    padding: 0 !important;
 }
 
 body.mobile-app-mode .container-fluid {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Cards edge-to-edge with small vertical gap */
+body.mobile-app-mode .card {
+    border-radius: 0 !important;
+    margin-bottom: 6px !important;
 }
 
 body.mobile-app-mode .card {
@@ -1367,83 +1374,126 @@ body.mobile-app-mode .card {
     margin-right: 0 !important;
 }
 
-/* Simplified mobile header - hide unnecessary items */
+/* Hide search, import, date/time - keep only queue + history */
 body.mobile-app-mode .main-header .btn-group,
-body.mobile-app-mode .main-header .datetime-display {
+body.mobile-app-mode .main-header .datetime-display,
+body.mobile-app-mode .main-header #btn-header-search {
     display: none !important;
 }
 
-/* Show patient history toggle button in mobile */
+/* History button - icon only, round */
 body.mobile-app-mode .main-header #btn-toggle-patient-sidebar {
     display: inline-flex !important;
-    font-size: 9px !important;
-    padding: 4px 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    font-size: 15px !important;
+    border-radius: 50% !important;
     min-width: auto !important;
 }
+body.mobile-app-mode .main-header #btn-toggle-patient-sidebar span {
+    display: none !important;
+}
 
-/* Show Antrian button on mobile */
+/* Queue button - icon only, round */
 body.mobile-app-mode .main-header #btn-header-queue {
     display: inline-flex !important;
-    font-size: 9px !important;
-    padding: 4px 8px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+    font-size: 15px !important;
+    border-radius: 50% !important;
+    position: relative !important;
 }
-
-body.mobile-app-mode .main-header #btn-header-queue .badge {
-    font-size: 8px !important;
-}
-
 body.mobile-app-mode .main-header #btn-header-queue span:not(.badge) {
     display: none !important;
 }
+body.mobile-app-mode .main-header #btn-header-queue .badge {
+    position: absolute !important;
+    top: -4px !important;
+    right: -4px !important;
+    font-size: 9px !important;
+    padding: 2px 4px !important;
+    min-width: 16px !important;
+    border-radius: 8px !important;
+}
 
-/* Queue dropdown on mobile */
+/* Queue dropdown */
 body.mobile-app-mode #header-queue-dropdown {
-    width: 280px !important;
-    max-width: 90vw !important;
-    font-size: 9px !important;
+    width: 300px !important;
+    max-width: 92vw !important;
+    font-size: 13px !important;
 }
-
 body.mobile-app-mode .header-queue-list {
-    font-size: 9px !important;
+    font-size: 13px !important;
 }
-
 body.mobile-app-mode .header-queue-list .dropdown-item {
-    padding: 6px 10px !important;
-    font-size: 9px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
 }
 
+/* Compact single-row header (48px) */
 body.mobile-app-mode .main-header {
-    display: block !important; /* Override mobile-responsive.css hiding */
-    padding: 8px 12px;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    padding: 0 8px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1050;
     background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
 }
 
-/* Style the back button (replaces hamburger) in mobile mode */
+/* Back button (hamburger → arrow) */
 body.mobile-app-mode .main-header .navbar-nav:first-child .nav-link {
-    font-size: 18px !important;
+    font-size: 20px !important;
     color: #333 !important;
+    padding: 0 10px 0 4px !important;
+    flex-shrink: 0 !important;
 }
 
-body.mobile-app-mode .content-wrapper {
-    padding-top: 110px !important; /* Space for fixed header (2 rows: title + search/queue) */
-}
-
+/* Left nav: back + patient name */
 body.mobile-app-mode .main-header .navbar-nav:first-child {
-    flex: 1;
+    flex: 1 !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    min-width: 0 !important;
 }
 
+/* Patient name - prominent, truncated */
 body.mobile-app-mode .main-header .clinic-header-title {
-    font-size: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: calc(100vw - 100px);
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: calc(100vw - 130px) !important;
+    color: #212529 !important;
+}
+
+/* Right nav: actions - no wrapping */
+body.mobile-app-mode .main-header .navbar-nav.ml-auto {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    gap: 4px !important;
+}
+
+/* Content: 48px top padding (matches header height) */
+body.mobile-app-mode .content-wrapper {
+    padding-top: 48px !important;
 }
 
 /* Mobile back button */
