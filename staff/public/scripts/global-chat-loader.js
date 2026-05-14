@@ -139,7 +139,7 @@
         
         const hasToken = window.getToken && window.getToken();
         
-        if (hasIdentity) {
+        if (hasIdentity || hasToken) {
             console.log('[GlobalChat] Auth context ready');
             callback();
         } else if (retries < maxRetries) {
