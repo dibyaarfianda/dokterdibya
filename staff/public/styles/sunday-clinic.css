@@ -2062,11 +2062,13 @@ body.mobile-app-mode .sc-section-inline-title {
     color: #212529 !important;
     line-height: 1.2 !important;
 }
-/* Category badge - smaller */
+/* Category badge - smaller (higher specificity to beat wildcard inherit rule) */
+body.mobile-app-mode #sunday-clinic-content .sc-badge-category,
 body.mobile-app-mode .sc-badge-category {
     font-size: 5px !important;
     padding: 1px 4px !important;
     font-weight: 600 !important;
+    line-height: 1.4 !important;
 }
 /* Pencil/trash icons in badge row */
 body.mobile-app-mode .sc-mobile-badge-right .badge {
