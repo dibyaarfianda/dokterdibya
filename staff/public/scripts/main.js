@@ -108,6 +108,7 @@ function initPages() {
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
+    pages.docboard = grab('docboard-frame-page');
     pages.mobileApp = grab('mobile-app-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
@@ -1465,9 +1466,18 @@ function showDocboardPage() {
         showWarning('Sesi login tidak ditemukan. Silakan login ulang.');
         return;
     }
-
-    localStorage.setItem('docboard_token', token);
-    window.open('/docboard/', '_blank', 'noopener');
+    hideAllPages();
+    if (!pages.docboard) pages.docboard = grab('docboard-frame-page');
+    if (pages.docboard) {
+        pages.docboard.classList.remove('d-none');
+        const iframe = document.getElementById('docboard-iframe');
+        if (iframe && !iframe.getAttribute('data-loaded')) {
+            localStorage.setItem('docboard_token', token);
+            iframe.src = '/docboard/';
+            iframe.setAttribute('data-loaded', '1');
+        }
+    }
+    setTitleAndActive('DocBoard', 'nav-docboard', 'docboard');
 }
 
 function showKelolaTindakanPage() {

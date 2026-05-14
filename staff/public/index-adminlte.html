@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
@@ -7,13 +7,13 @@
     <title>dokterDIBYA | Administrator</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v84">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v84">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v84">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v84">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v85">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v85">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v85">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v85">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v84">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v85">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,10 +21,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v84">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v85">
 
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v84"></script>
+    <script src="scripts/error-handler.js?v=v85"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -1184,7 +1184,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v84">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v85">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -1503,7 +1503,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v84'; // Mobile mode detection: standalone/webview + persistent storage fallback
+            const CACHE_VERSION = 'v85'; // Mobile mode detection: standalone/webview + persistent storage fallback
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -2094,6 +2094,13 @@
                         </div>
                     </div>
                     
+                </div>
+
+                <!-- DOCBOARD EMBEDDED PAGE -->
+                <div id="docboard-frame-page" class="d-none">
+                    <iframe id="docboard-iframe" src=""
+                        style="width: 100%; height: calc(100vh - 150px); min-height: 450px; border: none; border-radius: 8px; display: block;"
+                        allowfullscreen></iframe>
                 </div>
 
                 <!-- FINANCE PAGE (Superadmin) -->
@@ -2884,7 +2891,7 @@
                                                 <div class="input-group">
                                                     <input type="number" step="0.1" id="physical-temp" class="form-control">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text">°C</span>
+                                                        <span class="input-group-text">Â°C</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -3352,7 +3359,7 @@
                                     <div class="info-box bg-light mb-0">
                                         <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
                                         <div class="info-box-content">
-                                            <span class="info-box-text">Stok Kritis (≤5)</span>
+                                            <span class="info-box-text">Stok Kritis (â‰¤5)</span>
                                             <span class="info-box-number" id="summary-stock-low">0</span>
                                         </div>
                                     </div>
@@ -4960,7 +4967,7 @@
                                         <h5><i class="fas fa-list mr-2"></i>Semua Appointment</h5>
                                         <div class="row mb-3">
                                             <div class="col-md-6">
-                                                <input type="text" id="appointments-search" class="form-control" placeholder="🔍 Cari pasien...">
+                                                <input type="text" id="appointments-search" class="form-control" placeholder="ðŸ” Cari pasien...">
                                             </div>
                                             <div class="col-md-3">
                                                 <select id="appointments-filter-status" class="form-control">
@@ -5622,7 +5629,7 @@ Contoh Markdown:
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                     <div class="card-tools">
                                         <span id="adv-search-result-count" class="badge badge-light mr-2"></span>
-                                        <button type="button" class="btn btn-warning btn-sm mr-2" onclick="fixPatientNames()" title="Perbaiki kapitalisasi nama pasien (RAHAYU → Rahayu)">
+                                        <button type="button" class="btn btn-warning btn-sm mr-2" onclick="fixPatientNames()" title="Perbaiki kapitalisasi nama pasien (RAHAYU â†’ Rahayu)">
                                             <i class="fas fa-magic mr-1"></i>Auto-Fix Nama
                                         </button>
                                     </div>
@@ -5740,7 +5747,7 @@ Contoh Markdown:
                                     <!-- Search & Filter -->
                                     <div class="row mb-3">
                                         <div class="col-md-6">
-                                            <input type="text" id="kelola-obat-search" class="form-control" placeholder="🔍 Cari obat...">
+                                            <input type="text" id="kelola-obat-search" class="form-control" placeholder="ðŸ” Cari obat...">
                                         </div>
                                         <div class="col-md-4">
                                             <select id="kelola-obat-filter-category" class="form-control">
@@ -7247,12 +7254,11 @@ function openMobileMenu() {
     items.style.padding = '8px 0 16px 0';
 
     var menuData = [
-        {icon: 'fa-bullhorn', text: 'Pengumuman', fn: 'showKelolaPengumumanPage', color: '#0d6efd'},
-        {icon: 'fa-calendar-alt', text: 'Jadwal', fn: 'showKelolaJadwalPage', color: '#0d6efd'},
-        {icon: 'fa-procedures', text: 'DocBoard', fn: 'showDocboardPage', color: '#0d6efd'},
-        {icon: 'fa-stethoscope', text: 'Tindakan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
-        {icon: 'fa-pills', text: 'Obat', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
-        {icon: 'fa-user-shield', text: 'Roles', fn: 'showKelolaRolesPage', color: '#0d6efd'},
+        {icon: 'fa-user-cog', text: 'Profil', fn: 'showProfileSettings', color: '#0d6efd'},
+        {icon: 'fa-capsules', text: 'Obat/Alkes', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
+        {icon: 'fa-hand-holding-medical', text: 'Layanan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
+        {icon: 'fa-calendar-day', text: 'Pengaturan Sesi', fn: 'showBookingSettingsPage', color: '#0d6efd'},
+        {icon: 'fa-pills', text: 'Penjualan', fn: 'showPenjualanObatPage', color: '#0d6efd'},
         {icon: 'divider'},
         {icon: 'fa-sign-out-alt', text: 'Logout', fn: 'handleLogout', color: '#dc3545'}
     ];
@@ -7308,8 +7314,8 @@ function closeMobileMenu() {
     document.body.style.overflow = '';
 }
 function mobileNavClick(btn, action) {
-    document.querySelectorAll('#mobile-action-bar button:not(.mobile-profile-btn)').forEach(function(b){b.classList.remove('active');});
-    if(btn && action !== 'profile' && action !== 'more') btn.classList.add('active');
+    document.querySelectorAll('#mobile-action-bar button').forEach(function(b){b.classList.remove('active');});
+    if(btn && action !== 'more') btn.classList.add('active');
 }
 </script>
 
@@ -7333,34 +7339,31 @@ body.mobile-app-mode .mobile-action-bar-force button {
 }
 </style>
 
-<!-- Mobile quick action bar - matches sidebar menu -->
+<!-- Mobile bottom navigation bar -->
 <div id="mobile-action-bar" class="d-md-none d-lg-none mobile-action-bar-force">
-    <button type="button" class="mobile-profile-btn" onclick="if(typeof showProfileSettings==='function')showProfileSettings();">
-        <span class="icon-wrapper profile-avatar">
-            <img id="mobile-user-avatar" src="" alt="" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-            <i id="mobile-user-icon" class="fas fa-user"></i>
-        </span>
-        <span id="mobile-user-name">Profil</span>
+    <button type="button" id="mobile-btn-dashboard" class="active" onclick="mobileNavClick(this,'dashboard'); if(typeof showDashboardPage==='function')showDashboardPage();">
+        <span class="icon-wrapper"><i class="fas fa-home"></i></span>
+        <span>Dashboard</span>
     </button>
-    <button type="button" class="active" onclick="mobileNavClick(this,'dashboard'); if(typeof showDashboardPage==='function')showDashboardPage();">
-        <span class="icon-wrapper"><i class="fas fa-tachometer-alt"></i></span>
-        <span>Home</span>
+    <button type="button" id="mobile-btn-klinik" onclick="mobileNavClick(this,'klinik'); if(typeof showKlinikPrivatePage==='function')showKlinikPrivatePage();">
+        <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
+        <span>Janji Temu</span>
     </button>
-    <button type="button" onclick="mobileNavClick(this,'klinik'); if(typeof showKlinikPrivatePage==='function')showKlinikPrivatePage();">
-        <span class="icon-wrapper"><i class="fas fa-clinic-medical"></i></span>
-        <span>Klinik</span>
+    <button type="button" id="mobile-btn-docboard" onclick="mobileNavClick(this,'docboard'); if(typeof showDocboardPage==='function')showDocboardPage();">
+        <span class="icon-wrapper"><i class="fas fa-procedures"></i></span>
+        <span>DocBoard</span>
     </button>
-    <button type="button" onclick="mobileNavClick(this,'pasien'); if(typeof showManagePatientsPage==='function')showManagePatientsPage();">
+    <button type="button" id="mobile-btn-pasien" onclick="mobileNavClick(this,'pasien'); if(typeof showManagePatientsPage==='function')showManagePatientsPage();">
         <span class="icon-wrapper"><i class="fas fa-users"></i></span>
         <span>Pasien</span>
     </button>
-    <button type="button" onclick="mobileNavClick(this,'appointment'); if(typeof showKelolaAppointmentPage==='function')showKelolaAppointmentPage();">
-        <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
-        <span>Janji</span>
+    <button type="button" id="mobile-btn-tanya" onclick="mobileNavClick(this,'tanya'); if(typeof showTanyaDokterPage==='function')showTanyaDokterPage();">
+        <span class="icon-wrapper"><i class="fas fa-comments"></i></span>
+        <span>Tanya Dokter</span>
     </button>
-    <button type="button" onclick="openMobileMenu();">
+    <button type="button" id="mobile-btn-more" onclick="openMobileMenu();">
         <span class="icon-wrapper"><i class="fas fa-bars"></i></span>
-        <span>Menu</span>
+        <span>Lainnya</span>
     </button>
 </div>
 
@@ -7412,8 +7415,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v84" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v84" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v85" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v85" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -7433,13 +7436,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v84"></script>
+<script defer src="scripts/rum.js?v=v85"></script>
 
 <!-- Core app modules -->
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v84';
+    window.__assetVersion = 'v85';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -7507,14 +7510,14 @@ body.mobile-app-mode .mobile-action-bar-force button {
         try {
             initMain();
         } catch (error) {
-            console.error('❌ Error initializing main:', error);
+            console.error('âŒ Error initializing main:', error);
         }
 
         // Initialize feature areas
         try {
             initAuth(user);
         } catch (error) {
-            console.error('❌ Error initializing auth UI:', error);
+            console.error('âŒ Error initializing auth UI:', error);
         }
 
         // Direct navbar update
@@ -7528,7 +7531,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         try {
             initDashboard();
         } catch (error) {
-            console.error('❌ Error initializing dashboard:', error);
+            console.error('âŒ Error initializing dashboard:', error);
         }
 
         // Non-critical boot tasks run during idle so first paint can happen sooner.
@@ -7536,7 +7539,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             try {
                 initSessionManager();
             } catch (error) {
-                console.error('❌ Error initializing session manager:', error);
+                console.error('âŒ Error initializing session manager:', error);
             }
 
             try {
@@ -7550,7 +7553,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                     }, 500);
                 }
             } catch (error) {
-                console.error('❌ Error loading dashboard code:', error);
+                console.error('âŒ Error loading dashboard code:', error);
             }
         }, { timeout: 1500 });
 
@@ -7560,20 +7563,20 @@ body.mobile-app-mode .mobile-action-bar-force button {
             // Patients module - needed for search/kelola pasien
             import('./scripts/patients.js?v=' + v).then(m => {
                 if (m.initPatients) m.initPatients();
-            }).catch(e => console.error('❌ patients.js:', e));
+            }).catch(e => console.error('âŒ patients.js:', e));
 
             // Medical exam - needed when opening exam pages
-            import('./scripts/medical-exam.js?v=' + v).catch(e => console.error('❌ medical-exam.js:', e));
+            import('./scripts/medical-exam.js?v=' + v).catch(e => console.error('âŒ medical-exam.js:', e));
 
             // Finance & Analytics - superadmin only
             if (user.role === 'superadmin') {
                 import('./scripts/finance-dashboard.js?v=' + v).then(m => {
                     if (m.initFinanceDashboard) m.initFinanceDashboard();
-                }).catch(e => console.error('❌ finance-dashboard.js:', e));
+                }).catch(e => console.error('âŒ finance-dashboard.js:', e));
 
                 import('./scripts/analytics.js?v=' + v).then(m => {
                     if (m.initAnalyticsDashboard) m.initAnalyticsDashboard();
-                }).catch(e => console.error('❌ analytics.js:', e));
+                }).catch(e => console.error('âŒ analytics.js:', e));
             }
         }, { timeout: 3000 });
 
@@ -7584,17 +7587,17 @@ body.mobile-app-mode .mobile-action-bar-force button {
             try {
                 restoreSessionOnLoad().then(session => {
                     if (session && session.patient) {
-                        console.log('✅ Session restored for patient:', session.patient.name);
+                        console.log('âœ… Session restored for patient:', session.patient.name);
                     }
                 }).catch(error => {
-                    console.warn('⚠️ Session restore failed (non-critical):', error);
+                    console.warn('âš ï¸ Session restore failed (non-critical):', error);
                 });
             } catch (error) {
-                console.error('⚠️ Session restoration setup failed:', error);
+                console.error('âš ï¸ Session restoration setup failed:', error);
             }
         }, { timeout: 2200 });
 
-        console.log('✅ AdminLTE app initialized successfully');
+        console.log('âœ… AdminLTE app initialized successfully');
     }
  </script>
 
@@ -7624,10 +7627,10 @@ body.mobile-app-mode .mobile-action-bar-force button {
     });
 
     if (missingFunctions.length > 0) {
-        console.warn('⚠️ Warning: Some navigation functions not yet loaded:', missingFunctions);
+        console.warn('âš ï¸ Warning: Some navigation functions not yet loaded:', missingFunctions);
         console.log('This is normal - they will be available once their modules load');
     } else {
-        console.log('✅ All required navigation functions are available');
+        console.log('âœ… All required navigation functions are available');
     }
 
     // Socket.IO is now initialized via initRealtimeSync() which handles user registration
@@ -7646,7 +7649,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     window.getValidToken = function() {
         const token = localStorage.getItem('vps_auth_token');
         if (!token) {
-            console.error('❌ No authentication token found');
+            console.error('âŒ No authentication token found');
             alert('Sesi Anda telah habis. Silakan login kembali.');
             window.location.replace('login.html');
             return null;
@@ -7669,7 +7672,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             const response = await fetch(url, options);
 
             if (response.status === 401) {
-                console.error('❌ Unauthorized - token expired');
+                console.error('âŒ Unauthorized - token expired');
                 localStorage.removeItem('vps_auth_token');
                 alert('Token Anda telah kadaluarsa. Silakan login kembali.');
                 window.location.replace('login.html');
@@ -7682,7 +7685,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
             return response;
         } catch (error) {
-            console.error('❌ Fetch error:', error);
+            console.error('âŒ Fetch error:', error);
             throw error;
         }
     };
@@ -7781,9 +7784,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
             html: `
                 <p>Fungsi ini akan memperbaiki kapitalisasi nama pasien:</p>
                 <ul class="text-left" style="font-size: 0.9rem;">
-                    <li><strong>RAHAYU</strong> → <strong>Rahayu</strong></li>
-                    <li><strong>perama indah hapsari</strong> → <strong>Perama Indah Hapsari</strong></li>
-                    <li><strong>sITI AMINAH</strong> → <strong>Siti Aminah</strong></li>
+                    <li><strong>RAHAYU</strong> â†’ <strong>Rahayu</strong></li>
+                    <li><strong>perama indah hapsari</strong> â†’ <strong>Perama Indah Hapsari</strong></li>
+                    <li><strong>sITI AMINAH</strong> â†’ <strong>Siti Aminah</strong></li>
                 </ul>
                 <p class="text-warning mt-2"><i class="fas fa-exclamation-triangle"></i> Proses ini tidak bisa dibatalkan!</p>
             `,
@@ -8501,15 +8504,15 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
     };
 
-    // ─── Shared row renderer for #manage-patients-tbody ──────────────────────
+    // â”€â”€â”€ Shared row renderer for #manage-patients-tbody â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Used by BOTH loadWebPatients() and performAdvancedSearch() to keep the
     // template consistent and avoid the dual-render bug (AGENTS.md rule #24).
     function renderManagePatientRow(patient) {
         const visitDate = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
         const visitDateSort = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
         const resumeStatusMap = {
-            'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
-            'sudah_kirim_resume': '<span class="badge badge-info">Resume ✓</span>',
+            'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume âœ“</span>',
+            'sudah_kirim_resume': '<span class="badge badge-info">Resume âœ“</span>',
             'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
             'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
         };
@@ -8567,7 +8570,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             </tr>
         `;
     }
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     async function loadWebPatients() {
         try {
@@ -8845,22 +8848,22 @@ body.mobile-app-mode .mobile-action-bar-force button {
         const originalHtml = deleteBtn ? deleteBtn.innerHTML : '';
         
         // Konfirmasi dengan pesan detail tentang apa yang akan dihapus
-        const confirmMessage = `⚠️ PERINGATAN: Hapus Pasien dan Semua Data Terkait
+        const confirmMessage = `âš ï¸ PERINGATAN: Hapus Pasien dan Semua Data Terkait
 
 Anda akan menghapus pasien: "${patientName}"
 
 Data yang akan DIHAPUS PERMANEN:
-✗ Data pasien (profil, email, nomor telepon)
-✗ Riwayat billing dan invoice
-✗ Detail item billing
-✗ Transaksi pembayaran
-✗ Rekam medis (medical records)
-✗ Data pemeriksaan medis
-✗ Riwayat kunjungan
-✗ Janji temu (appointments)
-✗ Form patient intake
+âœ— Data pasien (profil, email, nomor telepon)
+âœ— Riwayat billing dan invoice
+âœ— Detail item billing
+âœ— Transaksi pembayaran
+âœ— Rekam medis (medical records)
+âœ— Data pemeriksaan medis
+âœ— Riwayat kunjungan
+âœ— Janji temu (appointments)
+âœ— Form patient intake
 
-⚠️ TINDAKAN INI TIDAK DAPAT DIBATALKAN!
+âš ï¸ TINDAKAN INI TIDAK DAPAT DIBATALKAN!
 
 Apakah Anda yakin ingin melanjutkan?`;
 
@@ -8897,7 +8900,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
             
             // Show success message with details
-            let successMessage = `✅ Pasien "${patientName}" berhasil dihapus!\n\nData yang dihapus:`;
+            let successMessage = `âœ… Pasien "${patientName}" berhasil dihapus!\n\nData yang dihapus:`;
             if (result.deleted_data) {
                 successMessage += `\n- Billing Items: ${result.deleted_data.billing_items || 0}`;
                 successMessage += `\n- Payment Transactions: ${result.deleted_data.payment_transactions || 0}`;
@@ -8924,21 +8927,21 @@ Apakah Anda yakin ingin melanjutkan?`;
             
             // Reload patient list in appointments module
             if (typeof window.reloadAppointmentPatients === 'function') {
-                console.log('🔄 Reloading appointment patients...');
+                console.log('ðŸ”„ Reloading appointment patients...');
                 await window.reloadAppointmentPatients();
             }
 
             // Reload Klinik Private appointments if available
             if (window.klinikPrivate && typeof window.klinikPrivate.reload === 'function') {
-                console.log('🔄 Reloading Klinik Private appointments...');
+                console.log('ðŸ”„ Reloading Klinik Private appointments...');
                 await window.klinikPrivate.reload();
             }
 
-            console.log('✅ All patient lists refreshed after deletion');
+            console.log('âœ… All patient lists refreshed after deletion');
             
         } catch (error) {
             console.error('Error deleting patient:', error);
-            alert('❌ Gagal menghapus pasien:\n' + error.message);
+            alert('âŒ Gagal menghapus pasien:\n' + error.message);
             
             // Restore button
             if (deleteBtn) {
@@ -8984,7 +8987,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 throw new Error(result.message || 'Gagal menandai pasien');
             }
 
-            // Update the row in-place — no table reload needed
+            // Update the row in-place â€” no table reload needed
             if (btnEl) {
                 const row = btnEl.closest('tr');
                 if (row) {
@@ -9506,10 +9509,10 @@ Apakah Anda yakin ingin melanjutkan?`;
             const result = data.data;
             
             let message = `Sinkronisasi selesai!\n\n`;
-            message += `✓ Berhasil disinkronkan: ${result.syncedCount} pasien\n`;
-            message += `⊘ Dilewati (sudah ada): ${result.skippedCount} pasien\n`;
+            message += `âœ“ Berhasil disinkronkan: ${result.syncedCount} pasien\n`;
+            message += `âŠ˜ Dilewati (sudah ada): ${result.skippedCount} pasien\n`;
             if (result.errorsCount > 0) {
-                message += `✗ Gagal: ${result.errorsCount} pasien\n\n`;
+                message += `âœ— Gagal: ${result.errorsCount} pasien\n\n`;
                 if (result.errors && result.errors.length > 0) {
                     message += 'Error pertama:\n';
                     result.errors.slice(0, 3).forEach(err => {
@@ -11112,10 +11115,10 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     function renderWeeklyRevenueChart(data) {
-        console.log('📊 Rendering weekly revenue chart with', data.length, 'data points');
+        console.log('ðŸ“Š Rendering weekly revenue chart with', data.length, 'data points');
         const container = document.getElementById('weekly-revenue-chart');
         if (!container) {
-            console.error('❌ weekly-revenue-chart container not found');
+            console.error('âŒ weekly-revenue-chart container not found');
             return;
         }
 
@@ -11167,7 +11170,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             const chart = new ApexCharts(container, options);
             chart.render();
-            console.log('✅ Weekly chart rendered');
+            console.log('âœ… Weekly chart rendered');
 
             const total = data.reduce((sum, d) => sum + d.revenue, 0);
             const avg = total / data.length;
@@ -11176,15 +11179,15 @@ Apakah Anda yakin ingin melanjutkan?`;
             if (weeklyTotalEl) weeklyTotalEl.textContent = formatCurrency(total);
             if (weeklyAvgEl) weeklyAvgEl.textContent = formatCurrency(avg);
         } catch (error) {
-            console.error('❌ Error rendering weekly chart:', error);
+            console.error('âŒ Error rendering weekly chart:', error);
         }
     }
 
     function renderMonthlyRevenueChart(data) {
-        console.log('📊 Rendering monthly revenue chart with', data.length, 'data points');
+        console.log('ðŸ“Š Rendering monthly revenue chart with', data.length, 'data points');
         const container = document.getElementById('monthly-revenue-chart');
         if (!container) {
-            console.error('❌ monthly-revenue-chart container not found');
+            console.error('âŒ monthly-revenue-chart container not found');
             return;
         }
 
@@ -11233,7 +11236,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             const chart = new ApexCharts(container, options);
             chart.render();
-            console.log('✅ Monthly chart rendered');
+            console.log('âœ… Monthly chart rendered');
 
             const total = data.reduce((sum, d) => sum + d.revenue, 0);
             const avg = total / data.length;
@@ -11242,21 +11245,21 @@ Apakah Anda yakin ingin melanjutkan?`;
             if (monthlyTotalEl) monthlyTotalEl.textContent = formatCurrency(total);
             if (monthlyAvgEl) monthlyAvgEl.textContent = formatCurrency(avg);
         } catch (error) {
-            console.error('❌ Error rendering monthly chart:', error);
+            console.error('âŒ Error rendering monthly chart:', error);
         }
     }
 
     function renderTopDrugsTable(drugs) {
-        console.log('💊 Rendering top drugs table with', drugs.length, 'items');
+        console.log('ðŸ’Š Rendering top drugs table with', drugs.length, 'items');
         const container = document.getElementById('top-drugs-table');
         if (!container) {
-            console.error('❌ top-drugs-table container not found');
+            console.error('âŒ top-drugs-table container not found');
             return;
         }
         
         if (!drugs.length) {
             container.innerHTML = '<div class="text-center text-muted py-3">Tidak ada data</div>';
-            console.log('ℹ️ No drugs data');
+            console.log('â„¹ï¸ No drugs data');
             return;
         }
 
@@ -11276,16 +11279,16 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     function renderTopServicesTable(services) {
-        console.log('🏥 Rendering top services table with', services.length, 'items');
+        console.log('ðŸ¥ Rendering top services table with', services.length, 'items');
         const container = document.getElementById('top-services-table');
         if (!container) {
-            console.error('❌ top-services-table container not found');
+            console.error('âŒ top-services-table container not found');
             return;
         }
         
         if (!services.length) {
             container.innerHTML = '<div class="text-center text-muted py-3">Tidak ada data</div>';
-            console.log('ℹ️ No services data');
+            console.log('â„¹ï¸ No services data');
             return;
         }
 
@@ -11327,23 +11330,23 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     async function initFinanceAnalysisPage() {
-        console.log('🔧 initFinanceAnalysisPage called');
+        console.log('ðŸ”§ initFinanceAnalysisPage called');
 
         const page = document.getElementById('finance-analysis-page');
         if (!page) {
-            console.error('❌ finance-analysis-page element not found');
+            console.error('âŒ finance-analysis-page element not found');
             return;
         }
 
-        console.log('✅ Page found, checking visibility...');
+        console.log('âœ… Page found, checking visibility...');
 
         const token = await getIdToken();
         if (!token) {
-            console.error('❌ No auth token');
+            console.error('âŒ No auth token');
             return;
         }
 
-        console.log('✅ Token obtained, loading data...');
+        console.log('âœ… Token obtained, loading data...');
 
         try {
             await loadKPIStats();
@@ -11352,9 +11355,9 @@ Apakah Anda yakin ingin melanjutkan?`;
             // Initialize and load Private Clinic Analysis
             initPrivateClinicMonthSelector();
             await loadPrivateClinicAnalysis();
-            console.log('✅ Finance Analysis data loaded successfully');
+            console.log('âœ… Finance Analysis data loaded successfully');
         } catch (error) {
-            console.error('❌ Error in initFinanceAnalysisPage:', error);
+            console.error('âŒ Error in initFinanceAnalysisPage:', error);
         }
     }
 
@@ -11512,7 +11515,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 <tr class="font-weight-bold border-top"><td>Laba Kotor</td><td class="text-right text-info">${formatRp(data.summary.labaKotor)}</td></tr>
                 <tr class="bg-light"><td colspan="2"><strong>BIAYA OPERASIONAL</strong></td></tr>
                 <tr><td class="pl-4">Sewa, Listrik, Air</td><td class="text-right text-muted">Rp 0 <small>(ditanggung RS)</small></td></tr>
-                <tr><td class="pl-4">Gaji Staff (${data.staffCost.jumlahStaff} org × ${data.staffCost.kehadiranPerStaff} hari)</td><td class="text-right text-danger">(${formatRp(data.staffCost.totalGaji)})</td></tr>
+                <tr><td class="pl-4">Gaji Staff (${data.staffCost.jumlahStaff} org Ã— ${data.staffCost.kehadiranPerStaff} hari)</td><td class="text-right text-danger">(${formatRp(data.staffCost.totalGaji)})</td></tr>
                 <tr class="font-weight-bold bg-success text-white"><td>LABA BERSIH</td><td class="text-right">${formatRp(data.netProfit.labaBersih)}</td></tr>
                 <tr><td class="text-muted">Margin Laba Bersih</td><td class="text-right text-success font-weight-bold">${formatPercent(data.netProfit.marginLabaBersih)}</td></tr>
             `;
@@ -11634,7 +11637,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     let currentHospitalLocation = '';
 
     window.showHospitalAppointmentsPage = async function(location) {
-        console.log('📋 Loading hospital appointments for:', location);
+        console.log('ðŸ“‹ Loading hospital appointments for:', location);
         currentHospitalLocation = location;
 
         // Hide all pages
@@ -11811,7 +11814,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     // Start hospital examination
     window.startHospitalExam = async function(patientId, appointmentId, hospitalName) {
-        console.log('🏥 Starting exam for patient:', patientId, 'appointment:', appointmentId);
+        console.log('ðŸ¥ Starting exam for patient:', patientId, 'appointment:', appointmentId);
 
         try {
             // Create or get medical record for this patient
@@ -11847,9 +11850,9 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v84"></script>
+ <script src="scripts/mobile-helper.js?v=v85"></script>
     <!-- Global Chat Loader -->
-     <script src="/staff/public/scripts/global-chat-loader.js?v=v84"></script>
+     <script src="/staff/public/scripts/global-chat-loader.js?v=v85"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">

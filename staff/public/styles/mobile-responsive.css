@@ -67,7 +67,7 @@
    ============================================ */
 
 @media (max-width: 991.98px) {
-    /* Show mobile action bar at TOP */
+    /* Show mobile action bar at BOTTOM */
     #mobile-action-bar {
         display: flex !important;
         align-items: stretch;
@@ -75,14 +75,15 @@
         position: fixed;
         left: 0;
         right: 0;
-        top: 0; /* At the very top */
-        bottom: auto !important;
+        bottom: 0; /* At the very bottom */
+        top: auto !important;
         padding: 0.35rem 0.4rem;
+        padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
         background: #ffffff;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
-        z-index: 1060; /* Higher than header */
-        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-        border-top: none;
+        box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.1);
+        z-index: 1060;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+        border-bottom: none;
         gap: 0.2rem;
     }
 
@@ -143,10 +144,10 @@
         max-width: 100%;
     }
 
-    /* Add padding to TOP for top navigation bar */
+    /* Add padding to BOTTOM for bottom navigation bar */
     body .content-wrapper {
-        padding-top: 15px !important;
-        padding-bottom: 1rem !important;
+        padding-top: 0.25rem !important;
+        padding-bottom: 78px !important;
     }
 
     /* Override d-md-none d-lg-none on mobile-action-bar */
@@ -446,10 +447,11 @@
         padding: 0.75rem;
     }
 
-    /* Compact top nav in landscape */
+    /* Compact bottom nav in landscape */
     #mobile-action-bar {
         padding: 0.2rem 0.4rem;
-        top: 0;
+        bottom: 0;
+        top: auto;
     }
 
     #mobile-action-bar button {
@@ -466,7 +468,8 @@
     }
 
     body .content-wrapper {
-        padding-top: 50px !important;
+        padding-top: 0.25rem !important;
+        padding-bottom: 60px !important;
     }
 
     /* Chat even more compact */
