@@ -2094,6 +2094,17 @@ body.mobile-app-mode #sunday-clinic-content .sc-section .badge-lg {
     font-size: 11px !important;
     padding: 3px 8px !important;
 }
+/* Mobile: billing table - 9px font */
+body.mobile-app-mode #sunday-clinic-content .table td,
+body.mobile-app-mode #sunday-clinic-content .table th {
+    font-size: 9px !important;
+    padding: 3px 5px !important;
+}
+/* Mobile: Cetak Etiket / Cetak Invoice - same compact padding as Sudah Lunas badge */
+body.mobile-app-mode #sunday-clinic-content #btn-print-etiket,
+body.mobile-app-mode #sunday-clinic-content #btn-print-invoice {
+    padding: 3px 8px !important;
+}
 /* Mobile-only elements (hidden on desktop, shown on mobile) */
 .sc-mobile-only {
     display: none;
