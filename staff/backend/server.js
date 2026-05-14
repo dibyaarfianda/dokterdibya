@@ -207,6 +207,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/patient-billing',    // Patient billing & online payment
     '/api/community-chat',     // Community profile + chat rooms
     '/api/sunday-clinic/queue/public', // Live queue for patient portal (names masked)
+    '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
 ];
 
 app.use('/api', (req, res, next) => {
@@ -465,6 +466,10 @@ app.use('/api/medify-batch', medifyBatchRoutes);
 // Tanya Dokter - Patient Questions
 const patientQuestionsRoutes = require('./routes/patient-questions');
 app.use('/api/patient-questions', patientQuestionsRoutes);
+
+// Patient Feedback (masukan untuk pengembang portal)
+const patientFeedbackRoutes = require('./routes/patient-feedback');
+app.use('/api/patient-feedback', patientFeedbackRoutes);
 
 app.use('/api/community-chat', communityChatRoutes);
 

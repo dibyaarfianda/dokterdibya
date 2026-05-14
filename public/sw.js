@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260502h'; // 2026-05-02 - birth testimonial input on birth card
+const CACHE_VERSION = '20260514'; // 2026-05-14 - feedback page for patient portal
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
