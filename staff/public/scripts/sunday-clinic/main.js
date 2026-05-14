@@ -279,7 +279,7 @@ class SundayClinicApp {
         let html = '';
 
         // Render category badge
-        html += this.renderCategoryBadge();
+        html += this.renderCategoryBadge(activeSection);
 
         // Render ONLY the active section
         const component = this.components[activeSection];
@@ -340,7 +340,7 @@ class SundayClinicApp {
      * Render category badge
      * Order: MR ID → Category → Edit → Delete
      */
-    renderCategoryBadge() {
+    renderCategoryBadge(activeSection) {
         const categoryLabels = {
             [MR_CATEGORIES.OBSTETRI]: { label: 'Obstetri', color: 'primary' },
             [MR_CATEGORIES.GYN_REPRO]: { label: 'Ginekologi Reproduksi', color: 'success' },
@@ -374,7 +374,7 @@ class SundayClinicApp {
         ` : '';
 
         // Current section label (shown only on mobile)
-        const activeSection = state.activeSection || null;
+        const activeSec = activeSection || state.activeSection || null;
         const SECTION_LABELS = {
             identitas: 'Identitas Pasien',
             anamnesa: 'Anamnesa',
@@ -388,13 +388,14 @@ class SundayClinicApp {
             'resume-medis': 'Resume Medis',
             tagihan: 'Tagihan'
         };
-        const sectionLabel = activeSection ? (SECTION_LABELS[activeSection] || '') : '';
+        const sectionLabel = activeSec ? (SECTION_LABELS[activeSec] || '') : '';
         const sectionSpan = sectionLabel
             ? `<span class="sc-section-inline-title">${sectionLabel}</span>`
             : '';
 
         return `
             <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:4px;">
+                ${sectionSpan}
                 <span class="badge badge-dark badge-lg">
                     ${this.currentMrId.toUpperCase()}
                 </span>
@@ -403,7 +404,6 @@ class SundayClinicApp {
                 </span>
                 ${editCategoryBtn}
                 ${deleteBtn}
-                ${sectionSpan}
             </div>
         `;
     }
