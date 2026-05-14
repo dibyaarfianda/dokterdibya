@@ -1476,6 +1476,9 @@ body.mobile-app-mode .main-header .navbar-nav:first-child .nav-link {
     color: #333 !important;
     padding: 0 8px 0 2px !important;
     flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 42px !important;
 }
 
 /* Left nav: back + patient name */
