@@ -160,10 +160,15 @@
         max-width: 100%;
     }
 
-    /* Add padding to BOTTOM for bottom navigation bar */
+    /* Add padding to BOTTOM for bottom navigation bar, zero top gap */
     body .content-wrapper {
-        padding-top: 0.25rem !important;
+        padding-top: 0 !important;
         padding-bottom: 78px !important;
+    }
+
+    body .content-wrapper > .content,
+    body .content-wrapper > section.content {
+        padding-top: 0 !important;
     }
 
     /* Override d-md-none d-lg-none on mobile-action-bar */
