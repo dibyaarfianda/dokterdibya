@@ -106,7 +106,7 @@
         // Load chat popup script if not already loaded
         if (!document.querySelector('script[src*="chat-popup.js"]')) {
             const script = document.createElement('script');
-            script.src = '/staff/public/scripts/chat-popup.js';
+            script.src = '/staff/public/scripts/chat-popup.js?v=v93';
             script.onload = function() {
                 console.log('[GlobalChat] Chat popup loaded successfully');
                 window.chatPopupLoaded = true;
@@ -137,7 +137,11 @@
                            window.currentStaffIdentity.id && 
                            window.currentStaffIdentity.name;
         
-        const hasToken = window.getToken && window.getToken();
+        // Check localStorage directly (don't rely on window.getToken being defined yet)
+        const hasToken = localStorage.getItem('vps_auth_token') || 
+                         sessionStorage.getItem('vps_auth_token') ||
+                         localStorage.getItem('token') ||
+                         sessionStorage.getItem('token');
         
         if (hasIdentity || hasToken) {
             console.log('[GlobalChat] Auth context ready');
