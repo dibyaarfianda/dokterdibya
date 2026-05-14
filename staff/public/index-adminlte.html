@@ -11914,8 +11914,10 @@ Apakah Anda yakin ingin melanjutkan?`;
 
  <!-- Mobile Helper Script -->
  <script src="scripts/mobile-helper.js?v=v87"></script>
-    <!-- Global Chat Loader -->
+    <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
      <script src="/staff/public/scripts/global-chat-loader.js?v=v93"></script>
+    <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
+     <script src="/staff/public/scripts/chat-popup.js?v=v93"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
