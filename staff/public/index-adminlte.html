@@ -7273,6 +7273,8 @@ function openMobileMenu() {
         {icon: 'fa-calendar-day', text: 'Pengaturan Sesi', fn: 'showBookingSettingsPage', color: '#0d6efd'},
         {icon: 'fa-pills', text: 'Penjualan', fn: 'showPenjualanObatPage', color: '#0d6efd'},
         {icon: 'divider'},
+        {icon: 'fa-sync-alt', text: 'Perbarui Aplikasi', fn: 'clearAppCache', color: '#6c757d'},
+        {icon: 'divider'},
         {icon: 'fa-sign-out-alt', text: 'Logout', fn: 'handleLogout', color: '#dc3545'}
     ];
 
@@ -7325,6 +7327,27 @@ function closeMobileMenu() {
     var m = document.getElementById('dynamic-mobile-menu');
     if(m) m.remove();
     document.body.style.overflow = '';
+}
+function clearAppCache() {
+    if(!confirm('Hapus cache dan muat ulang aplikasi?\nAnda perlu login ulang.')) return;
+    var done = function(){ window.location.reload(true); };
+    var tasks = [];
+    if('serviceWorker' in navigator) {
+        tasks.push(
+            navigator.serviceWorker.getRegistrations().then(function(regs){
+                return Promise.all(regs.map(function(r){ return r.unregister(); }));
+            })
+        );
+    }
+    if('caches' in window) {
+        tasks.push(
+            caches.keys().then(function(keys){
+                return Promise.all(keys.map(function(k){ return caches.delete(k); }));
+            })
+        );
+    }
+    localStorage.removeItem('vps_auth_token');
+    Promise.all(tasks).then(done).catch(done);
 }
 function mobileNavClick(btn, action) {
     document.querySelectorAll('#mobile-action-bar button').forEach(function(b){b.classList.remove('active');});
