@@ -163,19 +163,41 @@
   // ---------- CSS ----------
   const chatCSS = `
     <style>
+      /* CRITICAL: Force FAB always visible - overrides ALL other CSS including mobile-responsive.css */
       #chat-popup-container {
-        position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+        position: fixed !important;
+        bottom: 80px !important;
+        right: 14px !important;
+        z-index: 2147483647 !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       }
 
       body.has-mobile-action-bar #chat-popup-container {
-        bottom: calc(110px + env(safe-area-inset-bottom));
+        bottom: calc(110px + env(safe-area-inset-bottom)) !important;
       }
 
       @media (max-width: 991.98px) {
         #chat-popup-container {
-          right: 12px;
+          bottom: 75px !important;
+          right: 12px !important;
         }
+      }
+
+      /* Toggle button always visible; hidden only when container has .chat-is-open class */
+      #chat-popup-container #chat-toggle-btn,
+      #chat-popup-container .chat-toggle-btn {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+      /* Hide toggle button ONLY when chat is open (class-based, no JS inline needed) */
+      #chat-popup-container.chat-is-open #chat-toggle-btn,
+      #chat-popup-container.chat-is-open .chat-toggle-btn {
+        display: none !important;
       }
 
       .chat-toggle-btn {
@@ -383,24 +405,26 @@
         // Basic toggle that works without auth
         function basicToggle() {
             isChatOpenBasic = !isChatOpenBasic;
-            // Use both inline style AND class for WebView compatibility
+            // Use class on container instead of inline display (CSS !important handles visibility)
+            const cont = document.getElementById('chat-popup-container');
             if (isChatOpenBasic) {
                 chatBox.style.display = 'flex';
                 chatBox.classList.add('chat-open');
-                toggleBtn.style.display = 'none';
+                if (cont) cont.classList.add('chat-is-open');
             } else {
                 chatBox.style.display = 'none';
                 chatBox.classList.remove('chat-open');
-                toggleBtn.style.display = 'flex';
+                if (cont) cont.classList.remove('chat-is-open');
             }
             console.log('[ChatPopup] Basic toggle - isChatOpen:', isChatOpenBasic);
         }
 
         function basicClose() {
             isChatOpenBasic = false;
+            const cont = document.getElementById('chat-popup-container');
             chatBox.style.display = 'none';
             chatBox.classList.remove('chat-open');
-            toggleBtn.style.display = 'flex';
+            if (cont) cont.classList.remove('chat-is-open');
             console.log('[ChatPopup] Basic close');
         }
 
@@ -598,11 +622,12 @@
     // Toggle function - exposed globally for WebView onclick compatibility
     function handleToggleChat() {
       isChatOpen = !isChatOpen;
-      // Use both inline style AND class for WebView compatibility
+      // Use class on container instead of inline display (CSS !important handles visibility)
+      const cont = document.getElementById('chat-popup-container');
       if (isChatOpen) {
         chatBox.style.display = 'flex';
         chatBox.classList.add('chat-open');
-        toggleBtn.style.display = 'none';
+        if (cont) cont.classList.add('chat-is-open');
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
         // Mark all messages as read
@@ -618,7 +643,7 @@
       } else {
         chatBox.style.display = 'none';
         chatBox.classList.remove('chat-open');
-        toggleBtn.style.display = 'flex';
+        if (cont) cont.classList.remove('chat-is-open');
       }
     }
 
@@ -629,9 +654,10 @@
     // Close function - exposed globally for WebView onclick compatibility
     function handleCloseChat() {
       isChatOpen = false;
+      const cont = document.getElementById('chat-popup-container');
       chatBox.style.display = 'none';
       chatBox.classList.remove('chat-open');
-      toggleBtn.style.display = 'flex';
+      if (cont) cont.classList.remove('chat-is-open');
     }
 
     // Upgrade the close function
