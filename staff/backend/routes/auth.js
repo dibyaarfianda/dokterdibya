@@ -16,6 +16,22 @@ const activityLogger = require('../services/activityLogger');
 const PatientPasswordService = require('../services/PatientPasswordService');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
+const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
+
+function resolveStaffIdentity(name, photoUrl) {
+    const normalizedName = String(name || '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/\./g, '');
+    const gender = normalizedName === 'drdibya' ? 'laki-laki' : 'perempuan';
+    const hasCustomPhoto = typeof photoUrl === 'string' && photoUrl.trim().length > 0;
+
+    return {
+        gender,
+        photo_url: hasCustomPhoto ? photoUrl : (gender === 'laki-laki' ? STAFF_MALE_AVATAR : STAFF_FEMALE_AVATAR)
+    };
+}
 
 // POST /api/auth/login
 router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
@@ -101,6 +117,9 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
         logger.warn(`Failed to log login activity: ${logErr.message}`);
     }
 
+    const isStaffUser = (user.user_type || 'patient') === 'staff';
+    const staffIdentity = isStaffUser ? resolveStaffIdentity(user.name, user.photo_url) : null;
+
     sendSuccess(res, {
         token,
         user: {
@@ -110,7 +129,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             role: roleForToken,
             role_id: user.role_id || null,
             role_display_name: resolvedRoleDisplay || roleForToken,
-            photo_url: user.photo_url,
+            photo_url: isStaffUser ? staffIdentity.photo_url : user.photo_url,
+            gender: isStaffUser ? staffIdentity.gender : null,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false,
             profile_completed: user.profile_completed || false,
@@ -246,6 +266,8 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
         permissions = allPerms.map(p => p.name);
     }
 
+    const staffIdentity = resolveStaffIdentity(user.name, user.photo_url);
+
     sendSuccess(res, {
         user: {
             id: user.new_id,
@@ -254,7 +276,8 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             role: roleForClient,
             role_id: user.role_id || null,
             role_display_name: resolvedRoleDisplay || roleForClient,
-            photo_url: user.photo_url,
+            photo_url: staffIdentity.photo_url,
+            gender: staffIdentity.gender,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false,
             profile_completed: user.profile_completed || false,
@@ -278,6 +301,7 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
             u.email,
             u.role,
             u.role_id,
+            u.photo_url,
             u.user_type,
             u.is_superadmin,
             r.name AS resolved_role_name,
@@ -297,6 +321,8 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
     const roleForClient = user.role || 'staff';
     const resolvedRoleDisplay = user.resolved_role_display;
 
+    const staffIdentity = resolveStaffIdentity(user.name, user.photo_url);
+
     sendSuccess(res, {
         id: user.new_id,
         name: user.name,
@@ -305,7 +331,8 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
         role: roleForClient,
         role_id: user.role_id || null,
         role_display_name: resolvedRoleDisplay || roleForClient,
-        photo_url: null,
+        photo_url: staffIdentity.photo_url,
+        gender: staffIdentity.gender,
         user_type: user.user_type || 'staff',
         is_superadmin: user.is_superadmin || false
     });
