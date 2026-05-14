@@ -121,7 +121,7 @@ export default {
 
         return `
             <div class="sc-section">
-                <div class="sc-section-header">
+                <div class="sc-section-header sc-section-header-hide-mobile">
                     <h3>Identitas Pasien</h3>
                 </div>
                 <div class="sc-card">

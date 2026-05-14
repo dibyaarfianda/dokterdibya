@@ -1369,6 +1369,21 @@ body.mobile-app-mode .card {
     margin-bottom: 6px !important;
 }
 
+/* Content font 10% larger on mobile */
+body.mobile-app-mode #sunday-clinic-content,
+body.mobile-app-mode #sunday-clinic-content .sc-section,
+body.mobile-app-mode #sunday-clinic-content table,
+body.mobile-app-mode #sunday-clinic-content .form-control,
+body.mobile-app-mode #sunday-clinic-content input,
+body.mobile-app-mode #sunday-clinic-content select,
+body.mobile-app-mode #sunday-clinic-content textarea,
+body.mobile-app-mode #sunday-clinic-content label,
+body.mobile-app-mode #sunday-clinic-content .btn:not(.badge),
+body.mobile-app-mode #sunday-clinic-content td,
+body.mobile-app-mode #sunday-clinic-content th {
+    font-size: 15.4px !important;
+}
+
 body.mobile-app-mode .card {
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -1386,10 +1401,10 @@ body.mobile-app-mode .main-header #btn-toggle-patient-sidebar {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 36px !important;
-    height: 36px !important;
+    width: 28px !important;
+    height: 28px !important;
     padding: 0 !important;
-    font-size: 15px !important;
+    font-size: 12px !important;
     border-radius: 50% !important;
     min-width: auto !important;
 }
@@ -1402,10 +1417,10 @@ body.mobile-app-mode .main-header #btn-header-queue {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    width: 36px !important;
-    height: 36px !important;
+    width: 28px !important;
+    height: 28px !important;
     padding: 0 !important;
-    font-size: 15px !important;
+    font-size: 12px !important;
     border-radius: 50% !important;
     position: relative !important;
 }
@@ -1414,12 +1429,12 @@ body.mobile-app-mode .main-header #btn-header-queue span:not(.badge) {
 }
 body.mobile-app-mode .main-header #btn-header-queue .badge {
     position: absolute !important;
-    top: -4px !important;
-    right: -4px !important;
-    font-size: 9px !important;
-    padding: 2px 4px !important;
-    min-width: 16px !important;
-    border-radius: 8px !important;
+    top: -3px !important;
+    right: -3px !important;
+    font-size: 8px !important;
+    padding: 1px 3px !important;
+    min-width: 14px !important;
+    border-radius: 7px !important;
 }
 
 /* Queue dropdown */
@@ -1442,10 +1457,10 @@ body.mobile-app-mode .main-header {
     flex-direction: row !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
-    padding: 0 8px !important;
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
+    padding: 0 6px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
     position: fixed;
     top: 0;
     left: 0;
@@ -1457,9 +1472,9 @@ body.mobile-app-mode .main-header {
 
 /* Back button (hamburger → arrow) */
 body.mobile-app-mode .main-header .navbar-nav:first-child .nav-link {
-    font-size: 20px !important;
+    font-size: 16px !important;
     color: #333 !important;
-    padding: 0 10px 0 4px !important;
+    padding: 0 8px 0 2px !important;
     flex-shrink: 0 !important;
 }
 
@@ -1474,12 +1489,12 @@ body.mobile-app-mode .main-header .navbar-nav:first-child {
 
 /* Patient name - prominent, truncated */
 body.mobile-app-mode .main-header .clinic-header-title {
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-weight: 600 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: calc(100vw - 130px) !important;
+    max-width: calc(100vw - 110px) !important;
     color: #212529 !important;
 }
 
@@ -1488,12 +1503,12 @@ body.mobile-app-mode .main-header .navbar-nav.ml-auto {
     flex-wrap: nowrap !important;
     align-items: center !important;
     flex-shrink: 0 !important;
-    gap: 4px !important;
+    gap: 2px !important;
 }
 
-/* Content: 48px top padding (matches header height) */
+/* Content: 42px top padding (matches header height) */
 body.mobile-app-mode .content-wrapper {
-    padding-top: 48px !important;
+    padding-top: 42px !important;
 }
 
 /* Mobile back button */
@@ -2005,6 +2020,24 @@ body.mobile-app-mode .sc-section {
 body.mobile-app-mode .sc-section-header {
     margin-bottom: 4px !important;
     padding-bottom: 4px !important;
+}
+
+/* Hide redundant section title if it's already shown inline in DRD row */
+body.mobile-app-mode .sc-section-header-hide-mobile {
+    display: none !important;
+}
+
+/* Inline section title next to DRD badge */
+.sc-section-inline-title {
+    display: none; /* hidden on desktop */
+}
+body.mobile-app-mode .sc-section-inline-title {
+    display: inline-block !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #212529 !important;
+    margin-left: 6px !important;
+    vertical-align: middle !important;
 }
 
 body.mobile-app-mode .mb-3 {

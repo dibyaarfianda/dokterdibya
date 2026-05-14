@@ -373,16 +373,37 @@ class SundayClinicApp {
             </span>
         ` : '';
 
+        // Current section label (shown only on mobile)
+        const activeSection = state.activeSection || null;
+        const SECTION_LABELS = {
+            identitas: 'Identitas Pasien',
+            anamnesa: 'Anamnesa',
+            pemeriksaan: 'Pemeriksaan Fisik',
+            'pemeriksaan-obstetri': 'Pem. Obstetri',
+            'pemeriksaan-ginekologi': 'Pem. Ginekologi',
+            usg: 'USG',
+            penunjang: 'Penunjang',
+            diagnosis: 'Diagnosis',
+            planning: 'Planning',
+            'resume-medis': 'Resume Medis',
+            tagihan: 'Tagihan'
+        };
+        const sectionLabel = activeSection ? (SECTION_LABELS[activeSection] || '') : '';
+        const sectionSpan = sectionLabel
+            ? `<span class="sc-section-inline-title">${sectionLabel}</span>`
+            : '';
+
         return `
-            <div class="mb-3 d-flex align-items-center">
+            <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:4px;">
                 <span class="badge badge-dark badge-lg">
                     ${this.currentMrId.toUpperCase()}
                 </span>
-                <span class="badge badge-${category.color} badge-lg ml-2">
+                <span class="badge badge-${category.color} badge-lg ml-1">
                     ${category.label}
                 </span>
                 ${editCategoryBtn}
                 ${deleteBtn}
+                ${sectionSpan}
             </div>
         `;
     }
