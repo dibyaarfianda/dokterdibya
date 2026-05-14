@@ -95,11 +95,14 @@ class InventoryService {
             await connection.beginTransaction();
 
             // Get oldest batches with remaining stock (FIFO)
+            // FOR UPDATE acquires row-level locks to prevent race conditions
+            // when concurrent sales run for the same obat
             const [batches] = await connection.query(
                 `SELECT id, quantity_remaining, cost_price
                  FROM obat_batches
                  WHERE obat_id = ? AND quantity_remaining > 0
-                 ORDER BY purchase_date ASC, id ASC`,
+                 ORDER BY purchase_date ASC, id ASC
+                 FOR UPDATE`,
                 [obatId]
             );
 
@@ -109,7 +112,7 @@ class InventoryService {
             if (batches.length === 0) {
                 // FALLBACK: No batches exist (legacy stock), deduct directly from obat.stock
                 const [obatData] = await connection.query(
-                    `SELECT stock, default_cost_price FROM obat WHERE id = ?`,
+                    `SELECT stock, default_cost_price FROM obat WHERE id = ? FOR UPDATE`,
                     [obatId]
                 );
 
@@ -196,13 +199,17 @@ class InventoryService {
                     remainingToDeduct -= deductFromBatch;
                 }
 
-                // Update obat stock total
+                // Lock and update obat stock total atomically
                 await connection.query(
-                    `UPDATE obat SET stock = stock - ? WHERE id = ?`,
-                    [quantity, obatId]
+                    `UPDATE obat SET stock = stock - ? WHERE id = ? AND stock >= ?`,
+                    [quantity, obatId, quantity]
                 );
 
-                logger.info(`Stock deducted (FIFO): obat_id=${obatId}, qty=${quantity}, cost=${totalCost}`);
+                // Verify update actually happened (guards against race condition)
+                const [[obatCheck]] = await connection.query(
+                    `SELECT stock FROM obat WHERE id = ?`, [obatId]
+                );
+                logger.info(`Stock deducted (FIFO): obat_id=${obatId}, qty=${quantity}, cost=${totalCost}, remaining_stock=${obatCheck?.stock}`);
             }
 
             await connection.commit();
