@@ -11914,6 +11914,16 @@ Apakah Anda yakin ingin melanjutkan?`;
 
  <!-- Mobile Helper Script -->
  <script src="scripts/mobile-helper.js?v=v87"></script>
+
+    <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
+    <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
+      <div id="chat-toggle-btn" class="chat-toggle-btn" onclick="window.toggleChatPopup && window.toggleChatPopup()" aria-label="Buka Chat Tim" title="Buka Chat Tim" style="width:56px;height:56px;border-radius:50%;background:#007BFF;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,.35);position:relative;">
+        <i class="fas fa-comments"></i>
+        <span class="chat-badge" id="chat-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:#f5576c;color:#fff;border-radius:12px;padding:2px 6px;font-size:11px;font-weight:bold;min-width:20px;text-align:center;">0</span>
+      </div>
+      <!-- Chat box will be injected by chat-popup.js -->
+    </div>
+
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
      <script src="/staff/public/scripts/global-chat-loader.js?v=v93"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->

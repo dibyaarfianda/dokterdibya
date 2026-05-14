@@ -320,13 +320,44 @@
         console.log('[ChatPopup] initChatPopup called, readyState:', document.readyState);
         console.log('[ChatPopup] window.auth:', window.auth);
 
-        // ALWAYS inject HTML/CSS first so toggle button exists (for WebView compatibility)
-        // Inject CSS
+        // Inject CSS always
         console.log('[ChatPopup] Injecting CSS...');
         document.head.insertAdjacentHTML('beforeend', chatCSS);
 
-        // Inject HTML
-        document.body.insertAdjacentHTML('beforeend', chatHTML);
+        // Inject HTML only if container not already present (it may be injected directly in HTML)
+        const existingContainer = document.getElementById('chat-popup-container');
+        if (!existingContainer) {
+            console.log('[ChatPopup] Injecting HTML (container not found in DOM)...');
+            document.body.insertAdjacentHTML('beforeend', chatHTML);
+        } else {
+            console.log('[ChatPopup] Container already in DOM, injecting only chat-box...');
+            // Container is in HTML but chat-box is not — inject just the chat box
+            if (!document.getElementById('chat-box')) {
+                const chatBoxHTML = `<div id="chat-box" class="chat-box" style="display:none;">
+                    <div class="chat-header">
+                      <div class="chat-header-content">
+                        <div>
+                          <div class="chat-header-title">Team Chat</div>
+                          <div class="chat-header-online" id="chat-online-users">
+                            <i class="fas fa-circle" style="font-size: 8px; color: #4ade80;"></i>
+                            <span id="online-names"></span>
+                          </div>
+                        </div>
+                      </div>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <button id="chat-clear-btn" class="chat-clear-btn" aria-label="Clear Chat" title="Clear Chat"><i class="fas fa-trash-alt"></i></button>
+                        <button id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup"><i class="fas fa-times"></i></button>
+                      </div>
+                    </div>
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input-container">
+                      <input type="text" id="chat-input" class="chat-input" placeholder="Ketik pesan...">
+                      <button id="chat-send-btn" class="chat-send-btn" aria-label="Kirim"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                  </div>`;
+                existingContainer.insertAdjacentHTML('beforeend', chatBoxHTML);
+            }
+        }
 
         // Set up basic toggle handlers IMMEDIATELY (for WebView onclick compatibility)
         const toggleBtn = document.getElementById('chat-toggle-btn');
