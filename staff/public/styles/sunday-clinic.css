@@ -2085,6 +2085,22 @@ body.mobile-app-mode .sc-mobile-badge-right .badge {
 body.mobile-app-mode .sc-note {
     font-size: 12px !important;
 }
+/* Mobile: action buttons in sections - 11px */
+body.mobile-app-mode #sunday-clinic-content .sc-section .btn {
+    font-size: 11px !important;
+}
+/* Mobile: "Sudah Lunas" status badge */
+body.mobile-app-mode #sunday-clinic-content .sc-section .badge-lg {
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+}
+/* Mobile-only elements (hidden on desktop, shown on mobile) */
+.sc-mobile-only {
+    display: none;
+}
+body.mobile-app-mode .sc-mobile-only {
+    display: block !important;
+}
 
 body.mobile-app-mode .mb-3 {
     margin-bottom: 4px !important;

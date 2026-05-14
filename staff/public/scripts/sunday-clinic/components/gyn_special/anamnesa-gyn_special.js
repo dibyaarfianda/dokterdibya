@@ -327,6 +327,11 @@ export default {
                 <div class="mt-3 text-muted small" id="anamnesa-status">
                     ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(anamnesa.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
                 </div>
+                <div class="sc-mobile-only mt-3">
+                    <button type="button" class="btn btn-primary btn-block" onclick="document.getElementById('anamnesa-save').click()">
+                        <i class="fas fa-save mr-1"></i>Simpan Anamnesa
+                    </button>
+                </div>
             </div>
         `;
     },

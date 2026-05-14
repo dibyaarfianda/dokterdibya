@@ -284,8 +284,11 @@ export default {
                         </div>
                 </div>
             </div>
-
-
+            <div class="sc-mobile-only mt-3">
+                <button type="button" class="btn btn-primary btn-block" onclick="window.saveAnamnesa()">
+                    <i class="fas fa-save mr-1"></i>Simpan Anamnesa
+                </button>
+            </div>
         `;
     },
 
