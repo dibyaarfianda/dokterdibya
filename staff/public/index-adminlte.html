@@ -1000,16 +1000,20 @@
             object-fit: contain !important;
         }
 
-        /* Chat popup position - consistent across pages */
-        #chat-popup-container {
+        /* Chat popup position - html body prefix for higher specificity than mobile-responsive.css */
+        html body #chat-popup-container {
             position: fixed !important;
             bottom: 20px !important;
             right: 20px !important;
             z-index: 9999 !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
         }
         /* On mobile: push chat FAB above mobile action bar (~65px) */
         @media (max-width: 991.98px) {
-            #chat-popup-container {
+            html body #chat-popup-container {
                 bottom: 75px !important;
                 right: 12px !important;
             }
@@ -1204,7 +1208,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v87">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v96">
     
     <!-- Mobile App Mode Detection -->
     <script>
