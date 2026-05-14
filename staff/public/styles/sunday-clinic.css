@@ -2064,8 +2064,8 @@ body.mobile-app-mode .sc-section-inline-title {
 }
 /* Category badge - smaller */
 body.mobile-app-mode .sc-badge-category {
-    font-size: 8px !important;
-    padding: 1px 5px !important;
+    font-size: 5px !important;
+    padding: 1px 4px !important;
     font-weight: 600 !important;
 }
 /* Pencil/trash icons in badge row */
