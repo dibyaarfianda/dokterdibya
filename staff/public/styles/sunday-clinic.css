@@ -2028,17 +2028,60 @@ body.mobile-app-mode .sc-section-header-hide-mobile {
     display: none !important;
 }
 
-/* Inline section title next to DRD badge */
-.sc-section-inline-title {
+/* Mobile badge row: 2-row layout - title+category left, icons right */
+.sc-mobile-badge-row {
     display: none; /* hidden on desktop */
 }
+body.mobile-app-mode .sc-mobile-badge-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 4px 0 4px 0 !important;
+    margin-bottom: 4px !important;
+    gap: 4px !important;
+}
+body.mobile-app-mode .sc-mobile-badge-left {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+}
+body.mobile-app-mode .sc-mobile-badge-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+}
+/* Section title - above category badge */
+.sc-section-inline-title {
+    display: none;
+}
 body.mobile-app-mode .sc-section-inline-title {
-    display: inline-block !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
+    display: block !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
     color: #212529 !important;
-    margin-left: 6px !important;
-    vertical-align: middle !important;
+    line-height: 1.2 !important;
+}
+/* Category badge - 30% smaller */
+body.mobile-app-mode .sc-badge-category {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    font-weight: 600 !important;
+}
+/* Pencil/trash icons in badge row */
+body.mobile-app-mode .sc-mobile-badge-right .badge {
+    width: 26px !important;
+    height: 26px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+}
+/* "Dicatat oleh..." meta info - 12px */
+body.mobile-app-mode .sc-note {
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode .mb-3 {
