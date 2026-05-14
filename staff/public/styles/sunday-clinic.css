@@ -1377,6 +1377,12 @@ body.mobile-app-mode #sunday-clinic-content *,
 body.mobile-app-mode #sunday-clinic-content *::placeholder {
     font-size: inherit !important;
 }
+/* Explicit override for form elements (Bootstrap resets these) */
+body.mobile-app-mode #sunday-clinic-content textarea,
+body.mobile-app-mode #sunday-clinic-content textarea.form-control,
+body.mobile-app-mode #sunday-clinic-content textarea::placeholder {
+    font-size: 14.6px !important;
+}
 
 body.mobile-app-mode .card {
     margin-left: 0 !important;
