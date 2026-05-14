@@ -322,7 +322,7 @@ function renderPage() {
                 <div class="modal-content">
                     <div class="modal-header bg-info text-white">
                         <h5 class="modal-title">Detail Penjualan</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal">
+                        <button type="button" class="close text-white" onclick="hideModal('modal-view-sale')">
                             <span>&times;</span>
                         </button>
                     </div>
@@ -723,10 +723,45 @@ async function saveSale() {
 }
 
 // View sale
+// Reliable modal show/hide (Bootstrap jQuery or pure-JS fallback)
+function showModal(modalId) {
+    const el = document.getElementById(modalId);
+    if (!el) return;
+    if (window.$ && window.$.fn && window.$.fn.modal) {
+        try { $(el).modal('show'); return; } catch(e) {}
+    }
+    // Pure JS fallback
+    el.style.display = 'block';
+    el.classList.add('show');
+    document.body.classList.add('modal-open');
+    let backdrop = document.getElementById('_modal_backdrop_' + modalId);
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = '_modal_backdrop_' + modalId;
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.style.zIndex = '1040';
+        backdrop.onclick = function() { hideModal(modalId); };
+        document.body.appendChild(backdrop);
+    }
+}
+function hideModal(modalId) {
+    const el = document.getElementById(modalId);
+    if (!el) return;
+    if (window.$ && window.$.fn && window.$.fn.modal) {
+        try { $(el).modal('hide'); return; } catch(e) {}
+    }
+    el.style.display = 'none';
+    el.classList.remove('show');
+    document.body.classList.remove('modal-open');
+    const backdrop = document.getElementById('_modal_backdrop_' + modalId);
+    if (backdrop) backdrop.remove();
+}
+
 window.viewObatSale = async function(id) {
     try {
         const data = await apiRequest(`/obat-sales/${id}`);
         const sale = data.data;
+        if (!sale) throw new Error('Data penjualan tidak ditemukan');
 
         const hospitalLabel = HOSPITALS.find(h => h.value === sale.hospital_source)?.label || sale.hospital_source;
         const createdAt = new Date(sale.created_at).toLocaleDateString('id-ID', {
@@ -790,7 +825,7 @@ window.viewObatSale = async function(id) {
 
         // Footer actions based on status
         const footer = document.getElementById('view-sale-footer');
-        let actions = '<button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>';
+        let actions = '<button type="button" class="btn btn-secondary" onclick="hideModal(\'modal-view-sale\')">Tutup</button>';
 
         if (sale.status === 'draft') {
             actions += `
@@ -830,10 +865,10 @@ window.viewObatSale = async function(id) {
         }
 
         footer.innerHTML = actions;
-        $('#modal-view-sale').modal('show');
+        showModal('modal-view-sale');
     } catch (error) {
         console.error('Failed to load sale:', error);
-        showAlert('error', error.message);
+        showAlert('error', 'Gagal memuat detail: ' + error.message);
     }
 };
 
@@ -913,7 +948,7 @@ window.confirmObatSale = async function(id) {
             : 'Penjualan berhasil dikonfirmasi (menunggu pembayaran)';
 
         showAlert('success', statusMsg);
-        $('#modal-view-sale').modal('hide');
+        hideModal('modal-view-sale');
         loadSales();
     } catch (error) {
         console.error('Failed to confirm sale:', error);
@@ -957,7 +992,7 @@ window.setPaymentMethod = async function(id) {
             body: JSON.stringify({ payment_method: result.value })
         });
         showAlert('success', 'Metode pembayaran berhasil disimpan');
-        $('#modal-view-sale').modal('hide');
+        hideModal('modal-view-sale');
         loadSales();
     } catch (error) {
         console.error('Failed to set payment method:', error);
@@ -973,7 +1008,7 @@ window.markObatSalePaid = async function(id) {
     try {
         await apiRequest(`/obat-sales/${id}/mark-paid`, { method: 'POST' });
         showAlert('success', 'Pembayaran berhasil dikonfirmasi');
-        $('#modal-view-sale').modal('hide');
+        hideModal('modal-view-sale');
         loadSales();
     } catch (error) {
         console.error('Failed to mark paid:', error);
