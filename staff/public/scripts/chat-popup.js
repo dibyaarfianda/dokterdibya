@@ -6,6 +6,20 @@
 (function () {
   'use strict';
 
+  // ---------- CREATE FAB IMMEDIATELY (synchronous, before DOMContentLoaded) ----------
+  // This runs when the script is parsed — no timing issues, no cache dependency
+  // Append to <html> not <body> to bypass any overflow:hidden on body
+  (function createFABNow() {
+    if (document.getElementById('chat-popup-container')) return; // already in HTML
+    var fab = document.createElement('div');
+    fab.id = 'chat-popup-container';
+    fab.style.cssText = 'position:fixed;bottom:80px;right:14px;z-index:2147483647;display:block;';
+    fab.innerHTML = '<div id="chat-toggle-btn" onclick="window.toggleChatPopup&&window.toggleChatPopup()" style="width:56px;height:56px;border-radius:50%;background:#007BFF;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(0,0,0,.4);position:relative;"><i class="fas fa-comments"></i><span id="chat-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:#f5576c;color:#fff;border-radius:12px;padding:2px 6px;font-size:11px;font-weight:bold;min-width:20px;text-align:center;">0</span></div>';
+    // Use documentElement so overflow:hidden on body doesn't clip this
+    var target = document.body || document.documentElement;
+    target.appendChild(fab);
+  })();
+
   // ---------- EARLY STUB FUNCTIONS for WebView onclick compatibility ----------
   // These will be replaced with real implementations after init
   // This ensures onclick handlers work even before async init completes
