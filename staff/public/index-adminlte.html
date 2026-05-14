@@ -10516,7 +10516,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         const costPrice = document.getElementById('purchase-cost-price').value;
         const purchaseDate = document.getElementById('purchase-date').value;
         const expiryDate = document.getElementById('purchase-expiry-date').value;
-        const batchNumber = document.getElementById('purchase-batch-number').value;
+        const batchNumber = document.getElementById('purchase-batch-number').value.trim();
         const invoiceNumber = document.getElementById('purchase-invoice').value;
         const notes = document.getElementById('purchase-notes').value;
 
@@ -10531,6 +10531,10 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
         if (!purchaseDate) {
             showWarning('Tanggal pembelian harus diisi');
+            return;
+        }
+        if (!batchNumber) {
+            showWarning('No. batch wajib diisi');
             return;
         }
 
@@ -10558,7 +10562,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                     cost_price: parseFloat(costPrice),
                     purchase_date: purchaseDate,
                     expiry_date: expiryDate || null,
-                    batch_number: batchNumber || null,
+                    batch_number: batchNumber,
                     invoice_number: invoiceNumber || null,
                     notes: notes || null
                 })
@@ -12422,8 +12426,8 @@ async function deleteCode(codeId) {
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label>No. Batch</label>
-                                <input type="text" id="purchase-batch-number" class="form-control" placeholder="Opsional">
+                                <label>No. Batch <span class="text-danger">*</span></label>
+                                <input type="text" id="purchase-batch-number" class="form-control" placeholder="Contoh: BATCH-20260514" required>
                             </div>
                         </div>
                     </div>

@@ -57,10 +57,17 @@ router.post('/purchase', verifyToken, requireMenuAccess('obat_alkes'), async (re
             });
         }
 
+        if (!batch_number || !String(batch_number).trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'No. batch harus diisi'
+            });
+        }
+
         const result = await InventoryService.recordPurchase({
             obatId: obat_id,
             supplierId: supplier_id,
-            batchNumber: batch_number,
+            batchNumber: String(batch_number).trim(),
             purchaseDate: purchase_date,
             expiryDate: expiry_date,
             costPrice: cost_price,
