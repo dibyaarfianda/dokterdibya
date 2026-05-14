@@ -793,84 +793,54 @@ export default {
         // Action buttons
         let actionsHtml = '';
         if (status === 'draft') {
-            // DRAFT: All staff can confirm
             actionsHtml = `
-                <button type="button" class="btn btn-primary" id="btn-confirm-billing">
-                    <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
-                </button>
-                <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
-                    <i class="fas fa-tag mr-2"></i>Cetak Etiket
-                </button>
-                <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
-                    <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-                </button>`;
+                <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                    <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-confirm-billing">
+                        <i class="fas fa-check mr-1"></i>Konfirmasi Tagihan
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-etiket" disabled>
+                        <i class="fas fa-tag mr-1"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-invoice" disabled>
+                        <i class="fas fa-receipt mr-1"></i>Cetak Invoice
+                    </button>
+                </div>`;
         } else if (status === 'confirmed') {
-            // CONFIRMED: Show print buttons + Mark as Paid button + Pay Online button
-            const markPaidBtn = `
-                <button type="button" class="btn btn-primary mr-2" id="btn-mark-paid">
-                    <i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas
+            const extraBtn = isDokter ? '' : `
+                <button type="button" class="btn btn-warning btn-sm flex-fill" id="btn-request-revision">
+                    <i class="fas fa-edit mr-1"></i>Ajukan Perubahan
                 </button>`;
-
-            const payOnlineBtn = `
-                <button type="button" class="btn btn-info mr-2" id="btn-pay-online">
-                    <i class="fas fa-qrcode mr-2"></i>Bayar Online
-                </button>`;
-
-            if (isDokter) {
-                actionsHtml = `
-                    ${markPaidBtn}
-                    ${payOnlineBtn}
-                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
-                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+            actionsHtml = `
+                <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                    <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
+                        <i class="fas fa-money-bill-wave mr-1"></i>Tandai Lunas
                     </button>
-                    <button type="button" class="btn btn-success" id="btn-print-invoice">
-                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    <button type="button" class="btn btn-info btn-sm flex-fill" id="btn-pay-online">
+                        <i class="fas fa-qrcode mr-1"></i>Bayar Online
                     </button>
-                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
-            } else {
-                // Non-dokter: Print + Ajukan Perubahan + Mark as Paid + Pay Online
-                actionsHtml = `
-                    ${markPaidBtn}
-                    ${payOnlineBtn}
-                    <button type="button" class="btn btn-warning mr-2" id="btn-request-revision">
-                        <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
+                    ${extraBtn}
+                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
-                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
-                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
-                    <button type="button" class="btn btn-success" id="btn-print-invoice">
-                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-                    </button>
-                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
-            }
+                    ${billing.printed_at ? '<span class="small text-muted align-self-center">Telah dicetak</span>' : ''}
+                </div>`;
         } else if (status === 'paid') {
-            // PAID: Show print buttons + paid indicator (no more mark as paid)
-            const paidBadge = `
-                <span class="badge badge-lg badge-primary mr-3" style="font-size: 1rem; padding: 0.5rem 1rem;">
-                    <i class="fas fa-check-circle mr-1"></i>Sudah Lunas
-                </span>`;
-
-            if (isDokter) {
-                actionsHtml = `
-                    ${paidBadge}
-                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
-                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+            actionsHtml = `
+                <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                    <span class="badge badge-lg badge-primary align-self-center">
+                        <i class="fas fa-check-circle mr-1"></i>Sudah Lunas
+                    </span>
+                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
-                    <button type="button" class="btn btn-success" id="btn-print-invoice">
-                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
-                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
-            } else {
-                actionsHtml = `
-                    ${paidBadge}
-                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
-                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
-                    </button>
-                    <button type="button" class="btn btn-success" id="btn-print-invoice">
-                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-                    </button>
-                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
-            }
+                    ${billing.printed_at ? '<span class="small text-muted align-self-center">Telah dicetak</span>' : ''}
+                </div>`;
         }
 
         // Check which admin items are already in billing
@@ -953,7 +923,7 @@ export default {
                         </tbody>
                     </table>
 
-                    <div class="text-right mt-3">
+                    <div class="mt-3">
                         ${actionsHtml}
                     </div>
                 </div>
