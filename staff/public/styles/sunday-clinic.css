@@ -1586,25 +1586,27 @@ body.mobile-app-mode .chat-toggle-btn {
     -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
 }
 
-/* Chat box in Sunday Clinic mobile mode - use explicit dimensions */
+/* Chat box in Sunday Clinic mobile mode - full screen (top to above nav) */
 body.mobile-app-mode #chat-box,
 body.mobile-app-mode .chat-box {
     position: fixed !important;
-    top: 10% !important;
-    left: 5% !important;
-    width: 90% !important;
-    height: 65% !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 60px !important; /* above .mobile-section-nav (approx 60px) */
+    width: 100% !important;
+    height: auto !important;
     max-width: none !important;
     max-height: none !important;
     z-index: 100000 !important;
     pointer-events: auto !important;
     background: #ffffff !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.2) !important;
     flex-direction: column !important;
     overflow: hidden !important;
-    border: 1px solid #ddd !important;
-    padding-bottom: 8px !important;
+    border: none !important;
+    padding-bottom: 0 !important;
 }
 
 /* Chat input container spacing */
