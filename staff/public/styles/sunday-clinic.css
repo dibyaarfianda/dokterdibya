@@ -1371,7 +1371,7 @@ body.mobile-app-mode .card {
 
 /* Uniform content font on mobile - cascade from root container */
 body.mobile-app-mode #sunday-clinic-content {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 body.mobile-app-mode #sunday-clinic-content *,
 body.mobile-app-mode #sunday-clinic-content *::placeholder {
@@ -1381,7 +1381,7 @@ body.mobile-app-mode #sunday-clinic-content *::placeholder {
 body.mobile-app-mode #sunday-clinic-content textarea,
 body.mobile-app-mode #sunday-clinic-content textarea.form-control,
 body.mobile-app-mode #sunday-clinic-content textarea::placeholder {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode .card {
@@ -2099,6 +2099,12 @@ body.mobile-app-mode #sunday-clinic-content .table td,
 body.mobile-app-mode #sunday-clinic-content .table th {
     font-size: 9px !important;
     padding: 3px 5px !important;
+}
+/* Mobile: Identitas table - tetap 12px (ikut font konten, bukan 9px billing) */
+body.mobile-app-mode #sunday-clinic-content .identity-table td,
+body.mobile-app-mode #sunday-clinic-content .identity-table th {
+    font-size: 12px !important;
+    padding: 4px 6px !important;
 }
 /* Mobile: Cetak Etiket / Cetak Invoice - same compact padding as Sudah Lunas badge */
 body.mobile-app-mode #sunday-clinic-content #btn-print-etiket,
