@@ -1007,6 +1007,13 @@
             right: 20px !important;
             z-index: 9999 !important;
         }
+        /* On mobile: push chat FAB above mobile action bar (~65px) */
+        @media (max-width: 991.98px) {
+            #chat-popup-container {
+                bottom: 75px !important;
+                right: 12px !important;
+            }
+        }
 
         /* Embedded community chat page in staff panel */
         .staff-community-chat-card {
