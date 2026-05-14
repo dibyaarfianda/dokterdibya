@@ -708,10 +708,11 @@
         if (isSelf) {
           messageHTML += `<div class="chat-avatar-spacer"></div>`;
         } else {
-          const photoUrl = userPhoto || (userId ? userPhotoCache.get(userId) : null);
+          const photoUrl = userPhoto || (userId ? userPhotoCache.get(userId) : null)
+                        || (userId ? `${API_ORIGIN}/api/users/${encodeURIComponent(userId)}/photo` : null);
 
           if (photoUrl) {
-            messageHTML += `<div class="chat-avatar" title="${escapeHtml(userName || '')}"><img src="${photoUrl}" alt="${escapeHtml(userName || '')}"></div>`;
+            messageHTML += `<div class="chat-avatar" title="${escapeHtml(userName || '')}"><img src="${photoUrl}" alt="${escapeHtml(userName || '')}" onerror="this.parentElement.innerHTML='${getInitials(userName || '')}';this.parentElement.style.background='${avatarBg}'"></div>`;
           } else {
             const initials = getInitials(userName || '');
             messageHTML += `<div class="chat-avatar" style="background: ${avatarBg}" title="${escapeHtml(userName || '')}">${initials}</div>`;

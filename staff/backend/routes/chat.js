@@ -144,5 +144,43 @@ router.setSocketIO = function(io) {
     router.io = io;
 };
 
+// GET /api/users/:userId/photo - Serve staff profile photo (public, no auth needed for img src)
+router.get('/api/users/:userId/photo', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const [rows] = await db.query(
+            'SELECT photo_url FROM users WHERE new_id = ? LIMIT 1',
+            [userId]
+        );
+
+        if (!rows.length || !rows[0].photo_url) {
+            return res.redirect('/staff/public/images/avatarwanita.png');
+        }
+
+        const photo = rows[0].photo_url;
+
+        // If it's a relative or absolute URL path, redirect to it
+        if (photo.startsWith('/') || photo.startsWith('http')) {
+            return res.redirect(photo);
+        }
+
+        // If it's a base64 data URL (data:image/...), parse and serve as binary
+        const match = photo.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+        if (match) {
+            const mimeType = match[1];
+            const buffer = Buffer.from(match[2], 'base64');
+            res.set('Content-Type', mimeType);
+            res.set('Cache-Control', 'public, max-age=3600');
+            return res.send(buffer);
+        }
+
+        // Fallback
+        res.redirect('/staff/public/images/avatarwanita.png');
+    } catch (err) {
+        console.error('Error serving user photo:', err);
+        res.redirect('/staff/public/images/avatarwanita.png');
+    }
+});
+
 module.exports = router;
 
