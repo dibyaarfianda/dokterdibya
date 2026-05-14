@@ -1476,6 +1476,18 @@ function showDocboardPage() {
             iframe.src = '/docboard/';
             iframe.setAttribute('data-loaded', '1');
         }
+        // On mobile: make iframe fill the whole screen
+        if (window.innerWidth <= 991) {
+            const bottomNavH = document.getElementById('mobile-action-bar') ? 60 : 0;
+            iframe.style.position = 'fixed';
+            iframe.style.top = '0';
+            iframe.style.left = '0';
+            iframe.style.width = '100vw';
+            iframe.style.height = `calc(100vh - ${bottomNavH}px)`;
+            iframe.style.zIndex = '1000';
+            iframe.style.border = 'none';
+            pages.docboard.style.cssText = 'position:static;margin:0;padding:0;';
+        }
     }
     setTitleAndActive('DocBoard', 'nav-docboard', 'docboard');
 }
