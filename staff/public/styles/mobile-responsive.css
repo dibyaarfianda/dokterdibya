@@ -186,12 +186,7 @@
    ============================================ */
 
 @media (max-width: 991.98px) {
-    /* Make chat popup smaller on mobile */
-    #chat-popup-container,
-    .chat-popup-container {
-        bottom: 10px !important;
-        right: 10px !important;
-    }
+    /* Chat popup position managed by chatCSS in chat-popup.js (!important rules there override this) */
 
     #chat-popup-container .chat-popup,
     .chat-popup {
