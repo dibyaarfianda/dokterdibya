@@ -15,8 +15,10 @@
     }
 
     /* Prevent page being wider than viewport (caused by AdminLTE sidebar margin) */
+    /* NOTE: Use 'clip' not 'hidden' on html — overflow-x:hidden on <html> causes Chrome Android
+       to treat <html> as scroll container, which clips position:fixed elements (known Chrome bug) */
     html {
-        overflow-x: hidden;
+        overflow-x: clip;
     }
     body {
         overflow-x: hidden !important;
