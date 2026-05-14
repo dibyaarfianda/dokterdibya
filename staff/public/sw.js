@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v96';
+const STAFF_PWA_VERSION = 'v97';
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
@@ -129,6 +129,12 @@ self.addEventListener('fetch', (event) => {
 
   // Other API requests - network only (no caching)
   if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // HTML navigation requests - network first (always get fresh HTML)
+  if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
+    event.respondWith(networkFirst(request));
     return;
   }
 
