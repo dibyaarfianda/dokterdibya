@@ -1369,19 +1369,13 @@ body.mobile-app-mode .card {
     margin-bottom: 6px !important;
 }
 
-/* Content font 10% larger on mobile */
-body.mobile-app-mode #sunday-clinic-content,
-body.mobile-app-mode #sunday-clinic-content .sc-section,
-body.mobile-app-mode #sunday-clinic-content table,
-body.mobile-app-mode #sunday-clinic-content .form-control,
-body.mobile-app-mode #sunday-clinic-content input,
-body.mobile-app-mode #sunday-clinic-content select,
-body.mobile-app-mode #sunday-clinic-content textarea,
-body.mobile-app-mode #sunday-clinic-content label,
-body.mobile-app-mode #sunday-clinic-content .btn:not(.badge),
-body.mobile-app-mode #sunday-clinic-content td,
-body.mobile-app-mode #sunday-clinic-content th {
+/* Uniform content font on mobile - cascade from root container */
+body.mobile-app-mode #sunday-clinic-content {
     font-size: 14.6px !important;
+}
+body.mobile-app-mode #sunday-clinic-content *,
+body.mobile-app-mode #sunday-clinic-content *::placeholder {
+    font-size: inherit !important;
 }
 
 body.mobile-app-mode .card {
