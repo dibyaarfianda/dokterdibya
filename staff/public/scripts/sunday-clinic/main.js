@@ -376,34 +376,34 @@ class SundayClinicApp {
         // Current section label (shown only on mobile)
         const activeSec = activeSection || state.activeSection || null;
         const SECTION_LABELS = {
-            identitas: 'Identitas Pasien',
-            anamnesa: 'Anamnesa',
-            pemeriksaan: 'Pemeriksaan Fisik',
-            'pemeriksaan-obstetri': 'Pem. Obstetri',
+            'identity':               'Identitas Pasien',
+            'anamnesa':               'Anamnesa',
+            'physical-exam':          'Pemeriksaan Fisik',
+            'pemeriksaan-obstetri':   'Pem. Obstetri',
             'pemeriksaan-ginekologi': 'Pem. Ginekologi',
-            usg: 'USG',
-            penunjang: 'Penunjang',
-            diagnosis: 'Diagnosis',
-            planning: 'Planning',
-            'resume-medis': 'Resume Medis',
-            tagihan: 'Tagihan'
+            'usg':                    'USG',
+            'penunjang':              'Penunjang',
+            'diagnosis':              'Diagnosis',
+            'plan':                   'Planning',
+            'resume-medis':           'Resume Medis',
+            'billing':                'Tagihan'
         };
         const sectionLabel = activeSec ? (SECTION_LABELS[activeSec] || '') : '';
-        const sectionSpan = sectionLabel
-            ? `<span class="sc-section-inline-title">${sectionLabel}</span>`
-            : '';
 
         return `
-            <div class="mb-3 d-flex align-items-center flex-wrap" style="gap:4px;">
-                ${sectionSpan}
-                <span class="badge badge-dark badge-lg">
-                    ${this.currentMrId.toUpperCase()}
-                </span>
-                <span class="badge badge-${category.color} badge-lg ml-1">
-                    ${category.label}
-                </span>
-                ${editCategoryBtn}
-                ${deleteBtn}
+            <div class="sc-mobile-badge-row">
+                <div class="sc-mobile-badge-left">
+                    ${sectionLabel ? `<div class="sc-section-inline-title">${sectionLabel}</div>` : ''}
+                    <div class="d-flex align-items-center" style="gap:4px;">
+                        <span class="badge badge-${category.color} sc-badge-category">
+                            ${category.label}
+                        </span>
+                    </div>
+                </div>
+                <div class="sc-mobile-badge-right">
+                    ${editCategoryBtn}
+                    ${deleteBtn}
+                </div>
             </div>
         `;
     }
