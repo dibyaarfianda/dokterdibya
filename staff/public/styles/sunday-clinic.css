@@ -1371,7 +1371,7 @@ body.mobile-app-mode .card {
 
 /* Uniform content font on mobile - cascade from root container */
 body.mobile-app-mode #sunday-clinic-content {
-    font-size: 14.6px !important;
+    font-size: 13px !important;
 }
 body.mobile-app-mode #sunday-clinic-content *,
 body.mobile-app-mode #sunday-clinic-content *::placeholder {
@@ -1381,7 +1381,7 @@ body.mobile-app-mode #sunday-clinic-content *::placeholder {
 body.mobile-app-mode #sunday-clinic-content textarea,
 body.mobile-app-mode #sunday-clinic-content textarea.form-control,
 body.mobile-app-mode #sunday-clinic-content textarea::placeholder {
-    font-size: 14.6px !important;
+    font-size: 13px !important;
 }
 
 body.mobile-app-mode .card {
@@ -2065,8 +2065,8 @@ body.mobile-app-mode .sc-section-inline-title {
 /* Category badge - smaller (higher specificity to beat wildcard inherit rule) */
 body.mobile-app-mode #sunday-clinic-content .sc-badge-category,
 body.mobile-app-mode .sc-badge-category {
-    font-size: 5px !important;
-    padding: 1px 4px !important;
+    font-size: 10px !important;
+    padding: 1px 5px !important;
     font-weight: 600 !important;
     line-height: 1.4 !important;
 }
