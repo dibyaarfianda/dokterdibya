@@ -1348,6 +1348,40 @@ User confirmed with "sudah oke" and "okay" while iterating constraints for May V
   2) satisfy fairness structure,
   3) then tune distribution targets (off-days/night load) with minimal extra swaps.
 
+### 40. PWA Icon Crop Fix (Android) — Final Working Solution
+
+**Problem:** Staff Panel icon di Android home screen terpotong (logo menyentuh tepi rounded square).
+
+**Root Cause:**
+- Chrome PWA cache ikon berdasarkan URL path, **mengabaikan query string** (`?v=v91`)
+- Reinstall PWA pun tidak force re-download jika base filename sama
+- Android adaptive icon sistem: `"purpose": "maskable"` = safe zone inner 80% circle (radius 40% canvas)
+  - Untuk 512px: safe circle = 409px diameter → logo HARUS ≤ 409px
+
+**Solusi yang berhasil:**
+1. Generate file ikon dengan **nama baru** (`icon-any-*.png` dan `icon-mask-*.png`) — bukan `?v=` param
+2. `icon-any-*` = logo 70% canvas (any purpose)
+3. `icon-mask-*` = logo 45% canvas (maskable purpose, dalam safe zone)
+4. Update `manifest.json` ke nama file baru — Chrome wajib unduh fresh
+5. Bump SW version (`v92`)
+
+**manifest.json pattern:**
+```json
+{ "src": "icons/icon-any-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+{ "src": "icons/icon-mask-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+```
+
+**Prosedur reinstall wajib:**
+1. Hapus shortcut lama dari home screen
+2. Chrome → Settings → Privacy → Clear browsing data → Cached images and files
+3. Buka kembali URL → Add to Home screen
+
+**Key Insight:** Untuk force Chrome update ikon PWA, **harus ganti nama file** — query param tidak bekerja.
+
+**App name:** Ubah di manifest.json `"name"` dan `"short_name"` ke `"DB Staff"`.
+
+---
+
 ### 39. Session Log - 4 May 2026
 
 **VK Schedule Rule Stack (User Confirmed Excellent)**
