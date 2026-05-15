@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260515v4';
+            var PAGE_VERSION = '20260515v5';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -607,7 +607,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260515chat3';
+            const SC_CACHE_VERSION = 'v20260515chat4';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1430,7 +1430,7 @@ PLAN
     <!-- Planning helpers for tindakan and terapi modals -->
     <script>
         (function() {
-            var planningHelpersVersion = '20260118v5';
+            var planningHelpersVersion = '20260515v6';
 
             // Global debug function
             window.checkPlanningStatus = function() {
