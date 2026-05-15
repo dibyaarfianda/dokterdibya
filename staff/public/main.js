@@ -285,7 +285,8 @@ function showProfileSettings() {
     pages.profile?.classList.remove('d-none'); 
     setTitleAndActive('Profile Settings', null);
     // Load profile module and initialize
-    import('./scripts/profile.js').then(module => {
+    const profileVersion = window.__assetVersion || 'v104';
+    import('./scripts/profile.js?v=' + profileVersion).then(module => {
         if (module.initProfile) {
             module.initProfile();
         }
