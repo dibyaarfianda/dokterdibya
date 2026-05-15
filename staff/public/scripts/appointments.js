@@ -39,7 +39,7 @@ export async function initAppointments() {
         return;
     }
     
-    console.log('� [APPOINTMENTS] initAppointments called');
+    console.log('[APPOINTMENTS] initAppointments called');
     isInitialized = true;
     
     // Bind event listeners once
