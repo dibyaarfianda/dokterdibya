@@ -131,12 +131,6 @@
             }
         }
 
-        // Check if auth is valid (support both Firebase 'uid' and VPS auth 'id')
-        if (!window.auth.currentUser || (!window.auth.currentUser.uid && !window.auth.currentUser.id)) {
-            console.error('[GlobalChat] Cannot initialize: No valid user auth');
-            return;
-        }
-
         // On pages like Sunday Clinic, chat-popup.js is not included statically.
         // Delay this check one tick so index-adminlte's following static script tag can load first.
         setTimeout(() => {
@@ -148,6 +142,13 @@
 
             ensureChatPopupScriptLoaded();
         }, 0);
+
+        // Check if auth is valid (support both Firebase 'uid' and VPS auth 'id').
+        // Chat popup should still bootstrap even if auth finishes a little later.
+        if (!window.auth.currentUser || (!window.auth.currentUser.uid && !window.auth.currentUser.id)) {
+            console.warn('[GlobalChat] Chat popup bootstrapped before valid user auth was ready');
+            return;
+        }
 
         // Use global Socket.IO connection from realtime-sync.js
         // DO NOT create our own socket - wait for realtime-sync to initialize it
