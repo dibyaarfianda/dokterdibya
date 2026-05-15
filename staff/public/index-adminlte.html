@@ -7578,7 +7578,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     // ── Live Queue Toggle (Patient Portal) ──
     (function() {
         function _queueToken() {
-            return getAuthToken ? getAuthToken() : (localStorage.getItem('vps_auth_token') || '');
+            return (window.getAuthToken && window.getAuthToken()) || localStorage.getItem('vps_auth_token') || '';
         }
         function _updateBtn(isVisible) {
             var btn = document.getElementById('btn-queue-vis-toggle');
