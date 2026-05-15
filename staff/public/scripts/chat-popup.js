@@ -13,6 +13,23 @@
     return '65px';
   }
 
+  function getMobileViewportHeight() {
+    if (window.visualViewport && window.visualViewport.height) {
+      return Math.round(window.visualViewport.height);
+    }
+    if (window.innerHeight) return window.innerHeight;
+    if (document.documentElement && document.documentElement.clientHeight) {
+      return document.documentElement.clientHeight;
+    }
+    return 800;
+  }
+
+  function getMobileChatHeightPx(navPx) {
+    var viewportHeight = getMobileViewportHeight();
+    var safeNavPx = Number(navPx) || 65;
+    return Math.max(320, viewportHeight - safeNavPx) + 'px';
+  }
+
   // ---------- ENSURE FAB EXISTS + VISIBLE (creates if missing, restores if hidden) ----------
   var _ensureFABBusy = false;
   function ensureFAB() {
@@ -39,6 +56,7 @@
       if (cont.parentNode !== document.body) document.body.appendChild(cont);
       var navH = getNavBottomPx();
       var navPx = parseInt(navH) || 65;
+      var chatHeight = getMobileChatHeightPx(navPx);
       // Clear HTML inline style first, then set each property with !important
       cont.style.cssText = '';
       cont.style.setProperty('position', 'fixed', 'important');
@@ -47,7 +65,7 @@
       cont.style.setProperty('right', '0', 'important');
       cont.style.setProperty('bottom', navH, 'important');
       cont.style.setProperty('width', '100%', 'important');
-      cont.style.setProperty('height', 'calc(100vh - ' + navH + ')', 'important');
+      cont.style.setProperty('height', chatHeight, 'important');
       cont.style.setProperty('margin', '0', 'important');
       cont.style.setProperty('padding', '0', 'important');
       cont.style.setProperty('display', 'block', 'important');
@@ -98,6 +116,8 @@
   function applyMobileFullScreen(cont) {
     if (cont.parentNode !== document.body) document.body.appendChild(cont);
     var navH = getNavBottomPx();
+    var navPx = parseInt(navH) || 65;
+    var chatHeight = getMobileChatHeightPx(navPx);
     cont.style.cssText = '';
     cont.style.setProperty('position', 'fixed', 'important');
     cont.style.setProperty('top', '0', 'important');
@@ -105,7 +125,7 @@
     cont.style.setProperty('right', '0', 'important');
     cont.style.setProperty('bottom', navH, 'important');
     cont.style.setProperty('width', '100%', 'important');
-    cont.style.setProperty('height', 'calc(100vh - ' + navH + ')', 'important');
+    cont.style.setProperty('height', chatHeight, 'important');
     cont.style.setProperty('margin', '0', 'important');
     cont.style.setProperty('padding', '0', 'important');
     cont.style.setProperty('display', 'block', 'important');
@@ -500,7 +520,7 @@
           right: 0 !important;
           bottom: 65px !important;
           width: 100% !important;
-          height: calc(100vh - 65px) !important;
+          height: calc(100dvh - 65px) !important;
           margin: 0 !important;
           padding: 0 !important;
         }
