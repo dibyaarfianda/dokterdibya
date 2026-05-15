@@ -14,7 +14,13 @@
   }
 
   // ---------- ENSURE FAB EXISTS + VISIBLE (creates if missing, restores if hidden) ----------
+  var _ensureFABBusy = false;
   function ensureFAB() {
+    if (_ensureFABBusy) return;
+    _ensureFABBusy = true;
+    try { _ensureFABImpl(); } finally { _ensureFABBusy = false; }
+  }
+  function _ensureFABImpl() {
     var cont = document.getElementById('chat-popup-container');
     if (!cont) {
       // FAB was removed from DOM — recreate it
@@ -85,8 +91,8 @@
   // Run immediately
   ensureFAB();
 
-  // Guardian interval — every 200ms
-  setInterval(ensureFAB, 200);
+  // Guardian interval — every 2s (200ms was too aggressive, triggered observer loop)
+  setInterval(ensureFAB, 2000);
 
   // Helper: apply full-screen mode for the chat box on mobile
   function applyMobileFullScreen(cont) {
@@ -152,17 +158,9 @@
       }
       if (needsFix) ensureFAB();
     });
+    // Only watch for FAB removal from body — DO NOT watch style/attribute changes
+    // (watching style causes infinite loop: ensureFAB sets style → observer fires → ensureFAB again)
     obs.observe(document.body, { childList: true, subtree: false });
-    var c = document.getElementById('chat-popup-container');
-    if (c) obs.observe(c, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
-    // Re-attach attribute observer if FAB gets recreated
-    setInterval(function () {
-      var c2 = document.getElementById('chat-popup-container');
-      if (c2 && !c2.__obsAttached) {
-        obs.observe(c2, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
-        c2.__obsAttached = true;
-      }
-    }, 1000);
   }
   startObserver();
 
