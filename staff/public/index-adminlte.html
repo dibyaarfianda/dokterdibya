@@ -5719,20 +5719,19 @@ Contoh Markdown:
                                         <table id="manage-patients-table" class="table table-bordered table-striped table-sm">
                                             <thead>
                                                 <tr>
-                                                    <th>ID Pasien</th>
-                                                    <th>MR ID</th>
-                                                    <th>Nama Lengkap</th>
-                                                    <th>HPL</th>
-                                                    <th>Tipe</th>
-                                                    <th>Status Resume</th>
-                                                    <th>Tgl Kunjungan</th>
-                                                    <th>Status</th>
                                                     <th>Aksi</th>
+                                                    <th>Nama</th>
+                                                    <th>Tipe</th>
+                                                    <th>HPL</th>
+                                                    <th>Status Resume</th>
+                                                    <th>Tanggal Daftar</th>
+                                                    <th>Terakhir Visit</th>
+                                                    <th>Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="manage-patients-tbody">
                                                 <tr>
-                                                    <td colspan="9" class="text-center">Memuat data...</td>
+                                                    <td colspan="8" class="text-center">Memuat data...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -7566,7 +7565,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v121';
+    window.__assetVersion = 'v122';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -8634,6 +8633,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
     // Used by BOTH loadWebPatients() and performAdvancedSearch() to keep the
     // template consistent and avoid the dual-render bug (AGENTS.md rule #24).
     function renderManagePatientRow(patient) {
+        const registerDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+        const registerDateSort = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
         const visitDate = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
         const visitDateSort = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
         const resumeStatusMap = {
@@ -8644,11 +8645,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
         };
         const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Belum ada resume</span>';
         const visitHistoryBadgeMap = {
-            sudah_ada_drd: '<span class="badge badge-success mt-1">Sudah ada DRD</span>',
+            sudah_ada_drd: '',
             pernah_kontrol_tanpa_drd: '<span class="badge badge-info mt-1">Pernah kontrol, belum ada DRD</span>',
-            belum_pernah_kontrol: '<span class="badge badge-warning mt-1">Belum pernah kontrol</span>'
+            belum_pernah_kontrol: '<span class="d-inline-block border bg-white mt-1" style="width: 10px; height: 10px; border-radius: 2px;" title="Belum pernah kontrol" aria-label="Belum pernah kontrol"></span>'
         };
-        const visitHistoryBadge = visitHistoryBadgeMap[patient.visit_history_status] || visitHistoryBadgeMap.belum_pernah_kontrol;
+        const visitHistoryBadge = visitHistoryBadgeMap[patient.visit_history_status] ?? visitHistoryBadgeMap.belum_pernah_kontrol;
         const statusBadge = patient.status === 'active' ?
             '<span class="badge badge-success">Aktif</span>' :
             '<span class="badge badge-secondary">Nonaktif</span>';
@@ -8661,7 +8662,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
             : `sunday-clinic.html?_v=v20260515chat2&patient=${patient.id}&mr=${patient.mr_id}`;
         const mrIdCell = patient.mr_id
             ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}</div>${visitHistoryBadge}`
-            : `<span class="text-muted">-</span><div>${visitHistoryBadge}</div>`;
+            : `<span class="text-muted">-</span>${visitHistoryBadge ? `<div>${visitHistoryBadge}</div>` : ''}`;
+        const nameMeta = patient.mr_id
+            ? `${patient.id} • <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
+            : `${patient.id}${visitHistoryBadge ? ` • ${visitHistoryBadge}` : ''}`;
+        const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.full_name || '-'}</a></div><div class="small text-muted">${nameMeta}</div>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
             const hplDate = new Date(patient.hpl);
@@ -8680,14 +8685,6 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
         return `
             <tr>
-                <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
-                <td>${mrIdCell}</td>
-                <td>${patient.full_name || '-'}</td>
-                <td>${hplCell}</td>
-                <td>${formatPatientType(patient.last_visit_type)}</td>
-                <td>${resumeStatusBadge}</td>
-                <td data-order="${visitDateSort}">${visitDate}</td>
-                <td>${statusBadge}</td>
                 <td class="text-nowrap">
                     <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                         <i class="fas fa-eye"></i>
@@ -8702,6 +8699,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
+                <td>${nameCell}</td>
+                <td>${formatPatientType(patient.last_visit_type)}</td>
+                <td>${hplCell}</td>
+                <td>${resumeStatusBadge}</td>
+                <td data-order="${registerDateSort}">${registerDate}</td>
+                <td data-order="${visitDateSort}">${visitDate}</td>
+                <td>${statusBadge}</td>
             </tr>
         `;
     }
@@ -8735,7 +8739,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             const tbody = document.getElementById('manage-patients-tbody');
 
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada pasien</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada pasien</td></tr>';
                 return;
             }
 
@@ -8752,7 +8756,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             if ($.fn.DataTable) {
                 const dt = $('#manage-patients-table').DataTable({
                     "pageLength": 25,
-                    "order": [[6, 'desc']], // Sort by visit date (column 6: Tgl Kunjungan) - newest first
+                    "order": [[6, 'desc']], // Sort by visit date (column 6: Terakhir Visit) - newest first
                     "searching": false // Disable built-in search, use advanced search only
                 });
                 // Restore previous page position so user doesn't jump back to page 1
@@ -8781,7 +8785,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         } catch (error) {
             console.error('Error loading web patients:', error);
             document.getElementById('manage-patients-tbody').innerHTML =
-                '<tr><td colspan="9" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
+                '<tr><td colspan="8" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
         }
     }
 
@@ -8848,7 +8852,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             const resultCount = document.getElementById('adv-search-result-count');
 
             // Show loading
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Mencari...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-spin"></i> Mencari...</td></tr>';
 
             // Collect search parameters
             const params = new URLSearchParams();
@@ -8920,7 +8924,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             }
 
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Tidak ada pasien yang sesuai dengan kriteria pencarian</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Tidak ada pasien yang sesuai dengan kriteria pencarian</td></tr>';
                 return;
             }
 
@@ -8930,7 +8934,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             // Reinitialize DataTable with fresh data
             $('#manage-patients-table').DataTable({
                 "pageLength": 25,
-                "order": [[2, 'asc']], // Sort by name (column 2 after adding MR ID)
+                "order": [[1, 'asc']], // Sort by name (column 1)
                 "searching": false, // Disable built-in search since we have advanced search
                 "paging": data.data.length > 25, // Only show pagination if more than 25 results
                 "info": true
@@ -8949,7 +8953,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         } catch (error) {
             console.error('Error in advanced search:', error);
             document.getElementById('manage-patients-tbody').innerHTML =
-                '<tr><td colspan="9" class="text-center text-danger">Gagal melakukan pencarian</td></tr>';
+                '<tr><td colspan="8" class="text-center text-danger">Gagal melakukan pencarian</td></tr>';
         }
     }
 
