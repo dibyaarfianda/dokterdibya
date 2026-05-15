@@ -19,30 +19,93 @@
       console.log('[ChatPopup] FAB recreated by guardian');
     }
     var chatOpen = cont.classList.contains('chat-is-open');
-    cont.style.setProperty('position', 'fixed', 'important');
-    cont.style.setProperty('display', 'block', 'important');
-    cont.style.setProperty('visibility', 'visible', 'important');
-    cont.style.setProperty('opacity', '1', 'important');
-    cont.style.setProperty('z-index', '2147483647', 'important');
-    cont.style.setProperty('pointer-events', 'auto', 'important');
-    cont.style.setProperty('bottom', '80px', 'important');
-    cont.style.setProperty('right', '14px', 'important');
-    cont.style.setProperty('transform', 'none', 'important');
-    cont.style.setProperty('clip', 'auto', 'important');
-    cont.style.setProperty('clip-path', 'none', 'important');
-    var btn = document.getElementById('chat-toggle-btn');
-    if (btn && !chatOpen) {
-      btn.style.setProperty('display', 'flex', 'important');
-      btn.style.setProperty('visibility', 'visible', 'important');
-      btn.style.setProperty('opacity', '1', 'important');
+    var isMobile = window.innerWidth <= 991;
+
+    if (chatOpen && isMobile) {
+      // Full-screen mode — covers viewport above bottom nav
+      cont.style.setProperty('position', 'fixed', 'important');
+      cont.style.setProperty('top', '0', 'important');
+      cont.style.setProperty('left', '0', 'important');
+      cont.style.setProperty('right', '0', 'important');
+      cont.style.setProperty('bottom', '78px', 'important');
+      cont.style.setProperty('width', '100vw', 'important');
+      cont.style.setProperty('height', 'calc(100vh - 78px)', 'important');
+      cont.style.setProperty('display', 'block', 'important');
+      cont.style.setProperty('visibility', 'visible', 'important');
+      cont.style.setProperty('opacity', '1', 'important');
+      cont.style.setProperty('z-index', '2147483647', 'important');
+      cont.style.setProperty('pointer-events', 'auto', 'important');
+      cont.style.removeProperty('transform');
+      var box = document.getElementById('chat-box');
+      if (box && box.style.display !== 'none') {
+        box.style.setProperty('width', '100%', 'important');
+        box.style.setProperty('height', '100%', 'important');
+        box.style.setProperty('border-radius', '0', 'important');
+        box.style.setProperty('box-shadow', 'none', 'important');
+        box.style.setProperty('max-height', 'none', 'important');
+        box.style.setProperty('max-width', 'none', 'important');
+      }
+    } else if (!chatOpen) {
+      // FAB mode
+      cont.style.setProperty('position', 'fixed', 'important');
+      cont.style.setProperty('display', 'block', 'important');
+      cont.style.setProperty('visibility', 'visible', 'important');
+      cont.style.setProperty('opacity', '1', 'important');
+      cont.style.setProperty('z-index', '2147483647', 'important');
+      cont.style.setProperty('pointer-events', 'auto', 'important');
+      cont.style.setProperty('bottom', '80px', 'important');
+      cont.style.setProperty('right', '14px', 'important');
+      cont.style.setProperty('clip', 'auto', 'important');
+      cont.style.setProperty('clip-path', 'none', 'important');
+      // Clear full-screen properties
+      cont.style.removeProperty('top');
+      cont.style.removeProperty('left');
+      cont.style.removeProperty('width');
+      cont.style.removeProperty('height');
+      var btn = document.getElementById('chat-toggle-btn');
+      if (btn) {
+        btn.style.setProperty('display', 'flex', 'important');
+        btn.style.setProperty('visibility', 'visible', 'important');
+        btn.style.setProperty('opacity', '1', 'important');
+      }
     }
   }
 
   // Run immediately
   ensureFAB();
 
-  // Guardian interval — every 200ms (faster than 500ms to catch quick removal)
+  // Guardian interval — every 200ms
   setInterval(ensureFAB, 200);
+
+  // Helper: apply full-screen mode for the chat box on mobile
+  function applyMobileFullScreen(cont) {
+    cont.style.setProperty('position', 'fixed', 'important');
+    cont.style.setProperty('top', '0', 'important');
+    cont.style.setProperty('left', '0', 'important');
+    cont.style.setProperty('right', '0', 'important');
+    cont.style.setProperty('bottom', '78px', 'important');
+    cont.style.setProperty('width', '100vw', 'important');
+    cont.style.setProperty('height', 'calc(100vh - 78px)', 'important');
+    cont.style.setProperty('display', 'block', 'important');
+    cont.style.setProperty('visibility', 'visible', 'important');
+    cont.style.setProperty('opacity', '1', 'important');
+    cont.style.setProperty('z-index', '2147483647', 'important');
+    cont.style.setProperty('pointer-events', 'auto', 'important');
+    cont.style.removeProperty('transform');
+    // Style chat-box to fill container
+    var box = document.getElementById('chat-box');
+    if (box) {
+      box.style.setProperty('width', '100%', 'important');
+      box.style.setProperty('height', '100%', 'important');
+      box.style.setProperty('border-radius', '0', 'important');
+      box.style.setProperty('box-shadow', 'none', 'important');
+      box.style.setProperty('max-height', 'none', 'important');
+      box.style.setProperty('max-width', 'none', 'important');
+    }
+  }
+
+  // Export so toggle functions can call it
+  window._applyChatMobileFullScreen = applyMobileFullScreen;
 
   // MutationObserver — instant detection if FAB is removed or attribute changed
   function startObserver() {
@@ -415,8 +478,14 @@
       .chat-send-btn:active { transform: scale(.95); }
       .chat-send-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-      @media (max-width: 480px) {
-        .chat-box { width: calc(100vw - 40px); height: calc(100vh - 100px); }
+      /* Mobile: full-screen chat panel */
+      @media (max-width: 991.98px) {
+        #chat-popup-container.chat-is-open .chat-box {
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          animation: none !important;
+          max-height: none !important;
+        }
       }
     </style>
   `;
@@ -480,11 +549,15 @@
             if (isChatOpenBasic) {
                 chatBox.style.display = 'flex';
                 chatBox.classList.add('chat-open');
-                if (cont) cont.classList.add('chat-is-open');
+                if (cont) {
+                    cont.classList.add('chat-is-open');
+                    if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
+                }
                 if (btn) btn.style.setProperty('display', 'none', 'important');
             } else {
                 chatBox.style.display = 'none';
                 chatBox.classList.remove('chat-open');
+                chatBox.style.cssText = '';
                 if (cont) cont.classList.remove('chat-is-open');
                 if (btn) btn.style.setProperty('display', 'flex', 'important');
             }
@@ -497,6 +570,7 @@
             const btn = document.getElementById('chat-toggle-btn');
             chatBox.style.display = 'none';
             chatBox.classList.remove('chat-open');
+            chatBox.style.cssText = '';
             if (cont) cont.classList.remove('chat-is-open');
             if (btn) btn.style.setProperty('display', 'flex', 'important');
             console.log('[ChatPopup] Basic close');
@@ -700,7 +774,10 @@
       if (isChatOpen) {
         chatBox.style.display = 'flex';
         chatBox.classList.add('chat-open');
-        if (cont) cont.classList.add('chat-is-open');
+        if (cont) {
+          cont.classList.add('chat-is-open');
+          if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
+        }
         toggleBtn.style.setProperty('display', 'none', 'important');
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
@@ -713,6 +790,7 @@
       } else {
         chatBox.style.display = 'none';
         chatBox.classList.remove('chat-open');
+        chatBox.style.cssText = '';
         if (cont) cont.classList.remove('chat-is-open');
         toggleBtn.style.setProperty('display', 'flex', 'important');
       }
@@ -728,6 +806,7 @@
       const cont = document.getElementById('chat-popup-container');
       chatBox.style.display = 'none';
       chatBox.classList.remove('chat-open');
+      chatBox.style.cssText = '';
       if (cont) cont.classList.remove('chat-is-open');
       toggleBtn.style.setProperty('display', 'flex', 'important');
     }
