@@ -701,7 +701,9 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
                 COALESCE(scr1.mr_id, scr2.mr_id) as mr_id,
                 COALESCE(scr1.mr_category, scr2.mr_category) as mr_category,
                      COALESCE(scr1.visit_location, scr2.visit_location) as visit_location,
-                COALESCE(scr1.status, scr2.status) as record_status
+                COALESCE(scr1.status, scr2.status) as record_status,
+                COALESCE(scr1.queue_status, scr2.queue_status) as queue_status,
+                COALESCE(scr1.exam_started_at, scr2.exam_started_at) as exam_started_at
              FROM sunday_appointments sa
              LEFT JOIN sunday_clinic_records scr1
                                 ON scr1.id = (
@@ -785,6 +787,8 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
             mr_category: apt.mr_category || null,
             visit_location: apt.visit_location || null,
             record_status: apt.record_status || null,
+            queue_status: apt.queue_status || 'menunggu',
+            exam_started_at: apt.exam_started_at || null,
             has_record: !!apt.mr_id,
             medify_sync: apt.visit_location === 'rsia_melinda' && apt.mr_id
                 ? summarizeMedifySyncStatus(medifySyncByMrId.get(normalizeMrId(apt.mr_id)) || [])
@@ -825,14 +829,144 @@ function maskPatientName(name) {
 }
 
 /**
- * Compute a simplified queue status for patient-facing display
+ * Compute a simplified queue status for patient-facing display.
+ * Prefers the explicit queue_status column when available.
  */
 function computeQueueStatus(apt) {
-    if (apt.status === 'completed') return 'selesai';
-    if (apt.record_status === 'completed') return 'selesai';
-    if (apt.mr_id) return 'dilayani';
+    // Use explicit 5-stage status if present
+    if (apt.queue_status && apt.queue_status !== 'menunggu') return apt.queue_status;
+    // Fallback to legacy 3-stage logic for old records without queue_status
+    if (apt.status === 'completed') return 'selesai_periksa';
+    if (apt.record_status === 'completed') return 'selesai_periksa';
+    if (apt.mr_id) return 'anamnesa';
     return 'menunggu';
 }
+
+/**
+ * Update queue_status for a record, invalidate cache, and broadcast to clients.
+ * Only upgrades status (will not downgrade).
+ */
+const QUEUE_STATUS_ORDER = ['menunggu', 'anamnesa', 'diperiksa', 'selesai_periksa', 'lunas'];
+async function updateQueueStatus(mrId, newStatus) {
+    if (!QUEUE_STATUS_ORDER.includes(newStatus)) return;
+    try {
+        const currentIdx = QUEUE_STATUS_ORDER.indexOf(newStatus);
+        // Only upgrade
+        await db.query(
+            `UPDATE sunday_clinic_records
+             SET queue_status = ?
+             WHERE mr_id = ?
+               AND FIELD(queue_status, ${QUEUE_STATUS_ORDER.map(() => '?').join(',')}) < ?`,
+            [newStatus, mrId, ...QUEUE_STATUS_ORDER, currentIdx + 1]
+        );
+        // If diperiksa, also stamp exam start time
+        if (newStatus === 'diperiksa') {
+            await db.query(
+                `UPDATE sunday_clinic_records
+                 SET exam_started_at = COALESCE(exam_started_at, NOW())
+                 WHERE mr_id = ?`,
+                [mrId]
+            );
+        }
+        // Invalidate queue cache
+        queueTodayCache.expiresAt = 0;
+        // Broadcast via socket.io
+        const { dateStr: todayStr } = getGmt7DayWindow();
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'queue:updated',
+                date: todayStr,
+                mrId,
+                status: newStatus
+            });
+        }
+        logger.info(`Queue status updated: ${mrId} -> ${newStatus}`);
+    } catch (err) {
+        logger.warn('updateQueueStatus failed', { mrId, newStatus, error: err.message });
+    }
+}
+
+// ==================== QUEUE SETTINGS ====================
+
+/**
+ * GET /api/sunday-clinic/queue/settings
+ * Returns is_queue_visible flag. No auth required (patients need this).
+ */
+router.get('/queue/settings', async (req, res, next) => {
+    try {
+        const [[row]] = await db.query(
+            'SELECT is_queue_visible, queue_label FROM clinic_queue_settings WHERE id = 1'
+        );
+        res.json({
+            success: true,
+            is_queue_visible: row ? Boolean(row.is_queue_visible) : false,
+            queue_label: row?.queue_label || 'Klinik Privat Dr. Dibya'
+        });
+    } catch (error) {
+        logger.error('Error fetching queue settings:', error);
+        next(error);
+    }
+});
+
+/**
+ * PUT /api/sunday-clinic/queue/settings
+ * Toggle is_queue_visible. Staff only (verifyToken + requireSuperadmin).
+ */
+router.put('/queue/settings', verifyToken, async (req, res, next) => {
+    try {
+        const { is_queue_visible } = req.body;
+        if (typeof is_queue_visible !== 'boolean' && is_queue_visible !== 0 && is_queue_visible !== 1) {
+            return res.status(400).json({ success: false, message: 'is_queue_visible harus boolean' });
+        }
+        const visible = is_queue_visible ? 1 : 0;
+        await db.query(
+            'UPDATE clinic_queue_settings SET is_queue_visible = ? WHERE id = 1',
+            [visible]
+        );
+        // Broadcast setting change to patient portal
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({ type: 'queue:settings_changed', is_queue_visible: Boolean(visible) });
+        }
+        res.json({ success: true, is_queue_visible: Boolean(visible) });
+    } catch (error) {
+        logger.error('Error updating queue settings:', error);
+        next(error);
+    }
+});
+
+/**
+ * PUT /api/sunday-clinic/records/:mrId/queue-status
+ * Manually set queue_status (staff only). Used by "Periksa Pasien" button.
+ */
+router.put('/records/:mrId/queue-status', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid' });
+    }
+    const { status } = req.body;
+    if (!QUEUE_STATUS_ORDER.includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: `Status tidak valid. Gunakan: ${QUEUE_STATUS_ORDER.join(', ')}`
+        });
+    }
+    try {
+        await updateQueueStatus(normalizedMrId, status);
+        const [[row]] = await db.query(
+            'SELECT queue_status, exam_started_at FROM sunday_clinic_records WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+        res.json({
+            success: true,
+            mr_id: normalizedMrId,
+            queue_status: row?.queue_status || status,
+            exam_started_at: row?.exam_started_at || null
+        });
+    } catch (error) {
+        logger.error('Error updating queue status:', error);
+        next(error);
+    }
+});
 
 /**
  * GET /api/sunday-clinic/queue/public
@@ -866,7 +1000,8 @@ router.get('/queue/public', async (req, res, next) => {
                 sa.patient_name,
                 sa.status,
                 COALESCE(scr1.mr_id, scr2.mr_id) as mr_id,
-                COALESCE(scr1.status, scr2.status) as record_status
+                COALESCE(scr1.status, scr2.status) as record_status,
+                COALESCE(scr1.queue_status, scr2.queue_status) as queue_status
              FROM sunday_appointments sa
              LEFT JOIN sunday_clinic_records scr1
                 ON scr1.id = (
@@ -1222,6 +1357,11 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
             [normalizedMrId]
         );
+
+        // Update queue status when anamnesa is saved (klinik_private only)
+        if (section === 'anamnesa' && recordRow.visit_location === 'klinik_private') {
+            await updateQueueStatus(normalizedMrId, 'anamnesa');
+        }
 
         if (MEDIFY_SOAP_SYNC_SECTIONS.has(section) && recordRow.visit_location === 'rsia_melinda' && !skipMedifySync) {
             try {
@@ -2722,6 +2862,9 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
                 timestamp: new Date().toISOString()
             });
         }
+
+        // Update queue status to lunas (klinik_private only - billing only exists for klinik_private)
+        await updateQueueStatus(normalizedMrId, 'lunas');
 
         // Log activity
         await activityLogger.logFromRequest(req, activityLogger.ACTIONS.FINALIZE_VISIT,
