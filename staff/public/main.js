@@ -378,50 +378,6 @@ if (document.readyState === 'loading') {
     initMain();
 }
 
-// -------------------- TAP SOUND + HAPTIC --------------------
-(function initTapSound() {
-    let audioCtx = null;
-    function getCtx() {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        return audioCtx;
-    }
-    function playTap() {
-        try {
-            const ac = getCtx();
-            const osc = ac.createOscillator();
-            const gain = ac.createGain();
-            osc.connect(gain);
-            gain.connect(ac.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, ac.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);
-            gain.gain.setValueAtTime(0.12, ac.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.06);
-            osc.start(ac.currentTime);
-            osc.stop(ac.currentTime + 0.06);
-        } catch (e) { /* ignore */ }
-    }
-    const INTERACTIVE = new Set(['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL']);
-    function isInteractive(el) {
-        let node = el;
-        while (node && node !== document.body) {
-            if (INTERACTIVE.has(node.tagName) ||
-                node.getAttribute('role') === 'button' ||
-                node.getAttribute('tabindex') !== null ||
-                node.onclick !== null) return true;
-            node = node.parentElement;
-        }
-        return false;
-    }
-    document.addEventListener('touchstart', function(e) {
-        if (isInteractive(e.target)) {
-            playTap();
-            if ('vibrate' in navigator) navigator.vibrate(10);
-        }
-    }, { passive: true });
-})();
-
 // Export for manual initialization if needed
 export { initMain };
 
