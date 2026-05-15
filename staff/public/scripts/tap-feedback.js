@@ -34,13 +34,14 @@
             osc.connect(gain);
             gain.connect(ac.destination);
             osc.type = 'triangle';
-            osc.frequency.setValueAtTime(720, ac.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(440, ac.currentTime + 0.045);
-            gain.gain.setValueAtTime(0.028, ac.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.05);
+            osc.frequency.setValueAtTime(780, ac.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(460, ac.currentTime + 0.06);
+            gain.gain.setValueAtTime(0.085, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.018, ac.currentTime + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.07);
 
             osc.start(ac.currentTime);
-            osc.stop(ac.currentTime + 0.05);
+            osc.stop(ac.currentTime + 0.07);
         } catch (error) {
             console.debug('[TapFeedback] Tap sound skipped:', error?.message || error);
         }
