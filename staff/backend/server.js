@@ -207,6 +207,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/patient-billing',    // Patient billing & online payment
     '/api/community-chat',     // Community profile + chat rooms
     '/api/sunday-clinic/queue/public', // Live queue for patient portal (names masked)
+    '/api/sunday-clinic/queue/settings', // Queue visibility toggle (patients need to check)
     '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
 ];
 
