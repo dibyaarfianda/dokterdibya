@@ -7559,13 +7559,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v108"></script>
+<script defer src="scripts/rum.js?v=v109"></script>
 
 <!-- Core app modules -->
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v108';
+    window.__assetVersion = 'v109';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -8648,7 +8648,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>` : '';
         const escapedName = (patient.full_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const mrIdCell = patient.mr_id
-            ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
+            ? `<a href="sunday-clinic.html?_v=v20260515chat1&patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
             : `<span class="text-muted">-</span>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
@@ -9543,7 +9543,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             <td><small>${category}</small></td>
                                             <td>${statusBadge}</td>
                                             <td>
-                                                <a href="sunday-clinic.html?patient=${patientId}&mr=${record.mr_id}"
+                                                <a href="sunday-clinic.html?_v=v20260515chat1&patient=${patientId}&mr=${record.mr_id}"
                                                    class="btn btn-sm btn-info" title="Buka Rekam Medis">
                                                     <i class="fas fa-external-link-alt"></i>
                                                 </a>
@@ -11973,7 +11973,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v108"></script>
+ <script src="scripts/mobile-helper.js?v=v109"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -11985,9 +11985,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v108"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v109"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v108"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v109"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">

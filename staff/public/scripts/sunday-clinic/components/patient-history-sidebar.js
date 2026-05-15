@@ -497,7 +497,7 @@ class PatientHistorySidebar {
             }
 
             if (response.existingMrId) {
-                window.location.href = `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(response.existingMrId)}`;
+                window.location.href = `/staff/public/sunday-clinic.html?_v=v20260515chat1&mr=${encodeURIComponent(response.existingMrId)}`;
                 return;
             }
 
@@ -510,6 +510,7 @@ class PatientHistorySidebar {
                 location: location || this.currentLocation || 'klinik_private'
             });
 
+            query.set('_v', 'v20260515chat1');
             window.location.href = `/staff/public/sunday-clinic.html?${query.toString()}`;
         } catch (error) {
             console.error('[PatientSidebar] Failed to open Medify queue patient:', error);
@@ -782,7 +783,7 @@ class PatientHistorySidebar {
 
         if (mrId) {
             // Navigate to existing MR (with cache-bust for mobile)
-            window.location.href = `/staff/public/sunday-clinic.html?mr=${mrId}`;
+            window.location.href = `/staff/public/sunday-clinic.html?_v=v20260515chat1&mr=${mrId}`;
         } else if (appointmentId) {
             // Need to create MR from appointment - open directory
             this.openDirectory(patientId);
@@ -797,7 +798,7 @@ class PatientHistorySidebar {
      */
     openPatientFromSearch(patientId, mrId) {
         if (mrId) {
-            window.location.href = `/staff/public/sunday-clinic.html?mr=${mrId}`;
+            window.location.href = `/staff/public/sunday-clinic.html?_v=v20260515chat1&mr=${mrId}`;
         } else {
             this.openDirectory(patientId);
         }
