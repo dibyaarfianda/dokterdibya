@@ -526,6 +526,11 @@
         }
         #chat-popup-container.chat-is-open #chat-box,
         #chat-popup-container.chat-is-open .chat-box {
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
           display: flex !important;
           flex-direction: column !important;
           width: 100% !important;
