@@ -13,34 +13,10 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-01-19-v11-force-height';
+window.PLANNING_HELPERS_VERSION = '2026-05-15-v12-no-marker';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
-// Debug marker - lime-green indicator for visual verification
-console.log('%c[Planning v11] LOADED - force height fix', 'background: lime; color: black; padding: 2px 8px; font-weight: bold;');
-
-// Add visible debug marker in DOM (only in development/debug)
-document.addEventListener('DOMContentLoaded', function() {
-    // Only show marker if debug mode, localhost, or mobile app
-    const isDebug = window.location.hostname === 'localhost' ||
-                    window.location.search.includes('debug=1') ||
-                    window.location.search.includes('mobile=1') ||
-                    window.isNativePlatform?.();
-
-    if (isDebug) {
-        const marker = document.createElement('div');
-        marker.id = 'planning-version-marker';
-        marker.style.cssText = 'position:fixed;bottom:5px;right:5px;background:lime;color:black;padding:2px 8px;font-size:10px;z-index:99999;border-radius:3px;font-family:monospace;';
-        marker.textContent = 'Planning v11';
-        marker.title = 'planning-helpers.js version ' + window.PLANNING_HELPERS_VERSION;
-        document.body?.appendChild(marker);
-
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            marker.style.opacity = '0.3';
-        }, 5000);
-    }
-});
+console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
 
 window.availableTindakanList = null;
 window.selectedObatForPrescription = null;
