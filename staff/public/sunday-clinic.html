@@ -695,16 +695,7 @@
                         </div>
                     </div>
                 </li>
-                <!-- Toggle Queue Visibility for Patient Portal -->
-                <li class="nav-item mr-2">
-                    <button type="button" class="btn btn-sm" id="btn-toggle-queue-vis"
-                            onclick="window.toggleQueueVisibility()"
-                            title="Tampilkan/sembunyikan antrian di portal pasien"
-                            style="display:none;">
-                        <i class="fas fa-eye-slash" id="ico-queue-vis"></i>
-                        <span class="d-none d-sm-inline ml-1" id="lbl-queue-vis">Antrian: OFF</span>
-                    </button>
-                </li>
+
                 <!-- Date and Time Display -->
                 <li class="nav-item d-none d-sm-inline-block mr-2">
                     <span class="nav-link datetime-display" style="
@@ -1712,78 +1703,6 @@ PLAN
                     }
                 });
             };
-
-            // ─── Queue Visibility Toggle (Staff → Patient Portal) ───
-            (function() {
-                var _queueVisLoaded = false;
-
-                function updateToggleBtn(isVisible) {
-                    var btn = document.getElementById('btn-toggle-queue-vis');
-                    var ico = document.getElementById('ico-queue-vis');
-                    var lbl = document.getElementById('lbl-queue-vis');
-                    if (!btn) return;
-                    btn.style.display = '';
-                    if (isVisible) {
-                        btn.className = btn.className.replace(/queue-off/g, '').trim() + ' queue-on btn btn-sm';
-                        if (ico) ico.className = 'fas fa-eye';
-                        if (lbl) lbl.textContent = 'Antrian: ON';
-                    } else {
-                        btn.className = btn.className.replace(/queue-on/g, '').trim() + ' queue-off btn btn-sm';
-                        if (ico) ico.className = 'fas fa-eye-slash';
-                        if (lbl) lbl.textContent = 'Antrian: OFF';
-                    }
-                }
-
-                async function loadQueueSettings() {
-                    try {
-                        var token = window.getAuthToken && window.getAuthToken();
-                        var res = await fetch('/api/sunday-clinic/queue/settings', {
-                            headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-                        });
-                        var data = await res.json();
-                        if (data.success) {
-                            updateToggleBtn(data.is_queue_visible);
-                        }
-                    } catch(e) {
-                        console.warn('[QueueToggle] failed to load settings:', e.message);
-                    }
-                }
-
-                window.toggleQueueVisibility = async function() {
-                    var token = window.getAuthToken && window.getAuthToken();
-                    if (!token) return;
-                    try {
-                        var res = await fetch('/api/sunday-clinic/queue/settings', {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + token
-                            },
-                            body: JSON.stringify({}) // backend toggles it
-                        });
-                        var data = await res.json();
-                        if (data.success) {
-                            updateToggleBtn(data.is_queue_visible);
-                            var msg = data.is_queue_visible
-                                ? 'Antrian pasien ditampilkan di portal'
-                                : 'Antrian pasien disembunyikan dari portal';
-                            window.showToast && window.showToast('success', msg);
-                        } else {
-                            window.showToast && window.showToast('error', data.message || 'Gagal update setting antrian');
-                        }
-                    } catch(e) {
-                        console.error('[QueueToggle] toggleQueueVisibility error:', e);
-                        window.showToast && window.showToast('error', 'Gagal update setting antrian');
-                    }
-                };
-
-                // Load on page ready
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', loadQueueSettings);
-                } else {
-                    loadQueueSettings();
-                }
-            })();
         })();
     </script>
 
