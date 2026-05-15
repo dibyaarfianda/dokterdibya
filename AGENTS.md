@@ -1583,3 +1583,54 @@ User confirmed with "berhasil!" after the final Sunday Clinic refresh fix.
 **Critical lesson:**
 - If an installed PWA page opens fine at first but refresh shows browser chrome, inspect `history.pushState`, launcher URLs, and redirects for out-of-scope paths before assuming the manifest is wrong.
 - On this repo, fixing scope alone is often not enough; stale JS can preserve the bad route writer until staff asset versions are bumped and redeployed.
+
+### 45. Session Log - 16 May 2026
+
+**Staff PWA Chat Keyboard Jump on Android (User Confirmed Success)**
+
+User confirmed with "mantap" after the Android chat keyboard jump was fixed.
+
+**Problem:**
+- In the installed Android staff PWA, tapping the team chat input made the bottom nav jump upward.
+- About a second later, the chat box was pulled upward again, creating a double-jump effect while typing.
+
+**Root Causes (stacked):**
+1. `staff/public/styles/mobile-responsive.css` still had `body.mobile-app-mode #mobile-action-bar` pinned to the top of the screen, even though the mobile nav was meant to behave as a bottom bar.
+2. `staff/public/index-adminlte.html` had an inline `.mobile-action-bar-force` override also forcing that same bar to `top: 0`, so the layout conflict survived even if one stylesheet changed.
+3. `staff/public/scripts/chat-popup.js` positioned the open chat panel using `top + bottom + height` together while also reacting to `visualViewport`, which caused unstable reflow when the Android keyboard changed the visual viewport.
+4. The early/basic toggle path in `chat-popup.js` could open the chat with older geometry before the full handler upgraded it, causing a delayed correction that looked like a second jump.
+
+**What actually fixed it:**
+1. In `staff/public/styles/mobile-responsive.css`:
+    - move `body.mobile-app-mode #mobile-action-bar` back to the bottom with `top: auto` and `bottom: 0`
+    - switch content spacing from top padding to bottom padding (`padding-bottom: 78px`)
+    - use bottom-safe-area padding and bottom-oriented shadow/border
+2. In `staff/public/index-adminlte.html`:
+    - stop `.mobile-action-bar-force` from pinning the nav to the top
+    - keep the forced bar aligned with bottom-nav behavior instead
+3. In `staff/public/scripts/chat-popup.js`:
+    - add `chat-keyboard-active` handling so the bottom nav hides while typing
+    - sync the open chat layout immediately on `resize` and `visualViewport` changes
+    - stop anchoring the panel with conflicting `top/bottom/height` rules; instead compute the frame directly from `visualViewport.offsetTop`, `offsetLeft`, `width`, and `height`
+    - add `applyMobileViewportFrame()` and route open-chat layout through it
+    - keep the basic toggle path in sync with the same keyboard/layout logic so the panel does not open with stale geometry first
+4. Force fresh assets after the fix:
+    - `window.__assetVersion` -> `v118`
+    - `chat-popup.js` -> `?v=v113`
+    - `PAGE_VERSION` -> `20260515v14`
+    - `SC_CACHE_VERSION` -> `v20260515chat13`
+    - `STAFF_PWA_VERSION` -> `v119`
+
+**Verification pattern that mattered:**
+1. Confirm the server actually serves bottom-fixed mobile-app-mode nav CSS, not the earlier top-fixed rule.
+2. Verify the latest chat asset markers are live:
+    - `chat-popup.js?v=v113`
+    - `window.__assetVersion = 'v118'`
+    - `PAGE_VERSION = '20260515v14'`
+    - `SC_CACHE_VERSION = 'v20260515chat13'`
+    - `STAFF_PWA_VERSION = 'v119'`
+3. Retest on the installed Android PWA by opening chat and tapping the input, because desktop/mobile browser testing does not reproduce the same keyboard viewport behavior.
+
+**Critical lesson:**
+- If chat jumps in two phases on Android PWA, inspect both the nav CSS and the chat panel geometry. A bottom bar that is secretly still top-fixed in `mobile-app-mode` will keep destabilizing keyboard layouts.
+- In this repo, keyboard bugs on Android PWA are often caused by over-constrained fullscreen geometry. Prefer deriving the chat frame from `visualViewport` directly instead of mixing `top`, `bottom`, and `height` constraints.

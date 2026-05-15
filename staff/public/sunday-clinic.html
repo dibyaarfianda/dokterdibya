@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260515v11';
+            var PAGE_VERSION = '20260516v1';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -41,7 +41,7 @@
     <title>Klinik Private Minggu</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/mobile-responsive.css?v=3.0.2">
+    <link rel="stylesheet" href="/staff/public/styles/mobile-responsive.css?v=3.0.3">
     <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=20260515o">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -607,7 +607,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260515chat10';
+            const SC_CACHE_VERSION = 'v20260516chat1';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1423,9 +1423,9 @@ PLAN
         })();
     </script>
     <!-- Global Chat Loader (must be after Socket.IO) -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v116"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v117"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v111"></script>
-    <script src="/staff/public/scripts/chat-popup.js?v=v111"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v113"></script>
 
     <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=20260515v11"></script>
     <!-- Planning helpers for tindakan and terapi modals -->

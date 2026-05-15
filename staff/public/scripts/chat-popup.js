@@ -24,10 +24,63 @@
     return 800;
   }
 
+  function getMobileViewportTop() {
+    if (window.visualViewport && typeof window.visualViewport.offsetTop === 'number') {
+      return Math.max(0, Math.round(window.visualViewport.offsetTop));
+    }
+    return 0;
+  }
+
+  function getMobileViewportLeft() {
+    if (window.visualViewport && typeof window.visualViewport.offsetLeft === 'number') {
+      return Math.max(0, Math.round(window.visualViewport.offsetLeft));
+    }
+    return 0;
+  }
+
+  function getMobileViewportWidth() {
+    if (window.visualViewport && window.visualViewport.width) {
+      return Math.round(window.visualViewport.width);
+    }
+    if (window.innerWidth) return window.innerWidth;
+    if (document.documentElement && document.documentElement.clientWidth) {
+      return document.documentElement.clientWidth;
+    }
+    return 360;
+  }
+
+  function isChatKeyboardModeActive() {
+    return !!(document.body && document.body.classList.contains('chat-keyboard-active'));
+  }
+
+  function setChatKeyboardMode(active) {
+    if (!document.body) return;
+    document.body.classList.toggle('chat-keyboard-active', !!active);
+  }
+
+  function getReservedBottomPx() {
+    return isChatKeyboardModeActive() ? '0px' : getNavBottomPx();
+  }
+
   function getMobileChatHeightPx(navPx) {
     var viewportHeight = getMobileViewportHeight();
-    var safeNavPx = Number(navPx) || 65;
+    var safeNavPx = Number(navPx);
+    if (isNaN(safeNavPx)) safeNavPx = 65;
     return Math.max(320, viewportHeight - safeNavPx) + 'px';
+  }
+
+  function applyMobileViewportFrame(cont, reservedBottomPx) {
+    var viewportTop = getMobileViewportTop();
+    var viewportLeft = getMobileViewportLeft();
+    var viewportWidth = getMobileViewportWidth();
+    var chatHeight = getMobileChatHeightPx(reservedBottomPx);
+    cont.style.setProperty('position', 'fixed', 'important');
+    cont.style.setProperty('top', viewportTop + 'px', 'important');
+    cont.style.setProperty('left', viewportLeft + 'px', 'important');
+    cont.style.setProperty('right', 'auto', 'important');
+    cont.style.setProperty('bottom', 'auto', 'important');
+    cont.style.setProperty('width', viewportWidth + 'px', 'important');
+    cont.style.setProperty('height', chatHeight, 'important');
   }
 
   // ---------- ENSURE FAB EXISTS + VISIBLE (creates if missing, restores if hidden) ----------
@@ -54,18 +107,12 @@
     if (chatOpen && isMobile) {
       // Full-screen mode: move to body to avoid transform-ancestor offset issues
       if (cont.parentNode !== document.body) document.body.appendChild(cont);
-      var navH = getNavBottomPx();
-      var navPx = parseInt(navH) || 65;
-      var chatHeight = getMobileChatHeightPx(navPx);
+      var navH = getReservedBottomPx();
+      var navPx = parseInt(navH, 10);
+      if (isNaN(navPx)) navPx = 65;
       // Clear HTML inline style first, then set each property with !important
       cont.style.cssText = '';
-      cont.style.setProperty('position', 'fixed', 'important');
-      cont.style.setProperty('top', '0', 'important');
-      cont.style.setProperty('left', '0', 'important');
-      cont.style.setProperty('right', '0', 'important');
-      cont.style.setProperty('bottom', navH, 'important');
-      cont.style.setProperty('width', '100%', 'important');
-      cont.style.setProperty('height', chatHeight, 'important');
+      applyMobileViewportFrame(cont, navPx);
       cont.style.setProperty('margin', '0', 'important');
       cont.style.setProperty('padding', '0', 'important');
       cont.style.setProperty('display', 'block', 'important');
@@ -86,7 +133,8 @@
     } else if (!chatOpen) {
       // FAB mode
       var navH2 = getNavBottomPx();
-      var navPx2 = parseInt(navH2) || 65;
+      var navPx2 = parseInt(navH2, 10);
+      if (isNaN(navPx2)) navPx2 = 65;
       var fabBottom = (navPx2 + 12) + 'px';
       cont.style.cssText = '';
       cont.style.setProperty('position', 'fixed', 'important');
@@ -115,17 +163,11 @@
   // Helper: apply full-screen mode for the chat box on mobile
   function applyMobileFullScreen(cont) {
     if (cont.parentNode !== document.body) document.body.appendChild(cont);
-    var navH = getNavBottomPx();
-    var navPx = parseInt(navH) || 65;
-    var chatHeight = getMobileChatHeightPx(navPx);
+    var navH = getReservedBottomPx();
+    var navPx = parseInt(navH, 10);
+    if (isNaN(navPx)) navPx = 65;
     cont.style.cssText = '';
-    cont.style.setProperty('position', 'fixed', 'important');
-    cont.style.setProperty('top', '0', 'important');
-    cont.style.setProperty('left', '0', 'important');
-    cont.style.setProperty('right', '0', 'important');
-    cont.style.setProperty('bottom', navH, 'important');
-    cont.style.setProperty('width', '100%', 'important');
-    cont.style.setProperty('height', chatHeight, 'important');
+    applyMobileViewportFrame(cont, navPx);
     cont.style.setProperty('margin', '0', 'important');
     cont.style.setProperty('padding', '0', 'important');
     cont.style.setProperty('display', 'block', 'important');
@@ -148,6 +190,28 @@
 
   // Export so toggle functions can call it
   window._applyChatMobileFullScreen = applyMobileFullScreen;
+
+  var _chatLayoutSyncQueued = false;
+  function syncOpenChatLayout() {
+    var cont = document.getElementById('chat-popup-container');
+    if (!cont || !cont.classList.contains('chat-is-open') || window.innerWidth > 991) return;
+    applyMobileFullScreen(cont);
+  }
+
+  function queueChatLayoutSync() {
+    if (_chatLayoutSyncQueued) return;
+    _chatLayoutSyncQueued = true;
+    requestAnimationFrame(function () {
+      _chatLayoutSyncQueued = false;
+      syncOpenChatLayout();
+    });
+  }
+
+  window.addEventListener('resize', queueChatLayoutSync, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', queueChatLayoutSync, { passive: true });
+    window.visualViewport.addEventListener('scroll', queueChatLayoutSync, { passive: true });
+  }
 
   // MutationObserver — instant detection if FAB is removed or attribute changed
   function startObserver() {
@@ -352,6 +416,15 @@
           bottom: 75px !important;
           right: 12px !important;
         }
+
+        body.chat-keyboard-active #mobile-action-bar,
+        body.chat-keyboard-active .mobile-action-bar-force {
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          transform: translateY(120%) !important;
+          transition: opacity .12s ease, transform .12s ease, visibility .12s ease !important;
+        }
       }
 
       /* Toggle button always visible; hidden only when container has .chat-is-open class */
@@ -524,6 +597,10 @@
           margin: 0 !important;
           padding: 0 !important;
         }
+        body.chat-keyboard-active #chat-popup-container.chat-is-open {
+          bottom: 0 !important;
+          height: 100dvh !important;
+        }
         #chat-popup-container.chat-is-open #chat-box,
         #chat-popup-container.chat-is-open .chat-box {
           position: absolute !important;
@@ -610,6 +687,7 @@
             const cont = document.getElementById('chat-popup-container');
             const btn = document.getElementById('chat-toggle-btn');
             if (isChatOpenBasic) {
+            setChatKeyboardMode(false);
                 chatBox.style.setProperty('display', 'flex', 'important');
                 chatBox.classList.add('chat-open');
                 if (cont) {
@@ -618,6 +696,7 @@
                 }
                 if (btn) btn.style.setProperty('display', 'none', 'important');
             } else {
+            setChatKeyboardMode(false);
                 chatBox.style.setProperty('display', 'none', 'important');
                 chatBox.classList.remove('chat-open');
                 chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
@@ -633,6 +712,7 @@
             isChatOpenBasic = false;
             const cont = document.getElementById('chat-popup-container');
             const btn = document.getElementById('chat-toggle-btn');
+          setChatKeyboardMode(false);
             chatBox.style.setProperty('display', 'none', 'important');
             chatBox.classList.remove('chat-open');
             chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
@@ -839,6 +919,7 @@
       isChatOpen = !isChatOpen;
       const cont = document.getElementById('chat-popup-container');
       if (isChatOpen) {
+        setChatKeyboardMode(false);
         chatBox.style.display = 'flex';
         chatBox.classList.add('chat-open');
         if (cont) {
@@ -851,10 +932,15 @@
         markMessagesAsRead();
         setTimeout(() => {
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          if (chatInput) chatInput.focus();
+          if (chatInput) {
+            setChatKeyboardMode(true);
+            chatInput.focus();
+            queueChatLayoutSync();
+          }
         }, 100);
         checkClearButtonVisibility();
       } else {
+        setChatKeyboardMode(false);
         chatBox.style.setProperty('display', 'none', 'important');
         chatBox.classList.remove('chat-open');
         chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
@@ -867,12 +953,16 @@
 
     // Upgrade the toggle function with full features (badge, scroll, etc.)
     window._realToggleChatPopup = handleToggleChat;
+    if (chatBox.classList.contains('chat-open')) {
+      queueChatLayoutSync();
+    }
     console.log('[ChatPopup] Upgraded toggle handler with full features');
 
     // Close function - exposed globally for WebView onclick compatibility
     function handleCloseChat() {
       isChatOpen = false;
       const cont = document.getElementById('chat-popup-container');
+      setChatKeyboardMode(false);
       chatBox.style.setProperty('display', 'none', 'important');
       chatBox.classList.remove('chat-open');
       chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
@@ -938,6 +1028,18 @@
     }
     sendBtn.addEventListener('click', sendMessage);
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    chatInput.addEventListener('focus', function () {
+      if (window.innerWidth > 991) return;
+      setChatKeyboardMode(true);
+      queueChatLayoutSync();
+    });
+    chatInput.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (document.activeElement === chatInput) return;
+        setChatKeyboardMode(false);
+        queueChatLayoutSync();
+      }, 180);
+    });
 
         // Load chat history
     async function loadChatHistory() {

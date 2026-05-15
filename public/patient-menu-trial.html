@@ -9,7 +9,9 @@
     <title>Menu - dokterDIBYA</title>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260516pwa1">
+    <meta name="application-name" content="dokterDIBYA Patient Portal">
+    <meta name="apple-mobile-web-app-title" content="Portal Pasien">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
@@ -4808,9 +4810,9 @@
                 <h4><i class="fa-solid fa-mobile-screen-button"></i> Dapatkan Aplikasi</h4>
                 <p>Akses lebih cepat & notifikasi langsung</p>
                 <div class="download-buttons">
-                    <a href="/api/app-version/download/android" class="download-btn" id="btn-download-android">
-                        <i class="fa-brands fa-android"></i> Android
-                    </a>
+                    <button type="button" class="download-btn" id="btn-download-android" onclick="installPatientPWA()" aria-label="Install aplikasi Patient Portal di Android">
+                        <i class="fa-brands fa-android"></i> Install di Android
+                    </button>
                     <button class="download-btn pwa-install" id="btn-pwa-install" onclick="showIosInstallPrompt()" aria-label="Install PWA ke iPhone" style="display:none;">
                         <i class="fa-brands fa-apple"></i> Install ke iPhone
                     </button>
@@ -7504,6 +7506,23 @@
             pullIndicator.classList.remove('visible');
         }, { passive: true });
 
+        var patientDeferredInstallPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            patientDeferredInstallPrompt = e;
+            if (typeof window.updatePatientPortalInstallButtons === 'function') {
+                window.updatePatientPortalInstallButtons();
+            }
+        });
+
+        window.addEventListener('appinstalled', function() {
+            patientDeferredInstallPrompt = null;
+            if (typeof window.updatePatientPortalInstallButtons === 'function') {
+                window.updatePatientPortalInstallButtons();
+            }
+        });
+
         // ==================== iOS PWA INSTALL PROMPT ====================
         (function() {
             var ua = navigator.userAgent;
@@ -7523,6 +7542,28 @@
                 isCapacitorApp: isCapacitorApp
             };
 
+            window.updatePatientPortalInstallButtons = function() {
+                var btnAndroid = document.getElementById('btn-download-android');
+                if (!btnAndroid) return;
+
+                var isAndroid = /Android/i.test(navigator.userAgent || '');
+                var isStandaloneMode = window.navigator.standalone === true ||
+                    window.matchMedia('(display-mode: standalone)').matches;
+                var isNativeApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+                if (isNativeApp || isStandaloneMode) {
+                    btnAndroid.style.display = 'none';
+                    return;
+                }
+
+                btnAndroid.style.display = 'inline-flex';
+                btnAndroid.innerHTML = '<i class="fa-brands fa-android"></i> Install di Android';
+
+                if (!isAndroid) {
+                    btnAndroid.innerHTML = '<i class="fa-solid fa-download"></i> Install di Browser';
+                }
+            };
+
             function updateDownloadBanner() {
                 var btnPwaInstall = document.getElementById('btn-pwa-install');
                 var btnAppstoreIos = document.getElementById('btn-appstore-ios');
@@ -7539,6 +7580,8 @@
                 } else {
                     if (btnAppstoreIos) btnAppstoreIos.style.display = 'inline-flex';
                 }
+
+                window.updatePatientPortalInstallButtons();
             }
 
             function autoShowIosPrompt() {
@@ -7581,6 +7624,28 @@
                 prompt.style.transform = 'translateY(0)';
             });
         }
+
+        function installPatientPWA() {
+            if (patientDeferredInstallPrompt) {
+                patientDeferredInstallPrompt.prompt();
+                patientDeferredInstallPrompt.userChoice.then(function() {
+                    patientDeferredInstallPrompt = null;
+                    if (typeof window.updatePatientPortalInstallButtons === 'function') {
+                        window.updatePatientPortalInstallButtons();
+                    }
+                });
+                return;
+            }
+
+            if (/Android/i.test(navigator.userAgent || '')) {
+                alert('Untuk memasang Patient Portal, buka menu browser lalu pilih "Install app" atau "Tambahkan ke layar utama".');
+                return;
+            }
+
+            alert('Buka halaman ini dari browser Android atau gunakan menu browser untuk memasang PWA Patient Portal.');
+        }
+
+        window.installPatientPWA = installPatientPWA;
 
         function dismissIosInstallPrompt() {
             var prompt = document.getElementById('ios-install-prompt');

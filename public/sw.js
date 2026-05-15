@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260514'; // 2026-05-14 - feedback page for patient portal
+const CACHE_VERSION = '20260516c'; // 2026-05-16 - patient portal homepage now points to the dedicated patient manifest and install flow
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

@@ -789,14 +789,17 @@ body.mobile-app-mode [data-widget="pushmenu"] {
 body.mobile-app-mode #mobile-action-bar {
     display: flex !important;
     position: fixed;
-    top: 0;
+    top: auto !important;
     left: 0;
     right: 0;
+    bottom: 0 !important;
     z-index: 1060;
     background: #ffffff;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.1);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    border-bottom: none;
     padding: 0.35rem 0.4rem;
+    padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
     gap: 0.2rem;
     align-items: stretch;
     justify-content: space-around;
@@ -848,9 +851,10 @@ body.mobile-app-mode #mobile-action-bar button.active .icon-wrapper {
 
 /* Android WebView handles safe area via native padding - no CSS needed */
 
-/* Content padding for top nav */
+/* Content padding for bottom nav */
 body.mobile-app-mode .content-wrapper {
-    padding-top: 70px !important;
+    padding-top: 0 !important;
+    padding-bottom: 78px !important;
 }
 
 /* Hide header in mobile-app-mode (using action bar instead) */
