@@ -7545,13 +7545,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v104"></script>
+<script defer src="scripts/rum.js?v=v105"></script>
 
 <!-- Core app modules -->
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v104';
+    window.__assetVersion = 'v105';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -11971,9 +11971,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v104"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v105"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v104"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v105"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
@@ -12061,6 +12061,39 @@ window.profileCompletionData = {
     password: null
 };
 
+function buildSmoothedAvatarDataUrl(sourceUrl, targetSize, mimeType, quality) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = function() {
+            try {
+                const size = targetSize || 512;
+                const cropSize = Math.min(img.naturalWidth, img.naturalHeight);
+                const offsetX = Math.max(0, Math.floor((img.naturalWidth - cropSize) / 2));
+                const offsetY = Math.max(0, Math.floor((img.naturalHeight - cropSize) / 2));
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                if (!ctx || !cropSize) {
+                    resolve(sourceUrl);
+                    return;
+                }
+
+                canvas.width = size;
+                canvas.height = size;
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, offsetX, offsetY, cropSize, cropSize, 0, 0, size, size);
+                resolve(canvas.toDataURL(mimeType || 'image/jpeg', quality || 0.92));
+            } catch (error) {
+                reject(error);
+            }
+        };
+        img.onerror = reject;
+        img.src = sourceUrl;
+    });
+}
+
 // Toggle password visibility
 window.toggleCompletionPassword = function(inputId) {
     const input = document.getElementById(inputId);
@@ -12092,12 +12125,18 @@ document.getElementById('completion-photo-input')?.addEventListener('change', fu
     }
 
     const reader = new FileReader();
-    reader.onload = function(event) {
-        window.profileCompletionData.photo = event.target.result;
-        document.getElementById('completion-avatar-img').src = event.target.result;
-        document.getElementById('completion-avatar-img').style.display = 'block';
-        document.getElementById('completion-avatar-icon').style.display = 'none';
-        validateCompletionForm();
+    reader.onload = async function(event) {
+        try {
+            const optimizedPhoto = await buildSmoothedAvatarDataUrl(event.target.result, 512, 'image/jpeg', 0.92);
+            window.profileCompletionData.photo = optimizedPhoto;
+            document.getElementById('completion-avatar-img').src = optimizedPhoto;
+            document.getElementById('completion-avatar-img').style.display = 'block';
+            document.getElementById('completion-avatar-icon').style.display = 'none';
+            validateCompletionForm();
+        } catch (error) {
+            console.error('Failed to process completion avatar:', error);
+            Swal.fire('Error', 'Gagal memproses foto profil', 'error');
+        }
     };
     reader.readAsDataURL(file);
 });
