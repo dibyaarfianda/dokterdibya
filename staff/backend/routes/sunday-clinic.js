@@ -915,10 +915,17 @@ router.get('/queue/settings', async (req, res, next) => {
 router.put('/queue/settings', verifyToken, async (req, res, next) => {
     try {
         const { is_queue_visible } = req.body;
-        if (typeof is_queue_visible !== 'boolean' && is_queue_visible !== 0 && is_queue_visible !== 1) {
-            return res.status(400).json({ success: false, message: 'is_queue_visible harus boolean' });
+        let visible;
+
+        if (typeof is_queue_visible === 'boolean' || is_queue_visible === 0 || is_queue_visible === 1) {
+            visible = is_queue_visible ? 1 : 0;
+        } else {
+            const [[currentSettings]] = await db.query(
+                'SELECT is_queue_visible FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
+            );
+            visible = currentSettings && Number(currentSettings.is_queue_visible) === 1 ? 0 : 1;
         }
-        const visible = is_queue_visible ? 1 : 0;
+
         await db.query(
             'UPDATE clinic_queue_settings SET is_queue_visible = ? WHERE id = 1',
             [visible]
