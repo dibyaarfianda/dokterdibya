@@ -3,13 +3,26 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v109">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v109">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v109">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v109">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v109">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DB Staff">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="DB Staff">
+    <meta name="msapplication-TileColor" content="#0d6efd">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-mask-144x144.png?v=v109">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260514v2';
+            var PAGE_VERSION = '20260515v3';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -594,7 +607,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260515chat1';
+            const SC_CACHE_VERSION = 'v20260515chat2';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1487,6 +1500,13 @@ PLAN
                 sessionStorage.setItem('mobileAppMode', '1');
                 localStorage.setItem('sunday_clinic_mobile', '1');
                 localStorage.setItem('mobileAppMode', '1');
+
+                if (!mobileFromUrl) {
+                    const normalizedUrl = new URL(window.location.href);
+                    normalizedUrl.searchParams.set('mobile', '1');
+                    window.location.replace(normalizedUrl.toString());
+                    return;
+                }
             }
 
             if (isMobileApp) {
