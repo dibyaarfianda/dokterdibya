@@ -1023,17 +1023,29 @@
                 left: 0 !important;
                 right: 0 !important;
                 bottom: 65px !important;
-                width: auto !important;
-                height: auto !important;
+                width: 100% !important;
+                height: calc(100vh - 65px) !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             html body #chat-popup-container.chat-is-open #chat-box,
             html body #chat-popup-container.chat-is-open .chat-box {
+                display: flex !important;
+                flex-direction: column !important;
                 width: 100% !important;
                 height: 100% !important;
                 max-width: none !important;
                 max-height: none !important;
                 border-radius: 0 !important;
                 box-shadow: none !important;
+            }
+            html body #chat-popup-container.chat-is-open .chat-messages {
+                flex: 1 1 0 !important;
+                min-height: 0 !important;
+                overflow-y: auto !important;
+            }
+            html body #chat-popup-container.chat-is-open .chat-input-container {
+                flex-shrink: 0 !important;
             }
         }
         /* Force toggle button visible (JS sets display:none when opening chat - CSS !important overrides JS inline) */
@@ -11959,9 +11971,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-     <script src="/staff/public/scripts/global-chat-loader.js?v=v101"></script>
+     <script src="/staff/public/scripts/global-chat-loader.js?v=v102"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-     <script src="/staff/public/scripts/chat-popup.js?v=v101"></script>
+     <script src="/staff/public/scripts/chat-popup.js?v=v102"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
