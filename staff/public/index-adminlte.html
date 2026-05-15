@@ -7578,7 +7578,10 @@ body.mobile-app-mode .mobile-action-bar-force button {
     // ── Live Queue Toggle (Patient Portal) ──
     (function() {
         function _queueToken() {
-            return (window.getAuthToken && window.getAuthToken()) || localStorage.getItem('vps_auth_token') || '';
+            return (window.getAuthToken && window.getAuthToken())
+                || localStorage.getItem('vps_auth_token')
+                || sessionStorage.getItem('vps_auth_token')
+                || '';
         }
         function _updateBtn(isVisible) {
             var btn = document.getElementById('btn-queue-vis-toggle');
@@ -7604,7 +7607,10 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
         window.toggleStaffQueueVisibility = async function() {
             var token = _queueToken();
-            if (!token) return;
+            if (!token) {
+                if (window.showToast) window.showToast('error', 'Token tidak ditemukan, coba login ulang');
+                return;
+            }
             try {
                 var r = await fetch('/api/sunday-clinic/queue/settings', {
                     method: 'PUT',
@@ -7616,8 +7622,12 @@ body.mobile-app-mode .mobile-action-bar-force button {
                     _updateBtn(d.is_queue_visible);
                     if (window.showToast) window.showToast(d.is_queue_visible ? 'success' : 'info',
                         d.is_queue_visible ? 'Antrian ditampilkan di portal pasien' : 'Antrian disembunyikan dari portal pasien');
+                } else {
+                    if (window.showToast) window.showToast('error', d.message || 'Gagal update setting antrian');
                 }
-            } catch(e) {}
+            } catch(e) {
+                if (window.showToast) window.showToast('error', 'Gagal: ' + e.message);
+            }
         };
         // Load state after auth settles
         window.addEventListener('load', function() { setTimeout(_loadQueueVis, 1500); });
