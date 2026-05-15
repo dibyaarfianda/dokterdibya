@@ -9,6 +9,56 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 let currentUser = null;
 let selectedProfilePicture = null; // Store selected image as base64
 
+function loadOptimizedAvatar(imageEl, photoURL, targetSize) {
+    if (!imageEl) return;
+
+    const sourceImage = new Image();
+    sourceImage.decoding = 'async';
+
+    sourceImage.onload = () => {
+        try {
+            const size = targetSize || 240;
+            const cropSize = Math.min(sourceImage.naturalWidth, sourceImage.naturalHeight);
+            const offsetX = Math.max(0, Math.floor((sourceImage.naturalWidth - cropSize) / 2));
+            const offsetY = Math.max(0, Math.floor((sourceImage.naturalHeight - cropSize) / 2));
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            if (!context || !cropSize) {
+                imageEl.src = photoURL;
+                return;
+            }
+
+            canvas.width = size;
+            canvas.height = size;
+            context.imageSmoothingEnabled = true;
+            context.imageSmoothingQuality = 'high';
+            context.drawImage(
+                sourceImage,
+                offsetX,
+                offsetY,
+                cropSize,
+                cropSize,
+                0,
+                0,
+                size,
+                size
+            );
+
+            imageEl.src = canvas.toDataURL('image/png');
+        } catch (error) {
+            console.error('Failed to optimize avatar render:', error);
+            imageEl.src = photoURL;
+        }
+    };
+
+    sourceImage.onerror = () => {
+        imageEl.src = photoURL;
+    };
+
+    sourceImage.src = photoURL;
+}
+
 // Load profile data
 export async function loadProfileData() {
     currentUser = auth.currentUser;
@@ -93,14 +143,14 @@ function displayProfilePicture(photoURL) {
     if (photoURL) {
         // Show image, hide icon
         if (avatarImg) {
-            avatarImg.src = photoURL;
             avatarImg.style.display = 'block';
+            loadOptimizedAvatar(avatarImg, photoURL, 240);
         }
         if (avatarIcon) avatarIcon.style.display = 'none';
         
         if (previewImg) {
-            previewImg.src = photoURL;
             previewImg.style.display = 'block';
+            loadOptimizedAvatar(previewImg, photoURL, 160);
         }
         if (previewIcon) previewIcon.style.display = 'none';
         
