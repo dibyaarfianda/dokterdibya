@@ -128,6 +128,9 @@ class SundayClinicApp {
             this.importSource = response.data.record.import_source || null;
             patientSidebar.setCurrentLocation(this.currentLocation);
 
+            // Restore live queue state (stopwatch, button visibility)
+            this._restoreQueueState(mrId).catch(() => {});
+
             console.log('[SundayClinic] Category detected:', this.currentCategory);
             console.log('[SundayClinic] Location detected:', this.currentLocation);
             console.log('[SundayClinic] Import source:', this.importSource);
@@ -1787,6 +1790,9 @@ class SundayClinicApp {
             // Show success message
             this.showSuccess('Anamnesa berhasil disimpan!');
 
+            // Update live queue status (fire-and-forget)
+            this.updateQueueStatusSafe('anamnesa').catch(() => {});
+
             // Refresh metadata in background to keep save flow snappy.
             this.scheduleMetadataRefresh();
 
@@ -2156,6 +2162,9 @@ class SundayClinicApp {
                 this.showSuccess('Resume medis berhasil dibuat dan disimpan otomatis.');
             }
 
+            // Update live queue status to selesai_periksa (fire-and-forget)
+            this.updateQueueStatusSafe('selesai_periksa').catch(() => {});
+
         } catch (error) {
             console.error('[SundayClinic] Generate resume failed:', error);
             this.showError(error.message);
@@ -2418,6 +2427,136 @@ class SundayClinicApp {
             alert('Error: ' + message);
         }
     }
+
+    // ────────────────── LIVE QUEUE ──────────────────
+
+    /**
+     * Fire-and-forget queue status update. Never throws.
+     */
+    async updateQueueStatusSafe(status) {
+        const mrId = this.currentMrId;
+        if (!mrId) return;
+        try {
+            const token = window.getToken();
+            if (!token) return;
+            await fetch(`/api/sunday-clinic/records/${mrId}/queue-status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status })
+            });
+            // Refresh stopwatch if entering "diperiksa"
+            if (status === 'diperiksa') {
+                this._examStartTime = Date.now();
+                this._startStopwatchUI();
+            } else if (status === 'selesai_periksa' || status === 'lunas') {
+                this._stopStopwatchUI();
+            }
+        } catch (e) {
+            console.warn('[Queue] updateQueueStatusSafe failed:', e.message);
+        }
+    }
+
+    /**
+     * "Periksa Pasien" action — sets status to diperiksa and starts stopwatch.
+     */
+    async startExamination() {
+        const mrId = this.currentMrId;
+        if (!mrId) {
+            window.showToast && window.showToast('error', 'Buka DRD pasien terlebih dahulu');
+            return;
+        }
+        const btn = document.getElementById('btn-periksa-pasien');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; }
+        try {
+            const token = window.getToken();
+            const res = await fetch(`/api/sunday-clinic/records/${mrId}/queue-status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status: 'diperiksa' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Stamp start time from server response or now
+                this._examStartTime = data.exam_started_at
+                    ? new Date(data.exam_started_at).getTime()
+                    : Date.now();
+                this._startStopwatchUI();
+                // Hide button after clicking
+                if (btn) btn.style.display = 'none';
+                window.showToast && window.showToast('success', 'Pasien sedang diperiksa');
+            } else {
+                window.showToast && window.showToast('error', data.message || 'Gagal update status');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-stethoscope"></i> Periksa Pasien'; }
+            }
+        } catch (e) {
+            console.error('[Queue] startExamination failed:', e);
+            window.showToast && window.showToast('error', 'Gagal memulai pemeriksaan');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-stethoscope"></i> Periksa Pasien'; }
+        }
+    }
+
+    _startStopwatchUI() {
+        const sw = document.getElementById('exam-stopwatch');
+        if (!sw) return;
+        sw.style.display = 'inline';
+        if (this._stopwatchInterval) clearInterval(this._stopwatchInterval);
+        const tick = () => {
+            const elapsed = Math.floor((Date.now() - (this._examStartTime || Date.now())) / 1000);
+            const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const s = String(elapsed % 60).padStart(2, '0');
+            sw.textContent = `${m}:${s}`;
+        };
+        tick();
+        this._stopwatchInterval = setInterval(tick, 1000);
+    }
+
+    _stopStopwatchUI() {
+        if (this._stopwatchInterval) {
+            clearInterval(this._stopwatchInterval);
+            this._stopwatchInterval = null;
+        }
+        const sw = document.getElementById('exam-stopwatch');
+        if (sw) sw.style.display = 'none';
+        // Also hide the Periksa button (examination is over)
+        const btn = document.getElementById('btn-periksa-pasien');
+        if (btn) btn.style.display = 'none';
+    }
+
+    /**
+     * Called when a DRD is loaded — restore stopwatch if patient is mid-exam.
+     */
+    async _restoreQueueState(mrId) {
+        if (!mrId) return;
+        try {
+            const token = window.getToken();
+            const res = await fetch(`/api/sunday-clinic/records/${mrId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const rec = data?.data?.record;
+            if (!rec) return;
+            const qs = rec.queue_status;
+            const examStarted = rec.exam_started_at;
+            // Show or hide "Periksa Pasien" button
+            const btn = document.getElementById('btn-periksa-pasien');
+            const bar = document.getElementById('exam-action-bar');
+            const isPrivat = rec.visit_location === 'klinik_private';
+            if (bar) bar.style.display = isPrivat ? '' : 'none';
+            if (btn) {
+                const canStart = isPrivat && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
+                btn.style.display = canStart ? '' : 'none';
+            }
+            // Restore stopwatch if mid-exam
+            if (qs === 'diperiksa' && examStarted) {
+                this._examStartTime = new Date(examStarted).getTime();
+                this._startStopwatchUI();
+            }
+        } catch (e) {
+            console.warn('[Queue] _restoreQueueState failed:', e.message);
+        }
+    }
+
+
 
     /**
      * Reload current record
@@ -2719,6 +2858,7 @@ window.saveDiagnosis = () => app.saveDiagnosis();
 window.generateResumeMedis = () => app.generateResumeMedis();
 window.saveResumeMedis = () => app.saveResumeMedis();
 window.resetResumeMedis = () => app.resetResumeMedis();
+window.startExamination = () => app.startExamination();
 
 // Mark examination as completed
 window.markExaminationCompleted = async () => {

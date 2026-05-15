@@ -145,15 +145,30 @@
             margin-bottom: 8px;
             transition: background 0.2s, border-color 0.2s;
         }
-        .queue-row.status-selesai {
-            opacity: 0.55;
+        /* ── 5-stage queue row colors ── */
+        .queue-row.status-menunggu {
+            background: rgba(255,255,255,0.03);
         }
-        .queue-row.status-dilayani {
+        .queue-row.status-anamnesa {
             background: rgba(16, 185, 129, 0.07);
             border-color: rgba(16, 185, 129, 0.3);
         }
-        .queue-row.status-menunggu {
-            background: rgba(255,255,255,0.03);
+        .queue-row.status-diperiksa {
+            background: rgba(220, 53, 69, 0.07);
+            border-color: rgba(220, 53, 69, 0.35);
+        }
+        .queue-row.status-selesai_periksa {
+            background: rgba(255, 193, 7, 0.07);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+        .queue-row.status-lunas {
+            opacity: 0.4;
+        }
+        /* legacy aliases */
+        .queue-row.status-selesai { opacity: 0.55; }
+        .queue-row.status-dilayani {
+            background: rgba(16, 185, 129, 0.07);
+            border-color: rgba(16, 185, 129, 0.3);
         }
 
         /* Slot number bubble */
@@ -169,9 +184,14 @@
             font-weight: 700;
             flex-shrink: 0;
         }
-        .status-menunggu .slot-num { background: rgba(40, 167, 233, 0.15); color: #28a7e9; }
-        .status-dilayani .slot-num { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .status-selesai  .slot-num { background: rgba(255,255,255,0.06); color: #888; }
+        .status-menunggu .slot-num  { background: rgba(40, 167, 233, 0.15); color: #28a7e9; }
+        .status-anamnesa .slot-num  { background: rgba(16, 185, 129, 0.2);  color: #10b981; }
+        .status-diperiksa .slot-num { background: rgba(220, 53, 69, 0.2);   color: #dc3545; }
+        .status-selesai_periksa .slot-num { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .status-lunas .slot-num     { background: rgba(255,255,255,0.06);   color: #555; }
+        /* legacy */
+        .status-dilayani .slot-num { background: rgba(16, 185, 129, 0.2);  color: #10b981; }
+        .status-selesai  .slot-num { background: rgba(255,255,255,0.06);   color: #888; }
 
         .queue-info {
             flex: 1;
@@ -199,9 +219,14 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
-        .badge-menunggu { background: rgba(40, 167, 233, 0.12); color: #28a7e9; border: 1px solid rgba(40, 167, 233, 0.25); }
+        .badge-menunggu       { background: rgba(40, 167, 233, 0.12); color: #28a7e9; border: 1px solid rgba(40, 167, 233, 0.25); }
+        .badge-anamnesa       { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
+        .badge-diperiksa      { background: rgba(220, 53, 69, 0.12);  color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3); }
+        .badge-selesai_periksa{ background: rgba(255, 193, 7, 0.12);  color: #e6ac00; border: 1px solid rgba(255, 193, 7, 0.3); }
+        .badge-lunas          { background: rgba(255,255,255,0.06);   color: #777;    border: 1px solid rgba(255,255,255,0.1); }
+        /* legacy */
         .badge-dilayani { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
-        .badge-selesai  { background: rgba(255,255,255,0.06); color: #777; border: 1px solid rgba(255,255,255,0.1); }
+        .badge-selesai  { background: rgba(255,255,255,0.06);   color: #777;    border: 1px solid rgba(255,255,255,0.1); }
 
         /* ── Privacy note ── */
         .privacy-note {
@@ -305,16 +330,35 @@
     </div>
 
     <script>
-        const STATUS_LABELS = { menunggu: 'Menunggu', dilayani: 'Sedang Dilayani', selesai: 'Selesai' };
+        const STATUS_LABELS = {
+            menunggu:        'Menunggu',
+            anamnesa:        'Anamnesa',
+            diperiksa:       'Sedang Diperiksa',
+            selesai_periksa: 'Selesai Periksa',
+            lunas:           'Lunas',
+            // legacy fallbacks
+            dilayani:        'Sedang Dilayani',
+            selesai:         'Selesai'
+        };
         const REFRESH_INTERVAL_MS = 30000;
         let refreshTimer = null;
         let countdownTimer = null;
         let countdownSec = REFRESH_INTERVAL_MS / 1000;
+        let _queueHidden = false;
 
         function formatDate(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr + 'T00:00:00');
             return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function showQueueHidden() {
+            const container = document.getElementById('queue-container');
+            container.innerHTML = `
+                <div class="state-card">
+                    <i class="fa fa-eye-slash" style="font-size:36px;color:#555;margin-bottom:12px;display:block;"></i>
+                    <p>Antrian belum dibuka hari ini.<br><small style="color:#555">Silakan coba beberapa saat lagi.</small></p>
+                </div>`;
         }
 
         function renderQueue(data, date) {
@@ -366,12 +410,36 @@
             return d.innerHTML;
         }
 
+        async function checkQueueSettings() {
+            try {
+                const res = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now());
+                if (!res.ok) return true; // fallback: show queue
+                const data = await res.json();
+                if (data.success) {
+                    return data.is_queue_visible !== false;
+                }
+            } catch(e) {
+                console.warn('[Antrian] checkQueueSettings failed:', e.message);
+            }
+            return true; // default: show
+        }
+
         async function loadQueue(manual) {
             if (manual) {
                 const btn = document.getElementById('refresh-btn');
                 btn.classList.add('spinning');
                 setTimeout(() => btn.classList.remove('spinning'), 800);
             }
+
+            // Check if queue is open first
+            const visible = await checkQueueSettings();
+            if (!visible) {
+                _queueHidden = true;
+                showQueueHidden();
+                resetCountdown();
+                return;
+            }
+            _queueHidden = false;
 
             try {
                 const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
@@ -421,6 +489,40 @@
             const el = document.getElementById('refresh-info');
             if (el) el.textContent = `Auto-refresh dalam ${countdownSec} detik`;
         }
+
+        // ── Socket.IO real-time updates ──
+        (function() {
+            var sioScript = document.createElement('script');
+            sioScript.src = '/socket.io/socket.io.js';
+            sioScript.onload = function() {
+                try {
+                    var socket = io('/', {
+                        transports: ['polling'],
+                        reconnectionDelay: 5000,
+                        reconnectionDelayMax: 15000
+                    });
+                    socket.on('connect', function() {
+                        console.log('[Antrian] socket connected');
+                    });
+                    socket.on('queue:updated', function() {
+                        loadQueue(false);
+                    });
+                    socket.on('queue:settings_changed', function(data) {
+                        if (data && data.is_queue_visible === false) {
+                            showQueueHidden();
+                        } else {
+                            loadQueue(false);
+                        }
+                    });
+                } catch(e) {
+                    console.warn('[Antrian] socket.io init failed:', e.message);
+                }
+            };
+            sioScript.onerror = function() {
+                console.warn('[Antrian] socket.io CDN failed, using polling only');
+            };
+            document.head.appendChild(sioScript);
+        })();
 
         // Init
         loadQueue(false);
