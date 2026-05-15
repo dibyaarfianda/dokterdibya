@@ -547,7 +547,9 @@ async function importMedicalApply() {
                     resetImportModal();
 
                     // Navigate to existing MR
-                    const mrUrl = `/sunday-clinic/${checkResult.existingMrId}/identity`;
+                    const mrUrl = window.buildSundayClinicAppUrl
+                        ? window.buildSundayClinicAppUrl(checkResult.existingMrId, 'identity')
+                        : `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(checkResult.existingMrId)}&section=identity`;
 
                     if (window.Swal) {
                         await Swal.fire({

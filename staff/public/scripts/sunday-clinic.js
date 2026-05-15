@@ -300,8 +300,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Path-based: /sunday-clinic/{mrId}/{section}
             await loadMedicalRecord(initialRoute.mrId, initialRoute.section);
         } else if (mrIdFromQuery) {
-            // Query param: ?mr=xxx
-            await loadMedicalRecord(mrIdFromQuery, 'identity');
+            // Query param: ?mr=xxx&section=yyy
+            await loadMedicalRecord(mrIdFromQuery, initialRoute.section || 'identity');
         } else if (patientIdFromQuery) {
             // Query param: ?patient=xxx&appointment=yyy&location=zzz (from PERIKSA button)
             await handlePatientFromUrl(patientIdFromQuery, appointmentIdFromQuery, locationFromQuery);
@@ -554,6 +554,19 @@ const SECTION_NAME_MAP = {
 };
 
 function parseRoute(pathname = window.location.pathname) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const queryMrId = searchParams.get('mr');
+    const querySection = searchParams.get('section');
+
+    if (queryMrId) {
+        const normalizedQuerySection = (querySection || 'identity').toLowerCase();
+        return {
+            mrId: queryMrId,
+            section: SECTION_NAME_MAP[normalizedQuerySection] || 'identity',
+            remainder: ''
+        };
+    }
+
     const trimmed = pathname.replace(/^\/+|\/+$/g, '');
     const segments = trimmed.split('/');
     const [root, rawMrId = '', rawSection = 'identity', ...rest] = segments;
@@ -574,8 +587,11 @@ function parseRoute(pathname = window.location.pathname) {
 }
 
 function updateRoute(mrId, section = 'identity') {
-    const newPath = `/sunday-clinic/${mrId}/${section}`;
-    window.history.pushState({ mrId, section }, '', newPath);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.pathname = '/staff/public/sunday-clinic.html';
+    nextUrl.searchParams.set('mr', mrId);
+    nextUrl.searchParams.set('section', section);
+    window.history.pushState({ mrId, section }, '', nextUrl.toString());
 }
 
 // ============================================================================

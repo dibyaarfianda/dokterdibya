@@ -8266,7 +8266,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
             }
 
             // Navigate to sunday-clinic with the existing MR
-            window.location.href = `/sunday-clinic/${mrId}/identity`;
+            window.location.href = window.buildSundayClinicAppUrl
+                ? window.buildSundayClinicAppUrl(mrId, 'identity')
+                : `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(mrId)}&section=identity`;
 
         } catch (error) {
             console.error('Import apply error:', error);

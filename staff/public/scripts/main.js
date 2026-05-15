@@ -792,8 +792,7 @@ async function openHospitalRecordByMrId(patientId, patientName, location, mrId) 
         console.warn('Unable to update session:', sessionError);
     }
 
-    const mrSlug = String(mrId).toLowerCase();
-    window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
+    window.location.href = buildSundayClinicAppUrl(mrId, 'identitas');
 }
 
 async function openMedifyQueueRecord(button, location, medId, patientName, age = null, medicalRecordNo = '', identityNik = '') {
@@ -3554,6 +3553,17 @@ function normalizeMrSlug(value) {
         .replace(/\s+/g, '');
 }
 
+function buildSundayClinicAppUrl(mrId, section = 'identity') {
+    const slug = normalizeMrSlug(mrId);
+    if (!slug) {
+        return '';
+    }
+
+    let targetUrl = `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(slug)}&section=${encodeURIComponent(section)}`;
+    targetUrl = window.buildMobileUrl ? window.buildMobileUrl(targetUrl) : targetUrl;
+    return targetUrl;
+}
+
 function openSundayClinicViewer() {
     let mrId = getSundayClinicMrFromSession();
     if (!mrId) {
@@ -3570,8 +3580,7 @@ function openSundayClinicViewer() {
         return;
     }
 
-    let targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
-    targetUrl = window.buildMobileUrl ? window.buildMobileUrl(targetUrl) : targetUrl;
+    const targetUrl = buildSundayClinicAppUrl(slug, 'identitas');
 
     // In mobile app mode, navigate in same window (WebView doesn't handle new tabs well)
     if (window.isMobileAppMode && window.isMobileAppMode()) {
@@ -3593,8 +3602,7 @@ function openSundayClinicWithMrId(mrId) {
         return;
     }
 
-    let targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
-    targetUrl = window.buildMobileUrl ? window.buildMobileUrl(targetUrl) : targetUrl;
+    const targetUrl = buildSundayClinicAppUrl(slug, 'identitas');
 
     // In mobile app mode, navigate in same window
     if (window.isMobileAppMode && window.isMobileAppMode()) {
@@ -4322,7 +4330,7 @@ async function checkExtensionImportData() {
 
         // Navigate directly - no confirmation
         if (window.Swal) Swal.close();
-        window.location.href = `/sunday-clinic/${mrId.toLowerCase()}/anamnesa`;
+        window.location.href = buildSundayClinicAppUrl(mrId, 'anamnesa');
 
     } catch (e) {
         console.error('[Import] Error:', e);
@@ -4571,8 +4579,7 @@ async function startPatientVisit(patientId, patientName, location, category) {
         $('#patientDetailModal').modal('hide');
 
         // Redirect to Sunday Clinic page
-        const mrSlug = String(mrId).toLowerCase();
-        window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
+        window.location.href = buildSundayClinicAppUrl(mrId, 'identitas');
 
     } catch (error) {
         console.error('Error starting patient visit:', error);
@@ -4735,7 +4742,7 @@ async function showPatientDetail(patientId) {
                     <td>${categoryLabels[visit.mr_category] || visit.mr_category || '-'}</td>
                     <td>${statusLabels[visit.status] || visit.status || '-'}</td>
                     <td class="text-center">
-                        <a href="/sunday-clinic/${visit.mr_id.toLowerCase()}/identitas" class="btn btn-xs btn-info" title="Buka Rekam Medis">
+                        <a href="${buildSundayClinicAppUrl(visit.mr_id, 'identitas')}" class="btn btn-xs btn-info" title="Buka Rekam Medis">
                             <i class="fas fa-external-link-alt"></i>
                         </a>
                         <button class="btn btn-xs ${btnClass} ml-1" onclick="deleteMedicalRecord('${visit.mr_id}', ${isFinalized})" title="${btnTitle}">
@@ -5038,7 +5045,7 @@ async function showNewVisitModal(patientId, patientName) {
                 <td>${r.location_short || r.visit_location}</td>
                 <td>${categoryLabels[r.mr_category] || r.mr_category}</td>
                 <td>
-                    <a href="/sunday-clinic/${r.mr_id.toLowerCase()}/identitas" class="btn btn-sm btn-success">
+                    <a href="${buildSundayClinicAppUrl(r.mr_id, 'identitas')}" class="btn btn-sm btn-success">
                         <i class="fas fa-arrow-right mr-1"></i>Lanjutkan
                     </a>
                 </td>
@@ -5555,8 +5562,7 @@ async function startVisitWithImport() {
         // Navigate to Sunday Clinic page with the new MR ID
         setTimeout(() => {
             // Redirect to Sunday Clinic anamnesa page
-            const mrSlug = mrId.toLowerCase();
-            window.location.href = `/sunday-clinic/${mrSlug}/anamnesa`;
+            window.location.href = buildSundayClinicAppUrl(mrId, 'anamnesa');
         }, 800);
 
     } catch (error) {
@@ -5703,6 +5709,7 @@ window.showDashboardPage = showDashboardPage;
 window.showCommunityChatPage = showCommunityChatPage;
 window.openCommunityChatPopup = openCommunityChatPopup;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
+window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
 window.showTindakanPage = showTindakanPage;
 window.showObatPage = showObatPage;
 window.showCashierPage = showCashierPage;
