@@ -431,12 +431,12 @@ function showPasienBaruPage() {
 function getVisitHistoryBadge(patient) {
     const status = patient?.visit_history_status || 'belum_pernah_kontrol';
     const badgeMap = {
-        sudah_ada_drd: '<span class="badge badge-success">Sudah ada DRD</span>',
+        sudah_ada_drd: '',
         pernah_kontrol_tanpa_drd: '<span class="badge badge-info">Pernah kontrol, belum ada DRD</span>',
-        belum_pernah_kontrol: '<span class="badge badge-warning">Belum pernah kontrol</span>'
+        belum_pernah_kontrol: '<span class="d-inline-block border bg-white" style="width: 10px; height: 10px; border-radius: 2px;" title="Belum pernah kontrol" aria-label="Belum pernah kontrol"></span>'
     };
 
-    return badgeMap[status] || badgeMap.belum_pernah_kontrol;
+    return badgeMap[status] ?? badgeMap.belum_pernah_kontrol;
 }
 
 async function loadPasienBaru() {
@@ -560,6 +560,8 @@ async function loadHospitalPatients(location) {
                 '<span class="badge badge-success">Aktif</span>' :
                 '<span class="badge badge-secondary">Nonaktif</span>';
 
+            const visitHistoryBadge = getVisitHistoryBadge(patient);
+
             return `
                 <tr>
                     <td>${escapeHtml(patient.id)}</td>
@@ -567,7 +569,7 @@ async function loadHospitalPatients(location) {
                     <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
-                    <td><div>${lastVisit}</div><div class="mt-1">${getVisitHistoryBadge(patient)}</div></td>
+                    <td><div>${lastVisit}</div>${visitHistoryBadge ? `<div class="mt-1">${visitHistoryBadge}</div>` : ''}</td>
                     <td>${regDate}</td>
                     <td>${statusBadge}</td>
                     <td class="text-nowrap">
