@@ -42,11 +42,11 @@
             osc.frequency.exponentialRampToValueAtTime(680, ac.currentTime + 0.018);
             osc.frequency.exponentialRampToValueAtTime(420, ac.currentTime + 0.045);
 
-            clickGain.gain.setValueAtTime(0.065, ac.currentTime);
+            clickGain.gain.setValueAtTime(0.038, ac.currentTime);
             clickGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.014);
 
-            bodyGain.gain.setValueAtTime(0.0225, ac.currentTime + 0.004);
-            bodyGain.gain.exponentialRampToValueAtTime(0.006, ac.currentTime + 0.028);
+            bodyGain.gain.setValueAtTime(0.013, ac.currentTime + 0.004);
+            bodyGain.gain.exponentialRampToValueAtTime(0.0035, ac.currentTime + 0.028);
             bodyGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.05);
 
             osc.start(ac.currentTime);
