@@ -445,6 +445,20 @@
         .shadow-md { box-shadow: var(--shadow-md); }
         .shadow-lg { box-shadow: var(--shadow-lg); }
 
+        #profile-avatar-img,
+        #completion-avatar-img {
+            image-rendering: auto !important;
+            transform: none !important;
+            filter: none !important;
+            will-change: auto !important;
+            backface-visibility: visible !important;
+            -webkit-backface-visibility: visible !important;
+        }
+
+        #profile-completion-modal .modal-dialog {
+            transform: none !important;
+        }
+
         .text-xs { font-size: var(--font-size-xs); }
         .text-sm { font-size: var(--font-size-sm); }
         .text-base { font-size: var(--font-size-base); }
@@ -5273,7 +5287,7 @@ Contoh Markdown:
                                 <div class="card-body box-profile">
                                     <div class="text-center">
                                         <div class="profile-avatar mb-3 position-relative" style="display: inline-block;">
-                                            <img id="profile-avatar-img" src="" alt="Profile Picture" class="img-circle elevation-2" style="width: 120px; height: 120px; object-fit: cover; display: none; transform: translateZ(0); -webkit-transform: translateZ(0); backface-visibility: hidden; -webkit-backface-visibility: hidden;">
+                                            <img id="profile-avatar-img" src="" alt="Profile Picture" class="img-circle elevation-2" style="width: 120px; height: 120px; object-fit: cover; display: none;">
                                             <i id="profile-avatar-icon" class="fas fa-user-circle fa-5x text-primary"></i>
                                             <div class="profile-avatar-overlay" style="position: absolute; bottom: 0; right: 0;">
                                                 <label for="profile-picture-input" class="btn btn-primary btn-sm rounded-circle" style="width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -7545,13 +7559,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v105"></script>
+<script defer src="scripts/rum.js?v=v106"></script>
 
 <!-- Core app modules -->
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v105';
+    window.__assetVersion = 'v106';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -11971,9 +11985,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v105"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v106"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v105"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v106"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
@@ -12071,20 +12085,59 @@ function buildSmoothedAvatarDataUrl(sourceUrl, targetSize, mimeType, quality) {
                 const cropSize = Math.min(img.naturalWidth, img.naturalHeight);
                 const offsetX = Math.max(0, Math.floor((img.naturalWidth - cropSize) / 2));
                 const offsetY = Math.max(0, Math.floor((img.naturalHeight - cropSize) / 2));
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                const sourceCanvas = document.createElement('canvas');
+                const sourceContext = sourceCanvas.getContext('2d');
 
-                if (!ctx || !cropSize) {
+                if (!sourceContext || !cropSize) {
                     resolve(sourceUrl);
                     return;
                 }
 
-                canvas.width = size;
-                canvas.height = size;
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(img, offsetX, offsetY, cropSize, cropSize, 0, 0, size, size);
-                resolve(canvas.toDataURL(mimeType || 'image/jpeg', quality || 0.92));
+                sourceCanvas.width = cropSize;
+                sourceCanvas.height = cropSize;
+                sourceContext.imageSmoothingEnabled = true;
+                sourceContext.imageSmoothingQuality = 'high';
+                sourceContext.drawImage(img, offsetX, offsetY, cropSize, cropSize, 0, 0, cropSize, cropSize);
+
+                let currentCanvas = sourceCanvas;
+                let currentSize = cropSize;
+
+                while (currentSize > size * 2) {
+                    const nextSize = Math.max(size, Math.floor(currentSize / 2));
+                    const nextCanvas = document.createElement('canvas');
+                    const nextContext = nextCanvas.getContext('2d');
+
+                    if (!nextContext) break;
+
+                    nextCanvas.width = nextSize;
+                    nextCanvas.height = nextSize;
+                    nextContext.imageSmoothingEnabled = true;
+                    nextContext.imageSmoothingQuality = 'high';
+                    nextContext.drawImage(currentCanvas, 0, 0, currentSize, currentSize, 0, 0, nextSize, nextSize);
+                    currentCanvas = nextCanvas;
+                    currentSize = nextSize;
+                }
+
+                if (currentSize !== size) {
+                    const finalCanvas = document.createElement('canvas');
+                    const finalContext = finalCanvas.getContext('2d');
+
+                    if (finalContext) {
+                        finalCanvas.width = size;
+                        finalCanvas.height = size;
+                        finalContext.imageSmoothingEnabled = true;
+                        finalContext.imageSmoothingQuality = 'high';
+                        finalContext.drawImage(currentCanvas, 0, 0, currentSize, currentSize, 0, 0, size, size);
+                        currentCanvas = finalCanvas;
+                    }
+                }
+
+                if ((mimeType || 'image/png') === 'image/png') {
+                    resolve(currentCanvas.toDataURL('image/png'));
+                    return;
+                }
+
+                resolve(currentCanvas.toDataURL(mimeType || 'image/jpeg', quality || 0.92));
             } catch (error) {
                 reject(error);
             }
@@ -12127,7 +12180,7 @@ document.getElementById('completion-photo-input')?.addEventListener('change', fu
     const reader = new FileReader();
     reader.onload = async function(event) {
         try {
-            const optimizedPhoto = await buildSmoothedAvatarDataUrl(event.target.result, 512, 'image/jpeg', 0.92);
+            const optimizedPhoto = await buildSmoothedAvatarDataUrl(event.target.result, 512, 'image/png');
             window.profileCompletionData.photo = optimizedPhoto;
             document.getElementById('completion-avatar-img').src = optimizedPhoto;
             document.getElementById('completion-avatar-img').style.display = 'block';

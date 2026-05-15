@@ -9,6 +9,59 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 let currentUser = null;
 let selectedProfilePicture = null; // Store selected image as base64
 
+function buildProgressiveSquareAvatar(sourceImage, targetSize) {
+    const cropSize = Math.min(sourceImage.naturalWidth, sourceImage.naturalHeight);
+    const offsetX = Math.max(0, Math.floor((sourceImage.naturalWidth - cropSize) / 2));
+    const offsetY = Math.max(0, Math.floor((sourceImage.naturalHeight - cropSize) / 2));
+    const baseCanvas = document.createElement('canvas');
+    const baseContext = baseCanvas.getContext('2d');
+
+    if (!baseContext || !cropSize) return null;
+
+    baseCanvas.width = cropSize;
+    baseCanvas.height = cropSize;
+    baseContext.imageSmoothingEnabled = true;
+    baseContext.imageSmoothingQuality = 'high';
+    baseContext.drawImage(sourceImage, offsetX, offsetY, cropSize, cropSize, 0, 0, cropSize, cropSize);
+
+    let currentCanvas = baseCanvas;
+    let currentSize = cropSize;
+    const finalSize = targetSize || 240;
+
+    while (currentSize > finalSize * 2) {
+        const nextSize = Math.max(finalSize, Math.floor(currentSize / 2));
+        const nextCanvas = document.createElement('canvas');
+        const nextContext = nextCanvas.getContext('2d');
+
+        if (!nextContext) break;
+
+        nextCanvas.width = nextSize;
+        nextCanvas.height = nextSize;
+        nextContext.imageSmoothingEnabled = true;
+        nextContext.imageSmoothingQuality = 'high';
+        nextContext.drawImage(currentCanvas, 0, 0, currentSize, currentSize, 0, 0, nextSize, nextSize);
+
+        currentCanvas = nextCanvas;
+        currentSize = nextSize;
+    }
+
+    if (currentSize !== finalSize) {
+        const outputCanvas = document.createElement('canvas');
+        const outputContext = outputCanvas.getContext('2d');
+
+        if (!outputContext) return currentCanvas;
+
+        outputCanvas.width = finalSize;
+        outputCanvas.height = finalSize;
+        outputContext.imageSmoothingEnabled = true;
+        outputContext.imageSmoothingQuality = 'high';
+        outputContext.drawImage(currentCanvas, 0, 0, currentSize, currentSize, 0, 0, finalSize, finalSize);
+        return outputCanvas;
+    }
+
+    return currentCanvas;
+}
+
 function loadOptimizedAvatar(imageEl, photoURL, targetSize) {
     if (!imageEl) return;
 
@@ -17,33 +70,12 @@ function loadOptimizedAvatar(imageEl, photoURL, targetSize) {
 
     sourceImage.onload = () => {
         try {
-            const size = targetSize || 240;
-            const cropSize = Math.min(sourceImage.naturalWidth, sourceImage.naturalHeight);
-            const offsetX = Math.max(0, Math.floor((sourceImage.naturalWidth - cropSize) / 2));
-            const offsetY = Math.max(0, Math.floor((sourceImage.naturalHeight - cropSize) / 2));
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+            const canvas = buildProgressiveSquareAvatar(sourceImage, targetSize || 240);
 
-            if (!context || !cropSize) {
+            if (!canvas) {
                 imageEl.src = photoURL;
                 return;
             }
-
-            canvas.width = size;
-            canvas.height = size;
-            context.imageSmoothingEnabled = true;
-            context.imageSmoothingQuality = 'high';
-            context.drawImage(
-                sourceImage,
-                offsetX,
-                offsetY,
-                cropSize,
-                cropSize,
-                0,
-                0,
-                size,
-                size
-            );
 
             imageEl.src = canvas.toDataURL('image/png');
         } catch (error) {
