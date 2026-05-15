@@ -1264,7 +1264,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v108">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v109">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -7430,9 +7430,10 @@ body.mobile-app-mode .mobile-action-bar-force {
     opacity: 1 !important;
     z-index: 999999 !important;
     position: fixed !important;
-    top: 0 !important;
+    top: auto !important;
     left: 0 !important;
     right: 0 !important;
+    bottom: 0 !important;
     pointer-events: auto !important;
 }
 body.mobile-app-mode .mobile-action-bar-force button {
@@ -7565,7 +7566,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v116';
+    window.__assetVersion = 'v119';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -11990,10 +11991,10 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v116"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v117"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v111"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v111"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v113"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">

@@ -11,6 +11,12 @@
 		<meta name="description" content="">
 		<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="theme-color" content="#0066FF">
+		<meta name="application-name" content="dokterDIBYA Patient Portal">
+		<meta name="apple-mobile-web-app-title" content="Portal Pasien">
+		<link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+		<link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+		<link rel="manifest" href="/patient-portal.webmanifest?v=20260516pwa1">
 		
 		<!-- Cache-busted core styles -->
 		<link rel="stylesheet" href="css/animate.min.css?v=20251121">
@@ -295,10 +301,10 @@
     					<h3><i class="fa fa-mobile"></i> Aplikasi Sudah Tersedia!</h3>
     					<p class="announcement-subtitle">Akses portal pasien langsung dari HP Anda — lebih cepat, lebih praktis.</p>
     					<div class="download-cta-buttons">
-    						<a href="/api/app-version/download/android" class="download-cta-btn android" aria-label="Download aplikasi Android">
-    							<i class="fa fa-android"></i> Download Android
-    						</a>
-    						<a href="patient-login.html" class="download-cta-btn ios-pwa external" aria-label="Install aplikasi untuk iPhone via PWA">
+							<button type="button" id="btn-home-install-android" class="download-cta-btn android" aria-label="Install aplikasi Patient Portal di Android" onclick="installHomePatientPWA()">
+								<i class="fa fa-android"></i> Install di Android
+							</button>
+							<a href="patient-login.html" class="download-cta-btn ios-pwa external" aria-label="Buka portal pasien untuk iPhone">
     							<i class="fa fa-apple"></i> Install di iPhone
     						</a>
     					</div>
@@ -446,6 +452,68 @@
 			});
 		}
 	});
+	</script>
+	<script>
+	(function() {
+		var homeDeferredInstallPrompt = null;
+
+		function isStandaloneMode() {
+			return window.navigator.standalone === true ||
+				window.matchMedia('(display-mode: standalone)').matches;
+		}
+
+		function updateHomeInstallButtons() {
+			var btnAndroid = document.getElementById('btn-home-install-android');
+			if (!btnAndroid) return;
+
+			if (isStandaloneMode()) {
+				btnAndroid.style.display = 'none';
+				return;
+			}
+
+			btnAndroid.style.display = 'inline-flex';
+			btnAndroid.innerHTML = '<i class="fa fa-android"></i> Install di Android';
+
+			if (!/Android/i.test(navigator.userAgent || '')) {
+				btnAndroid.innerHTML = '<i class="fa fa-download"></i> Install di Browser';
+			}
+		}
+
+		window.addEventListener('beforeinstallprompt', function(e) {
+			e.preventDefault();
+			homeDeferredInstallPrompt = e;
+			updateHomeInstallButtons();
+		});
+
+		window.addEventListener('appinstalled', function() {
+			homeDeferredInstallPrompt = null;
+			updateHomeInstallButtons();
+		});
+
+		window.installHomePatientPWA = function() {
+			if (homeDeferredInstallPrompt) {
+				homeDeferredInstallPrompt.prompt();
+				homeDeferredInstallPrompt.userChoice.then(function() {
+					homeDeferredInstallPrompt = null;
+					updateHomeInstallButtons();
+				});
+				return;
+			}
+
+			if (/Android/i.test(navigator.userAgent || '')) {
+				alert('Untuk memasang Patient Portal, buka menu browser lalu pilih "Install app" atau "Tambahkan ke layar utama".');
+				return;
+			}
+
+			window.location.href = 'patient-login.html';
+		};
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', updateHomeInstallButtons, { once: true });
+		} else {
+			updateHomeInstallButtons();
+		}
+	})();
 	</script>
 	<script>
 	// Force navigation to .html pages - override singlePageNav

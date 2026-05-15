@@ -42,15 +42,15 @@
             osc.frequency.exponentialRampToValueAtTime(620, ac.currentTime + 0.016);
             osc.frequency.exponentialRampToValueAtTime(390, ac.currentTime + 0.038);
 
-            clickGain.gain.setValueAtTime(0.02, ac.currentTime);
-            clickGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.011);
+            clickGain.gain.setValueAtTime(0.012, ac.currentTime);
+            clickGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.01);
 
-            bodyGain.gain.setValueAtTime(0.006, ac.currentTime + 0.003);
-            bodyGain.gain.exponentialRampToValueAtTime(0.0018, ac.currentTime + 0.02);
-            bodyGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.04);
+            bodyGain.gain.setValueAtTime(0.0032, ac.currentTime + 0.003);
+            bodyGain.gain.exponentialRampToValueAtTime(0.0011, ac.currentTime + 0.018);
+            bodyGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.032);
 
             osc.start(ac.currentTime);
-            osc.stop(ac.currentTime + 0.04);
+            osc.stop(ac.currentTime + 0.032);
         } catch (error) {
             console.debug('[TapFeedback] Tap sound skipped:', error?.message || error);
         }
