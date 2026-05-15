@@ -15,6 +15,40 @@
 
     console.log('[GlobalChat] Initializing...');
 
+    function markChatPopupReady() {
+        window.chatPopupLoaded = true;
+        console.log('[GlobalChat] Chat popup ready');
+    }
+
+    function ensureChatPopupScriptLoaded() {
+        if (window.toggleChatPopup || window._realToggleChatPopup) {
+            markChatPopupReady();
+            return;
+        }
+
+        if (window.__chatPopupScriptRequested) {
+            console.log('[GlobalChat] chat-popup.js load already requested');
+            return;
+        }
+
+        window.__chatPopupScriptRequested = true;
+
+        const script = document.createElement('script');
+        const version = window.__assetVersion || 'v108';
+        script.src = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
+        script.onload = function() {
+            console.log('[GlobalChat] chat-popup.js loaded dynamically');
+            markChatPopupReady();
+        };
+        script.onerror = function(error) {
+            window.__chatPopupScriptRequested = false;
+            console.error('[GlobalChat] Failed to load chat-popup.js dynamically:', error);
+        };
+
+        (document.body || document.head || document.documentElement).appendChild(script);
+        console.log('[GlobalChat] Loading chat-popup.js dynamically');
+    }
+
     // Function to initialize chat
     function initializeChat() {
         // Ensure auth functions are available globally
@@ -103,10 +137,17 @@
             return;
         }
 
-        // chat-popup.js is now loaded as a static script in index-adminlte.html
-        // No dynamic loading needed here — just mark as loaded
-        window.chatPopupLoaded = true;
-        console.log('[GlobalChat] Auth ready, chat-popup.js loaded statically');
+        // On pages like Sunday Clinic, chat-popup.js is not included statically.
+        // Delay this check one tick so index-adminlte's following static script tag can load first.
+        setTimeout(() => {
+            if (window.toggleChatPopup || window._realToggleChatPopup) {
+                console.log('[GlobalChat] Auth ready, chat-popup.js already loaded statically');
+                markChatPopupReady();
+                return;
+            }
+
+            ensureChatPopupScriptLoaded();
+        }, 0);
 
         // Use global Socket.IO connection from realtime-sync.js
         // DO NOT create our own socket - wait for realtime-sync to initialize it
