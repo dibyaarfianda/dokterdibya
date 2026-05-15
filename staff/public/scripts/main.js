@@ -413,7 +413,7 @@ function showHospitalPatientsPage(location) {
     loadHospitalPatients(location);
 }
 
-// Show Pasien Baru page - patients with no visits yet
+// Show Pasien Baru page - patients without DRD yet
 function showPasienBaruPage() {
     hideAllPages();
     pages.hospitalPatients?.classList.remove('d-none');
@@ -421,11 +421,22 @@ function showPasienBaruPage() {
     // Update title
     const titleEl = document.getElementById('hospital-patients-title');
     if (titleEl) {
-        titleEl.textContent = 'Pasien Baru (Belum Berkunjung)';
+        titleEl.textContent = 'Pasien Tanpa DRD';
     }
 
-    setTitleAndActive('Pasien Baru', 'nav-pasien-baru', 'hospital-patients');
+    setTitleAndActive('Pasien Tanpa DRD', 'nav-pasien-baru', 'hospital-patients');
     loadPasienBaru();
+}
+
+function getVisitHistoryBadge(patient) {
+    const status = patient?.visit_history_status || 'belum_pernah_kontrol';
+    const badgeMap = {
+        sudah_ada_drd: '<span class="badge badge-success">Sudah ada DRD</span>',
+        pernah_kontrol_tanpa_drd: '<span class="badge badge-info">Pernah kontrol, belum ada DRD</span>',
+        belum_pernah_kontrol: '<span class="badge badge-warning">Belum pernah kontrol</span>'
+    };
+
+    return badgeMap[status] || badgeMap.belum_pernah_kontrol;
 }
 
 async function loadPasienBaru() {
@@ -446,7 +457,7 @@ async function loadPasienBaru() {
 
     try {
         const token = getAuthToken();
-        // Use last_visit_location=no_visit to get patients without any visits
+        // Use last_visit_location=no_visit to get patients without DRD records
         const response = await fetch(`/api/patients?last_visit_location=no_visit&_=${Date.now()}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -459,7 +470,7 @@ async function loadPasienBaru() {
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Tidak ada pasien baru (semua pasien sudah pernah berkunjung)</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Tidak ada pasien tanpa DRD</td></tr>`;
             return;
         }
 
@@ -477,7 +488,7 @@ async function loadPasienBaru() {
                     <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
-                    <td><span class="badge badge-warning">Belum berkunjung</span></td>
+                    <td>${getVisitHistoryBadge(patient)}</td>
                     <td>${regDate}</td>
                     <td>${statusBadge}</td>
                     <td class="text-nowrap">
@@ -556,7 +567,7 @@ async function loadHospitalPatients(location) {
                     <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
-                    <td>${lastVisit}</td>
+                    <td><div>${lastVisit}</div><div class="mt-1">${getVisitHistoryBadge(patient)}</div></td>
                     <td>${regDate}</td>
                     <td>${statusBadge}</td>
                     <td class="text-nowrap">

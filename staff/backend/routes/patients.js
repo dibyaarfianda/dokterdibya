@@ -391,6 +391,8 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         const resumeRecordSet = new Set();
         const resumeDocSet = new Set();
         const usgDocSet = new Set();
+        const appointmentHistorySet = new Set();
+        const medicalHistorySet = new Set();
         const obstetriMap = {}; // patient_id -> hpht
         const birthSet = new Set();
 
@@ -424,7 +426,30 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         if (patientIds.length > 0) {
             const pPlaceholders = patientIds.map(() => '?').join(',');
 
-            // Batch 4: obstetri/HPL
+            batchPromises.push(
+                db.query(
+                    `SELECT DISTINCT patient_id
+                     FROM sunday_appointments
+                     WHERE patient_id IN (${pPlaceholders})
+                       AND status IN ('completed', 'confirmed')`,
+                    patientIds
+                )
+                    .then(([rows]) => rows.forEach(r => appointmentHistorySet.add(r.patient_id)))
+                    .catch(err => _enrichFail('appointmentHistory', err))
+            );
+
+            batchPromises.push(
+                db.query(
+                    `SELECT DISTINCT patient_id
+                     FROM medical_records
+                     WHERE patient_id IN (${pPlaceholders})`,
+                    patientIds
+                )
+                    .then(([rows]) => rows.forEach(r => medicalHistorySet.add(r.patient_id)))
+                    .catch(err => _enrichFail('medicalHistory', err))
+            );
+
+            // Batch 6: obstetri/HPL
             // REQUIRES: collation migration (20260307_performance_indexes_up.sql)
             // to align medical_records.mr_id → utf8mb4_unicode_ci.
             // Without the migration, this JOIN will fail on collation mismatch.
@@ -502,11 +527,20 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 }
             }
 
+            const hasAppointmentHistory = appointmentHistorySet.has(patient.id) || Boolean(patient.actual_last_visit);
+            const hasMedicalHistory = medicalHistorySet.has(patient.id) || Boolean(patient.anamnesa_datetime);
+            const visit_history_status = patient.mr_id
+                ? 'sudah_ada_drd'
+                : (hasAppointmentHistory || hasMedicalHistory)
+                    ? 'pernah_kontrol_tanpa_drd'
+                    : 'belum_pernah_kontrol';
+
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                last_visit: patient.anamnesa_datetime || null,
+                last_visit: patient.anamnesa_datetime || patient.actual_last_visit || null,
                 resume_status,
+                visit_history_status,
                 hpl,
                 days_pregnant,
                 is_obstetri,

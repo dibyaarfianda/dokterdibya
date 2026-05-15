@@ -660,7 +660,7 @@ async function saveUserRoles() {
 // Menu definitions for visibility
 const VISIBILITY_MENUS = [
     { key: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
-    { key: 'pasien_baru', label: 'Pasien Baru', icon: 'fa-user-plus' },
+    { key: 'pasien_baru', label: 'Pasien Tanpa DRD', icon: 'fa-user-plus' },
     { key: 'klinik_privat', label: 'Klinik Privat', icon: 'fa-clinic-medical' },
     { key: 'rsia_melinda', label: 'RSIA Melinda', icon: 'fa-hospital' },
     { key: 'rsud_gambiran', label: 'RSUD Gambiran', icon: 'fa-hospital-alt' },

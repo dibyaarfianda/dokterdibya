@@ -2037,11 +2037,11 @@
                     <div class="row">
                         <!-- LEFT COLUMN -->
                         <div class="col-lg-6">
-                            <!-- Pasien Baru -->
+                            <!-- Pasien Tanpa DRD -->
                             <div class="card card-primary">
                                 <div class="card-header">
                                     <h3 class="card-title">
-                                        <i class="fas fa-user-plus mr-2"></i>Pasien Baru
+                                        <i class="fas fa-user-plus mr-2"></i>Pasien Tanpa DRD
                                     </h3>
                                     <div class="card-tools">
                                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -7566,7 +7566,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v119';
+    window.__assetVersion = 'v120';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 </script>
@@ -8642,7 +8642,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
             'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
             'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
         };
-        const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Pasien Baru</span>';
+        const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Belum ada resume</span>';
+        const visitHistoryBadgeMap = {
+            sudah_ada_drd: '<span class="badge badge-success mt-1">Sudah ada DRD</span>',
+            pernah_kontrol_tanpa_drd: '<span class="badge badge-info mt-1">Pernah kontrol, belum ada DRD</span>',
+            belum_pernah_kontrol: '<span class="badge badge-warning mt-1">Belum pernah kontrol</span>'
+        };
+        const visitHistoryBadge = visitHistoryBadgeMap[patient.visit_history_status] || visitHistoryBadgeMap.belum_pernah_kontrol;
         const statusBadge = patient.status === 'active' ?
             '<span class="badge badge-success">Aktif</span>' :
             '<span class="badge badge-secondary">Nonaktif</span>';
@@ -8654,8 +8660,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
             ? window.buildMobileUrl(`sunday-clinic.html?_v=v20260515chat2&patient=${patient.id}&mr=${patient.mr_id}`)
             : `sunday-clinic.html?_v=v20260515chat2&patient=${patient.id}&mr=${patient.mr_id}`;
         const mrIdCell = patient.mr_id
-            ? `<a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
-            : `<span class="text-muted">-</span>`;
+            ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}</div>${visitHistoryBadge}`
+            : `<span class="text-muted">-</span><div>${visitHistoryBadge}</div>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
             const hplDate = new Date(patient.hpl);
