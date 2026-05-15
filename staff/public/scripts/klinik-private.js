@@ -397,7 +397,9 @@ async function startClinicRecord(appointment, category) {
 
         const mrSlug = record.mrId ? String(record.mrId).toLowerCase() : null;
         const targetUrl = mrSlug
-            ? `/sunday-clinic/${mrSlug}/identitas`
+            ? (window.buildSundayClinicAppUrl
+                ? window.buildSundayClinicAppUrl(mrSlug, 'identitas')
+                : `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(mrSlug)}&section=identitas`)
             : `/${record.folderPath}/identitas/index.html`;
         window.location.href = targetUrl;
 
