@@ -1228,3 +1228,43 @@ User confirmed with "sudah sempurna buatan anda" after multiple refinements to t
 **Documentation updated:**
 - File: `snippets/sticky-stack-card-deck.md`
 - Updated to match the final per-row implementation instead of the older global-segment model
+
+### 36. Session Log - 15 May 2026
+
+**Sunday Clinic Refresh Leaving Staff PWA (User Confirmed Success)**
+
+User confirmed with "berhasil!" after the final Sunday Clinic refresh fix.
+
+**Problem:**
+- On Android, refreshing Sunday Clinic showed the Chrome/custom-tab header with the `X` button instead of staying inside the installed staff PWA.
+- Reinstalling the PWA did not fix it.
+
+**Root Cause:**
+- Sunday Clinic could start from an in-scope staff URL, but client-side navigation later rewrote the browser URL to `/sunday-clinic/{mrId}/{section}`.
+- That path is outside the staff PWA manifest scope `/staff/`, so the next refresh reopened in browser/custom-tab chrome.
+- Some launchers and redirects in staff code also still pointed directly to `/sunday-clinic/...`, reintroducing the same out-of-scope route.
+
+**What actually fixed it:**
+1. In `staff/public/scripts/sunday-clinic.js`:
+    - stop writing `/sunday-clinic/...` into history
+    - keep route updates on `/staff/public/sunday-clinic.html?mr=...&section=...`
+    - parse query-based route state instead of relying on path segments
+2. In `staff/public/scripts/main.js`, `staff/public/scripts/klinik-private.js`, `staff/public/scripts/sunday-clinic/utils/medical-import.js`, and `staff/public/index-adminlte.html`:
+    - replace Sunday Clinic launch URLs from `/sunday-clinic/...` to `/staff/public/sunday-clinic.html?...`
+    - preserve `mobile=1` via existing mobile URL helpers
+3. In `staff/public/sunday-clinic.html`:
+    - normalize mobile mode URLs so installed-app sessions keep `mobile=1`
+4. Force fresh assets after the route fix:
+    - bump `STAFF_PWA_VERSION` to `v110` in `staff/public/sw.js`
+    - bump `window.__assetVersion` to `v110` in `staff/public/index-adminlte.html`
+    - bump `PAGE_VERSION` to `20260515v4`, `SC_CACHE_VERSION` to `v20260515chat3`, and `sunday-clinic.js` to `?v=20260515v11` in `staff/public/sunday-clinic.html`
+
+**Verification pattern that mattered:**
+1. Check whether any code still writes or opens `/sunday-clinic/...` instead of the in-scope staff page.
+2. Confirm manifest scope is `/staff/` and that Sunday Clinic URLs stay under `/staff/public/`.
+3. After route fixes, bump service worker and page asset versions, then redeploy before retesting on device.
+4. Retest from the installed home-screen PWA, navigate into Sunday Clinic, then refresh there.
+
+**Critical lesson:**
+- If an installed PWA page opens fine at first but refresh shows browser chrome, inspect `history.pushState`, launcher URLs, and redirects for out-of-scope paths before assuming the manifest is wrong.
+- On this repo, fixing scope alone is often not enough; stale JS can preserve the bad route writer until staff asset versions are bumped and redeployed.
