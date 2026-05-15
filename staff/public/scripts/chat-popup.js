@@ -6,6 +6,33 @@
 (function () {
   'use strict';
 
+  // ---------- FORCE FAB VISIBLE via inline !important (beats all CSS) ----------
+  function forceFABVisible() {
+    var cont = document.getElementById('chat-popup-container');
+    if (!cont) return;
+    var chatOpen = cont.classList.contains('chat-is-open');
+    // Force container always visible
+    cont.style.setProperty('position', 'fixed', 'important');
+    cont.style.setProperty('display', 'block', 'important');
+    cont.style.setProperty('visibility', 'visible', 'important');
+    cont.style.setProperty('opacity', '1', 'important');
+    cont.style.setProperty('z-index', '2147483647', 'important');
+    cont.style.setProperty('pointer-events', 'auto', 'important');
+    cont.style.setProperty('bottom', '80px', 'important');
+    cont.style.setProperty('right', '14px', 'important');
+    // Force button visible only when chat not open
+    var btn = document.getElementById('chat-toggle-btn');
+    if (btn && !chatOpen) {
+      btn.style.setProperty('display', 'flex', 'important');
+      btn.style.setProperty('visibility', 'visible', 'important');
+      btn.style.setProperty('opacity', '1', 'important');
+    }
+  }
+
+  // Run immediately (sync), then guard every 500ms
+  forceFABVisible();
+  setInterval(forceFABVisible, 500);
+
   // ---------- CREATE FAB IMMEDIATELY (synchronous, before DOMContentLoaded) ----------
   // This runs when the script is parsed — no timing issues, no cache dependency
   // Append to <html> not <body> to bypass any overflow:hidden on body
@@ -18,6 +45,7 @@
     // Use documentElement so overflow:hidden on body doesn't clip this
     var target = document.body || document.documentElement;
     target.appendChild(fab);
+    forceFABVisible();
   })();
 
   // ---------- EARLY STUB FUNCTIONS for WebView onclick compatibility ----------
@@ -405,16 +433,18 @@
         // Basic toggle that works without auth
         function basicToggle() {
             isChatOpenBasic = !isChatOpenBasic;
-            // Use class on container instead of inline display (CSS !important handles visibility)
             const cont = document.getElementById('chat-popup-container');
+            const btn = document.getElementById('chat-toggle-btn');
             if (isChatOpenBasic) {
                 chatBox.style.display = 'flex';
                 chatBox.classList.add('chat-open');
                 if (cont) cont.classList.add('chat-is-open');
+                if (btn) btn.style.setProperty('display', 'none', 'important');
             } else {
                 chatBox.style.display = 'none';
                 chatBox.classList.remove('chat-open');
                 if (cont) cont.classList.remove('chat-is-open');
+                if (btn) btn.style.setProperty('display', 'flex', 'important');
             }
             console.log('[ChatPopup] Basic toggle - isChatOpen:', isChatOpenBasic);
         }
@@ -422,9 +452,11 @@
         function basicClose() {
             isChatOpenBasic = false;
             const cont = document.getElementById('chat-popup-container');
+            const btn = document.getElementById('chat-toggle-btn');
             chatBox.style.display = 'none';
             chatBox.classList.remove('chat-open');
             if (cont) cont.classList.remove('chat-is-open');
+            if (btn) btn.style.setProperty('display', 'flex', 'important');
             console.log('[ChatPopup] Basic close');
         }
 
@@ -622,28 +654,25 @@
     // Toggle function - exposed globally for WebView onclick compatibility
     function handleToggleChat() {
       isChatOpen = !isChatOpen;
-      // Use class on container instead of inline display (CSS !important handles visibility)
       const cont = document.getElementById('chat-popup-container');
       if (isChatOpen) {
         chatBox.style.display = 'flex';
         chatBox.classList.add('chat-open');
         if (cont) cont.classList.add('chat-is-open');
+        toggleBtn.style.setProperty('display', 'none', 'important');
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
-        // Mark all messages as read
         markMessagesAsRead();
-        // Delay focus and scroll to ensure chat box is rendered first
         setTimeout(() => {
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          // Focus input after box is visible (prevents keyboard appearing before box)
           if (chatInput) chatInput.focus();
         }, 100);
-        // Check clear button visibility when chat opens
         checkClearButtonVisibility();
       } else {
         chatBox.style.display = 'none';
         chatBox.classList.remove('chat-open');
         if (cont) cont.classList.remove('chat-is-open');
+        toggleBtn.style.setProperty('display', 'flex', 'important');
       }
     }
 
@@ -658,6 +687,7 @@
       chatBox.style.display = 'none';
       chatBox.classList.remove('chat-open');
       if (cont) cont.classList.remove('chat-is-open');
+      toggleBtn.style.setProperty('display', 'flex', 'important');
     }
 
     // Upgrade the close function
