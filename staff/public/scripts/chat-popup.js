@@ -6,6 +6,13 @@
 (function () {
   'use strict';
 
+  // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
+  function getNavBottomPx() {
+    var nav = document.getElementById('mobile-action-bar');
+    if (nav && nav.offsetHeight > 0) return nav.offsetHeight + 'px';
+    return '65px';
+  }
+
   // ---------- ENSURE FAB EXISTS + VISIBLE (creates if missing, restores if hidden) ----------
   function ensureFAB() {
     var cont = document.getElementById('chat-popup-container');
@@ -22,14 +29,15 @@
     var isMobile = window.innerWidth <= 991;
 
     if (chatOpen && isMobile) {
-      // Full-screen mode — covers viewport above bottom nav
+      // Full-screen mode: use top+right+bottom+left only — no width/height to avoid 100vw overflow
+      var navH = getNavBottomPx();
       cont.style.setProperty('position', 'fixed', 'important');
       cont.style.setProperty('top', '0', 'important');
       cont.style.setProperty('left', '0', 'important');
       cont.style.setProperty('right', '0', 'important');
-      cont.style.setProperty('bottom', '78px', 'important');
-      cont.style.setProperty('width', '100vw', 'important');
-      cont.style.setProperty('height', 'calc(100vh - 78px)', 'important');
+      cont.style.setProperty('bottom', navH, 'important');
+      cont.style.removeProperty('width');
+      cont.style.removeProperty('height');
       cont.style.setProperty('display', 'block', 'important');
       cont.style.setProperty('visibility', 'visible', 'important');
       cont.style.setProperty('opacity', '1', 'important');
@@ -79,13 +87,14 @@
 
   // Helper: apply full-screen mode for the chat box on mobile
   function applyMobileFullScreen(cont) {
+    var navH = getNavBottomPx();
     cont.style.setProperty('position', 'fixed', 'important');
     cont.style.setProperty('top', '0', 'important');
     cont.style.setProperty('left', '0', 'important');
     cont.style.setProperty('right', '0', 'important');
-    cont.style.setProperty('bottom', '78px', 'important');
-    cont.style.setProperty('width', '100vw', 'important');
-    cont.style.setProperty('height', 'calc(100vh - 78px)', 'important');
+    cont.style.setProperty('bottom', navH, 'important');
+    cont.style.removeProperty('width');
+    cont.style.removeProperty('height');
     cont.style.setProperty('display', 'block', 'important');
     cont.style.setProperty('visibility', 'visible', 'important');
     cont.style.setProperty('opacity', '1', 'important');
@@ -484,9 +493,9 @@
           top: 0 !important;
           left: 0 !important;
           right: 0 !important;
-          bottom: 78px !important;
-          width: 100vw !important;
-          height: calc(100vh - 78px) !important;
+          bottom: 65px !important;
+          width: auto !important;
+          height: auto !important;
         }
         #chat-popup-container.chat-is-open #chat-box,
         #chat-popup-container.chat-is-open .chat-box {
