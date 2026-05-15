@@ -1390,6 +1390,60 @@ obs.observe(document.body, { childList: true, subtree: false });
 - SELALU tambahkan re-entry guard (`_busy` flag) pada fungsi yang dipanggil MutationObserver
 - Setelah fix, bump versi (`?v=v102` → `?v=v103`) agar browser load file baru
 
+### 42. Staff PWA Chat Fullscreen Broken Only on Android PWA
+
+**Problem:** Chat box masih tampil sebagai panel kecil/mengambang di Android Staff PWA, padahal di browser desktop/full mobile web sudah fullscreen benar.
+
+**Symptoms:**
+- Header `Team Chat` muncul sebagai strip lebar, tapi isi chat masih terasa seperti panel lama
+- Screenshot terlihat seperti chat tidak benar-benar menempel ke viewport penuh
+- Browser biasa render benar, Android PWA tetap salah
+
+**Root Causes (multiple):**
+1. **Legacy `body.mobile-app-mode` CSS override** di `staff/public/styles/mobile-responsive.css` dan `staff/public/styles/sunday-clinic.css` masih memaksa:
+    - `top: 10%`
+    - `left: 5%`
+    - `width: 90%`
+    - `height: 65%`
+    pada `#chat-box`.
+2. State `.chat-open` hanya mengatur `display: flex`, tapi **tidak menetralkan ukuran/posisi lama**, jadi saat PWA aktif chat tetap kembali ke mode panel.
+3. **Asset version stale**:
+    - `mobile-responsive.css` masih dimuat dengan `?v=v97`
+    - `mobile-helper.js` masih `?v=v87`
+    sehingga patch CSS baru bisa tidak pernah terbaca oleh PWA meski JS chat sudah versi baru.
+4. `100vh` tidak reliable di Android PWA/WebView, jadi tinggi panel perlu fallback ke viewport riil.
+
+**What actually fixed it:**
+1. Di `staff/public/scripts/chat-popup.js`:
+    - gunakan tinggi viewport riil (`visualViewport.height` / `innerHeight`) untuk mode fullscreen mobile
+    - ubah fallback CSS mobile dari `100vh` ke `100dvh`
+    - saat `.chat-is-open`, paksa `#chat-box` menjadi:
+    ```javascript
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    ```
+2. Di `staff/public/styles/mobile-responsive.css` dan `staff/public/styles/sunday-clinic.css`:
+    - override state `body.mobile-app-mode #chat-box.chat-open`
+    - override juga selector fallback `[style*="display:flex"]`
+    - jangan biarkan `top/left/90%/65%` lama tetap menang saat chat open
+3. Bump semua asset staff yang relevan ke versi baru (`v108`):
+    - `mobile-responsive.css`
+    - `mobile-helper.js`
+    - `chat-popup.js`
+    - `global-chat-loader.js`
+    - `sw.js`
+    - `window.__assetVersion`
+
+**Critical lesson:**
+- Kalau bug hanya muncul di Android PWA tapi tidak di browser biasa, cek **`mobile-app-mode` CSS override lama** terlebih dahulu.
+- Jangan hanya patch JS fullscreen jika ada CSS state lama yang masih memaksa dimensi panel.
+- Selalu cek query version asset; CSS/JS stale dengan versi lama bisa membuat fix terlihat “tidak bekerja” padahal kode baru benar.
+
 ### 40. PWA Icon Crop Fix (Android) — Final Working Solution
 
 **Problem:** Staff Panel icon di Android home screen terpotong (logo menyentuh tepi rounded square).
