@@ -1348,6 +1348,48 @@ User confirmed with "sudah oke" and "okay" while iterating constraints for May V
   2) satisfy fairness structure,
   3) then tune distribution targets (off-days/night load) with minimal extra swaps.
 
+### 41. MutationObserver + style.setProperty = Infinite Loop (Page Unresponsive)
+
+**Problem:** Website hang dengan "Page Unresponsive" setelah menambahkan MutationObserver di `chat-popup.js`.
+
+**Root Cause:**
+MutationObserver yang mengamati `style` attribute pada elemen yang sama yang dimodifikasi oleh callback-nya:
+1. `ensureFAB()` memanggil `cont.style.setProperty(...)` → memodifikasi `style` attribute
+2. Observer melihat perubahan `style` → memanggil `ensureFAB()` lagi
+3. Loop tak terbatas → browser hang → "Page Unresponsive"
+
+**Gejala:**
+- Chrome menampilkan "Page Unresponsive" dialog
+- Terjadi segera setelah halaman mulai load
+- Hard refresh tidak membantu karena file ter-cache
+
+**Fix (3 perubahan):**
+1. **Re-entry guard** di fungsi yang dipanggil observer:
+```javascript
+var _ensureFABBusy = false;
+function ensureFAB() {
+    if (_ensureFABBusy) return;
+    _ensureFABBusy = true;
+    try { _ensureFABImpl(); } finally { _ensureFABBusy = false; }
+}
+```
+
+2. **Hapus attribute observer** — jangan amati `style`/`class` pada elemen yang dimodifikasi fungsi callback:
+```javascript
+// SALAH - menyebabkan loop:
+obs.observe(cont, { attributes: true, attributeFilter: ['style', 'class'] });
+
+// BENAR - hanya amati childList (FAB dihapus dari DOM):
+obs.observe(document.body, { childList: true, subtree: false });
+```
+
+3. **Perlambat interval** dari 200ms → 2000ms agar tidak membebani browser.
+
+**Lesson:**
+- JANGAN observe `style` attribute pada elemen yang sama-sama dimodifikasi oleh observer callback
+- SELALU tambahkan re-entry guard (`_busy` flag) pada fungsi yang dipanggil MutationObserver
+- Setelah fix, bump versi (`?v=v102` → `?v=v103`) agar browser load file baru
+
 ### 40. PWA Icon Crop Fix (Android) — Final Working Solution
 
 **Problem:** Staff Panel icon di Android home screen terpotong (logo menyentuh tepi rounded square).
