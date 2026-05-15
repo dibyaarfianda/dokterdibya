@@ -497,7 +497,8 @@ class PatientHistorySidebar {
             }
 
             if (response.existingMrId) {
-                window.location.href = `/staff/public/sunday-clinic.html?_v=v20260515chat1&mr=${encodeURIComponent(response.existingMrId)}`;
+                const existingMrUrl = `/staff/public/sunday-clinic.html?_v=v20260515chat2&mr=${encodeURIComponent(response.existingMrId)}`;
+                window.location.href = window.buildMobileUrl ? window.buildMobileUrl(existingMrUrl) : existingMrUrl;
                 return;
             }
 
@@ -510,8 +511,9 @@ class PatientHistorySidebar {
                 location: location || this.currentLocation || 'klinik_private'
             });
 
-            query.set('_v', 'v20260515chat1');
-            window.location.href = `/staff/public/sunday-clinic.html?${query.toString()}`;
+            query.set('_v', 'v20260515chat2');
+            const patientUrl = `/staff/public/sunday-clinic.html?${query.toString()}`;
+            window.location.href = window.buildMobileUrl ? window.buildMobileUrl(patientUrl) : patientUrl;
         } catch (error) {
             console.error('[PatientSidebar] Failed to open Medify queue patient:', error);
             if (window.showToast) {
@@ -783,7 +785,8 @@ class PatientHistorySidebar {
 
         if (mrId) {
             // Navigate to existing MR (with cache-bust for mobile)
-            window.location.href = `/staff/public/sunday-clinic.html?_v=v20260515chat1&mr=${mrId}`;
+            const existingMrUrl = `/staff/public/sunday-clinic.html?_v=v20260515chat2&mr=${mrId}`;
+            window.location.href = window.buildMobileUrl ? window.buildMobileUrl(existingMrUrl) : existingMrUrl;
         } else if (appointmentId) {
             // Need to create MR from appointment - open directory
             this.openDirectory(patientId);
@@ -798,7 +801,8 @@ class PatientHistorySidebar {
      */
     openPatientFromSearch(patientId, mrId) {
         if (mrId) {
-            window.location.href = `/staff/public/sunday-clinic.html?_v=v20260515chat1&mr=${mrId}`;
+            const mrUrl = `/staff/public/sunday-clinic.html?_v=v20260515chat2&mr=${mrId}`;
+            window.location.href = window.buildMobileUrl ? window.buildMobileUrl(mrUrl) : mrUrl;
         } else {
             this.openDirectory(patientId);
         }

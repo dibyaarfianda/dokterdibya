@@ -1495,3 +1495,51 @@ User confirmed with strong positive feedback that the final rule stack was alrea
 **What to keep for future revisions:**
 - Treat constraints in strict order: coverage/safety -> rank constraints -> fairness -> visual policy.
 - Validate after every batch using explicit rule checks instead of only visual inspection.
+
+### 43. Session Log - 15 May 2026
+
+**Sunday Clinic Chat Missing After Staff Chat Refactor (User Confirmed Great)**
+
+User confirmed with "mantap. keren!" after Sunday Clinic chat was restored.
+
+**Problem:**
+- Team chat disappeared only on `staff/public/sunday-clinic.html` after the staff chat architecture was changed.
+- Main staff shell still had chat, but Sunday Clinic no longer showed the floating chat button.
+
+**Root Causes (stacked):**
+1. `staff/public/scripts/global-chat-loader.js` had been changed to assume `chat-popup.js` was loaded statically in `index-adminlte.html`.
+2. `staff/public/sunday-clinic.html` loaded `global-chat-loader.js` but did **not** load `chat-popup.js`.
+3. Loader still had an early auth gate, so on Sunday Clinic it could exit before chat bootstrap if auth identity had not settled yet.
+4. Even after code fix, browser/PWA cache kept serving stale Sunday Clinic HTML without the new versioned chat script tags.
+
+**What actually fixed it:**
+1. In `staff/public/scripts/global-chat-loader.js`:
+    - restore dynamic fallback loading for `chat-popup.js` when static load is absent
+    - bootstrap chat popup before auth is fully ready, and only treat auth as a later readiness state
+2. In `staff/public/sunday-clinic.html`:
+    - add explicit versioned script tags:
+    ```html
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v109"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v109"></script>
+    ```
+    - bump `SC_CACHE_VERSION` so stale page cache forces a redirect to fresh HTML
+3. In navigation sources (`index-adminlte.html` and `staff/public/scripts/sunday-clinic/components/patient-history-sidebar.js`):
+    - append `_v=v20260515chat1` to Sunday Clinic URLs so internal navigation lands on fresh HTML immediately
+4. In `staff/public/sw.js` and `staff/public/index-adminlte.html`:
+    - bump staff asset/service worker version from `v108` -> `v109`
+
+**Verification pattern that proved the fix:**
+1. Check actual loaded scripts in browser:
+    - `global-chat-loader.js?v=v109`
+    - `chat-popup.js?v=v109`
+2. Confirm DOM contains:
+    - `#chat-popup-container`
+    - `#chat-box`
+3. Trigger toggle and verify chat opens:
+    - before: `display:none`
+    - after: `display:flex`
+4. Confirm plain `sunday-clinic.html` now redirects/lands on `?_v=v20260515chat1` and chat appears there too.
+
+**Critical lesson:**
+- If a feature works on one staff page but disappears on another after a loader refactor, check whether that page relied on dynamic script injection that was silently removed.
+- If production still behaves like old code after a correct script fix, inspect `Array.from(document.scripts).map(s => s.src)` and verify whether stale HTML, not stale JS, is the real blocker.

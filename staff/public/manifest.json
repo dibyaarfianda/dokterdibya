@@ -1,6 +1,7 @@
 {
   "name": "DB Staff",
   "short_name": "DB Staff",
+  "id": "/staff/public/",
   "version": "1.8.6",
   "description": "Aplikasi manajemen klinik Dokter Dibya untuk staff",
   "start_url": "/staff/public/index-adminlte.html?mobile=1",
