@@ -6,12 +6,19 @@
 (function () {
   'use strict';
 
-  // ---------- FORCE FAB VISIBLE via inline !important (beats all CSS) ----------
-  function forceFABVisible() {
+  // ---------- ENSURE FAB EXISTS + VISIBLE (creates if missing, restores if hidden) ----------
+  function ensureFAB() {
     var cont = document.getElementById('chat-popup-container');
-    if (!cont) return;
+    if (!cont) {
+      // FAB was removed from DOM — recreate it
+      cont = document.createElement('div');
+      cont.id = 'chat-popup-container';
+      cont.innerHTML = '<div id="chat-toggle-btn" onclick="window.toggleChatPopup&&window.toggleChatPopup()" style="width:56px;height:56px;border-radius:50%;background:#007BFF;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(0,0,0,.4);position:relative;"><i class="fas fa-comments"></i><span id="chat-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:#f5576c;color:#fff;border-radius:12px;padding:2px 6px;font-size:11px;font-weight:bold;min-width:20px;text-align:center;">0</span></div>';
+      var target = document.body || document.documentElement;
+      if (target) target.appendChild(cont);
+      console.log('[ChatPopup] FAB recreated by guardian');
+    }
     var chatOpen = cont.classList.contains('chat-is-open');
-    // Force container always visible
     cont.style.setProperty('position', 'fixed', 'important');
     cont.style.setProperty('display', 'block', 'important');
     cont.style.setProperty('visibility', 'visible', 'important');
@@ -20,7 +27,9 @@
     cont.style.setProperty('pointer-events', 'auto', 'important');
     cont.style.setProperty('bottom', '80px', 'important');
     cont.style.setProperty('right', '14px', 'important');
-    // Force button visible only when chat not open
+    cont.style.setProperty('transform', 'none', 'important');
+    cont.style.setProperty('clip', 'auto', 'important');
+    cont.style.setProperty('clip-path', 'none', 'important');
     var btn = document.getElementById('chat-toggle-btn');
     if (btn && !chatOpen) {
       btn.style.setProperty('display', 'flex', 'important');
@@ -29,24 +38,57 @@
     }
   }
 
-  // Run immediately (sync), then guard every 500ms
-  forceFABVisible();
-  setInterval(forceFABVisible, 500);
+  // Run immediately
+  ensureFAB();
 
-  // ---------- CREATE FAB IMMEDIATELY (synchronous, before DOMContentLoaded) ----------
-  // This runs when the script is parsed — no timing issues, no cache dependency
-  // Append to <html> not <body> to bypass any overflow:hidden on body
-  (function createFABNow() {
-    if (document.getElementById('chat-popup-container')) return; // already in HTML
-    var fab = document.createElement('div');
-    fab.id = 'chat-popup-container';
-    fab.style.cssText = 'position:fixed;bottom:80px;right:14px;z-index:2147483647;display:block;';
-    fab.innerHTML = '<div id="chat-toggle-btn" onclick="window.toggleChatPopup&&window.toggleChatPopup()" style="width:56px;height:56px;border-radius:50%;background:#007BFF;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(0,0,0,.4);position:relative;"><i class="fas fa-comments"></i><span id="chat-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:#f5576c;color:#fff;border-radius:12px;padding:2px 6px;font-size:11px;font-weight:bold;min-width:20px;text-align:center;">0</span></div>';
-    // Use documentElement so overflow:hidden on body doesn't clip this
-    var target = document.body || document.documentElement;
-    target.appendChild(fab);
-    forceFABVisible();
-  })();
+  // Guardian interval — every 200ms (faster than 500ms to catch quick removal)
+  setInterval(ensureFAB, 200);
+
+  // MutationObserver — instant detection if FAB is removed or attribute changed
+  function startObserver() {
+    if (!document.body) {
+      // body not ready yet, wait
+      setTimeout(startObserver, 10);
+      return;
+    }
+    var obs = new MutationObserver(function (mutations) {
+      var needsFix = false;
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        // Detect FAB removal
+        if (m.type === 'childList' && m.removedNodes) {
+          for (var j = 0; j < m.removedNodes.length; j++) {
+            var n = m.removedNodes[j];
+            if (n.id === 'chat-popup-container' || (n.querySelector && n.querySelector('#chat-popup-container'))) {
+              needsFix = true;
+              break;
+            }
+          }
+        }
+        // Detect style/class changes on FAB
+        if (m.type === 'attributes' && m.target && m.target.id === 'chat-popup-container') {
+          needsFix = true;
+        }
+        if (needsFix) break;
+      }
+      if (needsFix) ensureFAB();
+    });
+    obs.observe(document.body, { childList: true, subtree: false });
+    var c = document.getElementById('chat-popup-container');
+    if (c) obs.observe(c, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+    // Re-attach attribute observer if FAB gets recreated
+    setInterval(function () {
+      var c2 = document.getElementById('chat-popup-container');
+      if (c2 && !c2.__obsAttached) {
+        obs.observe(c2, { attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+        c2.__obsAttached = true;
+      }
+    }, 1000);
+  }
+  startObserver();
+
+  // Backwards-compat alias
+  var forceFABVisible = ensureFAB;
 
   // ---------- EARLY STUB FUNCTIONS for WebView onclick compatibility ----------
   // These will be replaced with real implementations after init
