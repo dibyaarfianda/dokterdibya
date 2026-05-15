@@ -1,6 +1,6 @@
 {
-  "name": "Dokter Dibya - Portal Pasien",
-  "short_name": "Dokter Dibya",
+  "name": "dokterDIBYA",
+  "short_name": "dokterDIBYA",
   "description": "Portal pasien untuk booking jadwal, riwayat kunjungan, dan informasi kesehatan",
   "start_url": "/patient-menu.html",
   "display": "standalone",
