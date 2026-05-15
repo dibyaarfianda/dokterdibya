@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260515v8';
+            var PAGE_VERSION = '20260515v9';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -607,7 +607,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260515chat7';
+            const SC_CACHE_VERSION = 'v20260515chat8';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1423,7 +1423,7 @@ PLAN
         })();
     </script>
     <!-- Global Chat Loader (must be after Socket.IO) -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v113"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v114"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v111"></script>
     <script src="/staff/public/scripts/chat-popup.js?v=v111"></script>
 
