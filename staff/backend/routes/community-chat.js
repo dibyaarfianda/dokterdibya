@@ -97,6 +97,38 @@ async function ensureSchema() {
     if (initPromise) return initPromise;
 
     initPromise = (async () => {
+        const ensureColumn = async (tableName, columnName, definition) => {
+            const [rows] = await db.query(
+                `SELECT 1
+                 FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = ?
+                   AND column_name = ?
+                 LIMIT 1`,
+                [tableName, columnName]
+            );
+
+            if (rows.length === 0) {
+                await db.query(`ALTER TABLE ${tableName} ADD COLUMN ${definition}`);
+            }
+        };
+
+        const ensureIndex = async (tableName, indexName, ddl) => {
+            const [rows] = await db.query(
+                `SELECT 1
+                 FROM information_schema.statistics
+                 WHERE table_schema = DATABASE()
+                   AND table_name = ?
+                   AND index_name = ?
+                 LIMIT 1`,
+                [tableName, indexName]
+            );
+
+            if (rows.length === 0) {
+                await db.query(ddl);
+            }
+        };
+
         await db.query(`
             CREATE TABLE IF NOT EXISTS community_chat_rooms (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -106,6 +138,9 @@ async function ensureSchema() {
                 color VARCHAR(7) NOT NULL DEFAULT '#2563eb',
                 created_by VARCHAR(64) NULL,
                 created_by_type ENUM('patient', 'staff') NULL,
+                is_direct TINYINT(1) NOT NULL DEFAULT 0,
+                direct_patient_id VARCHAR(64) NULL,
+                direct_staff_id VARCHAR(64) NULL,
                 is_system TINYINT(1) NOT NULL DEFAULT 0,
                 is_archived TINYINT(1) NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -113,6 +148,21 @@ async function ensureSchema() {
                 INDEX idx_active (is_archived, updated_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
+
+        await ensureColumn('community_chat_rooms', 'is_direct', 'is_direct TINYINT(1) NOT NULL DEFAULT 0 AFTER created_by_type');
+        await ensureColumn('community_chat_rooms', 'direct_patient_id', 'direct_patient_id VARCHAR(64) NULL AFTER is_direct');
+        await ensureColumn('community_chat_rooms', 'direct_staff_id', 'direct_staff_id VARCHAR(64) NULL AFTER direct_patient_id');
+
+        await ensureIndex(
+            'community_chat_rooms',
+            'idx_direct_patient',
+            'CREATE INDEX idx_direct_patient ON community_chat_rooms (direct_patient_id, is_archived)'
+        );
+        await ensureIndex(
+            'community_chat_rooms',
+            'idx_direct_staff',
+            'CREATE INDEX idx_direct_staff ON community_chat_rooms (direct_staff_id, is_archived)'
+        );
 
         await db.query(`
             CREATE TABLE IF NOT EXISTS community_chat_profiles (
@@ -179,13 +229,82 @@ async function ensureSchema() {
 
 async function getRoomBySlug(slug) {
     const [rows] = await db.query(
-        `SELECT id, slug, name, description, color, is_system, is_archived, created_by, created_by_type, created_at, updated_at
-         FROM community_chat_rooms
-         WHERE slug = ? AND is_archived = 0
+        `SELECT r.id, r.slug, r.name, r.description, r.color, r.is_system, r.is_archived, r.created_by, r.created_by_type,
+            r.is_direct, r.direct_patient_id, r.direct_staff_id,
+                p.full_name AS direct_patient_name,
+                u.name AS direct_staff_name,
+            r.created_at, r.updated_at
+         FROM community_chat_rooms r
+         LEFT JOIN patients p ON p.id = r.direct_patient_id
+         LEFT JOIN users u ON u.new_id = r.direct_staff_id
+         WHERE r.slug = ? AND r.is_archived = 0
          LIMIT 1`,
         [slug]
     );
     return rows[0] || null;
+}
+
+async function findActiveDirectRoom(staffUserId, patientId) {
+    const [rows] = await db.query(
+        `SELECT slug
+         FROM community_chat_rooms
+         WHERE is_archived = 0
+           AND is_direct = 1
+           AND direct_staff_id = ?
+           AND direct_patient_id = ?
+         ORDER BY updated_at DESC, id DESC
+         LIMIT 1`,
+        [staffUserId, patientId]
+    );
+
+    if (rows.length === 0) return null;
+    return getRoomBySlug(rows[0].slug);
+}
+
+function getRoomDisplayMeta(row, currentUserType, currentUserId) {
+    if (Number(row.is_direct) !== 1) {
+        return {
+            name: row.name,
+            description: row.description || '',
+            counterpart_name: null
+        };
+    }
+
+    if (currentUserType === 'patient') {
+        const staffName = row.direct_staff_name || 'Staff dokterDIBYA';
+        return {
+            name: `Chat dengan ${staffName}`,
+            description: 'Percakapan pribadi dengan staff',
+            counterpart_name: staffName
+        };
+    }
+
+    if (String(row.direct_staff_id || '') === String(currentUserId || '')) {
+        const patientName = row.direct_patient_name || `Pasien ${row.direct_patient_id || ''}`.trim();
+        return {
+            name: patientName,
+            description: 'Percakapan pribadi dengan pasien',
+            counterpart_name: patientName
+        };
+    }
+
+    return {
+        name: row.name || 'Chat Pasien',
+        description: row.description || 'Percakapan pribadi',
+        counterpart_name: null
+    };
+}
+
+function canAccessRoom(room, user) {
+    if (!room) return false;
+    if (Number(room.is_direct) !== 1) return true;
+
+    const userId = String(user.id);
+    if (isPatientUser(user)) {
+        return String(room.direct_patient_id || '') === userId;
+    }
+
+    return String(room.direct_staff_id || '') === userId;
 }
 
 async function resolveUserIdentity(user) {
@@ -293,17 +412,23 @@ function emitRoomListChanged() {
     ioRef.emit('community:rooms:changed', { at: new Date().toISOString() });
 }
 
-function mapRoom(row, currentUserType) {
+function mapRoom(row, currentUserType, currentUserId) {
+    const displayMeta = getRoomDisplayMeta(row, currentUserType, currentUserId);
     return {
         id: row.id,
         slug: row.slug,
-        name: row.name,
-        description: row.description || '',
+        name: displayMeta.name,
+        description: displayMeta.description,
         color: row.color || DEFAULT_ROOM_COLOR,
         is_system: row.is_system === 1,
+        is_direct: Number(row.is_direct) === 1,
+        direct_patient_id: row.direct_patient_id || null,
+        direct_staff_id: row.direct_staff_id || null,
+        counterpart_name: displayMeta.counterpart_name,
+        can_archive: Number(row.is_direct) === 1 && currentUserType === 'staff' && String(row.direct_staff_id || '') === String(currentUserId || ''),
         created_by: row.created_by,
         created_by_type: row.created_by_type,
-        is_owner: row.created_by && row.created_by === row.current_user_id && row.created_by_type === currentUserType,
+        is_owner: row.created_by && row.created_by === currentUserId && row.created_by_type === currentUserType,
         last_message_at: row.last_message_at,
         member_count: Number(row.member_count || 0)
     };
@@ -323,6 +448,9 @@ router.get('/rooms', verifyToken, async (req, res) => {
         const userId = String(req.user.id);
         const userType = isPatientUser(req.user) ? 'patient' : 'staff';
         const canCreate = await canCreateRoom(req.user);
+        const accessClause = userType === 'patient'
+            ? '(r.is_direct = 0 OR r.direct_patient_id = ?)'
+            : '(r.is_direct = 0 OR r.direct_staff_id = ?)';
 
         const [rows] = await db.query(
             `SELECT
@@ -334,6 +462,11 @@ router.get('/rooms', verifyToken, async (req, res) => {
                 r.is_system,
                 r.created_by,
                 r.created_by_type,
+                r.is_direct,
+                r.direct_patient_id,
+                r.direct_staff_id,
+                p.full_name AS direct_patient_name,
+                u.name AS direct_staff_name,
                 r.created_at,
                 r.updated_at,
                 MAX(m.created_at) AS last_message_at,
@@ -342,7 +475,10 @@ router.get('/rooms', verifyToken, async (req, res) => {
             FROM community_chat_rooms r
             LEFT JOIN community_chat_messages m ON m.room_id = r.id
             LEFT JOIN community_chat_room_moderators room_mod ON room_mod.room_id = r.id
+            LEFT JOIN patients p ON p.id = r.direct_patient_id
+            LEFT JOIN users u ON u.new_id = r.direct_staff_id
             WHERE r.is_archived = 0
+              AND ${accessClause}
             GROUP BY
                 r.id,
                 r.slug,
@@ -352,15 +488,20 @@ router.get('/rooms', verifyToken, async (req, res) => {
                 r.is_system,
                 r.created_by,
                 r.created_by_type,
+                r.is_direct,
+                r.direct_patient_id,
+                r.direct_staff_id,
+                p.full_name,
+                u.name,
                 r.created_at,
                 r.updated_at
             ORDER BY (r.slug = ?) DESC, COALESCE(MAX(m.created_at), r.created_at) DESC`,
-            [userId, DEFAULT_LOBBY_SLUG]
+            [userId, userId, DEFAULT_LOBBY_SLUG]
         );
 
         res.json({
             success: true,
-            rooms: rows.map((row) => mapRoom(row, userType)),
+            rooms: rows.map((row) => mapRoom(row, userType, userId)),
             permissions: {
                 can_create_room: canCreate,
                 is_vip: isPatientUser(req.user) ? canCreate : null
@@ -417,11 +558,87 @@ router.post('/rooms', verifyToken, async (req, res) => {
     }
 });
 
+router.post('/rooms/direct', verifyToken, async (req, res) => {
+    try {
+        if (!isStaffUser(req.user)) {
+            return res.status(403).json({ success: false, message: 'Hanya staff yang bisa memulai chat pasien' });
+        }
+
+        const staffUserId = String(req.user.id);
+        const patientId = normalizeText(req.body.patient_id);
+        const openingMessage = normalizeText(req.body.opening_message).slice(0, MAX_MESSAGE_LENGTH);
+
+        if (!patientId) {
+            return res.status(400).json({ success: false, message: 'Patient ID wajib diisi' });
+        }
+
+        const [patientRows] = await db.query(
+            'SELECT id, full_name FROM patients WHERE id = ? LIMIT 1',
+            [patientId]
+        );
+
+        if (patientRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
+        }
+
+        let room = await findActiveDirectRoom(staffUserId, patientId);
+
+        if (!room) {
+            const slug = `direct-${staffUserId}-${patientId}-${Math.random().toString(36).slice(2, 8)}`;
+            await db.query(
+                `INSERT INTO community_chat_rooms
+                    (slug, name, description, color, created_by, created_by_type, is_direct, direct_patient_id, direct_staff_id, is_system)
+                 VALUES (?, ?, ?, ?, ?, 'staff', 1, ?, ?, 0)`,
+                [
+                    slug,
+                    `Chat Pasien ${patientRows[0].full_name}`,
+                    'Percakapan pribadi staff dan pasien',
+                    '#16a34a',
+                    staffUserId,
+                    patientId,
+                    staffUserId
+                ]
+            );
+
+            room = await getRoomBySlug(slug);
+            emitRoomListChanged();
+        }
+
+        if (openingMessage) {
+            const identity = await resolveUserIdentity(req.user);
+            await db.query(
+                `INSERT INTO community_chat_messages
+                    (room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    room.id,
+                    identity.userId,
+                    identity.userType,
+                    identity.defaultName,
+                    identity.nickname,
+                    identity.avatarUrl,
+                    mapEmoticonToEmoji(openingMessage)
+                ]
+            );
+        }
+
+        const mappedRoom = mapRoom(room, 'staff', staffUserId);
+        res.json({ success: true, room: mappedRoom });
+    } catch (error) {
+        console.error('community create direct room error:', error);
+        res.status(500).json({ success: false, message: 'Gagal memulai chat pasien' });
+    }
+});
+
 router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
     try {
         const room = await getRoomBySlug(req.params.slug);
         if (!room) {
             return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
+        }
+
+        if (!canAccessRoom(room, req.user)) {
+            return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke room ini' });
         }
 
         const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
@@ -436,7 +653,7 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
 
         res.json({
             success: true,
-            room,
+            room: mapRoom(room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
             messages: rows.reverse()
         });
     } catch (error) {
@@ -450,6 +667,10 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
         const room = await getRoomBySlug(req.params.slug);
         if (!room) {
             return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
+        }
+
+        if (!canAccessRoom(room, req.user)) {
+            return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke room ini' });
         }
 
         const rawMessage = normalizeText(req.body.message);
@@ -503,6 +724,10 @@ router.delete('/rooms/:slug/messages/:messageId', verifyToken, async (req, res) 
         const room = await getRoomBySlug(req.params.slug);
         if (!room) {
             return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
+        }
+
+        if (!canAccessRoom(room, req.user)) {
+            return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke room ini' });
         }
 
         if (!(await isRoomModerator(room.id, req.user))) {
@@ -596,6 +821,10 @@ router.get('/rooms/:slug/moderators', verifyToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
         }
 
+        if (Number(room.is_direct) === 1) {
+            return res.status(400).json({ success: false, message: 'Chat pribadi tidak menggunakan moderator room' });
+        }
+
         const [rows] = await db.query(
             `SELECT m.staff_user_id, u.name, u.email, u.role_id, r.display_name AS role_display_name
              FROM community_chat_room_moderators m
@@ -634,6 +863,29 @@ router.get('/admin/staff-users', verifyToken, async (req, res) => {
     }
 });
 
+router.get('/admin/patient-users', verifyToken, async (req, res) => {
+    try {
+        if (!isStaffUser(req.user)) {
+            return res.status(403).json({ success: false, message: 'Hanya staff yang bisa memulai chat pasien' });
+        }
+
+        const search = `%${normalizeText(req.query.q).slice(0, 60)}%`;
+        const [rows] = await db.query(
+            `SELECT id, full_name, phone, email
+             FROM patients
+             WHERE (? = '%%' OR id LIKE ? OR full_name LIKE ? OR phone LIKE ? OR email LIKE ?)
+             ORDER BY full_name ASC
+             LIMIT 20`,
+            [search, search, search, search, search]
+        );
+
+        res.json({ success: true, patients: rows });
+    } catch (error) {
+        console.error('community patient users error:', error);
+        res.status(500).json({ success: false, message: 'Gagal memuat daftar pasien' });
+    }
+});
+
 router.put('/rooms/:slug/moderators', verifyToken, async (req, res) => {
     try {
         if (!isStaffUser(req.user)) {
@@ -643,6 +895,10 @@ router.put('/rooms/:slug/moderators', verifyToken, async (req, res) => {
         const room = await getRoomBySlug(req.params.slug);
         if (!room) {
             return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
+        }
+
+        if (Number(room.is_direct) === 1) {
+            return res.status(400).json({ success: false, message: 'Chat pribadi tidak menggunakan moderator room' });
         }
 
         const moderatorIds = Array.isArray(req.body.moderator_user_ids)
@@ -679,6 +935,29 @@ router.put('/rooms/:slug/moderators', verifyToken, async (req, res) => {
     }
 });
 
+router.post('/rooms/:slug/archive', verifyToken, async (req, res) => {
+    try {
+        const room = await getRoomBySlug(req.params.slug);
+        if (!room) {
+            return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
+        }
+
+        if (Number(room.is_direct) !== 1) {
+            return res.status(400).json({ success: false, message: 'Hanya chat pribadi yang dapat diakhiri dari menu ini' });
+        }
+
+        if (!isStaffUser(req.user) || String(room.direct_staff_id || '') !== String(req.user.id)) {
+            return res.status(403).json({ success: false, message: 'Hanya staff pembuka chat yang dapat mengakhiri percakapan' });
+        }
+
+        await router.archiveRoom(room.slug);
+        res.json({ success: true, message: 'Percakapan diakhiri oleh staff' });
+    } catch (error) {
+        console.error('community archive direct room error:', error);
+        res.status(500).json({ success: false, message: 'Gagal mengakhiri percakapan' });
+    }
+});
+
 router.archiveRoom = async function archiveRoom(slug) {
     await db.query('UPDATE community_chat_rooms SET is_archived = 1 WHERE slug = ?', [slug]);
     emitRoomListChanged();
@@ -696,9 +975,11 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
 
                 const user = jwt.verify(token, JWT_SECRET);
                 const room = await getRoomBySlug(roomSlug);
-                if (!room) return;
+                if (!room || !canAccessRoom(room, user)) return;
 
                 const roomKey = `community:${room.slug}`;
+                socket.data.communityRooms = socket.data.communityRooms || new Set();
+                socket.data.communityRooms.add(room.slug);
                 socket.join(roomKey);
                 socket.emit('community:joined', { room: room.slug });
 
@@ -715,12 +996,16 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
         socket.on('community:leave', (payload) => {
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
+            if (socket.data.communityRooms) {
+                socket.data.communityRooms.delete(roomSlug);
+            }
             socket.leave(`community:${roomSlug}`);
         });
 
         socket.on('community:typing', (payload) => {
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
+            if (!socket.data.communityRooms || !socket.data.communityRooms.has(roomSlug)) return;
             socket.to(`community:${roomSlug}`).emit('community:typing', {
                 room: roomSlug,
                 user_name: payload?.user_name || 'User',
@@ -731,6 +1016,7 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
         socket.on('community:stop-typing', (payload) => {
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
+            if (!socket.data.communityRooms || !socket.data.communityRooms.has(roomSlug)) return;
             socket.to(`community:${roomSlug}`).emit('community:stop-typing', {
                 room: roomSlug,
                 user_id: payload?.user_id || ''
