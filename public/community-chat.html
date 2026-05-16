@@ -312,6 +312,26 @@
             text-overflow: ellipsis;
         }
 
+        .room-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 6px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #e7f8ee;
+            color: #15803d;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            vertical-align: middle;
+        }
+
+        .room-badge.public {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
         .room-time {
             color: #8696a0;
             font-size: 11px;
@@ -433,6 +453,14 @@
             color: #90a4ae;
             background: #f8f9fb;
             cursor: not-allowed;
+        }
+
+        .chat-menu-item.danger {
+            color: #b42318;
+        }
+
+        .chat-menu-item.danger:hover {
+            background: #fef3f2;
         }
 
         .typing {
@@ -818,6 +846,66 @@
             padding: 16px;
         }
 
+        .patient-search-results {
+            display: grid;
+            gap: 8px;
+            max-height: 280px;
+            overflow: auto;
+        }
+
+        .patient-search-item {
+            width: 100%;
+            text-align: left;
+            border: 1px solid #dbe4ea;
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: #ffffff;
+            color: #12212c;
+        }
+
+        .patient-search-item.active {
+            border-color: #16a34a;
+            background: #f0fdf4;
+            box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.08);
+        }
+
+        .patient-search-name {
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .patient-search-meta {
+            color: #5f7280;
+            font-size: 12px;
+        }
+
+        .patient-search-empty {
+            border: 1px dashed #c9d7e1;
+            border-radius: 12px;
+            padding: 14px;
+            color: #60727f;
+            background: #f8fbfd;
+            font-size: 13px;
+        }
+
+        .direct-chat-selected {
+            display: none;
+            border: 1px solid #dbe4ea;
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: #f8fbfd;
+            color: #12212c;
+        }
+
+        .direct-chat-selected.show {
+            display: block;
+        }
+
+        .direct-chat-selected strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
         .menu-modal.show {
             display: flex;
         }
@@ -1194,6 +1282,8 @@
             <div class="chat-menu" id="chat-menu">
                 <button type="button" class="chat-menu-item" id="menu-room-picker"><i class="fa fa-comments"></i> Pilih Room</button>
                 <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
+                <button type="button" class="chat-menu-item" id="menu-direct-room" hidden><i class="fa fa-user-md"></i> Mulai Chat Pasien</button>
+                <button type="button" class="chat-menu-item danger" id="menu-archive-room" hidden><i class="fa fa-stop-circle"></i> Akhiri Percakapan</button>
                 <button type="button" class="chat-menu-item" id="menu-setting"><i class="fa fa-cog"></i> Setting</button>
                 <button type="button" class="chat-menu-item" id="menu-exit"><i class="fa fa-sign-out"></i> Keluar</button>
             </div>
@@ -1307,6 +1397,27 @@
     </div>
 </div>
 
+<div class="menu-modal" id="direct-room-modal">
+    <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="direct-room-title">
+        <div class="menu-modal-head">
+            <h2 class="menu-modal-title" id="direct-room-title">Mulai Chat Pasien</h2>
+            <button type="button" class="menu-modal-close" id="direct-room-close" title="Tutup"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="setting-group">
+            <label class="setting-label" for="direct-patient-search">Cari pasien</label>
+            <input id="direct-patient-search" placeholder="MR / nama / telepon / email pasien">
+            <p class="setting-note">Room akan tetap muncul untuk pasien sampai staff mengakhirinya.</p>
+        </div>
+        <div id="direct-chat-selected" class="direct-chat-selected"></div>
+        <div class="setting-group">
+            <label class="setting-label" for="direct-opening-message">Pesan pembuka</label>
+            <textarea id="direct-opening-message" rows="3" maxlength="500" placeholder="Halo, saya dari staff dokterDIBYA..."></textarea>
+        </div>
+        <div id="direct-patient-results" class="patient-search-results"></div>
+        <button id="direct-room-create-btn"><i class="fa fa-paper-plane"></i> Mulai Chat</button>
+    </div>
+</div>
+
 <div class="menu-modal" id="room-picker-modal">
     <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="room-picker-title">
         <div class="menu-modal-head">
@@ -1343,6 +1454,9 @@
     let typingTimeout = null;
     let isStaff = false;
     let canCreateRoomPermission = false;
+    let patientSearchTimer = null;
+    let directPatientResults = [];
+    let selectedDirectPatient = null;
     let renderedMessageIds = new Set();
     let quotedMessage = null;
     let stableAppHeight = 0;
@@ -1365,13 +1479,17 @@
         chatMenu: document.getElementById('chat-menu'),
         menuRoomPicker: document.getElementById('menu-room-picker'),
         menuCreateRoom: document.getElementById('menu-create-room'),
+        menuDirectRoom: document.getElementById('menu-direct-room'),
+        menuArchiveRoom: document.getElementById('menu-archive-room'),
         menuSetting: document.getElementById('menu-setting'),
         menuExit: document.getElementById('menu-exit'),
         createRoomModal: document.getElementById('create-room-modal'),
         settingModal: document.getElementById('setting-modal'),
+        directRoomModal: document.getElementById('direct-room-modal'),
         roomPickerModal: document.getElementById('room-picker-modal'),
         createRoomClose: document.getElementById('create-room-close'),
         settingClose: document.getElementById('setting-close'),
+        directRoomClose: document.getElementById('direct-room-close'),
         roomPickerClose: document.getElementById('room-picker-close'),
         settingTheme: document.getElementById('setting-theme'),
         settingWallpaper: document.getElementById('setting-wallpaper'),
@@ -1397,6 +1515,11 @@
         createRoomBtn: document.getElementById('create-room-btn'),
         roomCreatePanel: document.getElementById('room-create-panel'),
         roomCreateNote: document.getElementById('room-create-note'),
+        directPatientSearch: document.getElementById('direct-patient-search'),
+        directPatientResults: document.getElementById('direct-patient-results'),
+        directChatSelected: document.getElementById('direct-chat-selected'),
+        directOpeningMessage: document.getElementById('direct-opening-message'),
+        directRoomCreateBtn: document.getElementById('direct-room-create-btn'),
         moderatorPanel: document.getElementById('moderator-panel'),
         moderatorPanelClose: document.getElementById('moderator-panel-close'),
         moderatorToggleBtn: document.getElementById('moderator-toggle-btn'),
@@ -1458,6 +1581,37 @@
         }
         if (el.roomCreateNote) {
             el.roomCreateNote.style.display = allowed ? 'none' : 'block';
+        }
+    }
+
+    function syncDirectRoomActions() {
+        if (el.menuDirectRoom) {
+            el.menuDirectRoom.hidden = !isStaff;
+        }
+
+        const canArchive = !!(isStaff && activeRoom && activeRoom.can_archive);
+        if (el.menuArchiveRoom) {
+            el.menuArchiveRoom.hidden = !canArchive;
+            el.menuArchiveRoom.disabled = !canArchive;
+        }
+    }
+
+    function updateModeratorUi() {
+        const canManageModerators = !!(isStaff && activeRoom && !activeRoom.is_direct);
+        el.moderatorPanel.classList.toggle('show', canManageModerators);
+
+        if (!canManageModerators) {
+            el.moderatorToggleBtn.classList.remove('show');
+            setModeratorPanelExpanded(false);
+            return;
+        }
+
+        if (useCompactModerator) {
+            el.moderatorToggleBtn.classList.add('show');
+            setModeratorPanelExpanded(false);
+        } else {
+            el.moderatorToggleBtn.classList.remove('show');
+            setModeratorPanelExpanded(true);
         }
     }
 
@@ -1621,6 +1775,125 @@
         }, 0);
     }
 
+    function setSelectedDirectPatient(patient) {
+        selectedDirectPatient = patient || null;
+
+        if (!selectedDirectPatient) {
+            el.directChatSelected.classList.remove('show');
+            el.directChatSelected.innerHTML = '';
+            return;
+        }
+
+        el.directChatSelected.classList.add('show');
+        el.directChatSelected.innerHTML = `
+            <strong>${escapeHtml(selectedDirectPatient.full_name || selectedDirectPatient.id)}</strong>
+            <div class="patient-search-meta">MR: ${escapeHtml(selectedDirectPatient.id || '-')} • ${escapeHtml(selectedDirectPatient.phone || selectedDirectPatient.email || 'Kontak tidak tersedia')}</div>
+        `;
+    }
+
+    function renderDirectPatientResults() {
+        if (!el.directPatientResults) return;
+
+        if (!directPatientResults.length) {
+            el.directPatientResults.innerHTML = '<div class="patient-search-empty">Tidak ada pasien yang cocok. Coba cari dengan nama atau nomor MR.</div>';
+            return;
+        }
+
+        el.directPatientResults.innerHTML = directPatientResults.map((patient) => {
+            const active = selectedDirectPatient && String(selectedDirectPatient.id) === String(patient.id) ? 'active' : '';
+            return `
+                <button type="button" class="patient-search-item ${active}" data-patient-id="${escapeHtml(patient.id)}">
+                    <div class="patient-search-name">${escapeHtml(patient.full_name || patient.id)}</div>
+                    <div class="patient-search-meta">MR: ${escapeHtml(patient.id || '-')} • ${escapeHtml(patient.phone || patient.email || 'Kontak tidak tersedia')}</div>
+                </button>
+            `;
+        }).join('');
+
+        el.directPatientResults.querySelectorAll('.patient-search-item').forEach((button) => {
+            button.addEventListener('click', () => {
+                const patientId = button.getAttribute('data-patient-id');
+                const patient = directPatientResults.find((entry) => String(entry.id) === String(patientId));
+                setSelectedDirectPatient(patient || null);
+                renderDirectPatientResults();
+            });
+        });
+    }
+
+    async function searchDirectPatients(query) {
+        if (!isStaff) return;
+        const search = (query || '').trim();
+        const data = await api(`/admin/patient-users?q=${encodeURIComponent(search)}`);
+        directPatientResults = data.patients || [];
+
+        if (selectedDirectPatient) {
+            const refreshedSelection = directPatientResults.find((entry) => String(entry.id) === String(selectedDirectPatient.id));
+            if (refreshedSelection) {
+                selectedDirectPatient = refreshedSelection;
+            }
+        }
+
+        renderDirectPatientResults();
+    }
+
+    function openDirectRoomModal() {
+        if (!isStaff) return;
+        setSelectedDirectPatient(null);
+        directPatientResults = [];
+        el.directPatientSearch.value = '';
+        el.directOpeningMessage.value = '';
+        el.directPatientResults.innerHTML = '<div class="patient-search-empty">Memuat daftar pasien...</div>';
+        setModalOpen(el.directRoomModal, true);
+        setTimeout(() => {
+            el.directPatientSearch.focus();
+        }, 0);
+        searchDirectPatients('').catch((error) => {
+            el.directPatientResults.innerHTML = `<div class="patient-search-empty">${escapeHtml(error.message)}</div>`;
+        });
+    }
+
+    async function createDirectRoom() {
+        if (!isStaff) return;
+        if (!selectedDirectPatient) {
+            showToast('Pilih pasien terlebih dahulu', 'warning');
+            return;
+        }
+
+        try {
+            const data = await api('/rooms/direct', {
+                method: 'POST',
+                body: JSON.stringify({
+                    patient_id: selectedDirectPatient.id,
+                    opening_message: el.directOpeningMessage.value.trim()
+                })
+            });
+
+            setModalOpen(el.directRoomModal, false);
+            await loadRooms(false);
+            await openRoom(data.room.slug);
+            showToast('Chat pasien berhasil dimulai', 'success');
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function archiveActiveRoom() {
+        if (!activeRoom || !activeRoom.can_archive) return;
+
+        const confirmed = window.confirm('Akhiri percakapan ini? Room akan hilang dari pasien sampai staff memulai chat baru.');
+        if (!confirmed) return;
+
+        try {
+            await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/archive`, {
+                method: 'POST'
+            });
+            showToast('Percakapan diakhiri', 'success');
+            activeRoom = null;
+            await loadRooms(false);
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
     function initChatMenu() {
         el.chatMenuBtn.addEventListener('click', (event) => {
             event.stopPropagation();
@@ -1637,6 +1910,20 @@
             openCreateRoomModal();
         });
 
+        if (el.menuDirectRoom) {
+            el.menuDirectRoom.addEventListener('click', () => {
+                toggleChatMenu(false);
+                openDirectRoomModal();
+            });
+        }
+
+        if (el.menuArchiveRoom) {
+            el.menuArchiveRoom.addEventListener('click', () => {
+                toggleChatMenu(false);
+                archiveActiveRoom();
+            });
+        }
+
         el.menuSetting.addEventListener('click', () => {
             toggleChatMenu(false);
             setModalOpen(el.settingModal, true);
@@ -1649,7 +1936,18 @@
 
         el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
         el.settingClose.addEventListener('click', () => setModalOpen(el.settingModal, false));
+        el.directRoomClose.addEventListener('click', () => setModalOpen(el.directRoomModal, false));
         el.roomPickerClose.addEventListener('click', () => setModalOpen(el.roomPickerModal, false));
+        el.directRoomCreateBtn.addEventListener('click', createDirectRoom);
+
+        el.directPatientSearch.addEventListener('input', (event) => {
+            clearTimeout(patientSearchTimer);
+            patientSearchTimer = setTimeout(() => {
+                searchDirectPatients(event.target.value).catch((error) => {
+                    el.directPatientResults.innerHTML = `<div class="patient-search-empty">${escapeHtml(error.message)}</div>`;
+                });
+            }, 220);
+        });
 
         el.settingTheme.addEventListener('change', (event) => {
             uiSettings.theme = event.target.value === 'dark' ? 'dark' : 'light';
@@ -1700,7 +1998,7 @@
             showToast('Wallpaper dihapus', 'success');
         });
 
-        [el.createRoomModal, el.settingModal, el.roomPickerModal].forEach((modal) => {
+        [el.createRoomModal, el.settingModal, el.directRoomModal, el.roomPickerModal].forEach((modal) => {
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) setModalOpen(modal, false);
             });
@@ -1711,6 +2009,7 @@
                 toggleChatMenu(false);
                 setModalOpen(el.createRoomModal, false);
                 setModalOpen(el.settingModal, false);
+                setModalOpen(el.directRoomModal, false);
                 setModalOpen(el.roomPickerModal, false);
             }
         });
@@ -1778,15 +2077,18 @@
             const active = activeRoom && activeRoom.slug === room.slug ? 'active' : '';
             const roomColor = room.color || '#2563eb';
             const roomTime = formatRoomTime(room.last_message_at || room.created_at);
+            const badge = room.is_direct
+                ? '<span class="room-badge">Chat Pasien</span>'
+                : '<span class="room-badge public">Publik</span>';
             return `
                 <div class="room-item ${active}" data-room="${room.slug}" style="border-left-color:${roomColor}">
                     <div class="room-avatar" style="background:${roomColor}">${getInitials(room.name)}</div>
                     <div class="room-content">
                         <div class="room-row-top">
-                            <div class="room-name">${room.name}</div>
+                            <div class="room-name">${escapeHtml(room.name)} ${badge}</div>
                             <div class="room-time">${roomTime}</div>
                         </div>
-                        <div class="room-meta">${room.description || 'Room komunitas'}</div>
+                        <div class="room-meta">${escapeHtml(room.description || 'Room komunitas')}</div>
                     </div>
                 </div>
             `;
@@ -2087,15 +2389,10 @@
             socket.emit('community:join', { room: data.room.slug, token });
         }
 
-        if (isStaff) {
-            el.moderatorPanel.classList.add('show');
-            if (useCompactModerator) {
-                el.moderatorToggleBtn.classList.add('show');
-                setModeratorPanelExpanded(false);
-            } else {
-                el.moderatorToggleBtn.classList.remove('show');
-                setModeratorPanelExpanded(true);
-            }
+        syncDirectRoomActions();
+        updateModeratorUi();
+
+        if (isStaff && !activeRoom.is_direct) {
             await loadStaffModerators();
         }
     }
@@ -2186,9 +2483,19 @@
         rooms = data.rooms || [];
         canCreateRoomPermission = !!(data.permissions && data.permissions.can_create_room);
         applyCreateRoomPermission();
+        syncDirectRoomActions();
         renderRooms();
 
-        if (rooms.length === 0) return;
+        if (rooms.length === 0) {
+            activeRoom = null;
+            return;
+        }
+
+        const activeStillExists = activeRoom && rooms.some((room) => room.slug === activeRoom.slug);
+        if (activeRoom && !activeStillExists) {
+            activeRoom = null;
+            showToast('Room aktif sudah tidak tersedia.', 'warning');
+        }
 
         if (forceLobby) {
             const lobbyForced = rooms.find((r) => r.slug === 'lobby');
@@ -2385,6 +2692,7 @@
 
         isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
         updateStatusChips();
+        syncDirectRoomActions();
 
         loadUiSettings();
         applyUiSettings();
