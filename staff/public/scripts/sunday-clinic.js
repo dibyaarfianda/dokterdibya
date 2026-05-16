@@ -8,8 +8,8 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.21 - Medify prefill now replaces stale Gambiran/Melinda section data and clears outdated planning fields
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.21';
+// Version 2.1.22 - fix live queue exam action bar visibility for klinik private visits
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.22';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';

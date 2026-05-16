@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260516f'; // 2026-05-16 - add visible live queue card to regular patient portal
+const CACHE_VERSION = '20260516j'; // 2026-05-16 - push subscription status indicator on queue reminder page
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

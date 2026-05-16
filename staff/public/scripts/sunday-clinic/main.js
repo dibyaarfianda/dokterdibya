@@ -2541,7 +2541,10 @@ class SundayClinicApp {
             const btn = document.getElementById('btn-periksa-pasien');
             const bar = document.getElementById('exam-action-bar');
             const isPrivat = rec.visit_location === 'klinik_private';
-            if (bar) bar.style.display = isPrivat ? '' : 'none';
+            if (bar) {
+                bar.classList.toggle('show-bar', isPrivat);
+                bar.style.display = isPrivat ? 'flex' : 'none';
+            }
             if (btn) {
                 const canStart = isPrivat && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
                 btn.style.display = canStart ? '' : 'none';

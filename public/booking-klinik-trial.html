@@ -707,7 +707,7 @@
         <!-- Step 1: Select Date -->
         <div class="booking-step active" id="step-1">
             <h2 class="step-title">Pilih Tanggal</h2>
-            <p class="step-desc">Janji temu tersedia setiap hari Minggu</p>
+            <p class="step-desc">Pilih hari praktik yang tersedia untuk booking</p>
             <div id="date-loading" class="loading">
                 <i class="fa-solid fa-spinner fa-spin"></i> Memuat tanggal...
             </div>
@@ -930,7 +930,7 @@
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
                 return `
                     <div class="date-card" data-date="${sunday.date}" data-formatted="${sunday.formatted}">
-                        <div class="day">Minggu</div>
+                        <div class="day">${sunday.dayName || sunday.day_name || 'Hari Praktik'}</div>
                         <div class="date">${dateStr}</div>
                     </div>
                 `;

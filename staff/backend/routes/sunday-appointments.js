@@ -7,6 +7,9 @@ const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
 
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+let bookingSettingsDaySchemaReady = false;
+
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -29,9 +32,47 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-// Helper function to get next Sundays
-function getNextSundays(count = 8) {
-    const sundays = [];
+function getDayName(dayOfWeek) {
+    return DAY_NAMES[dayOfWeek] || 'Tidak diketahui';
+}
+
+async function ensureBookingSettingsDayColumn() {
+    if (bookingSettingsDaySchemaReady) {
+        return;
+    }
+
+    const [rows] = await db.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()
+           AND table_name = 'booking_settings'
+           AND column_name = 'day_of_week'
+         LIMIT 1`
+    );
+
+    if (rows.length === 0) {
+        await db.query(
+            `ALTER TABLE booking_settings
+             ADD COLUMN day_of_week TINYINT NOT NULL DEFAULT 0 AFTER session_name`
+        );
+    }
+
+    bookingSettingsDaySchemaReady = true;
+}
+
+// Helper function to get next available practice dates based on configured days
+function getNextPracticeDates(availableDays, count = 8) {
+    const practiceDates = [];
+    const normalizedDays = Array.from(new Set(
+        availableDays
+            .map(day => Number.parseInt(day, 10))
+            .filter(day => Number.isInteger(day) && day >= 0 && day <= 6)
+    ));
+
+    if (!normalizedDays.length) {
+        normalizedDays.push(0);
+    }
+
     // Use GMT+7 (Jakarta/Indonesian time) - getGMT7Date returns a Date object
     const now = getGMT7Date();
     const year = now.getFullYear();
@@ -42,34 +83,34 @@ function getNextSundays(count = 8) {
     // Create date at midnight for today
     let current = new Date(year, month, day, 0, 0, 0, 0);
 
-    // Check if today is Sunday and it's before 9 PM (21:00)
-    const isTodaySunday = current.getDay() === 0;
+    // Check if today is a configured practice day and it's before 9 PM (21:00)
+    const isTodayPracticeDay = normalizedDays.includes(current.getDay());
     const isBeforeCutoff = currentHour < 21; // Before 9 PM
 
-    // If today is Sunday and before 9 PM, include today
-    if (isTodaySunday && isBeforeCutoff) {
+    // If today is a configured practice day and before 9 PM, include today
+    if (isTodayPracticeDay && isBeforeCutoff) {
         // Create UTC date for API response
         const todayUtc = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-        sundays.push(todayUtc);
+        practiceDates.push(todayUtc);
     }
 
     // Continue from tomorrow
     current.setDate(current.getDate() + 1);
 
-    while (sundays.length < count) {
-        if (current.getDay() === 0) { // Sunday
-            const sundayUtc = new Date(Date.UTC(
+    while (practiceDates.length < count) {
+        if (normalizedDays.includes(current.getDay())) {
+            const practiceDateUtc = new Date(Date.UTC(
                 current.getFullYear(),
                 current.getMonth(),
                 current.getDate(),
                 0, 0, 0, 0
             ));
-            sundays.push(sundayUtc);
+            practiceDates.push(practiceDateUtc);
         }
         current.setDate(current.getDate() + 1);
     }
 
-    return sundays;
+    return practiceDates;
 }
 
 // Cache for session settings
@@ -79,6 +120,7 @@ const CACHE_TTL = 60000; // 1 minute cache
 
 // Helper function to get session settings from database
 async function getSessionSettings() {
+    await ensureBookingSettingsDayColumn();
     const now = Date.now();
     if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
         return sessionSettingsCache;
@@ -86,13 +128,15 @@ async function getSessionSettings() {
 
     try {
         const [settings] = await db.query(
-            `SELECT session_number, session_name, start_time, end_time, slot_duration, max_slots
+            `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time, slot_duration, max_slots
              FROM booking_settings WHERE is_active = 1 ORDER BY session_number ASC`
         );
 
         sessionSettingsCache = settings.map(s => ({
             session: s.session_number,
             name: s.session_name,
+            dayOfWeek: Number.parseInt(s.day_of_week, 10) || 0,
+            dayName: getDayName(Number.parseInt(s.day_of_week, 10) || 0),
             startTime: s.start_time.substring(0, 5),
             endTime: s.end_time.substring(0, 5),
             slotDuration: s.slot_duration,
@@ -105,11 +149,17 @@ async function getSessionSettings() {
         console.error('Error fetching session settings:', error);
         // Fallback to default if DB fails
         return [
-            { session: 1, name: 'Pagi', startTime: '09:00', endTime: '11:30', slotDuration: 15, maxSlots: 10, label: '09:00 - 11:30 (Pagi)' },
-            { session: 2, name: 'Siang', startTime: '12:00', endTime: '14:30', slotDuration: 15, maxSlots: 10, label: '12:00 - 14:30 (Siang)' },
-            { session: 3, name: 'Sore', startTime: '15:00', endTime: '17:30', slotDuration: 15, maxSlots: 10, label: '15:00 - 17:30 (Sore)' }
+            { session: 1, name: 'Pagi', dayOfWeek: 0, dayName: 'Minggu', startTime: '09:00', endTime: '11:30', slotDuration: 15, maxSlots: 10, label: '09:00 - 11:30 (Pagi)' },
+            { session: 2, name: 'Siang', dayOfWeek: 0, dayName: 'Minggu', startTime: '12:00', endTime: '14:30', slotDuration: 15, maxSlots: 10, label: '12:00 - 14:30 (Siang)' },
+            { session: 3, name: 'Sore', dayOfWeek: 0, dayName: 'Minggu', startTime: '15:00', endTime: '17:30', slotDuration: 15, maxSlots: 10, label: '15:00 - 17:30 (Sore)' }
         ];
     }
+}
+
+async function getConfiguredPracticeDays() {
+    const settings = await getSessionSettings();
+    const days = Array.from(new Set(settings.map(setting => setting.dayOfWeek))).sort((left, right) => left - right);
+    return days.length ? days : [0];
 }
 
 // Helper function to get session time label (async version with fallback)
@@ -215,13 +265,14 @@ router.get('/available', verifyToken, async (req, res) => {
         // Parse date in UTC to avoid timezone issues
         const appointmentDate = new Date(date + 'T00:00:00Z');
         const dayOfWeek = appointmentDate.getUTCDay();
+        const sessionSettings = await getSessionSettings();
+        const availableSessions = sessionSettings.filter(setting => setting.dayOfWeek === dayOfWeek);
         
         console.log('Available slots request:', { date, dayOfWeek, dateObj: appointmentDate });
         
-        // Check if it's a Sunday (0 = Sunday)
-        if (dayOfWeek !== 0) {
+        if (availableSessions.length === 0) {
             return res.status(400).json({
-                message: 'Janji temu hanya tersedia di hari Minggu',
+                message: `Janji temu tidak tersedia di hari ${getDayName(dayOfWeek)}`,
                 debug: { date, dayOfWeek, dateObj: appointmentDate.toISOString() }
             });
         }
@@ -245,11 +296,8 @@ router.get('/available', verifyToken, async (req, res) => {
             [date]
         );
 
-        // Get dynamic session settings from database
-        const sessionSettings = await getSessionSettings();
-
         // Build available slots structure from dynamic settings
-        const sessions = sessionSettings.map(setting => ({
+        const sessions = availableSessions.map(setting => ({
             session: setting.session,
             label: setting.label,
             slots: []
@@ -257,7 +305,7 @@ router.get('/available', verifyToken, async (req, res) => {
 
         // Populate slots for each session
         for (const sessionObj of sessions) {
-            const setting = sessionSettings.find(s => s.session === sessionObj.session);
+            const setting = availableSessions.find(s => s.session === sessionObj.session);
             const maxSlots = setting ? setting.maxSlots : 10;
 
             for (let slot = 1; slot <= maxSlots; slot++) {
@@ -275,7 +323,7 @@ router.get('/available', verifyToken, async (req, res) => {
         
         res.json({
             date,
-            dayOfWeek: 'Minggu',
+            dayOfWeek: getDayName(dayOfWeek),
             sessions
         });
         
@@ -287,12 +335,13 @@ router.get('/available', verifyToken, async (req, res) => {
 
 /**
  * GET /api/sunday-appointments/sundays
- * Get list of next available Sundays (excluding disabled dates)
+ * Get list of next available practice dates (excluding disabled dates)
  */
 router.get('/sundays', verifyToken, async (req, res) => {
     try {
-        const sundays = getNextSundays(8);
-        const formattedSundays = sundays.map(date => ({
+        const configuredDays = await getConfiguredPracticeDays();
+        const practiceDates = getNextPracticeDates(configuredDays, 8);
+        const formattedSundays = practiceDates.map(date => ({
             date: date.toISOString().split('T')[0],
             formatted: date.toLocaleDateString('id-ID', {
                 weekday: 'long',
@@ -301,7 +350,8 @@ router.get('/sundays', verifyToken, async (req, res) => {
                 day: 'numeric',
                 timeZone: 'UTC'
             }),
-            dayOfWeek: date.getUTCDay() // Should be 0 for Sunday
+            dayOfWeek: date.getUTCDay(),
+            dayName: getDayName(date.getUTCDay())
         }));
 
         // Check for disabled dates (klinik_privat or all locations)
@@ -321,13 +371,13 @@ router.get('/sundays', verifyToken, async (req, res) => {
             return `${y}-${m}-${day}`;
         }));
 
-        // Filter out disabled Sundays
+        // Filter out disabled dates
         const availableSundays = formattedSundays.filter(s => !disabledSet.has(s.date));
 
-        console.log('Sundays generated:', formattedSundays.length, 'Available:', availableSundays.length);
-        res.json({ sundays: availableSundays });
+        console.log('Practice dates generated:', formattedSundays.length, 'Available:', availableSundays.length);
+        res.json({ sundays: availableSundays, dates: availableSundays });
     } catch (error) {
-        console.error('Error getting sundays:', error);
+        console.error('Error getting practice dates:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
     }
 });
@@ -347,10 +397,15 @@ router.post('/book', verifyToken, async (req, res) => {
 
         // Get dynamic session settings for validation
         const sessionSettings = await getSessionSettings();
-        const validSessions = sessionSettings.map(s => s.session);
         const sessionSetting = sessionSettings.find(s => s.session === parseInt(session));
+        const appointmentDate = new Date(appointment_date + 'T00:00:00Z');
+        const appointmentDayOfWeek = appointmentDate.getUTCDay();
 
-        if (!validSessions.includes(parseInt(session))) {
+        const validSessions = sessionSettings
+            .filter(s => s.dayOfWeek === appointmentDayOfWeek)
+            .map(s => s.session);
+
+        if (!sessionSetting || !validSessions.includes(parseInt(session))) {
             return res.status(400).json({ message: `Sesi tidak valid (pilihan: ${validSessions.join(', ')})` });
         }
 
@@ -359,9 +414,10 @@ router.post('/book', verifyToken, async (req, res) => {
             return res.status(400).json({ message: `Nomor slot harus antara 1-${maxSlots}` });
         }
         
-        const appointmentDate = new Date(appointment_date);
-        if (appointmentDate.getDay() !== 0) {
-            return res.status(400).json({ message: 'Janji temu hanya tersedia di hari Minggu' });
+        if (sessionSetting.dayOfWeek !== appointmentDayOfWeek) {
+            return res.status(400).json({
+                message: `Sesi ini hanya tersedia di hari ${sessionSetting.dayName}`
+            });
         }
 
         // Check if date is disabled
@@ -401,7 +457,7 @@ router.post('/book', verifyToken, async (req, res) => {
             return res.status(409).json({ message: 'Slot ini sudah dibooking oleh pasien lain' });
         }
         
-        // Check if patient already has any upcoming Sunday appointment
+        // Check if patient already has any upcoming appointment
         const [patientExisting] = await db.query(
             `SELECT id, appointment_date, session, slot_number FROM sunday_appointments 
              WHERE patient_id = ? 
@@ -414,7 +470,7 @@ router.post('/book', verifyToken, async (req, res) => {
             const existingAppt = patientExisting[0];
             const existingDate = new Date(existingAppt.appointment_date);
             return res.status(409).json({ 
-                message: `Anda sudah memiliki janji temu di Klinik Privat Minggu pada ${existingDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabel(existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.` 
+                message: `Anda sudah memiliki janji temu di Klinik Privat pada ${existingDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabel(existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.` 
             });
         }
         

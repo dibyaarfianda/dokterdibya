@@ -74,6 +74,31 @@ function getUpcomingSunday(reference = new Date()) {
     return base;
 }
 
+async function getNextPracticeDate(token) {
+    try {
+        const response = await fetch(`${API_BASE}/sundays`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch practice dates');
+        }
+
+        const payload = await response.json();
+        const firstDate = Array.isArray(payload.sundays) && payload.sundays.length > 0 ? payload.sundays[0].date : null;
+
+        if (!firstDate) {
+            return null;
+        }
+
+        const parsed = new Date(`${firstDate}T00:00:00`);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    } catch (error) {
+        console.warn('Klinik Private: gagal mengambil tanggal praktik terdekat, fallback ke Minggu.', error);
+        return null;
+    }
+}
+
 function formatDateIso(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -437,17 +462,17 @@ async function loadUpcomingAppointments({ force = false } = {}) {
         return;
     }
 
-    const upcomingSunday = getUpcomingSunday();
-    state.selectedDate = upcomingSunday;
+    const practiceDate = await getNextPracticeDate(token) || getUpcomingSunday();
+    state.selectedDate = practiceDate;
 
     if (elements.dateLabel) {
-        elements.dateLabel.textContent = formatDateLabel(upcomingSunday);
+        elements.dateLabel.textContent = formatDateLabel(practiceDate);
     }
 
     setLoading(true);
 
     try {
-        const response = await fetch(`${API_BASE}/list?date=${formatDateIso(upcomingSunday)}`, {
+        const response = await fetch(`${API_BASE}/list?date=${formatDateIso(practiceDate)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
