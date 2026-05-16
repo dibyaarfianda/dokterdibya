@@ -5,6 +5,7 @@
     'use strict';
 
     const API_BASE = '/api/booking-settings';
+    const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     let settings = [];
     let bookings = [];
     let isLoading = false;
@@ -115,6 +116,7 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        <p class="text-center text-muted mb-2"><i class="far fa-calendar-alt mr-1"></i>${s.day_name || DAY_NAMES[s.day_of_week] || 'Minggu'}</p>
                         <h4 class="text-center mb-3">
                             <span class="text-primary">${s.start_time}</span> - <span class="text-primary">${s.end_time}</span>
                         </h4>
@@ -174,6 +176,7 @@
             document.getElementById('session-number').value = session.session_number;
             document.getElementById('session-number').disabled = true; // Can't change session number
             document.getElementById('session-name').value = session.session_name;
+            document.getElementById('session-day-of-week').value = String(session.day_of_week ?? 0);
             document.getElementById('session-start-time').value = session.start_time;
             document.getElementById('session-end-time').value = session.end_time;
             document.getElementById('session-slot-duration').value = session.slot_duration;
@@ -184,6 +187,7 @@
             title.textContent = 'Tambah Sesi Baru';
             document.getElementById('session-number').disabled = false;
             // Default values
+            document.getElementById('session-day-of-week').value = '0';
             document.getElementById('session-slot-duration').value = '15';
             document.getElementById('session-max-slots').value = '10';
             document.getElementById('session-is-active').checked = true;
@@ -213,6 +217,7 @@
         const data = {
             session_number: parseInt(document.getElementById('session-number').value),
             session_name: document.getElementById('session-name').value.trim(),
+            day_of_week: parseInt(document.getElementById('session-day-of-week').value),
             start_time: document.getElementById('session-start-time').value,
             end_time: document.getElementById('session-end-time').value,
             slot_duration: parseInt(document.getElementById('session-slot-duration').value),
@@ -221,7 +226,7 @@
         };
 
         // Validation
-        if (!data.session_name || !data.start_time || !data.end_time) {
+        if (!data.session_name || Number.isNaN(data.day_of_week) || !data.start_time || !data.end_time) {
             showToast('Harap isi semua field yang wajib', 'error');
             return;
         }

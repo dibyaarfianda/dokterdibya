@@ -4114,6 +4114,23 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
+                                                <label for="session-day-of-week">Hari Praktik <span class="text-danger">*</span></label>
+                                                <select class="form-control" id="session-day-of-week" required>
+                                                    <option value="0">Minggu</option>
+                                                    <option value="1">Senin</option>
+                                                    <option value="2">Selasa</option>
+                                                    <option value="3">Rabu</option>
+                                                    <option value="4">Kamis</option>
+                                                    <option value="5">Jumat</option>
+                                                    <option value="6">Sabtu</option>
+                                                </select>
+                                                <small class="text-muted">Hari yang akan muncul di pilihan booking pasien</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
                                                 <label for="session-start-time">Waktu Mulai <span class="text-danger">*</span></label>
                                                 <input type="time" class="form-control" id="session-start-time" required>
                                             </div>
@@ -7571,7 +7588,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v124';
+    window.__assetVersion = 'v126';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 

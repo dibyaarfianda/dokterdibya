@@ -10,6 +10,9 @@ const { findRecordByMrId } = require('../services/sundayClinicService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
 const sundayClinicMedifySyncQueue = require('../services/sundayClinicMedifySyncQueue');
+const patientNotifications = require('./patient-notifications');
+
+const createPatientNotification = patientNotifications.createPatientNotification;
 
 // Import realtime sync for broadcasting notifications
 let realtimeSync = null;
@@ -842,6 +845,123 @@ function computeQueueStatus(apt) {
     return 'menunggu';
 }
 
+function isQueueClosedStatus(status) {
+    return status === 'selesai_periksa' || status === 'lunas' || status === 'selesai';
+}
+
+async function loadTodayQueueForReminderChecks() {
+    const { dateStr: todayStr, startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
+    const [rows] = await db.query(
+        `SELECT
+            sa.patient_id,
+            sa.appointment_date,
+            sa.session,
+            sa.slot_number,
+            COALESCE(scr1.queue_status, scr2.queue_status) as queue_status
+         FROM sunday_appointments sa
+         LEFT JOIN sunday_clinic_records scr1
+                        ON scr1.id = (
+                                SELECT scrx.id
+                                FROM sunday_clinic_records scrx
+                                WHERE scrx.appointment_id = sa.id
+                                ORDER BY scrx.created_at DESC, scrx.id DESC
+                                LIMIT 1
+                        )
+         LEFT JOIN sunday_clinic_records scr2
+                        ON scr2.id = (
+                                SELECT scry.id
+                                FROM sunday_clinic_records scry
+                                WHERE scry.patient_id = sa.patient_id
+                                  AND scry.appointment_id IS NULL
+                                  AND scry.created_at >= ?
+                                  AND scry.created_at < ?
+                                ORDER BY scry.created_at DESC, scry.id DESC
+                                LIMIT 1
+                        )
+         WHERE sa.appointment_date = ?
+           AND sa.status IN ('confirmed', 'completed')
+         ORDER BY sa.session ASC, sa.slot_number ASC`,
+        [todayStart, tomorrowStart, todayStr]
+    );
+
+    return {
+        dateStr: todayStr,
+        queue: rows.map((row) => ({
+            patient_id: row.patient_id,
+            appointment_date: row.appointment_date,
+            session: Number(row.session),
+            slot_number: Number(row.slot_number),
+            queue_status: row.queue_status || 'menunggu'
+        }))
+    };
+}
+
+async function processQueueReminderNotifications() {
+    try {
+        if (!createPatientNotification || !patientNotifications.listActiveQueueReminderSettings) {
+            return;
+        }
+
+        const { dateStr, queue } = await loadTodayQueueForReminderChecks();
+        if (!Array.isArray(queue) || queue.length === 0) {
+            return;
+        }
+
+        const patientIds = queue.map((item) => item.patient_id).filter(Boolean);
+        const settingsRows = await patientNotifications.listActiveQueueReminderSettings(patientIds);
+
+        if (!settingsRows.length) {
+            return;
+        }
+
+        for (const settings of settingsRows) {
+            const patientQueueItem = queue.find((item) => item.patient_id === settings.patient_id);
+            if (!patientQueueItem) {
+                continue;
+            }
+
+            if (patientQueueItem.queue_status === 'diperiksa' || isQueueClosedStatus(patientQueueItem.queue_status)) {
+                continue;
+            }
+
+            const aheadCount = queue.filter((item) => (
+                Number(item.session) === Number(patientQueueItem.session)
+                && Number(item.slot_number) < Number(patientQueueItem.slot_number)
+                && !isQueueClosedStatus(item.queue_status)
+            )).length;
+
+            if (aheadCount > Number(settings.threshold_ahead || 2)) {
+                continue;
+            }
+
+            const signature = `${dateStr}|${patientQueueItem.session}|${patientQueueItem.slot_number}`;
+            if (settings.last_notified_signature === signature) {
+                continue;
+            }
+
+            const message = aheadCount <= 0
+                ? `Nomor antrian Anda di sesi ${patientQueueItem.session} sudah hampir diperiksa. Silakan segera bersiap.`
+                : `Tinggal ${aheadCount} pasien lagi sebelum nomor antrian Anda di sesi ${patientQueueItem.session}. Silakan bersiap.`;
+
+            const notification = await createPatientNotification({
+                patient_id: settings.patient_id,
+                type: 'queue_reminder',
+                title: 'Antrian Anda Sudah Dekat',
+                message,
+                link: '/antrian.html',
+                icon: 'fa fa-bell',
+                icon_color: 'text-warning'
+            });
+
+            if (notification && notification.success) {
+                await patientNotifications.markQueueReminderTriggered(settings.patient_id, signature);
+            }
+        }
+    } catch (error) {
+        logger.warn('processQueueReminderNotifications failed', { error: error.message });
+    }
+}
+
 /**
  * Update queue_status for a record, invalidate cache, and broadcast to clients.
  * Only upgrades status (will not downgrade).
@@ -880,6 +1000,13 @@ async function updateQueueStatus(mrId, newStatus) {
                 status: newStatus
             });
         }
+        processQueueReminderNotifications().catch((error) => {
+            logger.warn('Queue reminder background process failed', {
+                mrId,
+                newStatus,
+                error: error.message
+            });
+        });
         logger.info(`Queue status updated: ${mrId} -> ${newStatus}`);
     } catch (err) {
         logger.warn('updateQueueStatus failed', { mrId, newStatus, error: err.message });

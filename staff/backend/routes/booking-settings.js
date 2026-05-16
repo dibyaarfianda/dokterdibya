@@ -5,17 +5,50 @@ const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+let bookingSettingsSchemaReady = false;
+
+function normalizeDayOfWeek(value) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isInteger(parsed) && parsed >= 0 && parsed <= 6 ? parsed : 0;
+}
+
+async function ensureBookingSettingsSchema() {
+    if (bookingSettingsSchemaReady) {
+        return;
+    }
+
+    const [rows] = await db.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()
+           AND table_name = 'booking_settings'
+           AND column_name = 'day_of_week'
+         LIMIT 1`
+    );
+
+    if (rows.length === 0) {
+        await db.query(
+            `ALTER TABLE booking_settings
+             ADD COLUMN day_of_week TINYINT NOT NULL DEFAULT 0 AFTER session_name`
+        );
+    }
+
+    bookingSettingsSchemaReady = true;
+}
+
 /**
  * GET /api/booking-settings
  * Get all booking session settings
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
+        await ensureBookingSettingsSchema();
         const cached = cache.get('booking-settings:staff', 'long');
         if (cached) return res.json(cached);
 
         const [settings] = await db.query(
-            `SELECT id, session_number, session_name, start_time, end_time,
+            `SELECT id, session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time,
                     slot_duration, max_slots, is_active, created_at, updated_at
              FROM booking_settings
              ORDER BY session_number ASC`
@@ -24,6 +57,8 @@ router.get('/', verifyToken, async (req, res) => {
         // Format times for display
         const formatted = settings.map(s => ({
             ...s,
+            day_of_week: normalizeDayOfWeek(s.day_of_week),
+            day_name: DAY_NAMES[normalizeDayOfWeek(s.day_of_week)],
             start_time: s.start_time.substring(0, 5), // HH:MM
             end_time: s.end_time.substring(0, 5),
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
@@ -44,11 +79,12 @@ router.get('/', verifyToken, async (req, res) => {
  */
 router.get('/public', async (req, res) => {
     try {
+        await ensureBookingSettingsSchema();
         const cached = cache.get('booking-settings:public', 'long');
         if (cached) return res.json(cached);
 
         const [settings] = await db.query(
-            `SELECT session_number, session_name, start_time, end_time,
+            `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time,
                     slot_duration, max_slots
              FROM booking_settings
              WHERE is_active = 1
@@ -59,6 +95,8 @@ router.get('/public', async (req, res) => {
         const sessions = settings.map(s => ({
             session: s.session_number,
             name: s.session_name,
+            dayOfWeek: normalizeDayOfWeek(s.day_of_week),
+            dayName: DAY_NAMES[normalizeDayOfWeek(s.day_of_week)],
             startTime: s.start_time.substring(0, 5),
             endTime: s.end_time.substring(0, 5),
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`,
@@ -81,12 +119,19 @@ router.get('/public', async (req, res) => {
  */
 router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
+        await ensureBookingSettingsSchema();
         const { id } = req.params;
-        const { session_name, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
+        const { session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
 
         // Validate required fields
         if (!session_name || !start_time || !end_time) {
             return res.status(400).json({ success: false, message: 'Nama sesi, waktu mulai, dan waktu selesai harus diisi' });
+        }
+
+        const normalizedDay = normalizeDayOfWeek(day_of_week);
+
+        if (Number.parseInt(day_of_week, 10) !== normalizedDay) {
+            return res.status(400).json({ success: false, message: 'Hari praktik tidak valid' });
         }
 
         // Validate time format (HH:MM)
@@ -110,11 +155,11 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
         // Update the setting
         await db.query(
             `UPDATE booking_settings
-             SET session_name = ?, start_time = ?, end_time = ?,
+             SET session_name = ?, day_of_week = ?, start_time = ?, end_time = ?,
                  slot_duration = ?, max_slots = ?, is_active = ?,
                  updated_at = NOW()
              WHERE id = ?`,
-            [session_name, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0, id]
+            [session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0, id]
         );
 
         cache.delPattern('booking-settings:');
@@ -131,11 +176,18 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
  */
 router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
     try {
-        const { session_number, session_name, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
+        await ensureBookingSettingsSchema();
+        const { session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
 
         // Validate required fields
-        if (!session_number || !session_name || !start_time || !end_time) {
+        if (!session_number || !session_name || day_of_week === undefined || !start_time || !end_time) {
             return res.status(400).json({ success: false, message: 'Semua field harus diisi' });
+        }
+
+        const normalizedDay = normalizeDayOfWeek(day_of_week);
+
+        if (Number.parseInt(day_of_week, 10) !== normalizedDay) {
+            return res.status(400).json({ success: false, message: 'Hari praktik tidak valid' });
         }
 
         // Check if session_number already exists
@@ -148,9 +200,9 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
         const slots = parseInt(max_slots) || 10;
 
         await db.query(
-            `INSERT INTO booking_settings (session_number, session_name, start_time, end_time, slot_duration, max_slots, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [session_number, session_name, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0]
+            `INSERT INTO booking_settings (session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [session_number, session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0]
         );
 
         cache.delPattern('booking-settings:');
@@ -167,6 +219,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
  */
 router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
+        await ensureBookingSettingsSchema();
         const { id } = req.params;
 
         // Check if there are existing appointments using this session
@@ -204,6 +257,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
  */
 router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
     try {
+        await ensureBookingSettingsSchema();
         const { date, session, status } = req.query;
 
         let query = `

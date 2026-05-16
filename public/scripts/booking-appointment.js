@@ -3,6 +3,10 @@
 const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
 const API_BASE = '/api/sunday-appointments';
 
+function getDisplayDayName(entry) {
+    return entry?.dayName || entry?.day_name || 'Hari Praktik';
+}
+
 // Booking state
 let currentStep = 1;
 const bookingData = {
@@ -82,7 +86,7 @@ function renderSundays(sundays) {
     
     const html = sundays.map(sunday => `
         <div class="date-card" data-date="${sunday.date}" data-formatted="${sunday.formatted}">
-            <div class="day">Minggu</div>
+            <div class="day">${getDisplayDayName(sunday)}</div>
             <div class="date">${new Date(sunday.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</div>
         </div>
     `).join('');

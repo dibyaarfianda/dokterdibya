@@ -15,6 +15,16 @@
 
     var LOG_PREFIX = '[PushSub]';
 
+    function emitStatus(status) {
+        try {
+            window.dispatchEvent(new CustomEvent('patient-push-status', {
+                detail: status
+            }));
+        } catch (e) {
+            console.warn(LOG_PREFIX, 'Failed to emit push status:', e.message);
+        }
+    }
+
     // Check if Push API is available
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         console.log(LOG_PREFIX, 'Push not supported in this browser');
@@ -23,7 +33,76 @@
 
     // Get auth token
     function getToken() {
-        return localStorage.getItem('vps_auth_token');
+        return localStorage.getItem('vps_auth_token') ||
+            sessionStorage.getItem('vps_auth_token') ||
+            localStorage.getItem('auth_token') ||
+            sessionStorage.getItem('auth_token') ||
+            localStorage.getItem('patient_token') ||
+            sessionStorage.getItem('patient_token');
+    }
+
+    function getBasicStatus(code, message) {
+        return {
+            code: code,
+            message: message,
+            permission: ('Notification' in window) ? Notification.permission : 'unsupported',
+            hasToken: !!getToken(),
+            subscribed: false
+        };
+    }
+
+    function getPushStatus() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            var unsupportedStatus = getBasicStatus('unsupported', 'Push notification tidak didukung di browser ini.');
+            emitStatus(unsupportedStatus);
+            return Promise.resolve(unsupportedStatus);
+        }
+
+        if (!getToken()) {
+            var noTokenStatus = getBasicStatus('not-logged-in', 'Login pasien diperlukan untuk sinkron push background.');
+            emitStatus(noTokenStatus);
+            return Promise.resolve(noTokenStatus);
+        }
+
+        if (!('Notification' in window)) {
+            var noNotifApiStatus = getBasicStatus('unsupported', 'Notification API tidak tersedia di browser ini.');
+            emitStatus(noNotifApiStatus);
+            return Promise.resolve(noNotifApiStatus);
+        }
+
+        if (Notification.permission === 'denied') {
+            var deniedStatus = getBasicStatus('permission-denied', 'Izin notifikasi diblokir di browser ini.');
+            emitStatus(deniedStatus);
+            return Promise.resolve(deniedStatus);
+        }
+
+        if (Notification.permission === 'default') {
+            var defaultStatus = getBasicStatus('permission-default', 'Izin notifikasi belum diberikan.');
+            emitStatus(defaultStatus);
+            return Promise.resolve(defaultStatus);
+        }
+
+        return navigator.serviceWorker.ready
+            .then(function(registration) {
+                return registration.pushManager.getSubscription();
+            })
+            .then(function(subscription) {
+                var status = getBasicStatus(
+                    subscription ? 'subscribed' : 'permission-granted-not-subscribed',
+                    subscription
+                        ? 'Push background sudah aktif di perangkat ini.'
+                        : 'Izin sudah diberikan, tetapi subscription push belum tersambung.'
+                );
+                status.subscribed = !!subscription;
+                emitStatus(status);
+                return status;
+            })
+            .catch(function(err) {
+                var errorStatus = getBasicStatus('error', 'Gagal memeriksa status push background.');
+                errorStatus.error = err.message;
+                emitStatus(errorStatus);
+                return errorStatus;
+            });
     }
 
     // Wait for service worker to be ready, then attempt subscription
@@ -31,17 +110,20 @@
         var token = getToken();
         if (!token) {
             console.log(LOG_PREFIX, 'No auth token, skipping push subscription');
+            emitStatus(getBasicStatus('not-logged-in', 'Login pasien diperlukan untuk sinkron push background.'));
             return;
         }
 
         // Check notification permission first
         if (!('Notification' in window)) {
             console.log(LOG_PREFIX, 'Notification API not supported');
+            emitStatus(getBasicStatus('unsupported', 'Notification API tidak tersedia di browser ini.'));
             return;
         }
 
         if (Notification.permission === 'denied') {
             console.log(LOG_PREFIX, 'Notification permission denied');
+            emitStatus(getBasicStatus('permission-denied', 'Izin notifikasi diblokir di browser ini.'));
             showNotifBanner();
             return;
         }
@@ -49,6 +131,7 @@
         if (Notification.permission === 'default') {
             // Not yet asked — show banner to prompt user
             console.log(LOG_PREFIX, 'Notification permission not yet granted, showing banner');
+            emitStatus(getBasicStatus('permission-default', 'Izin notifikasi belum diberikan.'));
             showNotifBanner();
             return;
         }
@@ -64,6 +147,13 @@
             registration.pushManager.getSubscription().then(function(existing) {
                 if (existing) {
                     console.log(LOG_PREFIX, 'Already subscribed, syncing with backend');
+                    emitStatus({
+                        code: 'subscribed',
+                        message: 'Push background sudah aktif di perangkat ini.',
+                        permission: Notification.permission,
+                        hasToken: !!token,
+                        subscribed: true
+                    });
                     sendSubscriptionToBackend(existing, token);
                     return;
                 }
@@ -131,10 +221,12 @@
                 if (banner) banner.style.display = 'none';
                 if (modal) modal.style.display = 'none';
                 localStorage.removeItem('notif_modal_dismissed');
+                emitStatus(getBasicStatus('permission-granted-not-subscribed', 'Izin diberikan. Menyambungkan push background...'));
                 var token = getToken();
                 if (token) doSubscribe(token);
             } else if (permission === 'denied') {
                 console.log(LOG_PREFIX, 'Permission denied by user');
+                emitStatus(getBasicStatus('permission-denied', 'Izin notifikasi diblokir di browser ini.'));
                 if (modal) modal.style.display = 'none';
                 if (banner) {
                     banner.innerHTML = '<div style="padding:14px 18px;color:#ff6b6b;font-size:13px;">' +
@@ -216,12 +308,34 @@
         .then(function(data) {
             if (data.success) {
                 console.log(LOG_PREFIX, 'Subscription sent to backend');
+                emitStatus({
+                    code: 'subscribed',
+                    message: 'Push background sudah aktif di perangkat ini.',
+                    permission: Notification.permission,
+                    hasToken: !!authToken,
+                    subscribed: true
+                });
             } else {
                 console.warn(LOG_PREFIX, 'Backend rejected subscription:', data.message);
+                emitStatus({
+                    code: 'backend-rejected',
+                    message: 'Subscription push ditolak backend. Coba ulangi izin notifikasi.',
+                    permission: Notification.permission,
+                    hasToken: !!authToken,
+                    subscribed: false
+                });
             }
         })
         .catch(function(err) {
             console.warn(LOG_PREFIX, 'Failed to send subscription:', err.message);
+            emitStatus({
+                code: 'send-failed',
+                message: 'Gagal mengirim subscription push ke server.',
+                permission: Notification.permission,
+                hasToken: !!authToken,
+                subscribed: false,
+                error: err.message
+            });
         });
     }
 
@@ -263,6 +377,11 @@
 
     // Export for logout flow
     window.unsubscribeWebPush = unsubscribeWebPush;
+    window.ensurePatientPushSubscription = function() {
+        init();
+        registerCapacitorToken();
+    };
+    window.getPatientPushSubscriptionStatus = getPushStatus;
 
     // Also register Capacitor FCM token if running in Android/iOS WebView
     function registerCapacitorToken() {
@@ -301,5 +420,6 @@
     setTimeout(function() {
         init();
         registerCapacitorToken();
+        getPushStatus();
     }, 3000);
 })();
