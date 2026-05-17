@@ -422,8 +422,8 @@ export async function showTestNotification(title = 'Test Notifikasi', body = 'In
             // Regular browser - use Web Notification API
             new Notification(title, {
                 body: body,
-                icon: '/images/logo-dokter-dibya.png',
-                badge: '/images/logo-dokter-dibya.png'
+                icon: '/images/dokterdibya-logo.png',
+                badge: '/images/dokterdibya-logo.png'
             });
             console.log('[VitaminNotif] Test notification shown via Web API');
         }
@@ -472,8 +472,8 @@ function checkWebNotifications() {
             // Show notification
             new Notification('Waktunya Minum Obat', {
                 body: `${schedule.medicationName}${schedule.quantity ? ` - ${schedule.quantity} ${schedule.unit || 'tablet'}` : ''}`,
-                icon: '/images/logo-dokter-dibya.png',
-                badge: '/images/logo-dokter-dibya.png',
+                icon: '/images/dokterdibya-logo.png',
+                badge: '/images/dokterdibya-logo.png',
                 tag: `med-${schedule.id}`,
                 requireInteraction: true
             });
