@@ -1704,6 +1704,7 @@
                             <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulseDot 1.5s infinite;"></span>
                             Antrian Live Klinik
                         </h3>
+                        <span id="doctor-arrival-status" style="font-size: 11px; font-weight: 600; color: #e2e8f0; background: rgba(0,0,0,0.22); border: 1px solid rgba(148,163,184,0.35); border-radius: 999px; padding: 4px 9px; margin: 0 8px; white-space: nowrap;">dr. Dibya belum datang</span>
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <button type="button" onclick="openQueueReminderModal()" title="Pengingat Antrian" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.45); color: #10b981; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;">
                                 Atur reminder
@@ -3683,10 +3684,19 @@
                 .then(data => {
                     const banner = document.getElementById('live-queue-banner');
                     const content = document.getElementById('live-queue-content');
+                    const doctorStatus = document.getElementById('doctor-arrival-status');
                     if (!banner) return;
 
                     // Keep card visible so settings button is always reachable.
                     banner.style.display = '';
+
+                    if (doctorStatus) {
+                        const arrived = Boolean(data && data.doctor_arrived);
+                        doctorStatus.textContent = arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang';
+                        doctorStatus.style.color = arrived ? '#86efac' : '#e2e8f0';
+                        doctorStatus.style.borderColor = arrived ? 'rgba(22,163,74,0.55)' : 'rgba(148,163,184,0.35)';
+                        doctorStatus.style.background = arrived ? 'rgba(22,163,74,0.2)' : 'rgba(0,0,0,0.22)';
+                    }
 
                     if (data.success && data.is_queue_visible) {
                         loadLiveQueueData();
