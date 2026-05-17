@@ -3844,6 +3844,27 @@
             }
         }
 
+        function showSuccess(message) {
+            _showPatientToast(message, '#22c55e');
+        }
+        function showError(message) {
+            _showPatientToast(message, '#ef4444');
+        }
+        function _showPatientToast(message, color) {
+            let t = document.getElementById('_patient_toast_temp');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = '_patient_toast_temp';
+                t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;color:#fff;pointer-events:none;transition:opacity 0.3s;';
+                document.body.appendChild(t);
+            }
+            t.textContent = message;
+            t.style.background = color;
+            t.style.opacity = '1';
+            clearTimeout(t._hideTimer);
+            t._hideTimer = setTimeout(() => { t.style.opacity = '0'; }, 2800);
+        }
+
         function loadQueueReminderSettings() {
             const settings = JSON.parse(localStorage.getItem('queue_reminder_settings') || '{}');
             document.getElementById('queue-sync-account').checked = settings.sync_account || false;
