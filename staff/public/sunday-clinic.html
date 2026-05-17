@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260516v3';
+            var PAGE_VERSION = '20260517a';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -639,7 +639,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260516q2';
+            const SC_CACHE_VERSION = 'v20260517a';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -688,7 +688,11 @@
                         <div class="dropdown-header bg-primary text-white py-2">
                             <i class="fas fa-list-ol mr-2"></i>Antrian Hari Ini
                         </div>
-                        <div class="header-queue-list" id="header-queue-list" style="max-height: 380px; overflow-y: auto;">
+                        <div id="queue-stats-bar" style="display:none; background:#f8f9fa; border-bottom:1px solid #dee2e6; padding:6px 12px; font-size:12px;">
+                            <span class="mr-3"><i class="fas fa-hourglass-half text-warning mr-1"></i>Belum diperiksa: <strong id="queue-stat-belum">0</strong></span>
+                            <span><i class="fas fa-check-circle text-success mr-1"></i>Selesai (ada resume): <strong id="queue-stat-selesai">0</strong></span>
+                        </div>
+                        <div class="header-queue-list" id="header-queue-list" style="max-height: 360px; overflow-y: auto;">
                             <div class="text-center text-muted p-3">
                                 <i class="fas fa-spinner fa-spin"></i> Memuat...
                             </div>

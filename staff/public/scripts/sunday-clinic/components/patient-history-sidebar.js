@@ -337,6 +337,26 @@ class PatientHistorySidebar {
         const container = document.getElementById('header-queue-list');
         if (!container) return;
 
+        // Compute and update cumulative stats
+        const statsBar = document.getElementById('queue-stats-bar');
+        const statBelum = document.getElementById('queue-stat-belum');
+        const statSelesai = document.getElementById('queue-stat-selesai');
+        if (statsBar && this.todayQueue.length > 0) {
+            const belumCount = this.todayQueue.filter(apt => {
+                const qs = apt.queue_status || 'menunggu';
+                return qs === 'menunggu' || qs === 'anamnesa';
+            }).length;
+            const selesaiCount = this.todayQueue.filter(apt => {
+                const qs = apt.queue_status || 'menunggu';
+                return qs === 'selesai_periksa' || qs === 'lunas';
+            }).length;
+            if (statBelum) statBelum.textContent = belumCount;
+            if (statSelesai) statSelesai.textContent = selesaiCount;
+            statsBar.style.display = '';
+        } else if (statsBar) {
+            statsBar.style.display = 'none';
+        }
+
         if (this.todayQueue.length === 0) {
             container.innerHTML = `
                 <div class="text-center text-muted p-4">

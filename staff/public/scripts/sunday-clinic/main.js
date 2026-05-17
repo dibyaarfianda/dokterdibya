@@ -10,7 +10,7 @@ import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
-import patientSidebar from './components/patient-history-sidebar.js?v=2.0.3';
+import patientSidebar from './components/patient-history-sidebar.js?v=2.0.4';
 
 // Expose stateManager to window for cross-module access (used by medical-import.js)
 window.stateManager = stateManager;
