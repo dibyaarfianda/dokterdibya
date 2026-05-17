@@ -1717,9 +1717,7 @@
                             <i class="fa fa-circle-o-notch fa-spin"></i> Memuat antrian...
                         </div>
                     </div>
-                    <a href="/antrian.html" style="display: block; text-align: center; padding: 12px 16px; font-size: 13px; color: #10b981; text-decoration: none; border-top: 1px solid rgba(16, 185, 129, 0.15); background: rgba(16, 185, 129, 0.05); transition: background 0.2s;">
-                        <i class="fa fa-arrow-right"></i> Lihat antrian lengkap
-                    </a>
+                    <!-- antrian.html disembunyikan -->
                 </div>
 
                 <div class="dashboard-card pregnancy-tracker-card" id="pregnancy-tracker-home-card" style="margin-bottom: 20px;">
@@ -2006,14 +2004,7 @@
                             <p>FAQ, Kontak</p>
                         </div>
 
-                        <!-- Card 7: Antrian Hari Ini -->
-                        <div class="menu-card" onclick="window.location.href='/antrian.html'">
-                            <div class="menu-icon" style="background: linear-gradient(135deg, #0ea5e9, #2563eb);">
-                                <i class="fa fa-list-ol"></i>
-                            </div>
-                            <h3>Antrian Hari Ini</h3>
-                            <p>Live Queue Klinik Privat</p>
-                        </div>
+                        <!-- Card 7: Antrian Hari Ini - disembunyikan -->
 
                         <!-- Card 8: Community Chat -->
                         <div class="menu-card" onclick="window.location.href='/community-chat.html'">
@@ -3281,7 +3272,7 @@
                     { icon: 'fa-calendar-check-o', label: 'Booking Klinik', href: '/booking-klinik.html' },
                     { icon: 'fa-hospital-o', label: 'Jadwal RS', href: '/jadwal-rs.html' },
                     { icon: 'fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan.html' },
-                    { icon: 'fa-list-ol', label: 'Antrian Hari Ini', href: '/antrian.html' }
+                    // { icon: 'fa-list-ol', label: 'Antrian Hari Ini', href: '/antrian.html' } // disembunyikan
                 ]
             },
             'edukasi': {
@@ -3751,33 +3742,32 @@
 
             let html = '';
             const sessions = [
-                { num: 1, label: 'Pagi (09:00-11:30)' },
-                { num: 2, label: 'Siang (12:00-14:30)' },
-                { num: 3, label: 'Sore (15:00-17:30)' }
+                { num: 1, label: 'Pagi' },
+                { num: 2, label: 'Siang' },
+                { num: 3, label: 'Sore' }
             ];
 
             sessions.forEach(session => {
                 const items = bySession['session_' + session.num] || [];
                 if (items.length === 0) return;
 
-                html += '<div style="margin-bottom: 12px;">';
-                html += '<div style="font-size: 12px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">' + session.label + '</div>';
-                
+                html += '<div style="margin-bottom: 10px;">';
+                html += '<div style="font-size: 10px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">' + session.label + '</div>';
+                html += '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">';
+
                 items.forEach((item, idx) => {
                     const statusColor = getQueueStatusColor(item.queue_status);
                     const statusLabel = getQueueStatusLabel(item.queue_status);
-                    const patientDisplay = item.patient_name ? item.patient_name.charAt(0) + '***' : 'Pasien';
-                    
-                    html += '<div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: rgba(255,255,255,0.04); border-radius: 8px; margin-bottom: 6px; border-left: 3px solid ' + statusColor + ';">';
-                    html += '<span style="min-width: 28px; width: 28px; height: 28px; background: ' + statusColor + '; color: #000; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">' + (idx + 1) + '</span>';
-                    html += '<div style="flex: 1; min-width: 0;">';
-                    html += '<div style="font-size: 12px; color: #e0e0e0; font-weight: 500;">' + patientDisplay + '</div>';
-                    html += '<div style="font-size: 11px; color: rgba(255,255,255,0.6);">' + statusLabel + '</div>';
-                    html += '</div>';
+                    const patientDisplay = item.patient_name ? item.patient_name.charAt(0) + '**' : 'P';
+
+                    html += '<div style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 4px; background: rgba(255,255,255,0.04); border-radius: 7px; border-top: 2px solid ' + statusColor + '; text-align: center;">';
+                    html += '<span style="width: 22px; height: 22px; background: ' + statusColor + '; color: #000; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px;">' + (idx + 1) + '</span>';
+                    html += '<div style="font-size: 10px; color: #e0e0e0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">' + patientDisplay + '</div>';
+                    html += '<div style="font-size: 9px; color: rgba(255,255,255,0.55);">' + statusLabel + '</div>';
                     html += '</div>';
                 });
 
-                html += '</div>';
+                html += '</div></div>';
             });
 
             content.innerHTML = html;
