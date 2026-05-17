@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260517a'; // 2026-05-17 - live queue auto-display banner on patient home
+const CACHE_VERSION = '20260517b'; // 2026-05-17b - queue reminder modal with custom sound and notification settings
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
