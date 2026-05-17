@@ -2465,6 +2465,12 @@ class SundayClinicApp {
             window.showToast && window.showToast('error', 'Buka DRD pasien terlebih dahulu');
             return;
         }
+        const userRole = window.currentStaffIdentity?.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+        if (!isDokter) {
+            window.showToast && window.showToast('error', 'Hanya dokter yang bisa memulai pemeriksaan');
+            return;
+        }
         const btn = document.getElementById('btn-periksa-pasien');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; }
         try {
@@ -2546,7 +2552,9 @@ class SundayClinicApp {
                 bar.style.display = isPrivat ? 'flex' : 'none';
             }
             if (btn) {
-                const canStart = isPrivat && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
+                const userRole = window.currentStaffIdentity?.role || '';
+                const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+                const canStart = isPrivat && isDokter && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
                 btn.style.display = canStart ? '' : 'none';
             }
             // Restore stopwatch if mid-exam
