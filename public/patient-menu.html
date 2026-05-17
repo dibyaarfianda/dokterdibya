@@ -3665,12 +3665,10 @@
             // Check queue settings on load
             const banner = document.getElementById('live-queue-banner');
             const content = document.getElementById('live-queue-content');
-            if (banner) {
-                banner.style.display = '';
-            }
             if (content) {
                 content.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.6); padding: 20px 10px;"><i class="fa fa-circle-o-notch fa-spin"></i> Memuat antrian...</div>';
             }
+            // updateLiveQueueVisibility will show/hide banner based on settings
             updateLiveQueueVisibility();
             
             // Start refresh timer
@@ -3701,7 +3699,13 @@
                     const doctorStatus = document.getElementById('doctor-arrival-status');
                     if (!banner) return;
 
-                    // Keep card visible so settings button is always reachable.
+                    if (!data.success || !data.is_queue_visible) {
+                        // Antrian OFF → sembunyikan seluruh banner
+                        banner.style.display = 'none';
+                        return;
+                    }
+
+                    // Antrian ON → tampilkan banner
                     banner.style.display = '';
 
                     if (doctorStatus) {
@@ -3712,13 +3716,7 @@
                         doctorStatus.style.background = arrived ? 'rgba(22,163,74,0.2)' : 'rgba(0,0,0,0.22)';
                     }
 
-                    if (data.success && data.is_queue_visible) {
-                        loadLiveQueueData();
-                    } else {
-                        if (content) {
-                            content.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.75); padding: 20px 10px;"><i class="fa fa-toggle-off"></i> Antrian live belum aktif. Silakan aktifkan dari staff dashboard.</div>';
-                        }
-                    }
+                    loadLiveQueueData();
                 })
                 .catch(err => {
                     const content = document.getElementById('live-queue-content');

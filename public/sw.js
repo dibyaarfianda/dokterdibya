@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260517j'; // 2026-05-17j - fix openQueueReminderModal early global scope
+const CACHE_VERSION = '20260518a'; // 2026-05-18a - hide live queue banner when antrian OFF
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
