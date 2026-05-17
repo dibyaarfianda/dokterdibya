@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260517f'; // 2026-05-17f - move queue reminder block into settings modal on antrian page
+const CACHE_VERSION = '20260517h'; // 2026-05-17h - live queue 3-column compact grid
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
