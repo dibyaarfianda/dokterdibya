@@ -112,6 +112,23 @@
         .refresh-btn.spinning i { animation: spin 0.8s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        .settings-btn {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: #10b981;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .settings-btn:hover { background: rgba(16, 185, 129, 0.2); }
+
         /* ── Auto-refresh counter ── */
         .refresh-info {
             font-size: 11px;
@@ -155,6 +172,36 @@
             border-radius: 14px;
             padding: 14px;
             margin-bottom: 16px;
+        }
+        .reminder-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.58);
+            z-index: 1200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .reminder-modal.show {
+            display: flex;
+        }
+        .reminder-modal .reminder-card {
+            width: min(520px, 100%);
+            max-height: 82vh;
+            overflow-y: auto;
+            margin-bottom: 0;
+            background: #102133;
+            border-color: rgba(40, 167, 233, 0.35);
+        }
+        .reminder-modal-close {
+            background: none;
+            border: none;
+            color: #9fb8c8;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            padding: 0 4px;
         }
         .reminder-header {
             display: flex;
@@ -577,6 +624,9 @@
             <button class="refresh-btn" id="refresh-btn" onclick="loadQueue(true)">
                 <i class="fa fa-refresh"></i> Refresh
             </button>
+            <button class="settings-btn" id="open-reminder-settings" type="button">
+                <i class="fa fa-cog"></i> Atur reminder
+            </button>
         </div>
 
         <div class="refresh-info" id="refresh-info">Auto-refresh setiap 30 detik</div>
@@ -595,9 +645,11 @@
             </div>
         </div>
 
-        <div class="reminder-card">
+        <div class="reminder-modal" id="reminder-modal" aria-hidden="true">
+        <div class="reminder-card" role="dialog" aria-modal="true" aria-label="Pengaturan pengingat antrian">
             <div class="reminder-header">
                 <div class="reminder-title"><i class="fa fa-bell"></i> Pengingat Antrian Saya</div>
+                <button class="reminder-modal-close" id="close-reminder-settings" type="button" aria-label="Tutup">&times;</button>
                 <span class="reminder-status-pill" id="reminder-save-state">Tersimpan di perangkat ini</span>
             </div>
             <div class="reminder-note">
@@ -665,6 +717,7 @@
                 </div>
             </div>
             <div class="reminder-helper" id="reminder-live-status">Target reminder belum ditentukan.</div>
+        </div>
         </div>
 
         <div id="queue-container">
@@ -1273,6 +1326,41 @@
             document.getElementById('queue-reminder-popup-close').addEventListener('click', closeReminderPopup);
             window.addEventListener('patient-push-status', function(event) {
                 updatePushStatusIndicator(event.detail);
+            });
+
+            const reminderModal = document.getElementById('reminder-modal');
+            const openBtn = document.getElementById('open-reminder-settings');
+            const closeBtn = document.getElementById('close-reminder-settings');
+
+            function openReminderModal() {
+                if (!reminderModal) return;
+                reminderModal.classList.add('show');
+                reminderModal.setAttribute('aria-hidden', 'false');
+            }
+
+            function closeReminderModal() {
+                if (!reminderModal) return;
+                reminderModal.classList.remove('show');
+                reminderModal.setAttribute('aria-hidden', 'true');
+            }
+
+            if (openBtn) {
+                openBtn.addEventListener('click', openReminderModal);
+            }
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeReminderModal);
+            }
+            if (reminderModal) {
+                reminderModal.addEventListener('click', function(e) {
+                    if (e.target === reminderModal) {
+                        closeReminderModal();
+                    }
+                });
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeReminderModal();
+                }
             });
         }
 
