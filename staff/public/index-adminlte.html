@@ -7696,6 +7696,24 @@ body.mobile-app-mode .mobile-action-bar-force button {
         };
         // Load state after auth settles
         window.addEventListener('load', function() { setTimeout(_loadQueueVis, 1500); });
+
+        // Listen for real-time queue:settings_changed broadcast from server
+        // Socket is initialized later (after auth), so poll until ready
+        function _attachQueueSocketListener() {
+            if (window.socket) {
+                window.socket.on('queue:settings_changed', function(data) {
+                    if (data && typeof data.is_queue_visible !== 'undefined') {
+                        _updateBtn(Boolean(data.is_queue_visible));
+                    }
+                    if (data && typeof data.doctor_arrived !== 'undefined') {
+                        _updateDoctorArrivedBtn(Boolean(data.doctor_arrived));
+                    }
+                });
+            } else {
+                setTimeout(_attachQueueSocketListener, 1000);
+            }
+        }
+        window.addEventListener('load', function() { setTimeout(_attachQueueSocketListener, 2000); });
     })();
 </script>
 
