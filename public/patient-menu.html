@@ -3648,6 +3648,14 @@
 
         function initializeLiveQueueBanner() {
             // Check queue settings on load
+            const banner = document.getElementById('live-queue-banner');
+            const content = document.getElementById('live-queue-content');
+            if (banner) {
+                banner.style.display = '';
+            }
+            if (content) {
+                content.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.6); padding: 20px 10px;"><i class="fa fa-circle-o-notch fa-spin"></i> Memuat antrian...</div>';
+            }
             updateLiveQueueVisibility();
             
             // Start refresh timer
@@ -3674,21 +3682,32 @@
                 .then(r => r.json())
                 .then(data => {
                     const banner = document.getElementById('live-queue-banner');
+                    const content = document.getElementById('live-queue-content');
                     if (!banner) return;
-                    
+
+                    // Keep card visible so settings button is always reachable.
+                    banner.style.display = '';
+
                     if (data.success && data.is_queue_visible) {
-                        banner.style.display = '';
                         loadLiveQueueData();
                     } else {
-                        banner.style.display = 'none';
+                        if (content) {
+                            content.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.75); padding: 20px 10px;"><i class="fa fa-toggle-off"></i> Antrian live belum aktif. Silakan aktifkan dari staff dashboard.</div>';
+                        }
                     }
                 })
-                .catch(err => console.error('[LiveQueue] Failed to check visibility:', err));
+                .catch(err => {
+                    const content = document.getElementById('live-queue-content');
+                    if (content) {
+                        content.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.75); padding: 20px 10px;"><i class="fa fa-exclamation-circle"></i> Gagal cek status antrian live. Coba refresh halaman.</div>';
+                    }
+                    console.error('[LiveQueue] Failed to check visibility:', err);
+                });
         }
 
         function loadLiveQueueData() {
             const banner = document.getElementById('live-queue-banner');
-            if (!banner || banner.style.display === 'none') return;
+            if (!banner) return;
 
             fetch('/api/sunday-clinic/queue/public')
                 .then(r => r.json())
