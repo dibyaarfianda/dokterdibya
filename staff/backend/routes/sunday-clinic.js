@@ -1050,28 +1050,33 @@ router.put('/queue/settings', verifyToken, async (req, res, next) => {
         );
 
         const { is_queue_visible, doctor_arrived } = req.body;
+
+        // Always read current values first so each toggle is independent
+        const [[currentSettings]] = await db.query(
+            'SELECT is_queue_visible, doctor_arrived FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
+        );
+        const curVisible = currentSettings ? Number(currentSettings.is_queue_visible) : 0;
+        const curArrived = currentSettings ? Number(currentSettings.doctor_arrived) : 0;
+
         let visible;
         let doctorArrived;
 
         if (typeof is_queue_visible === 'boolean' || is_queue_visible === 0 || is_queue_visible === 1) {
+            // Explicit value provided for queue visibility
             visible = is_queue_visible ? 1 : 0;
+        } else if (typeof doctor_arrived !== 'undefined') {
+            // Only doctor_arrived is being updated — preserve queue visibility as-is
+            visible = curVisible;
         } else {
-            const [[currentSettings]] = await db.query(
-                'SELECT is_queue_visible, doctor_arrived FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
-            );
-            visible = currentSettings && Number(currentSettings.is_queue_visible) === 1 ? 0 : 1;
-            doctorArrived = currentSettings && Number(currentSettings.doctor_arrived) === 1 ? 1 : 0;
+            // Empty body: toggle queue visibility
+            visible = curVisible === 1 ? 0 : 1;
         }
 
         if (typeof doctor_arrived === 'boolean' || doctor_arrived === 0 || doctor_arrived === 1) {
             doctorArrived = doctor_arrived ? 1 : 0;
-        }
-
-        if (typeof doctorArrived !== 'number') {
-            const [[currentSettings]] = await db.query(
-                'SELECT doctor_arrived FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
-            );
-            doctorArrived = currentSettings && Number(currentSettings.doctor_arrived) === 1 ? 1 : 0;
+        } else {
+            // Preserve current doctor_arrived when not explicitly provided
+            doctorArrived = curArrived;
         }
 
         await db.query(
