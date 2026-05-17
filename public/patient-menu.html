@@ -2166,6 +2166,29 @@
     </div>
 
     <script>
+        // ==================== QUEUE REMINDER MODAL (early global) ====================
+        window.openQueueReminderModal = function() {
+            var m = document.getElementById('queue-reminder-modal');
+            if (!m) return;
+            m.style.display = 'flex';
+            m.style.position = 'fixed';
+            m.style.top = '0';
+            m.style.left = '0';
+            m.style.right = '0';
+            m.style.bottom = '0';
+            m.style.zIndex = '9999';
+            m.style.alignItems = 'center';
+            m.style.justifyContent = 'center';
+            m.style.background = 'rgba(0,0,0,0.6)';
+            m.style.boxSizing = 'border-box';
+            m.style.padding = '16px';
+            if (typeof loadQueueReminderSettings === 'function') loadQueueReminderSettings();
+        };
+        window.closeQueueReminderModal = function() {
+            var m = document.getElementById('queue-reminder-modal');
+            if (m) m.style.display = 'none';
+        };
+
         // ==================== AUTHENTICATION ====================
         function getToken() {
             return localStorage.getItem('vps_auth_token') ||
