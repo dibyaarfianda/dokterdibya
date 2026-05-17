@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260517c'; // 2026-05-17c - always show live queue card so settings button is visible
+const CACHE_VERSION = '20260517d'; // 2026-05-17d - fix reminder modal visibility and use Atur reminder button label
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

@@ -1704,9 +1704,9 @@
                             <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulseDot 1.5s infinite;"></span>
                             Antrian Live Klinik
                         </h3>
-                        <div style="display: flex; gap: 8px;">
-                            <button type="button" onclick="openQueueReminderModal()" title="Pengingat Antrian" style="background: none; border: none; color: #10b981; font-size: 18px; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fa fa-cog"></i>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button type="button" onclick="openQueueReminderModal()" title="Pengingat Antrian" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.45); color: #10b981; font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;">
+                                Atur reminder
                             </button>
                             <button type="button" onclick="closeLiveQueueBanner()" style="background: none; border: none; color: #10b981; font-size: 20px; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">&times;</button>
                         </div>
@@ -3800,129 +3800,146 @@
             if (banner) {
                 banner.style.display = 'none';
                 localStorage.setItem('live_queue_banner_closed', 'true');
-
-                    // ==================== QUEUE REMINDER MODAL ====================
-                    function openQueueReminderModal() {
-                        const modal = document.getElementById('queue-reminder-modal');
-                        if (modal) {
-                            modal.style.display = 'flex';
-                            modal.style.justifyContent = 'center';
-                            modal.style.alignItems = 'center';
-                            loadQueueReminderSettings();
-                        }
-                    }
-
-                    function closeQueueReminderModal() {
-                        const modal = document.getElementById('queue-reminder-modal');
-                        if (modal) {
-                            modal.style.display = 'none';
-                        }
-                    }
-
-                    function loadQueueReminderSettings() {
-                        const settings = JSON.parse(localStorage.getItem('queue_reminder_settings') || '{}');
-                        document.getElementById('queue-sync-account').checked = settings.sync_account || false;
-                        document.getElementById('queue-reminder-enabled').checked = settings.enabled || false;
-                        document.getElementById('queue-source-auto').checked = settings.source !== 'manual';
-                        document.getElementById('queue-source-manual').checked = settings.source === 'manual';
-                        document.getElementById('queue-session').value = settings.session || '';
-                        document.getElementById('queue-number').value = settings.number || '';
-                        document.getElementById('queue-threshold').value = settings.threshold || '2';
-                        document.getElementById('queue-notif-popup').checked = settings.notif_popup !== false;
-                        document.getElementById('queue-notif-browser').checked = settings.notif_browser || false;
-                        document.getElementById('queue-notif-sound').checked = settings.notif_sound || false;
-                        document.getElementById('queue-notif-push').checked = settings.notif_push || false;
-                        updateManualQueueOptionsVisibility();
-                        validateQueueReminderStatus();
-                    }
-
-                    function saveQueueReminder() {
-                        const settings = {
-                            sync_account: document.getElementById('queue-sync-account').checked,
-                            enabled: document.getElementById('queue-reminder-enabled').checked,
-                            source: document.getElementById('queue-source-manual').checked ? 'manual' : 'auto',
-                            session: document.getElementById('queue-session').value,
-                            number: document.getElementById('queue-number').value,
-                            threshold: parseInt(document.getElementById('queue-threshold').value) || 2,
-                            notif_popup: document.getElementById('queue-notif-popup').checked,
-                            notif_browser: document.getElementById('queue-notif-browser').checked,
-                            notif_sound: document.getElementById('queue-notif-sound').checked,
-                            notif_push: document.getElementById('queue-notif-push').checked,
-                            saved_at: new Date().toISOString()
-                        };
-                        localStorage.setItem('queue_reminder_settings', JSON.stringify(settings));
-                        showSuccess('Pengingat antrian tersimpan');
-                        closeQueueReminderModal();
-                    }
-
-                    function updateManualQueueOptionsVisibility() {
-                        const manualOptions = document.getElementById('manual-queue-options');
-                        const isManual = document.getElementById('queue-source-manual').checked;
-                        manualOptions.style.display = isManual ? 'block' : 'none';
-                    }
-
-                    function validateQueueReminderStatus() {
-                        const status = document.getElementById('queue-reminder-status');
-                        const statusText = document.getElementById('queue-reminder-status-text');
-                        const isEnabled = document.getElementById('queue-reminder-enabled').checked;
-                        const isManual = document.getElementById('queue-source-manual').checked;
-            
-                        if (!isEnabled) {
-                            status.style.display = 'none';
-                            return;
-                        }
-
-                        if (isManual && (!document.getElementById('queue-session').value || !document.getElementById('queue-number').value)) {
-                            status.style.display = 'block';
-                            statusText.textContent = 'Target reminder belum lengkap. Pilih booking otomatis atau isi sesi dan nomor antrian.';
-                        } else {
-                            status.style.display = 'none';
-                        }
-                    }
-
-                    function testQueueSound() {
-                        const audio = new Audio('/audio/notification.mp3');
-                        audio.play().catch(err => console.log('Audio play error:', err));
-                    }
-
-                    function clearQueueCustomSound() {
-                        document.getElementById('queue-custom-sound').value = '';
-                        showSuccess('Suara custom dihapus');
-                    }
-
-                    function requestBrowserNotification() {
-                        if (!('Notification' in window)) {
-                            showError('Browser tidak mendukung notifikasi');
-                            return;
-                        }
-                        if (Notification.permission === 'granted') {
-                            showSuccess('Izin notifikasi sudah aktif');
-                            return;
-                        }
-                        Notification.requestPermission().then(permission => {
-                            if (permission === 'granted') {
-                                showSuccess('Izin notifikasi berhasil');
-                                document.getElementById('queue-notif-browser').checked = true;
-                            } else {
-                                showError('Izin notifikasi ditolak');
-                            }
-                        });
-                    }
-
-                    // Event listeners untuk radio buttons dan checkboxes
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const sourceRadios = document.querySelectorAll('input[name="queue-source"]');
-                        sourceRadios.forEach(radio => {
-                            radio.addEventListener('change', updateManualQueueOptionsVisibility);
-                        });
-
-                        document.getElementById('queue-reminder-enabled').addEventListener('change', validateQueueReminderStatus);
-                        document.getElementById('queue-source-manual').addEventListener('change', validateQueueReminderStatus);
-                        document.getElementById('queue-session').addEventListener('change', validateQueueReminderStatus);
-                        document.getElementById('queue-number').addEventListener('change', validateQueueReminderStatus);
-                    });
             }
         }
+
+        // ==================== QUEUE REMINDER MODAL ====================
+        function openQueueReminderModal() {
+            const modal = document.getElementById('queue-reminder-modal');
+            if (modal) {
+                modal.style.display = 'block';
+                modal.classList.add('show');
+                modal.setAttribute('aria-modal', 'true');
+                modal.removeAttribute('aria-hidden');
+                loadQueueReminderSettings();
+            }
+        }
+
+        function closeQueueReminderModal() {
+            const modal = document.getElementById('queue-reminder-modal');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                modal.removeAttribute('aria-modal');
+            }
+        }
+
+        function loadQueueReminderSettings() {
+            const settings = JSON.parse(localStorage.getItem('queue_reminder_settings') || '{}');
+            document.getElementById('queue-sync-account').checked = settings.sync_account || false;
+            document.getElementById('queue-reminder-enabled').checked = settings.enabled || false;
+            document.getElementById('queue-source-auto').checked = settings.source !== 'manual';
+            document.getElementById('queue-source-manual').checked = settings.source === 'manual';
+            document.getElementById('queue-session').value = settings.session || '';
+            document.getElementById('queue-number').value = settings.number || '';
+            document.getElementById('queue-threshold').value = settings.threshold || '2';
+            document.getElementById('queue-notif-popup').checked = settings.notif_popup !== false;
+            document.getElementById('queue-notif-browser').checked = settings.notif_browser || false;
+            document.getElementById('queue-notif-sound').checked = settings.notif_sound || false;
+            document.getElementById('queue-notif-push').checked = settings.notif_push || false;
+            updateManualQueueOptionsVisibility();
+            validateQueueReminderStatus();
+        }
+
+        function saveQueueReminder() {
+            const settings = {
+                sync_account: document.getElementById('queue-sync-account').checked,
+                enabled: document.getElementById('queue-reminder-enabled').checked,
+                source: document.getElementById('queue-source-manual').checked ? 'manual' : 'auto',
+                session: document.getElementById('queue-session').value,
+                number: document.getElementById('queue-number').value,
+                threshold: parseInt(document.getElementById('queue-threshold').value) || 2,
+                notif_popup: document.getElementById('queue-notif-popup').checked,
+                notif_browser: document.getElementById('queue-notif-browser').checked,
+                notif_sound: document.getElementById('queue-notif-sound').checked,
+                notif_push: document.getElementById('queue-notif-push').checked,
+                saved_at: new Date().toISOString()
+            };
+            localStorage.setItem('queue_reminder_settings', JSON.stringify(settings));
+            showSuccess('Pengingat antrian tersimpan');
+            closeQueueReminderModal();
+        }
+
+        function updateManualQueueOptionsVisibility() {
+            const manualOptions = document.getElementById('manual-queue-options');
+            const isManual = document.getElementById('queue-source-manual').checked;
+            manualOptions.style.display = isManual ? 'block' : 'none';
+        }
+
+        function validateQueueReminderStatus() {
+            const status = document.getElementById('queue-reminder-status');
+            const statusText = document.getElementById('queue-reminder-status-text');
+            const isEnabled = document.getElementById('queue-reminder-enabled').checked;
+            const isManual = document.getElementById('queue-source-manual').checked;
+
+            if (!isEnabled) {
+                status.style.display = 'none';
+                return;
+            }
+
+            if (isManual && (!document.getElementById('queue-session').value || !document.getElementById('queue-number').value)) {
+                status.style.display = 'block';
+                statusText.textContent = 'Target reminder belum lengkap. Pilih booking otomatis atau isi sesi dan nomor antrian.';
+            } else {
+                status.style.display = 'none';
+            }
+        }
+
+        function testQueueSound() {
+            const audio = new Audio('/audio/notification.mp3');
+            audio.play().catch(err => console.log('Audio play error:', err));
+        }
+
+        function clearQueueCustomSound() {
+            document.getElementById('queue-custom-sound').value = '';
+            showSuccess('Suara custom dihapus');
+        }
+
+        function requestBrowserNotification() {
+            if (!('Notification' in window)) {
+                showError('Browser tidak mendukung notifikasi');
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                showSuccess('Izin notifikasi sudah aktif');
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showSuccess('Izin notifikasi berhasil');
+                    document.getElementById('queue-notif-browser').checked = true;
+                } else {
+                    showError('Izin notifikasi ditolak');
+                }
+            });
+        }
+
+        // Event listeners untuk radio buttons dan checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const sourceRadios = document.querySelectorAll('input[name="queue-source"]');
+            sourceRadios.forEach(radio => {
+                radio.addEventListener('change', updateManualQueueOptionsVisibility);
+            });
+
+            const reminderEnabled = document.getElementById('queue-reminder-enabled');
+            const sourceManual = document.getElementById('queue-source-manual');
+            const queueSession = document.getElementById('queue-session');
+            const queueNumber = document.getElementById('queue-number');
+
+            if (reminderEnabled) reminderEnabled.addEventListener('change', validateQueueReminderStatus);
+            if (sourceManual) sourceManual.addEventListener('change', validateQueueReminderStatus);
+            if (queueSession) queueSession.addEventListener('change', validateQueueReminderStatus);
+            if (queueNumber) queueNumber.addEventListener('change', validateQueueReminderStatus);
+        });
+
+        // Expose for inline onclick in HTML
+        window.openQueueReminderModal = openQueueReminderModal;
+        window.closeQueueReminderModal = closeQueueReminderModal;
+        window.saveQueueReminder = saveQueueReminder;
+        window.requestBrowserNotification = requestBrowserNotification;
+        window.testQueueSound = testQueueSound;
+        window.clearQueueCustomSound = clearQueueCustomSound;
     </script>
 
     </div><!-- End app-wrapper -->
@@ -3956,7 +3973,7 @@
 <script src="/js/push-subscribe.js?v=20260306"></script>
 
 <!-- Modal Pengingat Antrian Saya -->
-<div id="queue-reminder-modal" class="modal fade" tabindex="-1" role="dialog" style="display: none; background: rgba(0,0,0,0.5);">
+<div id="queue-reminder-modal" class="modal" tabindex="-1" role="dialog" onclick="if(event.target===this){closeQueueReminderModal();}" style="display: none; background: rgba(0,0,0,0.5);">
     <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 500px;">
         <div class="modal-content" style="background: #1e293b; border: 1px solid #475569; border-radius: 12px; color: #fff;">
             <div class="modal-header" style="border-bottom: 1px solid #475569; padding: 16px;">
