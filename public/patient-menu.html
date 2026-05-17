@@ -1704,7 +1704,12 @@
                             <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulseDot 1.5s infinite;"></span>
                             Antrian Live Klinik
                         </h3>
-                        <button type="button" onclick="closeLiveQueueBanner()" style="background: none; border: none; color: #10b981; font-size: 20px; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" onclick="openQueueReminderModal()" title="Pengingat Antrian" style="background: none; border: none; color: #10b981; font-size: 18px; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa fa-cog"></i>
+                            </button>
+                            <button type="button" onclick="closeLiveQueueBanner()" style="background: none; border: none; color: #10b981; font-size: 20px; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                        </div>
                     </div>
                     <div id="live-queue-content" style="max-height: 300px; overflow-y: auto; padding: 12px 14px;">
                         <div style="text-align: center; color: rgba(255,255,255,0.6); padding: 20px 10px;">
@@ -3776,6 +3781,127 @@
             if (banner) {
                 banner.style.display = 'none';
                 localStorage.setItem('live_queue_banner_closed', 'true');
+
+                    // ==================== QUEUE REMINDER MODAL ====================
+                    function openQueueReminderModal() {
+                        const modal = document.getElementById('queue-reminder-modal');
+                        if (modal) {
+                            modal.style.display = 'flex';
+                            modal.style.justifyContent = 'center';
+                            modal.style.alignItems = 'center';
+                            loadQueueReminderSettings();
+                        }
+                    }
+
+                    function closeQueueReminderModal() {
+                        const modal = document.getElementById('queue-reminder-modal');
+                        if (modal) {
+                            modal.style.display = 'none';
+                        }
+                    }
+
+                    function loadQueueReminderSettings() {
+                        const settings = JSON.parse(localStorage.getItem('queue_reminder_settings') || '{}');
+                        document.getElementById('queue-sync-account').checked = settings.sync_account || false;
+                        document.getElementById('queue-reminder-enabled').checked = settings.enabled || false;
+                        document.getElementById('queue-source-auto').checked = settings.source !== 'manual';
+                        document.getElementById('queue-source-manual').checked = settings.source === 'manual';
+                        document.getElementById('queue-session').value = settings.session || '';
+                        document.getElementById('queue-number').value = settings.number || '';
+                        document.getElementById('queue-threshold').value = settings.threshold || '2';
+                        document.getElementById('queue-notif-popup').checked = settings.notif_popup !== false;
+                        document.getElementById('queue-notif-browser').checked = settings.notif_browser || false;
+                        document.getElementById('queue-notif-sound').checked = settings.notif_sound || false;
+                        document.getElementById('queue-notif-push').checked = settings.notif_push || false;
+                        updateManualQueueOptionsVisibility();
+                        validateQueueReminderStatus();
+                    }
+
+                    function saveQueueReminder() {
+                        const settings = {
+                            sync_account: document.getElementById('queue-sync-account').checked,
+                            enabled: document.getElementById('queue-reminder-enabled').checked,
+                            source: document.getElementById('queue-source-manual').checked ? 'manual' : 'auto',
+                            session: document.getElementById('queue-session').value,
+                            number: document.getElementById('queue-number').value,
+                            threshold: parseInt(document.getElementById('queue-threshold').value) || 2,
+                            notif_popup: document.getElementById('queue-notif-popup').checked,
+                            notif_browser: document.getElementById('queue-notif-browser').checked,
+                            notif_sound: document.getElementById('queue-notif-sound').checked,
+                            notif_push: document.getElementById('queue-notif-push').checked,
+                            saved_at: new Date().toISOString()
+                        };
+                        localStorage.setItem('queue_reminder_settings', JSON.stringify(settings));
+                        showSuccess('Pengingat antrian tersimpan');
+                        closeQueueReminderModal();
+                    }
+
+                    function updateManualQueueOptionsVisibility() {
+                        const manualOptions = document.getElementById('manual-queue-options');
+                        const isManual = document.getElementById('queue-source-manual').checked;
+                        manualOptions.style.display = isManual ? 'block' : 'none';
+                    }
+
+                    function validateQueueReminderStatus() {
+                        const status = document.getElementById('queue-reminder-status');
+                        const statusText = document.getElementById('queue-reminder-status-text');
+                        const isEnabled = document.getElementById('queue-reminder-enabled').checked;
+                        const isManual = document.getElementById('queue-source-manual').checked;
+            
+                        if (!isEnabled) {
+                            status.style.display = 'none';
+                            return;
+                        }
+
+                        if (isManual && (!document.getElementById('queue-session').value || !document.getElementById('queue-number').value)) {
+                            status.style.display = 'block';
+                            statusText.textContent = 'Target reminder belum lengkap. Pilih booking otomatis atau isi sesi dan nomor antrian.';
+                        } else {
+                            status.style.display = 'none';
+                        }
+                    }
+
+                    function testQueueSound() {
+                        const audio = new Audio('/audio/notification.mp3');
+                        audio.play().catch(err => console.log('Audio play error:', err));
+                    }
+
+                    function clearQueueCustomSound() {
+                        document.getElementById('queue-custom-sound').value = '';
+                        showSuccess('Suara custom dihapus');
+                    }
+
+                    function requestBrowserNotification() {
+                        if (!('Notification' in window)) {
+                            showError('Browser tidak mendukung notifikasi');
+                            return;
+                        }
+                        if (Notification.permission === 'granted') {
+                            showSuccess('Izin notifikasi sudah aktif');
+                            return;
+                        }
+                        Notification.requestPermission().then(permission => {
+                            if (permission === 'granted') {
+                                showSuccess('Izin notifikasi berhasil');
+                                document.getElementById('queue-notif-browser').checked = true;
+                            } else {
+                                showError('Izin notifikasi ditolak');
+                            }
+                        });
+                    }
+
+                    // Event listeners untuk radio buttons dan checkboxes
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const sourceRadios = document.querySelectorAll('input[name="queue-source"]');
+                        sourceRadios.forEach(radio => {
+                            radio.addEventListener('change', updateManualQueueOptionsVisibility);
+                        });
+
+                        document.getElementById('queue-reminder-enabled').addEventListener('change', validateQueueReminderStatus);
+                        document.getElementById('queue-source-manual').addEventListener('change', validateQueueReminderStatus);
+                        document.getElementById('queue-session').addEventListener('change', validateQueueReminderStatus);
+                        document.getElementById('queue-number').addEventListener('change', validateQueueReminderStatus);
+                    });
             }
         }
     </script>
@@ -3809,5 +3935,129 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260306"></script>
+
+<!-- Modal Pengingat Antrian Saya -->
+<div id="queue-reminder-modal" class="modal fade" tabindex="-1" role="dialog" style="display: none; background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 500px;">
+        <div class="modal-content" style="background: #1e293b; border: 1px solid #475569; border-radius: 12px; color: #fff;">
+            <div class="modal-header" style="border-bottom: 1px solid #475569; padding: 16px;">
+                <h5 class="modal-title" style="margin: 0; font-weight: 600; font-size: 16px;">
+                    <i class="fa fa-bell"></i> Pengingat Antrian Saya
+                </h5>
+                <button type="button" class="close" onclick="closeQueueReminderModal()" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 16px; max-height: 70vh; overflow-y: auto;">
+                <!-- Sinkron ke Akun -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" id="queue-sync-account" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-size: 13px;">Sinkron ke akun pasien aktif</span>
+                    </label>
+                    <p style="margin: 0; font-size: 12px; color: #cbd5e1; margin-left: 28px;">Reminder akan tersimpan di akun Anda dan bekerja di semua perangkat</p>
+                </div>
+
+                <hr style="background: #475569; border: none; height: 1px; margin: 12px 0;">
+
+                <!-- Aktifkan Reminder -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" id="queue-reminder-enabled" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-weight: 600; font-size: 13px;">Aktifkan reminder live queue</span>
+                    </label>
+                </div>
+
+                <!-- Sumber Target -->
+                <div style="margin-bottom: 16px; padding: 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">SUMBER TARGET</label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="radio" name="queue-source" value="auto" id="queue-source-auto" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-size: 13px;">Pakai booking saya otomatis</span>
+                    </label>
+                    <p style="margin: 0 0 12px 24px; font-size: 11px; color: #94a3b8;">Otomatis gunakan booking aktif jika tersedia</p>
+
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="radio" name="queue-source" value="manual" id="queue-source-manual" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-size: 13px;">Pilih sesi dan nomor antrian manual</span>
+                    </label>
+                    <div id="manual-queue-options" style="margin-left: 24px; display: none;">
+                        <select id="queue-session" style="width: 100%; padding: 6px; margin-bottom: 8px; background: #1e293b; border: 1px solid #475569; color: #fff; border-radius: 4px; font-size: 12px;">
+                            <option value="">-- Pilih Sesi --</option>
+                            <option value="1">Sesi 1 (Pagi)</option>
+                            <option value="2">Sesi 2 (Siang)</option>
+                            <option value="3">Sesi 3 (Sore)</option>
+                        </select>
+                        <input type="number" id="queue-number" placeholder="Nomor antrian" min="1" max="99" style="width: 100%; padding: 6px; background: #1e293b; border: 1px solid #475569; color: #fff; border-radius: 4px; font-size: 12px;">
+                    </div>
+                </div>
+
+                <!-- Pengingat -->
+                <div style="margin-bottom: 16px; padding: 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">PENGINGAT</label>
+                    <label style="display: block; font-size: 12px; margin-bottom: 6px;">Muncul saat tersisa:</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" id="queue-threshold" value="2" min="1" max="10" style="width: 60px; padding: 6px; background: #1e293b; border: 1px solid #475569; color: #fff; border-radius: 4px; font-size: 12px;">
+                        <span style="font-size: 12px;">antrian</span>
+                    </div>
+                </div>
+
+                <!-- Notifikasi -->
+                <div style="margin-bottom: 16px; padding: 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 10px;">NOTIFIKASI</label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" id="queue-notif-popup" checked style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-size: 12px;">Popup di halaman</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" id="queue-notif-browser" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-size: 12px;">Notif browser</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 8px;">
+                        <input type="checkbox" id="queue-notif-sound" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-size: 12px;">Bunyi alarm</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
+                        <input type="checkbox" id="queue-notif-push" style="width: 16px; height: 16px; cursor: pointer;">
+                        <span style="font-size: 12px;">Push saat halaman ditutup</span>
+                    </label>
+                    <p style="margin: 0; font-size: 11px; color: #94a3b8;">Push background sudah aktif di perangkat ini.</p>
+                </div>
+
+                <!-- Custom Sound -->
+                <div style="margin-bottom: 16px; padding: 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">SUARA NOTIFIKASI</label>
+                    <div style="margin-bottom: 8px;">
+                        <input type="file" id="queue-custom-sound" accept="audio/*" style="font-size: 12px; color: #94a3b8; width: 100%;">
+                        <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8;">Belum ada suara custom. Jika kosong, sistem pakai bunyi default.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button type="button" onclick="testQueueSound()" class="btn btn-sm" style="flex: 1; padding: 6px 12px; background: #3b82f6; border: none; color: #fff; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                            <i class="fa fa-play"></i> Test suara
+                        </button>
+                        <button type="button" onclick="clearQueueCustomSound()" class="btn btn-sm" style="flex: 1; padding: 6px 12px; background: #6b7280; border: none; color: #fff; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                            <i class="fa fa-trash"></i> Hapus suara
+                        </button>
+                    </div>
+                    <p style="margin: 8px 0 0 0; font-size: 11px; color: #94a3b8;">Nada upload dipakai saat halaman antrian terbuka. Saat browser/app tertutup, push pakai nada standar perangkat.</p>
+                </div>
+
+                <!-- Info -->
+                <div id="queue-reminder-status" style="padding: 10px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 4px; color: #92400e; font-size: 12px; display: none; margin-bottom: 12px;">
+                    <i class="fa fa-warning"></i> <span id="queue-reminder-status-text"></span>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid #475569; padding: 12px; display: flex; gap: 8px; justify-content: flex-end;">
+                <button type="button" onclick="requestBrowserNotification()" class="btn btn-sm" style="padding: 6px 12px; background: #6b7280; border: none; color: #fff; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                    <i class="fa fa-check"></i> Izinkan notif browser
+                </button>
+                <button type="button" onclick="saveQueueReminder()" class="btn btn-primary btn-sm" style="padding: 6px 12px; background: #10b981; border: none; color: #fff; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600;">
+                    <i class="fa fa-save"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
