@@ -1021,12 +1021,16 @@ async function updateQueueStatus(mrId, newStatus) {
  */
 router.get('/queue/settings', async (req, res, next) => {
     try {
+        await db.query(
+            'ALTER TABLE clinic_queue_settings ADD COLUMN IF NOT EXISTS doctor_arrived TINYINT(1) NOT NULL DEFAULT 0 AFTER is_queue_visible'
+        );
         const [[row]] = await db.query(
-            'SELECT is_queue_visible, queue_label FROM clinic_queue_settings WHERE id = 1'
+            'SELECT is_queue_visible, doctor_arrived, queue_label FROM clinic_queue_settings WHERE id = 1'
         );
         res.json({
             success: true,
             is_queue_visible: row ? Boolean(row.is_queue_visible) : false,
+            doctor_arrived: row ? Boolean(row.doctor_arrived) : false,
             queue_label: row?.queue_label || 'Klinik Privat Dr. Dibya'
         });
     } catch (error) {
@@ -1041,27 +1045,52 @@ router.get('/queue/settings', async (req, res, next) => {
  */
 router.put('/queue/settings', verifyToken, async (req, res, next) => {
     try {
-        const { is_queue_visible } = req.body;
+        await db.query(
+            'ALTER TABLE clinic_queue_settings ADD COLUMN IF NOT EXISTS doctor_arrived TINYINT(1) NOT NULL DEFAULT 0 AFTER is_queue_visible'
+        );
+
+        const { is_queue_visible, doctor_arrived } = req.body;
         let visible;
+        let doctorArrived;
 
         if (typeof is_queue_visible === 'boolean' || is_queue_visible === 0 || is_queue_visible === 1) {
             visible = is_queue_visible ? 1 : 0;
         } else {
             const [[currentSettings]] = await db.query(
-                'SELECT is_queue_visible FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
+                'SELECT is_queue_visible, doctor_arrived FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
             );
             visible = currentSettings && Number(currentSettings.is_queue_visible) === 1 ? 0 : 1;
+            doctorArrived = currentSettings && Number(currentSettings.doctor_arrived) === 1 ? 1 : 0;
+        }
+
+        if (typeof doctor_arrived === 'boolean' || doctor_arrived === 0 || doctor_arrived === 1) {
+            doctorArrived = doctor_arrived ? 1 : 0;
+        }
+
+        if (typeof doctorArrived !== 'number') {
+            const [[currentSettings]] = await db.query(
+                'SELECT doctor_arrived FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
+            );
+            doctorArrived = currentSettings && Number(currentSettings.doctor_arrived) === 1 ? 1 : 0;
         }
 
         await db.query(
-            'UPDATE clinic_queue_settings SET is_queue_visible = ? WHERE id = 1',
-            [visible]
+            'UPDATE clinic_queue_settings SET is_queue_visible = ?, doctor_arrived = ? WHERE id = 1',
+            [visible, doctorArrived]
         );
         // Broadcast setting change to patient portal
         if (realtimeSync && realtimeSync.broadcast) {
-            realtimeSync.broadcast({ type: 'queue:settings_changed', is_queue_visible: Boolean(visible) });
+            realtimeSync.broadcast({
+                type: 'queue:settings_changed',
+                is_queue_visible: Boolean(visible),
+                doctor_arrived: Boolean(doctorArrived)
+            });
         }
-        res.json({ success: true, is_queue_visible: Boolean(visible) });
+        res.json({
+            success: true,
+            is_queue_visible: Boolean(visible),
+            doctor_arrived: Boolean(doctorArrived)
+        });
     } catch (error) {
         logger.error('Error updating queue settings:', error);
         next(error);
