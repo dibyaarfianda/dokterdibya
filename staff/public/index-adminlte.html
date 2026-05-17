@@ -1673,6 +1673,13 @@
             </li>
         </ul>
         <ul class="navbar-nav ml-auto" style="height: 68px; display: flex; align-items: center;">
+            <!-- Live Queue Toggle -->
+            <li class="nav-item" style="display: flex; align-items: center; margin-right: 10px;">
+                <button id="toggle-queue-btn" class="btn btn-sm btn-outline-secondary" onclick="toggleLiveQueue()" title="Toggle Live Queue Visibility" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px;">
+                    <i class="fa fa-circle-o text-muted"></i>
+                    <span class="d-none d-md-inline" style="font-size: 0.8rem;">Live Queue</span>
+                </button>
+            </li>
             <li class="nav-item" style="display: flex; align-items: center;">
                 <span id="status-banner" class="nav-link d-none">
                     <span class="badge badge-warning">Loading...</span>

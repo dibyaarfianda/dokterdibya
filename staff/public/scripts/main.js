@@ -3983,6 +3983,9 @@ async function initializeApp(user) {
         // Update welcome card
         updateWelcomeCard(user);
 
+        // Initialize queue button state
+        initializeQueueButton();
+
         // Fetch menu visibility without blocking critical startup tasks.
         applyMenuVisibility(user).catch(error => {
             console.error('Error fetching menu visibility:', error);
@@ -5798,9 +5801,71 @@ window.runMedifyQueueRobot = runMedifyQueueRobot;
 window.hideAllPages = hideAllPages;
 // window.setActiveNav = setActiveNav; // Defined in patient-utils.js, not here
 
+// ==================== LIVE QUEUE TOGGLE ====================
+async function initializeQueueButton() {
+    try {
+        const btn = document.getElementById('toggle-queue-btn');
+        if (!btn) return;
+
+        const res = await fetch('/api/sunday-clinic/queue/settings', {
+            headers: { 'Authorization': 'Bearer ' + (getAuthToken() || '') }
+        });
+
+        const data = await res.json();
+        if (data.success && data.is_queue_visible !== undefined) {
+            const isEnabled = data.is_queue_visible;
+            btn.innerHTML = isEnabled 
+                ? '<i class="fa fa-check-circle text-success"></i><span class="d-none d-md-inline">Live Queue ON</span>'
+                : '<i class="fa fa-circle-o text-muted"></i><span class="d-none d-md-inline">Live Queue OFF</span>';
+            btn.className = isEnabled ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-secondary';
+        }
+    } catch (err) {
+        console.error('[LiveQueue] Init failed:', err);
+    }
+}
+
+async function toggleLiveQueue() {
+    try {
+        const res = await fetch('/api/sunday-clinic/queue/settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + (getAuthToken() || '')
+            },
+            body: JSON.stringify({})
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            const isNowEnabled = data.is_queue_visible;
+            showSuccess(isNowEnabled ? 'Antrian live DIAKTIFKAN' : 'Antrian live DINONAKTIFKAN');
+            
+            // Update button state
+            const btn = document.getElementById('toggle-queue-btn');
+            if (btn) {
+                btn.innerHTML = isNowEnabled 
+                    ? '<i class="fa fa-check-circle text-success"></i><span class="d-none d-md-inline">Live Queue ON</span>'
+                    : '<i class="fa fa-circle-o text-muted"></i><span class="d-none d-md-inline">Live Queue OFF</span>';
+                btn.className = isNowEnabled ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-secondary';
+            }
+
+            // Log activity
+            logActivity('Toggle Queue', isNowEnabled ? 'Activated' : 'Deactivated');
+        } else {
+            showError(data.message || 'Gagal mengubah antrian');
+        }
+    } catch (err) {
+        showError('Error: ' + err.message);
+        console.error('[LiveQueue] Toggle failed:', err);
+    }
+}
+
 // Simple function to set page title
 function setPageTitle(title) {
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = title;
 }
 window.setPageTitle = setPageTitle;
+window.toggleLiveQueue = toggleLiveQueue;
+window.initializeQueueButton = initializeQueueButton;
+window.toggleLiveQueue = toggleLiveQueue;
