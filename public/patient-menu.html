@@ -3807,8 +3807,7 @@
         function openQueueReminderModal() {
             const modal = document.getElementById('queue-reminder-modal');
             if (modal) {
-                modal.style.display = 'block';
-                modal.classList.add('show');
+                modal.style.cssText = 'display:flex !important; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center; background:rgba(0,0,0,0.6);';
                 modal.setAttribute('aria-modal', 'true');
                 modal.removeAttribute('aria-hidden');
                 loadQueueReminderSettings();
@@ -3818,8 +3817,7 @@
         function closeQueueReminderModal() {
             const modal = document.getElementById('queue-reminder-modal');
             if (modal) {
-                modal.classList.remove('show');
-                modal.style.display = 'none';
+                modal.style.cssText = 'display:none;';
                 modal.setAttribute('aria-hidden', 'true');
                 modal.removeAttribute('aria-modal');
             }
@@ -3973,9 +3971,8 @@
 <script src="/js/push-subscribe.js?v=20260306"></script>
 
 <!-- Modal Pengingat Antrian Saya -->
-<div id="queue-reminder-modal" class="modal" tabindex="-1" role="dialog" onclick="if(event.target===this){closeQueueReminderModal();}" style="display: none; background: rgba(0,0,0,0.5);">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 500px;">
-        <div class="modal-content" style="background: #1e293b; border: 1px solid #475569; border-radius: 12px; color: #fff;">
+<div id="queue-reminder-modal" tabindex="-1" role="dialog" onclick="if(event.target===this){closeQueueReminderModal();}" style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center; background:rgba(0,0,0,0.6);">
+    <div role="document" style="max-width:500px; width:calc(100% - 32px); max-height:90vh; overflow-y:auto; border-radius:12px; background:#1e293b; border:1px solid #475569; color:#fff;">
             <div class="modal-header" style="border-bottom: 1px solid #475569; padding: 16px;">
                 <h5 class="modal-title" style="margin: 0; font-weight: 600; font-size: 16px;">
                     <i class="fa fa-bell"></i> Pengingat Antrian Saya
@@ -4091,7 +4088,6 @@
                     <i class="fa fa-save"></i> Simpan
                 </button>
             </div>
-        </div>
     </div>
 </div>
 
