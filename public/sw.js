@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518i'; // 2026-05-18i - Fix chat send button click blocked by floating FAB
+const CACHE_VERSION = '20260518j'; // 2026-05-18j - Rejoin support chat room after socket reconnect
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
