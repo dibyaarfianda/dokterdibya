@@ -652,26 +652,97 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
 
 // PUT /api/support-chat/staff/:id/resolve — mark session resolved
 router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
+    let conn = null;
     try {
         await ensureSchema();
 
-        const sessionId = parseInt(req.params.id);
+        const sessionId = parseInt(req.params.id, 10);
+        if (Number.isNaN(sessionId)) {
+            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
+        }
 
-        await db.query(
-            `UPDATE support_chat_sessions SET status = 'resolved', updated_at = NOW() WHERE id = ?`,
+        const staffName = req.user.name || req.user.display_name || 'Staff';
+        const staffId = String(req.user.id || req.user.new_id || '').trim();
+        const defaultClosingMessage = 'Terima kasih sudah menghubungi kami. Sesi bantuan ini kami tutup. Jika masih ada pertanyaan, silakan mulai chat baru kapan saja. 🙏';
+        const incomingClosingMessage = req.body && typeof req.body.closingMessage === 'string'
+            ? req.body.closingMessage
+            : '';
+        const closingMessage = String(incomingClosingMessage || defaultClosingMessage).trim().slice(0, 2000) || defaultClosingMessage;
+
+        conn = await db.getConnection();
+        await conn.beginTransaction();
+
+        const [sessions] = await conn.query(
+            `SELECT id, status, assigned_staff_id, assigned_staff_name
+             FROM support_chat_sessions
+             WHERE id = ?
+             FOR UPDATE`,
             [sessionId]
         );
 
-        if (global.io) {
-            global.io.to(`support:${sessionId}`).emit('support:resolved', { sessionId });
-            global.io.emit('support:session_resolved', { sessionId });
+        if (sessions.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
         }
 
-        return res.json({ success: true, message: 'Sesi telah diselesaikan' });
+        if (sessions[0].status === 'resolved') {
+            await conn.commit();
+            return res.json({ success: true, message: 'Sesi sudah diselesaikan' });
+        }
+
+        const [msgResult] = await conn.query(
+            `INSERT INTO support_chat_messages (session_id, sender_type, sender_name, content)
+             VALUES (?, 'staff', ?, ?)`,
+            [sessionId, staffName, closingMessage]
+        );
+
+        await conn.query(
+            `UPDATE support_chat_sessions
+             SET status = 'resolved',
+                 assigned_staff_id = COALESCE(assigned_staff_id, NULLIF(?, '')),
+                 assigned_staff_name = COALESCE(assigned_staff_name, ?),
+                 updated_at = NOW()
+             WHERE id = ?`,
+            [staffId, staffName, sessionId]
+        );
+
+        await conn.commit();
+
+        const closingMessagePayload = {
+            id: msgResult.insertId,
+            session_id: sessionId,
+            sender_type: 'staff',
+            sender_name: staffName,
+            content: closingMessage,
+            created_at: new Date()
+        };
+
+        if (global.io) {
+            global.io.to(`support:${sessionId}`).emit('support:resolved', {
+                sessionId,
+                closingMessage,
+                closingMessageId: closingMessagePayload.id
+            });
+            global.io.emit('support:session_resolved', {
+                sessionId,
+                closingMessageId: closingMessagePayload.id
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Sesi telah diselesaikan',
+            closingMessage: closingMessagePayload
+        });
 
     } catch (err) {
+        if (conn) {
+            try { await conn.rollback(); } catch (rollbackErr) { /* ignore rollback errors */ }
+        }
         console.error('[support-chat] resolve error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
