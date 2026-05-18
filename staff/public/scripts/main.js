@@ -4505,6 +4505,7 @@ function restoreLastPage() {
             'nav-pengumuman':                       () => showKelolaPengumumanPage(),
             'nav-voting':                           () => showVotingPage(),
             'nav-community-chat':                   () => showCommunityChatPage(),
+            'nav-support-chat':                     () => showSupportChatPage(),
             'nav-penjualan-obat':                   () => showPenjualanObatPage(),
             'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
             'nav-medify-sync':                      () => showMedifySyncPage(),
