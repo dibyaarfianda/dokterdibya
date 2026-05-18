@@ -110,10 +110,10 @@
         return hasNew;
     }
 
-    function startEscalatedPolling() {
-        stopEscalatedPolling();
+    function startMessagePolling() {
+        stopMessagePolling();
         state.pollTimer = setInterval(async function () {
-            if (!state.session || state.session.status !== 'escalated') return;
+            if (!state.session || !state.session.id) return;
             try {
                 var data = await apiFetch('/sessions/current');
                 if (!data || !data.session) return;
@@ -121,13 +121,16 @@
                 appendMissingMessages(data.session.messages);
                 state.session.status = data.session.status;
                 updateStatusBar();
+                if (state.session.status === 'resolved') {
+                    stopMessagePolling();
+                }
             } catch (e) {
                 // Silent fallback polling errors.
             }
         }, 3000);
     }
 
-    function stopEscalatedPolling() {
+    function stopMessagePolling() {
         if (!state.pollTimer) return;
         clearInterval(state.pollTimer);
         state.pollTimer = null;
@@ -170,7 +173,7 @@
             if (!state.session || !sameSessionId(data.sessionId, state.session.id)) return;
             state.session.status = 'resolved';
             updateStatusBar();
-            stopEscalatedPolling();
+            stopMessagePolling();
             appendSystemMessage('Sesi bantuan telah diselesaikan. Terima kasih! 🙏');
         });
     }
@@ -297,11 +300,7 @@
             updateLastMessageId(state.session.messages);
             updateStatusBar();
             joinSessionRoom(state.session.id);
-            if (state.session.status === 'escalated') {
-                startEscalatedPolling();
-            } else {
-                stopEscalatedPolling();
-            }
+            startMessagePolling();
 
         } catch (err) {
             console.error('[support-chat] init error:', err);
@@ -347,7 +346,7 @@
             if (data.escalated) {
                 state.session.status = 'escalated';
                 updateStatusBar();
-                startEscalatedPolling();
+                startMessagePolling();
             }
 
             // Bot reply was already emitted via socket, but also handle via REST response
@@ -468,9 +467,23 @@
         });
 
         inputEl.addEventListener('keydown', function (e) {
-            var isEnter = e.key === 'Enter' || e.code === 'Enter' || e.keyCode === 13 || e.which === 13;
+            var keyText = (e.key || '').toLowerCase();
+            var isEnter =
+                e.key === 'Enter' ||
+                e.code === 'Enter' ||
+                e.keyCode === 13 ||
+                e.which === 13 ||
+                keyText === 'send' ||
+                keyText === 'go';
             if (isEnter && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        inputEl.addEventListener('keyup', function (e) {
+            var keyText = (e.key || '').toLowerCase();
+            if ((keyText === 'send' || keyText === 'go') && !inputEl.disabled) {
                 sendMessage();
             }
         });
