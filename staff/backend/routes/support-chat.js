@@ -1202,6 +1202,214 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
     }
 });
 
+// GET /api/support-chat/staff/points — leaderboard poin staff dari sesi resolved
+router.get('/staff/points', verifyToken, async (req, res) => {
+    try {
+        await ensureSchema();
+
+        const reqDays = parseInt(String(req.query.days || '30'), 10);
+        const days = Number.isFinite(reqDays) ? Math.max(7, Math.min(reqDays, 90)) : 30;
+        const currentStaffId = String(req.user.id || req.user.new_id || '').trim();
+
+        const [rows] = await db.query(
+            `SELECT t.staff_id,
+                    t.staff_name,
+                    COUNT(*) AS resolved_count,
+                    SUM(CASE
+                        WHEN t.rating IS NULL THEN 8
+                        ELSE 10 + (t.rating * 2)
+                    END) AS total_points,
+                    SUM(CASE WHEN t.rating IS NOT NULL THEN 1 ELSE 0 END) AS rated_count,
+                    ROUND(AVG(t.rating), 2) AS avg_rating
+             FROM (
+                SELECT s.id,
+                       COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) AS staff_id,
+                       COALESCE(NULLIF(s.resolved_by_staff_name, ''), NULLIF(s.assigned_staff_name, ''), 'Staff') AS staff_name,
+                       r.rating,
+                       COALESCE(s.resolved_at, s.updated_at) AS resolved_ts
+                FROM support_chat_sessions s
+                LEFT JOIN support_chat_ratings r ON r.session_id = s.id
+                WHERE s.status = 'resolved'
+                  AND COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) IS NOT NULL
+                  AND COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)
+             ) t
+             GROUP BY t.staff_id, t.staff_name
+             ORDER BY total_points DESC, resolved_count DESC, t.staff_name ASC
+             LIMIT 30`,
+            [days]
+        );
+
+        const leaderboard = rows.map((row, index) => ({
+            rank: index + 1,
+            staff_id: row.staff_id,
+            staff_name: row.staff_name,
+            resolved_count: Number(row.resolved_count || 0),
+            total_points: Number(row.total_points || 0),
+            rated_count: Number(row.rated_count || 0),
+            avg_rating: row.avg_rating === null ? null : Number(row.avg_rating)
+        }));
+
+        let me = null;
+        if (currentStaffId) {
+            me = leaderboard.find((row) => String(row.staff_id || '') === currentStaffId) || null;
+        }
+
+        return res.json({
+            success: true,
+            days,
+            leaderboard,
+            me
+        });
+
+    } catch (err) {
+        console.error('[support-chat] staff/points error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// GET /api/support-chat/staff/briefing-weekly — ringkasan operasional 7 hari
+router.get('/staff/briefing-weekly', verifyToken, async (req, res) => {
+    try {
+        await ensureSchema();
+
+        const reqDays = parseInt(String(req.query.days || '7'), 10);
+        const days = Number.isFinite(reqDays) ? Math.max(7, Math.min(reqDays, 30)) : 7;
+
+        const [[pendingSummary]] = await db.query(
+            `SELECT COUNT(*) AS pending_count,
+                    COALESCE(MAX(TIMESTAMPDIFF(MINUTE, s.updated_at, NOW())), 0) AS oldest_wait_minutes
+             FROM support_chat_sessions s
+             WHERE s.status = 'escalated'`
+        );
+
+        const [[resolvedSummary]] = await db.query(
+            `SELECT COUNT(*) AS resolved_count,
+                    SUM(CASE WHEN r.rating IS NOT NULL THEN 1 ELSE 0 END) AS rated_count,
+                    ROUND(AVG(r.rating), 2) AS avg_rating
+             FROM support_chat_sessions s
+             LEFT JOIN support_chat_ratings r ON r.session_id = s.id
+             WHERE s.status = 'resolved'
+               AND COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
+            [days]
+        );
+
+        const [[replySummary]] = await db.query(
+            `SELECT ROUND(AVG(TIMESTAMPDIFF(MINUTE, p.first_patient_at, st.first_staff_at)), 1) AS avg_first_reply_minutes
+             FROM (
+                SELECT session_id, MIN(created_at) AS first_patient_at
+                FROM support_chat_messages
+                WHERE sender_type = 'patient'
+                GROUP BY session_id
+             ) p
+             INNER JOIN (
+                SELECT session_id, MIN(created_at) AS first_staff_at
+                FROM support_chat_messages
+                WHERE sender_type = 'staff'
+                GROUP BY session_id
+             ) st ON st.session_id = p.session_id AND st.first_staff_at >= p.first_patient_at
+             INNER JOIN support_chat_sessions s ON s.id = p.session_id
+             WHERE COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
+            [days]
+        );
+
+        const [ratingRows] = await db.query(
+            `SELECT r.rating, COUNT(*) AS total
+             FROM support_chat_ratings r
+             INNER JOIN support_chat_sessions s ON s.id = r.session_id
+             WHERE COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)
+             GROUP BY r.rating
+             ORDER BY r.rating DESC`,
+            [days]
+        );
+
+        const [topStaffRows] = await db.query(
+            `SELECT t.staff_id,
+                    t.staff_name,
+                    COUNT(*) AS resolved_count,
+                    SUM(CASE
+                        WHEN t.rating IS NULL THEN 8
+                        ELSE 10 + (t.rating * 2)
+                    END) AS total_points,
+                    ROUND(AVG(t.rating), 2) AS avg_rating
+             FROM (
+                SELECT s.id,
+                       COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) AS staff_id,
+                       COALESCE(NULLIF(s.resolved_by_staff_name, ''), NULLIF(s.assigned_staff_name, ''), 'Staff') AS staff_name,
+                       r.rating
+                FROM support_chat_sessions s
+                LEFT JOIN support_chat_ratings r ON r.session_id = s.id
+                WHERE s.status = 'resolved'
+                  AND COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) IS NOT NULL
+                  AND COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)
+             ) t
+             GROUP BY t.staff_id, t.staff_name
+             ORDER BY total_points DESC, resolved_count DESC
+             LIMIT 3`,
+            [days]
+        );
+
+        const resolvedCount = Number(resolvedSummary.resolved_count || 0);
+        const ratedCount = Number(resolvedSummary.rated_count || 0);
+        const avgRating = resolvedSummary.avg_rating === null ? null : Number(resolvedSummary.avg_rating);
+        const pendingCount = Number(pendingSummary.pending_count || 0);
+        const oldestWaitMinutes = Number(pendingSummary.oldest_wait_minutes || 0);
+        const avgFirstReplyMinutes = replySummary.avg_first_reply_minutes === null
+            ? null
+            : Number(replySummary.avg_first_reply_minutes);
+
+        const ratingBreakdown = [5, 4, 3, 2, 1].map((score) => {
+            const found = ratingRows.find((row) => Number(row.rating) === score);
+            return { rating: score, total: found ? Number(found.total || 0) : 0 };
+        });
+
+        const topStaff = topStaffRows.map((row) => ({
+            staff_id: row.staff_id,
+            staff_name: row.staff_name,
+            resolved_count: Number(row.resolved_count || 0),
+            total_points: Number(row.total_points || 0),
+            avg_rating: row.avg_rating === null ? null : Number(row.avg_rating)
+        }));
+
+        const actions = [];
+        if (pendingCount >= 5) {
+            actions.push('Antrian eskalasi cukup tinggi. Prioritaskan sesi paling lama terlebih dahulu.');
+        }
+        if (oldestWaitMinutes >= 30) {
+            actions.push('Ada pasien menunggu lebih dari 30 menit. Perlu penanganan cepat.');
+        }
+        if (avgFirstReplyMinutes !== null && avgFirstReplyMinutes > 10) {
+            actions.push('Rata-rata respons pertama di atas 10 menit. Coba percepat pickup sesi baru.');
+        }
+        if (avgRating !== null && avgRating < 4.5) {
+            actions.push('Rata-rata rating di bawah 4.5. Perbaiki kualitas closing dan follow-up.');
+        }
+        if (actions.length === 0) {
+            actions.push('Performa minggu ini stabil. Pertahankan respons cepat dan closing yang jelas.');
+        }
+
+        return res.json({
+            success: true,
+            generated_at: new Date(),
+            days,
+            kpis: {
+                pending_count: pendingCount,
+                oldest_wait_minutes: oldestWaitMinutes,
+                resolved_count: resolvedCount,
+                rated_count: ratedCount,
+                avg_rating: avgRating,
+                avg_first_reply_minutes: avgFirstReplyMinutes
+            },
+            rating_breakdown: ratingBreakdown,
+            top_staff: topStaff,
+            actions
+        });
+
+    } catch (err) {
+        console.error('[support-chat] staff/briefing-weekly error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // GET /api/support-chat/staff/count — pending count for badge
 router.get('/staff/count', verifyToken, async (req, res) => {
     try {

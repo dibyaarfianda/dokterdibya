@@ -6808,6 +6808,20 @@ Contoh Markdown:
                                     </div>
                                 </div>
                                 <div class="card-body p-0">
+                                    <div class="sc-insight-wrap">
+                                        <div class="sc-insight-card">
+                                            <div class="sc-insight-card-title"><i class="fas fa-trophy"></i>Point Staff</div>
+                                            <div id="sc-staff-points">
+                                                <div class="sc-insight-empty">Memuat point staff...</div>
+                                            </div>
+                                        </div>
+                                        <div class="sc-insight-card">
+                                            <div class="sc-insight-card-title"><i class="fas fa-clipboard-list"></i>Briefing Poli Minggu</div>
+                                            <div id="sc-staff-briefing">
+                                                <div class="sc-insight-empty">Memuat briefing minggu ini...</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="sc-staff-layout">
                                         <div class="sc-staff-sidebar">
                                             <div class="sc-staff-sidebar-header">
@@ -7631,7 +7645,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v137';
+    window.__assetVersion = 'v138';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -11063,7 +11077,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  <script src="./scripts/tanya-dokter.js?v=20260518a"></script>
 
  <!-- Support Chat Staff -->
-<script src="./scripts/support-chat-staff.js?v=20260518i"></script>
+<script src="./scripts/support-chat-staff.js?v=20260519a"></script>
  <script>
  function showSupportChatPage() {
      var pages = document.querySelectorAll('[id$="-page"]');
