@@ -32,7 +32,7 @@
             return window.getPatientToken();
         }
         // Fallback: common patient token storage keys
-        var keys = ['patient_token', 'patientToken', 'auth_token', 'token'];
+        var keys = ['vps_auth_token', 'patient_token', 'patientToken', 'auth_token', 'token'];
         for (var i = 0; i < keys.length; i++) {
             var t = localStorage.getItem(keys[i]);
             if (t) return t;
