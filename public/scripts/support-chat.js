@@ -178,7 +178,7 @@
             });
         }
         if (fab) fab.classList.add('sc-fab--open');
-        if (!state.initialized) {
+        if (!state.initialized || !state.session) {
             initChat();
         }
     }
@@ -217,6 +217,8 @@
 
         } catch (err) {
             console.error('[support-chat] init error:', err);
+            state.session = null;
+            state.initialized = false;
             if (!getToken()) {
                 appendSystemMessage('Silakan login terlebih dahulu untuk menggunakan fitur chat bantuan.');
             } else {
