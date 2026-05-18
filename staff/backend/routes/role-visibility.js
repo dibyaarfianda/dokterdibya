@@ -22,7 +22,9 @@ const MENUS = [
     { key: 'obat_alkes', label: 'Obat/Alkes', icon: 'fa-pills' },
     { key: 'keuangan', label: 'Keuangan', icon: 'fa-money-bill-wave' },
     { key: 'kelola_roles', label: 'Kelola Roles', icon: 'fa-user-shield' },
-    { key: 'ucapan_kelahiran', label: 'Ucapan Kelahiran', icon: 'fa-baby' }
+    { key: 'ucapan_kelahiran', label: 'Ucapan Kelahiran', icon: 'fa-baby' },
+    { key: 'staff_points', label: 'Point Staff', icon: 'fa-star' },
+    { key: 'staff_briefing', label: 'Briefing Poli Minggu', icon: 'fa-clipboard-check' }
 ];
 
 /**

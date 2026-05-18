@@ -38,34 +38,23 @@ async function ensureSchema() {
     schemaPromise = (async () => {
         const ensureColumn = async (tableName, columnName, definition) => {
             const [rows] = await db.query(
-                `SELECT 1
-                 FROM information_schema.columns
-                 WHERE table_schema = DATABASE()
-                   AND table_name = ?
-                   AND column_name = ?
+                `SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
                  LIMIT 1`,
                 [tableName, columnName]
             );
-
             if (rows.length === 0) {
-                await db.query(`ALTER TABLE ${tableName} ADD COLUMN ${definition}`);
+                await db.query(`ALTER TABLE \`${tableName}\` ADD COLUMN ${definition}`);
             }
         };
-
         const ensureIndex = async (tableName, indexName, ddl) => {
             const [rows] = await db.query(
-                `SELECT 1
-                 FROM information_schema.statistics
-                 WHERE table_schema = DATABASE()
-                   AND table_name = ?
-                   AND index_name = ?
+                `SELECT 1 FROM information_schema.statistics
+                 WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?
                  LIMIT 1`,
                 [tableName, indexName]
             );
-
-            if (rows.length === 0) {
-                await db.query(ddl);
-            }
+            if (rows.length === 0) await db.query(ddl);
         };
 
         // support_faq table
@@ -99,28 +88,6 @@ async function ensureSchema() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
-        await ensureColumn(
-            'support_chat_sessions',
-            'resolved_at',
-            'resolved_at DATETIME NULL AFTER assigned_staff_name'
-        );
-        await ensureColumn(
-            'support_chat_sessions',
-            'resolved_by_staff_id',
-            'resolved_by_staff_id VARCHAR(64) NULL AFTER resolved_at'
-        );
-        await ensureColumn(
-            'support_chat_sessions',
-            'resolved_by_staff_name',
-            'resolved_by_staff_name VARCHAR(255) NULL AFTER resolved_by_staff_id'
-        );
-
-        await ensureIndex(
-            'support_chat_sessions',
-            'idx_patient_resolved',
-            'CREATE INDEX idx_patient_resolved ON support_chat_sessions (patient_id, status, updated_at)'
-        );
-
         // support_chat_messages table
         await db.query(`
             CREATE TABLE IF NOT EXISTS support_chat_messages (
@@ -137,24 +104,62 @@ async function ensureSchema() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
-        // support_chat_ratings table
+        // Phase 1: Ownership lock + audit columns on sessions (idempotent)
+        await ensureColumn('support_chat_sessions', 'owner_staff_id', "owner_staff_id VARCHAR(64) NULL AFTER assigned_staff_name");
+        await ensureColumn('support_chat_sessions', 'owner_staff_name', "owner_staff_name VARCHAR(255) NULL AFTER owner_staff_id");
+        await ensureColumn('support_chat_sessions', 'owner_locked_at', "owner_locked_at DATETIME NULL AFTER owner_staff_name");
+        await ensureColumn('support_chat_sessions', 'resolved_at', "resolved_at DATETIME NULL AFTER owner_locked_at");
+        await ensureColumn('support_chat_sessions', 'resolved_by_staff_id', "resolved_by_staff_id VARCHAR(64) NULL AFTER resolved_at");
+        await ensureColumn('support_chat_sessions', 'resolved_by_staff_name', "resolved_by_staff_name VARCHAR(255) NULL AFTER resolved_by_staff_id");
+        await ensureIndex('support_chat_sessions', 'idx_owner', 'CREATE INDEX idx_owner ON support_chat_sessions (owner_staff_id, status)');
+        await ensureIndex('support_chat_sessions', 'idx_resolved_at', 'CREATE INDEX idx_resolved_at ON support_chat_sessions (resolved_at)');
+
+        // Phase 1: Ratings (1 per session, immutable)
         await db.query(`
             CREATE TABLE IF NOT EXISTS support_chat_ratings (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                id INT AUTO_INCREMENT PRIMARY KEY,
                 session_id INT NOT NULL,
                 patient_id VARCHAR(64) NOT NULL,
-                staff_id VARCHAR(64) NULL,
-                staff_name VARCHAR(255) NULL,
-                rating TINYINT UNSIGNED NOT NULL,
-                feedback TEXT NULL,
+                owner_staff_id VARCHAR(64) NULL,
+                rating TINYINT NOT NULL,
+                comment VARCHAR(1000) NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY uq_support_chat_ratings_session (session_id),
-                INDEX idx_support_chat_ratings_patient (patient_id, created_at),
-                INDEX idx_support_chat_ratings_staff (staff_id, created_at),
-                CONSTRAINT fk_support_chat_ratings_session
+                UNIQUE KEY uniq_session (session_id),
+                INDEX idx_patient_created (patient_id, created_at),
+                INDEX idx_owner_created (owner_staff_id, created_at),
+                CONSTRAINT chk_rating_range CHECK (rating BETWEEN 1 AND 5),
+                CONSTRAINT fk_support_rating_session
                     FOREIGN KEY (session_id) REFERENCES support_chat_sessions(id)
                     ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        // Phase 1: Daily briefing checklist (per staff per day)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS staff_daily_briefings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                staff_id VARCHAR(64) NOT NULL,
+                briefing_date DATE NOT NULL,
+                checklist_json JSON NULL,
+                started_at DATETIME NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_staff_date (staff_id, briefing_date),
+                INDEX idx_date (briefing_date)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        // Phase 1: Duty logs (1 per staff per day, idempotent)
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS staff_duty_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                staff_id VARCHAR(64) NOT NULL,
+                duty_date DATE NOT NULL,
+                source ENUM('briefing','manual') NOT NULL DEFAULT 'briefing',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_staff_duty_date (staff_id, duty_date),
+                INDEX idx_date (duty_date),
+                INDEX idx_staff_date (staff_id, duty_date)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
@@ -353,12 +358,73 @@ async function findBestFAQ(message) {
     return bestScore >= 3 ? bestFaq : null;
 }
 
+// ===================== HELPERS =====================
+
+// Cooldown: 5 hours between staff-escalations for the same patient.
+const ESCALATION_COOLDOWN_SECONDS = 5 * 60 * 60;
+
+async function getLastRatingForPatient(patientId) {
+    const [rows] = await db.query(
+        `SELECT id, session_id, rating, created_at
+         FROM support_chat_ratings
+         WHERE patient_id = ?
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [String(patientId)]
+    );
+    return rows[0] || null;
+}
+
+function computeCooldownRemainingSeconds(lastRating) {
+    if (!lastRating || !lastRating.created_at) return 0;
+    const ts = lastRating.created_at instanceof Date
+        ? lastRating.created_at.getTime()
+        : new Date(lastRating.created_at).getTime();
+    if (!Number.isFinite(ts)) return 0;
+    const elapsed = Math.floor((Date.now() - ts) / 1000);
+    const remaining = ESCALATION_COOLDOWN_SECONDS - elapsed;
+    return remaining > 0 ? remaining : 0;
+}
+
+async function getPatientChatMeta(patientId, sessionId) {
+    const lastRating = await getLastRatingForPatient(patientId);
+    const remaining = computeCooldownRemainingSeconds(lastRating);
+    const cooldown = {
+        active: remaining > 0,
+        remaining_seconds: remaining,
+        last_rating_at: lastRating ? lastRating.created_at : null,
+        last_rated_session_id: lastRating ? lastRating.session_id : null
+    };
+
+    const sessionFlags = { rated: false, requires_rating: false };
+    if (sessionId) {
+        const [r] = await db.query(
+            `SELECT 1 FROM support_chat_ratings WHERE session_id = ? LIMIT 1`,
+            [sessionId]
+        );
+        sessionFlags.rated = r.length > 0;
+        // Check if this session is resolved → requires rating if not yet rated
+        const [s] = await db.query(
+            `SELECT status FROM support_chat_sessions WHERE id = ? LIMIT 1`,
+            [sessionId]
+        );
+        if (s.length > 0 && s[0].status === 'resolved' && !sessionFlags.rated) {
+            sessionFlags.requires_rating = true;
+        }
+    }
+
+    return { cooldown, sessionFlags, lastRating };
+}
+
 // ===================== PATIENT ROUTES =====================
 
 // POST /api/support-chat/sessions — get or create active session
 router.post('/sessions', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
     try {
         await ensureSchema();
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         const patientId = String(req.user.id);
         const patientName = req.user.name || req.user.full_name || 'Pasien';
@@ -382,7 +448,8 @@ router.post('/sessions', verifyPatientToken, ensureSupportChatAllowed, async (re
                  ORDER BY created_at ASC`,
                 [session.id]
             );
-            return res.json({ success: true, session: { ...session, messages } });
+            const meta = await getPatientChatMeta(patientId);
+            return res.json({ success: true, session: { ...session, messages }, ...meta });
         }
 
         // Create new session
@@ -409,6 +476,7 @@ router.post('/sessions', verifyPatientToken, ensureSupportChatAllowed, async (re
             [sessionId]
         );
 
+        const meta = await getPatientChatMeta(patientId);
         return res.json({
             success: true,
             session: {
@@ -418,7 +486,8 @@ router.post('/sessions', verifyPatientToken, ensureSupportChatAllowed, async (re
                 assigned_staff_name: null,
                 created_at: new Date(),
                 messages
-            }
+            },
+            ...meta
         });
 
     } catch (err) {
@@ -431,18 +500,18 @@ router.post('/sessions', verifyPatientToken, ensureSupportChatAllowed, async (re
 router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
     try {
         await ensureSchema();
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         const patientId = String(req.user.id);
         const includeRecentResolved = ['1', 'true', 'yes'].includes(String(req.query.include_recent_resolved || '').toLowerCase());
 
         const [existing] = await db.query(
-            `SELECT s.id, s.status, s.assigned_staff_id, s.assigned_staff_name, s.created_at,
-                    s.resolved_at, s.resolved_by_staff_id, s.resolved_by_staff_name,
-                    r.rating AS rating_score, r.created_at AS rated_at
-             FROM support_chat_sessions s
-             LEFT JOIN support_chat_ratings r ON r.session_id = s.id
-             WHERE s.patient_id = ? AND s.status != 'resolved'
-             ORDER BY s.created_at DESC
+            `SELECT id, status, assigned_staff_id, assigned_staff_name, created_at
+             FROM support_chat_sessions
+             WHERE patient_id = ? AND status != 'resolved'
+             ORDER BY created_at DESC
              LIMIT 1`,
             [patientId]
         );
@@ -453,13 +522,10 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
         // return latest resolved session so client can still pick up closing message + status.
         if (!session && includeRecentResolved) {
             const [resolvedRows] = await db.query(
-                `SELECT s.id, s.status, s.assigned_staff_id, s.assigned_staff_name, s.created_at,
-                        s.resolved_at, s.resolved_by_staff_id, s.resolved_by_staff_name,
-                        r.rating AS rating_score, r.created_at AS rated_at
-                 FROM support_chat_sessions s
-                 LEFT JOIN support_chat_ratings r ON r.session_id = s.id
-                 WHERE s.patient_id = ? AND s.status = 'resolved'
-                 ORDER BY s.updated_at DESC
+                `SELECT id, status, assigned_staff_id, assigned_staff_name, created_at
+                 FROM support_chat_sessions
+                 WHERE patient_id = ? AND status = 'resolved'
+                 ORDER BY updated_at DESC
                  LIMIT 1`,
                 [patientId]
             );
@@ -478,213 +544,12 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
             [session.id]
         );
 
-        return res.json({ success: true, session: { ...session, messages } });
+        const meta = await getPatientChatMeta(patientId, session.id);
+        return res.json({ success: true, session: { ...session, messages, ...meta.sessionFlags }, cooldown: meta.cooldown });
 
     } catch (err) {
         console.error('[support-chat] sessions/current error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-// GET /api/support-chat/sessions/archive — rated resolved sessions for current patient
-router.get('/sessions/archive', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
-    try {
-        await ensureSchema();
-
-        const patientId = String(req.user.id);
-        const reqLimit = parseInt(String(req.query.limit || '20'), 10);
-        const limit = Number.isFinite(reqLimit) ? Math.max(1, Math.min(reqLimit, 100)) : 20;
-
-        const [sessions] = await db.query(
-            `SELECT s.id,
-                    s.created_at,
-                    s.updated_at,
-                    s.resolved_at,
-                    COALESCE(s.resolved_by_staff_name, s.assigned_staff_name, 'Staff') AS staff_name,
-                    r.rating,
-                    r.created_at AS rated_at,
-                    (
-                        SELECT sm.content
-                        FROM support_chat_messages sm
-                        WHERE sm.session_id = s.id
-                        ORDER BY sm.id DESC
-                        LIMIT 1
-                    ) AS last_message
-             FROM support_chat_sessions s
-             INNER JOIN support_chat_ratings r ON r.session_id = s.id
-             WHERE s.patient_id = ?
-               AND s.status = 'resolved'
-             ORDER BY r.created_at DESC
-             LIMIT ?`,
-            [patientId, limit]
-        );
-
-        return res.json({ success: true, sessions });
-    } catch (err) {
-        console.error('[support-chat] sessions/archive error:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-// GET /api/support-chat/sessions/archive/:id — transcript of a rated resolved session
-router.get('/sessions/archive/:id', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
-    try {
-        await ensureSchema();
-
-        const sessionId = parseInt(String(req.params.id || ''), 10);
-        if (Number.isNaN(sessionId)) {
-            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
-        }
-
-        const patientId = String(req.user.id);
-
-        const [sessions] = await db.query(
-            `SELECT s.id,
-                    s.patient_id,
-                    s.patient_name,
-                    s.status,
-                    s.assigned_staff_id,
-                    s.assigned_staff_name,
-                    s.created_at,
-                    s.resolved_at,
-                    s.resolved_by_staff_id,
-                    s.resolved_by_staff_name,
-                    r.rating,
-                    r.feedback,
-                    r.created_at AS rated_at
-             FROM support_chat_sessions s
-             INNER JOIN support_chat_ratings r ON r.session_id = s.id
-             WHERE s.id = ?
-               AND s.patient_id = ?
-               AND s.status = 'resolved'
-             LIMIT 1`,
-            [sessionId, patientId]
-        );
-
-        if (sessions.length === 0) {
-            return res.status(404).json({ success: false, message: 'Arsip tidak ditemukan' });
-        }
-
-        const [messages] = await db.query(
-            `SELECT id, sender_type, sender_name, content, created_at
-             FROM support_chat_messages
-             WHERE session_id = ?
-             ORDER BY created_at ASC`,
-            [sessionId]
-        );
-
-        return res.json({ success: true, session: { ...sessions[0], messages } });
-    } catch (err) {
-        console.error('[support-chat] sessions/archive/:id error:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-// POST /api/support-chat/sessions/:id/rating — submit 1-5 rating for resolved session
-router.post('/sessions/:id/rating', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
-    let conn = null;
-    try {
-        await ensureSchema();
-
-        const sessionId = parseInt(String(req.params.id || ''), 10);
-        if (Number.isNaN(sessionId)) {
-            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
-        }
-
-        const ratingRaw = parseInt(String(req.body && req.body.rating ? req.body.rating : ''), 10);
-        if (!Number.isFinite(ratingRaw) || ratingRaw < 1 || ratingRaw > 5) {
-            return res.status(400).json({ success: false, message: 'Rating harus antara 1 sampai 5' });
-        }
-
-        const feedback = req.body && typeof req.body.feedback === 'string'
-            ? String(req.body.feedback).trim().slice(0, 2000)
-            : null;
-        const patientId = String(req.user.id);
-
-        conn = await db.getConnection();
-        await conn.beginTransaction();
-
-        const [sessions] = await conn.query(
-            `SELECT id,
-                    patient_id,
-                    status,
-                    assigned_staff_id,
-                    assigned_staff_name,
-                    resolved_by_staff_id,
-                    resolved_by_staff_name
-             FROM support_chat_sessions
-             WHERE id = ?
-               AND patient_id = ?
-             FOR UPDATE`,
-            [sessionId, patientId]
-        );
-
-        if (sessions.length === 0) {
-            await conn.rollback();
-            return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
-        }
-
-        const session = sessions[0];
-        if (session.status !== 'resolved') {
-            await conn.rollback();
-            return res.status(400).json({ success: false, message: 'Sesi belum selesai dan belum dapat dirating' });
-        }
-
-        const [existingRatings] = await conn.query(
-            `SELECT id, rating, created_at
-             FROM support_chat_ratings
-             WHERE session_id = ?
-             FOR UPDATE`,
-            [sessionId]
-        );
-
-        if (existingRatings.length > 0) {
-            await conn.commit();
-            return res.json({
-                success: true,
-                alreadyRated: true,
-                rating: {
-                    session_id: sessionId,
-                    rating: existingRatings[0].rating,
-                    rated_at: existingRatings[0].created_at
-                }
-            });
-        }
-
-        const staffId = String(session.resolved_by_staff_id || session.assigned_staff_id || '').trim() || null;
-        const staffName = String(session.resolved_by_staff_name || session.assigned_staff_name || 'Staff').trim();
-
-        await conn.query(
-            `INSERT INTO support_chat_ratings (session_id, patient_id, staff_id, staff_name, rating, feedback)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [sessionId, patientId, staffId, staffName, ratingRaw, feedback]
-        );
-
-        await conn.query(
-            `UPDATE support_chat_sessions
-             SET updated_at = NOW()
-             WHERE id = ?`,
-            [sessionId]
-        );
-
-        await conn.commit();
-
-        return res.json({
-            success: true,
-            rating: {
-                session_id: sessionId,
-                rating: ratingRaw,
-                rated_at: new Date()
-            }
-        });
-    } catch (err) {
-        if (conn) {
-            try { await conn.rollback(); } catch (rollbackErr) { /* ignore rollback errors */ }
-        }
-        console.error('[support-chat] sessions/:id/rating error:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    } finally {
-        if (conn) conn.release();
     }
 });
 
@@ -727,14 +592,6 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
         }
 
         const session = sessions[0];
-
-        if (session.status === 'resolved') {
-            await conn.rollback();
-            return res.status(409).json({
-                success: false,
-                message: 'Sesi sudah selesai. Silakan mulai sesi baru untuk chat berikutnya.'
-            });
-        }
 
         // Idempotency guard: avoid duplicate inserts when client triggers rapid double submit.
         const [recentRows] = await conn.query(
@@ -836,6 +693,51 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
                 global.io.to(`support:${sessionId}`).emit('support:new_message', botReply);
             }
         } else {
+            // Bot can't answer → check cooldown before escalating to staff
+            const lastRating = await getLastRatingForPatient(patientId);
+            const cooldownRemaining = computeCooldownRemainingSeconds(lastRating);
+
+            if (cooldownRemaining > 0) {
+                // Cooldown active: do NOT escalate. Save a bot notice instead.
+                const minutes = Math.ceil(cooldownRemaining / 60);
+                const hours = Math.floor(minutes / 60);
+                const remMin = minutes % 60;
+                const timeText = hours > 0
+                    ? `${hours} jam${remMin > 0 ? ` ${remMin} menit` : ''}`
+                    : `${minutes} menit`;
+                const cooldownMsg = `Anda baru saja terhubung dengan staff kami. Untuk pertanyaan baru ke staff, silakan tunggu ${timeText} lagi.\n\nSementara itu, saya tetap siap membantu menjawab pertanyaan umum. 🤖`;
+
+                const [botMsgResult] = await db.query(
+                    `INSERT INTO support_chat_messages (session_id, sender_type, sender_name, content) VALUES (?, 'bot', 'Asisten Virtual', ?)`,
+                    [sessionId, cooldownMsg]
+                );
+
+                botReply = {
+                    id: botMsgResult.insertId,
+                    session_id: sessionId,
+                    sender_type: 'bot',
+                    sender_name: 'Asisten Virtual',
+                    content: cooldownMsg,
+                    created_at: new Date()
+                };
+
+                if (global.io) {
+                    global.io.to(`support:${sessionId}`).emit('support:new_message', botReply);
+                }
+
+                return res.json({
+                    success: true,
+                    message: patientMsg,
+                    botReply,
+                    escalated: false,
+                    cooldown: {
+                        active: true,
+                        remaining_seconds: cooldownRemaining,
+                        last_rating_at: lastRating ? lastRating.created_at : null
+                    }
+                });
+            }
+
             // Bot can't answer → escalate to staff
             await db.query(
                 `UPDATE support_chat_sessions SET status = 'escalated', updated_at = NOW() WHERE id = ?`,
@@ -884,6 +786,80 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
     }
 });
 
+// POST /api/support-chat/sessions/:id/rating — patient submits rating (1-5) for resolved session
+router.post('/sessions/:id/rating', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
+    try {
+        await ensureSchema();
+
+        // Patient endpoints: no-store
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
+        const sessionId = parseInt(req.params.id, 10);
+        if (Number.isNaN(sessionId)) {
+            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
+        }
+
+        const patientId = String(req.user.id);
+        const ratingRaw = req.body && req.body.rating;
+        const rating = parseInt(ratingRaw, 10);
+        if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating harus 1-5' });
+        }
+        const comment = req.body && typeof req.body.comment === 'string'
+            ? String(req.body.comment).trim().slice(0, 1000)
+            : null;
+
+        const [sessions] = await db.query(
+            `SELECT id, patient_id, status, owner_staff_id
+             FROM support_chat_sessions
+             WHERE id = ? LIMIT 1`,
+            [sessionId]
+        );
+        if (sessions.length === 0 || String(sessions[0].patient_id) !== patientId) {
+            return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
+        }
+        if (sessions[0].status !== 'resolved') {
+            return res.status(400).json({ success: false, message: 'Sesi belum diselesaikan' });
+        }
+
+        const ownerStaffId = sessions[0].owner_staff_id || null;
+
+        try {
+            await db.query(
+                `INSERT INTO support_chat_ratings (session_id, patient_id, owner_staff_id, rating, comment)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [sessionId, patientId, ownerStaffId, rating, comment]
+            );
+        } catch (err) {
+            if (err && err.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ success: false, message: 'Sesi sudah dirating', code: 'ALREADY_RATED' });
+            }
+            throw err;
+        }
+
+        if (global.io) {
+            global.io.to(`support:${sessionId}`).emit('support:session_rated', { sessionId, rating });
+            global.io.emit('support:session_rated', { sessionId, rating });
+        }
+
+        return res.json({
+            success: true,
+            rating,
+            cooldown: {
+                active: true,
+                remaining_seconds: ESCALATION_COOLDOWN_SECONDS,
+                last_rating_at: new Date()
+            }
+        });
+
+    } catch (err) {
+        console.error('[support-chat] rating error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // ===================== STAFF ROUTES =====================
 
 // GET /api/support-chat/staff/pending — list escalated sessions
@@ -894,6 +870,7 @@ router.get('/staff/pending', verifyToken, async (req, res) => {
         const [sessions] = await db.query(
             `SELECT s.id, s.patient_id, s.patient_name, s.status,
                     s.assigned_staff_id, s.assigned_staff_name,
+                    s.owner_staff_id, s.owner_staff_name, s.owner_locked_at,
                     s.created_at, s.updated_at,
                     m.content AS last_message, m.created_at AS last_message_at
              FROM support_chat_sessions s
@@ -927,7 +904,9 @@ router.get('/staff/session/:id', verifyToken, async (req, res) => {
         const sessionId = parseInt(req.params.id);
 
         const [sessions] = await db.query(
-            `SELECT id, patient_id, patient_name, status, assigned_staff_id, assigned_staff_name, created_at
+            `SELECT id, patient_id, patient_name, status, assigned_staff_id, assigned_staff_name,
+                    owner_staff_id, owner_staff_name, owner_locked_at,
+                    resolved_at, resolved_by_staff_id, resolved_by_staff_name, created_at
              FROM support_chat_sessions WHERE id = ?`,
             [sessionId]
         );
@@ -978,7 +957,7 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
         await conn.beginTransaction();
 
         const [sessions] = await conn.query(
-            `SELECT id, patient_id, patient_name, status, assigned_staff_id, assigned_staff_name
+            `SELECT id, patient_id, patient_name, status, owner_staff_id, owner_staff_name
              FROM support_chat_sessions
              WHERE id = ?
              FOR UPDATE`,
@@ -990,16 +969,17 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
         }
 
-        const session = sessions[0];
-        const lockedStaffId = String(session.assigned_staff_id || '').trim();
-        if (lockedStaffId && staffId && lockedStaffId !== staffId) {
+        const sessionRow = sessions[0];
+
+        // Ownership lock: if owner already set and not this staff → forbidden
+        if (sessionRow.owner_staff_id && String(sessionRow.owner_staff_id) !== String(staffId)) {
             await conn.rollback();
-            return res.status(423).json({
+            return res.status(403).json({
                 success: false,
-                message: `Sesi ini sedang ditangani oleh ${session.assigned_staff_name || 'staff lain'}`,
-                readOnly: true,
-                assigned_staff_id: session.assigned_staff_id,
-                assigned_staff_name: session.assigned_staff_name || null
+                message: `Sesi sudah ditangani oleh ${sessionRow.owner_staff_name || 'staff lain'}`,
+                code: 'NOT_SESSION_OWNER',
+                owner_staff_id: sessionRow.owner_staff_id,
+                owner_staff_name: sessionRow.owner_staff_name || null
             });
         }
 
@@ -1039,15 +1019,20 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
             }
         }
 
-        // Assign staff if not yet assigned; also ensure status is correct
+        // Assign + claim ownership (atomic via WHERE clause: only sets owner if currently NULL)
         await conn.query(
             `UPDATE support_chat_sessions
              SET assigned_staff_id = COALESCE(assigned_staff_id, ?),
                  assigned_staff_name = COALESCE(assigned_staff_name, ?),
+                 owner_staff_id = COALESCE(owner_staff_id, ?),
+                 owner_staff_name = COALESCE(owner_staff_name, ?),
+                 owner_locked_at = COALESCE(owner_locked_at, NOW()),
                  updated_at = NOW()
              WHERE id = ?`,
-            [staffId, staffName, sessionId]
+            [staffId, staffName, staffId, staffName, sessionId]
         );
+
+        const justClaimed = !sessionRow.owner_staff_id;
 
         const [result] = await conn.query(
             `INSERT INTO support_chat_messages (session_id, sender_type, sender_name, content)
@@ -1073,9 +1058,16 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
             global.io.to(`support:${sessionId}`).emit('support:new_message', staffMsg);
             // Notify other staff that session is being handled
             global.io.emit('support:staff_replied', { sessionId, staffName });
+            if (justClaimed) {
+                global.io.emit('support:session_locked', {
+                    sessionId,
+                    owner_staff_id: staffId,
+                    owner_staff_name: staffName
+                });
+            }
         }
 
-        return res.json({ success: true, message: staffMsg });
+        return res.json({ success: true, message: staffMsg, owner_staff_id: staffId, owner_staff_name: staffName });
 
     } catch (err) {
         if (conn) {
@@ -1111,7 +1103,7 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
         await conn.beginTransaction();
 
         const [sessions] = await conn.query(
-            `SELECT id, status, assigned_staff_id, assigned_staff_name
+            `SELECT id, status, assigned_staff_id, assigned_staff_name, owner_staff_id, owner_staff_name
              FROM support_chat_sessions
              WHERE id = ?
              FOR UPDATE`,
@@ -1123,19 +1115,21 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
         }
 
-        const lockedStaffId = String(sessions[0].assigned_staff_id || '').trim();
-        if (lockedStaffId && staffId && lockedStaffId !== staffId) {
+        const sessionRow = sessions[0];
+
+        // Ownership lock: only owner can resolve (if owner already claimed)
+        if (sessionRow.owner_staff_id && String(sessionRow.owner_staff_id) !== String(staffId)) {
             await conn.rollback();
-            return res.status(423).json({
+            return res.status(403).json({
                 success: false,
-                message: `Sesi ini sedang ditangani oleh ${sessions[0].assigned_staff_name || 'staff lain'}`,
-                readOnly: true,
-                assigned_staff_id: sessions[0].assigned_staff_id,
-                assigned_staff_name: sessions[0].assigned_staff_name || null
+                message: `Sesi sudah ditangani oleh ${sessionRow.owner_staff_name || 'staff lain'}`,
+                code: 'NOT_SESSION_OWNER',
+                owner_staff_id: sessionRow.owner_staff_id,
+                owner_staff_name: sessionRow.owner_staff_name || null
             });
         }
 
-        if (sessions[0].status === 'resolved') {
+        if (sessionRow.status === 'resolved') {
             await conn.commit();
             return res.json({ success: true, message: 'Sesi sudah diselesaikan' });
         }
@@ -1151,12 +1145,15 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
              SET status = 'resolved',
                  assigned_staff_id = COALESCE(assigned_staff_id, NULLIF(?, '')),
                  assigned_staff_name = COALESCE(assigned_staff_name, ?),
+                 owner_staff_id = COALESCE(owner_staff_id, NULLIF(?, '')),
+                 owner_staff_name = COALESCE(owner_staff_name, ?),
+                 owner_locked_at = COALESCE(owner_locked_at, NOW()),
                  resolved_at = NOW(),
-                 resolved_by_staff_id = COALESCE(resolved_by_staff_id, NULLIF(?, '')),
-                 resolved_by_staff_name = COALESCE(resolved_by_staff_name, ?),
+                 resolved_by_staff_id = NULLIF(?, ''),
+                 resolved_by_staff_name = ?,
                  updated_at = NOW()
              WHERE id = ?`,
-            [staffId, staffName, staffId, staffName, sessionId]
+            [staffId, staffName, staffId, staffName, staffId, staffName, sessionId]
         );
 
         await conn.commit();
@@ -1199,214 +1196,6 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     } finally {
         if (conn) conn.release();
-    }
-});
-
-// GET /api/support-chat/staff/points — leaderboard poin staff dari sesi resolved
-router.get('/staff/points', verifyToken, async (req, res) => {
-    try {
-        await ensureSchema();
-
-        const reqDays = parseInt(String(req.query.days || '30'), 10);
-        const days = Number.isFinite(reqDays) ? Math.max(7, Math.min(reqDays, 90)) : 30;
-        const currentStaffId = String(req.user.id || req.user.new_id || '').trim();
-
-        const [rows] = await db.query(
-            `SELECT t.staff_id,
-                    t.staff_name,
-                    COUNT(*) AS resolved_count,
-                    SUM(CASE
-                        WHEN t.rating IS NULL THEN 8
-                        ELSE 10 + (t.rating * 2)
-                    END) AS total_points,
-                    SUM(CASE WHEN t.rating IS NOT NULL THEN 1 ELSE 0 END) AS rated_count,
-                    ROUND(AVG(t.rating), 2) AS avg_rating
-             FROM (
-                SELECT s.id,
-                       COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) AS staff_id,
-                       COALESCE(NULLIF(s.resolved_by_staff_name, ''), NULLIF(s.assigned_staff_name, ''), 'Staff') AS staff_name,
-                       r.rating,
-                       COALESCE(s.resolved_at, s.updated_at) AS resolved_ts
-                FROM support_chat_sessions s
-                LEFT JOIN support_chat_ratings r ON r.session_id = s.id
-                WHERE s.status = 'resolved'
-                  AND COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) IS NOT NULL
-                  AND COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)
-             ) t
-             GROUP BY t.staff_id, t.staff_name
-             ORDER BY total_points DESC, resolved_count DESC, t.staff_name ASC
-             LIMIT 30`,
-            [days]
-        );
-
-        const leaderboard = rows.map((row, index) => ({
-            rank: index + 1,
-            staff_id: row.staff_id,
-            staff_name: row.staff_name,
-            resolved_count: Number(row.resolved_count || 0),
-            total_points: Number(row.total_points || 0),
-            rated_count: Number(row.rated_count || 0),
-            avg_rating: row.avg_rating === null ? null : Number(row.avg_rating)
-        }));
-
-        let me = null;
-        if (currentStaffId) {
-            me = leaderboard.find((row) => String(row.staff_id || '') === currentStaffId) || null;
-        }
-
-        return res.json({
-            success: true,
-            days,
-            leaderboard,
-            me
-        });
-
-    } catch (err) {
-        console.error('[support-chat] staff/points error:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
-
-// GET /api/support-chat/staff/briefing-weekly — ringkasan operasional 7 hari
-router.get('/staff/briefing-weekly', verifyToken, async (req, res) => {
-    try {
-        await ensureSchema();
-
-        const reqDays = parseInt(String(req.query.days || '7'), 10);
-        const days = Number.isFinite(reqDays) ? Math.max(7, Math.min(reqDays, 30)) : 7;
-
-        const [[pendingSummary]] = await db.query(
-            `SELECT COUNT(*) AS pending_count,
-                    COALESCE(MAX(TIMESTAMPDIFF(MINUTE, s.updated_at, NOW())), 0) AS oldest_wait_minutes
-             FROM support_chat_sessions s
-             WHERE s.status = 'escalated'`
-        );
-
-        const [[resolvedSummary]] = await db.query(
-            `SELECT COUNT(*) AS resolved_count,
-                    SUM(CASE WHEN r.rating IS NOT NULL THEN 1 ELSE 0 END) AS rated_count,
-                    ROUND(AVG(r.rating), 2) AS avg_rating
-             FROM support_chat_sessions s
-             LEFT JOIN support_chat_ratings r ON r.session_id = s.id
-             WHERE s.status = 'resolved'
-               AND COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
-            [days]
-        );
-
-        const [[replySummary]] = await db.query(
-            `SELECT ROUND(AVG(TIMESTAMPDIFF(MINUTE, p.first_patient_at, st.first_staff_at)), 1) AS avg_first_reply_minutes
-             FROM (
-                SELECT session_id, MIN(created_at) AS first_patient_at
-                FROM support_chat_messages
-                WHERE sender_type = 'patient'
-                GROUP BY session_id
-             ) p
-             INNER JOIN (
-                SELECT session_id, MIN(created_at) AS first_staff_at
-                FROM support_chat_messages
-                WHERE sender_type = 'staff'
-                GROUP BY session_id
-             ) st ON st.session_id = p.session_id AND st.first_staff_at >= p.first_patient_at
-             INNER JOIN support_chat_sessions s ON s.id = p.session_id
-             WHERE COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
-            [days]
-        );
-
-        const [ratingRows] = await db.query(
-            `SELECT r.rating, COUNT(*) AS total
-             FROM support_chat_ratings r
-             INNER JOIN support_chat_sessions s ON s.id = r.session_id
-             WHERE COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)
-             GROUP BY r.rating
-             ORDER BY r.rating DESC`,
-            [days]
-        );
-
-        const [topStaffRows] = await db.query(
-            `SELECT t.staff_id,
-                    t.staff_name,
-                    COUNT(*) AS resolved_count,
-                    SUM(CASE
-                        WHEN t.rating IS NULL THEN 8
-                        ELSE 10 + (t.rating * 2)
-                    END) AS total_points,
-                    ROUND(AVG(t.rating), 2) AS avg_rating
-             FROM (
-                SELECT s.id,
-                       COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) AS staff_id,
-                       COALESCE(NULLIF(s.resolved_by_staff_name, ''), NULLIF(s.assigned_staff_name, ''), 'Staff') AS staff_name,
-                       r.rating
-                FROM support_chat_sessions s
-                LEFT JOIN support_chat_ratings r ON r.session_id = s.id
-                WHERE s.status = 'resolved'
-                  AND COALESCE(NULLIF(s.resolved_by_staff_id, ''), NULLIF(s.assigned_staff_id, '')) IS NOT NULL
-                  AND COALESCE(s.resolved_at, s.updated_at) >= DATE_SUB(NOW(), INTERVAL ? DAY)
-             ) t
-             GROUP BY t.staff_id, t.staff_name
-             ORDER BY total_points DESC, resolved_count DESC
-             LIMIT 3`,
-            [days]
-        );
-
-        const resolvedCount = Number(resolvedSummary.resolved_count || 0);
-        const ratedCount = Number(resolvedSummary.rated_count || 0);
-        const avgRating = resolvedSummary.avg_rating === null ? null : Number(resolvedSummary.avg_rating);
-        const pendingCount = Number(pendingSummary.pending_count || 0);
-        const oldestWaitMinutes = Number(pendingSummary.oldest_wait_minutes || 0);
-        const avgFirstReplyMinutes = replySummary.avg_first_reply_minutes === null
-            ? null
-            : Number(replySummary.avg_first_reply_minutes);
-
-        const ratingBreakdown = [5, 4, 3, 2, 1].map((score) => {
-            const found = ratingRows.find((row) => Number(row.rating) === score);
-            return { rating: score, total: found ? Number(found.total || 0) : 0 };
-        });
-
-        const topStaff = topStaffRows.map((row) => ({
-            staff_id: row.staff_id,
-            staff_name: row.staff_name,
-            resolved_count: Number(row.resolved_count || 0),
-            total_points: Number(row.total_points || 0),
-            avg_rating: row.avg_rating === null ? null : Number(row.avg_rating)
-        }));
-
-        const actions = [];
-        if (pendingCount >= 5) {
-            actions.push('Antrian eskalasi cukup tinggi. Prioritaskan sesi paling lama terlebih dahulu.');
-        }
-        if (oldestWaitMinutes >= 30) {
-            actions.push('Ada pasien menunggu lebih dari 30 menit. Perlu penanganan cepat.');
-        }
-        if (avgFirstReplyMinutes !== null && avgFirstReplyMinutes > 10) {
-            actions.push('Rata-rata respons pertama di atas 10 menit. Coba percepat pickup sesi baru.');
-        }
-        if (avgRating !== null && avgRating < 4.5) {
-            actions.push('Rata-rata rating di bawah 4.5. Perbaiki kualitas closing dan follow-up.');
-        }
-        if (actions.length === 0) {
-            actions.push('Performa minggu ini stabil. Pertahankan respons cepat dan closing yang jelas.');
-        }
-
-        return res.json({
-            success: true,
-            generated_at: new Date(),
-            days,
-            kpis: {
-                pending_count: pendingCount,
-                oldest_wait_minutes: oldestWaitMinutes,
-                resolved_count: resolvedCount,
-                rated_count: ratedCount,
-                avg_rating: avgRating,
-                avg_first_reply_minutes: avgFirstReplyMinutes
-            },
-            rating_breakdown: ratingBreakdown,
-            top_staff: topStaff,
-            actions
-        });
-
-    } catch (err) {
-        console.error('[support-chat] staff/briefing-weekly error:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 

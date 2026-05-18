@@ -30,12 +30,25 @@
         lastMessageId: 0,
         hasStaffReply: false,
         sendingMessage: false,
+        // Phase 6: rating state
+        requiresRating: false,
+        rated: false,
         submittingRating: false,
-        archiveSessions: []
+        cooldown: null     // { active, remaining_seconds, last_rating_at }
     };
 
+    // ==================== UTIL ====================
+    function formatRemaining(seconds) {
+        var s = Math.max(0, Math.floor(Number(seconds) || 0));
+        var mins = Math.ceil(s / 60);
+        if (mins < 60) return mins + ' menit';
+        var hr = Math.floor(mins / 60);
+        var rem = mins % 60;
+        return hr + ' jam' + (rem > 0 ? ' ' + rem + ' menit' : '');
+    }
+
     // ==================== DOM REFS ====================
-    var fab, panel, messagesContainer, inputEl, sendBtn, statusBar, ratingArea, archiveList, archiveModal;
+    var fab, panel, messagesContainer, inputEl, sendBtn, statusBar;
 
     // ==================== TOKEN ====================
     function getToken() {
@@ -78,11 +91,14 @@
         if (token) headers['Authorization'] = 'Bearer ' + token;
 
         var resp = await fetch(API_BASE + path, Object.assign({ headers: headers }, options || {}));
+        var body = await resp.json().catch(() => ({}));
         if (!resp.ok) {
-            var err = await resp.json().catch(() => ({}));
-            throw new Error(err.message || 'Request failed');
+            var err = new Error((body && body.message) || 'Request failed');
+            err.status = resp.status;
+            err.body = body || {};
+            throw err;
         }
-        return resp.json();
+        return body;
     }
 
     // ==================== SOCKET ====================
@@ -140,12 +156,12 @@
                     state.hasStaffReply = true;
                 }
                 state.session.status = data.session.status;
-                state.session.rating_score = data.session.rating_score || null;
-                state.session.rated_at = data.session.rated_at || null;
+                if (typeof data.session.rated === 'boolean') state.rated = data.session.rated;
+                if (typeof data.session.requires_rating === 'boolean') state.requiresRating = data.session.requires_rating;
+                if (data.cooldown) state.cooldown = data.cooldown;
                 updateStatusBar();
                 if (state.session.status === 'resolved') {
                     stopMessagePolling();
-                    loadArchiveSessions();
                 }
             } catch (e) {
                 // Silent fallback polling errors.
@@ -199,11 +215,9 @@
         socket.on('support:resolved', function (data) {
             if (!state.session || !sameSessionId(data.sessionId, state.session.id)) return;
             state.session.status = 'resolved';
-            state.session.rating_score = null;
-            state.session.rated_at = null;
+            if (!state.rated) state.requiresRating = true;
             updateStatusBar();
             stopMessagePolling();
-            loadArchiveSessions();
 
             // Fallback: if the closing message event was missed, add it from resolved payload.
             var closingId = Number(data && data.closingMessageId ? data.closingMessageId : 0);
@@ -248,208 +262,6 @@
         var d = new Date(dateVal);
         return d.getHours().toString().padStart(2, '0') + ':' +
             d.getMinutes().toString().padStart(2, '0');
-    }
-
-    function formatDateTime(dateVal) {
-        var d = new Date(dateVal);
-        return d.toLocaleString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
-
-    function isSessionRated() {
-        if (!state.session) return false;
-        return !!(state.session.rated_at || state.session.rating_score || state.session.rating);
-    }
-
-    function isSessionResolvedAndUnrated() {
-        if (!state.session) return false;
-        return state.session.status === 'resolved' && !isSessionRated();
-    }
-
-    function applyComposerState() {
-        if (!inputEl || !sendBtn) return;
-
-        var canSend = !!state.session && state.session.status !== 'resolved' && !state.sendingMessage;
-        inputEl.disabled = !canSend;
-        sendBtn.disabled = !canSend;
-
-        if (!state.session) {
-            inputEl.placeholder = 'Memuat sesi bantuan...';
-            return;
-        }
-
-        if (state.session.status === 'resolved') {
-            inputEl.placeholder = 'Sesi selesai. Silakan beri rating atau mulai sesi baru.';
-            return;
-        }
-
-        inputEl.placeholder = 'Ketik pertanyaan...';
-    }
-
-    function renderRatingArea() {
-        if (!ratingArea) return;
-
-        if (!state.session || state.session.status !== 'resolved') {
-            ratingArea.style.display = 'none';
-            ratingArea.innerHTML = '';
-            return;
-        }
-
-        if (isSessionRated()) {
-            ratingArea.style.display = 'block';
-            ratingArea.innerHTML = '<div class="sc-rating-done">Terima kasih, rating Anda sudah tersimpan.</div>';
-            return;
-        }
-
-        ratingArea.style.display = 'block';
-        ratingArea.innerHTML = [
-            '<div class="sc-rating-title">Bagaimana bantuan staff kami?</div>',
-            '<div class="sc-rating-stars">',
-            '  <button class="sc-rating-star" data-score="1" aria-label="Rating 1">1</button>',
-            '  <button class="sc-rating-star" data-score="2" aria-label="Rating 2">2</button>',
-            '  <button class="sc-rating-star" data-score="3" aria-label="Rating 3">3</button>',
-            '  <button class="sc-rating-star" data-score="4" aria-label="Rating 4">4</button>',
-            '  <button class="sc-rating-star" data-score="5" aria-label="Rating 5">5</button>',
-            '</div>',
-            '<div class="sc-rating-hint">Pilih nilai 1-5 untuk menutup sesi bantuan.</div>'
-        ].join('');
-
-        Array.prototype.forEach.call(ratingArea.querySelectorAll('.sc-rating-star'), function (btn) {
-            btn.addEventListener('click', function () {
-                if (state.submittingRating) return;
-                var score = parseInt(String(btn.getAttribute('data-score') || ''), 10);
-                if (!Number.isFinite(score)) return;
-                submitRating(score);
-            });
-        });
-    }
-
-    async function submitRating(score) {
-        if (!state.session || state.session.status !== 'resolved') return;
-        if (state.submittingRating) return;
-
-        state.submittingRating = true;
-        if (ratingArea) {
-            ratingArea.classList.add('sc-rating-loading');
-        }
-
-        try {
-            var data = await apiFetch('/sessions/' + state.session.id + '/rating', {
-                method: 'POST',
-                body: JSON.stringify({ rating: score })
-            });
-
-            if (!state.session) return;
-            var ratingData = data && data.rating ? data.rating : {};
-            state.session.rating_score = Number(ratingData.rating || score);
-            state.session.rated_at = ratingData.rated_at || new Date();
-
-            renderRatingArea();
-            await loadArchiveSessions();
-            appendSystemMessage('Terima kasih atas rating Anda. Sesi bantuan telah diarsipkan.');
-            applyComposerState();
-
-            setTimeout(function () {
-                closePanel();
-            }, 600);
-        } catch (err) {
-            console.error('[support-chat] submit rating error:', err);
-            appendSystemMessage('Gagal menyimpan rating. Coba lagi.');
-        } finally {
-            state.submittingRating = false;
-            if (ratingArea) {
-                ratingArea.classList.remove('sc-rating-loading');
-            }
-        }
-    }
-
-    async function loadArchiveSessions() {
-        if (!archiveList) return;
-        try {
-            var data = await apiFetch('/sessions/archive?limit=20');
-            state.archiveSessions = data && data.sessions ? data.sessions : [];
-            renderArchiveSessions();
-        } catch (err) {
-            state.archiveSessions = [];
-            renderArchiveSessions();
-        }
-    }
-
-    function renderArchiveSessions() {
-        if (!archiveList) return;
-
-        if (!state.archiveSessions || state.archiveSessions.length === 0) {
-            archiveList.innerHTML = '<div class="sc-archive-empty">Belum ada riwayat bantuan.</div>';
-            return;
-        }
-
-        archiveList.innerHTML = state.archiveSessions.map(function (session) {
-            var ratedAt = session.rated_at || session.resolved_at || session.updated_at || session.created_at;
-            var rating = Number(session.rating || 0);
-            var preview = String(session.last_message || '').trim();
-            return [
-                '<button type="button" class="sc-archive-item" data-session-id="' + escapeHtml(String(session.id)) + '">',
-                '  <div class="sc-archive-item-top">',
-                '    <span class="sc-archive-item-date">' + escapeHtml(formatDateTime(ratedAt)) + '</span>',
-                '    <span class="sc-archive-item-rating">⭐ ' + escapeHtml(String(rating)) + '/5</span>',
-                '  </div>',
-                '  <div class="sc-archive-item-preview">' + escapeHtml(preview || 'Lihat transcript percakapan') + '</div>',
-                '</button>'
-            ].join('');
-        }).join('');
-    }
-
-    async function openArchiveTranscript(sessionId) {
-        if (!archiveModal) return;
-        var numericId = parseInt(String(sessionId || ''), 10);
-        if (!Number.isFinite(numericId)) return;
-
-        var titleEl = archiveModal.querySelector('#sc-archive-modal-title');
-        var metaEl = archiveModal.querySelector('#sc-archive-modal-meta');
-        var bodyEl = archiveModal.querySelector('#sc-archive-modal-body');
-        if (!titleEl || !metaEl || !bodyEl) return;
-
-        titleEl.textContent = 'Memuat transcript...';
-        metaEl.textContent = '';
-        bodyEl.innerHTML = '<div class="sc-archive-modal-loading">Memuat...</div>';
-        archiveModal.style.display = 'flex';
-
-        try {
-            var data = await apiFetch('/sessions/archive/' + numericId);
-            if (!data || !data.session) {
-                throw new Error('Arsip tidak tersedia');
-            }
-
-            var session = data.session;
-            var ratedAt = session.rated_at || session.resolved_at || session.updated_at || session.created_at;
-            titleEl.textContent = 'Transcript Bantuan';
-            metaEl.textContent = formatDateTime(ratedAt) + ' • Rating ' + String(session.rating || '-');
-
-            var messageHtml = (session.messages || []).map(function (msg) {
-                var labelMap = { bot: '🤖 Asisten', staff: '👤 staff', patient: 'Anda' };
-                var label = labelMap[msg.sender_type] || msg.sender_name || '-';
-                return [
-                    '<div class="sc-archive-msg sc-archive-msg--' + escapeHtml(String(msg.sender_type || 'bot')) + '">',
-                    '  <div class="sc-archive-msg-content">' + formatContent(msg.content || '') + '</div>',
-                    '  <div class="sc-archive-msg-meta">' + escapeHtml(label) + ' • ' + escapeHtml(formatTime(msg.created_at)) + '</div>',
-                    '</div>'
-                ].join('');
-            }).join('');
-
-            bodyEl.innerHTML = messageHtml || '<div class="sc-archive-modal-loading">Transcript kosong.</div>';
-        } catch (err) {
-            bodyEl.innerHTML = '<div class="sc-archive-modal-loading">Gagal memuat transcript.</div>';
-        }
-    }
-
-    function closeArchiveTranscript() {
-        if (!archiveModal) return;
-        archiveModal.style.display = 'none';
     }
 
     function appendMessage(msg) {
@@ -505,16 +317,136 @@
                 statusBar.className = 'sc-status sc-status--escalated';
             }
         } else if (status === 'resolved') {
-            if (isSessionRated()) {
-                statusBar.textContent = '✅ Selesai • Rated';
-            } else {
-                statusBar.textContent = '✅ Selesai • Menunggu Rating';
-            }
+            statusBar.textContent = state.rated ? '✅ Selesai · Terima kasih atas ratingnya' : '✅ Selesai';
             statusBar.className = 'sc-status sc-status--resolved';
         }
+        applyResolvedRatingGate();
+    }
 
-        renderRatingArea();
-        applyComposerState();
+    // ---------- Phase 6: rating gate ----------
+    function applyResolvedRatingGate() {
+        if (!state.session) return;
+        var needsRating = state.session.status === 'resolved' && state.requiresRating && !state.rated;
+
+        if (inputEl) inputEl.disabled = needsRating || inputEl.disabled === true && state.sendingMessage;
+        if (sendBtn) sendBtn.disabled = needsRating || state.sendingMessage;
+
+        // Close button gating
+        var closeBtn = document.getElementById('sc-close-btn');
+        if (closeBtn) {
+            if (needsRating) {
+                closeBtn.dataset.scLocked = '1';
+                closeBtn.title = 'Beri rating dulu untuk menutup percakapan';
+                closeBtn.style.opacity = '0.5';
+            } else {
+                if (closeBtn.dataset.scLocked) {
+                    delete closeBtn.dataset.scLocked;
+                    closeBtn.title = '';
+                    closeBtn.style.opacity = '';
+                }
+            }
+        }
+
+        renderRatingPanel(needsRating);
+    }
+
+    function renderRatingPanel(show) {
+        if (!panel) return;
+        var existing = document.getElementById('sc-rating-panel');
+        if (!show) {
+            if (existing) existing.remove();
+            return;
+        }
+        if (existing) return; // already shown
+
+        var div = document.createElement('div');
+        div.id = 'sc-rating-panel';
+        div.className = 'sc-rating-panel';
+        div.style.cssText = 'padding:16px;border-top:1px solid #e5e7eb;background:#f9fafb;text-align:center;';
+        div.innerHTML = [
+            '<div style="font-size:13px;color:#374151;margin-bottom:8px;font-weight:600;">Bagaimana pengalaman Anda dengan staff kami?</div>',
+            '<div id="sc-rating-stars" style="display:flex;justify-content:center;gap:6px;margin-bottom:10px;">',
+            [1,2,3,4,5].map(function (n) {
+                return '<button type="button" class="sc-star" data-rating="' + n + '" style="background:none;border:none;cursor:pointer;font-size:28px;color:#d1d5db;padding:2px 4px;line-height:1;" aria-label="Beri ' + n + ' bintang">★</button>';
+            }).join(''),
+            '</div>',
+            '<div id="sc-rating-status" style="font-size:11px;color:#6b7280;">Wajib memberi rating sebelum menutup percakapan.</div>'
+        ].join('');
+
+        // Append above input area
+        var inputArea = document.querySelector('#sc-panel .sc-input-area');
+        if (inputArea && inputArea.parentNode) {
+            inputArea.parentNode.insertBefore(div, inputArea);
+        } else {
+            panel.appendChild(div);
+        }
+
+        // Bind stars
+        var stars = div.querySelectorAll('.sc-star');
+        stars.forEach(function (btn) {
+            btn.addEventListener('mouseenter', function () {
+                highlightStars(stars, Number(btn.dataset.rating));
+            });
+            btn.addEventListener('mouseleave', function () {
+                highlightStars(stars, 0);
+            });
+            btn.addEventListener('click', function () {
+                submitRating(Number(btn.dataset.rating));
+            });
+        });
+    }
+
+    function highlightStars(stars, upTo) {
+        stars.forEach(function (s) {
+            var n = Number(s.dataset.rating);
+            s.style.color = (n <= upTo) ? '#f59e0b' : '#d1d5db';
+        });
+    }
+
+    async function submitRating(rating) {
+        if (state.submittingRating || state.rated || !state.session) return;
+        var sid = state.session.id;
+        state.submittingRating = true;
+        var statusEl = document.getElementById('sc-rating-status');
+        if (statusEl) statusEl.textContent = 'Mengirim rating...';
+
+        try {
+            var data = await apiFetch('/sessions/' + sid + '/rating', {
+                method: 'POST',
+                body: JSON.stringify({ rating: rating })
+            });
+            state.rated = true;
+            state.requiresRating = false;
+            if (data && data.cooldown) state.cooldown = data.cooldown;
+
+            // Persist star color
+            var stars = document.querySelectorAll('#sc-rating-stars .sc-star');
+            highlightStars(stars, rating);
+            stars.forEach(function (s) { s.disabled = true; });
+
+            if (statusEl) statusEl.textContent = 'Terima kasih atas ratingnya! 🙏';
+            updateStatusBar();
+
+            // Auto-close panel after a short delay
+            setTimeout(function () {
+                renderRatingPanel(false);
+                closePanel();
+            }, 1500);
+
+        } catch (err) {
+            console.error('[support-chat] submitRating error:', err);
+            if (err && err.status === 409) {
+                // Already rated
+                state.rated = true;
+                state.requiresRating = false;
+                updateStatusBar();
+                renderRatingPanel(false);
+            } else {
+                if (statusEl) statusEl.textContent = 'Gagal mengirim rating. Coba lagi.';
+            }
+        } finally {
+            state.submittingRating = false;
+        }
     }
 
     // ==================== PANEL OPEN / CLOSE ====================
@@ -528,15 +460,23 @@
             });
         }
         if (fab) fab.classList.add('sc-fab--open');
-        loadArchiveSessions();
         if (!state.initialized || !state.session) {
             initChat();
         }
     }
 
     function closePanel() {
+        // Phase 6: block close when rating is required
+        if (state.session && state.session.status === 'resolved' && state.requiresRating && !state.rated) {
+            var statusEl = document.getElementById('sc-rating-status');
+            if (statusEl) {
+                statusEl.textContent = 'Beri rating dulu untuk menutup percakapan. 👇';
+                statusEl.style.color = '#ef4444';
+                setTimeout(function () { statusEl.style.color = ''; }, 1500);
+            }
+            return;
+        }
         state.isOpen = false;
-        closeArchiveTranscript();
         if (panel) {
             panel.classList.remove('sc-panel--open');
             setTimeout(function () {
@@ -550,10 +490,8 @@
     async function initChat() {
         state.initialized = true;
         state.hasStaffReply = false;
-        state.lastMessageId = 0;
         renderMessages([]);
         appendSystemMessage('Memuat percakapan...');
-        applyComposerState();
 
         try {
             // Try to load existing session first
@@ -566,12 +504,16 @@
                 state.session = data.session;
             }
 
+            // Phase 6: read rating + cooldown flags
+            state.rated = !!(state.session && state.session.rated);
+            state.requiresRating = !!(state.session && state.session.requires_rating);
+            if (data.cooldown) state.cooldown = data.cooldown;
+
             renderMessages(state.session.messages);
             updateLastMessageId(state.session.messages);
             updateStatusBar();
             joinSessionRoom(state.session.id);
             startMessagePolling();
-            loadArchiveSessions();
 
         } catch (err) {
             console.error('[support-chat] init error:', err);
@@ -582,7 +524,6 @@
             } else {
                 appendSystemMessage('Gagal memuat chat. Coba muat ulang halaman.');
             }
-            applyComposerState();
         }
     }
 
@@ -594,14 +535,11 @@
         var content = inputEl.value.trim();
         if (!content) return;
         if (!state.session) return;
-        if (state.session.status === 'resolved') {
-            appendSystemMessage('Sesi sudah selesai. Beri rating terlebih dahulu atau buka sesi baru.');
-            return;
-        }
 
         var targetSessionId = state.session.id;
         state.sendingMessage = true;
-        applyComposerState();
+        inputEl.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
 
         try {
             var data = await apiFetch('/sessions/' + targetSessionId + '/message', {
@@ -618,6 +556,11 @@
             }
 
             inputEl.value = '';
+
+            // Phase 6: cooldown active — staff escalation blocked, bot replied politely
+            if (data.cooldown && data.cooldown.active) {
+                state.cooldown = data.cooldown;
+            }
 
             // Update session status if escalated
             if (data.escalated) {
@@ -638,13 +581,20 @@
 
         } catch (err) {
             console.error('[support-chat] send error:', err);
-            appendSystemMessage('Gagal mengirim pesan. Coba lagi.');
+            if (err && err.status === 429 && err.body && err.body.cooldown_remaining_seconds) {
+                state.cooldown = {
+                    active: true,
+                    remaining_seconds: err.body.cooldown_remaining_seconds
+                };
+                appendSystemMessage('Anda baru saja terhubung dengan staff. Coba lagi dalam ' + formatRemaining(err.body.cooldown_remaining_seconds) + '.');
+            } else {
+                appendSystemMessage('Gagal mengirim pesan. Coba lagi.');
+            }
         } finally {
             state.sendingMessage = false;
-            applyComposerState();
-            if (!inputEl.disabled) {
-                inputEl.focus();
-            }
+            inputEl.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
+            inputEl.focus();
         }
     }
 
@@ -670,15 +620,6 @@
             '.sc-status--bot{background:#1a1a2e;color:#a5b4fc;}',
             '.sc-status--escalated{background:#1a1a2e;color:#fbbf24;}',
             '.sc-status--resolved{background:#1a1a2e;color:#34d399;}',
-            /* Rating area */
-            '.sc-rating-area{display:none;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.08);background:#16162a;flex-shrink:0;}',
-            '.sc-rating-loading{opacity:.7;pointer-events:none;}',
-            '.sc-rating-title{font-size:12px;color:#e2e8f0;font-family:Poppins,sans-serif;font-weight:600;margin-bottom:7px;}',
-            '.sc-rating-stars{display:flex;gap:6px;margin-bottom:6px;}',
-            '.sc-rating-star{border:1px solid rgba(255,255,255,.2);background:#23233a;color:#fff;border-radius:8px;min-width:34px;height:34px;font-size:12px;font-weight:700;cursor:pointer;}',
-            '.sc-rating-star:hover,.sc-rating-star:active{background:#2f2f4d;}',
-            '.sc-rating-hint{font-size:11px;color:rgba(255,255,255,.55);font-family:Poppins,sans-serif;}',
-            '.sc-rating-done{font-size:12px;color:#34d399;font-family:Poppins,sans-serif;font-weight:600;}',
             /* Messages */
             '.sc-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}',
             '.sc-messages::-webkit-scrollbar{width:4px;}',
@@ -707,36 +648,6 @@
             '.sc-send-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;transition:opacity .15s;}',
             '.sc-send-btn:disabled{opacity:.4;cursor:not-allowed;}',
             '.sc-send-btn svg{width:16px;height:16px;fill:currentColor;}',
-            /* Archive list */
-            '.sc-archive{padding:8px 10px;border-top:1px solid rgba(255,255,255,.08);background:#151528;flex-shrink:0;}',
-            '.sc-archive-title{font-size:11px;color:rgba(255,255,255,.65);font-family:Poppins,sans-serif;font-weight:600;margin:0 0 6px 2px;letter-spacing:.02em;text-transform:uppercase;}',
-            '.sc-archive-list{display:flex;flex-direction:column;gap:6px;max-height:120px;overflow-y:auto;}',
-            '.sc-archive-empty{font-size:12px;color:rgba(255,255,255,.5);font-family:Poppins,sans-serif;padding:6px 4px;}',
-            '.sc-archive-item{width:100%;display:block;text-align:left;background:#23233a;border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#e2e8f0;padding:8px 10px;min-height:44px;cursor:pointer;}',
-            '.sc-archive-item:hover,.sc-archive-item:active{background:#2b2b47;}',
-            '.sc-archive-item-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}',
-            '.sc-archive-item-date{font-size:11px;color:#c7d2fe;font-family:Poppins,sans-serif;}',
-            '.sc-archive-item-rating{font-size:11px;color:#fcd34d;font-family:Poppins,sans-serif;font-weight:600;}',
-            '.sc-archive-item-preview{margin-top:3px;font-size:11px;color:rgba(255,255,255,.68);font-family:Poppins,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-            /* Archive transcript modal */
-            '.sc-archive-modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px;z-index:8100;}',
-            '.sc-archive-modal-card{width:100%;max-width:460px;max-height:80vh;background:#1f1f33;border:1px solid rgba(255,255,255,.12);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}',
-            '.sc-archive-modal-header{padding:12px 14px;background:#252541;display:flex;align-items:center;justify-content:space-between;gap:12px;}',
-            '.sc-archive-modal-title{font-size:14px;color:#fff;font-family:Poppins,sans-serif;font-weight:700;}',
-            '.sc-archive-modal-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:18px;cursor:pointer;min-height:36px;min-width:36px;border-radius:8px;}',
-            '.sc-archive-modal-close:hover,.sc-archive-modal-close:active{background:rgba(255,255,255,.08);}',
-            '.sc-archive-modal-meta{padding:8px 14px;font-size:12px;color:#a5b4fc;font-family:Poppins,sans-serif;border-bottom:1px solid rgba(255,255,255,.08);}',
-            '.sc-archive-modal-body{padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:120px;}',
-            '.sc-archive-modal-footer{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);display:flex;justify-content:flex-end;}',
-            '.sc-archive-modal-btn{border:1px solid rgba(255,255,255,.16);background:#2e2e4b;color:#fff;border-radius:9px;min-height:40px;padding:0 14px;font-size:12px;font-family:Poppins,sans-serif;cursor:pointer;}',
-            '.sc-archive-modal-btn:hover,.sc-archive-modal-btn:active{background:#3a3a62;}',
-            '.sc-archive-modal-loading{font-size:12px;color:rgba(255,255,255,.62);font-family:Poppins,sans-serif;text-align:center;padding:24px 0;}',
-            '.sc-archive-msg{padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#25253d;}',
-            '.sc-archive-msg--patient{background:#2d3a6b;}',
-            '.sc-archive-msg--staff{background:#1f4a3b;}',
-            '.sc-archive-msg--bot{background:#3d3a22;}',
-            '.sc-archive-msg-content{font-size:12px;line-height:1.45;color:#e2e8f0;font-family:Poppins,sans-serif;}',
-            '.sc-archive-msg-meta{margin-top:4px;font-size:10px;color:rgba(255,255,255,.5);font-family:Poppins,sans-serif;}',
         ].join('');
         document.head.appendChild(style);
 
@@ -761,48 +672,21 @@
             '  <button class="sc-panel-close" aria-label="Tutup" id="sc-close-btn">✕</button>',
             '</div>',
             '<div class="sc-status sc-status--bot" id="sc-status-bar">🤖 Asisten Virtual</div>',
-            '<div class="sc-rating-area" id="sc-rating-area"></div>',
             '<div class="sc-messages" id="sc-messages"></div>',
             '<div class="sc-input-area">',
             '  <textarea class="sc-input" id="sc-input" placeholder="Ketik pertanyaan..." rows="1"></textarea>',
             '  <button class="sc-send-btn" id="sc-send-btn" aria-label="Kirim">',
             '    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>',
             '  </button>',
-            '</div>',
-            '<div class="sc-archive">',
-            '  <div class="sc-archive-title">Arsip Bantuan</div>',
-            '  <div class="sc-archive-list" id="sc-archive-list">',
-            '    <div class="sc-archive-empty">Belum ada riwayat bantuan.</div>',
-            '  </div>',
             '</div>'
         ].join('');
         document.body.appendChild(panel);
-
-        archiveModal = document.createElement('div');
-        archiveModal.className = 'sc-archive-modal';
-        archiveModal.id = 'sc-archive-modal';
-        archiveModal.innerHTML = [
-            '<div class="sc-archive-modal-card">',
-            '  <div class="sc-archive-modal-header">',
-            '    <div class="sc-archive-modal-title" id="sc-archive-modal-title">Transcript Bantuan</div>',
-            '    <button type="button" class="sc-archive-modal-close" id="sc-archive-close" aria-label="Tutup">✕</button>',
-            '  </div>',
-            '  <div class="sc-archive-modal-meta" id="sc-archive-modal-meta"></div>',
-            '  <div class="sc-archive-modal-body" id="sc-archive-modal-body"></div>',
-            '  <div class="sc-archive-modal-footer">',
-            '    <button type="button" class="sc-archive-modal-btn" id="sc-archive-close-btn">Tutup</button>',
-            '  </div>',
-            '</div>'
-        ].join('');
-        document.body.appendChild(archiveModal);
 
         // Bind refs
         messagesContainer = document.getElementById('sc-messages');
         inputEl = document.getElementById('sc-input');
         sendBtn = document.getElementById('sc-send-btn');
         statusBar = document.getElementById('sc-status-bar');
-        ratingArea = document.getElementById('sc-rating-area');
-        archiveList = document.getElementById('sc-archive-list');
 
         // Events
         document.getElementById('sc-close-btn').addEventListener('click', closePanel);
@@ -831,21 +715,6 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 80) + 'px';
         });
-
-        archiveList.addEventListener('click', function (e) {
-            var btn = e.target && e.target.closest ? e.target.closest('.sc-archive-item') : null;
-            if (!btn) return;
-            var sessionId = btn.getAttribute('data-session-id');
-            openArchiveTranscript(sessionId);
-        });
-
-        document.getElementById('sc-archive-close').addEventListener('click', closeArchiveTranscript);
-        document.getElementById('sc-archive-close-btn').addEventListener('click', closeArchiveTranscript);
-        archiveModal.addEventListener('click', function (e) {
-            if (e.target === archiveModal) {
-                closeArchiveTranscript();
-            }
-        });
     }
 
     // ==================== INIT ====================
@@ -861,7 +730,6 @@
         state.patientName = (patientProfile && (patientProfile.full_name || patientProfile.fullname || patientProfile.name)) || 'Anda';
 
         buildWidget();
-        loadArchiveSessions();
 
         // Listen for incoming staff messages even when panel is closed (for notification badge)
         var socket = getSocket();

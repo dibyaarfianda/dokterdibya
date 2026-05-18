@@ -1971,6 +1971,18 @@
                             <p>Aktivitas Staff</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-staff-points">
+                        <a href="#" class="nav-link" onclick="showStaffPointsPage(); return false;">
+                            <i class="nav-icon fas fa-star"></i>
+                            <p>Point Staff</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-staff-briefing">
+                        <a href="#" class="nav-link" onclick="showStaffBriefingPage(); return false;">
+                            <i class="nav-icon fas fa-clipboard-check"></i>
+                            <p>Briefing Poli Minggu</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             
@@ -6808,20 +6820,6 @@ Contoh Markdown:
                                     </div>
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="sc-insight-wrap">
-                                        <div class="sc-insight-card">
-                                            <div class="sc-insight-card-title"><i class="fas fa-trophy"></i>Point Staff</div>
-                                            <div id="sc-staff-points">
-                                                <div class="sc-insight-empty">Memuat point staff...</div>
-                                            </div>
-                                        </div>
-                                        <div class="sc-insight-card">
-                                            <div class="sc-insight-card-title"><i class="fas fa-clipboard-list"></i>Briefing Poli Minggu</div>
-                                            <div id="sc-staff-briefing">
-                                                <div class="sc-insight-empty">Memuat briefing minggu ini...</div>
-                                            </div>
-                                        </div>
-                                    </div>
                                     <div class="sc-staff-layout">
                                         <div class="sc-staff-sidebar">
                                             <div class="sc-staff-sidebar-header">
@@ -6835,6 +6833,82 @@ Contoh Markdown:
                                             <p>Pilih sesi untuk mulai membalas</p>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAFF POINTS PAGE -->
+                <div id="content-staff-points" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                                    <h3 class="card-title mb-0"><i class="fas fa-star mr-2"></i>Point Staff</h3>
+                                    <div class="card-tools d-flex align-items-center">
+                                        <label class="text-white mb-0 mr-2" style="font-size:13px;">Bulan:</label>
+                                        <select id="staff-points-month" class="form-control form-control-sm" style="width:160px;"></select>
+                                        <button type="button" class="btn btn-sm btn-light ml-2" onclick="if(window.staffPoints) window.staffPoints.refresh()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="staff-points-summary" class="mb-3"></div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="staff-points-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama</th>
+                                                    <th>Role</th>
+                                                    <th class="text-right">Total Point</th>
+                                                    <th class="text-right">Sesi Dirating</th>
+                                                    <th class="text-right">Rata-rata</th>
+                                                    <th class="text-right">Sesi Selesai</th>
+                                                    <th class="text-right">Jumlah Dinas</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="staff-points-tbody">
+                                                <tr><td colspan="7" class="text-center text-muted">Memuat...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STAFF BRIEFING PAGE -->
+                <div id="content-staff-briefing" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0ea5e9, #0369a1); color: white;">
+                                    <h3 class="card-title mb-0"><i class="fas fa-clipboard-check mr-2"></i>Briefing Poli Minggu</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-sm btn-light" onclick="if(window.staffBriefing) window.staffBriefing.refresh()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="staff-briefing-header" class="mb-3"></div>
+                                    <div id="staff-briefing-checklist"></div>
+                                    <div class="mt-3 text-right">
+                                        <button type="button" id="staff-briefing-start-btn" class="btn btn-success" onclick="if(window.staffBriefing) window.staffBriefing.start()">
+                                            <i class="fas fa-play mr-1"></i> Mari Bekerja
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- (placeholder kept for following sections) -->
+                <div id="content-after-briefing-placeholder" class="d-none">
                                 </div>
                             </div>
                         </div>
@@ -11077,7 +11151,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  <script src="./scripts/tanya-dokter.js?v=20260518a"></script>
 
  <!-- Support Chat Staff -->
-<script src="./scripts/support-chat-staff.js?v=20260519a"></script>
+<script src="./scripts/support-chat-staff.js?v=20260518j"></script>
  <script>
  function showSupportChatPage() {
      var pages = document.querySelectorAll('[id$="-page"]');
@@ -11101,6 +11175,46 @@ Apakah Anda yakin ingin melanjutkan?`;
      if (window.supportChatStaff) window.supportChatStaff.init();
  }
  window.showSupportChatPage = showSupportChatPage;
+ </script>
+
+ <!-- Staff Points + Briefing -->
+ <script src="./scripts/staff-points.js?v=20260518a"></script>
+ <script src="./scripts/staff-briefing.js?v=20260518a"></script>
+ <script>
+ function _scHideAllStaffPages() {
+     var pages = document.querySelectorAll('[id$="-page"]');
+     pages.forEach(function(p) { p.classList.add('d-none'); });
+     ['content-support-chat-page','content-staff-points','content-staff-briefing'].forEach(function(id) {
+         var el = document.getElementById(id);
+         if (el) el.classList.add('d-none');
+     });
+ }
+ function showStaffPointsPage() {
+     _scHideAllStaffPages();
+     var pg = document.getElementById('content-staff-points');
+     if (pg) pg.classList.remove('d-none');
+     var links = document.querySelectorAll('.nav-sidebar .nav-link');
+     links.forEach(function(link) { link.classList.remove('active'); });
+     var navLink = document.querySelector('#nav-staff-points .nav-link');
+     if (navLink) navLink.classList.add('active');
+     if (typeof window.setPageTitle === 'function') window.setPageTitle('Point Staff');
+     try { sessionStorage.setItem('lastStaffNavId', 'nav-staff-points'); } catch (e) {}
+     if (window.staffPoints && typeof window.staffPoints.init === 'function') window.staffPoints.init();
+ }
+ function showStaffBriefingPage() {
+     _scHideAllStaffPages();
+     var pg = document.getElementById('content-staff-briefing');
+     if (pg) pg.classList.remove('d-none');
+     var links = document.querySelectorAll('.nav-sidebar .nav-link');
+     links.forEach(function(link) { link.classList.remove('active'); });
+     var navLink = document.querySelector('#nav-staff-briefing .nav-link');
+     if (navLink) navLink.classList.add('active');
+     if (typeof window.setPageTitle === 'function') window.setPageTitle('Briefing Poli Minggu');
+     try { sessionStorage.setItem('lastStaffNavId', 'nav-staff-briefing'); } catch (e) {}
+     if (window.staffBriefing && typeof window.staffBriefing.init === 'function') window.staffBriefing.init();
+ }
+ window.showStaffPointsPage = showStaffPointsPage;
+ window.showStaffBriefingPage = showStaffBriefingPage;
  </script>
 
 </div><!-- /.wrapper -->

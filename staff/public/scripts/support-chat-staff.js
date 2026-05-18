@@ -12,6 +12,7 @@
     var state = {
         sessions: [],           // List of pending escalated sessions
         activeSessionId: null,  // Currently open session
+        activeSession: null,    // Full active session object (for lock state)
         activeMessages: [],
         pollTimer: null,
         badgeCount: 0,
@@ -19,9 +20,7 @@
         socketConnectHandler: null,
         messagePollTimer: null,
         lastMessageId: 0,
-        sendingReply: false,
-        pointsData: null,
-        briefingData: null
+        sendingReply: false
     };
 
     function sameSessionId(a, b) {
@@ -41,6 +40,27 @@
         return 'Staff';
     }
 
+    function getCurrentStaffId() {
+        if (window.currentUserId) return String(window.currentUserId);
+        if (window.auth && window.auth.currentUser && window.auth.currentUser.id) {
+            return String(window.auth.currentUser.id);
+        }
+        return '';
+    }
+
+    function sessionLockState(session) {
+        var owner = session && session.owner_staff_id ? String(session.owner_staff_id) : '';
+        var me = getCurrentStaffId();
+        if (!owner) {
+            return { locked: false, isOwner: false, ownerName: '' };
+        }
+        return {
+            locked: true,
+            isOwner: me && owner === me,
+            ownerName: session.owner_staff_name || 'staff lain'
+        };
+    }
+
     // ==================== TOKEN ====================
     function getToken() {
         if (typeof window.getAuthToken === 'function') return window.getAuthToken();
@@ -52,11 +72,14 @@
         var token = getToken();
         var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
         var resp = await fetch(API_BASE + path, Object.assign({ headers: headers }, options || {}));
+        var body = await resp.json().catch(() => ({}));
         if (!resp.ok) {
-            var err = await resp.json().catch(() => ({}));
-            throw new Error(err.message || 'Request failed');
+            var err = new Error((body && body.message) || 'Request failed');
+            err.status = resp.status;
+            err.body = body || {};
+            throw err;
         }
-        return resp.json();
+        return body;
     }
 
     // ==================== SOCKET ====================
@@ -98,11 +121,24 @@
         socket.on('support:session_resolved', function (data) {
             if (sameSessionId(state.activeSessionId, data.sessionId)) {
                 state.activeSessionId = null;
+                state.activeSession = null;
                 renderEmptyPanel();
                 stopActiveSessionPolling();
             }
             loadPendingSessions();
-            refreshInsights();
+        });
+
+        // Session locked by a staff (ownership claimed)
+        socket.off('support:session_locked');
+        socket.on('support:session_locked', function (data) {
+            if (sameSessionId(state.activeSessionId, data.sessionId)) {
+                if (state.activeSession) {
+                    state.activeSession.owner_staff_id = data.owner_staff_id;
+                    state.activeSession.owner_staff_name = data.owner_staff_name;
+                    renderActiveSession(state.activeSession);
+                }
+            }
+            loadPendingSessions();
         });
 
         // Real-time message delivery in open session
@@ -149,14 +185,9 @@
     function updateBadge(count) {
         state.badgeCount = count;
         var badge = document.getElementById('support-chat-badge');
-        var inlineBadge = document.getElementById('support-chat-badge-count');
         if (badge) {
             badge.textContent = count > 0 ? count : '';
             badge.style.display = count > 0 ? 'inline-flex' : 'none';
-        }
-        if (inlineBadge) {
-            inlineBadge.textContent = count > 0 ? String(count) : '0';
-            inlineBadge.style.display = count > 0 ? 'inline-flex' : 'none';
         }
     }
 
@@ -177,93 +208,6 @@
         } catch (err) {
             console.error('[support-staff] loadPendingSessions error:', err);
         }
-    }
-
-    async function loadStaffPoints() {
-        var target = document.getElementById('sc-staff-points');
-        if (!target) return;
-
-        try {
-            var data = await apiFetch('/staff/points?days=30');
-            state.pointsData = data || null;
-            renderStaffPoints();
-        } catch (err) {
-            console.error('[support-staff] loadStaffPoints error:', err);
-            state.pointsData = null;
-            renderStaffPoints();
-        }
-    }
-
-    async function loadWeeklyBriefing() {
-        var target = document.getElementById('sc-staff-briefing');
-        if (!target) return;
-
-        try {
-            var data = await apiFetch('/staff/briefing-weekly?days=7');
-            state.briefingData = data || null;
-            renderWeeklyBriefing();
-        } catch (err) {
-            console.error('[support-staff] loadWeeklyBriefing error:', err);
-            state.briefingData = null;
-            renderWeeklyBriefing();
-        }
-    }
-
-    function renderStaffPoints() {
-        var target = document.getElementById('sc-staff-points');
-        if (!target) return;
-
-        if (!state.pointsData || !Array.isArray(state.pointsData.leaderboard) || state.pointsData.leaderboard.length === 0) {
-            target.innerHTML = '<div class="sc-insight-empty">Belum ada data point staff.</div>';
-            return;
-        }
-
-        var meId = state.pointsData.me && state.pointsData.me.staff_id
-            ? String(state.pointsData.me.staff_id)
-            : '';
-
-        target.innerHTML = state.pointsData.leaderboard.slice(0, 5).map(function (row) {
-            var isMe = meId && String(row.staff_id || '') === meId;
-            return [
-                '<div class="sc-point-row' + (isMe ? ' sc-point-row--me' : '') + '">',
-                '  <div class="sc-point-rank">#' + escapeHtml(String(row.rank || '-')) + '</div>',
-                '  <div class="sc-point-main">',
-                '    <div class="sc-point-name">' + escapeHtml(row.staff_name || 'Staff') + (isMe ? ' <span class="sc-point-me">Anda</span>' : '') + '</div>',
-                '    <div class="sc-point-meta">Resolved ' + escapeHtml(String(row.resolved_count || 0)) + ' • Avg ' + escapeHtml(row.avg_rating === null ? '-' : String(row.avg_rating)) + '</div>',
-                '  </div>',
-                '  <div class="sc-point-value">' + escapeHtml(String(row.total_points || 0)) + '</div>',
-                '</div>'
-            ].join('');
-        }).join('');
-    }
-
-    function renderWeeklyBriefing() {
-        var target = document.getElementById('sc-staff-briefing');
-        if (!target) return;
-
-        if (!state.briefingData || !state.briefingData.kpis) {
-            target.innerHTML = '<div class="sc-insight-empty">Belum ada data briefing minggu ini.</div>';
-            return;
-        }
-
-        var k = state.briefingData.kpis || {};
-        var actions = Array.isArray(state.briefingData.actions) ? state.briefingData.actions : [];
-
-        target.innerHTML = [
-            '<div class="sc-briefing-grid">',
-            '  <div class="sc-briefing-kpi"><span>Pending</span><strong>' + escapeHtml(String(k.pending_count || 0)) + '</strong></div>',
-            '  <div class="sc-briefing-kpi"><span>Wait Terlama</span><strong>' + escapeHtml(String(k.oldest_wait_minutes || 0)) + 'm</strong></div>',
-            '  <div class="sc-briefing-kpi"><span>Resolved 7 Hari</span><strong>' + escapeHtml(String(k.resolved_count || 0)) + '</strong></div>',
-            '  <div class="sc-briefing-kpi"><span>Avg Rating</span><strong>' + escapeHtml(k.avg_rating === null ? '-' : String(k.avg_rating)) + '</strong></div>',
-            '</div>',
-            '<div class="sc-briefing-actions">' + actions.map(function (text) {
-                return '<div class="sc-briefing-action">' + escapeHtml(String(text || '')) + '</div>';
-            }).join('') + '</div>'
-        ].join('');
-    }
-
-    async function refreshInsights() {
-        await Promise.all([loadStaffPoints(), loadWeeklyBriefing()]);
     }
 
     function renderSessionList() {
@@ -298,6 +242,7 @@
 
         try {
             var data = await apiFetch('/staff/session/' + sessionId);
+            state.activeSession = data.session;
             state.activeMessages = data.session.messages || [];
             state.lastMessageId = 0;
             state.activeMessages.forEach(function (m) {
@@ -316,6 +261,7 @@
         if (!sameSessionId(state.activeSessionId, sessionId)) return;
         try {
             var data = await apiFetch('/staff/session/' + sessionId);
+            state.activeSession = data.session;
             state.activeMessages = data.session.messages || [];
             renderMessagesInPanel(state.activeMessages);
             state.lastMessageId = 0;
@@ -345,6 +291,36 @@
         if (!panel) return;
 
         var resolveSessionExpr = JSON.stringify(session.id);
+        var lock = sessionLockState(session);
+
+        var headerActions = '';
+        if (!lock.locked || lock.isOwner) {
+            headerActions = '    <button class="btn btn-sm btn-success" onclick="window.supportChatStaff.resolveSession(' + resolveSessionExpr + ')" title="Selesaikan"><i class="fa fa-check"></i> Selesai</button>';
+        }
+
+        var ownerBadge = '';
+        if (lock.locked) {
+            var badgeColor = lock.isOwner ? 'badge-success' : 'badge-secondary';
+            var ownerText = lock.isOwner ? 'Anda menangani' : 'Ditangani: ' + escapeHtml(lock.ownerName);
+            ownerBadge = '<span class="badge ' + badgeColor + '" style="font-size:10px;margin-left:6px;"><i class="fa fa-lock" style="margin-right:3px;"></i>' + ownerText + '</span>';
+        }
+
+        var inputArea;
+        if (lock.locked && !lock.isOwner) {
+            inputArea = [
+                '<div class="sc-staff-input-area" style="background:#f8f9fa;padding:14px 16px;text-align:center;color:#6c757d;font-size:13px;">',
+                '  <i class="fa fa-lock" style="margin-right:6px;"></i>',
+                '  Sesi ditangani oleh <strong>' + escapeHtml(lock.ownerName) + '</strong>. Mode baca saja.',
+                '</div>'
+            ].join('');
+        } else {
+            inputArea = [
+                '<div class="sc-staff-input-area">',
+                '  <textarea class="sc-staff-input" id="sc-staff-input" placeholder="Ketik balasan..." rows="2"></textarea>',
+                '  <button class="btn btn-primary btn-sm sc-staff-send-btn" id="sc-staff-send-btn" onclick="window.supportChatStaff.sendReply()"><i class="fa fa-paper-plane"></i> Kirim</button>',
+                '</div>'
+            ].join('');
+        }
 
         panel.innerHTML = [
             '<div class="sc-staff-panel-header">',
@@ -352,21 +328,19 @@
             '    <i class="fa fa-user-circle"></i>',
             '    <span>' + escapeHtml(session.patient_name || 'Pasien') + '</span>',
             '    <span class="badge badge-warning" style="font-size:10px;margin-left:8px;">Eskalasi</span>',
+            '    ' + ownerBadge,
             '  </div>',
             '  <div class="sc-staff-panel-actions">',
-            '    <button class="btn btn-sm btn-success" onclick="window.supportChatStaff.resolveSession(' + resolveSessionExpr + ')" title="Selesaikan"><i class="fa fa-check"></i> Selesai</button>',
+            headerActions,
             '  </div>',
             '</div>',
             '<div class="sc-staff-messages" id="sc-staff-messages"></div>',
-            '<div class="sc-staff-input-area">',
-            '  <textarea class="sc-staff-input" id="sc-staff-input" placeholder="Ketik balasan..." rows="2"></textarea>',
-            '  <button class="btn btn-primary btn-sm sc-staff-send-btn" id="sc-staff-send-btn" onclick="window.supportChatStaff.sendReply()"><i class="fa fa-paper-plane"></i> Kirim</button>',
-            '</div>'
+            inputArea
         ].join('');
 
         renderMessagesInPanel(session.messages || []);
 
-        // Bind enter key
+        // Bind enter key (only when composer exists)
         var inp = document.getElementById('sc-staff-input');
         if (inp) {
             inp.addEventListener('keydown', function (e) {
@@ -443,6 +417,14 @@
                 body: JSON.stringify({ content: content })
             });
 
+            // Update local owner state if just claimed
+            if (state.activeSession && sameSessionId(state.activeSession.id, targetSessionId)) {
+                if (!state.activeSession.owner_staff_id && data.owner_staff_id) {
+                    state.activeSession.owner_staff_id = data.owner_staff_id;
+                    state.activeSession.owner_staff_name = data.owner_staff_name;
+                }
+            }
+
             var savedMessage = data && data.message ? data.message : null;
             if (savedMessage && sameSessionId(state.activeSessionId, targetSessionId)) {
                 var existing = document.querySelector('#sc-staff-messages [data-msg-id="' + savedMessage.id + '"]');
@@ -454,7 +436,17 @@
             inp.value = '';
         } catch (err) {
             console.error('[support-staff] sendReply error:', err);
-            showToast('Gagal mengirim pesan', 'error');
+            if (err && err.status === 403 && err.body && err.body.code === 'NOT_SESSION_OWNER') {
+                // Refresh session to show readonly lock UI
+                if (state.activeSession) {
+                    state.activeSession.owner_staff_id = err.body.owner_staff_id || state.activeSession.owner_staff_id;
+                    state.activeSession.owner_staff_name = err.body.owner_staff_name || state.activeSession.owner_staff_name;
+                    renderActiveSession(state.activeSession);
+                }
+                showToast('🔒 ' + (err.message || 'Sesi sudah ditangani staff lain'), 'error');
+            } else {
+                showToast('Gagal mengirim pesan', 'error');
+            }
         } finally {
             state.sendingReply = false;
             if (sendBtn) sendBtn.disabled = false;
@@ -469,14 +461,23 @@
         try {
             await apiFetch('/staff/' + sessionId + '/resolve', { method: 'PUT' });
             state.activeSessionId = null;
+            state.activeSession = null;
             renderEmptyPanel();
             stopActiveSessionPolling();
             loadPendingSessions();
-            refreshInsights();
             showToast('Sesi diselesaikan', 'success');
         } catch (err) {
             console.error('[support-staff] resolveSession error:', err);
-            showToast('Gagal menyelesaikan sesi', 'error');
+            if (err && err.status === 403 && err.body && err.body.code === 'NOT_SESSION_OWNER') {
+                if (state.activeSession) {
+                    state.activeSession.owner_staff_id = err.body.owner_staff_id || state.activeSession.owner_staff_id;
+                    state.activeSession.owner_staff_name = err.body.owner_staff_name || state.activeSession.owner_staff_name;
+                    renderActiveSession(state.activeSession);
+                }
+                showToast('🔒 ' + (err.message || 'Sesi sudah ditangani staff lain'), 'error');
+            } else {
+                showToast('Gagal menyelesaikan sesi', 'error');
+            }
         }
     }
 
@@ -532,25 +533,6 @@
         var containerSelector = '#content-support-chat-page';
         style.textContent = [
             '#content-support-chat .sc-staff-layout{display:flex;gap:0;height:calc(100vh - 200px);min-height:400px;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;background:#fff;}',
-            '#content-support-chat .sc-insight-wrap{padding:12px 12px 0 12px;background:#f4f6f9;display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
-            '#content-support-chat .sc-insight-card{background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:10px 12px;min-height:140px;}',
-            '#content-support-chat .sc-insight-card-title{font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;align-items:center;gap:6px;}',
-            '#content-support-chat .sc-insight-empty{font-size:12px;color:#64748b;padding:8px 0;}',
-            '#content-support-chat .sc-point-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed #e2e8f0;}',
-            '#content-support-chat .sc-point-row:last-child{border-bottom:none;}',
-            '#content-support-chat .sc-point-row--me{background:#eff6ff;border-radius:6px;padding:7px 6px;}',
-            '#content-support-chat .sc-point-rank{font-size:12px;font-weight:700;color:#0f172a;min-width:30px;}',
-            '#content-support-chat .sc-point-main{flex:1;min-width:0;}',
-            '#content-support-chat .sc-point-name{font-size:12px;color:#0f172a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
-            '#content-support-chat .sc-point-meta{font-size:11px;color:#64748b;}',
-            '#content-support-chat .sc-point-value{font-size:14px;font-weight:700;color:#059669;}',
-            '#content-support-chat .sc-point-me{font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:1px 6px;margin-left:4px;}',
-            '#content-support-chat .sc-briefing-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}',
-            '#content-support-chat .sc-briefing-kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 8px;display:flex;flex-direction:column;gap:1px;}',
-            '#content-support-chat .sc-briefing-kpi span{font-size:10px;color:#64748b;}',
-            '#content-support-chat .sc-briefing-kpi strong{font-size:14px;color:#0f172a;}',
-            '#content-support-chat .sc-briefing-actions{display:flex;flex-direction:column;gap:6px;}',
-            '#content-support-chat .sc-briefing-action{font-size:11px;color:#334155;line-height:1.35;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;}',
             '#content-support-chat .sc-staff-sidebar{width:280px;border-right:1px solid #dee2e6;display:flex;flex-direction:column;flex-shrink:0;}',
             '#content-support-chat .sc-staff-sidebar-header{padding:12px 16px;border-bottom:1px solid #dee2e6;background:#f8f9fa;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between;}',
             '#content-support-chat #sc-staff-list{flex:1;overflow-y:auto;}',
@@ -584,7 +566,6 @@
             '#content-support-chat .sc-staff-input:focus{border-color:#007bff;}',
             '#content-support-chat .sc-staff-send-btn{flex-shrink:0;}',
             '#content-support-chat .sc-staff-panel-empty{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;color:#6c757d;gap:12px;padding-left:48px;box-sizing:border-box;text-align:left;}',
-            '@media (max-width: 991.98px){#content-support-chat .sc-insight-wrap{grid-template-columns:1fr;}#content-support-chat .sc-staff-layout{height:auto;min-height:420px;}#content-support-chat .sc-staff-sidebar{width:42%;min-width:220px;}}',
         ].join('').replace(/#content-support-chat/g, containerSelector);
         document.head.appendChild(style);
     }
@@ -595,7 +576,6 @@
         bindSocketEvents();
         loadPendingSessions();
         refreshBadge();
-        refreshInsights();
 
         // Periodic polling as fallback for Socket.IO
         if (state.pollTimer) clearInterval(state.pollTimer);
@@ -605,17 +585,13 @@
         }, POLL_INTERVAL);
     }
 
-    async function refreshAll() {
-        await Promise.all([loadPendingSessions(), refreshBadge(), refreshInsights()]);
-    }
-
     // ==================== PUBLIC API ====================
     window.supportChatStaff = {
         init: init,
         openSession: openSession,
         sendReply: sendReply,
         resolveSession: resolveSession,
-        refresh: refreshAll
+        refresh: loadPendingSessions
     };
 
 })();
