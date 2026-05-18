@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518q'; // 2026-05-18q - Ensure closing message + resolved status consistency
+const CACHE_VERSION = '20260518r'; // 2026-05-18r - Always show staff label as "staff" in patient chat
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

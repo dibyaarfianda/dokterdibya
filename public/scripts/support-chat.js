@@ -241,7 +241,7 @@
         div.className = 'sc-msg sc-msg--' + msg.sender_type;
         div.dataset.msgId = msg.id;
 
-        var labelMap = { bot: '🤖 Asisten', staff: '👤 ' + (msg.sender_name || 'Staff'), patient: 'Anda' };
+        var labelMap = { bot: '🤖 Asisten', staff: '👤 staff', patient: 'Anda' };
         var label = labelMap[msg.sender_type] || msg.sender_name;
         var timeStr = formatTime(msg.created_at);
 
