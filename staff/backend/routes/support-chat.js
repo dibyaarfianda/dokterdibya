@@ -89,6 +89,9 @@ async function ensureSchema() {
             await seedFAQ();
         }
 
+        // Keep critical FAQ responses synchronized even on existing databases.
+        await syncRevisedFaqAnswers();
+
         schemaReady = true;
     })();
 
@@ -99,13 +102,13 @@ async function seedFAQ() {
     const faqs = [
         {
             keywords: ['jam praktik', 'jadwal dokter', 'jadwal praktik', 'jam buka', 'kapan buka', 'jam berapa', 'praktek', 'jadwal'],
-            answer: '🕐 *Jadwal Praktik dr. Dibya SpOG:*\n\n📍 *Klinik Privat:* Setiap Minggu pukul 08.00–12.00 WIB\n📍 *RSIA Melinda:* Cek jadwal di jadwal.rsia-melinda.com\n📍 *RSUD Gambiran:* Setiap Senin–Jumat\n\nUntuk jadwal terbaru, hubungi langsung klinik melalui tombol "Hubungi Kami" di menu Bantuan.',
+            answer: '🕐 *Jadwal Praktik*\n\n*RSUD GAMBIRAN*\n• SELASA: 08.30-11.00\n• RABU: 08.30-11.00\n\n*RSIA MELINDA*\n• SENIN: 18.30-20.00\n• KAMIS: 18.30-20.00\n• JUMAT: 18.30-20.00\n\n*RS BHAYANGKARA*\n• SABTU: 10.00-13.00\n\n*PRAKTEK PRIBADI (POLI RSIA MELINDA)*\n• MINGGU: 09.00-16.00',
             category: 'jadwal',
             priority: 10
         },
         {
             keywords: ['cara booking', 'cara daftar', 'cara pesan', 'daftar konsultasi', 'buat janji', 'booking', 'daftar antrian', 'mau periksa', 'pesan slot', 'reservasi'],
-            answer: '📋 *Cara Booking Konsultasi:*\n\n1. Dari menu utama, pilih **Booking**\n2. Pilih jenis konsultasi (Klinik Privat / RS)\n3. Pilih tanggal & waktu yang tersedia\n4. Konfirmasi booking\n5. Cek email untuk nomor antrian\n\n⚠️ Untuk Klinik Privat, pastikan konfirmasi kehadiran sebelum jam 05.00 WIB hari Minggu.',
+            answer: '📋 *Cara Booking*\n\nPilih menu Booking, pilih tanggal, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi.\n\nSelanjutnya akan ada 2x konfirmasi yaitu pukul 18.00 hari Sabtu dan pukul 05.00 WIB hari Minggu.\n\nJika sampai pukul 09.00 hari Minggu tidak ada konfirmasi, booking hangus.',
             category: 'booking',
             priority: 10
         },
@@ -117,7 +120,7 @@ async function seedFAQ() {
         },
         {
             keywords: ['batal booking', 'batalkan', 'cancel booking', 'batalkan janji', 'tidak jadi periksa', 'mau batal'],
-            answer: '❌ *Cara Membatalkan Booking:*\n\n1. Dari menu utama, pilih **Riwayat Booking**\n2. Temukan booking yang ingin dibatalkan\n3. Tekan tombol **Batalkan**\n4. Konfirmasi pembatalan\n\n⚠️ Pembatalan kurang dari 2 jam sebelum jadwal tidak dapat diproses.',
+            answer: '❌ *Batal Booking*\n\nMasuk ke menu **Riwayat Booking**, pilih jadwal yang ingin dibatalkan, lalu tekan **Batalkan**.',
             category: 'booking',
             priority: 8
         },
@@ -141,7 +144,7 @@ async function seedFAQ() {
         },
         {
             keywords: ['biaya', 'tarif', 'harga', 'berapa biaya', 'bayar berapa', 'konsultasi berapa', 'biaya periksa', 'harga konsultasi'],
-            answer: '💰 *Informasi Biaya:*\n\nBiaya konsultasi bervariasi tergantung lokasi dan jenis pemeriksaan. Untuk informasi terbaru:\n\n• Hubungi klinik via WhatsApp\n• Tanya pada saat booking\n\nKami menerima BPJS dan asuransi swasta di beberapa lokasi.',
+            answer: '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nPraktek Minggu tidak menerima BPJS.',
             category: 'biaya',
             priority: 7
         },
@@ -201,6 +204,41 @@ async function seedFAQ() {
             [JSON.stringify(faq.keywords), faq.answer, faq.category, faq.priority]
         );
     }
+}
+
+async function syncRevisedFaqAnswers() {
+    const scheduleAnswer = '🕐 *Jadwal Praktik*\n\n*RSUD GAMBIRAN*\n• SELASA: 08.30-11.00\n• RABU: 08.30-11.00\n\n*RSIA MELINDA*\n• SENIN: 18.30-20.00\n• KAMIS: 18.30-20.00\n• JUMAT: 18.30-20.00\n\n*RS BHAYANGKARA*\n• SABTU: 10.00-13.00\n\n*PRAKTEK PRIBADI (POLI RSIA MELINDA)*\n• MINGGU: 09.00-16.00';
+    const bookingAnswer = '📋 *Cara Booking*\n\nPilih menu Booking, pilih tanggal, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi.\n\nSelanjutnya akan ada 2x konfirmasi yaitu pukul 18.00 hari Sabtu dan pukul 05.00 WIB hari Minggu.\n\nJika sampai pukul 09.00 hari Minggu tidak ada konfirmasi, booking hangus.';
+    const cancelAnswer = '❌ *Batal Booking*\n\nMasuk ke menu **Riwayat Booking**, pilih jadwal yang ingin dibatalkan, lalu tekan **Batalkan**.';
+    const feeAnswer = '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nPraktek Minggu tidak menerima BPJS.';
+
+    await db.query(
+        `UPDATE support_faq
+         SET answer = ?
+         WHERE JSON_SEARCH(keywords, 'one', 'jam praktik') IS NOT NULL`,
+        [scheduleAnswer]
+    );
+
+    await db.query(
+        `UPDATE support_faq
+         SET answer = ?
+         WHERE JSON_SEARCH(keywords, 'one', 'cara booking') IS NOT NULL`,
+        [bookingAnswer]
+    );
+
+    await db.query(
+        `UPDATE support_faq
+         SET answer = ?
+         WHERE JSON_SEARCH(keywords, 'one', 'batal booking') IS NOT NULL`,
+        [cancelAnswer]
+    );
+
+    await db.query(
+        `UPDATE support_faq
+         SET answer = ?
+         WHERE JSON_SEARCH(keywords, 'one', 'biaya') IS NOT NULL`,
+        [feeAnswer]
+    );
 }
 
 // ===================== BOT ENGINE =====================
@@ -442,7 +480,7 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
                 [sessionId]
             );
 
-            const escalateMsg = 'Pertanyaan Anda sedang kami teruskan ke staff. Mohon tunggu sebentar, staff akan segera membalas... 🙏';
+            const escalateMsg = 'Bila kurang puas dengan jawaban sementara, akan kami sambungkan dengan staff kami.';
             const [botMsgResult] = await db.query(
                 `INSERT INTO support_chat_messages (session_id, sender_type, sender_name, content) VALUES (?, 'bot', 'Asisten Virtual', ?)`,
                 [sessionId, escalateMsg]
