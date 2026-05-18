@@ -386,12 +386,12 @@ async function ensureSundayConfirmationSchema() {
 }
 
 /**
- * Sunday 07:00 WIB — send WhatsApp confirmation link to all pending_confirmation bookings
+ * Saturday 18:00 WIB — send WhatsApp confirmation link to all pending_confirmation bookings for tomorrow (Sunday)
  */
 function startSundayConfirmationSender() {
-    cron.schedule('0 7 * * 0', async () => {
+    cron.schedule('0 18 * * 6', async () => {
         try {
-            logger.info('[Scheduler] Running Sunday confirmation sender...');
+            logger.info('[Scheduler] Running Sunday confirmation sender (Saturday 18:00)...');
             const notificationService = require('../utils/notification');
 
             const [appointments] = await db.query(
@@ -400,7 +400,7 @@ function startSundayConfirmationSender() {
                         sa.confirmation_token, sa.chief_complaint
                  FROM sunday_appointments sa
                  WHERE sa.status = 'pending_confirmation'
-                   AND sa.appointment_date = CURDATE()`
+                   AND sa.appointment_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY)`
             );
 
             if (appointments.length === 0) {
@@ -422,7 +422,7 @@ function startSundayConfirmationSender() {
                     const totalMins = slotStart[0]*60 + slotStart[1] + (apt.slot_number - 1) * 15;
                     const slotTime = `${String(Math.floor(totalMins/60)).padStart(2,'0')}:${String(totalMins%60).padStart(2,'0')}`;
 
-                    const message = `Halo ${apt.patient_name},\n\nAnda memiliki jadwal praktek hari ini:\n📅 Sesi: ${sessionLabel}\n🕐 Jam: ${slotTime} WIB\n📋 Keluhan: ${apt.chief_complaint}\n\nMohon konfirmasi kehadiran Anda SEBELUM jam 09.00 WIB:\n${confirmUrl}\n\nJika tidak dikonfirmasi, slot akan hangus otomatis jam 09.00.\n\nTerima kasih.`;
+                    const message = `Halo ${apt.patient_name},\n\nAnda memiliki jadwal praktek BESOK (Minggu):\n📅 Sesi: ${sessionLabel}\n🕐 Jam: ${slotTime} WIB\n📋 Keluhan: ${apt.chief_complaint}\n\nMohon konfirmasi kehadiran Anda SEBELUM jam 05.00 WIB hari Minggu:\n${confirmUrl}\n\nJika tidak dikonfirmasi, slot akan hangus otomatis jam 05.00.\n\nTerima kasih.`;
 
                     if (apt.patient_phone) {
                         await notificationService.sendWhatsAppAuto(apt.patient_phone, message);
@@ -435,7 +435,7 @@ function startSundayConfirmationSender() {
                             patient_id: apt.patient_id,
                             type: 'appointment',
                             title: 'Konfirmasi Kehadiran Diperlukan',
-                            message: `Jadwal Anda hari ini (${sessionLabel}, slot ${apt.slot_number}) menunggu konfirmasi. Konfirmasi sebelum jam 09.00 WIB agar nama Anda muncul di antrian.`,
+                            message: `Jadwal Anda besok (${sessionLabel}, slot ${apt.slot_number}) menunggu konfirmasi. Konfirmasi sebelum jam 05.00 WIB hari Minggu agar nama Anda muncul di antrian.`,
                             link: confirmUrl,
                             icon: 'fa fa-calendar-check-o',
                             icon_color: 'text-warning'
@@ -454,16 +454,16 @@ function startSundayConfirmationSender() {
         } catch (error) {
             logger.error('[Scheduler] Error in Sunday confirmation sender:', error);
         }
-    });
+    }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday confirmation sender started (runs Sundays at 07:00 WIB)');
+    logger.info('[Scheduler] Sunday confirmation sender started (runs Saturdays at 18:00 WIB)');
 }
 
 /**
- * Sunday 09:00 WIB — expire all unconfirmed pending_confirmation appointments
+ * Sunday 05:00 WIB — expire all unconfirmed pending_confirmation appointments
  */
 function startSundayExpiryJob() {
-    cron.schedule('0 9 * * 0', async () => {
+    cron.schedule('0 5 * * 0', async () => {
         try {
             logger.info('[Scheduler] Running Sunday expiry job...');
 
@@ -484,7 +484,7 @@ function startSundayExpiryJob() {
                 `UPDATE sunday_appointments
                  SET status = 'cancelled',
                      cancelled_by = 'system',
-                     cancellation_reason = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB',
+                     cancellation_reason = 'Tidak konfirmasi kehadiran sebelum jam 05.00 WIB',
                      cancelled_at = NOW()
                  WHERE id IN (?)`,
                 [ids]
@@ -502,7 +502,7 @@ function startSundayExpiryJob() {
                             patient_id: apt.patient_id,
                             type: 'appointment',
                             title: 'Jadwal Hangus — Tidak Ada Konfirmasi',
-                            message: `Slot Anda (${sessionLabel}, nomor ${apt.slot_number}) hangus karena tidak ada konfirmasi kehadiran sebelum jam 09.00 WIB. Slot telah dibuka kembali untuk pasien lain.`,
+                            message: `Slot Anda (${sessionLabel}, nomor ${apt.slot_number}) hangus karena tidak ada konfirmasi kehadiran sebelum jam 05.00 WIB. Slot telah dibuka kembali untuk pasien lain.`,
                             link: '/riwayat-kunjungan.html',
                             icon: 'fa fa-times-circle',
                             icon_color: 'text-danger'
@@ -530,9 +530,9 @@ function startSundayExpiryJob() {
         } catch (error) {
             logger.error('[Scheduler] Error in Sunday expiry job:', error);
         }
-    });
+    }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday expiry job started (runs Sundays at 09:00 WIB)');
+    logger.info('[Scheduler] Sunday expiry job started (runs Sundays at 05:00 WIB)');
 }
 
 /**
