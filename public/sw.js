@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518e'; // 2026-05-18e - Reschedule confirmation cron: Sat 18:00 + Sun 05:00 WIB
+const CACHE_VERSION = '20260518f'; // 2026-05-18f - Add support chat widget (bot + staff escalation)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

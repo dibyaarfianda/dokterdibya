@@ -209,6 +209,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/sunday-clinic/queue/public', // Live queue for patient portal (names masked)
     '/api/sunday-clinic/queue/settings', // Queue visibility toggle (patients need to check)
     '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
+    '/api/support-chat',       // Support chat (bot + staff escalation)
 ];
 
 app.use('/api', (req, res, next) => {
@@ -297,6 +298,10 @@ if (sundayClinicRoutes.setupSocketHandlers) {
 
 if (communityChatRoutes.setupSocketHandlers) {
     communityChatRoutes.setupSocketHandlers(io);
+}
+
+if (supportChatRoutes.setupSocketHandlers) {
+    supportChatRoutes.setupSocketHandlers(io);
 }
 
 // Lab results routes (upload and AI interpretation)
@@ -471,6 +476,10 @@ app.use('/api/patient-questions', patientQuestionsRoutes);
 // Patient Feedback (masukan untuk pengembang portal)
 const patientFeedbackRoutes = require('./routes/patient-feedback');
 app.use('/api/patient-feedback', patientFeedbackRoutes);
+
+// Support Chat — bot + staff escalation
+const supportChatRoutes = require('./routes/support-chat');
+app.use('/api/support-chat', supportChatRoutes);
 
 app.use('/api/community-chat', communityChatRoutes);
 
