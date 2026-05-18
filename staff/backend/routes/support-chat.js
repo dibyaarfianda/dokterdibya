@@ -663,31 +663,80 @@ router.get('/staff/session/:id', verifyToken, async (req, res) => {
 
 // POST /api/support-chat/staff/:id/reply — staff sends reply
 router.post('/staff/:id/reply', verifyToken, async (req, res) => {
+    let conn = null;
     try {
         await ensureSchema();
 
-        const sessionId = parseInt(req.params.id);
+        const sessionId = parseInt(req.params.id, 10);
+        if (Number.isNaN(sessionId)) {
+            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
+        }
+
         const { content } = req.body;
+        const DUPLICATE_WINDOW_MS = 5000;
 
         if (!content || !String(content).trim()) {
             return res.status(400).json({ success: false, message: 'Pesan tidak boleh kosong' });
         }
 
         const staffName = req.user.name || req.user.display_name || 'Staff';
-        const staffId = String(req.user.id || req.user.new_id);
+        const staffId = String(req.user.id || req.user.new_id || '').trim();
         const msgContent = String(content).trim().slice(0, 2000);
 
-        const [sessions] = await db.query(
-            `SELECT id, patient_id, patient_name, status FROM support_chat_sessions WHERE id = ?`,
+        conn = await db.getConnection();
+        await conn.beginTransaction();
+
+        const [sessions] = await conn.query(
+            `SELECT id, patient_id, patient_name, status
+             FROM support_chat_sessions
+             WHERE id = ?
+             FOR UPDATE`,
             [sessionId]
         );
 
         if (sessions.length === 0) {
+            await conn.rollback();
             return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
         }
 
+        const [recentRows] = await conn.query(
+            `SELECT id, sender_type, sender_name, content, created_at
+             FROM support_chat_messages
+             WHERE session_id = ?
+             ORDER BY id DESC
+             LIMIT 1`,
+            [sessionId]
+        );
+
+        if (recentRows.length > 0) {
+            const recent = recentRows[0];
+            const recentText = String(recent.content || '').trim();
+            const recentTs = recent.created_at instanceof Date
+                ? recent.created_at.getTime()
+                : new Date(recent.created_at).getTime();
+            const nowTs = Date.now();
+            const isDuplicateWindow = Number.isFinite(recentTs) && recentTs <= nowTs && (nowTs - recentTs) <= DUPLICATE_WINDOW_MS;
+            const sameSender = String(recent.sender_type || '') === 'staff' && String(recent.sender_name || '') === String(staffName);
+
+            if (sameSender && recentText === msgContent && isDuplicateWindow) {
+                await conn.commit();
+                return res.json({
+                    success: true,
+                    message: {
+                        id: recent.id,
+                        session_id: sessionId,
+                        sender_type: 'staff',
+                        sender_name: recent.sender_name || staffName,
+                        content: recent.content,
+                        created_at: recent.created_at
+                    },
+                    deduped: true
+                });
+            }
+        }
+
         // Assign staff if not yet assigned; also ensure status is correct
-        await db.query(
+        await conn.query(
             `UPDATE support_chat_sessions
              SET assigned_staff_id = COALESCE(assigned_staff_id, ?),
                  assigned_staff_name = COALESCE(assigned_staff_name, ?),
@@ -696,11 +745,15 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
             [staffId, staffName, sessionId]
         );
 
-        const [result] = await db.query(
+        const [result] = await conn.query(
             `INSERT INTO support_chat_messages (session_id, sender_type, sender_name, content)
              VALUES (?, 'staff', ?, ?)`,
             [sessionId, staffName, msgContent]
         );
+
+        await conn.commit();
+        conn.release();
+        conn = null;
 
         const staffMsg = {
             id: result.insertId,
@@ -721,8 +774,13 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
         return res.json({ success: true, message: staffMsg });
 
     } catch (err) {
+        if (conn) {
+            try { await conn.rollback(); } catch (rollbackErr) { /* ignore rollback errors */ }
+        }
         console.error('[support-chat] staff reply error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
