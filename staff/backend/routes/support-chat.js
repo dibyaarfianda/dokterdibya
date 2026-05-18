@@ -391,12 +391,18 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
 
 // POST /api/support-chat/sessions/:id/message — patient sends a message
 router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
+    let conn = null;
     try {
         await ensureSchema();
 
-        const sessionId = parseInt(req.params.id);
+        const sessionId = parseInt(req.params.id, 10);
+        if (Number.isNaN(sessionId)) {
+            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
+        }
+
         const patientId = String(req.user.id);
         const { content } = req.body;
+        const DUPLICATE_WINDOW_MS = 5000;
 
         if (!content || !String(content).trim()) {
             return res.status(400).json({ success: false, message: 'Pesan tidak boleh kosong' });
@@ -404,23 +410,72 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
 
         const msgContent = String(content).trim().slice(0, 2000);
 
+        conn = await db.getConnection();
+        await conn.beginTransaction();
+
         // Verify session belongs to this patient
-        const [sessions] = await db.query(
-            `SELECT id, status, patient_name FROM support_chat_sessions WHERE id = ? AND patient_id = ?`,
+        const [sessions] = await conn.query(
+            `SELECT id, status, patient_name
+             FROM support_chat_sessions
+             WHERE id = ? AND patient_id = ?
+             FOR UPDATE`,
             [sessionId, patientId]
         );
 
         if (sessions.length === 0) {
+            await conn.rollback();
             return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
         }
 
         const session = sessions[0];
 
+        // Idempotency guard: avoid duplicate inserts when client triggers rapid double submit.
+        const [recentRows] = await conn.query(
+            `SELECT id, sender_name, content, created_at
+             FROM support_chat_messages
+             WHERE session_id = ? AND sender_type = 'patient'
+             ORDER BY id DESC
+             LIMIT 1`,
+            [sessionId]
+        );
+
+        if (recentRows.length > 0) {
+            const recent = recentRows[0];
+            const recentText = String(recent.content || '').trim();
+            const recentTs = recent.created_at instanceof Date
+                ? recent.created_at.getTime()
+                : new Date(recent.created_at).getTime();
+            const nowTs = Date.now();
+            const isDuplicateWindow = Number.isFinite(recentTs) && recentTs <= nowTs && (nowTs - recentTs) <= DUPLICATE_WINDOW_MS;
+
+            if (recentText === msgContent && isDuplicateWindow) {
+                await conn.commit();
+                return res.json({
+                    success: true,
+                    message: {
+                        id: recent.id,
+                        session_id: sessionId,
+                        sender_type: 'patient',
+                        sender_name: recent.sender_name || session.patient_name,
+                        content: recent.content,
+                        created_at: recent.created_at
+                    },
+                    botReply: null,
+                    escalated: false,
+                    deduped: true
+                });
+            }
+        }
+
         // Save patient message
-        const [patientMsgResult] = await db.query(
+        const [patientMsgResult] = await conn.query(
             `INSERT INTO support_chat_messages (session_id, sender_type, sender_name, content) VALUES (?, 'patient', ?, ?)`,
             [sessionId, session.patient_name, msgContent]
         );
+
+        await conn.commit();
+        conn.release();
+        conn = null;
 
         const patientMsg = {
             id: patientMsgResult.insertId,
@@ -512,8 +567,13 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
         return res.json({ success: true, message: patientMsg, botReply, escalated });
 
     } catch (err) {
+        if (conn) {
+            try { await conn.rollback(); } catch (rollbackErr) { /* ignore rollback errors */ }
+        }
         console.error('[support-chat] message error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
