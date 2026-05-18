@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518l'; // 2026-05-18l - Harden Enter send and realtime polling for support chat
+const CACHE_VERSION = '20260518m'; // 2026-05-18m - Show connected status after first staff reply
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
