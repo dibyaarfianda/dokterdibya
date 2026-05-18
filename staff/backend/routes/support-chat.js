@@ -36,6 +36,38 @@ async function ensureSchema() {
     if (schemaPromise) return schemaPromise;
 
     schemaPromise = (async () => {
+        const ensureColumn = async (tableName, columnName, definition) => {
+            const [rows] = await db.query(
+                `SELECT 1
+                 FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = ?
+                   AND column_name = ?
+                 LIMIT 1`,
+                [tableName, columnName]
+            );
+
+            if (rows.length === 0) {
+                await db.query(`ALTER TABLE ${tableName} ADD COLUMN ${definition}`);
+            }
+        };
+
+        const ensureIndex = async (tableName, indexName, ddl) => {
+            const [rows] = await db.query(
+                `SELECT 1
+                 FROM information_schema.statistics
+                 WHERE table_schema = DATABASE()
+                   AND table_name = ?
+                   AND index_name = ?
+                 LIMIT 1`,
+                [tableName, indexName]
+            );
+
+            if (rows.length === 0) {
+                await db.query(ddl);
+            }
+        };
+
         // support_faq table
         await db.query(`
             CREATE TABLE IF NOT EXISTS support_faq (
@@ -67,6 +99,28 @@ async function ensureSchema() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
+        await ensureColumn(
+            'support_chat_sessions',
+            'resolved_at',
+            'resolved_at DATETIME NULL AFTER assigned_staff_name'
+        );
+        await ensureColumn(
+            'support_chat_sessions',
+            'resolved_by_staff_id',
+            'resolved_by_staff_id VARCHAR(64) NULL AFTER resolved_at'
+        );
+        await ensureColumn(
+            'support_chat_sessions',
+            'resolved_by_staff_name',
+            'resolved_by_staff_name VARCHAR(255) NULL AFTER resolved_by_staff_id'
+        );
+
+        await ensureIndex(
+            'support_chat_sessions',
+            'idx_patient_resolved',
+            'CREATE INDEX idx_patient_resolved ON support_chat_sessions (patient_id, status, updated_at)'
+        );
+
         // support_chat_messages table
         await db.query(`
             CREATE TABLE IF NOT EXISTS support_chat_messages (
@@ -78,6 +132,27 @@ async function ensureSchema() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_session (session_id, created_at),
                 CONSTRAINT fk_support_messages_session
+                    FOREIGN KEY (session_id) REFERENCES support_chat_sessions(id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        // support_chat_ratings table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS support_chat_ratings (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                session_id INT NOT NULL,
+                patient_id VARCHAR(64) NOT NULL,
+                staff_id VARCHAR(64) NULL,
+                staff_name VARCHAR(255) NULL,
+                rating TINYINT UNSIGNED NOT NULL,
+                feedback TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_support_chat_ratings_session (session_id),
+                INDEX idx_support_chat_ratings_patient (patient_id, created_at),
+                INDEX idx_support_chat_ratings_staff (staff_id, created_at),
+                CONSTRAINT fk_support_chat_ratings_session
                     FOREIGN KEY (session_id) REFERENCES support_chat_sessions(id)
                     ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -361,10 +436,13 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
         const includeRecentResolved = ['1', 'true', 'yes'].includes(String(req.query.include_recent_resolved || '').toLowerCase());
 
         const [existing] = await db.query(
-            `SELECT id, status, assigned_staff_id, assigned_staff_name, created_at
-             FROM support_chat_sessions
-             WHERE patient_id = ? AND status != 'resolved'
-             ORDER BY created_at DESC
+            `SELECT s.id, s.status, s.assigned_staff_id, s.assigned_staff_name, s.created_at,
+                    s.resolved_at, s.resolved_by_staff_id, s.resolved_by_staff_name,
+                    r.rating AS rating_score, r.created_at AS rated_at
+             FROM support_chat_sessions s
+             LEFT JOIN support_chat_ratings r ON r.session_id = s.id
+             WHERE s.patient_id = ? AND s.status != 'resolved'
+             ORDER BY s.created_at DESC
              LIMIT 1`,
             [patientId]
         );
@@ -375,10 +453,13 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
         // return latest resolved session so client can still pick up closing message + status.
         if (!session && includeRecentResolved) {
             const [resolvedRows] = await db.query(
-                `SELECT id, status, assigned_staff_id, assigned_staff_name, created_at
-                 FROM support_chat_sessions
-                 WHERE patient_id = ? AND status = 'resolved'
-                 ORDER BY updated_at DESC
+                `SELECT s.id, s.status, s.assigned_staff_id, s.assigned_staff_name, s.created_at,
+                        s.resolved_at, s.resolved_by_staff_id, s.resolved_by_staff_name,
+                        r.rating AS rating_score, r.created_at AS rated_at
+                 FROM support_chat_sessions s
+                 LEFT JOIN support_chat_ratings r ON r.session_id = s.id
+                 WHERE s.patient_id = ? AND s.status = 'resolved'
+                 ORDER BY s.updated_at DESC
                  LIMIT 1`,
                 [patientId]
             );
@@ -402,6 +483,208 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
     } catch (err) {
         console.error('[support-chat] sessions/current error:', err);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// GET /api/support-chat/sessions/archive — rated resolved sessions for current patient
+router.get('/sessions/archive', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
+    try {
+        await ensureSchema();
+
+        const patientId = String(req.user.id);
+        const reqLimit = parseInt(String(req.query.limit || '20'), 10);
+        const limit = Number.isFinite(reqLimit) ? Math.max(1, Math.min(reqLimit, 100)) : 20;
+
+        const [sessions] = await db.query(
+            `SELECT s.id,
+                    s.created_at,
+                    s.updated_at,
+                    s.resolved_at,
+                    COALESCE(s.resolved_by_staff_name, s.assigned_staff_name, 'Staff') AS staff_name,
+                    r.rating,
+                    r.created_at AS rated_at,
+                    (
+                        SELECT sm.content
+                        FROM support_chat_messages sm
+                        WHERE sm.session_id = s.id
+                        ORDER BY sm.id DESC
+                        LIMIT 1
+                    ) AS last_message
+             FROM support_chat_sessions s
+             INNER JOIN support_chat_ratings r ON r.session_id = s.id
+             WHERE s.patient_id = ?
+               AND s.status = 'resolved'
+             ORDER BY r.created_at DESC
+             LIMIT ?`,
+            [patientId, limit]
+        );
+
+        return res.json({ success: true, sessions });
+    } catch (err) {
+        console.error('[support-chat] sessions/archive error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// GET /api/support-chat/sessions/archive/:id — transcript of a rated resolved session
+router.get('/sessions/archive/:id', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
+    try {
+        await ensureSchema();
+
+        const sessionId = parseInt(String(req.params.id || ''), 10);
+        if (Number.isNaN(sessionId)) {
+            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
+        }
+
+        const patientId = String(req.user.id);
+
+        const [sessions] = await db.query(
+            `SELECT s.id,
+                    s.patient_id,
+                    s.patient_name,
+                    s.status,
+                    s.assigned_staff_id,
+                    s.assigned_staff_name,
+                    s.created_at,
+                    s.resolved_at,
+                    s.resolved_by_staff_id,
+                    s.resolved_by_staff_name,
+                    r.rating,
+                    r.feedback,
+                    r.created_at AS rated_at
+             FROM support_chat_sessions s
+             INNER JOIN support_chat_ratings r ON r.session_id = s.id
+             WHERE s.id = ?
+               AND s.patient_id = ?
+               AND s.status = 'resolved'
+             LIMIT 1`,
+            [sessionId, patientId]
+        );
+
+        if (sessions.length === 0) {
+            return res.status(404).json({ success: false, message: 'Arsip tidak ditemukan' });
+        }
+
+        const [messages] = await db.query(
+            `SELECT id, sender_type, sender_name, content, created_at
+             FROM support_chat_messages
+             WHERE session_id = ?
+             ORDER BY created_at ASC`,
+            [sessionId]
+        );
+
+        return res.json({ success: true, session: { ...sessions[0], messages } });
+    } catch (err) {
+        console.error('[support-chat] sessions/archive/:id error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// POST /api/support-chat/sessions/:id/rating — submit 1-5 rating for resolved session
+router.post('/sessions/:id/rating', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
+    let conn = null;
+    try {
+        await ensureSchema();
+
+        const sessionId = parseInt(String(req.params.id || ''), 10);
+        if (Number.isNaN(sessionId)) {
+            return res.status(400).json({ success: false, message: 'Sesi tidak valid' });
+        }
+
+        const ratingRaw = parseInt(String(req.body && req.body.rating ? req.body.rating : ''), 10);
+        if (!Number.isFinite(ratingRaw) || ratingRaw < 1 || ratingRaw > 5) {
+            return res.status(400).json({ success: false, message: 'Rating harus antara 1 sampai 5' });
+        }
+
+        const feedback = req.body && typeof req.body.feedback === 'string'
+            ? String(req.body.feedback).trim().slice(0, 2000)
+            : null;
+        const patientId = String(req.user.id);
+
+        conn = await db.getConnection();
+        await conn.beginTransaction();
+
+        const [sessions] = await conn.query(
+            `SELECT id,
+                    patient_id,
+                    status,
+                    assigned_staff_id,
+                    assigned_staff_name,
+                    resolved_by_staff_id,
+                    resolved_by_staff_name
+             FROM support_chat_sessions
+             WHERE id = ?
+               AND patient_id = ?
+             FOR UPDATE`,
+            [sessionId, patientId]
+        );
+
+        if (sessions.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
+        }
+
+        const session = sessions[0];
+        if (session.status !== 'resolved') {
+            await conn.rollback();
+            return res.status(400).json({ success: false, message: 'Sesi belum selesai dan belum dapat dirating' });
+        }
+
+        const [existingRatings] = await conn.query(
+            `SELECT id, rating, created_at
+             FROM support_chat_ratings
+             WHERE session_id = ?
+             FOR UPDATE`,
+            [sessionId]
+        );
+
+        if (existingRatings.length > 0) {
+            await conn.commit();
+            return res.json({
+                success: true,
+                alreadyRated: true,
+                rating: {
+                    session_id: sessionId,
+                    rating: existingRatings[0].rating,
+                    rated_at: existingRatings[0].created_at
+                }
+            });
+        }
+
+        const staffId = String(session.resolved_by_staff_id || session.assigned_staff_id || '').trim() || null;
+        const staffName = String(session.resolved_by_staff_name || session.assigned_staff_name || 'Staff').trim();
+
+        await conn.query(
+            `INSERT INTO support_chat_ratings (session_id, patient_id, staff_id, staff_name, rating, feedback)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [sessionId, patientId, staffId, staffName, ratingRaw, feedback]
+        );
+
+        await conn.query(
+            `UPDATE support_chat_sessions
+             SET updated_at = NOW()
+             WHERE id = ?`,
+            [sessionId]
+        );
+
+        await conn.commit();
+
+        return res.json({
+            success: true,
+            rating: {
+                session_id: sessionId,
+                rating: ratingRaw,
+                rated_at: new Date()
+            }
+        });
+    } catch (err) {
+        if (conn) {
+            try { await conn.rollback(); } catch (rollbackErr) { /* ignore rollback errors */ }
+        }
+        console.error('[support-chat] sessions/:id/rating error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -444,6 +727,14 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
         }
 
         const session = sessions[0];
+
+        if (session.status === 'resolved') {
+            await conn.rollback();
+            return res.status(409).json({
+                success: false,
+                message: 'Sesi sudah selesai. Silakan mulai sesi baru untuk chat berikutnya.'
+            });
+        }
 
         // Idempotency guard: avoid duplicate inserts when client triggers rapid double submit.
         const [recentRows] = await conn.query(
@@ -687,7 +978,7 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
         await conn.beginTransaction();
 
         const [sessions] = await conn.query(
-            `SELECT id, patient_id, patient_name, status
+            `SELECT id, patient_id, patient_name, status, assigned_staff_id, assigned_staff_name
              FROM support_chat_sessions
              WHERE id = ?
              FOR UPDATE`,
@@ -697,6 +988,19 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
         if (sessions.length === 0) {
             await conn.rollback();
             return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
+        }
+
+        const session = sessions[0];
+        const lockedStaffId = String(session.assigned_staff_id || '').trim();
+        if (lockedStaffId && staffId && lockedStaffId !== staffId) {
+            await conn.rollback();
+            return res.status(423).json({
+                success: false,
+                message: `Sesi ini sedang ditangani oleh ${session.assigned_staff_name || 'staff lain'}`,
+                readOnly: true,
+                assigned_staff_id: session.assigned_staff_id,
+                assigned_staff_name: session.assigned_staff_name || null
+            });
         }
 
         const [recentRows] = await conn.query(
@@ -819,6 +1123,18 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
         }
 
+        const lockedStaffId = String(sessions[0].assigned_staff_id || '').trim();
+        if (lockedStaffId && staffId && lockedStaffId !== staffId) {
+            await conn.rollback();
+            return res.status(423).json({
+                success: false,
+                message: `Sesi ini sedang ditangani oleh ${sessions[0].assigned_staff_name || 'staff lain'}`,
+                readOnly: true,
+                assigned_staff_id: sessions[0].assigned_staff_id,
+                assigned_staff_name: sessions[0].assigned_staff_name || null
+            });
+        }
+
         if (sessions[0].status === 'resolved') {
             await conn.commit();
             return res.json({ success: true, message: 'Sesi sudah diselesaikan' });
@@ -835,9 +1151,12 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
              SET status = 'resolved',
                  assigned_staff_id = COALESCE(assigned_staff_id, NULLIF(?, '')),
                  assigned_staff_name = COALESCE(assigned_staff_name, ?),
+                 resolved_at = NOW(),
+                 resolved_by_staff_id = COALESCE(resolved_by_staff_id, NULLIF(?, '')),
+                 resolved_by_staff_name = COALESCE(resolved_by_staff_name, ?),
                  updated_at = NOW()
              WHERE id = ?`,
-            [staffId, staffName, sessionId]
+            [staffId, staffName, staffId, staffName, sessionId]
         );
 
         await conn.commit();
