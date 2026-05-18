@@ -467,7 +467,7 @@
             '#content-support-chat .sc-staff-input{flex:1;border:1px solid #dee2e6;border-radius:8px;padding:8px 12px 8px 14px;font-size:13px;resize:none;outline:none;font-family:inherit;}',
             '#content-support-chat .sc-staff-input:focus{border-color:#007bff;}',
             '#content-support-chat .sc-staff-send-btn{flex-shrink:0;}',
-            '#content-support-chat .sc-staff-panel-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6c757d;gap:12px;}',
+            '#content-support-chat .sc-staff-panel-empty{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;color:#6c757d;gap:12px;padding-left:48px;box-sizing:border-box;text-align:left;}',
         ].join('');
         document.head.appendChild(style);
     }
