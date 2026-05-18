@@ -22,7 +22,8 @@
         initialized: false,
         socketConnectHandler: null,
         pollTimer: null,
-        lastMessageId: 0
+        lastMessageId: 0,
+        hasStaffReply: false
     };
 
     // ==================== DOM REFS ====================
@@ -94,6 +95,9 @@
         (messages || []).forEach(function (m) {
             var idNum = Number(m && m.id ? m.id : 0);
             if (idNum > maxId) maxId = idNum;
+            if (m && m.sender_type === 'staff') {
+                state.hasStaffReply = true;
+            }
         });
         state.lastMessageId = maxId;
     }
@@ -160,6 +164,10 @@
             // Only process if it's for this session and it's a staff message
             if (!state.session || !sameSessionId(msg.session_id, state.session.id)) return;
             if (msg.sender_type === 'patient') return; // We already show patient msgs immediately
+            if (msg.sender_type === 'staff') {
+                state.hasStaffReply = true;
+                updateStatusBar();
+            }
             appendMessage(msg);
             updateLastMessageId([msg]);
             // Auto-open if closed and message is from staff
@@ -244,8 +252,13 @@
             statusBar.textContent = '🤖 Asisten Virtual';
             statusBar.className = 'sc-status sc-status--bot';
         } else if (status === 'escalated') {
-            statusBar.textContent = '⏳ Menunggu staff...';
-            statusBar.className = 'sc-status sc-status--escalated';
+            if (state.hasStaffReply) {
+                statusBar.textContent = '👤 Terhubung dengan staff';
+                statusBar.className = 'sc-status sc-status--resolved';
+            } else {
+                statusBar.textContent = '⏳ Menunggu staff...';
+                statusBar.className = 'sc-status sc-status--escalated';
+            }
         } else if (status === 'resolved') {
             statusBar.textContent = '✅ Selesai';
             statusBar.className = 'sc-status sc-status--resolved';
@@ -282,6 +295,7 @@
     // ==================== INIT CHAT (load or create session) ====================
     async function initChat() {
         state.initialized = true;
+        state.hasStaffReply = false;
         renderMessages([]);
         appendSystemMessage('Memuat percakapan...');
 
