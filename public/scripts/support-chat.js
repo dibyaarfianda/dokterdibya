@@ -23,7 +23,8 @@
         socketConnectHandler: null,
         pollTimer: null,
         lastMessageId: 0,
-        hasStaffReply: false
+        hasStaffReply: false,
+        sendingMessage: false
     };
 
     // ==================== DOM REFS ====================
@@ -334,30 +335,32 @@
     // ==================== SEND MESSAGE ====================
     async function sendMessage() {
         if (!inputEl) return;
+        if (state.sendingMessage) return;
+
         var content = inputEl.value.trim();
         if (!content) return;
         if (!state.session) return;
 
-        inputEl.value = '';
+        var targetSessionId = state.session.id;
+        state.sendingMessage = true;
         inputEl.disabled = true;
         if (sendBtn) sendBtn.disabled = true;
 
-        // Optimistic render
-        var optimistic = {
-            id: 'opt_' + Date.now(),
-            session_id: state.session.id,
-            sender_type: 'patient',
-            sender_name: state.patientName || 'Anda',
-            content: content,
-            created_at: new Date()
-        };
-        appendMessage(optimistic);
-
         try {
-            var data = await apiFetch('/sessions/' + state.session.id + '/message', {
+            var data = await apiFetch('/sessions/' + targetSessionId + '/message', {
                 method: 'POST',
                 body: JSON.stringify({ content: content })
             });
+
+            if (data.message && sameSessionId(state.session.id, targetSessionId)) {
+                var existingPatient = messagesContainer && messagesContainer.querySelector('[data-msg-id="' + data.message.id + '"]');
+                if (!existingPatient) {
+                    appendMessage(data.message);
+                    updateLastMessageId([data.message]);
+                }
+            }
+
+            inputEl.value = '';
 
             // Update session status if escalated
             if (data.escalated) {
@@ -380,6 +383,7 @@
             console.error('[support-chat] send error:', err);
             appendSystemMessage('Gagal mengirim pesan. Coba lagi.');
         } finally {
+            state.sendingMessage = false;
             inputEl.disabled = false;
             if (sendBtn) sendBtn.disabled = false;
             inputEl.focus();
