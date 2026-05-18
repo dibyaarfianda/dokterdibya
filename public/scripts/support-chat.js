@@ -19,7 +19,8 @@
         token: null,
         patientName: '',
         socketRoom: null,  // joined room name
-        initialized: false
+        initialized: false,
+        socketConnectHandler: null
     };
 
     // ==================== DOM REFS ====================
@@ -89,6 +90,16 @@
         if (state.socketRoom === room) return;
         state.socketRoom = room;
         socket.emit('support:join', { sessionId: sessionId });
+
+        // Socket rooms are lost on reconnect; rejoin automatically.
+        if (state.socketConnectHandler) {
+            socket.off('connect', state.socketConnectHandler);
+        }
+        state.socketConnectHandler = function () {
+            if (!state.session || !state.session.id) return;
+            socket.emit('support:join', { sessionId: state.session.id });
+        };
+        socket.on('connect', state.socketConnectHandler);
 
         // Listen for real-time messages from staff
         socket.off('support:new_message');
