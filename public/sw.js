@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518o'; // 2026-05-18o - Prevent support chat duplicate message render
+const CACHE_VERSION = '20260518p'; // 2026-05-18p - Prevent duplicate submits on patient support chat
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

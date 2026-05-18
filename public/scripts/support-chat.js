@@ -8,6 +8,11 @@
 (function () {
     'use strict';
 
+    if (window.__supportChatWidgetBooted) {
+        return;
+    }
+    window.__supportChatWidgetBooted = true;
+
     // ==================== CONFIG ====================
     var API_BASE = '/api/support-chat';
     var SOCKET_RECONNECT_DELAY = 3000;
@@ -498,13 +503,6 @@
                 keyText === 'go';
             if (isEnter && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
-                sendMessage();
-            }
-        });
-
-        inputEl.addEventListener('keyup', function (e) {
-            var keyText = (e.key || '').toLowerCase();
-            if ((keyText === 'send' || keyText === 'go') && !inputEl.disabled) {
                 sendMessage();
             }
         });
