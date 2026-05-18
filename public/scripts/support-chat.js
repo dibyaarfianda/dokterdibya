@@ -20,7 +20,9 @@
         patientName: '',
         socketRoom: null,  // joined room name
         initialized: false,
-        socketConnectHandler: null
+        socketConnectHandler: null,
+        pollTimer: null,
+        lastMessageId: 0
     };
 
     // ==================== DOM REFS ====================
@@ -83,6 +85,54 @@
         return window._supportChatSocket || null;
     }
 
+    function sameSessionId(a, b) {
+        return String(a || '') === String(b || '');
+    }
+
+    function updateLastMessageId(messages) {
+        var maxId = state.lastMessageId || 0;
+        (messages || []).forEach(function (m) {
+            var idNum = Number(m && m.id ? m.id : 0);
+            if (idNum > maxId) maxId = idNum;
+        });
+        state.lastMessageId = maxId;
+    }
+
+    function appendMissingMessages(messages) {
+        var hasNew = false;
+        (messages || []).forEach(function (msg) {
+            var msgId = Number(msg && msg.id ? msg.id : 0);
+            if (msgId <= state.lastMessageId) return;
+            appendMessage(msg);
+            if (msgId > state.lastMessageId) state.lastMessageId = msgId;
+            hasNew = true;
+        });
+        return hasNew;
+    }
+
+    function startEscalatedPolling() {
+        stopEscalatedPolling();
+        state.pollTimer = setInterval(async function () {
+            if (!state.session || state.session.status !== 'escalated') return;
+            try {
+                var data = await apiFetch('/sessions/current');
+                if (!data || !data.session) return;
+                if (!sameSessionId(data.session.id, state.session.id)) return;
+                appendMissingMessages(data.session.messages);
+                state.session.status = data.session.status;
+                updateStatusBar();
+            } catch (e) {
+                // Silent fallback polling errors.
+            }
+        }, 3000);
+    }
+
+    function stopEscalatedPolling() {
+        if (!state.pollTimer) return;
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+    }
+
     function joinSessionRoom(sessionId) {
         var socket = getSocket();
         if (!socket) return;
@@ -105,9 +155,10 @@
         socket.off('support:new_message');
         socket.on('support:new_message', function (msg) {
             // Only process if it's for this session and it's a staff message
-            if (!state.session || msg.session_id !== state.session.id) return;
+            if (!state.session || !sameSessionId(msg.session_id, state.session.id)) return;
             if (msg.sender_type === 'patient') return; // We already show patient msgs immediately
             appendMessage(msg);
+            updateLastMessageId([msg]);
             // Auto-open if closed and message is from staff
             if (!state.isOpen && msg.sender_type === 'staff') {
                 openPanel();
@@ -116,9 +167,10 @@
 
         socket.off('support:resolved');
         socket.on('support:resolved', function (data) {
-            if (!state.session || data.sessionId !== state.session.id) return;
+            if (!state.session || !sameSessionId(data.sessionId, state.session.id)) return;
             state.session.status = 'resolved';
             updateStatusBar();
+            stopEscalatedPolling();
             appendSystemMessage('Sesi bantuan telah diselesaikan. Terima kasih! 🙏');
         });
     }
@@ -242,8 +294,14 @@
             }
 
             renderMessages(state.session.messages);
+            updateLastMessageId(state.session.messages);
             updateStatusBar();
             joinSessionRoom(state.session.id);
+            if (state.session.status === 'escalated') {
+                startEscalatedPolling();
+            } else {
+                stopEscalatedPolling();
+            }
 
         } catch (err) {
             console.error('[support-chat] init error:', err);
@@ -289,13 +347,17 @@
             if (data.escalated) {
                 state.session.status = 'escalated';
                 updateStatusBar();
+                startEscalatedPolling();
             }
 
             // Bot reply was already emitted via socket, but also handle via REST response
             if (data.botReply) {
                 // Avoid duplicate if socket already delivered it
                 var existing = messagesContainer && messagesContainer.querySelector('[data-msg-id="' + data.botReply.id + '"]');
-                if (!existing) appendMessage(data.botReply);
+                if (!existing) {
+                    appendMessage(data.botReply);
+                    updateLastMessageId([data.botReply]);
+                }
             }
 
         } catch (err) {
@@ -406,7 +468,8 @@
         });
 
         inputEl.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            var isEnter = e.key === 'Enter' || e.code === 'Enter' || e.keyCode === 13 || e.which === 13;
+            if (isEnter && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
                 sendMessage();
             }
@@ -437,7 +500,7 @@
         var socket = getSocket();
         if (socket) {
             socket.on('support:new_message', function (msg) {
-                if (!state.session || msg.session_id !== state.session.id) return;
+                if (!state.session || !sameSessionId(msg.session_id, state.session.id)) return;
                 if (msg.sender_type !== 'staff') return;
                 if (!state.isOpen) {
                     // Show notification badge on FAB
