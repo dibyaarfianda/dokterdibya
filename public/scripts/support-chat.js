@@ -182,7 +182,10 @@
             state.session.status = 'resolved';
             updateStatusBar();
             stopMessagePolling();
-            appendSystemMessage('Sesi bantuan telah diselesaikan. Terima kasih! 🙏');
+            var closingText = data && data.closingMessage
+                ? String(data.closingMessage)
+                : 'Sesi bantuan telah diselesaikan. Terima kasih! 🙏';
+            appendSystemMessage(closingText);
         });
     }
 
