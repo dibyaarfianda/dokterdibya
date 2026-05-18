@@ -114,6 +114,9 @@
             var msgId = Number(msg && msg.id ? msg.id : 0);
             if (msgId <= state.lastMessageId) return;
             appendMessage(msg);
+            if (msg && msg.sender_type === 'staff') {
+                state.hasStaffReply = true;
+            }
             if (msgId > state.lastMessageId) state.lastMessageId = msgId;
             hasNew = true;
         });
@@ -129,6 +132,11 @@
                 if (!data || !data.session) return;
                 if (!sameSessionId(data.session.id, state.session.id)) return;
                 appendMissingMessages(data.session.messages);
+                if ((data.session.messages || []).some(function (m) {
+                    return m && m.sender_type === 'staff';
+                })) {
+                    state.hasStaffReply = true;
+                }
                 state.session.status = data.session.status;
                 updateStatusBar();
                 if (state.session.status === 'resolved') {
