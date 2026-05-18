@@ -125,7 +125,7 @@
         state.pollTimer = setInterval(async function () {
             if (!state.session || !state.session.id) return;
             try {
-                var data = await apiFetch('/sessions/current');
+                var data = await apiFetch('/sessions/current?include_recent_resolved=1');
                 if (!data || !data.session) return;
                 if (!sameSessionId(data.session.id, state.session.id)) return;
                 appendMissingMessages(data.session.messages);
@@ -188,10 +188,28 @@
             state.session.status = 'resolved';
             updateStatusBar();
             stopMessagePolling();
-            var closingText = data && data.closingMessage
-                ? String(data.closingMessage)
-                : 'Sesi bantuan telah diselesaikan. Terima kasih! 🙏';
-            appendSystemMessage(closingText);
+
+            // Fallback: if the closing message event was missed, add it from resolved payload.
+            var closingId = Number(data && data.closingMessageId ? data.closingMessageId : 0);
+            var hasClosingMessage = false;
+            if (closingId > 0 && messagesContainer) {
+                hasClosingMessage = !!messagesContainer.querySelector('[data-msg-id="' + closingId + '"]');
+            }
+
+            if (!hasClosingMessage && data && data.closingMessage) {
+                var fallbackMsg = {
+                    id: closingId > 0 ? closingId : ('closing_' + Date.now()),
+                    session_id: state.session.id,
+                    sender_type: 'staff',
+                    sender_name: data.closingSenderName || 'Staff',
+                    content: String(data.closingMessage),
+                    created_at: data.closingCreatedAt || new Date()
+                };
+                appendMessage(fallbackMsg);
+                if (closingId > 0) {
+                    updateLastMessageId([fallbackMsg]);
+                }
+            }
         });
     }
 
