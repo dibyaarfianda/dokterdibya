@@ -481,6 +481,14 @@ app.use('/api/patient-feedback', patientFeedbackRoutes);
 // Support Chat — bot + staff escalation
 app.use('/api/support-chat', supportChatRoutes);
 
+// Staff Points (aggregated support-chat ratings + duty per month)
+const staffPointsRoutes = require('./routes/staff-points');
+app.use('/api/staff-points', staffPointsRoutes);
+
+// Staff Briefing (Briefing Poli Minggu — daily checklist + duty logs)
+const staffBriefingRoutes = require('./routes/staff-briefing');
+app.use('/api/staff-briefing', staffBriefingRoutes);
+
 app.use('/api/community-chat', communityChatRoutes);
 
 // Tanya Dokter - Subscriptions & Payments

@@ -109,6 +109,8 @@ function initPages() {
     pages.patientActivity = grab('patient-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
     pages.supportChat = grab('content-support-chat-page') || grab('content-support-chat');
+    pages.staffPoints = grab('content-staff-points');
+    pages.staffBriefing = grab('content-staff-briefing');
     pages.docboard = grab('docboard-frame-page');
     pages.mobileApp = grab('mobile-app-page');
 }
@@ -4046,7 +4048,9 @@ async function applyMenuVisibility(user) {
         'keuangan': ['nav-invoice-history'],
         'kelola_roles': ['management-nav-kelola-roles'],
         'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
-        'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials']
+        'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials'],
+        'staff_points': ['nav-staff-points'],
+        'staff_briefing': ['nav-staff-briefing']
     };
 
     // Superadmin/dokter sees everything - show all hidden menus
@@ -4513,6 +4517,8 @@ function restoreLastPage() {
             'nav-mobile-app':                       () => showMobileAppPage(),
             'management-nav-kelola-roles':          () => showKelolaRolesPage(),
             'nav-staff-activity':                   () => showStaffActivityPage(),
+            'nav-staff-points':                     () => showStaffPointsPage(),
+            'nav-staff-briefing':                   () => showStaffBriefingPage(),
             'finance-analysis-nav':                 () => showFinanceAnalysisPage(),
             'nav-birth-congrats':                   () => showBirthCongratsPage(),
             'nav-birth-testimonials':               () => showBirthTestimonialsPage(),
