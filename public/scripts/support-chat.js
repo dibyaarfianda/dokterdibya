@@ -40,6 +40,25 @@
         return null;
     }
 
+    function getPatientProfile() {
+        try {
+            var raw = localStorage.getItem('patient_user');
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function isSupportChatEnabledForCurrentPatient(profile) {
+        var p = profile || getPatientProfile();
+        if (!p) return false;
+
+        var patientId = String(p.id || p.medicalRecordId || '').trim();
+        var patientName = String(p.full_name || p.fullname || p.name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+        return patientId === 'P2025091' || patientName === 'nanda ananda';
+    }
+
     // ==================== API HELPERS ====================
     async function apiFetch(path, options) {
         var token = getToken();
@@ -393,6 +412,13 @@
     function init() {
         var token = getToken();
         if (!token) return; // No token = not logged in, skip widget
+
+        var patientProfile = getPatientProfile();
+        if (!isSupportChatEnabledForCurrentPatient(patientProfile)) {
+            return;
+        }
+
+        state.patientName = (patientProfile && (patientProfile.full_name || patientProfile.fullname || patientProfile.name)) || 'Anda';
 
         buildWidget();
 

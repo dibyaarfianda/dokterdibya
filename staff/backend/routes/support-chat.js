@@ -10,6 +10,23 @@ const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Temporary rollout guard: expose support chat only to selected patient accounts.
+const SUPPORT_CHAT_ALLOWED_PATIENT_IDS = new Set([
+    'P2025091' // Nanda Ananda
+]);
+
+function ensureSupportChatAllowed(req, res, next) {
+    const patientId = String(req.user && req.user.id ? req.user.id : '').trim();
+    if (SUPPORT_CHAT_ALLOWED_PATIENT_IDS.has(patientId)) {
+        return next();
+    }
+
+    return res.status(403).json({
+        success: false,
+        message: 'Fitur chat bantuan belum tersedia untuk akun ini'
+    });
+}
+
 // ===================== SCHEMA MIGRATION =====================
 let schemaReady = false;
 let schemaPromise = null;
@@ -226,7 +243,7 @@ async function findBestFAQ(message) {
 // ===================== PATIENT ROUTES =====================
 
 // POST /api/support-chat/sessions — get or create active session
-router.post('/sessions', verifyPatientToken, async (req, res) => {
+router.post('/sessions', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
     try {
         await ensureSchema();
 
@@ -298,7 +315,7 @@ router.post('/sessions', verifyPatientToken, async (req, res) => {
 });
 
 // GET /api/support-chat/sessions/current — get active session
-router.get('/sessions/current', verifyPatientToken, async (req, res) => {
+router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
     try {
         await ensureSchema();
 
@@ -335,7 +352,7 @@ router.get('/sessions/current', verifyPatientToken, async (req, res) => {
 });
 
 // POST /api/support-chat/sessions/:id/message — patient sends a message
-router.post('/sessions/:id/message', verifyPatientToken, async (req, res) => {
+router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowed, async (req, res) => {
     try {
         await ensureSchema();
 
