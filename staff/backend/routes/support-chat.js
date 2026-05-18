@@ -358,6 +358,7 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
         await ensureSchema();
 
         const patientId = String(req.user.id);
+        const includeRecentResolved = ['1', 'true', 'yes'].includes(String(req.query.include_recent_resolved || '').toLowerCase());
 
         const [existing] = await db.query(
             `SELECT id, status, assigned_staff_id, assigned_staff_name, created_at
@@ -368,11 +369,26 @@ router.get('/sessions/current', verifyPatientToken, ensureSupportChatAllowed, as
             [patientId]
         );
 
-        if (existing.length === 0) {
+        let session = existing[0] || null;
+
+        // Optional fallback for active polling: when a session is just resolved,
+        // return latest resolved session so client can still pick up closing message + status.
+        if (!session && includeRecentResolved) {
+            const [resolvedRows] = await db.query(
+                `SELECT id, status, assigned_staff_id, assigned_staff_name, created_at
+                 FROM support_chat_sessions
+                 WHERE patient_id = ? AND status = 'resolved'
+                 ORDER BY updated_at DESC
+                 LIMIT 1`,
+                [patientId]
+            );
+            session = resolvedRows[0] || null;
+        }
+
+        if (!session) {
             return res.json({ success: true, session: null });
         }
 
-        const session = existing[0];
         const [messages] = await db.query(
             `SELECT id, sender_type, sender_name, content, created_at
              FROM support_chat_messages
@@ -778,10 +794,13 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
         };
 
         if (global.io) {
+            global.io.to(`support:${sessionId}`).emit('support:new_message', closingMessagePayload);
             global.io.to(`support:${sessionId}`).emit('support:resolved', {
                 sessionId,
-                closingMessage,
-                closingMessageId: closingMessagePayload.id
+                closingMessage: closingMessagePayload.content,
+                closingMessageId: closingMessagePayload.id,
+                closingSenderName: closingMessagePayload.sender_name,
+                closingCreatedAt: closingMessagePayload.created_at
             });
             global.io.emit('support:session_resolved', {
                 sessionId,
