@@ -6795,7 +6795,7 @@ Contoh Markdown:
                 </div>
 
                 <!-- SUPPORT CHAT PAGE -->
-                <div id="content-support-chat" class="d-none">
+                <div id="content-support-chat-page" class="d-none">
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
@@ -11068,7 +11068,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  function showSupportChatPage() {
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
-     var pg = document.getElementById('content-support-chat');
+     var pg = document.getElementById('content-support-chat-page');
      if (pg) pg.classList.remove('d-none');
      if (window.supportChatStaff) window.supportChatStaff.init();
  }
