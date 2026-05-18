@@ -108,6 +108,7 @@ function initPages() {
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
+    pages.supportChat = grab('content-support-chat-page') || grab('content-support-chat');
     pages.docboard = grab('docboard-frame-page');
     pages.mobileApp = grab('mobile-app-page');
 }
@@ -196,6 +197,7 @@ function executeLoadedScripts(doc, baseUrl) {
 }
 function hideAllPages() {
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
+    document.querySelectorAll('[id$="-page"]').forEach(p => p.classList.add('d-none'));
     document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
 }
 function setTitleAndActive(title, navId, mobileAction) {
