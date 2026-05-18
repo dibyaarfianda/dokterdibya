@@ -25,6 +25,19 @@
         return String(a || '') === String(b || '');
     }
 
+    function getCurrentStaffName() {
+        if (window.currentUserName) return String(window.currentUserName);
+        if (window.auth && window.auth.currentUser) {
+            return String(
+                window.auth.currentUser.name ||
+                window.auth.currentUser.displayName ||
+                window.auth.currentUser.email ||
+                'Staff'
+            );
+        }
+        return 'Staff';
+    }
+
     // ==================== TOKEN ====================
     function getToken() {
         if (typeof window.getAuthToken === 'function') return window.getAuthToken();
@@ -333,7 +346,7 @@
             id: 'opt_' + Date.now(),
             session_id: state.activeSessionId,
             sender_type: 'staff',
-            sender_name: 'Anda',
+            sender_name: getCurrentStaffName(),
             content: content,
             created_at: new Date()
         });
