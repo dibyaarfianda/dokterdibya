@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518s'; // 2026-05-18s - Fix waiting status after staff reply via polling path
+const CACHE_VERSION = '20260518t'; // 2026-05-18t - Support chat archive transcript + mandatory rating flow
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
