@@ -18,7 +18,8 @@
         joinedRoom: null,
         socketConnectHandler: null,
         messagePollTimer: null,
-        lastMessageId: 0
+        lastMessageId: 0,
+        sendingReply: false
     };
 
     function sameSessionId(a, b) {
@@ -281,13 +282,6 @@
                     window.supportChatStaff.sendReply();
                 }
             });
-
-            inp.addEventListener('keyup', function (e) {
-                var keyText = (e.key || '').toLowerCase();
-                if ((keyText === 'send' || keyText === 'go') && !inp.disabled) {
-                    window.supportChatStaff.sendReply();
-                }
-            });
         }
     }
 
@@ -334,37 +328,40 @@
     // ==================== ACTIONS ====================
     async function sendReply() {
         if (!state.activeSessionId) return;
+        if (state.sendingReply) return;
+
         var inp = document.getElementById('sc-staff-input');
         if (!inp) return;
 
         var content = inp.value.trim();
         if (!content) return;
+        var targetSessionId = state.activeSessionId;
 
         var sendBtn = document.getElementById('sc-staff-send-btn');
+        state.sendingReply = true;
         if (sendBtn) sendBtn.disabled = true;
         inp.disabled = true;
 
-        // Optimistic append
-        appendMessageToPanel({
-            id: 'opt_' + Date.now(),
-            session_id: state.activeSessionId,
-            sender_type: 'staff',
-            sender_name: getCurrentStaffName(),
-            content: content,
-            created_at: new Date()
-        });
-
-        inp.value = '';
-
         try {
-            await apiFetch('/staff/' + state.activeSessionId + '/reply', {
+            var data = await apiFetch('/staff/' + targetSessionId + '/reply', {
                 method: 'POST',
                 body: JSON.stringify({ content: content })
             });
+
+            var savedMessage = data && data.message ? data.message : null;
+            if (savedMessage && sameSessionId(state.activeSessionId, targetSessionId)) {
+                var existing = document.querySelector('#sc-staff-messages [data-msg-id="' + savedMessage.id + '"]');
+                if (!existing) {
+                    appendMessageToPanel(savedMessage);
+                }
+            }
+
+            inp.value = '';
         } catch (err) {
             console.error('[support-staff] sendReply error:', err);
             showToast('Gagal mengirim pesan', 'error');
         } finally {
+            state.sendingReply = false;
             if (sendBtn) sendBtn.disabled = false;
             inp.disabled = false;
             inp.focus();
