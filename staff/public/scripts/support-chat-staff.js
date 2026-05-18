@@ -180,10 +180,11 @@
         }
 
         listEl.innerHTML = state.sessions.map(function (s) {
-            var isActive = s.id === state.activeSessionId;
+            var isActive = sameSessionId(s.id, state.activeSessionId);
+            var sessionIdExpr = JSON.stringify(s.id);
             var preview = (s.last_message || '').slice(0, 80);
             var timeAgo = s.updated_at ? relativeTime(new Date(s.updated_at)) : '';
-            return '<div class="sc-staff-item' + (isActive ? ' sc-staff-item--active' : '') + '" data-session-id="' + s.id + '" onclick="window.supportChatStaff.openSession(' + s.id + ')">' +
+            return '<div class="sc-staff-item' + (isActive ? ' sc-staff-item--active' : '') + '" data-session-id="' + escapeHtml(String(s.id)) + '" onclick="window.supportChatStaff.openSession(' + sessionIdExpr + ')">' +
                 '<div class="sc-staff-item-header">' +
                 '<span class="sc-staff-item-name">' + escapeHtml(s.patient_name || 'Pasien') + '</span>' +
                 '<span class="sc-staff-item-time">' + timeAgo + '</span>' +
@@ -247,6 +248,8 @@
         var panel = document.getElementById('sc-staff-panel');
         if (!panel) return;
 
+        var resolveSessionExpr = JSON.stringify(session.id);
+
         panel.innerHTML = [
             '<div class="sc-staff-panel-header">',
             '  <div class="sc-staff-panel-title">',
@@ -255,7 +258,7 @@
             '    <span class="badge badge-warning" style="font-size:10px;margin-left:8px;">Eskalasi</span>',
             '  </div>',
             '  <div class="sc-staff-panel-actions">',
-            '    <button class="btn btn-sm btn-success" onclick="window.supportChatStaff.resolveSession(' + session.id + ')" title="Selesaikan"><i class="fa fa-check"></i> Selesai</button>',
+            '    <button class="btn btn-sm btn-success" onclick="window.supportChatStaff.resolveSession(' + resolveSessionExpr + ')" title="Selesaikan"><i class="fa fa-check"></i> Selesai</button>',
             '  </div>',
             '</div>',
             '<div class="sc-staff-messages" id="sc-staff-messages"></div>',
@@ -433,6 +436,7 @@
         if (document.getElementById('support-chat-staff-styles')) return;
         var style = document.createElement('style');
         style.id = 'support-chat-staff-styles';
+        var containerSelector = '#content-support-chat-page';
         style.textContent = [
             '#content-support-chat .sc-staff-layout{display:flex;gap:0;height:calc(100vh - 200px);min-height:400px;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;background:#fff;}',
             '#content-support-chat .sc-staff-sidebar{width:280px;border-right:1px solid #dee2e6;display:flex;flex-direction:column;flex-shrink:0;}',
@@ -468,7 +472,7 @@
             '#content-support-chat .sc-staff-input:focus{border-color:#007bff;}',
             '#content-support-chat .sc-staff-send-btn{flex-shrink:0;}',
             '#content-support-chat .sc-staff-panel-empty{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;color:#6c757d;gap:12px;padding-left:48px;box-sizing:border-box;text-align:left;}',
-        ].join('');
+        ].join('').replace(/#content-support-chat/g, containerSelector);
         document.head.appendChild(style);
     }
 
