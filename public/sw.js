@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260518c'; // 2026-05-18c - fix wrong logo image path in vitamin-notifications.js
+const CACHE_VERSION = '20260518d'; // 2026-05-18d - Sunday attendance confirmation system
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

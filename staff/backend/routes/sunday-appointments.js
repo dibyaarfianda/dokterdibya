@@ -486,12 +486,21 @@ router.post('/book', verifyToken, async (req, res) => {
             [appointment_date, session, slot_number]
         );
 
-        // Create appointment with auto-confirmed status
+        // Generate confirmation token
+        const crypto = require('crypto');
+        const confirmationToken = crypto.randomBytes(32).toString('hex');
+
+        // Determine if this is a Sunday booking (requires confirmation)
+        const appointmentDayOfWeekForBooking = new Date(appointment_date + 'T00:00:00Z').getUTCDay();
+        const requiresConfirmation = appointmentDayOfWeekForBooking === 0; // 0 = Sunday
+        const bookingStatus = requiresConfirmation ? 'pending_confirmation' : 'confirmed';
+
+        // Create appointment
         const [result] = await db.query(
             `INSERT INTO sunday_appointments
-             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`,
-            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category]
+             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category, bookingStatus, confirmationToken]
         );
 
         // Broadcast new booking to all connected staff
@@ -502,16 +511,21 @@ router.post('/book', verifyToken, async (req, res) => {
             session: session,
             session_label: getSessionLabel(session),
             slot_number: slot_number,
-            status: 'confirmed'
+            status: bookingStatus
         });
 
         // Track booking activity (fire-and-forget)
         patientActivityLogger.logActivity(req.user.id, patientActivityLogger.EVENTS.BOOKING, { detail: 'Booking ' + appointment_date + ' Sesi ' + session }, req);
 
+        const responseMessage = requiresConfirmation
+            ? 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 09.00 WIB agar nama Anda muncul di antrian.'
+            : 'Janji temu berhasil dibuat dan langsung terkonfirmasi!';
+
         res.status(201).json({
-            message: 'Janji temu berhasil dibuat dan langsung terkonfirmasi!',
+            message: responseMessage,
             appointmentId: result.insertId,
-            status: 'confirmed',
+            status: bookingStatus,
+            requiresConfirmation,
             details: {
                 date: appointmentDate.toLocaleDateString('id-ID', {
                     weekday: 'long',
@@ -640,6 +654,337 @@ router.get('/patient', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Error getting patient appointments:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * GET /api/sunday-appointments/my-pending-confirmation
+ * Returns today's pending_confirmation appointment for the logged-in patient (before 09:00 WIB)
+ */
+router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status
+             FROM sunday_appointments
+             WHERE patient_id = ?
+               AND status = 'pending_confirmation'
+               AND appointment_date = CURDATE()`,
+            [req.user.id]
+        );
+
+        if (rows.length === 0) {
+            return res.json({ success: true, appointment: null });
+        }
+
+        const apt = rows[0];
+        res.json({
+            success: true,
+            appointment: {
+                id: apt.id,
+                appointment_date: apt.appointment_date,
+                session_label: getSessionLabel(apt.session),
+                slot_time: getSlotTime(apt.session, apt.slot_number),
+                slot_number: apt.slot_number,
+                chief_complaint: apt.chief_complaint,
+                status: apt.status
+            }
+        });
+    } catch (error) {
+        console.error('Error getting pending confirmation:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * POST /api/sunday-appointments/:id/confirm-attendance
+ * Confirm attendance via patient portal (authenticated)
+ */
+router.post('/:id/confirm-attendance', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [rows] = await db.query(
+            `SELECT id, patient_id, patient_name, session, slot_number, status
+             FROM sunday_appointments
+             WHERE id = ? AND patient_id = ? AND status = 'pending_confirmation'`,
+            [id, req.user.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan atau sudah dikonfirmasi' });
+        }
+
+        await db.query(
+            `UPDATE sunday_appointments
+             SET status = 'confirmed', confirmed_at = NOW()
+             WHERE id = ?`,
+            [id]
+        );
+
+        // Broadcast to staff
+        try {
+            realtimeSync.broadcastNewBooking({
+                id: parseInt(id),
+                patient_name: rows[0].patient_name,
+                session: rows[0].session,
+                session_label: getSessionLabel(rows[0].session),
+                slot_number: rows[0].slot_number,
+                status: 'confirmed',
+                _event: 'attendance_confirmed'
+            });
+        } catch (rtErr) {
+            console.error('Realtime broadcast error:', rtErr.message);
+        }
+
+        res.json({ success: true, message: 'Kehadiran dikonfirmasi! Nama Anda akan muncul di antrian.' });
+    } catch (error) {
+        console.error('Error confirming attendance:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * POST /api/sunday-appointments/:id/cancel-attendance
+ * Cancel attendance via patient portal (authenticated, no reason required)
+ */
+router.post('/:id/cancel-attendance', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [rows] = await db.query(
+            `SELECT id, patient_id, patient_name, session, slot_number, status
+             FROM sunday_appointments
+             WHERE id = ? AND patient_id = ? AND status = 'pending_confirmation'`,
+            [id, req.user.id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan atau sudah diproses' });
+        }
+
+        await db.query(
+            `UPDATE sunday_appointments
+             SET status = 'cancelled',
+                 cancelled_by = 'patient',
+                 cancellation_reason = 'Tidak dapat hadir (konfirmasi hari-H)',
+                 cancelled_at = NOW()
+             WHERE id = ?`,
+            [id]
+        );
+
+        // Broadcast slot released
+        try {
+            realtimeSync.broadcastCancellation({
+                id: parseInt(id),
+                patient_name: rows[0].patient_name,
+                session: rows[0].session,
+                slot_number: rows[0].slot_number,
+                status: 'cancelled'
+            });
+        } catch (rtErr) {
+            console.error('Realtime broadcast error:', rtErr.message);
+        }
+
+        res.json({ success: true, message: 'Jadwal dibatalkan.' });
+    } catch (error) {
+        console.error('Error cancelling attendance:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * GET /api/sunday-appointments/by-token/:token
+ * Get appointment info by confirmation token (no auth — token IS the auth)
+ */
+router.get('/by-token/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        if (!token || token.length !== 64) {
+            return res.status(400).json({ success: false, message: 'Token tidak valid' });
+        }
+
+        const [rows] = await db.query(
+            `SELECT id, patient_name, appointment_date, session, slot_number, chief_complaint, status
+             FROM sunday_appointments
+             WHERE confirmation_token = ?`,
+            [token]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Token tidak ditemukan' });
+        }
+
+        const apt = rows[0];
+
+        // Check if token is still usable
+        if (apt.status !== 'pending_confirmation') {
+            const statusLabel = apt.status === 'confirmed' ? 'sudah dikonfirmasi'
+                : apt.status === 'cancelled' ? 'sudah dibatalkan'
+                : apt.status;
+            return res.json({
+                success: true,
+                appointment: {
+                    id: apt.id,
+                    patient_name: apt.patient_name,
+                    appointment_date: apt.appointment_date,
+                    session_label: getSessionLabel(apt.session),
+                    slot_time: getSlotTime(apt.session, apt.slot_number),
+                    chief_complaint: apt.chief_complaint,
+                    status: apt.status
+                },
+                expired: true,
+                expiredMessage: `Jadwal ini ${statusLabel}.`
+            });
+        }
+
+        res.json({
+            success: true,
+            appointment: {
+                id: apt.id,
+                patient_name: apt.patient_name,
+                appointment_date: apt.appointment_date,
+                session_label: getSessionLabel(apt.session),
+                slot_time: getSlotTime(apt.session, apt.slot_number),
+                chief_complaint: apt.chief_complaint,
+                status: apt.status
+            },
+            expired: false
+        });
+    } catch (error) {
+        console.error('Error getting appointment by token:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * POST /api/sunday-appointments/by-token/:token/confirm
+ * Confirm attendance via WhatsApp link token (no auth)
+ */
+router.post('/by-token/:token/confirm', async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        const [rows] = await db.query(
+            `SELECT id, patient_id, patient_name, session, slot_number, status
+             FROM sunday_appointments
+             WHERE confirmation_token = ? AND status = 'pending_confirmation'`,
+            [token]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Token tidak valid atau sudah kedaluwarsa' });
+        }
+
+        const apt = rows[0];
+
+        await db.query(
+            `UPDATE sunday_appointments
+             SET status = 'confirmed', confirmed_at = NOW()
+             WHERE id = ?`,
+            [apt.id]
+        );
+
+        // Create in-app notification
+        try {
+            await createPatientNotification({
+                patient_id: apt.patient_id,
+                type: 'appointment',
+                title: 'Kehadiran Dikonfirmasi',
+                message: `Kehadiran Anda (${getSessionLabel(apt.session)}, slot ${apt.slot_number}) telah dikonfirmasi. Nama Anda akan muncul di antrian.`,
+                link: '/riwayat-kunjungan.html',
+                icon: 'fa fa-check-circle',
+                icon_color: 'text-success'
+            });
+        } catch (notifErr) {
+            console.error('Notification error:', notifErr.message);
+        }
+
+        // Broadcast to staff
+        try {
+            realtimeSync.broadcastNewBooking({
+                id: apt.id,
+                patient_name: apt.patient_name,
+                session: apt.session,
+                session_label: getSessionLabel(apt.session),
+                slot_number: apt.slot_number,
+                status: 'confirmed',
+                _event: 'attendance_confirmed'
+            });
+        } catch (rtErr) {
+            console.error('Realtime broadcast error:', rtErr.message);
+        }
+
+        res.json({ success: true, message: 'Kehadiran berhasil dikonfirmasi! Nama Anda akan muncul di antrian.' });
+    } catch (error) {
+        console.error('Error confirming by token:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * POST /api/sunday-appointments/by-token/:token/cancel
+ * Cancel attendance via WhatsApp link token (no auth)
+ */
+router.post('/by-token/:token/cancel', async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        const [rows] = await db.query(
+            `SELECT id, patient_id, patient_name, session, slot_number, status
+             FROM sunday_appointments
+             WHERE confirmation_token = ? AND status = 'pending_confirmation'`,
+            [token]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Token tidak valid atau sudah kedaluwarsa' });
+        }
+
+        const apt = rows[0];
+
+        await db.query(
+            `UPDATE sunday_appointments
+             SET status = 'cancelled',
+                 cancelled_by = 'patient',
+                 cancellation_reason = 'Tidak dapat hadir (konfirmasi via WhatsApp)',
+                 cancelled_at = NOW()
+             WHERE id = ?`,
+            [apt.id]
+        );
+
+        // Create in-app notification
+        try {
+            await createPatientNotification({
+                patient_id: apt.patient_id,
+                type: 'appointment',
+                title: 'Jadwal Dibatalkan',
+                message: `Jadwal Anda (${getSessionLabel(apt.session)}, slot ${apt.slot_number}) telah dibatalkan.`,
+                link: '/riwayat-kunjungan.html',
+                icon: 'fa fa-times-circle',
+                icon_color: 'text-danger'
+            });
+        } catch (notifErr) {
+            console.error('Notification error:', notifErr.message);
+        }
+
+        // Broadcast slot released
+        try {
+            realtimeSync.broadcastCancellation({
+                id: apt.id,
+                patient_name: apt.patient_name,
+                session: apt.session,
+                slot_number: apt.slot_number,
+                status: 'cancelled'
+            });
+        } catch (rtErr) {
+            console.error('Realtime broadcast error:', rtErr.message);
+        }
+
+        res.json({ success: true, message: 'Jadwal berhasil dibatalkan.' });
+    } catch (error) {
+        console.error('Error cancelling by token:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
     }
 });
 
@@ -944,7 +1289,7 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         const { id } = req.params;
         const { status, notes, cancellationReason } = req.body;
         
-        const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no_show'];
+        const validStatuses = ['pending', 'pending_confirmation', 'confirmed', 'completed', 'cancelled', 'no_show'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ message: 'Status tidak valid' });
         }

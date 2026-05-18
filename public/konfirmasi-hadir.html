@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Konfirmasi Kehadiran - dokterDIBYA</title>
+
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after {
+            margin: 0; padding: 0; box-sizing: border-box;
+        }
+        html, body {
+            min-height: 100%;
+            background: #111;
+            color: #f0f0f0;
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 24px 16px 40px;
+            min-height: 100vh;
+        }
+
+        /* ---- Header logo ---- */
+        .logo-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 32px;
+            margin-top: 8px;
+        }
+        .logo-header img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+        .logo-header span {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* ---- State screens ---- */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 400px;
+        }
+        .screen.active { display: block; }
+
+        /* Loading */
+        #screen-loading {
+            text-align: center;
+            padding: 48px 0;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #333;
+            border-top-color: #4A90D9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Card */
+        .confirm-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #1c3a5c, #0d2b44);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #2a3a4a;
+        }
+        .card-header .icon-circle {
+            width: 56px; height: 56px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .card-header .icon-circle i {
+            font-size: 24px;
+            color: #fff;
+        }
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .card-header p {
+            font-size: 12px;
+            color: rgba(255,255,255,0.65);
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .info-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .row-icon {
+            color: #888;
+            font-size: 14px;
+            width: 16px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .info-row .row-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        .info-row .row-value {
+            font-size: 13px;
+            color: #ddd;
+            font-weight: 500;
+        }
+        .patient-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        .deadline-notice {
+            background: rgba(255,193,7,0.1);
+            border: 1px solid rgba(255,193,7,0.25);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .deadline-notice i {
+            color: #ffc107;
+            font-size: 14px;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+        .deadline-notice span {
+            font-size: 12px;
+            color: #e0c060;
+            line-height: 1.5;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-hadir {
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-hadir:active { background: #218838; }
+        .btn-hadir:disabled { background: #555; cursor: not-allowed; }
+        .btn-batal {
+            background: transparent;
+            color: #e74c3c;
+            border: 1.5px solid #e74c3c;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-batal:active { background: rgba(231,76,60,0.1); }
+        .btn-batal:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Result screen */
+        .result-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+        }
+        .result-icon {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .result-icon.success { background: rgba(40,167,69,0.15); }
+        .result-icon.cancelled { background: rgba(231,76,60,0.12); }
+        .result-icon.info { background: rgba(74,144,217,0.12); }
+        .result-icon i { font-size: 32px; }
+        .result-icon.success i { color: #28a745; }
+        .result-icon.cancelled i { color: #e74c3c; }
+        .result-icon.info i { color: #4A90D9; }
+        .result-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .result-message {
+            font-size: 13px;
+            color: #aaa;
+            line-height: 1.6;
+        }
+        .portal-link {
+            display: inline-block;
+            margin-top: 24px;
+            color: #4A90D9;
+            font-size: 13px;
+            text-decoration: none;
+        }
+        .portal-link:hover { text-decoration: underline; }
+
+        /* Error screen */
+        #screen-error .result-message {
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo-header">
+        <img src="/images/logo-dokter-dibya.png" alt="Logo" onerror="this.style.display='none'">
+        <span>dokterDIBYA</span>
+    </div>
+
+    <!-- Loading -->
+    <div id="screen-loading" class="screen active">
+        <div class="spinner"></div>
+        <p style="color:#888;font-size:13px;">Memuat data jadwal...</p>
+    </div>
+
+    <!-- Appointment info + buttons -->
+    <div id="screen-confirm" class="screen" style="max-width:400px;width:100%;">
+        <div class="confirm-card">
+            <div class="card-header">
+                <div class="icon-circle"><i class="fa fa-calendar"></i></div>
+                <h2>Konfirmasi Kehadiran</h2>
+                <p>Praktek Hari Minggu</p>
+            </div>
+            <div class="card-body">
+                <div class="patient-name" id="apt-patient-name"></div>
+                <div class="info-row">
+                    <i class="fa fa-calendar row-icon"></i>
+                    <div>
+                        <div class="row-label">Tanggal</div>
+                        <div class="row-value" id="apt-date"></div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <i class="fa fa-clock-o row-icon"></i>
+                    <div>
+                        <div class="row-label">Sesi &amp; Waktu</div>
+                        <div class="row-value" id="apt-session"></div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <i class="fa fa-stethoscope row-icon"></i>
+                    <div>
+                        <div class="row-label">Keluhan</div>
+                        <div class="row-value" id="apt-complaint"></div>
+                    </div>
+                </div>
+                <div class="deadline-notice">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <span>Konfirmasi kehadiran diperlukan sebelum jam <strong>09.00 WIB</strong>. Jika tidak dikonfirmasi, slot akan hangus otomatis.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-hadir" id="btn-hadir" onclick="handleAction('confirm')">
+                <i class="fa fa-check-circle"></i> Saya Hadir
+            </button>
+            <button class="btn-batal" id="btn-batal" onclick="handleAction('cancel')">
+                <i class="fa fa-times-circle"></i> Batalkan Jadwal
+            </button>
+        </div>
+    </div>
+
+    <!-- Result (success/expired/info) -->
+    <div id="screen-result" class="screen" style="max-width:400px;width:100%;">
+        <div class="result-card">
+            <div class="result-icon" id="result-icon-wrap">
+                <i class="fa fa-check-circle" id="result-icon"></i>
+            </div>
+            <div class="result-title" id="result-title"></div>
+            <div class="result-message" id="result-message"></div>
+            <a href="/patient-menu.html" class="portal-link">Buka Portal Pasien &rarr;</a>
+        </div>
+    </div>
+
+    <!-- Error -->
+    <div id="screen-error" class="screen" style="max-width:400px;width:100%;">
+        <div class="result-card">
+            <div class="result-icon info">
+                <i class="fa fa-exclamation-circle" style="color:#e74c3c;"></i>
+            </div>
+            <div class="result-title" style="color:#e74c3c;">Link Tidak Valid</div>
+            <div class="result-message" id="error-message">Token tidak ditemukan atau sudah kedaluwarsa.</div>
+            <a href="/patient-menu.html" class="portal-link">Buka Portal Pasien &rarr;</a>
+        </div>
+    </div>
+
+    <script>
+        var currentToken = null;
+
+        function showScreen(id) {
+            ['screen-loading', 'screen-confirm', 'screen-result', 'screen-error'].forEach(function(s) {
+                document.getElementById(s).classList.remove('active');
+            });
+            document.getElementById(id).classList.add('active');
+        }
+
+        function showResult(type, title, message) {
+            // type: 'success' | 'cancelled' | 'info'
+            var wrap = document.getElementById('result-icon-wrap');
+            var icon = document.getElementById('result-icon');
+            wrap.className = 'result-icon ' + type;
+            if (type === 'success') { icon.className = 'fa fa-check-circle'; }
+            else if (type === 'cancelled') { icon.className = 'fa fa-times-circle'; }
+            else { icon.className = 'fa fa-info-circle'; }
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-message').textContent = message;
+            showScreen('screen-result');
+        }
+
+        async function loadAppointment() {
+            var urlParams = new URLSearchParams(window.location.search);
+            currentToken = urlParams.get('token');
+
+            if (!currentToken || currentToken.length !== 64) {
+                document.getElementById('error-message').textContent = 'Token tidak ditemukan atau tidak valid.';
+                showScreen('screen-error');
+                return;
+            }
+
+            try {
+                var response = await fetch('/api/sunday-appointments/by-token/' + currentToken);
+                var data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    document.getElementById('error-message').textContent = data.message || 'Jadwal tidak ditemukan.';
+                    showScreen('screen-error');
+                    return;
+                }
+
+                var apt = data.appointment;
+
+                if (data.expired) {
+                    showResult('info', 'Sudah Diproses', data.expiredMessage || ('Jadwal ini ' + apt.status + '.'));
+                    return;
+                }
+
+                // Populate card
+                document.getElementById('apt-patient-name').textContent = apt.patient_name;
+
+                var dateObj = new Date(apt.appointment_date);
+                var gmt7 = new Date(dateObj.getTime() + 7 * 3600 * 1000);
+                document.getElementById('apt-date').textContent = gmt7.toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+                document.getElementById('apt-session').textContent = apt.session_label + ' \u2022 Slot ' + apt.slot_time;
+                document.getElementById('apt-complaint').textContent = apt.chief_complaint;
+
+                showScreen('screen-confirm');
+            } catch (err) {
+                console.error('Error loading appointment:', err);
+                document.getElementById('error-message').textContent = 'Terjadi kesalahan jaringan. Coba lagi.';
+                showScreen('screen-error');
+            }
+        }
+
+        async function handleAction(action) {
+            if (!currentToken) return;
+
+            var btnHadir = document.getElementById('btn-hadir');
+            var btnBatal = document.getElementById('btn-batal');
+            btnHadir.disabled = true;
+            btnBatal.disabled = true;
+
+            var endpoint = '/api/sunday-appointments/by-token/' + currentToken + '/' + action;
+
+            try {
+                var response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                var data = await response.json();
+
+                if (data.success) {
+                    if (action === 'confirm') {
+                        showResult('success', 'Kehadiran Dikonfirmasi', data.message);
+                    } else {
+                        showResult('cancelled', 'Jadwal Dibatalkan', data.message);
+                    }
+                } else {
+                    showResult('info', 'Tidak Dapat Diproses', data.message || 'Terjadi kesalahan.');
+                }
+            } catch (err) {
+                console.error('Error submitting:', err);
+                btnHadir.disabled = false;
+                btnBatal.disabled = false;
+                alert('Terjadi kesalahan jaringan. Silakan coba lagi.');
+            }
+        }
+
+        // Load on page ready
+        loadAppointment();
+    </script>
+</body>
+</html>

@@ -2460,6 +2460,9 @@
                     // Check subscription for VIP badge
                     checkVipSubscription();
 
+                    // Check if there's a pending attendance confirmation (Sunday)
+                    checkAttendanceConfirmation();
+
                     // Show content
                     document.getElementById('loading-state').style.display = 'none';
                     document.getElementById('content-wrapper').style.display = 'block';
@@ -2501,6 +2504,115 @@
                 // Silently fail - VIP badge is optional
             }
         }
+
+        // ==================== ATTENDANCE CONFIRMATION POPUP ====================
+        async function checkAttendanceConfirmation() {
+            try {
+                const token = getToken();
+                if (!token) return;
+
+                const response = await fetch('/api/sunday-appointments/my-pending-confirmation?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+                });
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (!data.success || !data.appointment) return;
+
+                showAttendanceConfirmationPopup(data.appointment);
+            } catch (err) {
+                console.error('[AttendanceConfirmation] Error:', err);
+            }
+        }
+
+        function showAttendanceConfirmationPopup(apt) {
+            // Remove existing popup if any
+            var existing = document.getElementById('attendance-confirm-overlay');
+            if (existing) existing.remove();
+
+            var dateObj = new Date(apt.appointment_date);
+            var gmt7 = new Date(dateObj.getTime() + 7 * 3600 * 1000);
+            var dateStr = gmt7.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+            var overlay = document.createElement('div');
+            overlay.id = 'attendance-confirm-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            overlay.innerHTML = `
+                <div style="background:#1a1a1a;border-radius:16px;padding:24px;max-width:380px;width:100%;border:1px solid #333;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <div style="width:56px;height:56px;background:rgba(255,193,7,0.15);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                            <i class="fa fa-calendar-check-o" style="font-size:24px;color:#ffc107;"></i>
+                        </div>
+                        <h3 style="margin:0 0 6px;font-size:17px;color:#fff;font-weight:700;">Konfirmasi Kehadiran</h3>
+                        <p style="margin:0;font-size:12px;color:#aaa;">Diperlukan sebelum jam 09.00 WIB</p>
+                    </div>
+                    <div style="background:#111;border-radius:10px;padding:14px 16px;margin-bottom:20px;border:1px solid #2a2a2a;">
+                        <div style="display:flex;gap:10px;margin-bottom:8px;">
+                            <i class="fa fa-calendar" style="color:#aaa;margin-top:2px;width:14px;flex-shrink:0;"></i>
+                            <span style="font-size:13px;color:#ddd;">${dateStr}</span>
+                        </div>
+                        <div style="display:flex;gap:10px;margin-bottom:8px;">
+                            <i class="fa fa-clock-o" style="color:#aaa;margin-top:2px;width:14px;flex-shrink:0;"></i>
+                            <span style="font-size:13px;color:#ddd;">${apt.session_label} &bull; Slot ${apt.slot_number} (${apt.slot_time})</span>
+                        </div>
+                        <div style="display:flex;gap:10px;">
+                            <i class="fa fa-stethoscope" style="color:#aaa;margin-top:2px;width:14px;flex-shrink:0;"></i>
+                            <span style="font-size:13px;color:#ddd;">${apt.chief_complaint}</span>
+                        </div>
+                    </div>
+                    <p style="font-size:12px;color:#999;text-align:center;margin-bottom:20px;line-height:1.5;">Apakah Anda dapat hadir hari ini?<br>Jika tidak konfirmasi, slot akan hangus jam 09.00.</p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <button id="btn-confirm-hadir" onclick="submitAttendanceConfirmation(${apt.id},'confirm')" style="background:#28a745;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;">
+                            <i class="fa fa-check-circle"></i> Ya, Saya Hadir
+                        </button>
+                        <button id="btn-confirm-batal" onclick="submitAttendanceConfirmation(${apt.id},'cancel')" style="background:transparent;color:#e74c3c;border:1.5px solid #e74c3c;border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;">
+                            <i class="fa fa-times-circle"></i> Batalkan Jadwal
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+        }
+
+        async function submitAttendanceConfirmation(appointmentId, action) {
+            var btnConfirm = document.getElementById('btn-confirm-hadir');
+            var btnCancel = document.getElementById('btn-confirm-batal');
+            if (btnConfirm) btnConfirm.disabled = true;
+            if (btnCancel) btnCancel.disabled = true;
+
+            try {
+                const token = getToken();
+                const endpoint = action === 'confirm'
+                    ? '/api/sunday-appointments/' + appointmentId + '/confirm-attendance'
+                    : '/api/sunday-appointments/' + appointmentId + '/cancel-attendance';
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+                var overlay = document.getElementById('attendance-confirm-overlay');
+                if (overlay) overlay.remove();
+
+                if (data.success) {
+                    if (typeof showSuccess === 'function') showSuccess(data.message);
+                    else alert(data.message);
+                } else {
+                    if (typeof showError === 'function') showError(data.message || 'Terjadi kesalahan');
+                    else alert(data.message || 'Terjadi kesalahan');
+                }
+            } catch (err) {
+                console.error('[AttendanceConfirmation] Submit error:', err);
+                if (btnConfirm) btnConfirm.disabled = false;
+                if (btnCancel) btnCancel.disabled = false;
+                if (typeof showError === 'function') showError('Terjadi kesalahan jaringan');
+            }
+        }
+
+        window.submitAttendanceConfirmation = submitAttendanceConfirmation;
 
         function getInitials(name) {
             if (!name) return '--';

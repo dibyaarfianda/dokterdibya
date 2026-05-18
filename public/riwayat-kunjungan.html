@@ -491,7 +491,7 @@
 
             // Filter and prepare data
             const upcomingBookings = allData.bookings.filter(b =>
-                b.status === 'confirmed' || b.status === 'pending'
+                b.status === 'confirmed' || b.status === 'pending' || b.status === 'pending_confirmation'
             ).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
 
             const completedVisits = allData.visits.sort((a, b) =>
@@ -561,12 +561,13 @@
             const statusMap = {
                 'confirmed': { label: 'Dikonfirmasi', class: 'confirmed', icon: 'fa-check-circle' },
                 'pending': { label: 'Menunggu Konfirmasi', class: 'pending', icon: 'fa-clock-o' },
+                'pending_confirmation': { label: 'Menunggu Konfirmasi Kehadiran', class: 'pending', icon: 'fa-hourglass-half' },
                 'cancelled': { label: 'Dibatalkan', class: 'cancelled', icon: 'fa-times-circle' },
                 'completed': { label: 'Selesai', class: 'completed', icon: 'fa-check' }
             };
             const status = statusMap[booking.status] || statusMap.pending;
 
-            const canCancel = booking.status === 'pending' || booking.status === 'confirmed';
+            const canCancel = booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'pending_confirmation';
 
             return `
                 <div class="visit-card">
