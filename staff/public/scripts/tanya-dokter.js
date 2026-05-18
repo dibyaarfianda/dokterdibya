@@ -19,8 +19,18 @@
     window.showTanyaDokterPage = function() {
         if (typeof hideAllPages === 'function') hideAllPages();
         document.getElementById('tanya-dokter-page').classList.remove('d-none');
-        if (typeof setActiveNav === 'function') setActiveNav('nav-tanya-dokter');
+
+        var links = document.querySelectorAll('.nav-sidebar .nav-link');
+        links.forEach(function(link) { link.classList.remove('active'); });
+        var tanyaNav = document.querySelector('#nav-tanya-dokter .nav-link');
+        if (tanyaNav) tanyaNav.classList.add('active');
+
         if (typeof setPageTitle === 'function') setPageTitle('Tanya Dokter');
+
+        try {
+            sessionStorage.setItem('lastStaffNavId', 'nav-tanya-dokter');
+        } catch (e) {}
+
         loadTanyaDokterQuestions();
     };
 

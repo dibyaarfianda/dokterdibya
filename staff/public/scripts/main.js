@@ -4504,6 +4504,7 @@ function restoreLastPage() {
             'nav-estimasi-biaya':                   () => showEstimasiBiayaPage(),
             'nav-pengumuman':                       () => showKelolaPengumumanPage(),
             'nav-voting':                           () => showVotingPage(),
+            'nav-tanya-dokter':                    () => showTanyaDokterPage(),
             'nav-community-chat':                   () => showCommunityChatPage(),
             'nav-support-chat':                     () => showSupportChatPage(),
             'nav-penjualan-obat':                   () => showPenjualanObatPage(),
