@@ -19,7 +19,9 @@
         socketConnectHandler: null,
         messagePollTimer: null,
         lastMessageId: 0,
-        sendingReply: false
+        sendingReply: false,
+        pointsData: null,
+        briefingData: null
     };
 
     function sameSessionId(a, b) {
@@ -100,6 +102,7 @@
                 stopActiveSessionPolling();
             }
             loadPendingSessions();
+            refreshInsights();
         });
 
         // Real-time message delivery in open session
@@ -146,9 +149,14 @@
     function updateBadge(count) {
         state.badgeCount = count;
         var badge = document.getElementById('support-chat-badge');
+        var inlineBadge = document.getElementById('support-chat-badge-count');
         if (badge) {
             badge.textContent = count > 0 ? count : '';
             badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+        if (inlineBadge) {
+            inlineBadge.textContent = count > 0 ? String(count) : '0';
+            inlineBadge.style.display = count > 0 ? 'inline-flex' : 'none';
         }
     }
 
@@ -169,6 +177,93 @@
         } catch (err) {
             console.error('[support-staff] loadPendingSessions error:', err);
         }
+    }
+
+    async function loadStaffPoints() {
+        var target = document.getElementById('sc-staff-points');
+        if (!target) return;
+
+        try {
+            var data = await apiFetch('/staff/points?days=30');
+            state.pointsData = data || null;
+            renderStaffPoints();
+        } catch (err) {
+            console.error('[support-staff] loadStaffPoints error:', err);
+            state.pointsData = null;
+            renderStaffPoints();
+        }
+    }
+
+    async function loadWeeklyBriefing() {
+        var target = document.getElementById('sc-staff-briefing');
+        if (!target) return;
+
+        try {
+            var data = await apiFetch('/staff/briefing-weekly?days=7');
+            state.briefingData = data || null;
+            renderWeeklyBriefing();
+        } catch (err) {
+            console.error('[support-staff] loadWeeklyBriefing error:', err);
+            state.briefingData = null;
+            renderWeeklyBriefing();
+        }
+    }
+
+    function renderStaffPoints() {
+        var target = document.getElementById('sc-staff-points');
+        if (!target) return;
+
+        if (!state.pointsData || !Array.isArray(state.pointsData.leaderboard) || state.pointsData.leaderboard.length === 0) {
+            target.innerHTML = '<div class="sc-insight-empty">Belum ada data point staff.</div>';
+            return;
+        }
+
+        var meId = state.pointsData.me && state.pointsData.me.staff_id
+            ? String(state.pointsData.me.staff_id)
+            : '';
+
+        target.innerHTML = state.pointsData.leaderboard.slice(0, 5).map(function (row) {
+            var isMe = meId && String(row.staff_id || '') === meId;
+            return [
+                '<div class="sc-point-row' + (isMe ? ' sc-point-row--me' : '') + '">',
+                '  <div class="sc-point-rank">#' + escapeHtml(String(row.rank || '-')) + '</div>',
+                '  <div class="sc-point-main">',
+                '    <div class="sc-point-name">' + escapeHtml(row.staff_name || 'Staff') + (isMe ? ' <span class="sc-point-me">Anda</span>' : '') + '</div>',
+                '    <div class="sc-point-meta">Resolved ' + escapeHtml(String(row.resolved_count || 0)) + ' • Avg ' + escapeHtml(row.avg_rating === null ? '-' : String(row.avg_rating)) + '</div>',
+                '  </div>',
+                '  <div class="sc-point-value">' + escapeHtml(String(row.total_points || 0)) + '</div>',
+                '</div>'
+            ].join('');
+        }).join('');
+    }
+
+    function renderWeeklyBriefing() {
+        var target = document.getElementById('sc-staff-briefing');
+        if (!target) return;
+
+        if (!state.briefingData || !state.briefingData.kpis) {
+            target.innerHTML = '<div class="sc-insight-empty">Belum ada data briefing minggu ini.</div>';
+            return;
+        }
+
+        var k = state.briefingData.kpis || {};
+        var actions = Array.isArray(state.briefingData.actions) ? state.briefingData.actions : [];
+
+        target.innerHTML = [
+            '<div class="sc-briefing-grid">',
+            '  <div class="sc-briefing-kpi"><span>Pending</span><strong>' + escapeHtml(String(k.pending_count || 0)) + '</strong></div>',
+            '  <div class="sc-briefing-kpi"><span>Wait Terlama</span><strong>' + escapeHtml(String(k.oldest_wait_minutes || 0)) + 'm</strong></div>',
+            '  <div class="sc-briefing-kpi"><span>Resolved 7 Hari</span><strong>' + escapeHtml(String(k.resolved_count || 0)) + '</strong></div>',
+            '  <div class="sc-briefing-kpi"><span>Avg Rating</span><strong>' + escapeHtml(k.avg_rating === null ? '-' : String(k.avg_rating)) + '</strong></div>',
+            '</div>',
+            '<div class="sc-briefing-actions">' + actions.map(function (text) {
+                return '<div class="sc-briefing-action">' + escapeHtml(String(text || '')) + '</div>';
+            }).join('') + '</div>'
+        ].join('');
+    }
+
+    async function refreshInsights() {
+        await Promise.all([loadStaffPoints(), loadWeeklyBriefing()]);
     }
 
     function renderSessionList() {
@@ -377,6 +472,7 @@
             renderEmptyPanel();
             stopActiveSessionPolling();
             loadPendingSessions();
+            refreshInsights();
             showToast('Sesi diselesaikan', 'success');
         } catch (err) {
             console.error('[support-staff] resolveSession error:', err);
@@ -436,6 +532,25 @@
         var containerSelector = '#content-support-chat-page';
         style.textContent = [
             '#content-support-chat .sc-staff-layout{display:flex;gap:0;height:calc(100vh - 200px);min-height:400px;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;background:#fff;}',
+            '#content-support-chat .sc-insight-wrap{padding:12px 12px 0 12px;background:#f4f6f9;display:grid;grid-template-columns:1fr 1fr;gap:12px;}',
+            '#content-support-chat .sc-insight-card{background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:10px 12px;min-height:140px;}',
+            '#content-support-chat .sc-insight-card-title{font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;align-items:center;gap:6px;}',
+            '#content-support-chat .sc-insight-empty{font-size:12px;color:#64748b;padding:8px 0;}',
+            '#content-support-chat .sc-point-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed #e2e8f0;}',
+            '#content-support-chat .sc-point-row:last-child{border-bottom:none;}',
+            '#content-support-chat .sc-point-row--me{background:#eff6ff;border-radius:6px;padding:7px 6px;}',
+            '#content-support-chat .sc-point-rank{font-size:12px;font-weight:700;color:#0f172a;min-width:30px;}',
+            '#content-support-chat .sc-point-main{flex:1;min-width:0;}',
+            '#content-support-chat .sc-point-name{font-size:12px;color:#0f172a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+            '#content-support-chat .sc-point-meta{font-size:11px;color:#64748b;}',
+            '#content-support-chat .sc-point-value{font-size:14px;font-weight:700;color:#059669;}',
+            '#content-support-chat .sc-point-me{font-size:10px;background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:1px 6px;margin-left:4px;}',
+            '#content-support-chat .sc-briefing-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}',
+            '#content-support-chat .sc-briefing-kpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 8px;display:flex;flex-direction:column;gap:1px;}',
+            '#content-support-chat .sc-briefing-kpi span{font-size:10px;color:#64748b;}',
+            '#content-support-chat .sc-briefing-kpi strong{font-size:14px;color:#0f172a;}',
+            '#content-support-chat .sc-briefing-actions{display:flex;flex-direction:column;gap:6px;}',
+            '#content-support-chat .sc-briefing-action{font-size:11px;color:#334155;line-height:1.35;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;}',
             '#content-support-chat .sc-staff-sidebar{width:280px;border-right:1px solid #dee2e6;display:flex;flex-direction:column;flex-shrink:0;}',
             '#content-support-chat .sc-staff-sidebar-header{padding:12px 16px;border-bottom:1px solid #dee2e6;background:#f8f9fa;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:space-between;}',
             '#content-support-chat #sc-staff-list{flex:1;overflow-y:auto;}',
@@ -469,6 +584,7 @@
             '#content-support-chat .sc-staff-input:focus{border-color:#007bff;}',
             '#content-support-chat .sc-staff-send-btn{flex-shrink:0;}',
             '#content-support-chat .sc-staff-panel-empty{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;color:#6c757d;gap:12px;padding-left:48px;box-sizing:border-box;text-align:left;}',
+            '@media (max-width: 991.98px){#content-support-chat .sc-insight-wrap{grid-template-columns:1fr;}#content-support-chat .sc-staff-layout{height:auto;min-height:420px;}#content-support-chat .sc-staff-sidebar{width:42%;min-width:220px;}}',
         ].join('').replace(/#content-support-chat/g, containerSelector);
         document.head.appendChild(style);
     }
@@ -479,6 +595,7 @@
         bindSocketEvents();
         loadPendingSessions();
         refreshBadge();
+        refreshInsights();
 
         // Periodic polling as fallback for Socket.IO
         if (state.pollTimer) clearInterval(state.pollTimer);
@@ -488,13 +605,17 @@
         }, POLL_INTERVAL);
     }
 
+    async function refreshAll() {
+        await Promise.all([loadPendingSessions(), refreshBadge(), refreshInsights()]);
+    }
+
     // ==================== PUBLIC API ====================
     window.supportChatStaff = {
         init: init,
         openSession: openSession,
         sendReply: sendReply,
         resolveSession: resolveSession,
-        refresh: loadPendingSessions
+        refresh: refreshAll
     };
 
 })();
