@@ -14,8 +14,16 @@
         activeSessionId: null,  // Currently open session
         activeMessages: [],
         pollTimer: null,
-        badgeCount: 0
+        badgeCount: 0,
+        joinedRoom: null,
+        socketConnectHandler: null,
+        messagePollTimer: null,
+        lastMessageId: 0
     };
+
+    function sameSessionId(a, b) {
+        return String(a || '') === String(b || '');
+    }
 
     // ==================== TOKEN ====================
     function getToken() {
@@ -62,7 +70,7 @@
         socket.off('support:escalated_message');
         socket.on('support:escalated_message', function (data) {
             // Reload if it's for the currently open session
-            if (state.activeSessionId === data.sessionId) {
+            if (sameSessionId(state.activeSessionId, data.sessionId)) {
                 loadSessionMessages(data.sessionId);
             } else {
                 showToast('💬 Pesan baru dari ' + (data.patientName || 'pasien'));
@@ -72,18 +80,28 @@
         // Another staff resolved a session
         socket.off('support:session_resolved');
         socket.on('support:session_resolved', function (data) {
-            if (state.activeSessionId === data.sessionId) {
+            if (sameSessionId(state.activeSessionId, data.sessionId)) {
                 state.activeSessionId = null;
                 renderEmptyPanel();
+                stopActiveSessionPolling();
             }
             loadPendingSessions();
         });
 
         // Real-time message delivery in open session
-        socket.off('support:new_message_staff');
+        socket.off('support:new_message');
         socket.on('support:new_message', function (msg) {
-            if (state.activeSessionId !== msg.session_id) return;
-            if (msg.sender_type === 'staff') return; // Already shown optimistically
+            if (!sameSessionId(state.activeSessionId, msg.session_id)) return;
+
+            var msgId = Number(msg && msg.id ? msg.id : 0);
+            if (msgId > 0 && msgId <= state.lastMessageId) return;
+            if (msgId > state.lastMessageId) state.lastMessageId = msgId;
+
+            if (msg.sender_type === 'staff') {
+                // Ignore local optimistic duplicate, but allow staff replies from others if needed.
+                var exists = document.querySelector('#sc-staff-messages [data-msg-id="' + msg.id + '"]');
+                if (exists) return;
+            }
             appendMessageToPanel(msg);
         });
     }
@@ -93,11 +111,21 @@
         if (!socket || !sessionId) return;
 
         // Leave previous
-        if (state._joinedRoom) {
-            socket.emit('support:leave', { sessionId: state._joinedRoom });
+        if (state.joinedRoom) {
+            socket.emit('support:leave', { sessionId: state.joinedRoom });
         }
-        state._joinedRoom = sessionId;
+        state.joinedRoom = sessionId;
         socket.emit('support:join', { sessionId: sessionId });
+
+        // Rejoin after reconnect (rooms are not persistent across reconnects)
+        if (state.socketConnectHandler) {
+            socket.off('connect', state.socketConnectHandler);
+        }
+        state.socketConnectHandler = function () {
+            if (!state.activeSessionId) return;
+            socket.emit('support:join', { sessionId: state.activeSessionId });
+        };
+        socket.on('connect', state.socketConnectHandler);
     }
 
     // ==================== BADGE ====================
@@ -161,19 +189,45 @@
         try {
             var data = await apiFetch('/staff/session/' + sessionId);
             state.activeMessages = data.session.messages || [];
+            state.lastMessageId = 0;
+            state.activeMessages.forEach(function (m) {
+                var idNum = Number(m && m.id ? m.id : 0);
+                if (idNum > state.lastMessageId) state.lastMessageId = idNum;
+            });
             renderActiveSession(data.session);
             joinSessionRoom(sessionId);
+            startActiveSessionPolling();
         } catch (err) {
             console.error('[support-staff] openSession error:', err);
         }
     }
 
     async function loadSessionMessages(sessionId) {
-        if (state.activeSessionId !== sessionId) return;
+        if (!sameSessionId(state.activeSessionId, sessionId)) return;
         try {
             var data = await apiFetch('/staff/session/' + sessionId);
-            renderMessagesInPanel(data.session.messages || []);
+            state.activeMessages = data.session.messages || [];
+            renderMessagesInPanel(state.activeMessages);
+            state.lastMessageId = 0;
+            state.activeMessages.forEach(function (m) {
+                var idNum = Number(m && m.id ? m.id : 0);
+                if (idNum > state.lastMessageId) state.lastMessageId = idNum;
+            });
         } catch (e) { /* ignore */ }
+    }
+
+    function startActiveSessionPolling() {
+        stopActiveSessionPolling();
+        state.messagePollTimer = setInterval(function () {
+            if (!state.activeSessionId) return;
+            loadSessionMessages(state.activeSessionId);
+        }, 3000);
+    }
+
+    function stopActiveSessionPolling() {
+        if (!state.messagePollTimer) return;
+        clearInterval(state.messagePollTimer);
+        state.messagePollTimer = null;
     }
 
     function renderActiveSession(session) {
@@ -204,8 +258,17 @@
         var inp = document.getElementById('sc-staff-input');
         if (inp) {
             inp.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                var keyText = (e.key || '').toLowerCase();
+                var isEnter = e.key === 'Enter' || e.code === 'Enter' || e.keyCode === 13 || e.which === 13 || keyText === 'send' || keyText === 'go';
+                if (isEnter && !e.shiftKey && !e.isComposing) {
                     e.preventDefault();
+                    window.supportChatStaff.sendReply();
+                }
+            });
+
+            inp.addEventListener('keyup', function (e) {
+                var keyText = (e.key || '').toLowerCase();
+                if ((keyText === 'send' || keyText === 'go') && !inp.disabled) {
                     window.supportChatStaff.sendReply();
                 }
             });
@@ -247,6 +310,9 @@
 
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
+
+        var idNum = Number(msg && msg.id ? msg.id : 0);
+        if (idNum > state.lastMessageId) state.lastMessageId = idNum;
     }
 
     // ==================== ACTIONS ====================
@@ -296,6 +362,7 @@
             await apiFetch('/staff/' + sessionId + '/resolve', { method: 'PUT' });
             state.activeSessionId = null;
             renderEmptyPanel();
+            stopActiveSessionPolling();
             loadPendingSessions();
             showToast('Sesi diselesaikan', 'success');
         } catch (err) {

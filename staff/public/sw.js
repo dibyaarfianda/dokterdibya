@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v129'; // Simplify navbar to 2 control buttons
+const STAFF_PWA_VERSION = 'v130'; // Support chat staff realtime + Enter send reliability fixes
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
