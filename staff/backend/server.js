@@ -142,6 +142,7 @@ const aiRoutes = require('./routes/ai');
 const kickCounterRoutes = require('./routes/kick-counter');
 const rumRoutes = require('./routes/rum');
 const communityChatRoutes = require('./routes/community-chat');
+const supportChatRoutes = require('./routes/support-chat');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -478,7 +479,6 @@ const patientFeedbackRoutes = require('./routes/patient-feedback');
 app.use('/api/patient-feedback', patientFeedbackRoutes);
 
 // Support Chat — bot + staff escalation
-const supportChatRoutes = require('./routes/support-chat');
 app.use('/api/support-chat', supportChatRoutes);
 
 app.use('/api/community-chat', communityChatRoutes);
