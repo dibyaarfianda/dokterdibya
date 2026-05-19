@@ -110,6 +110,52 @@
             display: inline-flex;
         }
 
+        #kantor-saya-page .ks-edit-hint {
+            display: none;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        #kantor-saya-page.ks-edit-mode .ks-edit-hint {
+            display: inline-flex;
+        }
+
+        #kantor-saya-page.ks-edit-mode .ks-widget-header {
+            cursor: move;
+        }
+
+        #kantor-saya-page .grid-stack-item .ui-resizable-handle {
+            opacity: 0;
+            pointer-events: none;
+            z-index: 6;
+            transition: opacity 0.16s ease;
+        }
+
+        #kantor-saya-page.ks-edit-mode .grid-stack-item .ui-resizable-handle {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #kantor-saya-page .grid-stack-item .ui-resizable-se {
+            width: 18px;
+            height: 18px;
+            right: 3px;
+            bottom: 3px;
+            border-right: 2px solid color-mix(in srgb, var(--kantor-accent) 75%, #111827);
+            border-bottom: 2px solid color-mix(in srgb, var(--kantor-accent) 75%, #111827);
+            border-radius: 0 0 8px 0;
+        }
+
+        #kantor-saya-page .grid-stack-item .ui-resizable-s {
+            height: 9px;
+            bottom: 0;
+        }
+
+        #kantor-saya-page .grid-stack-item .ui-resizable-e {
+            width: 9px;
+            right: 0;
+        }
+
         #kantor-saya-page .ks-empty {
             color: #6b7280;
             text-align: center;
@@ -345,6 +391,7 @@
         <button type="button" class="btn btn-sm btn-outline-secondary" id="ks-btn-refresh">
             <i class="fas fa-sync-alt mr-1"></i>Refresh
         </button>
+        <small class="ks-edit-hint">Drag sudut/tepi widget untuk ubah ukuran</small>
         <small class="text-muted ml-auto" id="ks-last-saved">Belum tersimpan</small>
     </div>
 
@@ -418,4 +465,4 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css">
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack-all.js"></script>
-<script src="./scripts/kantor-saya.js?v=v143"></script>
+<script src="./scripts/kantor-saya.js?v=v144"></script>
