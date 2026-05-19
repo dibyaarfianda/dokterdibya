@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v139'; // Kantor Saya launch (customizable staff workdesk)
+const STAFF_PWA_VERSION = 'v140'; // Kantor Saya cache refresh after shell loader + HTML wrapper fix
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
