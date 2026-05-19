@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260520b'; // 2026-05-20b - Patient login maintenance gate and trial allowlist notice
+const CACHE_VERSION = '20260520c'; // 2026-05-20c - Generic patient login maintenance messaging
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

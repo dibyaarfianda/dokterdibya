@@ -18,7 +18,7 @@ const PatientPasswordService = require('../services/PatientPasswordService');
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
 const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
-const PATIENT_TRIAL_LOCK_MESSAGE = 'Sedang dalam perbaikan. Akses trial saat ini hanya untuk Nanda Ananda dan Konchelsky.';
+const PATIENT_TRIAL_LOCK_MESSAGE = 'Sedang dalam perbaikan. Akses trial saat ini terbatas.';
 const PATIENT_TRIAL_LOGIN_ALLOWLIST_EMAILS = new Set([
     'dibyaarfianda83@gmail.com',
     'konchelskydaf@gmail.com'
