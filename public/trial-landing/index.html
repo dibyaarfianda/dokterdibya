@@ -4994,6 +4994,42 @@
             return previewParam === '1' || previewParam === 'true';
         }
 
+        function getJakartaGreeting() {
+            var totalMinutes = 0;
+
+            try {
+                var timeParts = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: 'Asia/Jakarta',
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).formatToParts(new Date());
+
+                var hour = 0;
+                var minute = 0;
+
+                timeParts.forEach(function(part) {
+                    if (part.type === 'hour') hour = parseInt(part.value, 10) || 0;
+                    if (part.type === 'minute') minute = parseInt(part.value, 10) || 0;
+                });
+
+                totalMinutes = (hour * 60) + minute;
+            } catch (e) {
+                var now = new Date();
+                totalMinutes = (now.getHours() * 60) + now.getMinutes();
+            }
+
+            // GMT+7 ranges:
+            // Pagi  : 04:01-09:00
+            // Siang : 09:01-14:00
+            // Sore  : 14:01-18:00
+            // Malam : 18:01-04:00
+            if (totalMinutes >= (4 * 60 + 1) && totalMinutes <= (9 * 60)) return 'Selamat Pagi';
+            if (totalMinutes >= (9 * 60 + 1) && totalMinutes <= (14 * 60)) return 'Selamat Siang';
+            if (totalMinutes >= (14 * 60 + 1) && totalMinutes <= (18 * 60)) return 'Selamat Sore';
+            return 'Selamat Malam';
+        }
+
         function activateTrialPreviewMode() {
             var loading = document.getElementById('loading-state');
             var wrapper = document.getElementById('content-wrapper');
@@ -5002,7 +5038,7 @@
             var avatarInitials = document.getElementById('user-avatar-initials');
 
             if (heroName) heroName.textContent = 'Halo.';
-            if (heroKicker) heroKicker.textContent = 'Preview Trial';
+            if (heroKicker) heroKicker.textContent = getJakartaGreeting();
             if (avatarInitials) avatarInitials.textContent = 'TR';
 
             if (loading) loading.style.display = 'none';
