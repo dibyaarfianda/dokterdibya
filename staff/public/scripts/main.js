@@ -111,6 +111,7 @@ function initPages() {
     pages.supportChat = grab('content-support-chat-page') || grab('content-support-chat');
     pages.staffPoints = grab('content-staff-points');
     pages.staffBriefing = grab('content-staff-briefing');
+    pages.kantorSaya = grab('content-kantor-saya');
     pages.docboard = grab('docboard-frame-page');
     pages.mobileApp = grab('mobile-app-page');
 }
@@ -3409,6 +3410,30 @@ function showProfileSettings() {
     loadExternalPage('profile-settings-page', 'profile-settings.html');
 }
 
+function showKantorSayaPage() {
+    hideAllPages();
+    pages.kantorSaya?.classList.remove('d-none');
+    setTitleAndActive('Kantor Saya', 'nav-kantor-saya', 'kantor-saya');
+    loadExternalPage('content-kantor-saya', 'kantor-saya.html');
+
+    var retries = 0;
+    function bootstrapKantorSaya() {
+        if (window.kantorSaya && typeof window.kantorSaya.init === 'function') {
+            window.kantorSaya.init();
+            if (typeof window.kantorSaya.onShow === 'function') {
+                window.kantorSaya.onShow();
+            }
+            return;
+        }
+        if (retries < 25) {
+            retries += 1;
+            setTimeout(bootstrapKantorSaya, 120);
+        }
+    }
+
+    bootstrapKantorSaya();
+}
+
 // REMOVED: Email Settings Page
 // function showEmailSettingsPage() {
 //     hideAllPages();
@@ -4040,6 +4065,7 @@ async function applyMenuVisibility(user) {
     // Menu key to DOM element ID mapping
     // Each menu_key from role_visibility table maps to one or more DOM elements
     const menuMapping = {
+        'kantor_saya': ['nav-kantor-saya'],
         'dashboard': null, // Dashboard always visible
         'kelola_pasien': ['nav-kelola-pasien'],
         'pasien_baru': ['nav-kelola-pasien'], // Same as kelola_pasien
@@ -4484,6 +4510,7 @@ function restoreLastPage() {
         if (!navId) { showDashboardPage(); return; }
         const pageMap = {
             'nav-dashboard':                        () => showDashboardPage(),
+            'nav-kantor-saya':                      () => showKantorSayaPage(),
             'nav-klinik-private':                   () => showKlinikPrivatePage(),
             'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
             'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
@@ -5783,6 +5810,7 @@ window.saveArticle = saveArticle;
 window.togglePublishArticle = togglePublishArticle;
 window.deleteArticle = deleteArticle;
 window.showProfileSettings = showProfileSettings;
+window.showKantorSayaPage = showKantorSayaPage;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;
 window.showPengaturanPage = showPengaturanPage;

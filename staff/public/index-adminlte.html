@@ -1744,6 +1744,12 @@
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                     <!-- MAIN -->
                     <li class="nav-header">MAIN</li>
+                    <li class="nav-item" id="nav-kantor-saya">
+                        <a href="#" class="nav-link" onclick="showKantorSayaPage(); return false;">
+                            <i class="nav-icon fas fa-briefcase"></i>
+                            <p>Kantor Saya</p>
+                        </a>
+                    </li>
                     <li class="nav-item" id="nav-dashboard">
                         <a href="#" class="nav-link" onclick="showDashboardPage(); return false;">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -6806,6 +6812,9 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- KANTOR SAYA PAGE -->
+                <div id="content-kantor-saya" class="d-none"></div>
+
                 <!-- SUPPORT CHAT PAGE -->
                 <div id="content-support-chat-page" class="d-none">
                     <div class="row">
@@ -7719,7 +7728,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v138';
+    window.__assetVersion = 'v139';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -11156,6 +11165,8 @@ Apakah Anda yakin ingin melanjutkan?`;
  function showSupportChatPage() {
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
+     var kantorPage = document.getElementById('content-kantor-saya');
+     if (kantorPage) kantorPage.classList.add('d-none');
      var pg = document.getElementById('content-support-chat-page');
      if (pg) pg.classList.remove('d-none');
 
@@ -11184,7 +11195,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  function _scHideAllStaffPages() {
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
-     ['content-support-chat-page','content-staff-points','content-staff-briefing'].forEach(function(id) {
+     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-kantor-saya'].forEach(function(id) {
          var el = document.getElementById(id);
          if (el) el.classList.add('d-none');
      });
