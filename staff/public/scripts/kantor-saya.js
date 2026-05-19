@@ -271,11 +271,15 @@
             defaultSize: { w: 6, h: 3, minW: 3, minH: 2 },
             defaultConfig: {
                 endpoint_url: '',
+                auth_header: '',
                 data_path: '',
                 title_path: 'title',
                 value_path: 'value',
                 subtitle_path: '',
-                limit: 6
+                limit: 6,
+                view_mode: 'list',
+                value_format: 'text',
+                subtitle_format: 'text'
             },
             render: renderCustomIntegrationWidget,
             configure: configureCustomIntegrationWidget
@@ -358,6 +362,24 @@
             return window.CSS.escape(raw);
         }
         return raw.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
+    }
+
+    function normalizeOption(value, allowedValues, fallbackValue) {
+        var normalized = String(value == null ? '' : value)
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '_');
+        return allowedValues.indexOf(normalized) >= 0 ? normalized : fallbackValue;
+    }
+
+    function hashText(value) {
+        var input = String(value == null ? '' : value);
+        var hash = 0;
+        for (var i = 0; i < input.length; i += 1) {
+            hash = ((hash << 5) - hash) + input.charCodeAt(i);
+            hash |= 0;
+        }
+        return String(hash >>> 0);
     }
 
     function toLocalDateTimeString(value) {
@@ -1526,6 +1548,14 @@
 
         endpointUrl = String(endpointUrl || '').trim();
 
+        var authHeader = window.prompt(
+            'Authorization Header (opsional, contoh: Bearer xxxxx)',
+            String(currentConfig.auth_header || '')
+        );
+        if (authHeader === null) return;
+
+        authHeader = String(authHeader || '').trim();
+
         var dataPath = window.prompt(
             'Data Path (opsional, contoh: data.items)',
             String(currentConfig.data_path || '')
@@ -1559,13 +1589,46 @@
         var parsedLimit = Number(limitInput);
         var safeLimit = Number.isFinite(parsedLimit) ? Math.max(1, Math.min(20, Math.floor(parsedLimit))) : 6;
 
+        var viewModeInput = window.prompt(
+            'Mode tampilan: list atau table',
+            String(currentConfig.view_mode || 'list')
+        );
+        if (viewModeInput === null) return;
+        var safeViewMode = normalizeOption(viewModeInput, ['list', 'table'], 'list');
+
+        var valueFormatInput = window.prompt(
+            'Formatter Nilai: text | number | currency_idr | date_id | datetime_id',
+            String(currentConfig.value_format || 'text')
+        );
+        if (valueFormatInput === null) return;
+        var safeValueFormat = normalizeOption(
+            valueFormatInput,
+            ['text', 'number', 'currency_idr', 'date_id', 'datetime_id'],
+            'text'
+        );
+
+        var subtitleFormatInput = window.prompt(
+            'Formatter Subtitle: text | number | currency_idr | date_id | datetime_id',
+            String(currentConfig.subtitle_format || 'text')
+        );
+        if (subtitleFormatInput === null) return;
+        var safeSubtitleFormat = normalizeOption(
+            subtitleFormatInput,
+            ['text', 'number', 'currency_idr', 'date_id', 'datetime_id'],
+            'text'
+        );
+
         updateWidgetConfig(widgetInstance.instance_id, {
             endpoint_url: endpointUrl,
+            auth_header: authHeader,
             data_path: String(dataPath || '').trim(),
             title_path: String(titlePath || '').trim() || 'title',
             value_path: String(valuePath || '').trim(),
             subtitle_path: String(subtitlePath || '').trim(),
-            limit: safeLimit
+            limit: safeLimit,
+            view_mode: safeViewMode,
+            value_format: safeValueFormat,
+            subtitle_format: safeSubtitleFormat
         });
 
         refreshAllWidgets(true);
@@ -1898,6 +1961,18 @@
     function renderCustomIntegrationWidget(widgetInstance, bodyEl, forceRefresh) {
         var config = widgetInstance.config || {};
         var endpointUrl = String(config.endpoint_url || '').trim();
+        var authHeader = String(config.auth_header || '').trim();
+        var viewMode = normalizeOption(config.view_mode, ['list', 'table'], 'list');
+        var valueFormat = normalizeOption(
+            config.value_format,
+            ['text', 'number', 'currency_idr', 'date_id', 'datetime_id'],
+            'text'
+        );
+        var subtitleFormat = normalizeOption(
+            config.subtitle_format,
+            ['text', 'number', 'currency_idr', 'date_id', 'datetime_id'],
+            'text'
+        );
 
         if (!endpointUrl) {
             bodyEl.innerHTML = '<div class="ks-empty">Endpoint belum diset. Gunakan tombol config.</div>';
@@ -1909,24 +1984,71 @@
             return;
         }
 
-        var cacheKey = widgetInstance.instance_id + ':custom-integration:' + endpointUrl;
+        var cacheKey = [
+            widgetInstance.instance_id,
+            'custom-integration',
+            endpointUrl,
+            String(config.data_path || '').trim(),
+            String(config.title_path || '').trim(),
+            String(config.value_path || '').trim(),
+            String(config.subtitle_path || '').trim(),
+            String(config.limit || 6),
+            viewMode,
+            valueFormat,
+            subtitleFormat,
+            hashText(authHeader)
+        ].join(':');
 
         cacheFetch(cacheKey, function () {
             return apiPost('/widgets/custom-integration', {
                 endpoint_url: endpointUrl,
+                auth_header: authHeader,
                 data_path: String(config.data_path || '').trim(),
                 title_path: String(config.title_path || '').trim() || 'title',
                 value_path: String(config.value_path || '').trim(),
                 subtitle_path: String(config.subtitle_path || '').trim(),
-                limit: Number(config.limit || 6)
+                limit: Number(config.limit || 6),
+                value_format: valueFormat,
+                subtitle_format: subtitleFormat
             });
         }, forceRefresh).then(function (data) {
             var items = Array.isArray(data.items) ? data.items : [];
             var endpointHost = data.endpoint_host || '-';
+            var hasSubtitle = items.some(function (item) {
+                return item && item.subtitle != null && String(item.subtitle).trim() !== '';
+            });
 
             if (!items.length) {
                 bodyEl.innerHTML =
                     '<div class="ks-empty">Tidak ada data dari endpoint.</div>' +
+                    '<div class="text-muted mt-2" style="font-size:11px;">Sumber: ' + escapeHtml(endpointHost) + '</div>';
+                return;
+            }
+
+            if (viewMode === 'table') {
+                bodyEl.innerHTML =
+                    '<div class="table-responsive">' +
+                        '<table class="table table-sm table-striped ks-table mb-0">' +
+                            '<thead><tr>' +
+                                '<th>Judul</th>' +
+                                '<th class="text-right">Nilai</th>' +
+                                (hasSubtitle ? '<th>Subtitle</th>' : '') +
+                            '</tr></thead>' +
+                            '<tbody>' +
+                                items.map(function (item) {
+                                    var title = escapeHtml(item.title || '-');
+                                    var value = item.value == null ? '' : escapeHtml(String(item.value));
+                                    var subtitle = item.subtitle == null ? '' : escapeHtml(String(item.subtitle));
+
+                                    return '<tr>' +
+                                        '<td>' + title + '</td>' +
+                                        '<td class="text-right">' + (value || '-') + '</td>' +
+                                        (hasSubtitle ? '<td>' + (subtitle || '-') + '</td>' : '') +
+                                    '</tr>';
+                                }).join('') +
+                            '</tbody>' +
+                        '</table>' +
+                    '</div>' +
                     '<div class="text-muted mt-2" style="font-size:11px;">Sumber: ' + escapeHtml(endpointHost) + '</div>';
                 return;
             }
