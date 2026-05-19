@@ -200,7 +200,12 @@ function executeLoadedScripts(doc, baseUrl) {
 }
 function hideAllPages() {
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
-    document.querySelectorAll('[id$="-page"]').forEach(p => p.classList.add('d-none'));
+    document.querySelectorAll('[id$="-page"]').forEach(function (p) {
+        if (p.closest('#content-kantor-saya')) {
+            return;
+        }
+        p.classList.add('d-none');
+    });
     document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
 }
 function setTitleAndActive(title, navId, mobileAction) {
@@ -3411,12 +3416,25 @@ function showProfileSettings() {
 }
 
 function showKantorSayaPage() {
+    function revealKantorRoot() {
+        var root = document.querySelector('#content-kantor-saya #kantor-saya-page');
+        if (root) {
+            root.classList.remove('d-none');
+        }
+    }
+
     hideAllPages();
     pages.kantorSaya?.classList.remove('d-none');
+    revealKantorRoot();
+
     setTitleAndActive('Kantor Saya', 'nav-kantor-saya', 'kantor-saya');
     var kantorVersion = window.__assetVersion ? encodeURIComponent(window.__assetVersion) : '';
     var kantorHtml = kantorVersion ? ('kantor-saya.html?v=' + kantorVersion) : 'kantor-saya.html';
     loadExternalPage('content-kantor-saya', kantorHtml);
+
+    setTimeout(revealKantorRoot, 80);
+    setTimeout(revealKantorRoot, 220);
+    setTimeout(revealKantorRoot, 520);
 
     var retries = 0;
     var recovered = false;
