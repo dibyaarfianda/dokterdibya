@@ -1634,3 +1634,33 @@ User confirmed with "mantap" after the Android chat keyboard jump was fixed.
 **Critical lesson:**
 - If chat jumps in two phases on Android PWA, inspect both the nav CSS and the chat panel geometry. A bottom bar that is secretly still top-fixed in `mobile-app-mode` will keep destabilizing keyboard layouts.
 - In this repo, keyboard bugs on Android PWA are often caused by over-constrained fullscreen geometry. Prefer deriving the chat frame from `visualViewport` directly instead of mixing `top`, `bottom`, and `height` constraints.
+
+### 46. Session Log - 20 May 2026
+
+**Tanya Dokter Table/List Positioning Fix (Staff Panel)**
+
+User requested: "Tanya Dokter tidak tepat posisi tabelnya, betulkan".
+
+**Root cause pattern:**
+- `tanya-dokter-page` did not have dedicated layout rules for its question list/table area.
+- Global shell styles could affect perceived alignment, so the list/table block needed page-scoped positioning constraints.
+
+**What worked:**
+1. In `staff/public/index-adminlte.html`, add page-specific CSS for Tanya Dokter:
+    - `#tanya-dokter-page .tanya-questions-table-shell { width: 100%; margin: 0; }`
+    - `#tanya-dokter-page #tanya-questions-list { width: 100%; margin: 0 !important; }`
+    - `#tanya-dokter-page #tanya-questions-list .tanya-question-card { margin-left/right: 0 !important; }`
+    - `#tanya-dokter-page .tanya-questions-table-shell table { width: 100% !important; margin: 0 !important; }`
+2. Wrap the questions area with:
+    - `<div class="table-responsive tanya-questions-table-shell"> ... </div>`
+3. Force fresh assets after frontend fix:
+    - `window.__assetVersion` bumped to `v171`
+    - `STAFF_PWA_VERSION` bumped to `v171`
+
+**Verification pattern:**
+1. Confirm CSS markers and wrapper markup exist in `index-adminlte.html`.
+2. Confirm `window.__assetVersion` and `STAFF_PWA_VERSION` both updated.
+3. Deploy and verify `/api/health` remains healthy after restart.
+
+**Lesson:**
+- For page-specific alignment issues in this repo, prefer scoped selectors under the page id (e.g., `#tanya-dokter-page ...`) instead of broad global overrides.
