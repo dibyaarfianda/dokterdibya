@@ -3,6 +3,7 @@
 
     var API_BASE = '/api/staff-workdesk';
     var CACHE_TTL_MS = 60000;
+    var WALLPAPER_REFRESH_COOLDOWN_MS = 30000;
     var GRIDSTACK_CSS_URL = 'https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css';
 
     var state = {
@@ -18,7 +19,11 @@
         widgetTimers: new Map(),
         isRendering: false,
         isHydrating: false,
-        activeWallpaperPreset: null
+        activeWallpaperPreset: null,
+        wallpaperRefreshInFlight: false,
+        wallpaperLastRefreshAt: 0,
+        wallpaperProbeToken: 0,
+        lastWallpaperProbeUrl: null
     };
 
     function getLiveRoot() {
@@ -420,20 +425,99 @@
         };
     }
 
-    function getWallpaperBackground(theme) {
-        if (theme.wallpaper_download_url) {
-            return "url('" + theme.wallpaper_download_url.replace(/'/g, '') + "')";
-        }
+    function getWallpaperFallback(theme) {
         if (theme.wallpaper_preset && PRESET_WALLPAPERS[theme.wallpaper_preset]) {
             return PRESET_WALLPAPERS[theme.wallpaper_preset];
         }
         return PRESET_WALLPAPERS.morning;
     }
 
-    function applyTheme() {
+    function getWallpaperBackground(theme) {
+        var fallback = getWallpaperFallback(theme);
+        if (theme.wallpaper_download_url) {
+            var safeUrl = theme.wallpaper_download_url.replace(/'/g, '');
+            return "url('" + safeUrl + "'), " + fallback;
+        }
+        return fallback;
+    }
+
+    async function refreshWallpaperDownloadUrl(reason, force) {
+        if (!state.theme || !state.theme.wallpaper_url) return;
+
+        var now = Date.now();
+        var withinCooldown = (now - state.wallpaperLastRefreshAt) < WALLPAPER_REFRESH_COOLDOWN_MS;
+        if (state.wallpaperRefreshInFlight) return;
+        if (!force && state.wallpaperLastRefreshAt && withinCooldown) return;
+
+        state.wallpaperRefreshInFlight = true;
+        state.wallpaperLastRefreshAt = now;
+
+        try {
+            var layoutData = await apiGet('/layout');
+            var latestTheme = normalizeTheme(layoutData.theme);
+
+            if (!latestTheme.wallpaper_url) {
+                return;
+            }
+
+            state.theme.wallpaper_url = latestTheme.wallpaper_url;
+            state.theme.wallpaper_download_url = latestTheme.wallpaper_download_url || null;
+            state.theme.wallpaper_preset = latestTheme.wallpaper_preset || null;
+
+            applyTheme({ skipWallpaperProbe: !state.theme.wallpaper_download_url });
+        } catch (error) {
+            console.warn('[kantor-saya] refresh wallpaper signed URL failed (' + (reason || 'unknown') + '):', error);
+        } finally {
+            state.wallpaperRefreshInFlight = false;
+        }
+    }
+
+    function probeCurrentWallpaperUrl() {
+        if (!state.theme || !state.theme.wallpaper_url || !state.theme.wallpaper_download_url) {
+            state.lastWallpaperProbeUrl = null;
+            return;
+        }
+
+        var expectedUrl = state.theme.wallpaper_download_url;
+        if (state.lastWallpaperProbeUrl === expectedUrl) {
+            return;
+        }
+
+        state.lastWallpaperProbeUrl = expectedUrl;
+        var probeToken = ++state.wallpaperProbeToken;
+        var probeImage = new Image();
+
+        probeImage.onload = function () {
+            if (probeToken !== state.wallpaperProbeToken) return;
+        };
+
+        probeImage.onerror = function () {
+            if (probeToken !== state.wallpaperProbeToken) return;
+            if (!state.theme || state.theme.wallpaper_download_url !== expectedUrl) return;
+
+            // Keep a visual fallback, then request a fresh signed URL from server.
+            state.theme.wallpaper_download_url = null;
+            state.lastWallpaperProbeUrl = null;
+            applyTheme({ skipWallpaperProbe: true });
+            refreshWallpaperDownloadUrl('probe-error', false);
+        };
+
+        probeImage.src = expectedUrl;
+    }
+
+    function applyTheme(options) {
         if (!state.root || !state.theme) return;
         state.root.style.setProperty('--kantor-accent', state.theme.accent_color || '#0d6efd');
         state.root.style.backgroundImage = getWallpaperBackground(state.theme);
+
+        if (!state.theme.wallpaper_download_url) {
+            state.lastWallpaperProbeUrl = null;
+            if (state.theme.wallpaper_url) {
+                refreshWallpaperDownloadUrl('missing-signed-url', false);
+            }
+        } else if (!(options && options.skipWallpaperProbe)) {
+            probeCurrentWallpaperUrl();
+        }
 
         var colorInput = document.getElementById('ks-theme-color');
         if (colorInput) {
@@ -896,6 +980,7 @@
                     state.theme.wallpaper_url = null;
                     state.theme.wallpaper_download_url = null;
                     applyTheme();
+                    scheduleSave();
                 };
             });
         }
@@ -912,6 +997,9 @@
             state.theme.wallpaper_preset = null;
 
             applyTheme();
+            if (state.theme.wallpaper_url && !state.theme.wallpaper_download_url) {
+                refreshWallpaperDownloadUrl('upload-missing-url', true);
+            }
             scheduleSave();
         } catch (error) {
             console.error('[kantor-saya] upload wallpaper error:', error);
