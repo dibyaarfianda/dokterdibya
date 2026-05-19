@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v166'; // Force fresh caches for footer-aligned sidebar divider seam
+const STAFF_PWA_VERSION = 'v167'; // Force fresh caches for full-height sidebar view + visible scrollbar
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
