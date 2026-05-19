@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260520f'; // 2026-05-20f - Remove trial-theme override from trial-landing for 1:1 visuals
+const CACHE_VERSION = '20260520g'; // 2026-05-20g - Disable all Update Terkini clicks on trial landing
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
