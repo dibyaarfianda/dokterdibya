@@ -11,6 +11,7 @@ const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 // Menu definitions - must match menu_key in role_visibility table
 const MENUS = [
+    { key: 'kantor_saya', label: 'Kantor Saya', icon: 'fa-briefcase' },
     { key: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
     { key: 'kelola_pasien', label: 'Kelola Pasien', icon: 'fa-users-cog' },
     { key: 'pasien_baru', label: 'Pasien Baru', icon: 'fa-user-plus' },

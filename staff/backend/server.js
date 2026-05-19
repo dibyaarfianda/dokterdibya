@@ -489,6 +489,10 @@ app.use('/api/staff-points', staffPointsRoutes);
 const staffBriefingRoutes = require('./routes/staff-briefing');
 app.use('/api/staff-briefing', staffBriefingRoutes);
 
+// Staff Workdesk (Kantor Saya) routes
+const staffWorkdeskRoutes = require('./routes/staff-workdesk');
+app.use('/api/staff-workdesk', staffWorkdeskRoutes);
+
 app.use('/api/community-chat', communityChatRoutes);
 
 // Tanya Dokter - Subscriptions & Payments
