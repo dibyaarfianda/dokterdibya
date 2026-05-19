@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260520e'; // 2026-05-20e - Disable Update Terkini links on trial landing
+const CACHE_VERSION = '20260520d'; // 2026-05-20d - Split trial menu login page and duplicate trial landing index
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
