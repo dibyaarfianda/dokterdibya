@@ -1057,23 +1057,53 @@
         var configBtn = itemEl.querySelector('.ks-config-btn');
         var deleteBtn = itemEl.querySelector('.ks-delete-btn');
 
+        function guardWidgetActionButton(button) {
+            if (!button) return;
+
+            ['pointerdown', 'mousedown', 'touchstart', 'dragstart'].forEach(function (eventName) {
+                button.addEventListener(eventName, function (event) {
+                    event.stopPropagation();
+                });
+            });
+        }
+
+        function showNoConfigMessage(widgetId) {
+            var def = getWidgetDef(widgetId);
+            var label = def && def.label ? def.label : widgetId;
+            window.alert('Widget "' + label + '" belum memiliki pengaturan tambahan.');
+        }
+
+        guardWidgetActionButton(refreshBtn);
+        guardWidgetActionButton(configBtn);
+        guardWidgetActionButton(deleteBtn);
+
         if (refreshBtn) {
-            refreshBtn.addEventListener('click', function () {
+            refreshBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 renderWidget(widgetInstance, bodyEl, true);
             });
         }
 
         if (configBtn) {
-            configBtn.addEventListener('click', function () {
+            configBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
                 var def = getWidgetDef(widgetInstance.widget_id);
                 if (def && typeof def.configure === 'function') {
                     def.configure(widgetInstance);
+                    return;
                 }
+
+                showNoConfigMessage(widgetInstance.widget_id);
             });
         }
 
         if (deleteBtn) {
-            deleteBtn.addEventListener('click', function () {
+            deleteBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
                 removeWidget(widgetInstance.instance_id);
             });
         }
