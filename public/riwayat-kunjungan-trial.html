@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="id" data-trial-nav-active="jadwal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Riwayat Kunjungan - dokterDIBYA</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            color: #ffffff;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: max(15px, env(safe-area-inset-top));
+            background: rgba(0, 0, 0, 0.95);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #28a7e9;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            color: #888;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .filter-tab.active {
+            background: rgba(40, 167, 233, 0.2);
+            border-color: #28a7e9;
+            color: #28a7e9;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #28a7e9;
+            margin-bottom: 15px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        /* Visit Card */
+        .visit-card {
+            background: rgba(255, 255, 255, 0.08);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .visit-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .visit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .location-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .location-badge img {
+            height: 24px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .location-badge span {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 12px;
+            color: #fff;
+        }
+
+        .visit-type {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .visit-type.obstetri {
+            background: rgba(233, 30, 99, 0.2);
+            color: #ec4899;
+        }
+
+        .visit-type.ginekologi {
+            background: rgba(156, 39, 176, 0.2);
+            color: #a855f7;
+        }
+
+        .visit-date {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .visit-info {
+            font-size: 13px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+
+        .visit-info i {
+            width: 16px;
+            color: #28a7e9;
+        }
+
+        .visit-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .visit-status.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .visit-status.confirmed {
+            background: rgba(40, 167, 233, 0.2);
+            color: #28a7e9;
+        }
+
+        .visit-status.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .visit-status.cancelled {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .visit-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visit-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-invoice {
+            background: rgba(40, 167, 233, 0.2);
+            border: 1px solid rgba(40, 167, 233, 0.3);
+            color: #28a7e9;
+        }
+
+        .btn-invoice:hover {
+            background: rgba(40, 167, 233, 0.3);
+        }
+
+        .btn-cancel {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #28a7e9;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .loading i {
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            background: rgba(26, 26, 46, 0.98);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 8px 20px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            color: #28a7e9;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #28a7e9; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 400px) {
+            .content { padding: 15px; }
+            .visit-card { padding: 12px; }
+        }
+    </style>
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()" title="Kembali" aria-label="Kembali">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title"><i class="fa fa-stethoscope"></i> Riwayat Kunjungan</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">Semua</button>
+            <button class="filter-tab" data-filter="upcoming">Akan Datang</button>
+            <button class="filter-tab" data-filter="completed">Selesai</button>
+        </div>
+
+        <!-- Content Container -->
+        <div id="content-container">
+            <div class="loading">
+                <i class="fa fa-spinner fa-spin"></i> Memuat riwayat...
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu-trial.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi-trial.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil-trial.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, showToast, formatDate } from '/scripts/patient-utils.js';
+
+        // Check auth
+        if (!checkAuth()) {
+            // Redirect handled by checkAuth
+        }
+
+        const token = getToken();
+        let allData = {
+            bookings: [],
+            visits: []
+        };
+        let currentFilter = 'all';
+
+        // Load data
+        loadAllData();
+
+        // Setup filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                renderContent();
+            });
+        });
+
+        async function loadAllData() {
+            try {
+                // Load bookings (upcoming appointments) and visits (completed) in parallel
+                const [bookingsRes, visitsRes] = await Promise.all([
+                    fetch('/api/sunday-appointments/my-bookings', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/patients/profile', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(async res => {
+                        const profile = await res.json();
+                        if (profile.success && profile.patient?.id) {
+                            return fetch(`/api/sunday-clinic/patient-visits/${profile.patient.id}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                        }
+                        return null;
+                    })
+                ]);
+
+                const bookingsData = await bookingsRes.json();
+                allData.bookings = bookingsData.success && bookingsData.bookings ? bookingsData.bookings : [];
+
+                if (visitsRes) {
+                    const visitsData = await visitsRes.json();
+                    allData.visits = visitsData.data || [];
+                }
+
+                renderContent();
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('content-container').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat data</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderContent() {
+            const container = document.getElementById('content-container');
+            let html = '';
+
+            // Filter and prepare data
+            const upcomingBookings = allData.bookings.filter(b =>
+                b.status === 'confirmed' || b.status === 'pending' || b.status === 'pending_confirmation'
+            ).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+
+            const completedVisits = allData.visits.sort((a, b) =>
+                new Date(b.visit_date) - new Date(a.visit_date)
+            );
+
+            const cancelledBookings = allData.bookings.filter(b =>
+                b.status === 'cancelled'
+            );
+
+            // Filter based on current tab
+            if (currentFilter === 'upcoming') {
+                if (upcomingBookings.length === 0) {
+                    html = renderEmptyState('Tidak ada jadwal kunjungan yang akan datang');
+                } else {
+                    html = upcomingBookings.map(b => renderBookingCard(b)).join('');
+                }
+            } else if (currentFilter === 'completed') {
+                if (completedVisits.length === 0) {
+                    html = renderEmptyState('Belum ada riwayat kunjungan');
+                } else {
+                    html = completedVisits.map(v => renderVisitCard(v)).join('');
+                }
+            } else {
+                // All
+                if (upcomingBookings.length === 0 && completedVisits.length === 0) {
+                    html = renderEmptyState('Belum ada riwayat kunjungan');
+                } else {
+                    if (upcomingBookings.length > 0) {
+                        html += `<h3 class="section-title"><i class="fa fa-calendar-check-o"></i> Jadwal Mendatang</h3>`;
+                        html += upcomingBookings.map(b => renderBookingCard(b)).join('');
+                    }
+
+                    if (completedVisits.length > 0) {
+                        html += `<h3 class="section-title"><i class="fa fa-history"></i> Riwayat Selesai</h3>`;
+                        html += completedVisits.map(v => renderVisitCard(v)).join('');
+                    }
+
+                    if (cancelledBookings.length > 0) {
+                        html += `<h3 class="section-title"><i class="fa fa-times-circle"></i> Dibatalkan</h3>`;
+                        html += cancelledBookings.map(b => renderBookingCard(b)).join('');
+                    }
+                }
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderEmptyState(message) {
+            return `
+                <div class="empty-state">
+                    <i class="fa fa-calendar-o"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function renderBookingCard(booking) {
+            const date = new Date(booking.appointment_date);
+            const dateStr = date.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            const statusMap = {
+                'confirmed': { label: 'Dikonfirmasi', class: 'confirmed', icon: 'fa-check-circle' },
+                'pending': { label: 'Menunggu Konfirmasi', class: 'pending', icon: 'fa-clock-o' },
+                'pending_confirmation': { label: 'Menunggu Konfirmasi Kehadiran', class: 'pending', icon: 'fa-hourglass-half' },
+                'cancelled': { label: 'Dibatalkan', class: 'cancelled', icon: 'fa-times-circle' },
+                'completed': { label: 'Selesai', class: 'completed', icon: 'fa-check' }
+            };
+            const status = statusMap[booking.status] || statusMap.pending;
+
+            const canCancel = booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'pending_confirmation';
+
+            return `
+                <div class="visit-card">
+                    <div class="visit-header">
+                        <div class="location-badge">
+                            <span style="background: #28a7e9;"><i class="fa fa-hospital-o"></i> Klinik Private</span>
+                        </div>
+                        <span class="visit-type obstetri">${getCategoryLabel(booking.consultation_category)}</span>
+                    </div>
+                    <div class="visit-date">${dateStr}</div>
+                    <div class="visit-info">
+                        <i class="fa fa-clock-o"></i>
+                        Sesi ${booking.session || '-'} - ${booking.slot_time || '-'}
+                    </div>
+                    ${booking.chief_complaint ? `
+                        <div class="visit-info">
+                            <i class="fa fa-comment"></i>
+                            ${escapeHtml(booking.chief_complaint)}
+                        </div>
+                    ` : ''}
+                    <span class="visit-status ${status.class}">
+                        <i class="fa ${status.icon}"></i> ${status.label}
+                    </span>
+                    ${canCancel ? `
+                        <div class="visit-actions">
+                            <button class="btn-cancel" onclick="cancelBooking(${booking.id})">
+                                <i class="fa fa-times"></i> Batalkan
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderVisitCard(visit) {
+            const date = new Date(visit.visit_date);
+            const dateStr = date.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            const category = visit.mr_category === 'ginekologi' ? 'Ginekologi' : 'Obstetri';
+            const categoryClass = visit.mr_category === 'ginekologi' ? 'ginekologi' : 'obstetri';
+            const locationName = visit.location_short || visit.location_name || 'Klinik';
+            const locationColor = visit.location_color || '#28a7e9';
+
+            const locationBadge = visit.location_logo
+                ? `<div class="location-badge">
+                        <img src="${visit.location_logo}" alt="${locationName}">
+                        <span style="background: ${locationColor};">${locationName}</span>
+                   </div>`
+                : `<div class="location-badge">
+                        <span style="background: ${locationColor};"><i class="fa fa-hospital-o"></i> ${locationName}</span>
+                   </div>`;
+
+            return `
+                <div class="visit-card" style="border-left: 3px solid ${locationColor};">
+                    <div class="visit-header">
+                        ${locationBadge}
+                        <span class="visit-type ${categoryClass}">${category}</span>
+                    </div>
+                    <div class="visit-date">${dateStr}</div>
+                    <span class="visit-status completed">
+                        <i class="fa fa-check"></i> Selesai
+                    </span>
+                    ${visit.has_invoice ? `
+                        <div class="visit-actions">
+                            <button class="btn-invoice" onclick="viewInvoice('${visit.mr_id}')">
+                                <i class="fa fa-file-text-o"></i> Lihat Invoice
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function getCategoryLabel(category) {
+            const map = {
+                'obstetri': 'Obstetri',
+                'gyn_repro': 'Promil',
+                'gyn_special': 'Ginekologi'
+            };
+            return map[category] || 'Konsultasi';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.cancelBooking = async function(bookingId) {
+            if (!confirm('Apakah Anda yakin ingin membatalkan janji temu ini?')) {
+                return;
+            }
+
+            const reasonInput = window.prompt('Tuliskan alasan pembatalan minimal 10 karakter:');
+            if (reasonInput === null) {
+                return;
+            }
+
+            const reason = reasonInput.trim();
+            if (reason.length < 10) {
+                showToast('Alasan pembatalan minimal 10 karakter.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/sunday-appointments/${bookingId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal membatalkan');
+                }
+
+                showToast('Janji temu berhasil dibatalkan', 'success');
+                loadAllData();
+
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+            }
+        };
+
+        window.viewInvoice = function(mrId) {
+            // Redirect to dokumen-medis.html with invoice filter
+            window.location.href = `/dokumen-medis.html?type=invoice&mr=${mrId}`;
+        };
+    </script>
+<script src="/js/patient-tracker.js?v=20260209"></script>
+<script src="/js/push-subscribe.js?v=20260209"></script>
+
+    <script src="/scripts/trial-bottom-nav.js?v=20260520trial1" defer></script>
+</body>
+</html>

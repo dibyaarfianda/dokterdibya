@@ -30,6 +30,12 @@
         '/jadwal-vitamin.html':     '/jadwal-vitamin-trial.html',
         '/pregnancy-tracker.html':  '/pregnancy-tracker-trial.html',
         '/kick-counter.html':       '/kick-counter-trial.html',
+        '/hasil-lab.html':          '/hasil-lab-trial.html',
+        '/jadwal-rs.html':          '/jadwal-rs-trial.html',
+        '/riwayat-kunjungan.html':  '/riwayat-kunjungan-trial.html',
+        '/antrian.html':            '/antrian-trial.html',
+        '/estimasi-biaya-kehamilan.html': '/estimasi-biaya-kehamilan-trial.html',
+        '/feedback.html':           '/feedback-trial.html',
         '/patient-login.html':      '/patient-login-trial.html',
         '/tanya-dokter.html':       '/tanya-dokter-trial.html'
     };
