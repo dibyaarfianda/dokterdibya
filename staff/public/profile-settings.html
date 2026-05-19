@@ -167,6 +167,10 @@
         setTimeout(() => toast.fadeOut(500, function() { $(this).remove(); }), 3000);
     }
 
+    function isEmailLike(value) {
+        return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    }
+
     // Load profile data
     async function loadProfileData() {
         try {
@@ -267,6 +271,10 @@
         // Validate display name
         if (!newDisplayName) {
             showToast('Tampilan nama harus diisi', 'error');
+            return;
+        }
+        if (isEmailLike(newDisplayName)) {
+            showToast('Tampilan nama tidak boleh berupa email', 'error');
             return;
         }
 

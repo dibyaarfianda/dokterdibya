@@ -47,6 +47,20 @@ const ACTIONS = {
     UPDATE_VISIBILITY: 'Update Visibility'
 };
 
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function resolveAuditUserName(userId, userName) {
+    const candidate = typeof userName === 'string' ? userName.trim() : '';
+    if (candidate && !isEmailLike(candidate)) {
+        return candidate;
+    }
+
+    const fallbackId = String(userId || '').trim();
+    return fallbackId || 'Unknown';
+}
+
 /**
  * Log an activity
  * @param {string} userId - User ID
@@ -57,9 +71,11 @@ const ACTIONS = {
  */
 async function log(userId, userName, action, details = null, io = null) {
     try {
+        const safeUserName = resolveAuditUserName(userId, userName);
+
         const [result] = await db.query(
             'INSERT INTO activity_logs (user_id, user_name, action, details) VALUES (?, ?, ?, ?)',
-            [userId, userName, action, details]
+            [userId, safeUserName, action, details]
         );
 
         // Fetch the created log
@@ -77,7 +93,7 @@ async function log(userId, userName, action, details = null, io = null) {
 
         logger.info(`Activity: ${action}`, {
             userId,
-            userName,
+            userName: safeUserName,
             action,
             details
         });
@@ -105,7 +121,7 @@ async function logFromRequest(req, action, details = null, io = null) {
 
     return log(
         req.user.id,
-        req.user.name || req.user.email || 'Unknown',
+        req.user.name,
         action,
         details,
         io
