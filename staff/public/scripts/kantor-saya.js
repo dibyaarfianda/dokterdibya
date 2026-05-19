@@ -30,7 +30,9 @@
         wallpaperLeaseTimer: null,
         wallpaperGuardTimer: null,
         wallpaperGuardLastRestoreAt: 0,
-        wallpaperFallbackWarnAt: 0
+        wallpaperFallbackWarnAt: 0,
+        lastSuccessfulWallpaperKey: null,
+        lastSuccessfulWallpaperBackground: null
     };
 
     function getLiveRoot() {
@@ -104,6 +106,8 @@
         state.wallpaperProbeToken = 0;
         state.wallpaperProbeFailures = 0;
         state.lastWallpaperProbeUrl = null;
+        state.lastSuccessfulWallpaperKey = null;
+        state.lastSuccessfulWallpaperBackground = null;
         state.initialized = false;
     }
 
@@ -685,8 +689,26 @@
 
     function applyTheme(options) {
         if (!state.root || !state.theme) return;
+        var nextBackground = getWallpaperBackground(state.theme);
+
+        if (state.theme.wallpaper_download_url) {
+            state.lastSuccessfulWallpaperKey = state.theme.wallpaper_url || null;
+            state.lastSuccessfulWallpaperBackground = nextBackground.indexOf('url(') !== -1 ? nextBackground : null;
+        } else if (
+            state.theme.wallpaper_url &&
+            state.theme.wallpaper_url === state.lastSuccessfulWallpaperKey &&
+            state.lastSuccessfulWallpaperBackground
+        ) {
+            nextBackground = state.lastSuccessfulWallpaperBackground;
+        }
+
+        if (!state.theme.wallpaper_url) {
+            state.lastSuccessfulWallpaperKey = null;
+            state.lastSuccessfulWallpaperBackground = null;
+        }
+
         state.root.style.setProperty('--kantor-accent', state.theme.accent_color || '#0d6efd');
-        state.root.style.setProperty('background-image', getWallpaperBackground(state.theme), 'important');
+        state.root.style.setProperty('background-image', nextBackground, 'important');
         state.root.style.setProperty('background-size', 'cover', 'important');
         state.root.style.setProperty('background-position', 'center', 'important');
 
