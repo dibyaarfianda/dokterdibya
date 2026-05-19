@@ -264,6 +264,22 @@
             render: renderExternalIframeWidget,
             configure: configureExternalIframeWidget
         },
+        'custom-integration': {
+            id: 'custom-integration',
+            label: 'Integrasi API Khusus',
+            icon: 'fa-plug',
+            defaultSize: { w: 6, h: 3, minW: 3, minH: 2 },
+            defaultConfig: {
+                endpoint_url: '',
+                data_path: '',
+                title_path: 'title',
+                value_path: 'value',
+                subtitle_path: '',
+                limit: 6
+            },
+            render: renderCustomIntegrationWidget,
+            configure: configureCustomIntegrationWidget
+        },
         'pomodoro-timer': {
             id: 'pomodoro-timer',
             label: 'Pomodoro Timer',
@@ -500,6 +516,19 @@
         var body = await response.json().catch(function () { return {}; });
         if (!response.ok || body.success === false) {
             throw new Error(body.message || 'Gagal menyimpan');
+        }
+        return body.data || body;
+    }
+
+    async function apiPost(path, payload) {
+        var response = await makeRequest(API_BASE + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload || {})
+        });
+        var body = await response.json().catch(function () { return {}; });
+        if (!response.ok || body.success === false) {
+            throw new Error(body.message || 'Request gagal');
         }
         return body.data || body;
     }
@@ -1486,6 +1515,62 @@
         refreshAllWidgets(true);
     }
 
+    function configureCustomIntegrationWidget(widgetInstance) {
+        var currentConfig = widgetInstance.config || {};
+
+        var endpointUrl = window.prompt(
+            'Masukkan URL endpoint JSON (https://...)',
+            String(currentConfig.endpoint_url || '')
+        );
+        if (endpointUrl === null) return;
+
+        endpointUrl = String(endpointUrl || '').trim();
+
+        var dataPath = window.prompt(
+            'Data Path (opsional, contoh: data.items)',
+            String(currentConfig.data_path || '')
+        );
+        if (dataPath === null) return;
+
+        var titlePath = window.prompt(
+            'Field Judul (contoh: name atau patient.full_name)',
+            String(currentConfig.title_path || 'title')
+        );
+        if (titlePath === null) return;
+
+        var valuePath = window.prompt(
+            'Field Nilai (opsional, contoh: score atau stats.total)',
+            String(currentConfig.value_path || 'value')
+        );
+        if (valuePath === null) return;
+
+        var subtitlePath = window.prompt(
+            'Field Subtitle (opsional)',
+            String(currentConfig.subtitle_path || '')
+        );
+        if (subtitlePath === null) return;
+
+        var limitInput = window.prompt(
+            'Jumlah item tampil (1-20)',
+            String(currentConfig.limit || 6)
+        );
+        if (limitInput === null) return;
+
+        var parsedLimit = Number(limitInput);
+        var safeLimit = Number.isFinite(parsedLimit) ? Math.max(1, Math.min(20, Math.floor(parsedLimit))) : 6;
+
+        updateWidgetConfig(widgetInstance.instance_id, {
+            endpoint_url: endpointUrl,
+            data_path: String(dataPath || '').trim(),
+            title_path: String(titlePath || '').trim() || 'title',
+            value_path: String(valuePath || '').trim(),
+            subtitle_path: String(subtitlePath || '').trim(),
+            limit: safeLimit
+        });
+
+        refreshAllWidgets(true);
+    }
+
     function renderShortcutWidget(widgetInstance, bodyEl) {
         var pinned = Array.isArray(widgetInstance.config.pinned)
             ? widgetInstance.config.pinned
@@ -1808,6 +1893,62 @@
         bodyEl.innerHTML =
             '<div class="mb-2"><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt mr-1"></i>Buka di Tab Baru</a></div>' +
             '<div class="ks-iframe-wrap"><iframe src="' + escapeHtml(url) + '" loading="lazy"></iframe></div>';
+    }
+
+    function renderCustomIntegrationWidget(widgetInstance, bodyEl, forceRefresh) {
+        var config = widgetInstance.config || {};
+        var endpointUrl = String(config.endpoint_url || '').trim();
+
+        if (!endpointUrl) {
+            bodyEl.innerHTML = '<div class="ks-empty">Endpoint belum diset. Gunakan tombol config.</div>';
+            return;
+        }
+
+        if (!/^https?:\/\//i.test(endpointUrl)) {
+            bodyEl.innerHTML = '<div class="ks-empty">URL endpoint harus dimulai dengan http:// atau https://</div>';
+            return;
+        }
+
+        var cacheKey = widgetInstance.instance_id + ':custom-integration:' + endpointUrl;
+
+        cacheFetch(cacheKey, function () {
+            return apiPost('/widgets/custom-integration', {
+                endpoint_url: endpointUrl,
+                data_path: String(config.data_path || '').trim(),
+                title_path: String(config.title_path || '').trim() || 'title',
+                value_path: String(config.value_path || '').trim(),
+                subtitle_path: String(config.subtitle_path || '').trim(),
+                limit: Number(config.limit || 6)
+            });
+        }, forceRefresh).then(function (data) {
+            var items = Array.isArray(data.items) ? data.items : [];
+            var endpointHost = data.endpoint_host || '-';
+
+            if (!items.length) {
+                bodyEl.innerHTML =
+                    '<div class="ks-empty">Tidak ada data dari endpoint.</div>' +
+                    '<div class="text-muted mt-2" style="font-size:11px;">Sumber: ' + escapeHtml(endpointHost) + '</div>';
+                return;
+            }
+
+            bodyEl.innerHTML =
+                '<ul class="ks-list">' +
+                    items.map(function (item) {
+                        var title = escapeHtml(item.title || '-');
+                        var value = item.value == null ? '' : escapeHtml(String(item.value));
+                        var subtitle = item.subtitle == null ? '' : escapeHtml(String(item.subtitle));
+
+                        return '<li>' +
+                            '<strong>' + title + '</strong>' +
+                            (value ? '<span class="float-right badge badge-primary">' + value + '</span>' : '') +
+                            (subtitle ? '<br><small class="text-muted">' + subtitle + '</small>' : '') +
+                        '</li>';
+                    }).join('') +
+                '</ul>' +
+                '<div class="text-muted mt-2" style="font-size:11px;">Sumber: ' + escapeHtml(endpointHost) + '</div>';
+        }).catch(function (error) {
+            bodyEl.innerHTML = '<div class="text-danger">' + escapeHtml(error.message || 'Gagal memuat integrasi khusus') + '</div>';
+        });
     }
 
     function renderPomodoroWidget(widgetInstance, bodyEl) {
