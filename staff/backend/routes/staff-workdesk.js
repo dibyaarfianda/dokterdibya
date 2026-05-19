@@ -107,6 +107,121 @@ function setNoCacheHeaders(res) {
     res.set('Vary', 'Authorization');
 }
 
+function parsePathSegments(pathValue) {
+    return String(pathValue || '')
+        .split('.')
+        .map((segment) => segment.trim())
+        .filter(Boolean);
+}
+
+function getValueByPath(source, pathValue) {
+    const segments = parsePathSegments(pathValue);
+    if (!segments.length) {
+        return source;
+    }
+
+    let cursor = source;
+    for (const segment of segments) {
+        if (cursor == null) return undefined;
+
+        if (Array.isArray(cursor) && /^\d+$/.test(segment)) {
+            cursor = cursor[Number(segment)];
+            continue;
+        }
+
+        if (typeof cursor !== 'object') {
+            return undefined;
+        }
+
+        cursor = cursor[segment];
+    }
+
+    return cursor;
+}
+
+function toScalarString(value) {
+    if (value == null) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    try {
+        return JSON.stringify(value);
+    } catch (_) {
+        return String(value);
+    }
+}
+
+function pickFirstArray(sourceObject) {
+    if (!sourceObject || typeof sourceObject !== 'object' || Array.isArray(sourceObject)) {
+        return null;
+    }
+
+    const keys = ['items', 'data', 'results', 'result', 'rows', 'list', 'entries'];
+    for (const key of keys) {
+        if (Array.isArray(sourceObject[key])) {
+            return sourceObject[key];
+        }
+    }
+
+    return null;
+}
+
+function normalizeIntegrationItems(payload, dataPath) {
+    const hasPath = parsePathSegments(dataPath).length > 0;
+    let source = hasPath ? getValueByPath(payload, dataPath) : payload;
+
+    if (Array.isArray(source)) {
+        return source;
+    }
+
+    const nestedFromSource = pickFirstArray(source);
+    if (nestedFromSource) {
+        return nestedFromSource;
+    }
+
+    if (source && typeof source === 'object') {
+        return [source];
+    }
+
+    if (!hasPath) {
+        const nestedFromPayload = pickFirstArray(payload);
+        if (nestedFromPayload) {
+            return nestedFromPayload;
+        }
+    }
+
+    if (source == null) {
+        return [];
+    }
+
+    return [{ value: source }];
+}
+
+function isBlockedPrivateHost(hostnameValue) {
+    const hostname = String(hostnameValue || '').toLowerCase().trim();
+    if (!hostname) return true;
+
+    if (hostname === 'localhost' || hostname === '0.0.0.0' || hostname === '::1') {
+        return true;
+    }
+
+    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) {
+        return true;
+    }
+
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        const parts = hostname.split('.').map((part) => Number(part));
+        const [a, b] = parts;
+
+        if (a === 10) return true;
+        if (a === 127) return true;
+        if (a === 169 && b === 254) return true;
+        if (a === 172 && b >= 16 && b <= 31) return true;
+        if (a === 192 && b === 168) return true;
+    }
+
+    return false;
+}
+
 function getDefaultLayout() {
     return {
         version: 1,
@@ -876,6 +991,110 @@ router.get('/widgets/birthday-reminder', async (req, res) => {
     } catch (error) {
         console.error('[staff-workdesk] birthday-reminder widget error:', error);
         return res.status(500).json({ success: false, message: 'Gagal memuat pengingat ulang tahun' });
+    }
+});
+
+router.post('/widgets/custom-integration', async (req, res) => {
+    try {
+        setNoCacheHeaders(res);
+
+        const endpointInput = String(req.body?.endpoint_url || '').trim();
+        const dataPath = String(req.body?.data_path || '').trim();
+        const titlePath = String(req.body?.title_path || 'title').trim() || 'title';
+        const valuePath = String(req.body?.value_path || '').trim();
+        const subtitlePath = String(req.body?.subtitle_path || '').trim();
+
+        const requestedLimit = Number(req.body?.limit || 6);
+        const limit = Number.isFinite(requestedLimit)
+            ? Math.max(1, Math.min(20, Math.floor(requestedLimit)))
+            : 6;
+
+        if (!endpointInput) {
+            return res.status(400).json({ success: false, message: 'endpoint_url wajib diisi' });
+        }
+
+        let endpointUrl;
+        try {
+            endpointUrl = new URL(endpointInput);
+        } catch (_) {
+            return res.status(400).json({ success: false, message: 'endpoint_url tidak valid' });
+        }
+
+        if (!['http:', 'https:'].includes(endpointUrl.protocol)) {
+            return res.status(400).json({ success: false, message: 'Hanya protokol http/https yang diizinkan' });
+        }
+
+        if (isBlockedPrivateHost(endpointUrl.hostname)) {
+            return res.status(400).json({ success: false, message: 'Host endpoint tidak diizinkan' });
+        }
+
+        const response = await fetch(endpointUrl.toString(), {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json, text/plain;q=0.9, */*;q=0.8',
+                'User-Agent': 'dokterdibya-workdesk-integration/1.0'
+            },
+            redirect: 'follow',
+            signal: AbortSignal.timeout(10000)
+        });
+
+        if (!response.ok) {
+            return res.status(502).json({
+                success: false,
+                message: `Endpoint merespons status ${response.status}`
+            });
+        }
+
+        const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+        let payload;
+
+        if (contentType.includes('application/json') || contentType.includes('+json')) {
+            payload = await response.json();
+        } else {
+            const rawText = await response.text();
+            try {
+                payload = JSON.parse(rawText);
+            } catch (_) {
+                return res.status(422).json({
+                    success: false,
+                    message: 'Endpoint tidak mengembalikan JSON yang valid'
+                });
+            }
+        }
+
+        const sourceItems = normalizeIntegrationItems(payload, dataPath);
+        const items = sourceItems.slice(0, limit).map((entry, index) => {
+            const source = entry && typeof entry === 'object' ? entry : { value: entry };
+
+            const fallbackTitle =
+                getValueByPath(source, 'name') ??
+                getValueByPath(source, 'title') ??
+                getValueByPath(source, 'label') ??
+                `Item ${index + 1}`;
+
+            const titleValue = getValueByPath(source, titlePath);
+            const valueValue = valuePath ? getValueByPath(source, valuePath) : undefined;
+            const subtitleValue = subtitlePath ? getValueByPath(source, subtitlePath) : undefined;
+
+            return {
+                title: toScalarString(titleValue ?? fallbackTitle).slice(0, 200),
+                value: toScalarString(valueValue).slice(0, 200),
+                subtitle: toScalarString(subtitleValue).slice(0, 300)
+            };
+        });
+
+        return res.json({
+            success: true,
+            data: {
+                endpoint_host: endpointUrl.host,
+                count: items.length,
+                fetched_at: new Date().toISOString(),
+                items
+            }
+        });
+    } catch (error) {
+        console.error('[staff-workdesk] custom-integration widget error:', error);
+        return res.status(500).json({ success: false, message: 'Gagal memuat integrasi khusus' });
     }
 });
 
