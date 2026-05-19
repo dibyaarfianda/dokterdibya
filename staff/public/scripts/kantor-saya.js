@@ -29,7 +29,8 @@
         wallpaperRetryTimer: null,
         wallpaperLeaseTimer: null,
         wallpaperGuardTimer: null,
-        wallpaperGuardLastRestoreAt: 0
+        wallpaperGuardLastRestoreAt: 0,
+        wallpaperFallbackWarnAt: 0
     };
 
     function getLiveRoot() {
@@ -466,6 +467,11 @@
         var prev = normalizeTheme(previousTheme);
         var next = normalizeTheme(incomingTheme);
 
+        // Keep last known custom wallpaper key when server payload is temporarily incomplete.
+        if (!next.wallpaper_url && !next.wallpaper_preset && prev.wallpaper_url) {
+            next.wallpaper_url = prev.wallpaper_url;
+        }
+
         if (
             next.wallpaper_url &&
             prev.wallpaper_url === next.wallpaper_url &&
@@ -695,9 +701,15 @@
         if (!state.theme.wallpaper_download_url) {
             state.lastWallpaperProbeUrl = null;
             if (state.theme.wallpaper_url) {
+                var now = Date.now();
+                if ((now - state.wallpaperFallbackWarnAt) > 10000) {
+                    state.wallpaperFallbackWarnAt = now;
+                    console.warn('[kantor-saya] wallpaper fallback active (signed URL missing, key retained)');
+                }
                 refreshWallpaperDownloadUrl('missing-signed-url', false);
             }
         } else if (!(options && options.skipWallpaperProbe)) {
+            state.wallpaperFallbackWarnAt = 0;
             probeCurrentWallpaperUrl();
         }
 
