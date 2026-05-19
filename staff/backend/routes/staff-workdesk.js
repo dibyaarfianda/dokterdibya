@@ -250,16 +250,19 @@ async function toLayoutResponse(record) {
     };
 
     const wallpaperKey = record.wallpaper_url || theme.wallpaper_url || null;
-    let wallpaperSignedUrl = null;
+    const cachedSignedUrl = typeof theme.wallpaper_download_url === 'string' && theme.wallpaper_download_url.trim()
+        ? theme.wallpaper_download_url.trim()
+        : null;
+    let wallpaperSignedUrl = cachedSignedUrl;
 
     if (wallpaperKey && r2Storage.isR2Configured()) {
         try {
             wallpaperSignedUrl = await r2Storage.getSignedDownloadUrl(wallpaperKey, 3600);
         } catch (error) {
-            wallpaperSignedUrl = null;
             console.warn('[staff-workdesk] wallpaper signed URL generation failed:', {
                 user_id: record.user_id || null,
                 wallpaper_key: wallpaperKey,
+                fallback_cached_signed_url: !!cachedSignedUrl,
                 error: error && error.message ? error.message : String(error)
             });
         }
