@@ -4936,7 +4936,7 @@
         </div>
 
         <div class="bottom-inner">
-            <a href="/patient-menu-trial.html" class="nav-item active" aria-current="page">
+            <a href="/trial-landing/index.html" class="nav-item active" aria-current="page">
                 <i class="fa-solid fa-house"></i>
                 <span>Beranda</span>
             </a>
@@ -4982,6 +4982,33 @@
             return localStorage.getItem('vps_auth_token') ||
                    sessionStorage.getItem('vps_auth_token') ||
                    localStorage.getItem('patient_token');
+        }
+
+        function isTrialPreviewMode() {
+            try {
+                if (sessionStorage.getItem('trial_preview_mode') === '1') return true;
+            } catch (e) {}
+
+            var params = new URLSearchParams(window.location.search);
+            var previewParam = params.get('preview') || params.get('trial_preview') || params.get('skipLogin');
+            return previewParam === '1' || previewParam === 'true';
+        }
+
+        function activateTrialPreviewMode() {
+            var loading = document.getElementById('loading-state');
+            var wrapper = document.getElementById('content-wrapper');
+            var heroName = document.getElementById('hero-patient-name');
+            var heroKicker = document.getElementById('hero-kicker-text');
+            var avatarInitials = document.getElementById('user-avatar-initials');
+
+            if (heroName) heroName.textContent = 'Halo.';
+            if (heroKicker) heroKicker.textContent = 'Preview Trial';
+            if (avatarInitials) avatarInitials.textContent = 'TR';
+
+            if (loading) loading.style.display = 'none';
+            if (wrapper) wrapper.style.display = 'block';
+
+            triggerHeroAnimations();
         }
 
         // Check authentication on page load
@@ -5229,6 +5256,20 @@
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
             const urlUser = urlParams.get('user');
+            const previewParam = urlParams.get('preview') || urlParams.get('trial_preview') || urlParams.get('skipLogin');
+            const previewRequested = previewParam === '1' || previewParam === 'true';
+
+            if (previewRequested) {
+                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try {
+                    urlParams.delete('preview');
+                    urlParams.delete('trial_preview');
+                    urlParams.delete('skipLogin');
+                    const qs = urlParams.toString();
+                    const cleanedUrl = qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanedUrl);
+                } catch (e) {}
+            }
 
             if (urlToken) {
                 localStorage.setItem('vps_auth_token', urlToken);
@@ -5248,21 +5289,16 @@
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             const isAuthenticated = !!(token && user.id);
 
-            if (!isAuthenticated) {
-                // Not authenticated, redirect to login
-                const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
-                const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-
-                if (fromMobile || isCapacitor) {
-                    localStorage.removeItem('from_mobile_app');
-                    window.location.href = 'dokterdibya://logout';
-                } else {
-                    window.location.href = '/patient-login-trial.html';
-                }
+            if (isAuthenticated) {
+                try { sessionStorage.removeItem('trial_preview_mode'); } catch (e) {}
+                window.location.href = '/patient-menu-trial.html';
                 return;
             }
 
-            try { sessionStorage.removeItem('trial_preview_mode'); } catch (e) {}
+            // Landing version always renders in preview mode for unauthenticated users.
+            try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+            activateTrialPreviewMode();
+            return;
 
             // Register service worker for push notifications and offline support
             if ('serviceWorker' in navigator) {
