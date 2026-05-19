@@ -20,6 +20,60 @@
         activeWallpaperPreset: null
     };
 
+    function getLiveRoot() {
+        return document.querySelector('#content-kantor-saya #kantor-saya-page') || document.getElementById('kantor-saya-page');
+    }
+
+    function getLiveGridElement() {
+        return document.querySelector('#content-kantor-saya #kantor-grid') || document.getElementById('kantor-grid');
+    }
+
+    function hasStaleBindings() {
+        if (!state.initialized) return false;
+
+        var liveRoot = getLiveRoot();
+        var liveGrid = getLiveGridElement();
+        var gridEl = state.grid && state.grid.el ? state.grid.el : null;
+
+        return !liveRoot ||
+            !liveGrid ||
+            !state.root ||
+            !state.root.isConnected ||
+            !gridEl ||
+            !gridEl.isConnected ||
+            state.root !== liveRoot ||
+            gridEl !== liveGrid;
+    }
+
+    function resetGridRuntime() {
+        if (state.saveTimer) {
+            clearTimeout(state.saveTimer);
+            state.saveTimer = null;
+        }
+
+        state.widgetTimers.forEach(function (timer) {
+            clearInterval(timer);
+        });
+        state.widgetTimers.clear();
+
+        if (state.grid && typeof state.grid.destroy === 'function') {
+            try {
+                state.grid.destroy(false);
+            } catch (error) {
+                console.warn('[kantor-saya] grid destroy warning:', error);
+            }
+        }
+
+        state.grid = null;
+        state.root = null;
+        state.layout = null;
+        state.theme = null;
+        state.editMode = false;
+        state.isRendering = false;
+        state.isHydrating = false;
+        state.initialized = false;
+    }
+
     var PRESET_WALLPAPERS = {
         morning: 'radial-gradient(circle at 10% 20%, rgba(13,110,253,0.16), transparent 40%), radial-gradient(circle at 85% 0%, rgba(16,185,129,0.14), transparent 40%), linear-gradient(160deg, #f8fafc 0%, #eef4ff 50%, #f3f8f5 100%)',
         dusk: 'radial-gradient(circle at 20% 10%, rgba(236,72,153,0.16), transparent 38%), radial-gradient(circle at 80% 12%, rgba(168,85,247,0.14), transparent 36%), linear-gradient(155deg, #eef2ff 0%, #fdf2f8 52%, #f5f3ff 100%)',
@@ -429,8 +483,14 @@
             state.grid.enableResize(state.editMode);
         }
 
+        var liveRoot = getLiveRoot();
+        if (liveRoot) {
+            state.root = liveRoot;
+        }
+
         if (state.root) {
             state.root.classList.toggle('ks-edit-mode', state.editMode);
+            state.root.classList.toggle('ks-editing', state.editMode);
         }
 
         var btn = document.getElementById('ks-btn-edit');
@@ -471,6 +531,27 @@
             state.theme = normalizeTheme(data.theme || state.theme);
             applyTheme();
             updateLastSavedLabel(data.updated_at || new Date().toISOString());
+        }
+    }
+
+    async function reloadLayoutFromServer(options) {
+        if (!state.grid) return;
+
+        var keepEditMode = !!(options && options.keepEditMode);
+        var nextEditMode = keepEditMode && state.editMode;
+
+        state.isHydrating = true;
+        try {
+            var layoutData = await apiGet('/layout');
+            state.layout = normalizeLayout(layoutData.layout);
+            state.theme = normalizeTheme(layoutData.theme);
+
+            applyTheme();
+            renderGrid();
+            setEditMode(nextEditMode);
+            updateLastSavedLabel(layoutData.updated_at || null);
+        } finally {
+            state.isHydrating = false;
         }
     }
 
@@ -730,7 +811,10 @@
         if (btnRefresh) {
             btnRefresh.addEventListener('click', function () {
                 state.cache.clear();
-                refreshAllWidgets(true);
+                reloadLayoutFromServer({ keepEditMode: true }).catch(function (error) {
+                    console.error('[kantor-saya] refresh layout error:', error);
+                    refreshAllWidgets(true);
+                });
             });
         }
 
@@ -814,15 +898,24 @@
     }
 
     async function init() {
-        if (state.initialized || state.initInFlight) {
+        if (state.initInFlight) {
             return;
         }
 
-        var root = document.getElementById('kantor-saya-page');
-        var gridElement = document.getElementById('kantor-grid');
+        var root = getLiveRoot();
+        var gridElement = getLiveGridElement();
 
         if (!root || !gridElement) {
             return;
+        }
+
+        if (state.initialized && !hasStaleBindings()) {
+            state.root = root;
+            return;
+        }
+
+        if (state.initialized && hasStaleBindings()) {
+            resetGridRuntime();
         }
 
         root.classList.remove('d-none');
@@ -848,10 +941,13 @@
                 disableDrag: true,
                 disableResize: true,
                 alwaysShowResizeHandle: true,
-                resizable: { handles: 'e, se, s' },
-                draggable: { handle: '.ks-widget-header' },
+                resizable: { handles: 'se' },
+                draggable: {
+                    handle: '.ks-widget-header',
+                    cancel: '.ks-widget-actions, .ks-widget-actions *'
+                },
                 animate: true
-            }, '#kantor-grid');
+            }, gridElement);
 
             bindGridEvents();
             bindToolbar();
@@ -872,13 +968,24 @@
     }
 
     function onShow() {
-        if (!state.initialized) {
+        if (!state.initialized || hasStaleBindings()) {
+            if (hasStaleBindings()) {
+                resetGridRuntime();
+            }
             init();
             return;
         }
+
+        var liveRoot = getLiveRoot();
+        if (liveRoot) {
+            state.root = liveRoot;
+        }
+
         if (state.root) {
             state.root.classList.remove('d-none');
         }
+
+        setEditMode(state.editMode);
         refreshAllWidgets(false);
     }
 
@@ -1430,7 +1537,9 @@
         onShow: onShow,
         refresh: function () {
             state.cache.clear();
-            refreshAllWidgets(true);
+            return reloadLayoutFromServer({ keepEditMode: true }).catch(function () {
+                refreshAllWidgets(true);
+            });
         }
     };
 })();
