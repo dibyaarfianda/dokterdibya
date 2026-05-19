@@ -49,6 +49,20 @@ function isManagementRole(roleId) {
     return [ROLE_IDS.DOKTER, ROLE_IDS.ADMIN, ROLE_IDS.MANAGERIAL].includes(roleId);
 }
 
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function resolveDisplayName(user) {
+    const candidate = String(user?.name || '').trim();
+    if (candidate && !isEmailLike(candidate)) {
+        return candidate;
+    }
+
+    const fallbackId = String(user?.id || '').trim();
+    return fallbackId || 'User';
+}
+
 // Check if profile needs completion
 function checkProfileCompletion(user) {
     // Skip check for superadmin/dokter
@@ -75,12 +89,12 @@ async function setAuthUI(user) {
     const navbarDivider = $('navbar-divider');
 
     if (user) {
-        const name = user.name || user.email;
+        const name = resolveDisplayName(user);
         const role = user.role || '';
 
         // Set global user variables for real-time features
         window.currentUserId = user.id;
-        window.currentUserName = user.name || user.email;
+        window.currentUserName = name;
 
         // Display name with role: "dr.dibya (superadmin)"
         if (userInfo) {

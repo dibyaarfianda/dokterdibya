@@ -33,6 +33,10 @@ function resolveStaffIdentity(name, photoUrl) {
     };
 }
 
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 // POST /api/auth/login
 router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -112,7 +116,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     // Log to activity_logs table with IP address
     try {
         const clientIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
-        await activityLogger.log(userId, user.name || user.email, 'Login', `Logged in from ${clientIP}`);
+        await activityLogger.log(userId, user.name || userId, 'Login', `Logged in from ${clientIP}`);
     } catch (logErr) {
         logger.warn(`Failed to log login activity: ${logErr.message}`);
     }
@@ -345,15 +349,25 @@ router.put('/api/auth/profile', verifyToken, async (req, res) => {
         if (!userId) return res.status(400).json({ success: false, message: 'Invalid token payload' });
         
         const { name, photo_url } = req.body;
+        const normalizedName = typeof name === 'string' ? name.trim() : '';
+
+        if (name !== undefined) {
+            if (!normalizedName) {
+                return res.status(400).json({ success: false, message: 'Tampilan nama tidak boleh kosong' });
+            }
+            if (isEmailLike(normalizedName)) {
+                return res.status(400).json({ success: false, message: 'Tampilan nama tidak boleh berupa email' });
+            }
+        }
         
         // Build update query dynamically based on what's provided
         const updates = [];
         const values = [];
         
-        if (name) {
+        if (name !== undefined) {
             updates.push('name = ?');
             updates.push('display_name = ?');
-            values.push(name, name);
+            values.push(normalizedName, normalizedName);
         }
         
         if (photo_url !== undefined) {

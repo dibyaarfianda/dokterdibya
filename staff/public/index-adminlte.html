@@ -7728,7 +7728,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v155';
+    window.__assetVersion = 'v156';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -7893,13 +7893,23 @@ body.mobile-app-mode .mobile-action-bar-force button {
     // Now check authentication
     const user = auth.currentUser;
 
+    function resolveSafeDisplayName(staffUser) {
+        const candidate = String(staffUser?.name || '').trim();
+        if (candidate && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
+            return candidate;
+        }
+
+        const fallbackId = String(staffUser?.id || '').trim();
+        return fallbackId || 'User';
+    }
+
     if (!user) {
         window.location.replace('login.html');
     } else {
         // IMMEDIATE navbar update
         const navName = document.getElementById('navbar-user-name');
         const navRole = document.getElementById('navbar-user-role');
-        const newName = user.name || user.email || 'Unknown User';
+        const newName = resolveSafeDisplayName(user);
         const newRole = user.role_display_name || user.role || 'Staff';
         if (navName) navName.textContent = newName;
         if (navRole) navRole.textContent = newRole;
@@ -7933,7 +7943,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         if (user) {
             const navName = document.getElementById('navbar-user-name');
             const navRole = document.getElementById('navbar-user-role');
-            if (navName) navName.textContent = user.name || user.email || 'User';
+            if (navName) navName.textContent = resolveSafeDisplayName(user);
             if (navRole) navRole.textContent = user.role_display_name || user.role || 'Staff';
         }
 

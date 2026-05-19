@@ -251,6 +251,21 @@ function setTitleAndActive(title, navId, mobileAction) {
 
 // Activity logging function for audit trail
 let lastLoggedPage = '';
+
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function resolveDisplayName(rawName, userId, fallbackLabel = 'Unknown') {
+    const candidate = String(rawName || '').trim();
+    if (candidate && !isEmailLike(candidate)) {
+        return candidate;
+    }
+
+    const fallbackId = String(userId || '').trim();
+    return fallbackId || fallbackLabel;
+}
+
 function logActivity(action, details) {
     // Debounce same page views
     if (action === 'Page View' && details === lastLoggedPage) return;
@@ -261,7 +276,7 @@ function logActivity(action, details) {
 
     // Use global user info set by auth.js
     const userId = window.currentUserId || 'unknown';
-    const userName = window.currentUserName || 'Unknown';
+    const userName = resolveDisplayName(window.currentUserName, userId, 'Unknown');
 
     // Skip if user not identified yet
     if (userId === 'unknown') return;
@@ -3981,7 +3996,7 @@ async function updateWelcomeCard(user) {
     if (isSuperadmin) {
         welcomeName.innerHTML = '<strong>dr. Dibya</strong>';
     } else {
-        welcomeName.textContent = user.name || user.email || 'User';
+        welcomeName.textContent = resolveDisplayName(user.name, user.id, 'User');
     }
 
     // Also update navbar user name
@@ -3989,7 +4004,7 @@ async function updateWelcomeCard(user) {
         if (isSuperadmin) {
             navbarUserName.textContent = 'dr. Dibya';
         } else {
-            navbarUserName.textContent = user.name || user.email || 'User';
+            navbarUserName.textContent = resolveDisplayName(user.name, user.id, 'User');
         }
     }
 

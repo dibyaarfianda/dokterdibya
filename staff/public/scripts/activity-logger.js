@@ -52,6 +52,20 @@ export const ACTIONS = {
     EXPORT_DATA: 'Export Data'
 };
 
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function resolveActivityUserName(user) {
+    const candidate = String(user?.name || '').trim();
+    if (candidate && !isEmailLike(candidate)) {
+        return candidate;
+    }
+
+    const fallbackId = String(user?.id || '').trim();
+    return fallbackId || 'Unknown';
+}
+
 /**
  * Log an activity to the backend
  * @param {string} action - The action type (use ACTIONS constants)
@@ -82,7 +96,7 @@ export async function logActivity(action, details, metadata = {}) {
             },
             body: JSON.stringify({
                 user_id: user.id,
-                user_name: user.name || user.email || 'Unknown',
+                user_name: resolveActivityUserName(user),
                 action: action,
                 details: fullDetails
             })

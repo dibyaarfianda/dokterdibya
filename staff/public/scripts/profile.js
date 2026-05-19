@@ -9,6 +9,10 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 let currentUser = null;
 let selectedProfilePicture = null; // Store selected image as base64
 
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function buildProgressiveSquareAvatar(sourceImage, targetSize) {
     const cropSize = Math.min(sourceImage.naturalWidth, sourceImage.naturalHeight);
     const offsetX = Math.max(0, Math.floor((sourceImage.naturalWidth - cropSize) / 2));
@@ -285,6 +289,10 @@ async function handleProfileUpdate() {
     
     // Check if display name changed
     if (newDisplayName && newDisplayName !== currentUser.name) {
+        if (isEmailLike(newDisplayName)) {
+            showError('Tampilan nama tidak boleh berupa email');
+            return;
+        }
         hasChanges = true;
     }
     
