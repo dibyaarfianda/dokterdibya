@@ -719,13 +719,6 @@
                 z-index: 1030;
             }
 
-            /* AdminLTE subtracts top-brand height from .sidebar in layout-fixed.
-               Our logo lives inside .sidebar, so force full height to avoid clipped menu view. */
-            .main-sidebar .sidebar {
-                height: 100% !important;
-                max-height: 100% !important;
-            }
-
             /* Compensate CSS zoom:0.8 in browser mode so sidebar still reaches viewport bottom. */
             html.browser-zoom-80:not(.mobile-app-mode) .main-sidebar,
             body.browser-zoom-80:not(.mobile-app-mode) .main-sidebar {
@@ -749,32 +742,26 @@
         /* Nav section headers */
         .sidebar .nav-header { color: rgba(0,0,0,0.6) !important; }
         
-        /* Sidebar scrollbar */
+        /* Hide sidebar scrollbar */
         .main-sidebar,
         .main-sidebar .sidebar,
         .sidebar-mini .main-sidebar { 
             overflow-y: auto !important;
-            scrollbar-width: thin !important; /* Firefox */
-            scrollbar-color: rgba(15, 23, 42, 0.28) transparent !important;
-            -ms-overflow-style: auto !important; /* IE and Edge */
+            scrollbar-width: none !important; /* Firefox */
+            -ms-overflow-style: none !important; /* IE and Edge */
         }
         .main-sidebar::-webkit-scrollbar,
         .main-sidebar .sidebar::-webkit-scrollbar,
         .sidebar-mini .main-sidebar::-webkit-scrollbar {
-            width: 6px !important;
-            height: 6px !important;
-            display: block !important; /* Chrome, Safari, Opera */
+            width: 0 !important;
+            height: 0 !important;
+            display: none !important; /* Chrome, Safari, Opera */
         }
-        .main-sidebar::-webkit-scrollbar-thumb,
-        .main-sidebar .sidebar::-webkit-scrollbar-thumb,
-        .sidebar-mini .main-sidebar::-webkit-scrollbar-thumb {
-            background: rgba(15, 23, 42, 0.28) !important;
-            border-radius: 999px !important;
-        }
-        .main-sidebar::-webkit-scrollbar-track,
-        .main-sidebar .sidebar::-webkit-scrollbar-track,
-        .sidebar-mini .main-sidebar::-webkit-scrollbar-track {
-            background: transparent !important;
+        .main-sidebar:hover::-webkit-scrollbar,
+        .main-sidebar .sidebar:hover::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+            display: none !important;
         }
         
         /* Obstetri fields fixed width */
@@ -7823,7 +7810,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v167';
+    window.__assetVersion = 'v166';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
