@@ -1070,9 +1070,11 @@
         #tanya-dokter-page #tanya-questions-list {
             width: 100%;
             margin: 0 !important;
+            padding-top: 0 !important;
         }
 
         #tanya-dokter-page #tanya-questions-list .tanya-question-card {
+            margin-top: 0 !important;
             margin-left: 0 !important;
             margin-right: 0 !important;
         }
@@ -7032,12 +7034,7 @@ Contoh Markdown:
                 </div>
 
                 <!-- (placeholder kept for following sections) -->
-                <div id="content-after-briefing-placeholder" class="d-none">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div id="content-after-briefing-placeholder" class="d-none"></div>
 
                 <!-- TANYA DR. DIBYA PAGE -->
                 <div id="tanya-dokter-page" class="d-none">
@@ -7094,7 +7091,7 @@ Contoh Markdown:
                                     </div>
 
                                     <!-- Filter Tabs -->
-                                    <ul class="nav nav-tabs mb-3" id="tanya-tabs">
+                                    <ul class="nav nav-tabs mb-2" id="tanya-tabs">
                                         <li class="nav-item">
                                             <a class="nav-link active" href="#" data-filter="all" onclick="filterTanyaQuestions('all'); return false;">
                                                 <i class="fas fa-list mr-1"></i> Semua
@@ -7119,7 +7116,7 @@ Contoh Markdown:
                                     </ul>
 
                                     <!-- Questions List -->
-                                    <div class="table-responsive tanya-questions-table-shell">
+                                    <div class="tanya-questions-table-shell">
                                         <div id="tanya-questions-list">
                                             <div class="text-center py-4 text-muted">
                                                 <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
@@ -7845,7 +7842,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v171';
+    window.__assetVersion = 'v172';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
