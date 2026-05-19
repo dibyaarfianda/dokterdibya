@@ -57,9 +57,13 @@
     <style>
         /* Browser policy: show staff panel at ~80% only in regular browser mode.
            PWA/mobile-app mode must stay true 100%. */
-        html.browser-zoom-80:not(.mobile-app-mode),
-        body.browser-zoom-80:not(.mobile-app-mode) {
+        html.browser-zoom-80:not(.mobile-app-mode) {
             zoom: 0.8;
+        }
+
+        /* Prevent compounded zoom (html + body) which can clip viewport rendering. */
+        body.browser-zoom-80:not(.mobile-app-mode) {
+            zoom: 1 !important;
         }
 
         html.mobile-app-mode,
@@ -687,11 +691,15 @@
                 box-sizing: border-box;
             }
 
-            /* Compensate CSS zoom:0.8 in browser mode so sidebar still reaches viewport bottom. */
-            html.browser-zoom-80:not(.mobile-app-mode) .main-sidebar,
-            body.browser-zoom-80:not(.mobile-app-mode) .main-sidebar {
-                min-height: calc(100vh / 0.8) !important;
-                height: calc(100vh / 0.8) !important;
+            /* Our logo is inside .sidebar (not .brand-link), so keep sidebar container full height. */
+            .main-sidebar .sidebar {
+                height: 100% !important;
+                max-height: 100% !important;
+            }
+
+            /* Keep divider seam visible through footer area. */
+            .main-footer {
+                border-left: 1px solid rgba(15, 23, 42, 0.12) !important;
             }
         }
 
@@ -710,26 +718,32 @@
         /* Nav section headers */
         .sidebar .nav-header { color: rgba(0,0,0,0.6) !important; }
         
-        /* Hide sidebar scrollbar */
+        /* Sidebar scrollbar */
         .main-sidebar,
         .main-sidebar .sidebar,
         .sidebar-mini .main-sidebar { 
             overflow-y: auto !important;
-            scrollbar-width: none !important; /* Firefox */
-            -ms-overflow-style: none !important; /* IE and Edge */
+            scrollbar-width: thin !important; /* Firefox */
+            scrollbar-color: rgba(15, 23, 42, 0.28) transparent !important;
+            -ms-overflow-style: auto !important; /* IE and Edge */
         }
         .main-sidebar::-webkit-scrollbar,
         .main-sidebar .sidebar::-webkit-scrollbar,
         .sidebar-mini .main-sidebar::-webkit-scrollbar {
-            width: 0 !important;
-            height: 0 !important;
-            display: none !important; /* Chrome, Safari, Opera */
+            width: 6px !important;
+            height: 6px !important;
+            display: block !important; /* Chrome, Safari, Opera */
         }
-        .main-sidebar:hover::-webkit-scrollbar,
-        .main-sidebar .sidebar:hover::-webkit-scrollbar {
-            width: 0 !important;
-            height: 0 !important;
-            display: none !important;
+        .main-sidebar::-webkit-scrollbar-thumb,
+        .main-sidebar .sidebar::-webkit-scrollbar-thumb,
+        .sidebar-mini .main-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(15, 23, 42, 0.28) !important;
+            border-radius: 999px !important;
+        }
+        .main-sidebar::-webkit-scrollbar-track,
+        .main-sidebar .sidebar::-webkit-scrollbar-track,
+        .sidebar-mini .main-sidebar::-webkit-scrollbar-track {
+            background: transparent !important;
         }
         
         /* Obstetri fields fixed width */
@@ -7778,7 +7792,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v163';
+    window.__assetVersion = 'v168';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
