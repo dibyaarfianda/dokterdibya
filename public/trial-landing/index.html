@@ -5036,10 +5036,19 @@
             var heroName = document.getElementById('hero-patient-name');
             var heroKicker = document.getElementById('hero-kicker-text');
             var avatarInitials = document.getElementById('user-avatar-initials');
+            var vipBadge = document.getElementById('vip-badge');
 
-            if (heroName) heroName.textContent = 'Halo.';
+            if (heroName && String(heroName.textContent || '').trim() === '...') heroName.textContent = 'Selamat';
             if (heroKicker) heroKicker.textContent = getJakartaGreeting();
-            if (avatarInitials) avatarInitials.textContent = 'TR';
+            if (avatarInitials) avatarInitials.textContent = 'D';
+            if (vipBadge) vipBadge.classList.add('show');
+
+            // Keep topbar contrast aligned with the green hero layer like the original page.
+            try {
+                var rootStyle = document.documentElement.style;
+                rootStyle.setProperty('--hero-green-opacity', '1', 'important');
+                rootStyle.setProperty('--hero-preg-opacity', '1', 'important');
+            } catch (e) {}
 
             if (loading) loading.style.display = 'none';
             if (wrapper) wrapper.style.display = 'block';
