@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260517a';
+            var PAGE_VERSION = '20260520a';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
             // If version mismatch, force reload with cache bust
@@ -46,6 +46,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Browser policy: scale to 80% in regular browser, keep true 100% in PWA/mobile-app mode. */
+        html.browser-zoom-80:not(.mobile-app-mode),
+        body.browser-zoom-80:not(.mobile-app-mode) {
+            zoom: 0.8;
+        }
+
+        html.mobile-app-mode,
+        body.mobile-app-mode {
+            zoom: 1 !important;
+        }
+
+        @media print {
+            html.browser-zoom-80,
+            body.browser-zoom-80 {
+                zoom: 1 !important;
+            }
+        }
+
         /* Clinic header title font */
         .clinic-header-title {
             font-family: 'Montserrat', sans-serif;
@@ -639,7 +657,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260517a';
+            const SC_CACHE_VERSION = 'v20260520a';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1562,6 +1580,8 @@ PLAN
             if (isMobileApp) {
                 // Add mobile mode class immediately (before DOMContentLoaded for flash prevention)
                 document.documentElement.classList.add('mobile-app-mode');
+            } else {
+                document.documentElement.classList.add('browser-zoom-80');
             }
 
             // Global helpers for mobile mode
@@ -1586,6 +1606,8 @@ PLAN
                 if (window.isMobileAppMode()) {
                     document.body.classList.add('mobile-app-mode');
                     initMobileAppMode();
+                } else {
+                    document.body.classList.add('browser-zoom-80');
                 }
 
                 // Add click handler for sidebar navigation (both desktop and mobile)
