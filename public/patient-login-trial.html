@@ -415,7 +415,7 @@
             const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
-                window.location.href = '/patient-menu.html';
+                window.location.href = '/patient-menu-trial.html';
             }
         });
 
@@ -439,7 +439,7 @@
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
                 return '/patient-intake.html';
             }
-            return '/patient-menu.html';
+            return '/patient-menu-trial.html';
         }
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
