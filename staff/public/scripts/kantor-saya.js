@@ -421,77 +421,6 @@
         scheduleSave();
     }
 
-    function clampNumber(value, min, max) {
-        var n = Number(value);
-        if (!Number.isFinite(n)) return min;
-        if (n < min) return min;
-        if (n > max) return max;
-        return n;
-    }
-
-    function applyWidgetSize(instanceId, targetW, targetH) {
-        var widget = state.layout.widgets.find(function (entry) {
-            return entry.instance_id === instanceId;
-        });
-        if (!widget) return false;
-
-        var def = getWidgetDef(widget.widget_id);
-        var size = def && def.defaultSize ? def.defaultSize : {};
-        var minW = Number.isFinite(size.minW) ? size.minW : 2;
-        var minH = Number.isFinite(size.minH) ? size.minH : 2;
-        var maxW = 12;
-        var maxH = 16;
-
-        var nextW = clampNumber(targetW, minW, maxW);
-        var nextH = clampNumber(targetH, minH, maxH);
-
-        widget.w = nextW;
-        widget.h = nextH;
-
-        if (state.grid) {
-            var item = state.grid.getGridItems().find(function (el) {
-                return el.dataset && el.dataset.instanceId === instanceId;
-            });
-            if (item) {
-                state.grid.update(item, { w: nextW, h: nextH });
-            }
-        }
-
-        scheduleSave();
-        return true;
-    }
-
-    function promptWidgetSize(widgetInstance) {
-        if (!widgetInstance) return;
-        if (!state.editMode) {
-            alert('Aktifkan Mode Edit untuk mengatur ukuran widget.');
-            return;
-        }
-
-        var def = getWidgetDef(widgetInstance.widget_id);
-        var size = def && def.defaultSize ? def.defaultSize : {};
-        var minW = Number.isFinite(size.minW) ? size.minW : 2;
-        var minH = Number.isFinite(size.minH) ? size.minH : 2;
-        var currentW = Number.isFinite(widgetInstance.w) ? widgetInstance.w : (size.w || minW);
-        var currentH = Number.isFinite(widgetInstance.h) ? widgetInstance.h : (size.h || minH);
-        var input = window.prompt(
-            'Masukkan ukuran widget format W x H (contoh: 6x3). Batas: W ' + minW + '-12, H ' + minH + '-16.',
-            currentW + 'x' + currentH
-        );
-        if (input === null) return;
-
-        var normalized = String(input).trim().replace(/\s+/g, '');
-        var match = normalized.match(/^(\d+)[xX](\d+)$/);
-        if (!match) {
-            alert('Format ukuran tidak valid. Gunakan format seperti 6x3.');
-            return;
-        }
-
-        var nextW = Number(match[1]);
-        var nextH = Number(match[2]);
-        applyWidgetSize(widgetInstance.instance_id, nextW, nextH);
-    }
-
     function setEditMode(enabled) {
         state.editMode = !!enabled;
 
@@ -599,7 +528,6 @@
                         '<div class="ks-widget-actions">' +
                             '<button type="button" class="btn btn-light btn-sm ks-refresh-btn" title="Refresh"><i class="fas fa-sync-alt"></i></button>' +
                             '<button type="button" class="btn btn-light btn-sm ks-edit-only ks-config-btn" title="Config"><i class="fas fa-cog"></i></button>' +
-                            '<button type="button" class="btn btn-light btn-sm ks-edit-only ks-size-btn" title="Atur ukuran"><i class="fas fa-expand-arrows-alt"></i></button>' +
                             '<button type="button" class="btn btn-danger btn-sm ks-edit-only ks-delete-btn" title="Hapus"><i class="fas fa-trash"></i></button>' +
                         '</div>' +
                     '</div>' +
@@ -613,7 +541,6 @@
     function bindWidgetActions(widgetInstance, itemEl, bodyEl) {
         var refreshBtn = itemEl.querySelector('.ks-refresh-btn');
         var configBtn = itemEl.querySelector('.ks-config-btn');
-        var sizeBtn = itemEl.querySelector('.ks-size-btn');
         var deleteBtn = itemEl.querySelector('.ks-delete-btn');
 
         if (refreshBtn) {
@@ -628,12 +555,6 @@
                 if (def && typeof def.configure === 'function') {
                     def.configure(widgetInstance);
                 }
-            });
-        }
-
-        if (sizeBtn) {
-            sizeBtn.addEventListener('click', function () {
-                promptWidgetSize(widgetInstance);
             });
         }
 
@@ -656,14 +577,16 @@
 
             var shell = renderWidgetShell(widget);
             var size = def.defaultSize || { minW: 2, minH: 2 };
+            var minW = Number.isFinite(size.minW) ? size.minW : 2;
+            var minH = 1;
 
             state.grid.addWidget(shell, {
                 x: widget.x,
                 y: widget.y,
                 w: widget.w,
                 h: widget.h,
-                minW: size.minW || 2,
-                minH: size.minH || 2
+                minW: minW,
+                minH: minH
             });
 
             var body = shell.querySelector('.ks-widget-body');
@@ -902,6 +825,8 @@
             return;
         }
 
+        root.classList.remove('d-none');
+
         state.initInFlight = true;
         state.root = root;
 
@@ -922,6 +847,9 @@
                 float: true,
                 disableDrag: true,
                 disableResize: true,
+                alwaysShowResizeHandle: true,
+                resizable: { handles: 'e, se, s' },
+                draggable: { handle: '.ks-widget-header' },
                 animate: true
             }, '#kantor-grid');
 
@@ -947,6 +875,9 @@
         if (!state.initialized) {
             init();
             return;
+        }
+        if (state.root) {
+            state.root.classList.remove('d-none');
         }
         refreshAllWidgets(false);
     }
