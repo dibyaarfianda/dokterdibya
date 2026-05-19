@@ -143,6 +143,9 @@ function loadExternalPage(containerId, htmlFile, options = {}) {
             container.dataset.loadedHtml = htmlFile;
             container.dataset.lastLoaded = Date.now().toString();
 
+            // Ensure external stylesheets are attached before scripts execute.
+            executeLoadedStyles(doc, fileUrl);
+
             // Execute scripts in the loaded content
             executeLoadedScripts(doc, fileUrl);
         })
@@ -150,6 +153,24 @@ function loadExternalPage(containerId, htmlFile, options = {}) {
             console.error('Error loading page:', error, fileUrl);
             container.innerHTML = '<div class="alert alert-danger">Gagal memuat halaman: ' + htmlFile + '</div>';
         });
+}
+
+function executeLoadedStyles(doc, baseUrl) {
+    const stylesheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"][href]'));
+    if (!stylesheets.length) return;
+
+    stylesheets.forEach(link => {
+        const resolvedHref = new URL(link.getAttribute('href'), baseUrl).href;
+        const alreadyLoaded = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+            .some(existing => existing.href === resolvedHref);
+
+        if (alreadyLoaded) return;
+
+        const newLink = document.createElement('link');
+        newLink.rel = 'stylesheet';
+        newLink.href = resolvedHref;
+        document.head.appendChild(newLink);
+    });
 }
 
 function executeLoadedScripts(doc, baseUrl) {

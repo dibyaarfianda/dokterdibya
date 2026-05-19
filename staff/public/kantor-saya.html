@@ -48,6 +48,16 @@
             padding: 6px;
         }
 
+        /* Fallback essentials when external GridStack CSS is delayed or blocked. */
+        #kantor-saya-page .grid-stack {
+            position: relative;
+            min-height: 120px;
+        }
+
+        #kantor-saya-page .grid-stack > .grid-stack-item {
+            position: absolute;
+        }
+
         #kantor-saya-page .grid-stack-item-content {
             overflow: hidden;
             border-radius: 12px;
@@ -129,6 +139,7 @@
         }
 
         #kantor-saya-page .grid-stack-item .ui-resizable-handle {
+            position: absolute;
             opacity: 0;
             pointer-events: none;
             z-index: 6;
@@ -143,14 +154,14 @@
         }
 
         #kantor-saya-page .grid-stack-item .ui-resizable-se {
-            width: 28px;
-            height: 28px;
-            right: 0;
-            bottom: 0;
+            width: 22px;
+            height: 22px;
+            right: 4px;
+            bottom: 4px;
             background: linear-gradient(145deg, color-mix(in srgb, var(--kantor-accent) 24%, #ffffff), color-mix(in srgb, var(--kantor-accent) 46%, #111827));
             border-right: 2px solid color-mix(in srgb, var(--kantor-accent) 75%, #111827);
             border-bottom: 2px solid color-mix(in srgb, var(--kantor-accent) 75%, #111827);
-            border-radius: 10px 0 12px 0;
+            border-radius: 8px;
             cursor: nwse-resize;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
         }
@@ -158,10 +169,10 @@
         #kantor-saya-page .grid-stack-item .ui-resizable-se::before {
             content: '';
             position: absolute;
-            width: 12px;
-            height: 12px;
-            right: 6px;
-            bottom: 6px;
+            width: 9px;
+            height: 9px;
+            right: 5px;
+            bottom: 5px;
             background-image:
                 linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.92) 45%, rgba(255, 255, 255, 0.92) 58%, transparent 58%),
                 linear-gradient(135deg, transparent 63%, rgba(255, 255, 255, 0.72) 63%, rgba(255, 255, 255, 0.72) 75%, transparent 75%);
@@ -174,8 +185,10 @@
 
         @media (max-width: 767.98px) {
             #kantor-saya-page .grid-stack-item .ui-resizable-se {
-                width: 34px;
-                height: 34px;
+                width: 28px;
+                height: 28px;
+                right: 3px;
+                bottom: 3px;
             }
         }
 
@@ -488,4 +501,4 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css">
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack-all.js"></script>
-<script src="./scripts/kantor-saya.js?v=v145"></script>
+<script src="./scripts/kantor-saya.js?v=v146"></script>
