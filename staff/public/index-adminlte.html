@@ -684,11 +684,40 @@
 
         /* Keep side-menu divider full height to bottom on desktop view. */
         @media (min-width: 992px) {
+            body {
+                position: relative;
+            }
+
+            /* Full-page left rail so sidebar area never appears cut off above footer. */
+            body::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 210px;
+                background: #FAFAFA;
+                border-right: 1px solid rgba(15, 23, 42, 0.12);
+                pointer-events: none;
+                z-index: 1019;
+            }
+
+            body.sidebar-collapse::before {
+                width: 4.6rem;
+            }
+
             .main-sidebar {
-                min-height: 100vh !important;
-                height: 100vh !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                min-height: 0 !important;
+                height: auto !important;
                 border-right: 1px solid rgba(15, 23, 42, 0.12) !important;
                 box-sizing: border-box;
+                box-shadow: none !important;
+            }
+
+            .main-sidebar.elevation-4 {
+                box-shadow: none !important;
             }
 
             /* Our logo is inside .sidebar (not .brand-link), so keep sidebar container full height. */
@@ -7792,7 +7821,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v168';
+    window.__assetVersion = 'v169';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
