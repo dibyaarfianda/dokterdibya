@@ -3444,6 +3444,11 @@ function showKantorSayaPage() {
         }
     }
 
+    function isKantorGridReady() {
+        var grid = document.querySelector('#content-kantor-saya #kantor-grid');
+        return !!(grid && grid.gridstack);
+    }
+
     hideAllPages();
     pages.kantorSaya?.classList.remove('d-none');
     revealKantorRoot();
@@ -3459,30 +3464,62 @@ function showKantorSayaPage() {
 
     var retries = 0;
     var recovered = false;
-    function bootstrapKantorSaya() {
-        if (window.kantorSaya && typeof window.kantorSaya.init === 'function') {
-            window.kantorSaya.init();
-            if (typeof window.kantorSaya.onShow === 'function') {
-                window.kantorSaya.onShow();
-            }
-            return;
-        }
+
+    function scheduleBootstrapRetry() {
         if (retries < 25) {
             retries += 1;
             setTimeout(bootstrapKantorSaya, 120);
+            return true;
+        }
+        return false;
+    }
+
+    function attemptRecoveryLoad() {
+        if (recovered) return;
+
+        // Recovery path for stale cached HTML where root container is missing.
+        recovered = true;
+        var container = document.getElementById('content-kantor-saya');
+        if (container && !container.querySelector('#kantor-saya-page')) {
+            var separator = kantorHtml.includes('?') ? '&' : '?';
+            var fallbackUrl = kantorHtml + separator + 'r=' + Date.now();
+            loadExternalPage('content-kantor-saya', fallbackUrl, { forceReload: true });
+            retries = 0;
+            setTimeout(bootstrapKantorSaya, 180);
+        }
+    }
+
+    function bootstrapKantorSaya() {
+        var hasKantorApi = window.kantorSaya && typeof window.kantorSaya.init === 'function';
+        var rootReady = !!document.querySelector('#content-kantor-saya #kantor-saya-page');
+        var gridReady = !!document.querySelector('#content-kantor-saya #kantor-grid');
+
+        if (!hasKantorApi || !rootReady || !gridReady) {
+            if (!scheduleBootstrapRetry()) {
+                attemptRecoveryLoad();
+            }
             return;
         }
 
-        // Recovery path for stale cached HTML where root container is missing.
-        if (!recovered) {
-            recovered = true;
-            var container = document.getElementById('content-kantor-saya');
-            if (container && !container.querySelector('#kantor-saya-page')) {
-                var separator = kantorHtml.includes('?') ? '&' : '?';
-                var fallbackUrl = kantorHtml + separator + 'r=' + Date.now();
-                loadExternalPage('content-kantor-saya', fallbackUrl, { forceReload: true });
-                retries = 0;
-                setTimeout(bootstrapKantorSaya, 180);
+        try {
+            var initResult = window.kantorSaya.init();
+            if (typeof window.kantorSaya.onShow === 'function') {
+                window.kantorSaya.onShow();
+            }
+
+            Promise.resolve(initResult).finally(function () {
+                if (isKantorGridReady()) {
+                    return;
+                }
+
+                if (!scheduleBootstrapRetry()) {
+                    attemptRecoveryLoad();
+                }
+            });
+        } catch (error) {
+            console.warn('[main] bootstrapKantorSaya error:', error);
+            if (!scheduleBootstrapRetry()) {
+                attemptRecoveryLoad();
             }
         }
     }
