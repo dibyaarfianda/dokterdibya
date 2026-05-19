@@ -686,6 +686,13 @@
                 border-right: 1px solid rgba(15, 23, 42, 0.12) !important;
                 box-sizing: border-box;
             }
+
+            /* Compensate CSS zoom:0.8 in browser mode so sidebar still reaches viewport bottom. */
+            html.browser-zoom-80:not(.mobile-app-mode) .main-sidebar,
+            body.browser-zoom-80:not(.mobile-app-mode) .main-sidebar {
+                min-height: calc(100vh / 0.8) !important;
+                height: calc(100vh / 0.8) !important;
+            }
         }
 
         /* Default (not selected) link/icon color */
@@ -7771,7 +7778,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v162';
+    window.__assetVersion = 'v163';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
