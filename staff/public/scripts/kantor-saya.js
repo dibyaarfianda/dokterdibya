@@ -4,6 +4,7 @@
     var API_BASE = '/api/staff-workdesk';
     var CACHE_TTL_MS = 60000;
     var WALLPAPER_REFRESH_COOLDOWN_MS = 30000;
+    var WALLPAPER_LEASE_REFRESH_MS = 12 * 60 * 1000;
     var GRIDSTACK_CSS_URL = 'https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css';
 
     var state = {
@@ -25,7 +26,8 @@
         wallpaperProbeToken: 0,
         lastWallpaperProbeUrl: null,
         wallpaperProbeFailures: 0,
-        wallpaperRetryTimer: null
+        wallpaperRetryTimer: null,
+        wallpaperLeaseTimer: null
     };
 
     function getLiveRoot() {
@@ -62,6 +64,11 @@
         if (state.wallpaperRetryTimer) {
             clearTimeout(state.wallpaperRetryTimer);
             state.wallpaperRetryTimer = null;
+        }
+
+        if (state.wallpaperLeaseTimer) {
+            clearInterval(state.wallpaperLeaseTimer);
+            state.wallpaperLeaseTimer = null;
         }
 
         state.widgetTimers.forEach(function (timer) {
@@ -357,8 +364,19 @@
         return fetch(url, Object.assign({}, options || {}, { headers: headers }));
     }
 
+    function withCacheBust(url) {
+        var separator = url.indexOf('?') === -1 ? '?' : '&';
+        return url + separator + '_t=' + Date.now();
+    }
+
     async function apiGet(path) {
-        var response = await makeRequest(API_BASE + path, { headers: { 'Cache-Control': 'no-cache' } });
+        var response = await makeRequest(withCacheBust(API_BASE + path), {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        });
         var body = await response.json().catch(function () { return {}; });
         if (!response.ok || body.success === false) {
             throw new Error(body.message || 'Request gagal');
@@ -457,6 +475,12 @@
         if (theme.wallpaper_preset && PRESET_WALLPAPERS[theme.wallpaper_preset]) {
             return PRESET_WALLPAPERS[theme.wallpaper_preset];
         }
+
+        // Avoid sudden plain-white look while waiting for custom wallpaper signed URL refresh.
+        if (theme.wallpaper_url) {
+            return PRESET_WALLPAPERS.dusk;
+        }
+
         return PRESET_WALLPAPERS.morning;
     }
 
@@ -473,6 +497,33 @@
         if (!state.wallpaperRetryTimer) return;
         clearTimeout(state.wallpaperRetryTimer);
         state.wallpaperRetryTimer = null;
+    }
+
+    function clearWallpaperLeaseTimer() {
+        if (!state.wallpaperLeaseTimer) return;
+        clearInterval(state.wallpaperLeaseTimer);
+        state.wallpaperLeaseTimer = null;
+    }
+
+    function ensureWallpaperLeaseRefreshLoop() {
+        if (!state.theme || !state.theme.wallpaper_url) {
+            clearWallpaperLeaseTimer();
+            return;
+        }
+
+        if (state.wallpaperLeaseTimer) {
+            return;
+        }
+
+        // Refresh signed URL periodically before the 1-hour lease expires.
+        state.wallpaperLeaseTimer = setInterval(function () {
+            if (!state.theme || !state.theme.wallpaper_url) {
+                clearWallpaperLeaseTimer();
+                return;
+            }
+
+            refreshWallpaperDownloadUrl('lease-refresh', true);
+        }, WALLPAPER_LEASE_REFRESH_MS);
     }
 
     function scheduleWallpaperRefreshRetry(reason) {
@@ -554,15 +605,15 @@
 
             // First failure is often transient (expired edge cache / flaky mobile network).
             // Retry refresh without immediately dropping the visible wallpaper.
-            if (state.wallpaperProbeFailures <= 1) {
+            if (state.wallpaperProbeFailures <= 2) {
                 refreshWallpaperDownloadUrl('probe-error-retry', true);
+                scheduleWallpaperRefreshRetry('probe-error-retry');
                 return;
             }
 
-            // Keep a visual fallback after repeated failures, then request a fresh signed URL.
-            state.theme.wallpaper_download_url = null;
-            applyTheme({ skipWallpaperProbe: true });
-            refreshWallpaperDownloadUrl('probe-error-fallback', true);
+            // Persistent failure: keep current theme state and keep forcing signed URL refresh.
+            scheduleWallpaperRefreshRetry('probe-error-persistent');
+            refreshWallpaperDownloadUrl('probe-error-persistent', true);
         };
 
         probeImage.src = expectedUrl;
@@ -572,6 +623,12 @@
         if (!state.root || !state.theme) return;
         state.root.style.setProperty('--kantor-accent', state.theme.accent_color || '#0d6efd');
         state.root.style.backgroundImage = getWallpaperBackground(state.theme);
+
+        if (state.theme.wallpaper_url) {
+            ensureWallpaperLeaseRefreshLoop();
+        } else {
+            clearWallpaperLeaseTimer();
+        }
 
         if (!state.theme.wallpaper_download_url) {
             state.lastWallpaperProbeUrl = null;
@@ -1176,6 +1233,10 @@
 
         if (state.root) {
             state.root.classList.remove('d-none');
+        }
+
+        if (state.theme) {
+            applyTheme();
         }
 
         bindToolbar();
