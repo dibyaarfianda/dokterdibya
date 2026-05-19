@@ -3414,7 +3414,9 @@ function showKantorSayaPage() {
     hideAllPages();
     pages.kantorSaya?.classList.remove('d-none');
     setTitleAndActive('Kantor Saya', 'nav-kantor-saya', 'kantor-saya');
-    loadExternalPage('content-kantor-saya', 'kantor-saya.html');
+    var kantorVersion = window.__assetVersion ? encodeURIComponent(window.__assetVersion) : '';
+    var kantorHtml = kantorVersion ? ('kantor-saya.html?v=' + kantorVersion) : 'kantor-saya.html';
+    loadExternalPage('content-kantor-saya', kantorHtml);
 
     var retries = 0;
     function bootstrapKantorSaya() {
