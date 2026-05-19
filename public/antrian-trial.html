@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="id" data-trial-nav-active="jadwal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Antrian Hari Ini - Dokter Dibya</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 400;
+            min-height: 100vh;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 70px);
+        }
+
+        /* ── Top bar ── */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #1a1a2e;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.25);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .top-bar a {
+            color: #28a7e9;
+            text-decoration: none;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .top-bar h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            flex: 1;
+        }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 3px 9px;
+        }
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse-dot 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        /* ── Page body ── */
+        .page-body {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 16px 14px 16px;
+        }
+
+        /* ── Info bar ── */
+        .info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .info-date {
+            font-size: 13px;
+            color: #aaa;
+        }
+        .info-date span {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        .refresh-btn {
+            background: none;
+            border: 1px solid rgba(40, 167, 233, 0.35);
+            color: #28a7e9;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .refresh-btn:hover { background: rgba(40, 167, 233, 0.1); }
+        .refresh-btn.spinning i { animation: spin 0.8s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .settings-btn {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            color: #10b981;
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .settings-btn:hover { background: rgba(16, 185, 129, 0.2); }
+
+        /* ── Auto-refresh counter ── */
+        .refresh-info {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        /* ── Status legend ── */
+        .legend-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .legend-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            font-size: 12px;
+            color: #cfcfcf;
+        .reminder-card {
+            background: rgba(40, 167, 233, 0.07);
+            border: 1px solid rgba(40, 167, 233, 0.2);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .reminder-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.58);
+            z-index: 1200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .reminder-modal.show {
+            display: flex;
+        }
+        .reminder-modal .reminder-card {
+            width: min(520px, 100%);
+            max-height: 82vh;
+            overflow-y: auto;
+            margin-bottom: 0;
+            background: #102133;
+            border-color: rgba(40, 167, 233, 0.35);
+        }
+        .reminder-modal-close {
+            background: none;
+            border: none;
+            color: #9fb8c8;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            padding: 0 4px;
+        }
+        .reminder-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .reminder-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .reminder-note {
+            font-size: 11px;
+            color: #9fb8c8;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        .reminder-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #e6f4fb;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .reminder-toggle input {
+            accent-color: #28a7e9;
+        }
+        .reminder-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .reminder-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .reminder-field label {
+            font-size: 11px;
+            color: #aac8d9;
+        }
+        .reminder-field select,
+        .reminder-field input[type="number"],
+        .reminder-field input[type="file"] {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 10px;
+            color: #fff;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            width: 100%;
+        }
+        .reminder-field select option {
+            color: #111;
+        }
+        .reminder-choices {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .reminder-choice {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #d7edf9;
+        }
+        .reminder-choice input {
+            accent-color: #28a7e9;
+        }
+        .reminder-helper {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #cfe7f4;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .push-status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .push-status-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #6b7280;
+            flex-shrink: 0;
+        }
+        .push-status-dot.ok {
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+        }
+        .push-status-dot.warn {
+            background: #f59e0b;
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+        }
+        .push-status-dot.error {
+            background: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        }
+        .push-status-text {
+            font-size: 11px;
+            color: #d7edf9;
+            line-height: 1.6;
+            flex: 1;
+        }
+        .reminder-helper strong {
+            color: #fff;
+        }
+        .upload-box {
+            background: rgba(0,0,0,0.16);
+            border: 1px dashed rgba(40, 167, 233, 0.35);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .upload-meta {
+            font-size: 11px;
+            color: #aac8d9;
+            margin-top: 6px;
+        }
+        .upload-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .mini-btn {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+        }
+        .mini-btn.primary {
+            background: rgba(40, 167, 233, 0.16);
+            border-color: rgba(40, 167, 233, 0.35);
+            color: #9fe0ff;
+        }
+        .mini-btn.warn {
+            color: #ffd48a;
+            border-color: rgba(255, 193, 7, 0.25);
+        }
+        .reminder-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #9fe0ff;
+            background: rgba(40, 167, 233, 0.12);
+            border: 1px solid rgba(40, 167, 233, 0.25);
+        }
+        .queue-reminder-popup {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 1200;
+        }
+        .queue-reminder-popup[hidden] {
+            display: none;
+        }
+        .queue-reminder-popup-card {
+            width: min(100%, 380px);
+            background: #101828;
+            border: 1px solid rgba(40, 167, 233, 0.25);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+        }
+        .queue-reminder-popup-card h3 {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .queue-reminder-popup-card p {
+            font-size: 13px;
+            color: #d9e7ef;
+            line-height: 1.7;
+            margin-bottom: 14px;
+        }
+        .queue-reminder-popup-card .mini-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        }
+        .legend-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            .reminder-grid,
+            .reminder-choices {
+                grid-template-columns: 1fr;
+            }
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .legend-swatch-menunggu { background: rgba(255,255,255,0.78); }
+        .legend-swatch-anamnesa { background: #10b981; }
+        .legend-swatch-diperiksa { background: #dc3545; }
+        .legend-swatch-selesai { background: #ffc107; }
+        .legend-swatch-lunas { background: #6b7280; }
+
+        @media (max-width: 420px) {
+            .legend-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── Session label ── */
+        .session-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #28a7e9;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 4px 0 8px;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.15);
+            margin: 18px 0 10px;
+        }
+        .session-label:first-of-type { margin-top: 0; }
+
+        /* ── Queue row ── */
+        .queue-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        /* ── 5-stage queue row colors ── */
+        .queue-row.status-menunggu {
+            background: rgba(255,255,255,0.03);
+        }
+        .queue-row.status-anamnesa {
+            background: rgba(16, 185, 129, 0.07);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+        .queue-row.status-diperiksa {
+            background: rgba(220, 53, 69, 0.07);
+            border-color: rgba(220, 53, 69, 0.35);
+        }
+        .queue-row.status-selesai_periksa {
+            background: rgba(255, 193, 7, 0.07);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+        .queue-row.status-lunas {
+            opacity: 0.4;
+        }
+        /* legacy aliases */
+        .queue-row.status-selesai { opacity: 0.55; }
+        .queue-row.status-dilayani {
+            background: rgba(16, 185, 129, 0.07);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        /* Slot number bubble */
+        .slot-num {
+            min-width: 40px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .status-menunggu .slot-num  { background: rgba(40, 167, 233, 0.15); color: #28a7e9; }
+        .status-anamnesa .slot-num  { background: rgba(16, 185, 129, 0.2);  color: #10b981; }
+        .status-diperiksa .slot-num { background: rgba(220, 53, 69, 0.2);   color: #dc3545; }
+        .status-selesai_periksa .slot-num { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+        .status-lunas .slot-num     { background: rgba(255,255,255,0.06);   color: #555; }
+        /* legacy */
+        .status-dilayani .slot-num { background: rgba(16, 185, 129, 0.2);  color: #10b981; }
+        .status-selesai  .slot-num { background: rgba(255,255,255,0.06);   color: #888; }
+
+        .queue-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .queue-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .queue-time {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .queue-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 3px 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .badge-menunggu       { background: rgba(40, 167, 233, 0.12); color: #28a7e9; border: 1px solid rgba(40, 167, 233, 0.25); }
+        .badge-anamnesa       { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
+        .badge-diperiksa      { background: rgba(220, 53, 69, 0.12);  color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3); }
+        .badge-selesai_periksa{ background: rgba(255, 193, 7, 0.12);  color: #e6ac00; border: 1px solid rgba(255, 193, 7, 0.3); }
+        .badge-lunas          { background: rgba(255,255,255,0.06);   color: #777;    border: 1px solid rgba(255,255,255,0.1); }
+        /* legacy */
+        .badge-dilayani { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
+        .badge-selesai  { background: rgba(255,255,255,0.06);   color: #777;    border: 1px solid rgba(255,255,255,0.1); }
+
+        /* ── Privacy note ── */
+        .privacy-note {
+            text-align: center;
+            font-size: 11px;
+            color: #555;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+        .privacy-note i { margin-right: 4px; }
+
+        /* ── Empty / loading states ── */
+        .state-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .state-card i {
+            font-size: 36px;
+            color: #444;
+            margin-bottom: 14px;
+            display: block;
+        }
+        .state-card p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .state-card.loading i { color: #28a7e9; animation: spin 1s linear infinite; }
+
+        /* ── Bottom nav ── */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a2e;
+            border-top: 1px solid rgba(40, 167, 233, 0.2);
+            padding: 10px 0;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            justify-content: center;
+        }
+        .nav-home {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            text-decoration: none;
+            color: #28a7e9;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .nav-home i { font-size: 20px; }
+    </style>
+
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body>
+
+    <!-- Top bar -->
+    <div class="top-bar">
+        <a href="/patient-menu-trial.html" aria-label="Kembali"><i class="fa fa-arrow-left"></i></a>
+        <h1>Antrian Klinik Hari Ini</h1>
+        <div class="live-badge">
+            <span class="live-dot"></span>
+            LIVE
+        </div>
+    </div>
+
+    <!-- Page body -->
+    <div class="page-body">
+        <div class="info-bar">
+            <div class="info-date">Tanggal: <span id="today-date">-</span></div>
+            <button class="refresh-btn" id="refresh-btn" onclick="loadQueue(true)">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+            <button class="settings-btn" id="open-reminder-settings" type="button">
+                <i class="fa fa-cog"></i> Atur reminder
+            </button>
+        </div>
+
+        <div class="refresh-info" id="refresh-info">Auto-refresh setiap 30 detik</div>
+
+        <div class="legend-card">
+            <div class="legend-title">
+                <i class="fa fa-info-circle"></i>
+                Arti Warna Status
+            </div>
+            <div class="legend-grid">
+                <div class="legend-item"><span class="legend-swatch legend-swatch-menunggu"></span><span>Putih: Belum Datang</span></div>
+                <div class="legend-item"><span class="legend-swatch legend-swatch-anamnesa"></span><span>Hijau: Pasien Hadir</span></div>
+                <div class="legend-item"><span class="legend-swatch legend-swatch-diperiksa"></span><span>Merah: Sedang Diperiksa</span></div>
+                <div class="legend-item"><span class="legend-swatch legend-swatch-selesai"></span><span>Kuning: Selesai Periksa</span></div>
+                <div class="legend-item"><span class="legend-swatch legend-swatch-lunas"></span><span>Abu gelap: Lunas</span></div>
+            </div>
+        </div>
+
+        <div class="reminder-modal" id="reminder-modal" aria-hidden="true">
+        <div class="reminder-card" role="dialog" aria-modal="true" aria-label="Pengaturan pengingat antrian">
+            <div class="reminder-header">
+                <div class="reminder-title"><i class="fa fa-bell"></i> Pengingat Antrian Saya</div>
+                <button class="reminder-modal-close" id="close-reminder-settings" type="button" aria-label="Tutup">&times;</button>
+                <span class="reminder-status-pill" id="reminder-save-state">Tersimpan di perangkat ini</span>
+            </div>
+            <div class="reminder-note">
+                Pasien bisa atur sendiri kapan reminder muncul, misalnya saat tinggal 2 antrian di depan. Popup dan nada custom tetap berlaku di perangkat ini, sementara push background bisa disinkronkan ke akun pasien yang sedang login.
+            </div>
+            <label class="reminder-toggle">
+                <input type="checkbox" id="reminder-enabled">
+                Aktifkan reminder live queue
+            </label>
+            <div class="reminder-grid">
+                <div class="reminder-field">
+                    <label for="reminder-source">Sumber target</label>
+                    <select id="reminder-source">
+                        <option value="auto">Pakai booking saya otomatis</option>
+                        <option value="manual">Atur sesi dan nomor sendiri</option>
+                    </select>
+                </div>
+                <div class="reminder-field">
+                    <label for="reminder-threshold">Muncul saat tersisa</label>
+                    <select id="reminder-threshold">
+                        <option value="1">1 antrian</option>
+                        <option value="2">2 antrian</option>
+                        <option value="3">3 antrian</option>
+                        <option value="4">4 antrian</option>
+                        <option value="5">5 antrian</option>
+                    </select>
+                </div>
+            </div>
+            <div class="reminder-helper" id="reminder-booking-info">Booking aktif belum dibaca.</div>
+            <div class="reminder-grid" id="reminder-manual-fields">
+                <div class="reminder-field">
+                    <label for="reminder-session">Sesi</label>
+                    <select id="reminder-session">
+                        <option value="">Pilih sesi</option>
+                    </select>
+                </div>
+                <div class="reminder-field">
+                    <label for="reminder-slot">Nomor antrian saya</label>
+                    <input type="number" id="reminder-slot" min="1" max="99" placeholder="Contoh: 7">
+                </div>
+            </div>
+            <div class="reminder-choices">
+                <label class="reminder-choice"><input type="checkbox" id="reminder-popup-enabled"> Popup di halaman</label>
+                <label class="reminder-choice"><input type="checkbox" id="reminder-browser-enabled"> Notif browser</label>
+                <label class="reminder-choice"><input type="checkbox" id="reminder-sound-enabled"> Bunyi alarm</label>
+                <label class="reminder-choice"><input type="checkbox" id="reminder-background-push-enabled"> Push saat halaman ditutup</label>
+            </div>
+            <div class="reminder-helper">
+                <div class="push-status-row">
+                    <span class="push-status-dot" id="reminder-push-status-dot"></span>
+                    <div class="push-status-text" id="reminder-push-status-text">Memeriksa status push background...</div>
+                </div>
+            </div>
+            <div class="upload-box">
+                <div class="reminder-field">
+                    <label for="reminder-sound-file">Upload suara notifikasi sendiri</label>
+                    <input type="file" id="reminder-sound-file" accept="audio/*,.mp3,.wav,.ogg">
+                </div>
+                <div class="upload-meta" id="reminder-sound-meta">Belum ada suara custom. Jika kosong, sistem pakai bunyi default.</div>
+                <div class="upload-meta">Nada upload dipakai saat halaman antrian sedang terbuka. Saat browser atau app tertutup, push notification memakai nada standar perangkat.</div>
+                <div class="upload-actions">
+                    <button type="button" class="mini-btn primary" id="reminder-test-sound">Test suara</button>
+                    <button type="button" class="mini-btn" id="reminder-request-browser">Izinkan notif browser</button>
+                    <button type="button" class="mini-btn warn" id="reminder-clear-sound">Hapus suara custom</button>
+                </div>
+            </div>
+            <div class="reminder-helper" id="reminder-live-status">Target reminder belum ditentukan.</div>
+        </div>
+        </div>
+
+        <div id="queue-container">
+            <div class="state-card loading">
+                <i class="fa fa-circle-o-notch"></i>
+                <p>Memuat data antrian...</p>
+            </div>
+        </div>
+
+        <p class="privacy-note">
+            <i class="fa fa-lock"></i>
+            Nama pasien lain disamarkan untuk menjaga privasi
+        </p>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+        <a href="/patient-menu-trial.html" class="nav-home">
+            <i class="fa fa-home"></i>
+            Beranda
+        </a>
+    </div>
+
+    <div class="queue-reminder-popup" id="queue-reminder-popup" hidden>
+        <div class="queue-reminder-popup-card">
+            <h3><i class="fa fa-bell"></i> Pengingat Antrian</h3>
+            <p id="queue-reminder-popup-text">Antrian Anda sudah mendekat.</p>
+            <button type="button" class="mini-btn primary" id="queue-reminder-popup-close">Saya mengerti</button>
+        </div>
+    </div>
+
+    <script src="/js/push-subscribe.js?v=20260516q1"></script>
+
+    <script>
+        const STATUS_LABELS = {
+            menunggu:        'Belum Datang',
+            anamnesa:        'Pasien Hadir',
+            diperiksa:       'Sedang Diperiksa',
+            selesai_periksa: 'Selesai Periksa',
+            lunas:           'Lunas',
+            // legacy fallbacks
+            dilayani:        'Sedang Dilayani',
+            selesai:         'Selesai'
+        };
+        const REFRESH_INTERVAL_MS = 30000;
+        const REMINDER_STORAGE_KEY = 'queue_reminder_settings_v1';
+        const REMINDER_TRIGGER_KEY = 'queue_reminder_last_trigger_v1';
+        let refreshTimer = null;
+        let countdownTimer = null;
+        let countdownSec = REFRESH_INTERVAL_MS / 1000;
+        let _queueHidden = false;
+        let _queueData = [];
+        let _queueDate = null;
+        let _activeBooking = null;
+        let _reminderSettings = loadReminderSettings();
+
+        function getPatientToken() {
+            return sessionStorage.getItem('vps_auth_token')
+                || localStorage.getItem('vps_auth_token')
+                || sessionStorage.getItem('auth_token')
+                || localStorage.getItem('auth_token')
+                || sessionStorage.getItem('patient_token')
+                || localStorage.getItem('patient_token')
+                || '';
+        }
+
+        function getDefaultReminderSettings() {
+            return {
+                enabled: false,
+                source: 'auto',
+                threshold: 2,
+                targetSession: '',
+                targetSlot: '',
+                popupEnabled: true,
+                browserEnabled: false,
+                soundEnabled: true,
+                backgroundPushEnabled: false,
+                customSoundDataUrl: '',
+                customSoundName: ''
+            };
+        }
+
+        function loadReminderSettings() {
+            try {
+                const raw = localStorage.getItem(REMINDER_STORAGE_KEY);
+                if (!raw) return getDefaultReminderSettings();
+                return Object.assign(getDefaultReminderSettings(), JSON.parse(raw));
+            } catch (e) {
+                return getDefaultReminderSettings();
+            }
+        }
+
+        function saveReminderSettings() {
+            localStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(_reminderSettings));
+        }
+
+        function getReminderFormElements() {
+            return {
+                enabled: document.getElementById('reminder-enabled'),
+                source: document.getElementById('reminder-source'),
+                threshold: document.getElementById('reminder-threshold'),
+                session: document.getElementById('reminder-session'),
+                slot: document.getElementById('reminder-slot'),
+                popupEnabled: document.getElementById('reminder-popup-enabled'),
+                browserEnabled: document.getElementById('reminder-browser-enabled'),
+                soundEnabled: document.getElementById('reminder-sound-enabled'),
+                backgroundPushEnabled: document.getElementById('reminder-background-push-enabled'),
+                soundFile: document.getElementById('reminder-sound-file'),
+                soundMeta: document.getElementById('reminder-sound-meta'),
+                bookingInfo: document.getElementById('reminder-booking-info'),
+                liveStatus: document.getElementById('reminder-live-status'),
+                manualFields: document.getElementById('reminder-manual-fields'),
+                saveState: document.getElementById('reminder-save-state'),
+                pushStatusDot: document.getElementById('reminder-push-status-dot'),
+                pushStatusText: document.getElementById('reminder-push-status-text')
+            };
+        }
+
+        function setReminderSaveState(message) {
+            const els = getReminderFormElements();
+            if (els.saveState) {
+                els.saveState.textContent = message;
+            }
+        }
+
+        function updatePushStatusIndicator(status) {
+            const els = getReminderFormElements();
+            if (!els.pushStatusDot || !els.pushStatusText) return;
+
+            const state = status || {
+                code: 'unknown',
+                message: 'Status push background belum diketahui.'
+            };
+
+            els.pushStatusDot.className = 'push-status-dot';
+
+            if (state.code === 'subscribed') {
+                els.pushStatusDot.classList.add('ok');
+            } else if (state.code === 'permission-denied' || state.code === 'backend-rejected' || state.code === 'send-failed' || state.code === 'error') {
+                els.pushStatusDot.classList.add('error');
+            } else {
+                els.pushStatusDot.classList.add('warn');
+            }
+
+            els.pushStatusText.textContent = state.message || 'Status push background belum diketahui.';
+        }
+
+        async function refreshPushStatusIndicator() {
+            if (typeof window.getPatientPushSubscriptionStatus !== 'function') {
+                updatePushStatusIndicator({
+                    code: 'unsupported',
+                    message: 'Helper status push belum tersedia di halaman ini.'
+                });
+                return;
+            }
+
+            const status = await window.getPatientPushSubscriptionStatus();
+            updatePushStatusIndicator(status);
+        }
+
+        function hydrateReminderForm() {
+            const els = getReminderFormElements();
+            if (!els.enabled) return;
+
+            els.enabled.checked = !!_reminderSettings.enabled;
+            els.source.value = _reminderSettings.source || 'auto';
+            els.threshold.value = String(_reminderSettings.threshold || 2);
+            els.slot.value = _reminderSettings.targetSlot || '';
+            els.popupEnabled.checked = _reminderSettings.popupEnabled !== false;
+            els.browserEnabled.checked = !!_reminderSettings.browserEnabled;
+            els.soundEnabled.checked = _reminderSettings.soundEnabled !== false;
+            els.backgroundPushEnabled.checked = !!_reminderSettings.backgroundPushEnabled;
+            els.soundMeta.textContent = _reminderSettings.customSoundName
+                ? `Suara custom aktif: ${_reminderSettings.customSoundName}`
+                : 'Belum ada suara custom. Jika kosong, sistem pakai bunyi default.';
+            els.manualFields.style.display = (_reminderSettings.source === 'manual') ? 'grid' : 'none';
+        }
+
+        async function loadRemoteReminderSettings() {
+            const token = getPatientToken();
+            if (!token) {
+                setReminderSaveState('Mode lokal di perangkat ini');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patient-notifications/queue-reminder-settings', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const payload = await response.json();
+                if (payload.success && payload.settings) {
+                    _reminderSettings.enabled = !!payload.settings.enabled;
+                    _reminderSettings.threshold = Number(payload.settings.threshold_ahead) || _reminderSettings.threshold;
+                    _reminderSettings.backgroundPushEnabled = !!payload.settings.background_push_enabled;
+                    saveReminderSettings();
+                    hydrateReminderForm();
+                    updateReminderLiveStatus();
+                    setReminderSaveState('Sinkron ke akun pasien aktif');
+                }
+            } catch (error) {
+                setReminderSaveState('Gagal sinkron, tetap lokal');
+                console.warn('[Antrian] loadRemoteReminderSettings failed:', error.message);
+            }
+
+            refreshPushStatusIndicator();
+        }
+
+        async function saveRemoteReminderSettings() {
+            const token = getPatientToken();
+            if (!token) {
+                setReminderSaveState('Mode lokal di perangkat ini');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patient-notifications/queue-reminder-settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        enabled: _reminderSettings.enabled,
+                        threshold_ahead: _reminderSettings.threshold,
+                        background_push_enabled: _reminderSettings.backgroundPushEnabled
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const payload = await response.json();
+                if (payload.success && payload.settings) {
+                    _reminderSettings.enabled = !!payload.settings.enabled;
+                    _reminderSettings.threshold = Number(payload.settings.threshold_ahead) || _reminderSettings.threshold;
+                    _reminderSettings.backgroundPushEnabled = !!payload.settings.background_push_enabled;
+                    saveReminderSettings();
+                    hydrateReminderForm();
+                    setReminderSaveState('Sinkron ke akun pasien aktif');
+                }
+            } catch (error) {
+                setReminderSaveState('Gagal sinkron, tetap lokal');
+                console.warn('[Antrian] saveRemoteReminderSettings failed:', error.message);
+            }
+
+            refreshPushStatusIndicator();
+        }
+
+        function populateReminderSessions() {
+            const sessionSelect = document.getElementById('reminder-session');
+            if (!sessionSelect) return;
+
+            const currentValue = _reminderSettings.targetSession ? String(_reminderSettings.targetSession) : '';
+            const seen = new Set();
+            const options = ['<option value="">Pilih sesi</option>'];
+            _queueData.forEach(function(apt) {
+                const key = String(apt.session);
+                if (seen.has(key)) return;
+                seen.add(key);
+                const label = apt.session_label || ('Sesi ' + apt.session);
+                options.push(`<option value="${escHtml(key)}">${escHtml(label)}</option>`);
+            });
+            sessionSelect.innerHTML = options.join('');
+            sessionSelect.value = currentValue && seen.has(currentValue) ? currentValue : '';
+        }
+
+        async function loadActiveBookingForQueueDate(date) {
+            const infoEl = document.getElementById('reminder-booking-info');
+            const token = getPatientToken();
+            _activeBooking = null;
+
+            if (!token) {
+                if (infoEl) {
+                    infoEl.innerHTML = '<strong>Auto booking belum aktif.</strong> Login pasien diperlukan agar sistem bisa membaca booking Anda otomatis.';
+                }
+                return null;
+            }
+
+            try {
+                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal membaca booking aktif');
+                }
+
+                const payload = await response.json();
+                const sameDateBooking = (payload.bookings || []).find(function(booking) {
+                    return booking.appointment_date === date && String(booking.status).toLowerCase() === 'confirmed';
+                }) || (payload.bookings || []).find(function(booking) {
+                    return booking.appointment_date === date;
+                }) || null;
+
+                _activeBooking = sameDateBooking;
+
+                if (infoEl) {
+                    if (_activeBooking) {
+                        infoEl.innerHTML = `<strong>Booking aktif terdeteksi.</strong> ${escHtml(_activeBooking.dateFormatted || _activeBooking.appointment_date)} • ${escHtml(_activeBooking.sessionLabel || ('Sesi ' + _activeBooking.session))} • Slot ${escHtml(_activeBooking.slot_number)}`;
+                    } else {
+                        infoEl.innerHTML = '<strong>Tidak ada booking aktif untuk tanggal antrian ini.</strong> Anda tetap bisa pilih sesi dan nomor sendiri secara manual.';
+                    }
+                }
+            } catch (error) {
+                if (infoEl) {
+                    infoEl.innerHTML = `<strong>Booking otomatis gagal dibaca.</strong> ${escHtml(error.message)}. Gunakan mode manual bila perlu.`;
+                }
+            }
+
+            return _activeBooking;
+        }
+
+        function getReminderTarget() {
+            if (_reminderSettings.source === 'auto' && _activeBooking) {
+                return {
+                    session: Number(_activeBooking.session),
+                    slot: Number(_activeBooking.slot_number),
+                    label: `${_activeBooking.sessionLabel || ('Sesi ' + _activeBooking.session)} • Slot ${_activeBooking.slot_number}`
+                };
+            }
+
+            const session = Number(_reminderSettings.targetSession);
+            const slot = Number(_reminderSettings.targetSlot);
+            if (!session || !slot) {
+                return null;
+            }
+
+            const matching = _queueData.find(function(apt) {
+                return Number(apt.session) === session;
+            });
+
+            return {
+                session: session,
+                slot: slot,
+                label: `${matching ? matching.session_label : 'Sesi ' + session} • Slot ${slot}`
+            };
+        }
+
+        function isQueueFinished(status) {
+            return status === 'selesai_periksa' || status === 'lunas' || status === 'selesai';
+        }
+
+        function updateReminderLiveStatus() {
+            const statusEl = document.getElementById('reminder-live-status');
+            if (!statusEl) return;
+
+            if (_queueHidden) {
+                statusEl.innerHTML = '<strong>Reminder standby.</strong> Antrian belum dibuka saat ini.';
+                return;
+            }
+
+            const target = getReminderTarget();
+            if (!_reminderSettings.enabled) {
+                statusEl.innerHTML = '<strong>Reminder nonaktif.</strong> Aktifkan jika ingin muncul popup atau alarm otomatis.';
+                return;
+            }
+
+            if (!target) {
+                statusEl.innerHTML = '<strong>Target reminder belum lengkap.</strong> Pilih booking otomatis atau isi sesi dan nomor antrian.';
+                return;
+            }
+
+            const targetApt = _queueData.find(function(apt) {
+                return Number(apt.session) === target.session && Number(apt.slot_number) === target.slot;
+            });
+
+            if (!targetApt) {
+                statusEl.innerHTML = `<strong>Target belum terlihat di live queue.</strong> Menunggu ${escHtml(target.label)} muncul di daftar hari ini.`;
+                return;
+            }
+
+            const aheadCount = _queueData.filter(function(apt) {
+                return Number(apt.session) === target.session
+                    && Number(apt.slot_number) < target.slot
+                    && !isQueueFinished(apt.queue_status || 'menunggu');
+            }).length;
+
+            const currentStatus = STATUS_LABELS[targetApt.queue_status] || targetApt.queue_status;
+            statusEl.innerHTML = `<strong>Target:</strong> ${escHtml(target.label)}<br><strong>Status saat ini:</strong> ${escHtml(currentStatus)}<br><strong>Sisa antrian di depan:</strong> ${aheadCount}`;
+        }
+
+        function showReminderPopup(message) {
+            const popup = document.getElementById('queue-reminder-popup');
+            const text = document.getElementById('queue-reminder-popup-text');
+            if (!popup || !text) return;
+            text.textContent = message;
+            popup.hidden = false;
+        }
+
+        function closeReminderPopup() {
+            const popup = document.getElementById('queue-reminder-popup');
+            if (popup) popup.hidden = true;
+        }
+
+        async function requestBrowserNotifications() {
+            if (!('Notification' in window)) {
+                alert('Browser ini belum mendukung notifikasi browser. Popup di halaman dan bunyi alarm tetap bisa dipakai.');
+                return false;
+            }
+
+            if (Notification.permission === 'granted') {
+                if (typeof window.ensurePatientPushSubscription === 'function') {
+                    window.ensurePatientPushSubscription();
+                }
+                refreshPushStatusIndicator();
+                return true;
+            }
+
+            const result = await Notification.requestPermission();
+            if (result === 'granted' && typeof window.ensurePatientPushSubscription === 'function') {
+                window.ensurePatientPushSubscription();
+            }
+            refreshPushStatusIndicator();
+            return result === 'granted';
+        }
+
+        function playDefaultReminderTone() {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+
+            const context = new AudioCtx();
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 880;
+            gainNode.gain.value = 0.0001;
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+
+            const now = context.currentTime;
+            gainNode.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.42);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.45);
+        }
+
+        function playReminderSound() {
+            if (!_reminderSettings.soundEnabled) return;
+
+            if (_reminderSettings.customSoundDataUrl) {
+                const audio = new Audio(_reminderSettings.customSoundDataUrl);
+                audio.play().catch(function() {
+                    playDefaultReminderTone();
+                });
+                return;
+            }
+
+            playDefaultReminderTone();
+        }
+
+        function getReminderSignature(target) {
+            return [_queueDate || '', target.session, target.slot, _reminderSettings.threshold].join('|');
+        }
+
+        function maybeTriggerReminder() {
+            if (!_reminderSettings.enabled || _queueHidden) {
+                return;
+            }
+
+            const target = getReminderTarget();
+            if (!target) {
+                return;
+            }
+
+            const targetApt = _queueData.find(function(apt) {
+                return Number(apt.session) === target.session && Number(apt.slot_number) === target.slot;
+            });
+
+            if (!targetApt) {
+                return;
+            }
+
+            const status = targetApt.queue_status || 'menunggu';
+            if (status === 'diperiksa' || isQueueFinished(status)) {
+                return;
+            }
+
+            const aheadCount = _queueData.filter(function(apt) {
+                return Number(apt.session) === target.session
+                    && Number(apt.slot_number) < target.slot
+                    && !isQueueFinished(apt.queue_status || 'menunggu');
+            }).length;
+
+            if (aheadCount > Number(_reminderSettings.threshold || 0)) {
+                return;
+            }
+
+            const signature = getReminderSignature(target);
+            if (localStorage.getItem(REMINDER_TRIGGER_KEY) === signature) {
+                return;
+            }
+
+            const message = `Tinggal ${aheadCount} antrian lagi sebelum nomor Anda (${target.label}). Silakan bersiap.`;
+
+            if (_reminderSettings.popupEnabled !== false) {
+                showReminderPopup(message);
+            }
+
+            if (_reminderSettings.browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
+                try {
+                    new Notification('Pengingat Antrian', {
+                        body: message,
+                            icon: '/images/dibya-logo.png'
+                    });
+                } catch (e) {
+                    console.warn('[Antrian] browser notification failed:', e.message);
+                }
+            }
+
+            playReminderSound();
+            localStorage.setItem(REMINDER_TRIGGER_KEY, signature);
+        }
+
+        function handleReminderSettingChange() {
+            const els = getReminderFormElements();
+            _reminderSettings.enabled = !!els.enabled.checked;
+            _reminderSettings.source = els.source.value;
+            _reminderSettings.threshold = Number(els.threshold.value) || 2;
+            _reminderSettings.targetSession = els.session.value;
+            _reminderSettings.targetSlot = els.slot.value;
+            _reminderSettings.popupEnabled = !!els.popupEnabled.checked;
+            _reminderSettings.browserEnabled = !!els.browserEnabled.checked;
+            _reminderSettings.soundEnabled = !!els.soundEnabled.checked;
+            _reminderSettings.backgroundPushEnabled = !!els.backgroundPushEnabled.checked;
+            saveReminderSettings();
+            hydrateReminderForm();
+            updateReminderLiveStatus();
+            saveRemoteReminderSettings();
+        }
+
+        function setupReminderControls() {
+            const els = getReminderFormElements();
+            if (!els.enabled) return;
+
+            hydrateReminderForm();
+
+            [
+                els.enabled,
+                els.source,
+                els.threshold,
+                els.session,
+                els.slot,
+                els.popupEnabled,
+                els.browserEnabled,
+                els.soundEnabled,
+                els.backgroundPushEnabled
+            ].forEach(function(el) {
+                if (!el) return;
+                el.addEventListener('change', handleReminderSettingChange);
+                if (el.tagName === 'INPUT' && el.type === 'number') {
+                    el.addEventListener('input', handleReminderSettingChange);
+                }
+            });
+
+            els.soundFile.addEventListener('change', function(event) {
+                const file = event.target.files && event.target.files[0];
+                if (!file) return;
+                if (file.size > 500 * 1024) {
+                    alert('Ukuran file suara maksimal 500 KB agar bisa disimpan di perangkat ini.');
+                    event.target.value = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(loadEvent) {
+                    _reminderSettings.customSoundDataUrl = loadEvent.target.result;
+                    _reminderSettings.customSoundName = file.name;
+                    saveReminderSettings();
+                    hydrateReminderForm();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            document.getElementById('reminder-test-sound').addEventListener('click', function() {
+                playReminderSound();
+            });
+
+            document.getElementById('reminder-clear-sound').addEventListener('click', function() {
+                _reminderSettings.customSoundDataUrl = '';
+                _reminderSettings.customSoundName = '';
+                saveReminderSettings();
+                hydrateReminderForm();
+            });
+
+            document.getElementById('reminder-request-browser').addEventListener('click', async function() {
+                const granted = await requestBrowserNotifications();
+                if (granted) {
+                    _reminderSettings.browserEnabled = true;
+                    saveReminderSettings();
+                    hydrateReminderForm();
+                    saveRemoteReminderSettings();
+                    alert('Notif browser sudah diizinkan di perangkat ini.');
+                } else {
+                    alert('Izin notif browser belum diberikan. Popup di halaman tetap bisa dipakai.');
+                }
+            });
+
+            document.getElementById('queue-reminder-popup-close').addEventListener('click', closeReminderPopup);
+            window.addEventListener('patient-push-status', function(event) {
+                updatePushStatusIndicator(event.detail);
+            });
+
+            const reminderModal = document.getElementById('reminder-modal');
+            const openBtn = document.getElementById('open-reminder-settings');
+            const closeBtn = document.getElementById('close-reminder-settings');
+
+            function openReminderModal() {
+                if (!reminderModal) return;
+                reminderModal.classList.add('show');
+                reminderModal.setAttribute('aria-hidden', 'false');
+            }
+
+            function closeReminderModal() {
+                if (!reminderModal) return;
+                reminderModal.classList.remove('show');
+                reminderModal.setAttribute('aria-hidden', 'true');
+            }
+
+            if (openBtn) {
+                openBtn.addEventListener('click', openReminderModal);
+            }
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeReminderModal);
+            }
+            if (reminderModal) {
+                reminderModal.addEventListener('click', function(e) {
+                    if (e.target === reminderModal) {
+                        closeReminderModal();
+                    }
+                });
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeReminderModal();
+                }
+            });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function showQueueHidden() {
+            const container = document.getElementById('queue-container');
+            container.innerHTML = `
+                <div class="state-card">
+                    <i class="fa fa-eye-slash" style="font-size:36px;color:#555;margin-bottom:12px;display:block;"></i>
+                    <p>Antrian belum dibuka hari ini.<br><small style="color:#555">Silakan coba beberapa saat lagi.</small></p>
+                </div>`;
+                updateReminderLiveStatus();
+        }
+
+        function renderQueue(data, date) {
+            _queueData = Array.isArray(data) ? data.slice() : [];
+            _queueDate = date || null;
+            document.getElementById('today-date').textContent = formatDate(date);
+            const container = document.getElementById('queue-container');
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="state-card">
+                        <i class="fa fa-calendar-times-o"></i>
+                        <p>Tidak ada antrian hari ini.<br>Klinik mungkin sedang tidak buka.</p>
+                    </div>`;
+                populateReminderSessions();
+                updateReminderLiveStatus();
+                return;
+            }
+
+            // Group by session
+            const sessions = {};
+            for (const apt of data) {
+                const key = apt.session;
+                if (!sessions[key]) sessions[key] = { label: apt.session_label, items: [] };
+                sessions[key].items.push(apt);
+            }
+
+            let html = '';
+            for (const key of Object.keys(sessions).sort((a, b) => a - b)) {
+                const sess = sessions[key];
+                html += `<div class="session-label"><i class="fa fa-clock-o"></i> Sesi ${sess.label}</div>`;
+                for (const apt of sess.items) {
+                    const st = apt.queue_status || 'menunggu';
+                    const badgeClass = `badge-${st}`;
+                    const rowClass = `status-${st}`;
+                    html += `
+                        <div class="queue-row ${rowClass}">
+                            <div class="slot-num">${apt.slot_number}</div>
+                            <div class="queue-info">
+                                <div class="queue-name">${escHtml(apt.masked_name)}</div>
+                                <div class="queue-time"><i class="fa fa-clock-o" style="font-size:10px;margin-right:3px;"></i>${apt.slot_time || '-'}</div>
+                            </div>
+                            <span class="queue-status-badge ${badgeClass}">${STATUS_LABELS[st] || st}</span>
+                        </div>`;
+                }
+            }
+            container.innerHTML = html;
+
+            populateReminderSessions();
+            updateReminderLiveStatus();
+            maybeTriggerReminder();
+        }
+
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        async function checkQueueSettings() {
+            try {
+                const res = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now());
+                if (!res.ok) return true; // fallback: show queue
+                const data = await res.json();
+                if (data.success) {
+                    return data.is_queue_visible !== false;
+                }
+            } catch(e) {
+                console.warn('[Antrian] checkQueueSettings failed:', e.message);
+            }
+            return true; // default: show
+        }
+
+        async function loadQueue(manual) {
+            if (manual) {
+                const btn = document.getElementById('refresh-btn');
+                btn.classList.add('spinning');
+                setTimeout(() => btn.classList.remove('spinning'), 800);
+            }
+
+            // Check if queue is open first
+            const visible = await checkQueueSettings();
+            if (!visible) {
+                _queueHidden = true;
+                showQueueHidden();
+                resetCountdown();
+                return;
+            }
+            _queueHidden = false;
+
+            try {
+                const token = getPatientToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+
+                const res = await fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), { headers });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+
+                if (json.success) {
+                    await loadActiveBookingForQueueDate(json.date);
+                    renderQueue(json.data, json.date);
+                } else {
+                    throw new Error('Gagal memuat');
+                }
+            } catch (e) {
+                const container = document.getElementById('queue-container');
+                container.innerHTML = `
+                    <div class="state-card">
+                        <i class="fa fa-exclamation-circle"></i>
+                        <p>Gagal memuat data antrian.<br><small style="color:#555">${escHtml(e.message)}</small></p>
+                    </div>`;
+            }
+
+            // Reset countdown
+            resetCountdown();
+        }
+
+        function resetCountdown() {
+            clearInterval(countdownTimer);
+            clearTimeout(refreshTimer);
+            countdownSec = REFRESH_INTERVAL_MS / 1000;
+            updateCountdown();
+
+            countdownTimer = setInterval(() => {
+                countdownSec--;
+                updateCountdown();
+            }, 1000);
+
+            refreshTimer = setTimeout(() => {
+                clearInterval(countdownTimer);
+                loadQueue(false);
+            }, REFRESH_INTERVAL_MS);
+        }
+
+        function updateCountdown() {
+            const el = document.getElementById('refresh-info');
+            if (el) el.textContent = `Auto-refresh dalam ${countdownSec} detik`;
+        }
+
+        // ── Socket.IO real-time updates ──
+        (function() {
+            var sioScript = document.createElement('script');
+            sioScript.src = '/socket.io/socket.io.js';
+            sioScript.onload = function() {
+                try {
+                    var socket = io('/', {
+                        transports: ['polling'],
+                        reconnectionDelay: 5000,
+                        reconnectionDelayMax: 15000
+                    });
+                    socket.on('connect', function() {
+                        console.log('[Antrian] socket connected');
+                    });
+                    socket.on('queue:updated', function() {
+                        loadQueue(false);
+                    });
+                    socket.on('queue:settings_changed', function(data) {
+                        if (data && data.is_queue_visible === false) {
+                            showQueueHidden();
+                        } else {
+                            loadQueue(false);
+                        }
+                    });
+                } catch(e) {
+                    console.warn('[Antrian] socket.io init failed:', e.message);
+                }
+            };
+            sioScript.onerror = function() {
+                console.warn('[Antrian] socket.io CDN failed, using polling only');
+            };
+            document.head.appendChild(sioScript);
+        })();
+
+        // Init
+        setupReminderControls();
+        loadRemoteReminderSettings();
+        refreshPushStatusIndicator();
+        loadQueue(false);
+    </script>
+
+    <script src="/scripts/trial-bottom-nav.js?v=20260520trial1" defer></script>
+</body>
+</html>

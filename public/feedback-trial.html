@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id" data-trial-nav-active="beranda">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Masukan untuk Portal - dokterDIBYA</title>
+
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/patient-portal.css">
+
+    <style>
+        .feedback-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 15px 120px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .back-btn:hover { color: #28a7e9; }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .page-header .icon-wrap {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px;
+            font-size: 28px; color: #fff;
+        }
+        .page-header h1 {
+            color: #fff; font-size: 22px; font-weight: 600; margin-bottom: 6px;
+        }
+        .page-header p {
+            color: rgba(255,255,255,0.6); font-size: 13px; line-height: 1.6;
+        }
+
+        .form-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            color: rgba(255,255,255,0.85);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-select, .form-textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            padding: 11px 14px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #28a7e9;
+        }
+        .form-select option { background: #1a1a2e; color: #fff; }
+        .form-textarea {
+            resize: vertical;
+            min-height: 130px;
+            line-height: 1.6;
+        }
+        .char-count {
+            text-align: right;
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 4px;
+        }
+        .char-count.warn { color: #f59e0b; }
+
+        /* Rating bintang */
+        .rating-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .star-btn {
+            font-size: 28px;
+            cursor: pointer;
+            color: rgba(255,255,255,0.2);
+            transition: color 0.15s, transform 0.15s;
+            background: none; border: none; padding: 0;
+        }
+        .star-btn:hover, .star-btn.active { color: #f59e0b; }
+        .star-btn:hover { transform: scale(1.15); }
+
+        .anonymous-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 44px; height: 24px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0;
+            background: rgba(255,255,255,0.15);
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 18px; height: 18px;
+            left: 3px; top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: #28a7e9; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+        .anonymous-label {
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-submit:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 90px; left: 50%;
+            transform: translateX(-50%) translateY(30px);
+            background: #1e3a2f;
+            border: 1px solid #2d6a4f;
+            color: #52b788;
+            padding: 12px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.35s ease;
+            white-space: nowrap;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .toast.error {
+            background: #3a1e1e; border-color: #8b2b2b; color: #f87171;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* History list */
+        .history-section { margin-top: 28px; }
+        .history-title {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .history-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+        }
+        .history-item .hi-meta {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11px; color: rgba(255,255,255,0.4);
+            margin-bottom: 5px;
+        }
+        .hi-category {
+            background: rgba(40,167,233,0.15);
+            color: #28a7e9;
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .history-item .hi-text {
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .history-item .hi-stars { color: #f59e0b; font-size: 12px; }
+
+        .empty-state {
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            font-size: 13px;
+            padding: 20px 0;
+        }
+    </style>
+    <script src="/scripts/patient-theme-trial.js"></script>
+</head>
+<body>
+    <div class="feedback-container">
+        <a href="javascript:history.back()" class="back-btn">
+            <i class="fa fa-arrow-left"></i> Kembali
+        </a>
+
+        <div class="page-header">
+            <div class="icon-wrap"><i class="fa fa-commenting"></i></div>
+            <h1>Masukan untuk Portal</h1>
+            <p>Sampaikan saran, kritik, atau laporan masalah<br>untuk membantu kami memperbaiki portal ini</p>
+        </div>
+
+        <div class="form-card">
+            <label class="form-label" for="category">Kategori</label>
+            <select class="form-select" id="category">
+                <option value="umum">💬 Umum</option>
+                <option value="fitur">✨ Permintaan Fitur</option>
+                <option value="bug">🐛 Laporan Bug / Error</option>
+                <option value="saran">💡 Saran Perbaikan</option>
+                <option value="layanan">🏥 Layanan Klinik</option>
+                <option value="lainnya">📝 Lainnya</option>
+            </select>
+
+            <label class="form-label" style="margin-top:16px" for="message">Pesan Masukan <span style="color:#ef4444">*</span></label>
+            <textarea class="form-textarea" id="message" placeholder="Tulis masukan Anda di sini... Boleh panjang, tidak ada batas minimum." maxlength="2000"></textarea>
+            <div class="char-count" id="charCount">0 / 2000</div>
+
+            <label class="form-label" style="margin-top:16px">Rating Portal (opsional)</label>
+            <div class="rating-row" id="ratingRow">
+                <button class="star-btn" data-val="1">★</button>
+                <button class="star-btn" data-val="2">★</button>
+                <button class="star-btn" data-val="3">★</button>
+                <button class="star-btn" data-val="4">★</button>
+                <button class="star-btn" data-val="5">★</button>
+            </div>
+
+            <div class="anonymous-row">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="isAnonymous">
+                    <span class="toggle-slider"></span>
+                </label>
+                <label class="anonymous-label" for="isAnonymous">Kirim sebagai anonim</label>
+            </div>
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="submitFeedback()">
+            <i class="fa fa-paper-plane"></i> Kirim Masukan
+        </button>
+
+        <div class="history-section" id="historySection" style="display:none">
+            <div class="history-title"><i class="fa fa-history" style="margin-right:5px"></i>Masukan sebelumnya</div>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="/scripts/vps-auth-v2.js" type="module"></script>
+    <script>
+    // ── State ──────────────────────────────────────────────────────────
+    let selectedRating = null;
+
+    // ── Rating stars ───────────────────────────────────────────────────
+    document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const val = parseInt(this.dataset.val);
+            selectedRating = (selectedRating === val) ? null : val; // toggle off on re-click
+            updateStars();
+        });
+    });
+    function updateStars() {
+        document.querySelectorAll('.star-btn').forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.val) <= (selectedRating || 0));
+        });
+    }
+
+    // ── Char counter ───────────────────────────────────────────────────
+    document.getElementById('message').addEventListener('input', function() {
+        const len = this.value.length;
+        const el = document.getElementById('charCount');
+        el.textContent = len + ' / 2000';
+        el.classList.toggle('warn', len > 1800);
+    });
+
+    // ── Toast ──────────────────────────────────────────────────────────
+    function showToast(msg, isError = false) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast' + (isError ? ' error' : '');
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => t.classList.add('show'));
+        });
+        setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    // ── Get token ──────────────────────────────────────────────────────
+    function getToken() {
+        const keys = ['vps_auth_token', 'patient_token', 'auth_token'];
+        for (const k of keys) {
+            const v = localStorage.getItem(k) || sessionStorage.getItem(k);
+            if (v) return v;
+        }
+        return null;
+    }
+
+    // ── Submit ─────────────────────────────────────────────────────────
+    async function submitFeedback() {
+        const message = document.getElementById('message').value.trim();
+        const category = document.getElementById('category').value;
+        const isAnonymous = document.getElementById('isAnonymous').checked;
+
+        if (!message) {
+            showToast('Tulis pesan masukan terlebih dahulu', true);
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            showToast('Silakan login terlebih dahulu', true);
+            setTimeout(() => window.location.href = '/patient-login-trial.html', 1500);
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
+
+        try {
+            const res = await fetch('/api/patient-feedback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ category, message, rating: selectedRating, is_anonymous: isAnonymous })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast('Terima kasih! Masukan Anda sudah diterima 🙏');
+                document.getElementById('message').value = '';
+                document.getElementById('charCount').textContent = '0 / 2000';
+                selectedRating = null;
+                updateStars();
+                document.getElementById('category').value = 'umum';
+                document.getElementById('isAnonymous').checked = false;
+                saveFeedbackLocally({ category, message, rating: selectedRating, created_at: new Date().toISOString() });
+                loadHistory();
+            } else {
+                showToast(data.message || 'Gagal mengirim masukan', true);
+            }
+        } catch (e) {
+            showToast('Koneksi bermasalah, coba lagi', true);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-paper-plane"></i> Kirim Masukan';
+        }
+    }
+
+    // ── Local history (localStorage) ──────────────────────────────────
+    const HISTORY_KEY = 'patient_feedback_history';
+
+    function saveFeedbackLocally(item) {
+        try {
+            const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            list.unshift(item);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 20)));
+        } catch(e) {}
+    }
+
+    function loadHistory() {
+        try {
+            const list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            const section = document.getElementById('historySection');
+            const container = document.getElementById('historyList');
+            if (!list.length) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            const categoryLabels = {
+                umum: '💬 Umum', fitur: '✨ Fitur', bug: '🐛 Bug',
+                saran: '💡 Saran', layanan: '🏥 Layanan', lainnya: '📝 Lainnya'
+            };
+            container.innerHTML = list.map(item => {
+                const stars = item.rating ? '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating) : '';
+                const date = item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                return `<div class="history-item">
+                    <div class="hi-meta">
+                        <span class="hi-category">${categoryLabels[item.category] || item.category}</span>
+                        ${stars ? `<span class="hi-stars">${stars}</span>` : ''}
+                        <span>${date}</span>
+                    </div>
+                    <div class="hi-text">${escapeHtml(item.message)}</div>
+                </div>`;
+            }).join('');
+        } catch(e) {}
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────
+    loadHistory();
+    </script>
+
+    <script src="/scripts/trial-bottom-nav.js?v=20260520trial1" defer></script>
+</body>
+</html>

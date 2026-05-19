@@ -31,18 +31,21 @@
         '/patient-menu-trial.html': 'beranda',
         '/album-usg-trial.html': 'dokumen',
         '/dokumen-medis-trial.html': 'dokumen',
-        '/hasil-lab.html': 'dokumen',
+        '/hasil-lab-trial.html': 'dokumen',
         '/tanya-dokter-trial.html': 'aplikasi',
         '/kick-counter-trial.html': 'aplikasi',
         '/pregnancy-tracker-trial.html': 'aplikasi',
         '/fertility-calendar-trial.html': 'aplikasi',
         '/jadwal-vitamin-trial.html': 'aplikasi',
+        '/estimasi-biaya-kehamilan-trial.html': 'aplikasi',
         '/perjalanan-ibu-trial.html': 'edukasi',
         '/artikel-trial.html': 'edukasi',
         '/artikel-kesehatan-trial.html': 'edukasi',
         '/booking-klinik-trial.html': 'jadwal',
-        '/jadwal-rs.html': 'jadwal',
-        '/riwayat-kunjungan.html': 'jadwal'
+        '/jadwal-rs-trial.html': 'jadwal',
+        '/riwayat-kunjungan-trial.html': 'jadwal',
+        '/antrian-trial.html': 'jadwal',
+        '/feedback-trial.html': 'beranda'
     };
 
     function detectActive() {
@@ -58,7 +61,7 @@
             title: 'Dokumen',
             items: [
                 { icon: 'fa-solid fa-image', label: 'Album USG', href: '/album-usg-trial.html' },
-                { icon: 'fa-solid fa-flask', label: 'Hasil Lab', href: '/hasil-lab.html' },
+                { icon: 'fa-solid fa-flask', label: 'Hasil Lab', href: '/hasil-lab-trial.html' },
                 { icon: 'fa-solid fa-file-medical', label: 'Resume Medis Saya', href: '/dokumen-medis-trial.html' }
             ]
         },
@@ -84,8 +87,9 @@
             title: 'Jadwal',
             items: [
                 { icon: 'fa-solid fa-calendar-check', label: 'Booking Klinik Minggu', href: '/booking-klinik-trial.html' },
-                { icon: 'fa-solid fa-hospital', label: 'Jadwal Rumah Sakit', href: '/jadwal-rs.html' },
-                { icon: 'fa-solid fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan.html' }
+                { icon: 'fa-solid fa-hospital', label: 'Jadwal Rumah Sakit', href: '/jadwal-rs-trial.html' },
+                { icon: 'fa-solid fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan-trial.html' },
+                { icon: 'fa-solid fa-list-ol', label: 'Antrian Hari Ini', href: '/antrian-trial.html' }
             ]
         }
     };
