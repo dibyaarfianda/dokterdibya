@@ -1061,6 +1061,27 @@
             padding-right: 0.5rem !important;
         }
 
+        /* Keep Tanya Dokter list/table aligned in content area */
+        #tanya-dokter-page .tanya-questions-table-shell {
+            width: 100%;
+            margin: 0;
+        }
+
+        #tanya-dokter-page #tanya-questions-list {
+            width: 100%;
+            margin: 0 !important;
+        }
+
+        #tanya-dokter-page #tanya-questions-list .tanya-question-card {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+
+        #tanya-dokter-page .tanya-questions-table-shell table {
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
         /* Avatar hover animation */
         #navbar-user-avatar {
             transition: transform 0.3s ease;
@@ -7098,10 +7119,12 @@ Contoh Markdown:
                                     </ul>
 
                                     <!-- Questions List -->
-                                    <div id="tanya-questions-list">
-                                        <div class="text-center py-4 text-muted">
-                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
-                                            <p>Memuat pertanyaan...</p>
+                                    <div class="table-responsive tanya-questions-table-shell">
+                                        <div id="tanya-questions-list">
+                                            <div class="text-center py-4 text-muted">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                <p>Memuat pertanyaan...</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -7822,7 +7845,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v170';
+    window.__assetVersion = 'v171';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
