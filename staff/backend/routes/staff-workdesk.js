@@ -150,6 +150,82 @@ function toScalarString(value) {
     }
 }
 
+function normalizeIntegrationFormat(value) {
+    const normalized = String(value || '').trim().toLowerCase();
+    const allowed = ['text', 'number', 'currency_idr', 'date_id', 'datetime_id'];
+    return allowed.includes(normalized) ? normalized : 'text';
+}
+
+function parseFiniteNumber(value) {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+    }
+    if (typeof value === 'string') {
+        const cleaned = value.trim().replace(/,/g, '');
+        if (!cleaned) return null;
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+}
+
+function parseValidDate(value) {
+    if (value == null || value === '') return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
+}
+
+function formatIntegrationField(value, formatter) {
+    const formatKey = normalizeIntegrationFormat(formatter);
+
+    if (formatKey === 'text') {
+        return toScalarString(value);
+    }
+
+    if (formatKey === 'number') {
+        const num = parseFiniteNumber(value);
+        if (num == null) return toScalarString(value);
+        return new Intl.NumberFormat('id-ID').format(num);
+    }
+
+    if (formatKey === 'currency_idr') {
+        const num = parseFiniteNumber(value);
+        if (num == null) return toScalarString(value);
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            maximumFractionDigits: 0
+        }).format(num);
+    }
+
+    if (formatKey === 'date_id') {
+        const dateValue = parseValidDate(value);
+        if (!dateValue) return toScalarString(value);
+        return dateValue.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'Asia/Jakarta'
+        });
+    }
+
+    if (formatKey === 'datetime_id') {
+        const dateValue = parseValidDate(value);
+        if (!dateValue) return toScalarString(value);
+        return dateValue.toLocaleString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta'
+        });
+    }
+
+    return toScalarString(value);
+}
+
 function pickFirstArray(sourceObject) {
     if (!sourceObject || typeof sourceObject !== 'object' || Array.isArray(sourceObject)) {
         return null;
@@ -999,10 +1075,13 @@ router.post('/widgets/custom-integration', async (req, res) => {
         setNoCacheHeaders(res);
 
         const endpointInput = String(req.body?.endpoint_url || '').trim();
+        const authHeader = String(req.body?.auth_header || '').trim();
         const dataPath = String(req.body?.data_path || '').trim();
         const titlePath = String(req.body?.title_path || 'title').trim() || 'title';
         const valuePath = String(req.body?.value_path || '').trim();
         const subtitlePath = String(req.body?.subtitle_path || '').trim();
+        const valueFormat = normalizeIntegrationFormat(req.body?.value_format || 'text');
+        const subtitleFormat = normalizeIntegrationFormat(req.body?.subtitle_format || 'text');
 
         const requestedLimit = Number(req.body?.limit || 6);
         const limit = Number.isFinite(requestedLimit)
@@ -1011,6 +1090,14 @@ router.post('/widgets/custom-integration', async (req, res) => {
 
         if (!endpointInput) {
             return res.status(400).json({ success: false, message: 'endpoint_url wajib diisi' });
+        }
+
+        if (authHeader.length > 1024) {
+            return res.status(400).json({ success: false, message: 'Authorization header terlalu panjang' });
+        }
+
+        if (/[\r\n]/.test(authHeader)) {
+            return res.status(400).json({ success: false, message: 'Authorization header tidak valid' });
         }
 
         let endpointUrl;
@@ -1028,12 +1115,18 @@ router.post('/widgets/custom-integration', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Host endpoint tidak diizinkan' });
         }
 
+        const requestHeaders = {
+            Accept: 'application/json, text/plain;q=0.9, */*;q=0.8',
+            'User-Agent': 'dokterdibya-workdesk-integration/1.0'
+        };
+
+        if (authHeader) {
+            requestHeaders.Authorization = authHeader;
+        }
+
         const response = await fetch(endpointUrl.toString(), {
             method: 'GET',
-            headers: {
-                Accept: 'application/json, text/plain;q=0.9, */*;q=0.8',
-                'User-Agent': 'dokterdibya-workdesk-integration/1.0'
-            },
+            headers: requestHeaders,
             redirect: 'follow',
             signal: AbortSignal.timeout(10000)
         });
@@ -1078,8 +1171,8 @@ router.post('/widgets/custom-integration', async (req, res) => {
 
             return {
                 title: toScalarString(titleValue ?? fallbackTitle).slice(0, 200),
-                value: toScalarString(valueValue).slice(0, 200),
-                subtitle: toScalarString(subtitleValue).slice(0, 300)
+                value: formatIntegrationField(valueValue, valueFormat).slice(0, 200),
+                subtitle: formatIntegrationField(subtitleValue, subtitleFormat).slice(0, 300)
             };
         });
 
@@ -1089,6 +1182,8 @@ router.post('/widgets/custom-integration', async (req, res) => {
                 endpoint_host: endpointUrl.host,
                 count: items.length,
                 fetched_at: new Date().toISOString(),
+                value_format: valueFormat,
+                subtitle_format: subtitleFormat,
                 items
             }
         });
