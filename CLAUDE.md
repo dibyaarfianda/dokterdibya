@@ -1309,3 +1309,25 @@ User confirmed with "mantap" after the Android chat keyboard jump was fixed.
 **Critical lesson:**
 - If chat jumps in two phases on Android PWA, inspect both the nav CSS and the chat panel geometry. A bottom bar that is secretly still top-fixed in `mobile-app-mode` will keep destabilizing keyboard layouts.
 - In this repo, keyboard bugs on Android PWA are often caused by over-constrained fullscreen geometry. Prefer deriving the chat frame from `visualViewport` directly instead of mixing `top`, `bottom`, and `height` constraints.
+
+### 38. Session Log - 20 May 2026
+
+**Tanya Dokter Table/List Positioning Fix (Staff Panel)**
+
+User requested: "Tanya Dokter tidak tepat posisi tabelnya, betulkan".
+
+**What worked:**
+1. Add scoped layout rules in `staff/public/index-adminlte.html` under `#tanya-dokter-page` to lock width/margin for the question list/table container.
+2. Wrap question list block with `table-responsive tanya-questions-table-shell` so table/list content stays aligned in the card body.
+3. Normalize question card side margins to avoid visual shift.
+4. Bump cache versions so clients fetch the fix immediately:
+    - `window.__assetVersion = 'v171'`
+    - `STAFF_PWA_VERSION = 'v171'`
+
+**Verification pattern:**
+1. Confirm CSS selectors and wrapper markup exist.
+2. Confirm both version bumps are present.
+3. Deploy and verify health endpoint stays healthy.
+
+**Lesson:**
+- For staff page layout drift, use page-scoped CSS (`#page-id ...`) first; avoid broad global table overrides.
