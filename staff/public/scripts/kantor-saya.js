@@ -3,6 +3,7 @@
 
     var API_BASE = '/api/staff-workdesk';
     var CACHE_TTL_MS = 60000;
+    var GRIDSTACK_CSS_URL = 'https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css';
 
     var state = {
         initialized: false,
@@ -72,6 +73,39 @@
         state.isRendering = false;
         state.isHydrating = false;
         state.initialized = false;
+    }
+
+    function ensureGridstackCssLoaded() {
+        var linkEls = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+        var existing = linkEls.find(function (link) {
+            return (link.href || '').indexOf('/gridstack@10.2.0/dist/gridstack.min.css') !== -1 ||
+                (link.href || '').indexOf('/gridstack.min.css') !== -1;
+        });
+
+        if (!existing) {
+            existing = document.createElement('link');
+            existing.rel = 'stylesheet';
+            existing.href = GRIDSTACK_CSS_URL;
+            existing.setAttribute('data-gridstack-css', '1');
+            document.head.appendChild(existing);
+        }
+
+        if (existing.sheet) {
+            return Promise.resolve();
+        }
+
+        return new Promise(function (resolve) {
+            var done = false;
+            function finish() {
+                if (done) return;
+                done = true;
+                resolve();
+            }
+
+            existing.addEventListener('load', finish, { once: true });
+            existing.addEventListener('error', finish, { once: true });
+            setTimeout(finish, 1600);
+        });
     }
 
     var PRESET_WALLPAPERS = {
@@ -927,6 +961,8 @@
             if (!window.GridStack) {
                 throw new Error('Gridstack tidak tersedia');
             }
+
+            await ensureGridstackCssLoaded();
 
             state.isHydrating = true;
             var layoutData = await apiGet('/layout');
