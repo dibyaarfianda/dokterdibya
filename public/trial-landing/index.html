@@ -916,6 +916,14 @@
             z-index: 1;
         }
 
+        #announcements-container[data-disable-links='1'] a,
+        #announcements-container[data-disable-links='1'] button,
+        #announcements-container[data-disable-links='1'] [onclick],
+        #announcements-container[data-disable-links='1'] .announcement-item {
+            pointer-events: none !important;
+            cursor: default !important;
+        }
+
         #announcements-container::after {
             content: none;
         }
@@ -5030,6 +5038,51 @@
             return 'Selamat Malam';
         }
 
+        function stripUpdateTerkiniLinks() {
+            var container = document.getElementById('announcements-container');
+            if (!container) return;
+
+            container.setAttribute('data-disable-links', '1');
+
+            container.querySelectorAll('a').forEach(function(link) {
+                link.removeAttribute('href');
+                link.removeAttribute('target');
+                link.removeAttribute('rel');
+            });
+
+            container.querySelectorAll('[onclick]').forEach(function(el) {
+                el.removeAttribute('onclick');
+            });
+
+            container.querySelectorAll('button').forEach(function(btn) {
+                btn.setAttribute('type', 'button');
+            });
+        }
+
+        function initUpdateTerkiniNoLinksMode() {
+            var container = document.getElementById('announcements-container');
+            if (!container) return;
+
+            if (container.dataset.linksObserverAttached === '1') {
+                stripUpdateTerkiniLinks();
+                return;
+            }
+
+            container.dataset.linksObserverAttached = '1';
+            stripUpdateTerkiniLinks();
+
+            var observer = new MutationObserver(function() {
+                stripUpdateTerkiniLinks();
+            });
+
+            observer.observe(container, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['href', 'onclick']
+            });
+        }
+
         function activateTrialPreviewMode() {
             var loading = document.getElementById('loading-state');
             var wrapper = document.getElementById('content-wrapper');
@@ -5050,6 +5103,7 @@
             if (bottomNav) bottomNav.style.display = 'none';
             if (navBlurFade) navBlurFade.style.display = 'none';
             if (sheetOverlay) sheetOverlay.style.display = 'none';
+            initUpdateTerkiniNoLinksMode();
 
             // Keep topbar contrast aligned with the green hero layer like the original page.
             try {
@@ -5066,6 +5120,8 @@
 
         // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
+            initUpdateTerkiniNoLinksMode();
+
             (function() {
                 var footer = document.querySelector('.site-footer');
                 if (!footer) return;
