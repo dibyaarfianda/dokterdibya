@@ -110,6 +110,12 @@
             z-index: 9999;
         }
 
+        /* Lock trial-landing top area to the previously approved transparent header style. */
+        body.trial-newdesign-theme .safe-area-top,
+        body.trial-newdesign-theme .safe-area-bottom {
+            background: transparent !important;
+        }
+
         /* ========== APP WRAPPER ========== */
         .app-wrapper {
             padding-top: env(safe-area-inset-top, 0px);
@@ -131,6 +137,16 @@
             opacity: 1;
             --topbar-ink: color-mix(in srgb, #ffffff calc(var(--hero-green-opacity, 1) * 100%), #000000);
             color: var(--topbar-ink);
+        }
+
+        body.trial-newdesign-theme .topbar,
+        body.trial-newdesign-theme .nav-bar,
+        body.trial-newdesign-theme nav.topbar {
+            background: transparent !important;
+            background-color: transparent !important;
+            border-bottom: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
 
         /* Brand area text follows the dynamic --topbar-ink (white → black). */
@@ -2217,6 +2233,10 @@
             font-style: normal;
             margin-right: 0;
             color: rgba(255, 255, 255, 0.92);
+        }
+
+        body.trial-newdesign-theme .welcome-window-left-inner h2 {
+            color: rgba(255, 255, 255, 0.92) !important;
         }
 
         .welcome-window-scroll {
