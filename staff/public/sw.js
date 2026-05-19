@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v141'; // Network-first staff HTML to prevent blank cached Kantor Saya page
+const STAFF_PWA_VERSION = 'v142'; // Cache bust follow-up for Kantor Saya HTML/script stale response
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
