@@ -23,12 +23,22 @@ let isMainInitialized = false;
 function updateDateTime() {
     const dateEl = document.getElementById('date-display');
     const timeEl = document.getElementById('time-display');
-    if (!dateEl || !timeEl) return;
+    if (!dateEl && !timeEl) return;
     const now = new Date();
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Jakarta' };
     const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta', hour12: false };
-    dateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
-    timeEl.textContent = `${now.toLocaleTimeString('id-ID', timeOptions)} WIB`;
+    const dateText = now.toLocaleDateString('id-ID', dateOptions);
+    const timeText = now.toLocaleTimeString('id-ID', timeOptions);
+
+    // Main staff navbar uses a single compact date+time label.
+    if (dateEl) {
+        dateEl.textContent = `${dateText}  ${timeText} WIB`;
+    }
+
+    // Backward compatibility for pages that still render a separate time element.
+    if (timeEl) {
+        timeEl.textContent = `${timeText} WIB`;
+    }
 }
 function startClock() {
     if (clockIntervalId) clearInterval(clockIntervalId);
