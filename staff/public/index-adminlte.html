@@ -678,6 +678,16 @@
             margin-left: 4.6rem !important;
         }
 
+        /* Keep side-menu divider full height to bottom on desktop view. */
+        @media (min-width: 992px) {
+            .main-sidebar {
+                min-height: 100vh !important;
+                height: 100vh !important;
+                border-right: 1px solid rgba(15, 23, 42, 0.12) !important;
+                box-sizing: border-box;
+            }
+        }
+
         /* Default (not selected) link/icon color */
         .sidebar .nav-sidebar .nav-link { color: #000000 !important; }
         .sidebar .nav-sidebar .nav-link .nav-icon { color: #000000 !important; }
@@ -7761,7 +7771,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v161';
+    window.__assetVersion = 'v162';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
