@@ -3419,6 +3419,7 @@ function showKantorSayaPage() {
     loadExternalPage('content-kantor-saya', kantorHtml);
 
     var retries = 0;
+    var recovered = false;
     function bootstrapKantorSaya() {
         if (window.kantorSaya && typeof window.kantorSaya.init === 'function') {
             window.kantorSaya.init();
@@ -3430,6 +3431,20 @@ function showKantorSayaPage() {
         if (retries < 25) {
             retries += 1;
             setTimeout(bootstrapKantorSaya, 120);
+            return;
+        }
+
+        // Recovery path for stale cached HTML where root container is missing.
+        if (!recovered) {
+            recovered = true;
+            var container = document.getElementById('content-kantor-saya');
+            if (container && !container.querySelector('#kantor-saya-page')) {
+                var separator = kantorHtml.includes('?') ? '&' : '?';
+                var fallbackUrl = kantorHtml + separator + 'r=' + Date.now();
+                loadExternalPage('content-kantor-saya', fallbackUrl, { forceReload: true });
+                retries = 0;
+                setTimeout(bootstrapKantorSaya, 180);
+            }
         }
     }
 

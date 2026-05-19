@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v140'; // Kantor Saya cache refresh after shell loader + HTML wrapper fix
+const STAFF_PWA_VERSION = 'v141'; // Network-first staff HTML to prevent blank cached Kantor Saya page
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
@@ -117,6 +117,13 @@ self.addEventListener('fetch', (event) => {
   const isRealtimeRoute = REALTIME_ROUTES.some(route => url.pathname.startsWith(route));
   if (isRealtimeRoute) {
     // Don't intercept - let browser handle directly for fresh data
+    return;
+  }
+
+  // Staff HTML fragments/pages loaded via fetch() must stay fresh (avoid stale blank content)
+  const isStaffHtml = url.pathname.startsWith('/staff/public/') && url.pathname.endsWith('.html');
+  if (isStaffHtml) {
+    event.respondWith(networkFirst(request));
     return;
   }
 
