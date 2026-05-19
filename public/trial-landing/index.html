@@ -5037,11 +5037,19 @@
             var heroKicker = document.getElementById('hero-kicker-text');
             var avatarInitials = document.getElementById('user-avatar-initials');
             var vipBadge = document.getElementById('vip-badge');
+            var topActions = document.querySelector('.topbar .top-actions');
+            var bottomNav = document.querySelector('.bottom-nav');
+            var navBlurFade = document.getElementById('nav-blur-fade');
+            var sheetOverlay = document.getElementById('sheet-overlay');
 
             if (heroName && String(heroName.textContent || '').trim() === '...') heroName.textContent = 'Selamat';
             if (heroKicker) heroKicker.textContent = getJakartaGreeting();
             if (avatarInitials) avatarInitials.textContent = 'D';
             if (vipBadge) vipBadge.classList.add('show');
+            if (topActions) topActions.style.display = 'none';
+            if (bottomNav) bottomNav.style.display = 'none';
+            if (navBlurFade) navBlurFade.style.display = 'none';
+            if (sheetOverlay) sheetOverlay.style.display = 'none';
 
             // Keep topbar contrast aligned with the green hero layer like the original page.
             try {
