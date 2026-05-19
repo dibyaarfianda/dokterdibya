@@ -3462,12 +3462,13 @@ function showKantorSayaPage() {
     setTimeout(revealKantorRoot, 220);
     setTimeout(revealKantorRoot, 520);
 
-    var retries = 0;
+    var bootstrapStartedAt = Date.now();
+    var bootstrapWindowMs = 15000;
     var recovered = false;
+    var forcedFinalRetry = false;
 
     function scheduleBootstrapRetry() {
-        if (retries < 25) {
-            retries += 1;
+        if ((Date.now() - bootstrapStartedAt) < bootstrapWindowMs) {
             setTimeout(bootstrapKantorSaya, 120);
             return true;
         }
@@ -3475,17 +3476,27 @@ function showKantorSayaPage() {
     }
 
     function attemptRecoveryLoad() {
-        if (recovered) return;
+        var container = document.getElementById('content-kantor-saya');
+        if (!container) return;
+
+        var hasRoot = !!container.querySelector('#kantor-saya-page');
 
         // Recovery path for stale cached HTML where root container is missing.
-        recovered = true;
-        var container = document.getElementById('content-kantor-saya');
-        if (container && !container.querySelector('#kantor-saya-page')) {
+        if (!recovered && !hasRoot) {
+            recovered = true;
             var separator = kantorHtml.includes('?') ? '&' : '?';
             var fallbackUrl = kantorHtml + separator + 'r=' + Date.now();
             loadExternalPage('content-kantor-saya', fallbackUrl, { forceReload: true });
-            retries = 0;
+            bootstrapStartedAt = Date.now();
             setTimeout(bootstrapKantorSaya, 180);
+            return;
+        }
+
+        // If root exists but bootstrap timed out at the wrong moment, run one final retry window.
+        if (hasRoot && !forcedFinalRetry) {
+            forcedFinalRetry = true;
+            bootstrapStartedAt = Date.now();
+            setTimeout(bootstrapKantorSaya, 120);
         }
     }
 
