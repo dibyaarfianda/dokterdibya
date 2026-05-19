@@ -55,6 +55,25 @@
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <style>
+        /* Browser policy: show staff panel at ~80% only in regular browser mode.
+           PWA/mobile-app mode must stay true 100%. */
+        html.browser-zoom-80:not(.mobile-app-mode),
+        body.browser-zoom-80:not(.mobile-app-mode) {
+            zoom: 0.8;
+        }
+
+        html.mobile-app-mode,
+        body.mobile-app-mode {
+            zoom: 1 !important;
+        }
+
+        @media print {
+            html.browser-zoom-80,
+            body.browser-zoom-80 {
+                zoom: 1 !important;
+            }
+        }
+
         /* ========================================
            DESIGN SYSTEM - CSS VARIABLES
            ======================================== */
@@ -1296,11 +1315,25 @@
                 }
             }
 
+            function applyBrowserZoomClass() {
+                document.documentElement.classList.add('browser-zoom-80');
+
+                if (document.body) {
+                    document.body.classList.add('browser-zoom-80');
+                } else {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.classList.add('browser-zoom-80');
+                    });
+                }
+            }
+
             if (isMobileApp) {
                 applyMobileModeClass();
                 // Persist in both storages so mobile mode survives browser/session differences.
                 sessionStorage.setItem('mobileAppMode', '1');
                 localStorage.setItem('mobileAppMode', '1');
+            } else {
+                applyBrowserZoomClass();
             }
 
             // Global helper to check mobile mode and build URLs
@@ -7728,7 +7761,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v160';
+    window.__assetVersion = 'v161';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
