@@ -41,7 +41,7 @@ if (!JWT_SECRET) {
     process.exit(1);
 }
 const JWT_EXPIRES_IN = '7d';
-const PATIENT_TRIAL_LOCK_MESSAGE = 'Sedang dalam perbaikan. Akses trial saat ini hanya untuk Nanda Ananda dan Konchelsky.';
+const PATIENT_TRIAL_LOCK_MESSAGE = 'Sedang dalam perbaikan. Akses trial saat ini terbatas.';
 const PATIENT_TRIAL_LOGIN_ALLOWLIST_EMAILS = new Set([
     'dibyaarfianda83@gmail.com',
     'konchelskydaf@gmail.com'
