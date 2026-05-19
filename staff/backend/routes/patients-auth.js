@@ -41,6 +41,25 @@ if (!JWT_SECRET) {
     process.exit(1);
 }
 const JWT_EXPIRES_IN = '7d';
+const PATIENT_TRIAL_LOCK_MESSAGE = 'Sedang dalam perbaikan. Akses trial saat ini hanya untuk Nanda Ananda dan Konchelsky.';
+const PATIENT_TRIAL_LOGIN_ALLOWLIST_EMAILS = new Set([
+    'dibyaarfianda83@gmail.com',
+    'konchelskydaf@gmail.com'
+]);
+const PATIENT_TRIAL_LOGIN_ALLOWLIST_NAMES = new Set([
+    'nanda ananda',
+    'konchelsky'
+]);
+
+function normalizeTrialName(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isPatientTrialLoginAllowed(identity) {
+    var email = String(identity?.email || '').trim().toLowerCase();
+    var name = normalizeTrialName(identity?.name);
+    return PATIENT_TRIAL_LOGIN_ALLOWLIST_EMAILS.has(email) || PATIENT_TRIAL_LOGIN_ALLOWLIST_NAMES.has(name);
+}
 
 // Google OAuth Client
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
@@ -202,6 +221,13 @@ async function handlePatientRegister(req, res) {
 
         if (password.length < 6) {
             return res.status(400).json({ message: 'Password minimal 6 karakter' });
+        }
+
+        if (!isPatientTrialLoginAllowed({ email, name: fullname })) {
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
         }
 
         // Check if registration code is required
@@ -368,6 +394,13 @@ router.post('/login', async (req, res) => {
         
         const patient = patients[0];
         console.log('Patient found:', patient.id, 'Has password:', !!patient.password);
+
+        if (!isPatientTrialLoginAllowed({ email: patient.email, name: patient.full_name })) {
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
+        }
         
         // Check if patient has a password (might be Google auth only)
         if (!patient.password) {
@@ -474,6 +507,14 @@ router.post('/auth/google', async (req, res) => {
 
         const payload = ticket.getPayload();
         const { email, name, sub: googleId, picture } = payload;
+
+        if (!isPatientTrialLoginAllowed({ email, name })) {
+            logger.warn(`[GOOGLE-AUTH] Blocked by trial maintenance gate: ${email}`);
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
+        }
 
         // Check if patient exists
         const [existingPatients] = await db.query(
@@ -764,6 +805,14 @@ router.post('/google-auth-code', async (req, res) => {
         if (!email) {
             console.log('[GOOGLE-AUTH] No email in user info');
             return res.status(401).json({ success: false, message: 'Tidak dapat mengambil email dari akun Google' });
+        }
+
+        if (!isPatientTrialLoginAllowed({ email, name })) {
+            logger.warn(`[GOOGLE-AUTH-CODE] Blocked by trial maintenance gate: ${email}`);
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
         }
 
         // Check if patient exists

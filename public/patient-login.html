@@ -146,6 +146,19 @@
             color: var(--text-muted);
             margin-bottom: 28px;
         }
+        .maintenance-note {
+            width: 100%;
+            max-width: 320px;
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            background: rgba(245, 158, 11, 0.14);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 12px;
+            color: #fcd34d;
+            font-size: 13px;
+            line-height: 1.5;
+            text-align: left;
+        }
 
         /* Input Group */
         .input-group {
@@ -410,6 +423,9 @@
             <div class="form-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
                 <h1 class="form-title">Selamat Datang</h1>
                 <p class="form-subtitle" style="margin-bottom: 30px;">Masuk untuk mengakses portal pasien</p>
+                <div class="maintenance-note">
+                    Sedang dalam perbaikan. Akses trial saat ini hanya dibuka untuk Nanda Ananda dan Konchelsky.
+                </div>
 
                 <div class="error-message" id="login-error">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>

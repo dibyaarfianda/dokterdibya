@@ -18,6 +18,25 @@ const PatientPasswordService = require('../services/PatientPasswordService');
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
 const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
+const PATIENT_TRIAL_LOCK_MESSAGE = 'Sedang dalam perbaikan. Akses trial saat ini hanya untuk Nanda Ananda dan Konchelsky.';
+const PATIENT_TRIAL_LOGIN_ALLOWLIST_EMAILS = new Set([
+    'dibyaarfianda83@gmail.com',
+    'konchelskydaf@gmail.com'
+]);
+const PATIENT_TRIAL_LOGIN_ALLOWLIST_NAMES = new Set([
+    'nanda ananda',
+    'konchelsky'
+]);
+
+function normalizeTrialName(value) {
+    return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isPatientTrialLoginAllowed(identity) {
+    var email = String(identity?.email || '').trim().toLowerCase();
+    var name = normalizeTrialName(identity?.name);
+    return PATIENT_TRIAL_LOGIN_ALLOWLIST_EMAILS.has(email) || PATIENT_TRIAL_LOGIN_ALLOWLIST_NAMES.has(name);
+}
 
 function resolveStaffIdentity(name, photoUrl) {
     const normalizedName = String(name || '')
@@ -176,16 +195,22 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
 
     const user = rows[0];
     const userId = user.new_id;
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
-    if (!isPasswordValid) {
-        throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
-    }
 
     // Only allow patients to login via this endpoint
     if (user.user_type !== 'patient') {
         logger.warn(`Non-patient attempted patient login: ${user.email}`);
         throw new AppError('Akses ditolak. Silakan gunakan halaman login staff.', HTTP_STATUS.FORBIDDEN);
+    }
+
+    if (!isPatientTrialLoginAllowed({ email: user.email, name: user.name })) {
+        logger.warn(`Patient login blocked by trial maintenance gate: ${user.email}`);
+        throw new AppError(PATIENT_TRIAL_LOCK_MESSAGE, 503);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
+        throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
     }
 
     const token = jwt.sign(
