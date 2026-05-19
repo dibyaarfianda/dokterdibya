@@ -23,7 +23,9 @@
         wallpaperRefreshInFlight: false,
         wallpaperLastRefreshAt: 0,
         wallpaperProbeToken: 0,
-        lastWallpaperProbeUrl: null
+        lastWallpaperProbeUrl: null,
+        wallpaperProbeFailures: 0,
+        wallpaperRetryTimer: null
     };
 
     function getLiveRoot() {
@@ -57,6 +59,11 @@
             state.saveTimer = null;
         }
 
+        if (state.wallpaperRetryTimer) {
+            clearTimeout(state.wallpaperRetryTimer);
+            state.wallpaperRetryTimer = null;
+        }
+
         state.widgetTimers.forEach(function (timer) {
             clearInterval(timer);
         });
@@ -77,6 +84,11 @@
         state.editMode = false;
         state.isRendering = false;
         state.isHydrating = false;
+        state.wallpaperRefreshInFlight = false;
+        state.wallpaperLastRefreshAt = 0;
+        state.wallpaperProbeToken = 0;
+        state.wallpaperProbeFailures = 0;
+        state.lastWallpaperProbeUrl = null;
         state.initialized = false;
     }
 
@@ -425,6 +437,22 @@
         };
     }
 
+    function mergeThemeWithSignedUrlFallback(previousTheme, incomingTheme) {
+        var prev = normalizeTheme(previousTheme);
+        var next = normalizeTheme(incomingTheme);
+
+        if (
+            next.wallpaper_url &&
+            prev.wallpaper_url === next.wallpaper_url &&
+            !next.wallpaper_download_url &&
+            prev.wallpaper_download_url
+        ) {
+            next.wallpaper_download_url = prev.wallpaper_download_url;
+        }
+
+        return next;
+    }
+
     function getWallpaperFallback(theme) {
         if (theme.wallpaper_preset && PRESET_WALLPAPERS[theme.wallpaper_preset]) {
             return PRESET_WALLPAPERS[theme.wallpaper_preset];
@@ -441,6 +469,23 @@
         return fallback;
     }
 
+    function clearWallpaperRetryTimer() {
+        if (!state.wallpaperRetryTimer) return;
+        clearTimeout(state.wallpaperRetryTimer);
+        state.wallpaperRetryTimer = null;
+    }
+
+    function scheduleWallpaperRefreshRetry(reason) {
+        if (state.wallpaperRetryTimer || !state.theme || !state.theme.wallpaper_url) {
+            return;
+        }
+
+        state.wallpaperRetryTimer = setTimeout(function () {
+            state.wallpaperRetryTimer = null;
+            refreshWallpaperDownloadUrl(reason || 'scheduled-retry', true);
+        }, 4000);
+    }
+
     async function refreshWallpaperDownloadUrl(reason, force) {
         if (!state.theme || !state.theme.wallpaper_url) return;
 
@@ -454,7 +499,7 @@
 
         try {
             var layoutData = await apiGet('/layout');
-            var latestTheme = normalizeTheme(layoutData.theme);
+            var latestTheme = mergeThemeWithSignedUrlFallback(state.theme, layoutData.theme);
 
             if (!latestTheme.wallpaper_url) {
                 return;
@@ -464,9 +509,17 @@
             state.theme.wallpaper_download_url = latestTheme.wallpaper_download_url || null;
             state.theme.wallpaper_preset = latestTheme.wallpaper_preset || null;
 
+            if (state.theme.wallpaper_download_url) {
+                state.wallpaperProbeFailures = 0;
+                clearWallpaperRetryTimer();
+            } else {
+                scheduleWallpaperRefreshRetry('signed-url-still-missing');
+            }
+
             applyTheme({ skipWallpaperProbe: !state.theme.wallpaper_download_url });
         } catch (error) {
             console.warn('[kantor-saya] refresh wallpaper signed URL failed (' + (reason || 'unknown') + '):', error);
+            scheduleWallpaperRefreshRetry('refresh-failed');
         } finally {
             state.wallpaperRefreshInFlight = false;
         }
@@ -489,17 +542,27 @@
 
         probeImage.onload = function () {
             if (probeToken !== state.wallpaperProbeToken) return;
+            state.wallpaperProbeFailures = 0;
         };
 
         probeImage.onerror = function () {
             if (probeToken !== state.wallpaperProbeToken) return;
             if (!state.theme || state.theme.wallpaper_download_url !== expectedUrl) return;
 
-            // Keep a visual fallback, then request a fresh signed URL from server.
-            state.theme.wallpaper_download_url = null;
+            state.wallpaperProbeFailures += 1;
             state.lastWallpaperProbeUrl = null;
+
+            // First failure is often transient (expired edge cache / flaky mobile network).
+            // Retry refresh without immediately dropping the visible wallpaper.
+            if (state.wallpaperProbeFailures <= 1) {
+                refreshWallpaperDownloadUrl('probe-error-retry', true);
+                return;
+            }
+
+            // Keep a visual fallback after repeated failures, then request a fresh signed URL.
+            state.theme.wallpaper_download_url = null;
             applyTheme({ skipWallpaperProbe: true });
-            refreshWallpaperDownloadUrl('probe-error', false);
+            refreshWallpaperDownloadUrl('probe-error-fallback', true);
         };
 
         probeImage.src = expectedUrl;
@@ -645,8 +708,9 @@
 
         var data = await apiPut('/layout', payload);
         if (data) {
+            var previousTheme = state.theme;
             state.layout = normalizeLayout(data.layout || state.layout);
-            state.theme = normalizeTheme(data.theme || state.theme);
+            state.theme = mergeThemeWithSignedUrlFallback(previousTheme, data.theme || previousTheme);
             applyTheme();
             updateLastSavedLabel(data.updated_at || new Date().toISOString());
         }
@@ -660,9 +724,10 @@
 
         state.isHydrating = true;
         try {
+            var previousTheme = state.theme;
             var layoutData = await apiGet('/layout');
             state.layout = normalizeLayout(layoutData.layout);
-            state.theme = normalizeTheme(layoutData.theme);
+            state.theme = mergeThemeWithSignedUrlFallback(previousTheme, layoutData.theme);
 
             applyTheme();
             renderGrid();
@@ -979,6 +1044,8 @@
                     state.theme.wallpaper_preset = preset;
                     state.theme.wallpaper_url = null;
                     state.theme.wallpaper_download_url = null;
+                    state.wallpaperProbeFailures = 0;
+                    clearWallpaperRetryTimer();
                     applyTheme();
                     scheduleSave();
                 };
@@ -995,6 +1062,8 @@
             state.theme.wallpaper_url = result.wallpaper_url || null;
             state.theme.wallpaper_download_url = result.wallpaper_download_url || null;
             state.theme.wallpaper_preset = null;
+            state.wallpaperProbeFailures = 0;
+            clearWallpaperRetryTimer();
 
             applyTheme();
             if (state.theme.wallpaper_url && !state.theme.wallpaper_download_url) {
@@ -1055,7 +1124,7 @@
             state.isHydrating = true;
             var layoutData = await apiGet('/layout');
             state.layout = normalizeLayout(layoutData.layout);
-            state.theme = normalizeTheme(layoutData.theme);
+            state.theme = mergeThemeWithSignedUrlFallback(state.theme, layoutData.theme);
 
             state.grid = window.GridStack.init({
                 column: 12,

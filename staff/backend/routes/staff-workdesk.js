@@ -211,7 +211,7 @@ async function ensureSchema() {
 
 async function getStoredLayout(userId) {
     const [rows] = await db.query(
-        `SELECT layout_json, theme_json, wallpaper_url, updated_at
+        `SELECT user_id, layout_json, theme_json, wallpaper_url, updated_at
          FROM staff_workdesk_layouts
          WHERE user_id = ?
          LIMIT 1`,
@@ -228,6 +228,7 @@ async function getStoredLayout(userId) {
     const wallpaperUrl = row.wallpaper_url || theme.wallpaper_url || null;
 
     return {
+        user_id: row.user_id,
         layout,
         theme,
         wallpaper_url: wallpaperUrl,
@@ -247,8 +248,13 @@ async function toLayoutResponse(record) {
     if (wallpaperKey && r2Storage.isR2Configured()) {
         try {
             wallpaperSignedUrl = await r2Storage.getSignedDownloadUrl(wallpaperKey, 3600);
-        } catch (_) {
+        } catch (error) {
             wallpaperSignedUrl = null;
+            console.warn('[staff-workdesk] wallpaper signed URL generation failed:', {
+                user_id: record.user_id || null,
+                wallpaper_key: wallpaperKey,
+                error: error && error.message ? error.message : String(error)
+            });
         }
     }
 
