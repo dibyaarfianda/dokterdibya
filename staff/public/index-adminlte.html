@@ -57,9 +57,13 @@
     <style>
         /* Browser policy: show staff panel at ~80% only in regular browser mode.
            PWA/mobile-app mode must stay true 100%. */
-        html.browser-zoom-80:not(.mobile-app-mode),
-        body.browser-zoom-80:not(.mobile-app-mode) {
+        html.browser-zoom-80:not(.mobile-app-mode) {
             zoom: 0.8;
+        }
+
+        /* Keep body at normal zoom to avoid compounded scaling with html zoom. */
+        body.browser-zoom-80:not(.mobile-app-mode) {
+            zoom: 1 !important;
         }
 
         html.mobile-app-mode,
@@ -7778,7 +7782,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v163';
+    window.__assetVersion = 'v164';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
