@@ -816,22 +816,22 @@
         var wallpaperFile = document.getElementById('ks-wallpaper-file');
 
         if (btnEdit) {
-            btnEdit.addEventListener('click', function () {
+            btnEdit.onclick = function () {
                 setEditMode(!state.editMode);
-            });
+            };
         }
 
         if (btnAddWidget) {
-            btnAddWidget.addEventListener('click', function () {
+            btnAddWidget.onclick = function () {
                 renderWidgetCatalog();
                 if (window.jQuery) {
                     window.jQuery('#ks-widget-modal').modal('show');
                 }
-            });
+            };
         }
 
         if (btnTheme) {
-            btnTheme.addEventListener('click', function () {
+            btnTheme.onclick = function () {
                 var colorInput = document.getElementById('ks-theme-color');
                 if (colorInput) {
                     colorInput.value = state.theme.accent_color || '#0d6efd';
@@ -839,21 +839,21 @@
                 if (window.jQuery) {
                     window.jQuery('#ks-theme-modal').modal('show');
                 }
-            });
+            };
         }
 
         if (btnRefresh) {
-            btnRefresh.addEventListener('click', function () {
+            btnRefresh.onclick = function () {
                 state.cache.clear();
                 reloadLayoutFromServer({ keepEditMode: true }).catch(function (error) {
                     console.error('[kantor-saya] refresh layout error:', error);
                     refreshAllWidgets(true);
                 });
-            });
+            };
         }
 
         if (btnSaveTheme) {
-            btnSaveTheme.addEventListener('click', function () {
+            btnSaveTheme.onclick = function () {
                 var colorInput = document.getElementById('ks-theme-color');
                 if (colorInput) {
                     state.theme.accent_color = colorInput.value || '#0d6efd';
@@ -863,40 +863,40 @@
                 if (window.jQuery) {
                     window.jQuery('#ks-theme-modal').modal('hide');
                 }
-            });
+            };
         }
 
         if (btnUploadWallpaper && wallpaperFile) {
-            btnUploadWallpaper.addEventListener('click', function () {
+            btnUploadWallpaper.onclick = function () {
                 wallpaperFile.click();
-            });
+            };
 
-            wallpaperFile.addEventListener('change', function () {
+            wallpaperFile.onchange = function () {
                 if (!wallpaperFile.files || !wallpaperFile.files[0]) return;
                 uploadWallpaper(wallpaperFile.files[0]).finally(function () {
                     wallpaperFile.value = '';
                 });
-            });
+            };
         }
 
         var colorInputGlobal = document.getElementById('ks-theme-color');
         if (colorInputGlobal) {
-            colorInputGlobal.addEventListener('input', function () {
+            colorInputGlobal.oninput = function () {
                 state.theme.accent_color = colorInputGlobal.value || '#0d6efd';
                 applyTheme();
-            });
+            };
         }
 
         if (state.root) {
             state.root.querySelectorAll('.ks-preset[data-preset]').forEach(function (button) {
-                button.addEventListener('click', function () {
+                button.onclick = function () {
                     var preset = button.getAttribute('data-preset');
                     if (!preset) return;
                     state.theme.wallpaper_preset = preset;
                     state.theme.wallpaper_url = null;
                     state.theme.wallpaper_download_url = null;
                     applyTheme();
-                });
+                };
             });
         }
     }
@@ -1021,6 +1021,7 @@
             state.root.classList.remove('d-none');
         }
 
+        bindToolbar();
         setEditMode(state.editMode);
         refreshAllWidgets(false);
     }
