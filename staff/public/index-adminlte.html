@@ -684,11 +684,34 @@
 
         /* Keep side-menu divider full height to bottom on desktop view. */
         @media (min-width: 992px) {
+            body {
+                position: relative;
+            }
+
+            /* Draw a document-height left rail so divider continues through footer area. */
+            body::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 210px;
+                background: #FAFAFA;
+                border-right: 1px solid rgba(15, 23, 42, 0.12);
+                pointer-events: none;
+                z-index: 1020;
+            }
+
+            body.sidebar-collapse::before {
+                width: 4.6rem;
+            }
+
             .main-sidebar {
                 min-height: 100vh !important;
                 height: 100vh !important;
                 border-right: 1px solid rgba(15, 23, 42, 0.12) !important;
                 box-sizing: border-box;
+                z-index: 1030;
             }
 
             /* Compensate CSS zoom:0.8 in browser mode so sidebar still reaches viewport bottom. */
@@ -7782,7 +7805,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v164';
+    window.__assetVersion = 'v165';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
