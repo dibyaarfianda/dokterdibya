@@ -100,6 +100,13 @@ function computeNextBirthdayDays(birthDate) {
     return Math.round((upcoming - now) / 86400000);
 }
 
+function setNoCacheHeaders(res) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Vary', 'Authorization');
+}
+
 function getDefaultLayout() {
     return {
         version: 1,
@@ -281,6 +288,8 @@ router.use(async (_req, _res, next) => {
 
 router.get('/layout', async (req, res) => {
     try {
+        setNoCacheHeaders(res);
+
         const userId = getUserId(req);
         if (!userId) {
             return res.status(401).json({ success: false, message: 'User tidak valid' });
