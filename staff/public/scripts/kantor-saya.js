@@ -376,6 +376,101 @@
         return fetch(url, Object.assign({}, options || {}, { headers: headers }));
     }
 
+    function showFallbackModal(modalEl) {
+        if (!modalEl) return;
+
+        modalEl.style.display = 'block';
+        modalEl.classList.add('show');
+        modalEl.setAttribute('aria-modal', 'true');
+        modalEl.removeAttribute('aria-hidden');
+        document.body.classList.add('modal-open');
+
+        var existingBackdrop = document.querySelector('.modal-backdrop.ks-fallback-backdrop');
+        if (!existingBackdrop) {
+            existingBackdrop = document.createElement('div');
+            existingBackdrop.className = 'modal-backdrop fade show ks-fallback-backdrop';
+            existingBackdrop.addEventListener('click', function () {
+                hideFallbackModal(modalEl);
+            });
+            document.body.appendChild(existingBackdrop);
+        }
+    }
+
+    function hideFallbackModal(modalEl) {
+        if (!modalEl) return;
+
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.removeAttribute('aria-modal');
+
+        var backdrop = document.querySelector('.modal-backdrop.ks-fallback-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+
+        if (!document.querySelector('.modal.show')) {
+            document.body.classList.remove('modal-open');
+        }
+    }
+
+    function showModal(modalId) {
+        var modalEl = document.getElementById(modalId);
+        if (!modalEl) return;
+
+        if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+            window.jQuery(modalEl).modal('show');
+            return;
+        }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            var modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            return;
+        }
+
+        showFallbackModal(modalEl);
+    }
+
+    function hideModal(modalId) {
+        var modalEl = document.getElementById(modalId);
+        if (!modalEl) return;
+
+        if (window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function') {
+            window.jQuery(modalEl).modal('hide');
+            return;
+        }
+
+        if (window.bootstrap && window.bootstrap.Modal) {
+            var modal = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.hide();
+            return;
+        }
+
+        hideFallbackModal(modalEl);
+    }
+
+    function bindModalDismissFallback(modalId) {
+        var modalEl = document.getElementById(modalId);
+        if (!modalEl || modalEl.dataset.dismissBound === '1') {
+            return;
+        }
+
+        modalEl.dataset.dismissBound = '1';
+
+        modalEl.addEventListener('click', function (event) {
+            if (event.target === modalEl) {
+                hideModal(modalId);
+            }
+        });
+
+        modalEl.querySelectorAll('[data-dismiss="modal"], .close').forEach(function (button) {
+            button.addEventListener('click', function () {
+                hideModal(modalId);
+            });
+        });
+    }
+
     function withCacheBust(url) {
         var separator = url.indexOf('?') === -1 ? '?' : '&';
         return url + separator + '_t=' + Date.now();
@@ -1087,9 +1182,7 @@
             button.addEventListener('click', function () {
                 var widgetId = button.getAttribute('data-widget-id');
                 addWidget(widgetId);
-                if (window.jQuery) {
-                    window.jQuery('#ks-widget-modal').modal('hide');
-                }
+                hideModal('ks-widget-modal');
             });
         });
     }
@@ -1119,6 +1212,9 @@
         var btnUploadWallpaper = document.getElementById('ks-btn-upload-wallpaper');
         var wallpaperFile = document.getElementById('ks-wallpaper-file');
 
+        bindModalDismissFallback('ks-widget-modal');
+        bindModalDismissFallback('ks-theme-modal');
+
         if (btnEdit) {
             btnEdit.onclick = function () {
                 setEditMode(!state.editMode);
@@ -1128,9 +1224,7 @@
         if (btnAddWidget) {
             btnAddWidget.onclick = function () {
                 renderWidgetCatalog();
-                if (window.jQuery) {
-                    window.jQuery('#ks-widget-modal').modal('show');
-                }
+                showModal('ks-widget-modal');
             };
         }
 
@@ -1140,9 +1234,7 @@
                 if (colorInput) {
                     colorInput.value = state.theme.accent_color || '#0d6efd';
                 }
-                if (window.jQuery) {
-                    window.jQuery('#ks-theme-modal').modal('show');
-                }
+                showModal('ks-theme-modal');
             };
         }
 
@@ -1164,9 +1256,7 @@
                 }
                 applyTheme();
                 scheduleSave();
-                if (window.jQuery) {
-                    window.jQuery('#ks-theme-modal').modal('hide');
-                }
+                hideModal('ks-theme-modal');
             };
         }
 
