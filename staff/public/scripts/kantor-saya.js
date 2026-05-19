@@ -27,7 +27,9 @@
         lastWallpaperProbeUrl: null,
         wallpaperProbeFailures: 0,
         wallpaperRetryTimer: null,
-        wallpaperLeaseTimer: null
+        wallpaperLeaseTimer: null,
+        wallpaperGuardTimer: null,
+        wallpaperGuardLastRestoreAt: 0
     };
 
     function getLiveRoot() {
@@ -69,6 +71,11 @@
         if (state.wallpaperLeaseTimer) {
             clearInterval(state.wallpaperLeaseTimer);
             state.wallpaperLeaseTimer = null;
+        }
+
+        if (state.wallpaperGuardTimer) {
+            clearInterval(state.wallpaperGuardTimer);
+            state.wallpaperGuardTimer = null;
         }
 
         state.widgetTimers.forEach(function (timer) {
@@ -505,6 +512,57 @@
         state.wallpaperLeaseTimer = null;
     }
 
+    function clearWallpaperGuardTimer() {
+        if (!state.wallpaperGuardTimer) return;
+        clearInterval(state.wallpaperGuardTimer);
+        state.wallpaperGuardTimer = null;
+    }
+
+    function isRootLikelyVisible() {
+        if (!state.root) return false;
+        if (state.root.classList && state.root.classList.contains('d-none')) return false;
+        if (state.root.getClientRects && state.root.getClientRects().length === 0) return false;
+        return true;
+    }
+
+    function ensureWallpaperVisualIntegrity(reason) {
+        if (!state.root || !state.theme || !isRootLikelyVisible()) return;
+
+        var computed = window.getComputedStyle ? window.getComputedStyle(state.root) : null;
+        var computedImage = computed && computed.backgroundImage ? computed.backgroundImage : '';
+        if (computedImage && computedImage !== 'none') return;
+
+        var now = Date.now();
+        if ((now - state.wallpaperGuardLastRestoreAt) < 4000) {
+            return;
+        }
+        state.wallpaperGuardLastRestoreAt = now;
+
+        console.warn('[kantor-saya] wallpaper guard restore (' + (reason || 'unknown') + ')');
+        state.root.style.setProperty('background-image', getWallpaperBackground(state.theme), 'important');
+        state.root.style.setProperty('background-size', 'cover', 'important');
+        state.root.style.setProperty('background-position', 'center', 'important');
+
+        if (state.theme.wallpaper_url) {
+            refreshWallpaperDownloadUrl('guard-restore-' + (reason || 'unknown'), true);
+        }
+    }
+
+    function ensureWallpaperGuardLoop() {
+        if (!state.theme) {
+            clearWallpaperGuardTimer();
+            return;
+        }
+
+        if (state.wallpaperGuardTimer) {
+            return;
+        }
+
+        state.wallpaperGuardTimer = setInterval(function () {
+            ensureWallpaperVisualIntegrity('interval');
+        }, 3000);
+    }
+
     function ensureWallpaperLeaseRefreshLoop() {
         if (!state.theme || !state.theme.wallpaper_url) {
             clearWallpaperLeaseTimer();
@@ -622,13 +680,17 @@
     function applyTheme(options) {
         if (!state.root || !state.theme) return;
         state.root.style.setProperty('--kantor-accent', state.theme.accent_color || '#0d6efd');
-        state.root.style.backgroundImage = getWallpaperBackground(state.theme);
+        state.root.style.setProperty('background-image', getWallpaperBackground(state.theme), 'important');
+        state.root.style.setProperty('background-size', 'cover', 'important');
+        state.root.style.setProperty('background-position', 'center', 'important');
 
         if (state.theme.wallpaper_url) {
             ensureWallpaperLeaseRefreshLoop();
         } else {
             clearWallpaperLeaseTimer();
         }
+
+        ensureWallpaperGuardLoop();
 
         if (!state.theme.wallpaper_download_url) {
             state.lastWallpaperProbeUrl = null;
@@ -653,6 +715,8 @@
                 button.classList.remove('is-selected');
             }
         });
+
+        ensureWallpaperVisualIntegrity('apply-theme');
     }
 
     function getWidgetDef(widgetId) {
@@ -1237,6 +1301,7 @@
 
         if (state.theme) {
             applyTheme();
+            ensureWallpaperVisualIntegrity('on-show');
         }
 
         bindToolbar();
