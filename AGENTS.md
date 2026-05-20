@@ -1664,3 +1664,53 @@ User requested: "Tanya Dokter tidak tepat posisi tabelnya, betulkan".
 
 **Lesson:**
 - For page-specific alignment issues in this repo, prefer scoped selectors under the page id (e.g., `#tanya-dokter-page ...`) instead of broad global overrides.
+
+### 47. Session Log - 21 May 2026
+
+**Kantor Saya Bottom Gap with Browser Zoom 80 (User Confirmed Perfect)**
+
+User confirmed with "perfect" after the final gap fix for the Kantor Saya frame.
+
+**Problem:**
+- Kantor Saya still showed a white bottom gap even after dynamic frame height, no outer scroll mode, and cache/version bumps.
+- Browser measurements first looked correct (`scrollDelta = 0`), but the screenshot still showed white space below the frame.
+
+**Root Cause:**
+- Staff panel applies `html.browser-zoom-80 { zoom: 0.8; }`.
+- `visualViewport.height` / `window.innerHeight` reported the unscaled viewport height, while the page content was rendered at 80% zoom.
+- The frame height was therefore calculated about 20% too short.
+
+**What actually fixed it:**
+1. Keep Kantor Saya mode class on both `html` and `body`:
+    - `kantor-saya-active` added in `showKantorSayaPage()`
+    - removed in `hideAllPages()` and inline page hiders
+2. Disable outer document scroll only while Kantor Saya is active:
+    - `html.kantor-saya-active`, `body.kantor-saya-active`, `.wrapper`, and `.content-wrapper` use `overflow: hidden !important`
+    - `content-wrapper` padding-bottom forced to `0 !important`
+3. Make frame height zoom-aware in `staff/public/scripts/kantor-saya.js`:
+    ```javascript
+    function getShellZoomScale() {
+        var rawZoom = window.getComputedStyle(document.documentElement).zoom || '1';
+        var zoom = Number.parseFloat(rawZoom);
+        return Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+    }
+
+    var viewportHeight = getViewportHeight() / getShellZoomScale();
+    ```
+4. Force fresh assets after the fix:
+    - `window.__assetVersion` -> `v208`
+    - `STAFF_PWA_VERSION` -> `v208`
+
+**Verification pattern that proved the fix:**
+1. Use browser tooling, not only curl/source checks.
+2. Inspect `getComputedStyle(document.documentElement).zoom`.
+3. Use `document.elementFromPoint()` near the visual bottom to confirm whether the white area belongs to `content-wrapper` or `#kantor-saya-page`.
+4. Final browser metrics that mattered:
+    - `assetVersion: v208`
+    - `htmlZoom: 0.8`
+    - `rootHeight` increased to account for zoom
+    - `scrollDelta: 0`
+    - `maxWindowScrollY: 0`
+
+**Lesson:**
+- When layout math looks correct but the visual result is still short, check CSS `zoom` on `html` or `body`. In this staff panel, viewport-based calculations must account for `browser-zoom-80`.
