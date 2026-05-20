@@ -5,9 +5,13 @@
             --kantor-accent: #0d6efd;
             --kantor-surface: rgba(255, 255, 255, 0.58);
             --kantor-border: rgba(15, 23, 42, 0.08);
-            min-height: calc(100vh - 170px);
+            height: calc(100dvh - 148px);
+            min-height: 420px;
             border-radius: 16px;
             padding: 14px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
             background: radial-gradient(circle at 15% 10%, rgba(13, 110, 253, 0.15), transparent 42%),
                         radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.14), transparent 40%),
                         linear-gradient(160deg, #f8fafc 0%, #eef4ff 50%, #f3f8f5 100%);
@@ -725,7 +729,8 @@
         @media (max-width: 767.98px) {
             #kantor-saya-page {
                 padding: 10px;
-                min-height: calc(100vh - 140px);
+                height: calc(100dvh - 118px);
+                min-height: 360px;
             }
 
             #kantor-saya-page .ks-toolbar {

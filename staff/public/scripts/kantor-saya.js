@@ -35,6 +35,7 @@
         wallpaperGuardLastRestoreAt: 0,
         wallpaperFallbackWarnAt: 0,
         backgroundParallaxBound: false,
+        backgroundParallaxRoot: null,
         backgroundParallaxRaf: null,
         lastSuccessfulWallpaperKey: null,
         lastSuccessfulWallpaperBackground: null,
@@ -87,6 +88,21 @@
         if (state.wallpaperGuardTimer) {
             clearInterval(state.wallpaperGuardTimer);
             state.wallpaperGuardTimer = null;
+        }
+
+        if (state.backgroundParallaxRoot) {
+            state.backgroundParallaxRoot.removeEventListener('scroll', scheduleBackgroundParallax);
+            state.backgroundParallaxRoot = null;
+        }
+
+        if (state.backgroundParallaxBound) {
+            window.removeEventListener('resize', scheduleBackgroundParallax);
+            state.backgroundParallaxBound = false;
+        }
+
+        if (state.backgroundParallaxRaf) {
+            window.cancelAnimationFrame(state.backgroundParallaxRaf);
+            state.backgroundParallaxRaf = null;
         }
 
         state.widgetTimers.forEach(function (timer) {
@@ -1684,21 +1700,8 @@
     }
 
     function getKantorScrollTop() {
-        var candidates = [
-            document.querySelector('.content-wrapper'),
-            document.scrollingElement,
-            document.documentElement,
-            document.body
-        ];
-
-        for (var i = 0; i < candidates.length; i += 1) {
-            var el = candidates[i];
-            if (el && Number(el.scrollTop) > 0) {
-                return Number(el.scrollTop);
-            }
-        }
-
-        return Number(window.pageYOffset || window.scrollY || 0);
+        var root = getLiveRoot();
+        return root ? Number(root.scrollTop || 0) : 0;
     }
 
     function updateBackgroundParallax() {
@@ -1717,14 +1720,23 @@
     }
 
     function bindBackgroundParallax() {
+        var root = getLiveRoot();
+        if (!root) return;
+
+        if (state.backgroundParallaxRoot !== root) {
+            if (state.backgroundParallaxRoot) {
+                state.backgroundParallaxRoot.removeEventListener('scroll', scheduleBackgroundParallax);
+            }
+            root.addEventListener('scroll', scheduleBackgroundParallax, { passive: true });
+            state.backgroundParallaxRoot = root;
+        }
+
         if (state.backgroundParallaxBound) {
             scheduleBackgroundParallax();
             return;
         }
 
-        window.addEventListener('scroll', scheduleBackgroundParallax, { passive: true });
         window.addEventListener('resize', scheduleBackgroundParallax, { passive: true });
-        document.addEventListener('scroll', scheduleBackgroundParallax, { passive: true, capture: true });
         state.backgroundParallaxBound = true;
         scheduleBackgroundParallax();
     }
