@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v175'; // Force fresh caches for Kantor Saya asset-version sync fix
+const STAFF_PWA_VERSION = 'v176'; // Force fresh caches for Kantor Saya lite widget previews and DocBoard modal embed
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
