@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260521g'; // 2026-05-21g - Slow queue promo modal, blur backdrop, and keep wrapper sized to image
+const CACHE_VERSION = '20260521h'; // 2026-05-21h - Reduce queue modal blur to 10px and extend animation to 1.5s
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
