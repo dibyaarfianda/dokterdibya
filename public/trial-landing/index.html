@@ -2316,28 +2316,30 @@
             }
 
             .welcome-window {
-                grid-template-columns: 1fr;
-                gap: 0;
+                grid-template-columns: minmax(340px, 0.96fr) minmax(0, 1.04fr);
+                gap: 36px;
             }
 
             .welcome-window-left {
-                border-right: none;
-                border-bottom: none;
-                padding: 12px 6px 20px;
-                justify-content: flex-start;
+                padding: 18px 0 18px 8px;
+                justify-content: flex-end;
+            }
+
+            .welcome-window-left-inner {
+                max-width: 440px;
             }
 
             .welcome-window-left-inner h2 {
-                font-size: clamp(72px, 9vw, 104px);
+                font-size: clamp(70px, 7.4vw, 96px);
             }
 
             .welcome-window-scroll {
-                padding: 0;
+                padding: 0 6px;
             }
 
             .welcome-pinned-content {
-                max-width: 100%;
-                padding: 34px 8px 12px;
+                max-width: 620px;
+                padding: 42px 0 12px;
             }
         }
 
