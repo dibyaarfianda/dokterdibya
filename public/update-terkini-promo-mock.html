@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Terkini Promo Mock</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f6f8;
+            color: #111827;
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            padding: 58px;
+            background:
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 28%),
+                radial-gradient(circle at bottom left, rgba(17, 24, 39, 0.06), transparent 22%),
+                #f5f6f8;
+        }
+
+        .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 40px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: rgba(255, 255, 255, 0.82);
+            padding: 44px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #2563eb;
+        }
+
+        h1 {
+            font-size: 64px;
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            font-weight: 650;
+            max-width: 660px;
+            margin-top: 12px;
+        }
+
+        .lead {
+            font-size: 23px;
+            line-height: 1.58;
+            color: #526070;
+            max-width: 780px;
+        }
+
+        .stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .announcement {
+            border-radius: 26px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: #fff;
+            padding: 22px 24px;
+            display: grid;
+            grid-template-columns: 110px 1fr auto;
+            gap: 18px;
+            align-items: center;
+        }
+
+        .announcement:nth-child(1) {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), #fff 72%);
+        }
+
+        .badge {
+            align-self: start;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 28px;
+            line-height: 1.22;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .copy {
+            font-size: 18px;
+            line-height: 1.55;
+            color: #5a6676;
+        }
+
+        .meta {
+            text-align: right;
+            font-size: 15px;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        .meta strong {
+            display: block;
+            font-size: 20px;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="frame">
+            <div>
+                <div class="kicker">Update Terkini</div>
+                <h1>Pengumuman penting terkumpul di satu tempat.</h1>
+            </div>
+            <p class="lead">Mock ini mengikuti pola kartu pengumuman pada section Update Terkini: status jelas, judul singkat, isi padat, dan waktu publikasi yang mudah dibaca.</p>
+            <div class="stack">
+                <div class="announcement">
+                    <div class="badge">Info</div>
+                    <div>
+                        <div class="title">Jadwal praktik hari Minggu dibuka lebih awal minggu ini.</div>
+                        <div class="copy">Reservasi dibuka mulai Kamis malam untuk memberi waktu lebih panjang bagi pasien yang ingin memilih slot.</div>
+                    </div>
+                    <div class="meta"><strong>Hari ini</strong>08.15 WIB</div>
+                </div>
+                <div class="announcement">
+                    <div class="badge">Promo</div>
+                    <div>
+                        <div class="title">Pengingat cek vitamin trimester kedua telah diperbarui.</div>
+                        <div class="copy">Lihat rekomendasi baru dan jadwal minum suplemen sesuai fase kehamilan Anda di patient portal.</div>
+                    </div>
+                    <div class="meta"><strong>Kemarin</strong>19.30 WIB</div>
+                </div>
+                <div class="announcement">
+                    <div class="badge">Alert</div>
+                    <div>
+                        <div class="title">Perubahan alur kedatangan pasien untuk sesi pagi.</div>
+                        <div class="copy">Mohon datang 15 menit lebih awal agar proses verifikasi dan antrean klinik berjalan lebih lancar.</div>
+                    </div>
+                    <div class="meta"><strong>20 Mei</strong>09.00 WIB</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

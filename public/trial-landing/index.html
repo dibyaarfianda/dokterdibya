@@ -4877,7 +4877,7 @@
                     <div class="cta-content">
                         <h2 class="cta-heading">Booking Klinik Minggu</h2>
                         <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
-                        <a class="doc-cta-link" href="/booking-klinik-trial.html">
+                        <a class="doc-cta-link" href="/images/booking-klinik-promo-fake.png" data-promo-src="/images/booking-klinik-promo-fake.png" data-promo-alt="Preview Booking Klinik Minggu dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                             <span class="doc-cta-track">
                                 <span class="dot dot-left"></span>
                                 <span class="text">Booking Sekarang</span>
@@ -4898,7 +4898,7 @@
                     </div>
 
                     <div class="journey-showcase-grid">
-                        <button type="button" class="journey-card card-perjalanan is-short" onclick="window.location.href='/perjalanan-ibu-trial.html'" aria-label="Buka Perjalanan Ibu: Langkah Awal Ibu">
+                        <button type="button" class="journey-card card-perjalanan is-short" data-promo-src="/images/perjalanan-ibu-promo-fake.png" data-promo-alt="Preview Perjalanan Ibu dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Perjalanan Ibu: Langkah Awal Ibu">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Perjalanan Ibu</span>
@@ -4909,7 +4909,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-membaca is-tall" onclick="window.location.href='/artikel-trial.html'" aria-label="Buka Ruang Membaca: Nadi Pengetahuan">
+                        <button type="button" class="journey-card card-membaca is-tall" data-promo-src="/images/ruang-membaca-promo-fake.png" data-promo-alt="Preview Ruang Membaca dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Ruang Membaca: Nadi Pengetahuan">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Ruang Membaca</span>
@@ -4920,7 +4920,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-update is-taller" onclick="document.getElementById('announcements-container').scrollIntoView({ behavior: 'smooth', block: 'start' });" aria-label="Lihat Update Terkini: Kabar Sehat Hari Ini">
+                        <button type="button" class="journey-card card-update is-taller" data-promo-src="/images/update-terkini-promo-fake.png" data-promo-alt="Preview Update Terkini dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Update Terkini: Kabar Sehat Hari Ini">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Update Terkini</span>
@@ -4931,7 +4931,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-obgyn is-short" onclick="window.location.href='/artikel-kesehatan-trial.html'" aria-label="Buka Obstetri Ginekologi: Mengenai istilah bidang Obgyn">
+                        <button type="button" class="journey-card card-obgyn is-short" data-promo-src="/images/tanya-dokter-promo-fake.png" data-promo-alt="Preview Fitur Tanya Dokter dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Fitur Tanya Dokter">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Fitur Tanya Dokter</span>
@@ -8014,6 +8014,8 @@
         document.addEventListener('click', function(e) {
             var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;
             if (!link) return;
+
+            if (link.dataset && link.dataset.promoSrc) return;
 
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             if (link.target === '_blank') return;

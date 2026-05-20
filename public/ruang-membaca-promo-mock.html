@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruang Membaca Promo Mock</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f7f7f4;
+            color: #111;
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            padding: 58px;
+            background:
+                radial-gradient(circle at top left, rgba(15, 23, 42, 0.08), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(32, 129, 226, 0.08), transparent 24%),
+                #f7f7f4;
+        }
+
+        .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 40px;
+            border: 1px solid rgba(17, 17, 17, 0.08);
+            background: rgba(255, 255, 255, 0.82);
+            padding: 44px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        h1 {
+            font-size: 64px;
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            font-weight: 650;
+            max-width: 640px;
+            margin-top: 12px;
+        }
+
+        .lead {
+            font-size: 23px;
+            line-height: 1.58;
+            color: #475569;
+            max-width: 770px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab {
+            padding: 12px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(17, 17, 17, 0.08);
+            background: #f4f5f7;
+            font-size: 16px;
+            font-weight: 600;
+            color: #5b6470;
+        }
+
+        .tab.active {
+            background: #111;
+            color: #fff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            flex: 1;
+        }
+
+        .card {
+            border-radius: 26px;
+            border: 1px solid rgba(17, 17, 17, 0.08);
+            background: #fff;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .card-title {
+            font-size: 32px;
+            line-height: 1.18;
+            font-weight: 700;
+        }
+
+        .card-copy {
+            font-size: 18px;
+            line-height: 1.58;
+            color: #53606f;
+            flex: 1;
+        }
+
+        .card-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 14px;
+            border-top: 1px solid rgba(17, 17, 17, 0.08);
+            font-size: 15px;
+            color: #64748b;
+        }
+
+        .read-link {
+            color: #111;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="frame">
+            <div>
+                <div class="kicker">Ruang Membaca</div>
+                <h1>Bacaan terkurasi untuk belajar dengan ritme yang lebih tenang.</h1>
+            </div>
+            <p class="lead">Halaman ini menonjolkan tab kategori dan kartu artikel yang ringkas, mudah dibaca, dan tetap terasa editorial.</p>
+            <div class="tabs">
+                <div class="tab active">Kehamilan</div>
+                <div class="tab">Nutrisi</div>
+                <div class="tab">Persalinan</div>
+                <div class="tab">Menyusui</div>
+            </div>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-top"><span>Edukasi</span><span>5 menit</span></div>
+                    <div class="card-title">Tanda awal persalinan yang perlu dikenali.</div>
+                    <div class="card-copy">Penjelasan singkat tentang kontraksi teratur, pecah ketuban, dan kapan waktu yang tepat untuk berangkat ke fasilitas kesehatan.</div>
+                    <div class="card-foot"><span>Sumber terverifikasi</span><span class="read-link">Baca Artikel</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-top"><span>Nutrisi</span><span>7 menit</span></div>
+                    <div class="card-title">Menu sederhana untuk ibu hamil trimester dua.</div>
+                    <div class="card-copy">Contoh porsi harian yang mudah dipraktikkan untuk menjaga asupan protein, zat besi, dan hidrasi selama kehamilan.</div>
+                    <div class="card-foot"><span>Catatan klinis</span><span class="read-link">Buka Ringkasan</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-top"><span>Menyusui</span><span>4 menit</span></div>
+                    <div class="card-title">Posisi pelekatan yang membuat menyusui lebih nyaman.</div>
+                    <div class="card-copy">Panduan dasar untuk menemukan posisi yang aman dan membantu bayi menyusu lebih efektif.</div>
+                    <div class="card-foot"><span>Bahasa sederhana</span><span class="read-link">Pelajari</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-top"><span>Persiapan</span><span>6 menit</span></div>
+                    <div class="card-title">Checklist tas persalinan yang sebaiknya disiapkan lebih awal.</div>
+                    <div class="card-copy">Daftar ringkas barang penting untuk ibu, bayi, dan dokumen agar hari persalinan terasa lebih tenang.</div>
+                    <div class="card-foot"><span>Disusun rapi</span><span class="read-link">Lihat Panduan</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
