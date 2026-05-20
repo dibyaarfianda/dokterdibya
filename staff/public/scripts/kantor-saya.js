@@ -34,7 +34,8 @@
         lastSuccessfulWallpaperKey: null,
         lastSuccessfulWallpaperBackground: null,
         activeAppearanceWidgetId: null,
-        activeAppearancePreset: ''
+        activeAppearancePreset: '',
+        activeAppearanceUseDefault: true
     };
 
     function getLiveRoot() {
@@ -422,6 +423,7 @@
 
     function setAppearancePresetSelection(preset) {
         state.activeAppearancePreset = preset || '';
+        state.activeAppearanceUseDefault = false;
         var modalEl = document.getElementById('ks-widget-appearance-modal');
         if (!modalEl) return;
 
@@ -450,7 +452,11 @@
             colorInput.value = appearance.header_color || '#0d6efd';
         }
 
+        state.activeAppearanceUseDefault = !appearance.header_color && !appearance.header_preset;
         setAppearancePresetSelection(appearance.header_preset || '');
+        if (!appearance.header_preset) {
+            state.activeAppearanceUseDefault = !appearance.header_color;
+        }
 
         if (advancedBtn) {
             if (def && typeof def.configure === 'function') {
@@ -2349,6 +2355,7 @@
 
         if (widgetAppearanceColor) {
             widgetAppearanceColor.oninput = function () {
+                state.activeAppearanceUseDefault = false;
                 if (widgetAppearanceColor.value) {
                     setAppearancePresetSelection('');
                 }
@@ -2357,10 +2364,12 @@
 
         if (btnResetWidgetAppearance) {
             btnResetWidgetAppearance.onclick = function () {
+                state.activeAppearanceUseDefault = true;
                 if (widgetAppearanceColor) {
                     widgetAppearanceColor.value = '#0d6efd';
                 }
                 setAppearancePresetSelection('');
+                state.activeAppearanceUseDefault = true;
             };
         }
 
@@ -2381,7 +2390,7 @@
                     header_preset: state.activeAppearancePreset || ''
                 };
 
-                if (!nextAppearance.header_color && !nextAppearance.header_preset) {
+                if (state.activeAppearanceUseDefault || (!nextAppearance.header_color && !nextAppearance.header_preset)) {
                     delete nextConfig.appearance;
                 } else {
                     nextConfig.appearance = nextAppearance;

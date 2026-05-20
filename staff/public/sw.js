@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v178'; // Force fresh caches for per-widget appearance customization and lighter wallpaper overlay
+const STAFF_PWA_VERSION = 'v179'; // Force fresh caches for widget appearance customization and reset fix
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
