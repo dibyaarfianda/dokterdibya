@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalender Kesuburan Promo Mock</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f7f6f2;
+            color: #161616;
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            padding: 58px;
+            background:
+                radial-gradient(circle at top right, rgba(34, 197, 94, 0.08), transparent 26%),
+                radial-gradient(circle at bottom left, rgba(0, 0, 0, 0.05), transparent 24%),
+                #f7f6f2;
+        }
+
+        .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 38px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: rgba(255, 255, 255, 0.78);
+            padding: 42px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #6d6d6d;
+        }
+
+        h1 {
+            font-size: 62px;
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            font-weight: 650;
+            max-width: 700px;
+            margin-top: 10px;
+        }
+
+        .lead {
+            font-size: 23px;
+            line-height: 1.55;
+            color: #3b3b3b;
+            max-width: 790px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            border-radius: 18px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #fff;
+            padding: 18px 16px;
+        }
+
+        .stat-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, 0.12);
+            color: #166534;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: #707070;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #141414;
+        }
+
+        .calendar-container {
+            flex: 1;
+            border-radius: 28px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #fff;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 18px;
+        }
+
+        .calendar-shell {
+            border-radius: 22px;
+            background: #fcfcfa;
+            border: 1px solid rgba(20, 20, 20, 0.06);
+            padding: 18px;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .nav-btn, .today-btn {
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #fff;
+            border-radius: 999px;
+            padding: 9px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .month {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .head, .day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+        }
+
+        .head {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #7a7a7a;
+            letter-spacing: 0.08em;
+        }
+
+        .day {
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #fff;
+            font-size: 18px;
+            color: #222;
+            position: relative;
+        }
+
+        .day.period {
+            background: #141414;
+            color: #fff;
+            border-color: #141414;
+        }
+
+        .day.fertile {
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+            border-color: rgba(34, 197, 94, 0.24);
+        }
+
+        .day.ovulation {
+            background: #22c55e;
+            color: #fff;
+            border-color: #22c55e;
+            font-weight: 700;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .legend-card {
+            border-radius: 20px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #f8f8f6;
+            padding: 18px;
+        }
+
+        .legend-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #6d6d6d;
+            margin-bottom: 12px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            color: #444;
+        }
+
+        .legend-row + .legend-row {
+            margin-top: 10px;
+        }
+
+        .swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 6px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            flex-shrink: 0;
+        }
+
+        .swatch.period { background: #141414; }
+        .swatch.fertile { background: rgba(34, 197, 94, 0.14); }
+        .swatch.ovulation { background: #22c55e; }
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 18px;
+            color: #6b6b6b;
+        }
+
+        .badge {
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+            border: 1px solid rgba(34, 197, 94, 0.16);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="frame">
+            <div>
+                <div class="kicker">Kalender Kesuburan</div>
+                <h1>Tandai masa subur, ovulasi, dan pola siklus dalam satu kalender.</h1>
+            </div>
+
+            <div class="lead">Promo dummy ini meniru tampilan utama fitur asli: kartu statistik ringkas, kalender interaktif, dan legenda status yang cepat dibaca pasien.</div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">21</div>
+                    <div class="stat-label">Siklus</div>
+                    <div class="stat-value">28 Hari</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">18</div>
+                    <div class="stat-label">Masa Subur</div>
+                    <div class="stat-value">14-18 Mei</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">O</div>
+                    <div class="stat-label">Ovulasi</div>
+                    <div class="stat-value">16 Mei</div>
+                </div>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-shell">
+                    <div class="calendar-header">
+                        <div class="nav-btn">&lt;</div>
+                        <div class="month">Mei 2026</div>
+                        <div class="today-btn">Hari Ini</div>
+                    </div>
+                    <div class="grid">
+                        <div class="head">S</div><div class="head">S</div><div class="head">R</div><div class="head">K</div><div class="head">J</div><div class="head">S</div><div class="head">M</div>
+                        <div class="day"></div><div class="day"></div><div class="day"></div><div class="day">1</div><div class="day">2</div><div class="day">3</div><div class="day">4</div>
+                        <div class="day period">5</div><div class="day period">6</div><div class="day period">7</div><div class="day period">8</div><div class="day">9</div><div class="day">10</div><div class="day">11</div>
+                        <div class="day">12</div><div class="day">13</div><div class="day fertile">14</div><div class="day fertile">15</div><div class="day ovulation">16</div><div class="day fertile">17</div><div class="day fertile">18</div>
+                        <div class="day">19</div><div class="day">20</div><div class="day">21</div><div class="day">22</div><div class="day">23</div><div class="day">24</div><div class="day">25</div>
+                        <div class="day">26</div><div class="day">27</div><div class="day">28</div><div class="day">29</div><div class="day">30</div><div class="day">31</div><div class="day"></div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-card">
+                        <div class="legend-title">Legenda</div>
+                        <div class="legend-row"><span class="swatch period"></span><span>Periode</span></div>
+                        <div class="legend-row"><span class="swatch fertile"></span><span>Masa subur</span></div>
+                        <div class="legend-row"><span class="swatch ovulation"></span><span>Ovulasi</span></div>
+                    </div>
+                    <div class="legend-card">
+                        <div class="legend-title">Catatan</div>
+                        <div style="font-size:18px; line-height:1.6; color:#4a4a4a;">Kalender membantu pasien mengenali pola siklus, merencanakan promil, dan membaca estimasi fase penting tanpa tampilan yang rumit.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <span>Preview dummy 1:1 berbasis visual Kalender Kesuburan.</span>
+                <span class="badge">Simulasi</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

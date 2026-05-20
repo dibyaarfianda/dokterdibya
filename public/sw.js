@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260521j'; // 2026-05-21j - Add rounded corners to queue promo modal
+const CACHE_VERSION = '20260521k'; // 2026-05-21k - Reuse queue promo modal for four additional patient feature previews
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

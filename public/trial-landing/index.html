@@ -4683,7 +4683,7 @@
                 <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
             </div>
 
-            <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Antrian Live" onclick="closeQueuePromoModal()">
+            <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Fitur Pasien Portal" onclick="closeQueuePromoModal()">
                 <div class="queue-promo-modal-card" onclick="event.stopPropagation()">
                     <button type="button" class="queue-promo-modal-close" onclick="closeQueuePromoModal()">&times;</button>
                     <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="/images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
@@ -4812,35 +4812,35 @@
                     </div>
 
 
-                    <a href="/images/antrian-live-promo-fake.png" class="proces-row" onclick="return openQueuePromoModal(event)">
+                    <a href="/images/antrian-live-promo-fake.png" class="proces-row" data-promo-src="/images/antrian-live-promo-fake.png" data-promo-alt="Preview Antrian Live dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ANTRIAN LIVE</h3>
                         <p class="proces-desc">Pantau antrian klinik secara real-time. Lihat posisi antrean, siapa yang sedang dilayani, dan perkirakan giliran Anda dengan lebih jelas.</p>
                     </a>
 
 
-                    <a href="/kick-counter-trial.html" class="proces-row">
+                    <a href="/images/gerakan-bayi-promo-fake.png" class="proces-row" data-promo-src="/images/gerakan-bayi-promo-fake.png" data-promo-alt="Preview Gerakan Bayi dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-baby" aria-hidden="true"></i></span>
                         <h3 class="proces-title">GERAKAN BAYI</h3>
                         <p class="proces-desc">Hitung dan pantau gerakan bayi Anda setiap hari. Catat setiap tendangan untuk memastikan kesehatan janin tetap terjaga dengan baik.</p>
                     </a>
 
 
-                    <a href="/pregnancy-tracker-trial.html" class="proces-row">
+                    <a href="/images/monitoring-kehamilan-promo-fake.png" class="proces-row" data-promo-src="/images/monitoring-kehamilan-promo-fake.png" data-promo-alt="Preview Monitoring Kehamilan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-person-pregnant" aria-hidden="true"></i></span>
                         <h3 class="proces-title">MONITORING KEHAMILAN</h3>
                         <p class="proces-desc">Pantau perkembangan kehamilan minggu demi minggu. Lihat estimasi berat janin, ukuran, dan milestone penting setiap tahap kehamilan Anda.</p>
                     </a>
 
 
-                    <a href="/fertility-calendar-trial.html" class="proces-row">
+                    <a href="/images/kalender-kesuburan-promo-fake.png" class="proces-row" data-promo-src="/images/kalender-kesuburan-promo-fake.png" data-promo-alt="Preview Kalender Kesuburan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
                         <h3 class="proces-title">KALENDER KESUBURAN</h3>
                         <p class="proces-desc">Prediksi masa subur dan ovulasi berdasarkan siklus menstruasi Anda. Rencanakan kehamilan dengan lebih tepat dan terukur setiap bulannya.</p>
                     </a>
 
 
-                    <a href="/jadwal-vitamin-trial.html" class="proces-row">
+                    <a href="/images/jadwal-vitamin-promo-fake.png" class="proces-row" data-promo-src="/images/jadwal-vitamin-promo-fake.png" data-promo-alt="Preview Jadwal Vitamin dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-pills" aria-hidden="true"></i></span>
                         <h3 class="proces-title">JADWAL VITAMIN</h3>
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
@@ -6135,9 +6135,10 @@
         }
 
         const QUEUE_PROMO_IMAGE_URL = '/images/antrian-live-promo-fake.png';
+        const QUEUE_PROMO_IMAGE_ALT = 'Preview Antrian Live dengan data simulasi';
         const QUEUE_PROMO_ANIMATION_MS = 1000;
 
-        function openQueuePromoModal(event) {
+        function openQueuePromoModal(event, trigger) {
             if (event) {
                 event.preventDefault();
             }
@@ -6151,7 +6152,15 @@
                 modal._queuePromoHideTimer = null;
             }
 
-            modalImg.src = QUEUE_PROMO_IMAGE_URL;
+            const promoSrc = trigger && trigger.dataset && trigger.dataset.promoSrc
+                ? trigger.dataset.promoSrc
+                : QUEUE_PROMO_IMAGE_URL;
+            const promoAlt = trigger && trigger.dataset && trigger.dataset.promoAlt
+                ? trigger.dataset.promoAlt
+                : QUEUE_PROMO_IMAGE_ALT;
+
+            modalImg.src = promoSrc;
+            modalImg.alt = promoAlt;
             modal.classList.add('is-mounted');
             modal.classList.remove('active');
             modal.offsetWidth;
