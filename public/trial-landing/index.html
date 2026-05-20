@@ -1664,6 +1664,10 @@
             transition: opacity 0.28s ease, visibility 0.28s ease;
         }
 
+        .queue-promo-modal.is-mounted {
+            visibility: visible;
+        }
+
         .queue-promo-modal.active {
             visibility: visible;
             opacity: 1;
@@ -6125,6 +6129,7 @@
         }
 
         const QUEUE_PROMO_IMAGE_URL = '/images/antrian-live-promo-fake.png';
+        const QUEUE_PROMO_ANIMATION_MS = 320;
 
         function openQueuePromoModal(event) {
             if (event) {
@@ -6135,8 +6140,18 @@
             const modalImg = document.getElementById('queue-promo-modal-img');
             if (!modal || !modalImg) return false;
 
+            if (modal._queuePromoHideTimer) {
+                window.clearTimeout(modal._queuePromoHideTimer);
+                modal._queuePromoHideTimer = null;
+            }
+
             modalImg.src = QUEUE_PROMO_IMAGE_URL;
-            modal.classList.add('active');
+            modal.classList.add('is-mounted');
+            modal.classList.remove('active');
+            modal.offsetWidth;
+            window.requestAnimationFrame(function() {
+                modal.classList.add('active');
+            });
             var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
             document.body.style.overflow = 'hidden';
             document.body.style.paddingRight = scrollbarW + 'px';
@@ -6148,6 +6163,13 @@
             if (!modal) return;
 
             modal.classList.remove('active');
+            if (modal._queuePromoHideTimer) {
+                window.clearTimeout(modal._queuePromoHideTimer);
+            }
+            modal._queuePromoHideTimer = window.setTimeout(function() {
+                modal.classList.remove('is-mounted');
+                modal._queuePromoHideTimer = null;
+            }, QUEUE_PROMO_ANIMATION_MS);
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
         }
