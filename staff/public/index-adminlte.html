@@ -1024,9 +1024,12 @@
             padding-bottom: 60px;
         }
 
+        html.kantor-saya-active,
+        html.kantor-saya-active body,
         body.kantor-saya-active,
         body.kantor-saya-active .wrapper,
         body.kantor-saya-active .content-wrapper {
+            height: 100% !important;
             overflow: hidden !important;
         }
 
@@ -7859,7 +7862,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v206';
+    window.__assetVersion = 'v207';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -11274,6 +11277,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 <script src="./scripts/support-chat-staff.js?v=20260518j"></script>
  <script>
  function showSupportChatPage() {
+     document.documentElement.classList.remove('kantor-saya-active');
      document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
@@ -11305,6 +11309,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  <script src="./scripts/staff-briefing.js?v=20260518a"></script>
  <script>
  function _scHideAllStaffPages() {
+     document.documentElement.classList.remove('kantor-saya-active');
      document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
