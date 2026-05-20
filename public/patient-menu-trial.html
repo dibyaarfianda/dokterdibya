@@ -2304,22 +2304,6 @@
             color: rgba(255, 255, 255, 0.92);
         }
 
-        .welcome-wordmark {
-            display: block;
-            width: min(100%, 430px);
-            margin-bottom: 6px;
-        }
-
-        .welcome-wordmark img {
-            display: block;
-            width: 100%;
-            height: auto;
-        }
-
-        .welcome-word-text {
-            display: block;
-        }
-
         .welcome-window-scroll {
             position: relative;
             background: transparent;
@@ -2435,11 +2419,6 @@
                 font-size: clamp(70px, 7.4vw, 96px);
             }
 
-            .welcome-wordmark {
-                width: min(100%, 340px);
-                margin-bottom: 4px;
-            }
-
             .welcome-window-scroll {
                 padding: 0 6px;
             }
@@ -2470,11 +2449,6 @@
 
             .welcome-window-left-inner h2 {
                 font-size: 58px;
-            }
-
-            .welcome-wordmark {
-                width: min(100%, 220px);
-                margin-bottom: 2px;
             }
 
             .welcome-window-scroll {
@@ -4235,6 +4209,19 @@
             filter: none;
         }
 
+        #hero-patient-name.hero-wordmark {
+            display: inline-block;
+            width: min(100%, 264px);
+            line-height: 0;
+            vertical-align: top;
+        }
+
+        #hero-patient-name.hero-wordmark img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
 
         body.header-animated .hero-greeting {
             animation: titleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 300ms forwards;
@@ -4540,7 +4527,7 @@
                 </div>
                 <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> <span id="hero-kicker-text">Selamat Pagi</span></div>
                 <h1 class="hero-greeting" id="hero-greeting">
-                    <span id="hero-patient-name">...</span>
+                    <span id="hero-patient-name" class="hero-wordmark"><img src="/images/bg/sisiwanita.svg" alt="SISIwanita"></span>
                 </h1>
                 <p class="hero-copy" id="hero-copy">&nbsp;</p>
                 <script>
@@ -4578,7 +4565,7 @@
                         </button>
                         <div class="welcome-window-left">
                             <div class="welcome-window-left-inner">
-                                <h2><span class="welcome-wordmark"><img src="/images/bg/sisiwanita.svg" alt="SISIwanita"></span><span class="welcome-word-text">Datang</span></h2>
+                                <h2>Selamat<br>Datang</h2>
                             </div>
                         </div>
                         <div class="welcome-window-scroll">
@@ -5635,7 +5622,11 @@
 
                     // Update hero greeting with time-aware salutation
                     const firstName = (profile.fullname || 'Pasien').split(' ')[0];
-                    document.getElementById('hero-patient-name').textContent = firstName + '.';
+                    var heroNameEl = document.getElementById('hero-patient-name');
+                    if (heroNameEl) {
+                        heroNameEl.classList.remove('hero-wordmark');
+                        heroNameEl.textContent = firstName + '.';
+                    }
                     var hour = new Date().getHours();
                     var timeGreet = hour >= 5 && hour < 11 ? 'Selamat Pagi' :
                                     hour >= 11 && hour < 15 ? 'Selamat Siang' :
@@ -5691,7 +5682,11 @@
                 }
             } catch (error) {
                 console.error('Error loading profile:', error);
-                document.getElementById('hero-patient-name').textContent = 'Halo.';
+                var fallbackHeroNameEl = document.getElementById('hero-patient-name');
+                if (fallbackHeroNameEl) {
+                    fallbackHeroNameEl.classList.add('hero-wordmark');
+                    fallbackHeroNameEl.innerHTML = '<img src="/images/bg/sisiwanita.svg" alt="SISIwanita">';
+                }
                 document.getElementById('user-avatar-initials').textContent = '--';
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-wrapper').style.display = 'block';
