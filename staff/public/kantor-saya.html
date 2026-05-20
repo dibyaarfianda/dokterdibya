@@ -7,8 +7,8 @@
             --kantor-border: rgba(15, 23, 42, 0.08);
             --kantor-bg-position-x: 50%;
             --kantor-bg-position-y: 50%;
-            height: calc(100dvh - 88px);
-            min-height: 420px;
+            height: var(--kantor-frame-height, calc(100dvh - 8px));
+            min-height: min(420px, calc(100dvh - 8px));
             border-radius: 16px;
             padding: 14px;
             overflow-y: auto;
@@ -22,7 +22,7 @@
         }
 
         #content-kantor-saya {
-            min-height: calc(100dvh - 88px);
+            min-height: var(--kantor-frame-height, calc(100dvh - 8px));
         }
 
         #content-kantor-saya > .content {
@@ -769,12 +769,12 @@
         @media (max-width: 767.98px) {
             #kantor-saya-page {
                 padding: 10px;
-                height: calc(100dvh - 84px);
-                min-height: 360px;
+                height: var(--kantor-frame-height, calc(100dvh - 6px));
+                min-height: min(360px, calc(100dvh - 6px));
             }
 
             #content-kantor-saya {
-                min-height: calc(100dvh - 84px);
+                min-height: var(--kantor-frame-height, calc(100dvh - 6px));
             }
 
             #kantor-saya-page .ks-toolbar {

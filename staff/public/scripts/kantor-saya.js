@@ -102,6 +102,9 @@
 
         if (state.backgroundParallaxBound) {
             window.removeEventListener('resize', scheduleBackgroundParallax);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', scheduleBackgroundParallax);
+            }
             state.backgroundParallaxBound = false;
         }
 
@@ -1726,10 +1729,37 @@
         return root ? Number(root.scrollTop || 0) : 0;
     }
 
+    function getViewportHeight() {
+        if (window.visualViewport && Number(window.visualViewport.height) > 0) {
+            return Number(window.visualViewport.height);
+        }
+        return Number(window.innerHeight || document.documentElement.clientHeight || 0);
+    }
+
+    function fitKantorFrameToViewport() {
+        var root = getLiveRoot();
+        if (!root || !root.isConnected) return;
+
+        var rect = root.getBoundingClientRect();
+        var viewportHeight = getViewportHeight();
+        if (!viewportHeight) return;
+
+        var top = Math.max(0, Math.floor(rect.top));
+        var frameHeight = Math.max(240, Math.floor(viewportHeight - top));
+        root.style.setProperty('--kantor-frame-height', frameHeight + 'px');
+
+        var container = document.getElementById('content-kantor-saya');
+        if (container) {
+            container.style.setProperty('--kantor-frame-height', frameHeight + 'px');
+        }
+    }
+
     function updateBackgroundParallax() {
         state.backgroundParallaxRaf = null;
         var root = getLiveRoot();
         if (!root || !root.isConnected) return;
+
+        fitKantorFrameToViewport();
 
         var offset = clampBackgroundOffset(Math.round(getKantorScrollTop() * BACKGROUND_PARALLAX_RATIO));
         root.style.setProperty('--kantor-bg-offset-y', offset + 'px');
@@ -1776,6 +1806,9 @@
         }
 
         window.addEventListener('resize', scheduleBackgroundParallax, { passive: true });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', scheduleBackgroundParallax, { passive: true });
+        }
         state.backgroundParallaxBound = true;
         scheduleBackgroundParallax();
     }
