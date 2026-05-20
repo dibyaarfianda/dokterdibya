@@ -1643,66 +1643,85 @@
         }
 
         .queue-promo-modal {
-            display: none;
             position: fixed;
             inset: 0;
             z-index: 9999;
             align-items: center;
             justify-content: center;
             padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
-            background: rgba(6, 10, 18, 0.88);
+            display: flex;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.96);
+            transition: opacity 0.28s ease, visibility 0.28s ease;
         }
 
         .queue-promo-modal.active {
-            display: flex;
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .queue-promo-modal-card {
             position: relative;
-            width: min(1320px, 100%);
-            max-height: 100%;
-            padding: 14px;
-            border-radius: 24px;
-            background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(10, 16, 28, 0.96));
-            border: 1px solid rgba(255, 255, 255, 0.09);
-            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
+            width: fit-content;
+            max-width: min(1320px, calc(100vw - 32px));
+            max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            padding: 0;
+            border-radius: 0;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            transform: translateY(24px) scale(0.96);
+            opacity: 0;
+            transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.24s ease;
+        }
+
+        .queue-promo-modal.active .queue-promo-modal-card {
+            transform: translateY(0) scale(1);
+            opacity: 1;
         }
 
         .queue-promo-modal-media {
             display: block;
-            width: 100%;
-            max-height: calc(100vh - 96px);
+            width: auto;
+            max-width: min(1320px, calc(100vw - 32px));
+            max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
             object-fit: contain;
-            border-radius: 18px;
-            background: #0f1720;
+            border-radius: 0;
+            background: transparent;
         }
 
         .queue-promo-modal-close {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: 10px;
+            right: 10px;
             width: 42px;
             height: 42px;
             border: none;
             border-radius: 999px;
-            background: rgba(15, 23, 32, 0.72);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 10px 26px rgba(15, 23, 32, 0.14);
+            backdrop-filter: blur(8px);
             color: #fff;
             font-size: 24px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #18212f;
         }
 
         @media (max-width: 640px) {
             .queue-promo-modal-card {
-                padding: 10px;
-                border-radius: 18px;
+                max-width: calc(100vw - 20px);
+                max-height: calc(100vh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
             }
 
             .queue-promo-modal-media {
-                max-height: calc(100vh - 72px);
-                border-radius: 14px;
+                max-width: calc(100vw - 20px);
+                max-height: calc(100vh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
             }
         }
 
