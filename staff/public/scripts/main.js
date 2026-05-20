@@ -3458,7 +3458,9 @@ function showProfileSettings() {
     hideAllPages();
     pages.profile?.classList.remove('d-none');
     setTitleAndActive('Pengaturan Profil', 'nav-profile-settings', 'profile');
-    loadExternalPage('profile-settings-page', 'profile-settings.html');
+    var profileVersion = window.__assetVersion ? encodeURIComponent(window.__assetVersion) : '';
+    var profileHtml = profileVersion ? ('profile-settings.html?v=' + profileVersion) : 'profile-settings.html';
+    loadExternalPage('profile-settings-page', profileHtml);
 }
 
 function showKantorSayaPage() {
