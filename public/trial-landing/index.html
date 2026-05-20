@@ -2311,6 +2311,22 @@
             color: rgba(255, 255, 255, 0.92);
         }
 
+        .welcome-wordmark {
+            display: block;
+            width: min(100%, 430px);
+            margin-bottom: 6px;
+        }
+
+        .welcome-wordmark img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .welcome-word-text {
+            display: block;
+        }
+
         .welcome-window-scroll {
             position: relative;
             background: transparent;
@@ -2426,6 +2442,11 @@
                 font-size: clamp(70px, 7.4vw, 96px);
             }
 
+            .welcome-wordmark {
+                width: min(100%, 340px);
+                margin-bottom: 4px;
+            }
+
             .welcome-window-scroll {
                 padding: 0 6px;
             }
@@ -2456,6 +2477,11 @@
 
             .welcome-window-left-inner h2 {
                 font-size: 58px;
+            }
+
+            .welcome-wordmark {
+                width: min(100%, 220px);
+                margin-bottom: 2px;
             }
 
             .welcome-window-scroll {
@@ -4120,7 +4146,7 @@
         #hero-fixed-bg .hero-fixed-bg-preg {
             position: absolute;
             inset: 0;
-            background: url('/images/bg/background-preg.png') center 0 / cover no-repeat;
+            background: url('/images/bg/docdaf.jpg') center 0 / cover no-repeat;
             mix-blend-mode: overlay;
             opacity: calc(var(--hero-preg-opacity, 1) * 0.8);
             --hero-preg-opacity: 1;
@@ -4559,7 +4585,7 @@
                         </button>
                         <div class="welcome-window-left">
                             <div class="welcome-window-left-inner">
-                                <h2>Selamat<br>Datang</h2>
+                                <h2><span class="welcome-wordmark"><img src="/images/bg/sisiwanita.svg" alt="SISIwanita"></span><span class="welcome-word-text">Datang</span></h2>
                             </div>
                         </div>
                         <div class="welcome-window-scroll">
