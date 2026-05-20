@@ -6,6 +6,7 @@
     var WALLPAPER_REFRESH_COOLDOWN_MS = 30000;
     var WALLPAPER_LEASE_REFRESH_MS = 12 * 60 * 1000;
     var GRIDSTACK_CSS_URL = 'https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css';
+    var DEFAULT_OFFICE_NAME = 'Kantor Saya';
 
     var state = {
         initialized: false,
@@ -179,6 +180,13 @@
         'staff-activity-page-launcher': true
     };
 
+    var REMOVED_WIDGET_IDS = {
+        'online-users-mini': true,
+        'point-saya': true,
+        'inventory-alert': true,
+        'bulk-upload-usg-page-launcher': true
+    };
+
     var QUOTES = [
         'Kerja teliti hari ini adalah ketenangan pasien besok.',
         'Satu catatan medis yang rapi bisa menyelamatkan waktu satu tim.',
@@ -203,10 +211,17 @@
 
     function isWidgetAvailable(definition) {
         if (!definition) return false;
+        if (REMOVED_WIDGET_IDS[definition.id]) return false;
         if (typeof definition.isAvailable === 'function') {
             return !!definition.isAvailable();
         }
         return definition.hidden !== true;
+    }
+
+    function normalizeOfficeName(value) {
+        var name = String(value || '').replace(/\s+/g, ' ').trim();
+        if (!name) return DEFAULT_OFFICE_NAME;
+        return name.slice(0, 60);
     }
 
     function getWidgetCatalogOrder(widgetId) {
@@ -1307,6 +1322,10 @@
             el.textContent = 'Belum tersimpan';
             return;
         }
+        if (timestamp === 'Menyimpan...') {
+            el.textContent = timestamp;
+            return;
+        }
         el.textContent = 'Tersimpan ' + toLocalDateTimeString(timestamp);
     }
 
@@ -1549,9 +1568,10 @@
 
     function normalizeLayout(layoutData) {
         var layout = layoutData && typeof layoutData === 'object' ? layoutData : {};
-        var widgets = Array.isArray(layout.widgets) ? layout.widgets.slice() : [];
+        var hasWidgetsField = Array.isArray(layout.widgets);
+        var widgets = hasWidgetsField ? layout.widgets.slice() : [];
 
-        if (!widgets.length) {
+        if (!hasWidgetsField) {
             widgets = getRecommendedStarterWidgets();
         }
 
@@ -1585,6 +1605,7 @@
     function normalizeTheme(themeData) {
         var theme = themeData && typeof themeData === 'object' ? themeData : {};
         return {
+            office_name: normalizeOfficeName(theme.office_name || theme.officeName),
             accent_color: theme.accent_color || '#0d6efd',
             wallpaper_url: theme.wallpaper_url || null,
             wallpaper_download_url: theme.wallpaper_download_url || null,
@@ -1816,6 +1837,8 @@
         if (!state.root || !state.theme) return;
         var nextBackground = getWallpaperBackground(state.theme);
 
+        updateOfficeNameLabel();
+
         if (state.theme.wallpaper_download_url) {
             state.lastSuccessfulWallpaperKey = state.theme.wallpaper_url || null;
             state.lastSuccessfulWallpaperBackground = nextBackground.indexOf('url(') !== -1 ? nextBackground : null;
@@ -1884,7 +1907,7 @@
 
     function buildWidgetInstance(widgetId, overrides) {
         var def = getWidgetDef(widgetId);
-        if (!def) return null;
+        if (!def || !isWidgetAvailable(def)) return null;
 
         var next = overrides && typeof overrides === 'object' ? overrides : {};
         var size = def.defaultSize;
@@ -1920,6 +1943,57 @@
 
         destroyWidgetRuntime(instanceId);
         state.layout.widgets.splice(idx, 1);
+        scheduleSave();
+        renderWidgetCatalog();
+    }
+
+    function clearAllWidgets() {
+        if (!state.layout || !Array.isArray(state.layout.widgets)) return;
+
+        if (!state.layout.widgets.length) {
+            window.alert('Tidak ada widget yang perlu dihapus.');
+            return;
+        }
+
+        if (!window.confirm('Hapus semua widget dari Kantor Saya? Perubahan ini akan langsung disimpan.')) {
+            return;
+        }
+
+        state.layout.widgets.forEach(function (widget) {
+            if (widget && widget.instance_id) {
+                destroyWidgetRuntime(widget.instance_id);
+            }
+        });
+        state.layout.widgets = [];
+        renderGrid();
+        renderWidgetCatalog();
+
+        if (state.saveTimer) {
+            clearTimeout(state.saveTimer);
+            state.saveTimer = null;
+        }
+
+        updateLastSavedLabel('Menyimpan...');
+        saveLayout().catch(function (error) {
+            console.error('[kantor-saya] clear widgets save error:', error);
+            window.alert('Widget sudah dihapus di layar, tetapi gagal menyimpan. Coba refresh lalu ulangi.');
+        });
+    }
+
+    function updateOfficeNameLabel() {
+        var label = document.getElementById('ks-office-name-label');
+        if (!label) return;
+        label.textContent = normalizeOfficeName(state.theme && state.theme.office_name);
+    }
+
+    function renameOfficeFromPrompt() {
+        if (!state.theme) return;
+        var currentName = normalizeOfficeName(state.theme.office_name);
+        var nextName = window.prompt('Nama kantor:', currentName);
+        if (nextName === null) return;
+
+        state.theme.office_name = normalizeOfficeName(nextName);
+        updateOfficeNameLabel();
         scheduleSave();
     }
 
@@ -2222,6 +2296,15 @@
         var catalog = document.getElementById('ks-widget-catalog');
         if (!catalog) return;
 
+        var usedWidgetIds = {};
+        if (state.layout && Array.isArray(state.layout.widgets)) {
+            state.layout.widgets.forEach(function (widget) {
+                if (widget && widget.widget_id) {
+                    usedWidgetIds[widget.widget_id] = true;
+                }
+            });
+        }
+
         var html = Object.keys(WIDGETS)
             .filter(function (widgetId) {
                 return isWidgetAvailable(WIDGETS[widgetId]);
@@ -2231,9 +2314,12 @@
             })
             .map(function (widgetId) {
             var def = WIDGETS[widgetId];
+            var isUsed = !!usedWidgetIds[widgetId];
             return (
-                '<button type="button" class="ks-widget-option" data-widget-id="' + widgetId + '">' +
-                    '<div class="font-weight-bold"><i class="fas ' + def.icon + ' mr-2"></i>' + escapeHtml(def.label) + '</div>' +
+                '<button type="button" class="ks-widget-option' + (isUsed ? ' is-used' : '') + '" data-widget-id="' + widgetId + '">' +
+                    '<div class="font-weight-bold ks-widget-option-main"><span><i class="fas ' + def.icon + ' mr-2"></i>' + escapeHtml(def.label) + '</span>' +
+                        (isUsed ? '<span class="ks-widget-used"><i class="fas fa-check-circle"></i>Terpakai</span>' : '') +
+                    '</div>' +
                     '<small class="text-muted">Ukuran default: ' + def.defaultSize.w + 'x' + def.defaultSize.h + '</small>' +
                 '</button>'
             );
@@ -2251,6 +2337,14 @@
     }
 
     function addWidget(widgetId) {
+        var def = getWidgetDef(widgetId);
+        if (!def || !isWidgetAvailable(def)) return;
+
+        if (SINGLETON_WIDGET_IDS[widgetId] && state.layout.widgets.some(function (widget) { return widget.widget_id === widgetId; })) {
+            window.alert('Widget "' + def.label + '" sudah ada di Kantor Saya.');
+            return;
+        }
+
         var instance = buildWidgetInstance(widgetId);
         if (!instance) return;
 
@@ -2263,12 +2357,15 @@
 
         state.layout.widgets.push(instance);
         renderGrid();
+        renderWidgetCatalog();
         scheduleSave();
     }
 
     function bindToolbar() {
         var btnEdit = document.getElementById('ks-btn-edit');
+        var btnRenameOffice = document.getElementById('ks-btn-rename-office');
         var btnAddWidget = document.getElementById('ks-btn-add-widget');
+        var btnClearWidgets = document.getElementById('ks-btn-clear-widgets');
         var btnTheme = document.getElementById('ks-btn-theme');
         var btnRefresh = document.getElementById('ks-btn-refresh');
         var btnSaveTheme = document.getElementById('ks-save-theme');
@@ -2288,6 +2385,10 @@
             };
         }
 
+        if (btnRenameOffice) {
+            btnRenameOffice.onclick = renameOfficeFromPrompt;
+        }
+
         if (btnAddWidget) {
             btnAddWidget.onclick = function () {
                 renderWidgetCatalog();
@@ -2295,9 +2396,17 @@
             };
         }
 
+        if (btnClearWidgets) {
+            btnClearWidgets.onclick = clearAllWidgets;
+        }
+
         if (btnTheme) {
             btnTheme.onclick = function () {
+                var nameInput = document.getElementById('ks-office-name-input');
                 var colorInput = document.getElementById('ks-theme-color');
+                if (nameInput) {
+                    nameInput.value = normalizeOfficeName(state.theme && state.theme.office_name);
+                }
                 if (colorInput) {
                     colorInput.value = state.theme.accent_color || '#0d6efd';
                 }
@@ -2317,10 +2426,15 @@
 
         if (btnSaveTheme) {
             btnSaveTheme.onclick = function () {
+                var nameInput = document.getElementById('ks-office-name-input');
                 var colorInput = document.getElementById('ks-theme-color');
+                if (nameInput) {
+                    state.theme.office_name = normalizeOfficeName(nameInput.value);
+                }
                 if (colorInput) {
                     state.theme.accent_color = colorInput.value || '#0d6efd';
                 }
+                updateOfficeNameLabel();
                 applyTheme();
                 scheduleSave();
                 hideModal('ks-theme-modal');

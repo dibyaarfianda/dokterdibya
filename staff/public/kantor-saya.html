@@ -39,6 +39,23 @@
             background: var(--kantor-accent);
         }
 
+        #kantor-saya-page .ks-office-badge {
+            display: inline-flex;
+            align-items: center;
+            max-width: min(320px, 100%);
+            padding: 6px 10px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 999px;
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.62);
+        }
+
+        #kantor-saya-page #ks-office-name-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         #kantor-saya-page .ks-grid-shell {
             border: 1px solid var(--kantor-border);
             border-radius: 14px;
@@ -204,6 +221,32 @@
             color: #6b7280;
             text-align: center;
             padding: 12px;
+        }
+
+        #kantor-saya-page .ks-widget-option {
+            position: relative;
+        }
+
+        #kantor-saya-page .ks-widget-option.is-used {
+            border-color: color-mix(in srgb, var(--kantor-accent) 45%, rgba(15, 23, 42, 0.1)) !important;
+            background: color-mix(in srgb, var(--kantor-accent) 8%, #ffffff) !important;
+        }
+
+        #kantor-saya-page .ks-widget-option-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        #kantor-saya-page .ks-widget-used {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex: 0 0 auto;
+            font-size: 11px;
+            font-weight: 700;
+            color: #16a34a;
         }
 
         #kantor-saya-page .ks-list {
@@ -718,12 +761,18 @@
     </style>
 
     <div class="ks-toolbar">
-        <span class="badge badge-light"><span class="ks-dot"></span>Kantor Saya</span>
+        <span class="badge badge-light ks-office-badge"><span class="ks-dot"></span><span id="ks-office-name-label">Kantor Saya</span></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="ks-btn-rename-office">
+            <i class="fas fa-i-cursor mr-1"></i>Ganti Nama
+        </button>
         <button type="button" class="btn btn-sm btn-primary" id="ks-btn-edit">
             <i class="fas fa-pen mr-1"></i>Mode Edit
         </button>
         <button type="button" class="btn btn-sm btn-outline-primary" id="ks-btn-add-widget">
             <i class="fas fa-plus mr-1"></i>Tambah Widget
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger" id="ks-btn-clear-widgets">
+            <i class="fas fa-broom mr-1"></i>Clear
         </button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="ks-btn-theme">
             <i class="fas fa-palette mr-1"></i>Tema
@@ -765,6 +814,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div class="form-group">
+                        <label>Nama Kantor</label>
+                        <input type="text" class="form-control" id="ks-office-name-input" maxlength="60" placeholder="Kantor Saya">
+                    </div>
                     <div class="form-group">
                         <label>Accent Color</label>
                         <input type="color" class="form-control" id="ks-theme-color" value="#0d6efd">
