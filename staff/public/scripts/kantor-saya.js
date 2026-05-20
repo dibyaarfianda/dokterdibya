@@ -7,7 +7,7 @@
     var WALLPAPER_LEASE_REFRESH_MS = 12 * 60 * 1000;
     var GRIDSTACK_CSS_URL = 'https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css';
     var DEFAULT_OFFICE_NAME = 'Kantor Saya';
-    var BACKGROUND_PARALLAX_RATIO = 0.1;
+    var BACKGROUND_PARALLAX_RATIO = 0.01;
     var BACKGROUND_PARALLAX_MAX_OFFSET = 100;
 
     var state = {
