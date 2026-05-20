@@ -163,6 +163,113 @@
         'Klinik yang baik dibangun dari detail yang dijaga bersama.'
     ];
 
+    function isDokterUser() {
+        var currentUser = window.auth && window.auth.currentUser ? window.auth.currentUser : null;
+        var role = String(
+            (currentUser && currentUser.role) ||
+            window.__userRole ||
+            localStorage.getItem('vps_user_role') ||
+            ''
+        ).toLowerCase();
+
+        return !!(currentUser && currentUser.is_superadmin) || role === 'dokter' || role === 'superadmin';
+    }
+
+    function isWidgetAvailable(definition) {
+        if (!definition) return false;
+        if (typeof definition.isAvailable === 'function') {
+            return !!definition.isAvailable();
+        }
+        return definition.hidden !== true;
+    }
+
+    function getWidgetCatalogOrder(widgetId) {
+        var orderMap = {
+            'clock-greeting': 10,
+            'mini-stats': 20,
+            'briefing-hari-ini': 30,
+            'jadwal-jaga-saya': 40,
+            'inbox-page-launcher': 50,
+            'chat-page-launcher': 60,
+            'tanya-dokter-page-launcher': 70,
+            'support-chat-page-launcher': 80,
+            'docboard-page-launcher': 90,
+            'point-staff-page-launcher': 100,
+            'bulk-upload-usg-page-launcher': 110,
+            'patient-activity-page-launcher': 120,
+            'finance-analysis-page-launcher': 130,
+            'staff-activity-page-launcher': 140,
+            'shortcut-menu': 150,
+            'quick-search-pasien': 160,
+            'online-users-mini': 170,
+            'recent-patients': 180,
+            'point-saya': 190,
+            'tanya-dokter-inbox-preview': 200,
+            'recent-activity-saya': 210,
+            'sticky-notes': 220,
+            'todo-list': 230,
+            'inventory-alert': 240,
+            'birthday-reminder': 250,
+            'calendar-mini': 260,
+            'pomodoro-timer': 270,
+            'quote-of-the-day': 280,
+            'external-iframe': 290,
+            'custom-integration': 300
+        };
+
+        return Object.prototype.hasOwnProperty.call(orderMap, widgetId) ? orderMap[widgetId] : 999;
+    }
+
+    function invokeWidgetAction(actionName) {
+        if (!actionName || typeof window[actionName] !== 'function') {
+            window.alert('Aksi widget belum tersedia. Coba refresh halaman terlebih dahulu.');
+            return;
+        }
+
+        window[actionName]();
+    }
+
+    function renderPageLauncherWidget(_widgetInstance, bodyEl, options) {
+        var buttonLabel = options.buttonLabel || 'Buka';
+        var actionName = options.actionName || '';
+        var description = options.description || '';
+
+        bodyEl.innerHTML =
+            '<div class="ks-page-launcher">' +
+                '<div>' +
+                    '<div class="ks-page-launcher-title">' + escapeHtml(options.label || 'Widget') + '</div>' +
+                    '<div class="ks-page-launcher-desc">' + escapeHtml(description) + '</div>' +
+                '</div>' +
+                '<div class="mt-2">' +
+                    '<button type="button" class="btn btn-sm btn-primary ks-page-launcher-btn" data-widget-action="' + escapeHtml(actionName) + '">' +
+                        '<i class="fas ' + escapeHtml(options.icon || 'fa-arrow-right') + ' mr-1"></i>' + escapeHtml(buttonLabel) +
+                    '</button>' +
+                '</div>' +
+            '</div>';
+
+        var button = bodyEl.querySelector('[data-widget-action]');
+        if (button) {
+            button.addEventListener('click', function () {
+                invokeWidgetAction(button.getAttribute('data-widget-action'));
+            });
+        }
+    }
+
+    function buildPageLauncherWidgetDef(options) {
+        var size = options.defaultSize || { w: 4, h: 2, minW: 3, minH: 2 };
+        return {
+            id: options.id,
+            label: options.label,
+            icon: options.headerIcon || options.icon || 'fa-window-restore',
+            defaultSize: size,
+            defaultConfig: {},
+            isAvailable: options.isAvailable || null,
+            render: function (widgetInstance, bodyEl) {
+                renderPageLauncherWidget(widgetInstance, bodyEl, options);
+            }
+        };
+    }
+
     var WIDGETS = {
         'shortcut-menu': {
             id: 'shortcut-menu',
@@ -191,6 +298,14 @@
             defaultConfig: { items: [] },
             render: renderTodoWidget
         },
+        'briefing-hari-ini': {
+            id: 'briefing-hari-ini',
+            label: 'Briefing',
+            icon: 'fa-clipboard-check',
+            defaultSize: { w: 4, h: 2, minW: 3, minH: 2 },
+            defaultConfig: {},
+            render: renderBriefingHariIniWidget
+        },
         'jadwal-jaga-saya': {
             id: 'jadwal-jaga-saya',
             label: 'Jadwal Jaga Saya',
@@ -207,14 +322,99 @@
             defaultConfig: {},
             render: renderPointSayaWidget
         },
-        'briefing-hari-ini': {
-            id: 'briefing-hari-ini',
-            label: 'Briefing Hari Ini',
-            icon: 'fa-clipboard-check',
-            defaultSize: { w: 4, h: 2, minW: 3, minH: 2 },
-            defaultConfig: {},
-            render: renderBriefingHariIniWidget
-        },
+        'inbox-page-launcher': buildPageLauncherWidgetDef({
+            id: 'inbox-page-launcher',
+            label: 'Inbox',
+            icon: 'fa-bell',
+            headerIcon: 'fa-bell',
+            description: 'Buka pengumuman dan notifikasi staff.',
+            buttonLabel: 'Buka Inbox',
+            actionName: 'showNotificationsPage'
+        }),
+        'chat-page-launcher': buildPageLauncherWidgetDef({
+            id: 'chat-page-launcher',
+            label: 'Chat',
+            icon: 'fa-comments',
+            headerIcon: 'fa-comments',
+            description: 'Buka Community Chat staff.',
+            buttonLabel: 'Buka Chat',
+            actionName: 'showCommunityChatPage'
+        }),
+        'tanya-dokter-page-launcher': buildPageLauncherWidgetDef({
+            id: 'tanya-dokter-page-launcher',
+            label: 'Tanya Dokter',
+            icon: 'fa-comment-medical',
+            headerIcon: 'fa-comment-medical',
+            description: 'Kelola pertanyaan dan jawaban pasien.',
+            buttonLabel: 'Buka Tanya Dokter',
+            actionName: 'showTanyaDokterPage'
+        }),
+        'support-chat-page-launcher': buildPageLauncherWidgetDef({
+            id: 'support-chat-page-launcher',
+            label: 'Chat Bantuan',
+            icon: 'fa-headset',
+            headerIcon: 'fa-headset',
+            description: 'Balas sesi bantuan pasien dari staff panel.',
+            buttonLabel: 'Buka Chat Bantuan',
+            actionName: 'showSupportChatPage'
+        }),
+        'docboard-page-launcher': buildPageLauncherWidgetDef({
+            id: 'docboard-page-launcher',
+            label: 'DocBoard',
+            icon: 'fa-procedures',
+            headerIcon: 'fa-procedures',
+            description: 'Buka DocBoard dari widget Kantor Saya.',
+            buttonLabel: 'Buka DocBoard',
+            actionName: 'showDocboardPage'
+        }),
+        'point-staff-page-launcher': buildPageLauncherWidgetDef({
+            id: 'point-staff-page-launcher',
+            label: 'Point Staff',
+            icon: 'fa-star',
+            headerIcon: 'fa-star',
+            description: 'Lihat statistik point semua staff.',
+            buttonLabel: 'Buka Point Staff',
+            actionName: 'showStaffPointsPage'
+        }),
+        'bulk-upload-usg-page-launcher': buildPageLauncherWidgetDef({
+            id: 'bulk-upload-usg-page-launcher',
+            label: 'Upload USG',
+            icon: 'fa-cloud-upload-alt',
+            headerIcon: 'fa-cloud-upload-alt',
+            description: 'Sinkron dan upload data USG rumah sakit.',
+            buttonLabel: 'Buka Upload USG',
+            actionName: 'showBulkUploadUSGPage'
+        }),
+        'patient-activity-page-launcher': buildPageLauncherWidgetDef({
+            id: 'patient-activity-page-launcher',
+            label: 'Aktivitas Pasien',
+            icon: 'fa-user-check',
+            headerIcon: 'fa-user-check',
+            description: 'Pantau aktivitas pasien terbaru.',
+            buttonLabel: 'Buka Aktivitas Pasien',
+            actionName: 'showPatientActivityPage',
+            isAvailable: isDokterUser
+        }),
+        'finance-analysis-page-launcher': buildPageLauncherWidgetDef({
+            id: 'finance-analysis-page-launcher',
+            label: 'Analisis Finansial',
+            icon: 'fa-chart-line',
+            headerIcon: 'fa-chart-line',
+            description: 'Widget khusus dr. Dibya untuk analisis finansial.',
+            buttonLabel: 'Buka Analisis',
+            actionName: 'showFinanceAnalysisPage',
+            isAvailable: isDokterUser
+        }),
+        'staff-activity-page-launcher': buildPageLauncherWidgetDef({
+            id: 'staff-activity-page-launcher',
+            label: 'Aktivitas Staff',
+            icon: 'fa-user-clock',
+            headerIcon: 'fa-user-clock',
+            description: 'Widget khusus dr. Dibya untuk audit aktivitas staff.',
+            buttonLabel: 'Buka Aktivitas Staff',
+            actionName: 'showStaffActivityPage',
+            isAvailable: isDokterUser
+        }),
         'online-users-mini': {
             id: 'online-users-mini',
             label: 'Online Users Mini',
@@ -581,6 +781,11 @@
             ];
         }
 
+        widgets = ensureRequiredWidgets(widgets);
+        widgets = widgets.filter(function (widget) {
+            return isWidgetAvailable(WIDGETS[widget.widget_id]);
+        });
+
         widgets = widgets.map(function (widget, index) {
             var id = widget.widget_id;
             var def = WIDGETS[id] || null;
@@ -601,6 +806,61 @@
             version: Number(layout.version || 1),
             widgets: widgets
         };
+    }
+
+    function ensureRequiredWidgets(widgets) {
+        var next = Array.isArray(widgets) ? widgets.slice() : [];
+        var existingWidgetIds = {};
+        var requiredWidgetIds = [
+            'inbox-page-launcher',
+            'chat-page-launcher',
+            'tanya-dokter-page-launcher',
+            'support-chat-page-launcher',
+            'docboard-page-launcher',
+            'point-staff-page-launcher',
+            'briefing-hari-ini',
+            'jadwal-jaga-saya',
+            'bulk-upload-usg-page-launcher'
+        ];
+
+        if (isDokterUser()) {
+            requiredWidgetIds.push('patient-activity-page-launcher');
+            requiredWidgetIds.push('finance-analysis-page-launcher');
+            requiredWidgetIds.push('staff-activity-page-launcher');
+        }
+
+        next.forEach(function (widget) {
+            if (widget && widget.widget_id) {
+                existingWidgetIds[widget.widget_id] = true;
+            }
+        });
+
+        var baseY = next.reduce(function (acc, item) {
+            return Math.max(acc, Number(item.y || 0) + Number(item.h || 0));
+        }, 0);
+        var inserted = 0;
+
+        requiredWidgetIds.forEach(function (widgetId) {
+            var def = WIDGETS[widgetId];
+            if (!def || !isWidgetAvailable(def) || existingWidgetIds[widgetId]) {
+                return;
+            }
+
+            var instance = buildWidgetInstance(widgetId, {
+                x: (inserted % 3) * 4,
+                y: baseY + (Math.floor(inserted / 3) * 2),
+                w: def.defaultSize.w,
+                h: def.defaultSize.h
+            });
+
+            if (!instance) return;
+
+            next.push(instance);
+            existingWidgetIds[widgetId] = true;
+            inserted += 1;
+        });
+
+        return next;
     }
 
     function normalizeTheme(themeData) {
@@ -1247,7 +1507,14 @@
         var catalog = document.getElementById('ks-widget-catalog');
         if (!catalog) return;
 
-        var html = Object.keys(WIDGETS).map(function (widgetId) {
+        var html = Object.keys(WIDGETS)
+            .filter(function (widgetId) {
+                return isWidgetAvailable(WIDGETS[widgetId]);
+            })
+            .sort(function (left, right) {
+                return getWidgetCatalogOrder(left) - getWidgetCatalogOrder(right);
+            })
+            .map(function (widgetId) {
             var def = WIDGETS[widgetId];
             return (
                 '<button type="button" class="ks-widget-option" data-widget-id="' + widgetId + '">' +
@@ -1800,7 +2067,15 @@
                     '<li><strong>Pasien Hari Ini</strong><span class="float-right">' + Number(data.patient_count || 0).toLocaleString('id-ID') + '</span></li>' +
                     '<li><strong>Status Briefing</strong><span class="float-right badge ' + (data.checked ? 'badge-success' : 'badge-secondary') + '">' + (data.checked ? 'Sudah Checklist' : 'Belum') + '</span></li>' +
                     '<li><strong>Status Kerja</strong><span class="float-right badge ' + (data.started ? 'badge-primary' : 'badge-secondary') + '">' + (data.started ? 'Sudah Start' : 'Belum') + '</span></li>' +
-                '</ul>';
+                '</ul>' +
+                '<div class="mt-2"><button type="button" class="btn btn-sm btn-outline-primary ks-page-launcher-btn" data-widget-action="showStaffBriefingPage"><i class="fas fa-arrow-right mr-1"></i>Buka Briefing</button></div>';
+
+            var button = bodyEl.querySelector('[data-widget-action="showStaffBriefingPage"]');
+            if (button) {
+                button.addEventListener('click', function () {
+                    invokeWidgetAction('showStaffBriefingPage');
+                });
+            }
         }).catch(function (error) {
             bodyEl.innerHTML = '<div class="text-danger">' + escapeHtml(error.message || 'Gagal memuat briefing') + '</div>';
         });

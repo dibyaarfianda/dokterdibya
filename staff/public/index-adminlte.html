@@ -1885,19 +1885,19 @@
                             <p>Jadwal</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-docboard">
+                    <li class="nav-item d-none" id="nav-docboard">
                         <a href="#" class="nav-link" onclick="showDocboardPage(); return false;">
                             <i class="nav-icon fas fa-procedures"></i>
                             <p>DocBoard</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-notifications">
+                    <li class="nav-item d-none" id="nav-notifications">
                         <a href="#" class="nav-link" onclick="showNotificationsPage(); return false;">
                             <i class="nav-icon fas fa-bell"></i>
                             <p>Inbox</p>
                         </a>
                     </li>
-                    <li class="nav-item has-treeview" id="nav-chat-main">
+                    <li class="nav-item has-treeview d-none" id="nav-chat-main">
                         <a href="#" class="nav-link">
                             <i class="nav-icon fas fa-comments"></i>
                             <p>
@@ -1950,7 +1950,7 @@
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-tanya-dokter">
+                    <li class="nav-item d-none" id="nav-tanya-dokter">
                         <a href="#" class="nav-link" onclick="showTanyaDokterPage(); return false;">
                             <i class="nav-icon fas fa-comments" style="color: #8b5cf6;"></i>
                             <p>
@@ -1959,7 +1959,7 @@
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-support-chat">
+                    <li class="nav-item d-none" id="nav-support-chat">
                         <a href="#" class="nav-link" onclick="showSupportChatPage(); return false;">
                             <i class="nav-icon fas fa-headset" style="color: #10b981;"></i>
                             <p>
@@ -1968,7 +1968,7 @@
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
+                    <li class="nav-item d-none" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
                         <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
                             <i class="nav-icon fas fa-cloud-upload-alt" style="color: #6f42c1;"></i>
                             <p>Upload USG</p>
@@ -1993,7 +1993,7 @@
                         <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); markBadgeRead('klinik_private'); return false;">
                             <i class="nav-icon fas fa-calendar-check" style="color: #3c8dbc;"></i>
                             <p>
-                                Janji Temu Sunday Clinic
+                                Janji Temu
                                 <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span>
                             </p>
                         </a>
@@ -2024,8 +2024,8 @@
                     </li>
 
                     <!-- RSIA MELINDA -->
-                    <li class="nav-header">RSIA MELINDA</li>
-                    <li class="nav-item" id="nav-rsia-melinda">
+                    <li class="nav-header d-none" id="nav-header-rsia-melinda">RSIA MELINDA</li>
+                    <li class="nav-item d-none" id="nav-rsia-melinda">
                         <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); markBadgeRead('rsia_melinda'); return false;">
                             <i class="nav-icon fas fa-calendar-check" style="color: #e91e63;"></i>
                             <p>
@@ -2036,8 +2036,8 @@
                     </li>
 
                     <!-- RSUD GAMBIRAN -->
-                    <li class="nav-header">RSUD GAMBIRAN</li>
-                    <li class="nav-item" id="nav-rsud-gambiran">
+                    <li class="nav-header d-none" id="nav-header-rsud-gambiran">RSUD GAMBIRAN</li>
+                    <li class="nav-item d-none" id="nav-rsud-gambiran">
                         <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); markBadgeRead('rsud_gambiran'); return false;">
                             <i class="nav-icon fas fa-calendar-check" style="color: #2196f3;"></i>
                             <p>
@@ -2082,7 +2082,7 @@
                             <p>Analisis Finansial</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="management-nav-kelola-roles">
+                    <li class="nav-item d-none" id="management-nav-kelola-roles">
                         <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
                             <i class="nav-icon fas fa-user-shield"></i>
                             <p>Staff Roles</p>
@@ -2094,16 +2094,16 @@
                             <p>Aktivitas Staff</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-staff-points">
+                    <li class="nav-item d-none" id="nav-staff-points">
                         <a href="#" class="nav-link" onclick="showStaffPointsPage(); return false;">
                             <i class="nav-icon fas fa-star"></i>
                             <p>Point Staff</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-staff-briefing">
+                    <li class="nav-item d-none" id="nav-staff-briefing">
                         <a href="#" class="nav-link" onclick="showStaffBriefingPage(); return false;">
                             <i class="nav-icon fas fa-clipboard-check"></i>
-                            <p>Briefing Poli Minggu</p>
+                            <p>Briefing</p>
                         </a>
                     </li>
                 </ul>
@@ -7012,7 +7012,7 @@ Contoh Markdown:
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0ea5e9, #0369a1); color: white;">
-                                    <h3 class="card-title mb-0"><i class="fas fa-clipboard-check mr-2"></i>Briefing Poli Minggu</h3>
+                                    <h3 class="card-title mb-0"><i class="fas fa-clipboard-check mr-2"></i>Briefing</h3>
                                     <div class="card-tools">
                                         <button type="button" class="btn btn-sm btn-light" onclick="if(window.staffBriefing) window.staffBriefing.refresh()">
                                             <i class="fas fa-sync-alt"></i> Refresh
@@ -7842,7 +7842,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v172';
+    window.__assetVersion = 'v173';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -11344,7 +11344,7 @@ Apakah Anda yakin ingin melanjutkan?`;
      links.forEach(function(link) { link.classList.remove('active'); });
      var navLink = document.querySelector('#nav-staff-briefing .nav-link');
      if (navLink) navLink.classList.add('active');
-     if (typeof window.setPageTitle === 'function') window.setPageTitle('Briefing Poli Minggu');
+     if (typeof window.setPageTitle === 'function') window.setPageTitle('Briefing');
      try { sessionStorage.setItem('lastStaffNavId', 'nav-staff-briefing'); } catch (e) {}
      if (window.staffBriefing && typeof window.staffBriefing.init === 'function') window.staffBriefing.init();
  }
