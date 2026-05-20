@@ -198,7 +198,6 @@
             'clock-greeting': 10,
             'mini-stats': 20,
             'briefing-hari-ini': 30,
-            'jadwal-jaga-saya': 40,
             'inbox-page-launcher': 50,
             'chat-page-launcher': 60,
             'tanya-dokter-page-launcher': 70,
@@ -690,14 +689,6 @@
             defaultSize: { w: 4, h: 2, minW: 3, minH: 2 },
             defaultConfig: {},
             render: renderBriefingHariIniWidget
-        },
-        'jadwal-jaga-saya': {
-            id: 'jadwal-jaga-saya',
-            label: 'Jadwal Jaga Saya',
-            icon: 'fa-calendar-week',
-            defaultSize: { w: 4, h: 3, minW: 3, minH: 2 },
-            defaultConfig: {},
-            render: renderJadwalJagaWidget
         },
         'point-saya': {
             id: 'point-saya',
@@ -1518,7 +1509,6 @@
             'docboard-page-launcher',
             'point-staff-page-launcher',
             'briefing-hari-ini',
-            'jadwal-jaga-saya',
             'bulk-upload-usg-page-launcher'
         ];
 
@@ -2775,27 +2765,6 @@
         }
 
         redraw();
-    }
-
-    function renderJadwalJagaWidget(widgetInstance, bodyEl, forceRefresh) {
-        cacheFetch(widgetInstance.instance_id + ':jadwal-jaga', function () {
-            return apiGet('/widgets/jadwal-jaga');
-        }, forceRefresh).then(function (data) {
-            var days = data.days || [];
-            if (!days.length) {
-                bodyEl.innerHTML = '<div class="ks-empty">Belum ada data jadwal minggu ini.</div>';
-                return;
-            }
-
-            bodyEl.innerHTML = '<ul class="ks-list">' + days.map(function (day) {
-                return '<li><strong>' + escapeHtml(day.day_label) + '</strong> · ' + escapeHtml(day.date) +
-                    '<span class="float-right badge ' + (day.has_duty ? 'badge-success' : 'badge-secondary') + '">' +
-                    (day.has_duty ? 'Jaga' : 'Off') +
-                    '</span></li>';
-            }).join('') + '</ul>';
-        }).catch(function (error) {
-            bodyEl.innerHTML = '<div class="text-danger">' + escapeHtml(error.message || 'Gagal memuat jadwal') + '</div>';
-        });
     }
 
     function renderPointSayaWidget(widgetInstance, bodyEl, forceRefresh) {
