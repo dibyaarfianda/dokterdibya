@@ -1736,12 +1736,22 @@
         return Number(window.innerHeight || document.documentElement.clientHeight || 0);
     }
 
+    function getShellZoomScale() {
+        var rawZoom = '1';
+        if (window.getComputedStyle && document.documentElement) {
+            rawZoom = window.getComputedStyle(document.documentElement).zoom || '1';
+        }
+
+        var zoom = Number.parseFloat(rawZoom);
+        return Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+    }
+
     function fitKantorFrameToViewport() {
         var root = getLiveRoot();
         if (!root || !root.isConnected) return;
 
         var rect = root.getBoundingClientRect();
-        var viewportHeight = getViewportHeight();
+        var viewportHeight = getViewportHeight() / getShellZoomScale();
         if (!viewportHeight) return;
 
         var top = Math.max(0, Math.floor(rect.top));
