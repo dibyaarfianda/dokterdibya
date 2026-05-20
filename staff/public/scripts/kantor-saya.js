@@ -405,7 +405,7 @@
         if (!widgetEl) return;
 
         var appearance = getWidgetAppearance(widgetInstance);
-        var headerBg = 'linear-gradient(90deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.42) 100%)';
+        var headerBg = 'linear-gradient(90deg, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.26) 100%)';
         var headerColor = '#0f172a';
 
         if (appearance.header_preset && WIDGET_HEADER_PRESETS[appearance.header_preset]) {
