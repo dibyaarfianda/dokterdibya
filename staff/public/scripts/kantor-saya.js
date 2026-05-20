@@ -229,34 +229,249 @@
         window[actionName]();
     }
 
-    function renderPageLauncherWidget(_widgetInstance, bodyEl, options) {
-        var buttonLabel = options.buttonLabel || 'Buka';
-        var actionName = options.actionName || '';
-        var description = options.description || '';
+    function apiGetAbsolute(path) {
+        return makeRequest(withCacheBust(path), {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        }).then(function (response) {
+            return response.json().catch(function () { return {}; }).then(function (body) {
+                if (!response.ok || body.success === false) {
+                    throw new Error(body.message || 'Request gagal');
+                }
+                return body.data || body;
+            });
+        });
+    }
+
+    function apiGetAbsoluteRaw(path) {
+        return makeRequest(withCacheBust(path), {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        }).then(function (response) {
+            return response.json().catch(function () { return {}; }).then(function (body) {
+                if (!response.ok || body.success === false) {
+                    throw new Error(body.message || 'Request gagal');
+                }
+                return body;
+            });
+        });
+    }
+
+    function formatMoneyIdr(amount) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(Number(amount || 0));
+    }
+
+    function formatDateLocalValue(date) {
+        var year = date.getFullYear();
+        var month = String(date.getMonth() + 1).padStart(2, '0');
+        var day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
+
+    function getCurrentMonthValue() {
+        return formatDateLocalValue(new Date()).slice(0, 7);
+    }
+
+    function truncateText(value, maxLength) {
+        var text = String(value == null ? '' : value).trim();
+        if (!text || text.length <= maxLength) {
+            return text;
+        }
+        return text.slice(0, maxLength - 1).trimEnd() + '...';
+    }
+
+    function formatAnnouncementPriority(priority) {
+        var labels = {
+            urgent: 'Mendesak',
+            high: 'Tinggi',
+            medium: 'Sedang',
+            low: 'Rendah'
+        };
+        return labels[String(priority || '').toLowerCase()] || 'Info';
+    }
+
+    function getPriorityTone(priority) {
+        var normalized = String(priority || '').toLowerCase();
+        if (normalized === 'urgent' || normalized === 'high') return 'danger';
+        if (normalized === 'medium') return 'warning';
+        if (normalized === 'low') return 'success';
+        return 'neutral';
+    }
+
+    function formatRoleLabel(role) {
+        var text = String(role == null ? '' : role).trim();
+        if (!text) return 'Staff';
+        return text.replace(/[_-]+/g, ' ').replace(/\b\w/g, function (letter) {
+            return letter.toUpperCase();
+        });
+    }
+
+    function formatRelativeTimeCompact(value) {
+        if (!value) return '';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        var diffMs = Date.now() - date.getTime();
+        if (diffMs < 0) diffMs = 0;
+        var minutes = Math.floor(diffMs / 60000);
+        if (minutes < 1) return 'Baru saja';
+        if (minutes < 60) return minutes + ' m lalu';
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + ' j lalu';
+        var days = Math.floor(hours / 24);
+        if (days < 7) return days + ' h lalu';
+        return toLocalDateTimeString(value);
+    }
+
+    function formatPatientActivityLabel(type) {
+        var normalized = String(type || '').toLowerCase();
+        var labels = {
+            booking: 'Booking',
+            intake: 'Intake',
+            registration: 'Registrasi',
+            login: 'Login',
+            view_halaman: 'Page View',
+            pembayaran: 'Pembayaran'
+        };
+        return labels[normalized] || formatRoleLabel(normalized || 'Aktivitas');
+    }
+
+    function getPatientActivityTone(type) {
+        var normalized = String(type || '').toLowerCase();
+        if (normalized === 'booking') return 'info';
+        if (normalized === 'intake') return 'success';
+        if (normalized === 'registration') return 'warning';
+        if (normalized === 'pembayaran') return 'danger';
+        return 'neutral';
+    }
+
+    function openDocboardWidgetModal() {
+        var modalId = 'ks-docboard-modal';
+        var iframeId = 'ks-docboard-modal-iframe';
+        var modalEl = document.getElementById(modalId);
+
+        if (!modalEl) {
+            invokeWidgetAction('showDocboardPage');
+            return;
+        }
+
+        bindModalDismissFallback(modalId);
+
+        var token = getToken();
+        if (token) {
+            try {
+                localStorage.setItem('docboard_token', token);
+            } catch (_error) {
+                // Ignore storage issues and still try to open the embedded board.
+            }
+        }
+
+        var iframe = document.getElementById(iframeId);
+        if (iframe && !iframe.getAttribute('src')) {
+            iframe.setAttribute('src', '/docboard/');
+        }
+
+        showModal(modalId);
+    }
+
+    function runPageLauncherAction(options) {
+        if (options && typeof options.openHandler === 'function') {
+            options.openHandler();
+            return;
+        }
+
+        invokeWidgetAction(options && options.actionName ? options.actionName : '');
+    }
+
+    function renderPageLauncherView(bodyEl, options, model) {
+        var buttonLabel = (model && model.buttonLabel) || options.buttonLabel || 'Buka';
+        var buttonClass = (model && model.buttonClass) || options.buttonClass || 'btn-outline-primary';
+        var description = (model && model.summary) || options.description || '';
+        var stats = Array.isArray(model && model.stats) ? model.stats.filter(Boolean) : [];
+        var items = Array.isArray(model && model.items) ? model.items.filter(Boolean) : [];
+        var note = model && model.note ? String(model.note) : '';
+        var emptyText = (model && model.emptyText) || 'Belum ada preview.';
 
         bodyEl.innerHTML =
-            '<div class="ks-page-launcher">' +
+            '<div class="ks-page-launcher ks-page-launcher--lite">' +
                 '<div>' +
                     '<div class="ks-page-launcher-title">' + escapeHtml(options.label || 'Widget') + '</div>' +
                     '<div class="ks-page-launcher-desc">' + escapeHtml(description) + '</div>' +
                 '</div>' +
+                (stats.length
+                    ? '<div class="ks-page-launcher-stats">' + stats.map(function (stat) {
+                        return '<div class="ks-page-launcher-stat">' +
+                            '<div class="ks-page-launcher-stat-value">' + escapeHtml(stat.value == null ? '-' : String(stat.value)) + '</div>' +
+                            '<div class="ks-page-launcher-stat-label">' + escapeHtml(stat.label || '') + '</div>' +
+                        '</div>';
+                    }).join('') + '</div>'
+                    : '') +
+                (items.length
+                    ? '<ul class="ks-page-launcher-list">' + items.map(function (item) {
+                        return '<li class="ks-page-launcher-item">' +
+                            '<div class="ks-page-launcher-item-head">' +
+                                '<div class="ks-page-launcher-item-main">' +
+                                    (item.eyebrow ? '<div class="ks-page-launcher-item-eyebrow">' + escapeHtml(item.eyebrow) + '</div>' : '') +
+                                    '<div class="ks-page-launcher-item-title">' + escapeHtml(item.title || '-') + '</div>' +
+                                '</div>' +
+                                (item.badge ? '<span class="ks-page-launcher-badge is-' + escapeHtml(item.badgeTone || 'neutral') + '">' + escapeHtml(item.badge) + '</span>' : '') +
+                            '</div>' +
+                            (item.meta ? '<div class="ks-page-launcher-item-meta">' + escapeHtml(item.meta) + '</div>' : '') +
+                            (item.tail ? '<div class="ks-page-launcher-item-tail">' + escapeHtml(item.tail) + '</div>' : '') +
+                        '</li>';
+                    }).join('') + '</ul>'
+                    : '<div class="ks-page-launcher-empty">' + escapeHtml(emptyText) + '</div>') +
+                (note ? '<div class="ks-page-launcher-note">' + escapeHtml(note) + '</div>' : '') +
                 '<div class="mt-2">' +
-                    '<button type="button" class="btn btn-sm btn-primary ks-page-launcher-btn" data-widget-action="' + escapeHtml(actionName) + '">' +
-                        '<i class="fas ' + escapeHtml(options.icon || 'fa-arrow-right') + ' mr-1"></i>' + escapeHtml(buttonLabel) +
+                    '<button type="button" class="btn btn-sm ' + escapeHtml(buttonClass) + ' ks-page-launcher-btn" data-widget-open="1">' +
+                        '<i class="fas ' + escapeHtml(options.buttonIcon || options.icon || 'fa-arrow-right') + ' mr-1"></i>' + escapeHtml(buttonLabel) +
                     '</button>' +
                 '</div>' +
             '</div>';
 
-        var button = bodyEl.querySelector('[data-widget-action]');
+        var button = bodyEl.querySelector('[data-widget-open]');
         if (button) {
             button.addEventListener('click', function () {
-                invokeWidgetAction(button.getAttribute('data-widget-action'));
+                runPageLauncherAction(options);
             });
         }
     }
 
+    function renderPageLauncherWidget(widgetInstance, bodyEl, options, forceRefresh) {
+        if (!options || typeof options.loadData !== 'function') {
+            renderPageLauncherView(bodyEl, options || {}, null);
+            return;
+        }
+
+        bodyEl.innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Memuat preview...</div>';
+
+        cacheFetch(widgetInstance.instance_id + ':page-preview:' + (options.id || 'launcher'), function () {
+            return options.loadData();
+        }, forceRefresh).then(function (data) {
+            var model = typeof options.mapData === 'function' ? options.mapData(data) : data;
+            renderPageLauncherView(bodyEl, options, model || null);
+        }).catch(function (error) {
+            renderPageLauncherView(bodyEl, options, {
+                summary: options.description || 'Preview belum tersedia.',
+                note: error && error.message ? error.message : 'Gagal memuat preview.',
+                items: [],
+                emptyText: 'Tetap bisa dibuka dari tombol di bawah.'
+            });
+        });
+    }
+
     function buildPageLauncherWidgetDef(options) {
-        var size = options.defaultSize || { w: 4, h: 2, minW: 3, minH: 2 };
+        var size = options.defaultSize || { w: 4, h: 3, minW: 3, minH: 3 };
         return {
             id: options.id,
             label: options.label,
@@ -264,8 +479,8 @@
             defaultSize: size,
             defaultConfig: {},
             isAvailable: options.isAvailable || null,
-            render: function (widgetInstance, bodyEl) {
-                renderPageLauncherWidget(widgetInstance, bodyEl, options);
+            render: function (widgetInstance, bodyEl, forceRefresh) {
+                renderPageLauncherWidget(widgetInstance, bodyEl, options, forceRefresh);
             }
         };
     }
@@ -327,93 +542,409 @@
             label: 'Inbox',
             icon: 'fa-bell',
             headerIcon: 'fa-bell',
-            description: 'Buka pengumuman dan notifikasi staff.',
-            buttonLabel: 'Buka Inbox',
-            actionName: 'showNotificationsPage'
+            description: 'Pengumuman dan notifikasi staff terbaru.',
+            buttonLabel: 'Lihat Inbox',
+            actionName: 'showNotificationsPage',
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return apiGetAbsolute('/api/announcements');
+            },
+            mapData: function (items) {
+                var announcements = Array.isArray(items) ? items : [];
+                var activeItems = announcements.filter(function (item) {
+                    return String(item.status || 'active').toLowerCase() === 'active';
+                });
+                var shownItems = activeItems.slice(0, 3);
+                var highPriority = activeItems.filter(function (item) {
+                    var priority = String(item.priority || '').toLowerCase();
+                    return priority === 'high' || priority === 'urgent';
+                }).length;
+
+                return {
+                    summary: shownItems.length ? 'Ringkasan pengumuman terbaru untuk staff.' : 'Belum ada pengumuman aktif.',
+                    stats: [
+                        { label: 'Aktif', value: activeItems.length },
+                        { label: 'Prioritas tinggi', value: highPriority }
+                    ],
+                    items: shownItems.map(function (item) {
+                        return {
+                            eyebrow: 'Pengumuman Staff',
+                            title: truncateText(item.title || 'Tanpa judul', 42),
+                            badge: formatAnnouncementPriority(item.priority),
+                            badgeTone: getPriorityTone(item.priority),
+                            meta: truncateText(item.message || '', 52),
+                            tail: String(item.status || 'active').toLowerCase() === 'active' ? 'Sedang tayang' : 'Tidak aktif'
+                        };
+                    }),
+                    emptyText: 'Belum ada pengumuman aktif.'
+                };
+            }
         }),
         'chat-page-launcher': buildPageLauncherWidgetDef({
             id: 'chat-page-launcher',
             label: 'Chat',
             icon: 'fa-comments',
             headerIcon: 'fa-comments',
-            description: 'Buka Community Chat staff.',
-            buttonLabel: 'Buka Chat',
-            actionName: 'showCommunityChatPage'
+            description: 'Community Chat staff yang sedang aktif.',
+            buttonLabel: 'Masuk Chat',
+            actionName: 'showCommunityChatPage',
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return apiGet('/widgets/online-users');
+            },
+            mapData: function (data) {
+                var users = Array.isArray(data.users) ? data.users : [];
+                var dokterCount = users.filter(function (user) {
+                    return String(user.role || '').toLowerCase().indexOf('dokter') !== -1;
+                }).length;
+
+                return {
+                    summary: users.length ? 'Staff sedang online dan siap berkomunikasi.' : 'Belum ada staff yang sedang online.',
+                    stats: [
+                        { label: 'Online', value: Number(data.total || users.length || 0) },
+                        { label: 'Dokter', value: dokterCount }
+                    ],
+                    items: users.slice(0, 3).map(function (user) {
+                        return {
+                            eyebrow: formatRoleLabel(user.role || 'staff'),
+                            title: user.name || '-',
+                            badge: user.activity || 'Online',
+                            badgeTone: 'success',
+                            meta: user.photo ? 'Foto profil tersedia' : 'Tanpa foto profil',
+                            tail: formatRelativeTimeCompact(user.timestamp)
+                        };
+                    }),
+                    emptyText: 'Belum ada user online saat ini.'
+                };
+            }
         }),
         'tanya-dokter-page-launcher': buildPageLauncherWidgetDef({
             id: 'tanya-dokter-page-launcher',
             label: 'Tanya Dokter',
             icon: 'fa-comment-medical',
             headerIcon: 'fa-comment-medical',
-            description: 'Kelola pertanyaan dan jawaban pasien.',
-            buttonLabel: 'Buka Tanya Dokter',
-            actionName: 'showTanyaDokterPage'
+            description: 'Pertanyaan pasien yang perlu dijawab.',
+            buttonLabel: 'Jawab Sekarang',
+            actionName: 'showTanyaDokterPage',
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return Promise.all([
+                    apiGet('/widgets/tanya-dokter-preview'),
+                    apiGet('/widgets/mini-stats')
+                ]).then(function (result) {
+                    return {
+                        preview: result[0],
+                        stats: result[1]
+                    };
+                });
+            },
+            mapData: function (data) {
+                var preview = data.preview || {};
+                var stats = data.stats || {};
+                var items = Array.isArray(preview.items) ? preview.items : [];
+                return {
+                    summary: stats.unanswered_questions ? 'Ada pertanyaan pasien yang menunggu jawaban.' : 'Tidak ada pertanyaan terbuka saat ini.',
+                    stats: [
+                        { label: 'Belum dijawab', value: Number(stats.unanswered_questions || 0) },
+                        { label: 'Preview', value: items.length }
+                    ],
+                    items: items.slice(0, 3).map(function (item) {
+                        return {
+                            eyebrow: truncateText(item.patient_name || 'Pasien', 28),
+                            title: truncateText(item.question_text || item.question || item.preview || '-', 56),
+                            badge: formatRoleLabel(item.status || 'open'),
+                            badgeTone: 'warning',
+                            tail: formatRelativeTimeCompact(item.created_at)
+                        };
+                    }),
+                    emptyText: 'Tidak ada pertanyaan terbuka.'
+                };
+            }
         }),
         'support-chat-page-launcher': buildPageLauncherWidgetDef({
             id: 'support-chat-page-launcher',
             label: 'Chat Bantuan',
             icon: 'fa-headset',
             headerIcon: 'fa-headset',
-            description: 'Balas sesi bantuan pasien dari staff panel.',
-            buttonLabel: 'Buka Chat Bantuan',
-            actionName: 'showSupportChatPage'
+            description: 'Sesi bantuan pasien yang menunggu respons.',
+            buttonLabel: 'Tindak Lanjut',
+            actionName: 'showSupportChatPage',
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return Promise.all([
+                    apiGetAbsolute('/api/support-chat/staff/pending'),
+                    apiGet('/widgets/mini-stats')
+                ]).then(function (result) {
+                    return {
+                        pending: result[0],
+                        stats: result[1]
+                    };
+                });
+            },
+            mapData: function (data) {
+                var pending = data.pending || {};
+                var stats = data.stats || {};
+                var sessions = Array.isArray(pending.sessions) ? pending.sessions : [];
+                return {
+                    summary: stats.support_open ? 'Ada sesi bantuan yang perlu ditangani staff.' : 'Tidak ada sesi bantuan yang menunggu.',
+                    stats: [
+                        { label: 'Open', value: Number(stats.support_open || sessions.length || 0) },
+                        { label: 'Preview', value: sessions.length }
+                    ],
+                    items: sessions.slice(0, 3).map(function (session) {
+                        return {
+                            eyebrow: session.assigned_staff_name ? ('Ditangani ' + session.assigned_staff_name) : 'Belum diambil staff',
+                            title: truncateText(session.patient_name || 'Pasien', 30),
+                            badge: 'Pending',
+                            badgeTone: 'warning',
+                            meta: truncateText(session.last_message || 'Menunggu balasan staff.', 52),
+                            tail: formatRelativeTimeCompact(session.updated_at)
+                        };
+                    }),
+                    emptyText: 'Tidak ada sesi bantuan yang menunggu.'
+                };
+            }
         }),
         'docboard-page-launcher': buildPageLauncherWidgetDef({
             id: 'docboard-page-launcher',
             label: 'DocBoard',
             icon: 'fa-procedures',
             headerIcon: 'fa-procedures',
-            description: 'Buka DocBoard dari widget Kantor Saya.',
-            buttonLabel: 'Buka DocBoard',
-            actionName: 'showDocboardPage'
+            description: 'Ringkasan jadwal hari ini dan akses cepat ke DocBoard.',
+            buttonLabel: 'Buka Pop-up',
+            buttonIcon: 'fa-up-right-and-down-left-from-center',
+            defaultSize: { w: 6, h: 3, minW: 4, minH: 3 },
+            openHandler: openDocboardWidgetModal,
+            loadData: function () {
+                return Promise.all([
+                    apiGet('/widgets/mini-stats'),
+                    apiGet('/widgets/recent-patients')
+                ]).then(function (result) {
+                    return {
+                        stats: result[0],
+                        recentPatients: result[1]
+                    };
+                });
+            },
+            mapData: function (data) {
+                var stats = data.stats || {};
+                var recentPatients = data.recentPatients || {};
+                var items = Array.isArray(recentPatients.items) ? recentPatients.items : [];
+                return {
+                    summary: 'Buka board pasien tanpa meninggalkan Kantor Saya.',
+                    stats: [
+                        { label: 'Janji hari ini', value: Number(stats.appointments_today || 0) },
+                        { label: 'Pasien terbaru', value: items.length }
+                    ],
+                    items: items.slice(0, 3).map(function (item) {
+                        return {
+                            eyebrow: item.whatsapp || 'Pasien terbaru',
+                            title: truncateText(item.full_name || 'Pasien', 28),
+                            badge: item.appointment_date ? String(item.appointment_date) : 'Baru',
+                            badgeTone: 'info',
+                            meta: 'Masuk antrian Sunday Clinic',
+                            tail: formatRelativeTimeCompact(item.created_at)
+                        };
+                    }),
+                    emptyText: 'Belum ada pasien terbaru untuk ditampilkan.',
+                    note: 'Modal embed cocok untuk cek cepat, halaman penuh tetap tersedia dari menu internal DocBoard.'
+                };
+            }
         }),
         'point-staff-page-launcher': buildPageLauncherWidgetDef({
             id: 'point-staff-page-launcher',
             label: 'Point Staff',
             icon: 'fa-star',
             headerIcon: 'fa-star',
-            description: 'Lihat statistik point semua staff.',
-            buttonLabel: 'Buka Point Staff',
-            actionName: 'showStaffPointsPage'
+            description: 'Peringkat point staff untuk bulan berjalan.',
+            buttonLabel: 'Lihat Ranking',
+            actionName: 'showStaffPointsPage',
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return apiGetAbsolute('/api/staff-points?month=' + encodeURIComponent(getCurrentMonthValue()));
+            },
+            mapData: function (data) {
+                var rows = Array.isArray(data.staff) ? data.staff : [];
+                var totalPoints = rows.reduce(function (sum, row) {
+                    return sum + Number(row.total_points || 0);
+                }, 0);
+                var totalRated = rows.reduce(function (sum, row) {
+                    return sum + Number(row.rated_sessions || 0);
+                }, 0);
+                return {
+                    summary: rows.length ? 'Papan skor staff periode ' + (data.period && data.period.month ? data.period.month : getCurrentMonthValue()) + '.' : 'Belum ada data point untuk bulan ini.',
+                    stats: [
+                        { label: 'Total point', value: totalPoints },
+                        { label: 'Sesi dirating', value: totalRated }
+                    ],
+                    items: rows.slice(0, 3).map(function (row) {
+                        return {
+                            eyebrow: formatRoleLabel(row.role_display || row.role || 'staff'),
+                            title: truncateText(row.name || '-', 28),
+                            badge: String(Number(row.total_points || 0)) + ' pt',
+                            badgeTone: 'warning',
+                            meta: String(Number(row.rated_sessions || 0)) + ' sesi dirating',
+                            tail: String(Number(row.resolved_sessions || 0)) + ' sesi selesai • duty ' + String(Number(row.duty_count || 0))
+                        };
+                    }),
+                    emptyText: 'Belum ada point staff bulan ini.'
+                };
+            }
         }),
         'bulk-upload-usg-page-launcher': buildPageLauncherWidgetDef({
             id: 'bulk-upload-usg-page-launcher',
             label: 'Upload USG',
             icon: 'fa-cloud-upload-alt',
             headerIcon: 'fa-cloud-upload-alt',
-            description: 'Sinkron dan upload data USG rumah sakit.',
-            buttonLabel: 'Buka Upload USG',
-            actionName: 'showBulkUploadUSGPage'
+            description: 'Lokasi rumah sakit yang siap untuk bulk upload.',
+            buttonLabel: 'Mulai Upload',
+            actionName: 'showBulkUploadUSGPage',
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return apiGetAbsolute('/api/usg-bulk-upload/hospitals');
+            },
+            mapData: function (data) {
+                var hospitals = Array.isArray(data.hospitals) ? data.hospitals : (Array.isArray(data) ? data : []);
+                return {
+                    summary: hospitals.length ? 'Sinkron foto USG tersedia untuk beberapa lokasi.' : 'Daftar lokasi upload belum tersedia.',
+                    stats: [
+                        { label: 'Lokasi', value: hospitals.length },
+                        { label: 'Siap upload', value: hospitals.length ? 'Ya' : 'Belum' }
+                    ],
+                    items: hospitals.slice(0, 3).map(function (hospital) {
+                        return {
+                            eyebrow: hospital.value || 'Lokasi rumah sakit',
+                            title: hospital.label || hospital.value || '-',
+                            badge: 'Ready',
+                            badgeTone: 'success',
+                            meta: 'Siap dipilih untuk sinkron dan upload ZIP'
+                        };
+                    }),
+                    emptyText: 'Belum ada lokasi upload yang tersedia.'
+                };
+            }
         }),
         'patient-activity-page-launcher': buildPageLauncherWidgetDef({
             id: 'patient-activity-page-launcher',
             label: 'Aktivitas Pasien',
             icon: 'fa-user-check',
             headerIcon: 'fa-user-check',
-            description: 'Pantau aktivitas pasien terbaru.',
-            buttonLabel: 'Buka Aktivitas Pasien',
+            description: 'Booking, intake, login, dan aktivitas pasien terbaru.',
+            buttonLabel: 'Lihat Aktivitas',
             actionName: 'showPatientActivityPage',
-            isAvailable: isDokterUser
+            isAvailable: isDokterUser,
+            defaultSize: { w: 6, h: 3, minW: 4, minH: 3 },
+            loadData: function () {
+                return apiGetAbsoluteRaw('/api/patient-activity?limit=3');
+            },
+            mapData: function (data) {
+                var rows = Array.isArray(data.data) ? data.data : [];
+                var stats = data.stats || {};
+                return {
+                    summary: rows.length ? 'Aktivitas pasien terbaru dari portal dan booking.' : 'Belum ada aktivitas pasien terbaru.',
+                    stats: [
+                        { label: 'Booking', value: Number(stats.appointments || 0) },
+                        { label: 'Login', value: Number(stats.logins || 0) },
+                        { label: 'Intake', value: Number(stats.intakes || 0) }
+                    ],
+                    items: rows.slice(0, 3).map(function (row) {
+                        return {
+                            eyebrow: row.patient_email || row.patient_phone || 'Portal pasien',
+                            title: truncateText(row.patient_name || '-', 30),
+                            badge: formatPatientActivityLabel(row.type),
+                            badgeTone: getPatientActivityTone(row.type),
+                            meta: truncateText(row.details || '-', 44),
+                            tail: formatRelativeTimeCompact(row.timestamp)
+                        };
+                    }),
+                    emptyText: 'Belum ada aktivitas pasien.'
+                };
+            }
         }),
         'finance-analysis-page-launcher': buildPageLauncherWidgetDef({
             id: 'finance-analysis-page-launcher',
             label: 'Analisis Finansial',
             icon: 'fa-chart-line',
             headerIcon: 'fa-chart-line',
-            description: 'Widget khusus dr. Dibya untuk analisis finansial.',
-            buttonLabel: 'Buka Analisis',
+            description: 'Ringkasan kunjungan dan pemasukan hari ini.',
+            buttonLabel: 'Lihat Analisis',
             actionName: 'showFinanceAnalysisPage',
-            isAvailable: isDokterUser
+            isAvailable: isDokterUser,
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                var today = formatDateLocalValue(new Date());
+                return apiGetAbsolute('/api/visits?exclude_dummy=true&start_date=' + encodeURIComponent(today) + '&end_date=' + encodeURIComponent(today));
+            },
+            mapData: function (data) {
+                var visits = Array.isArray(data) ? data : [];
+                var totalRevenue = visits.reduce(function (sum, visit) {
+                    var total = Number(visit.grand_total != null ? visit.grand_total : (visit.grandTotal != null ? visit.grandTotal : visit.total_amount));
+                    return sum + (Number.isFinite(total) ? total : 0);
+                }, 0);
+                var averageBill = visits.length ? Math.round(totalRevenue / visits.length) : 0;
+                return {
+                    summary: visits.length ? 'Ringkasan transaksi kunjungan klinik hari ini.' : 'Belum ada transaksi kunjungan hari ini.',
+                    stats: [
+                        { label: 'Kunjungan', value: visits.length },
+                        { label: 'Revenue', value: formatMoneyIdr(totalRevenue) },
+                        { label: 'Rata-rata', value: formatMoneyIdr(averageBill) }
+                    ],
+                    items: visits.slice(0, 2).map(function (visit) {
+                        return {
+                            eyebrow: 'Transaksi hari ini',
+                            title: truncateText(visit.patient_name || visit.full_name || 'Pasien', 28),
+                            badge: formatMoneyIdr(visit.grand_total != null ? visit.grand_total : (visit.grandTotal != null ? visit.grandTotal : visit.total_amount)),
+                            badgeTone: 'success',
+                            meta: 'Masuk ringkasan revenue klinik',
+                            tail: visit.created_at ? formatRelativeTimeCompact(visit.created_at) : ''
+                        };
+                    }),
+                    emptyText: 'Belum ada data kunjungan untuk hari ini.'
+                };
+            }
         }),
         'staff-activity-page-launcher': buildPageLauncherWidgetDef({
             id: 'staff-activity-page-launcher',
             label: 'Aktivitas Staff',
             icon: 'fa-user-clock',
             headerIcon: 'fa-user-clock',
-            description: 'Widget khusus dr. Dibya untuk audit aktivitas staff.',
-            buttonLabel: 'Buka Aktivitas Staff',
+            description: 'Audit singkat aktivitas staff 7 hari terakhir.',
+            buttonLabel: 'Buka Audit',
             actionName: 'showStaffActivityPage',
-            isAvailable: isDokterUser
+            isAvailable: isDokterUser,
+            defaultSize: { w: 4, h: 3, minW: 3, minH: 3 },
+            loadData: function () {
+                return apiGetAbsolute('/api/logs/summary?days=7');
+            },
+            mapData: function (data) {
+                var topUsers = Array.isArray(data.most_active_users) ? data.most_active_users : [];
+                var actionPairs = data.by_action && typeof data.by_action === 'object' ? Object.keys(data.by_action).map(function (key) {
+                    return { action: key, count: Number(data.by_action[key] || 0) };
+                }) : [];
+                actionPairs.sort(function (left, right) {
+                    return right.count - left.count;
+                });
+
+                return {
+                    summary: data.total_activities ? 'Aktivitas staff 7 hari terakhir terpantau.' : 'Belum ada aktivitas staff yang tercatat.',
+                    stats: [
+                        { label: 'Aktivitas', value: Number(data.total_activities || 0) },
+                        { label: 'Staff aktif', value: Number(data.unique_users || 0) }
+                    ],
+                    items: topUsers.slice(0, 3).map(function (user, index) {
+                        var topAction = actionPairs[index] ? actionPairs[index].action : 'aktivitas';
+                        return {
+                            eyebrow: 'Top activity #' + String(index + 1),
+                            title: truncateText(user.user_name || 'Staff', 28),
+                            badge: String(Number(user.action_count || 0)) + ' aksi',
+                            badgeTone: 'info',
+                            meta: 'Aksi terbanyak: ' + formatRoleLabel(topAction),
+                            tail: formatRelativeTimeCompact(user.last_activity)
+                        };
+                    }),
+                    emptyText: 'Belum ada aktivitas staff yang tercatat.'
+                };
+            }
         }),
         'online-users-mini': {
             id: 'online-users-mini',
@@ -796,8 +1327,8 @@
                 widget_id: id,
                 x: Number.isFinite(widget.x) ? widget.x : 0,
                 y: Number.isFinite(widget.y) ? widget.y : 0,
-                w: Number.isFinite(widget.w) ? widget.w : size.w,
-                h: Number.isFinite(widget.h) ? widget.h : size.h,
+                w: Number.isFinite(widget.w) ? Math.max(widget.w, Number(size.minW || 1)) : size.w,
+                h: Number.isFinite(widget.h) ? Math.max(widget.h, Number(size.minH || 1)) : size.h,
                 config: Object.assign({}, def && def.defaultConfig ? def.defaultConfig : {}, widget.config || {})
             };
         });

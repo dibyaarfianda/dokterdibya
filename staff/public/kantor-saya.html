@@ -221,6 +221,10 @@
             gap: 10px;
         }
 
+        #kantor-saya-page .ks-page-launcher--lite {
+            gap: 12px;
+        }
+
         #kantor-saya-page .ks-page-launcher-title {
             font-size: 13px;
             font-weight: 700;
@@ -239,6 +243,169 @@
             font-size: 11px;
             font-weight: 600;
             padding: 5px 10px;
+            box-shadow: none !important;
+        }
+
+        #kantor-saya-page .ks-page-launcher-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+            gap: 7px;
+        }
+
+        #kantor-saya-page .ks-page-launcher-stat {
+            padding: 7px 8px;
+            border-radius: 10px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+        }
+
+        #kantor-saya-page .ks-page-launcher-stat-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+
+        #kantor-saya-page .ks-page-launcher-stat-label {
+            margin-top: 3px;
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.35;
+        }
+
+        #kantor-saya-page .ks-page-launcher-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 6px;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item {
+            padding: 7px 8px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.035);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-main {
+            min-width: 0;
+            flex: 1;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-eyebrow {
+            margin-bottom: 2px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.35px;
+            color: #64748b;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.35;
+        }
+
+        #kantor-saya-page .ks-page-launcher-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            min-height: 20px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 700;
+            line-height: 1.2;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(148, 163, 184, 0.12);
+            color: #334155;
+            max-width: 46%;
+            text-align: center;
+        }
+
+        #kantor-saya-page .ks-page-launcher-badge.is-neutral {
+            background: rgba(148, 163, 184, 0.12);
+            color: #334155;
+        }
+
+        #kantor-saya-page .ks-page-launcher-badge.is-info {
+            background: rgba(59, 130, 246, 0.12);
+            color: #1d4ed8;
+        }
+
+        #kantor-saya-page .ks-page-launcher-badge.is-success {
+            background: rgba(16, 185, 129, 0.12);
+            color: #047857;
+        }
+
+        #kantor-saya-page .ks-page-launcher-badge.is-warning {
+            background: rgba(245, 158, 11, 0.14);
+            color: #b45309;
+        }
+
+        #kantor-saya-page .ks-page-launcher-badge.is-danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-meta,
+        #kantor-saya-page .ks-page-launcher-empty,
+        #kantor-saya-page .ks-page-launcher-note {
+            font-size: 10px;
+            line-height: 1.45;
+            color: #64748b;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-meta {
+            margin-top: 4px;
+        }
+
+        #kantor-saya-page .ks-page-launcher-item-tail {
+            margin-top: 4px;
+            font-size: 9px;
+            line-height: 1.35;
+            color: #94a3b8;
+        }
+
+        #kantor-saya-page .ks-page-launcher-empty {
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px dashed rgba(15, 23, 42, 0.08);
+        }
+
+        #kantor-saya-page .ks-page-launcher-note {
+            padding: 0 2px;
+        }
+
+        #kantor-saya-page .ks-docboard-modal .modal-dialog {
+            max-width: 1180px;
+        }
+
+        #kantor-saya-page .ks-docboard-modal .modal-body {
+            padding: 10px;
+            background: #eef3ff;
+        }
+
+        #kantor-saya-page .ks-docboard-modal-frame {
+            width: 100%;
+            min-height: 78vh;
+            border: 0;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
         }
 
         #kantor-saya-page .ks-table {
@@ -457,6 +624,15 @@
             #kantor-saya-page .ks-preset-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
+
+            #kantor-saya-page .ks-docboard-modal .modal-dialog {
+                max-width: calc(100vw - 12px);
+                margin: 6px auto;
+            }
+
+            #kantor-saya-page .ks-docboard-modal-frame {
+                min-height: 84dvh;
+            }
         }
     </style>
 
@@ -538,6 +714,33 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                     <button type="button" class="btn btn-primary" id="ks-save-theme">
                         <i class="fas fa-save mr-1"></i>Simpan Tema
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade ks-docboard-modal" id="ks-docboard-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-procedures mr-2"></i>DocBoard</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <iframe
+                        id="ks-docboard-modal-iframe"
+                        class="ks-docboard-modal-frame"
+                        title="DocBoard Embed"
+                        loading="lazy"
+                        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.showDocboardPage && window.showDocboardPage()">
+                        <i class="fas fa-external-link-alt mr-1"></i>Buka Halaman Penuh
                     </button>
                 </div>
             </div>
