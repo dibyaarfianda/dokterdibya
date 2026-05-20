@@ -29,14 +29,16 @@
         .avatar-editor-stage {
             position: relative;
             width: min(320px, 100%);
+            max-width: 320px;
             aspect-ratio: 1;
             margin: 0 auto;
             overflow: hidden;
-            border-radius: 24px;
-            background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.16), rgba(15, 23, 42, 0.9));
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+            border-radius: 32px;
+            background: linear-gradient(145deg, #dbeafe 0%, #eff6ff 36%, #e2e8f0 100%);
+            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24), 0 18px 40px rgba(15, 23, 42, 0.12);
             touch-action: none;
             user-select: none;
+            overscroll-behavior: contain;
         }
 
         .avatar-editor-stage.is-dragging {
@@ -56,14 +58,15 @@
             pointer-events: none;
             user-select: none;
             -webkit-user-drag: none;
+            display: block;
         }
 
         .avatar-editor-stage::after {
             content: '';
             position: absolute;
             inset: 0;
-            border-radius: 24px;
-            box-shadow: inset 0 0 0 999px rgba(15, 23, 42, 0.32);
+            border-radius: 32px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(15, 23, 42, 0.08));
             pointer-events: none;
         }
 
@@ -72,10 +75,31 @@
             position: absolute;
             inset: 14px;
             border-radius: 50%;
-            box-shadow: 0 0 0 999px rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.88);
+            box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.28);
+            border: 3px solid rgba(255, 255, 255, 0.94);
             pointer-events: none;
             z-index: 2;
+        }
+
+        .avatar-editor-panel {
+            display: none;
+            margin-top: 18px;
+        }
+
+        .avatar-editor-panel.is-active {
+            display: block;
+        }
+
+        .avatar-editor-panel .card {
+            border-radius: 20px;
+            border: 1px solid rgba(13, 110, 253, 0.12);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+            overflow: hidden;
+        }
+
+        .avatar-editor-panel .card-header {
+            background: linear-gradient(135deg, rgba(13, 110, 253, 0.12), rgba(34, 197, 94, 0.08));
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
         }
 
         .avatar-editor-toolbar {
@@ -217,30 +241,30 @@
                     </div>
                 </div>
             </div>
-                    <div class="modal fade" id="profile-picture-editor-modal" tabindex="-1" role="dialog" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header bg-primary">
-                                    <h5 class="modal-title text-white"><i class="fas fa-crop-alt mr-2"></i>Atur Foto Profil</h5>
-                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
+                    <div id="profile-picture-editor-panel" class="avatar-editor-panel">
+                        <div class="card card-outline card-primary">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <h3 class="card-title mb-0"><i class="fas fa-crop-alt mr-2"></i>Atur Foto Profil</h3>
+                                <button type="button" class="btn btn-tool" id="avatar-editor-close-btn" aria-label="Tutup editor foto">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <p class="avatar-editor-hint mb-3">Geser foto untuk center yang pas. Area lingkaran adalah hasil akhir foto profil.</p>
+                                <div class="avatar-editor-stage" id="avatar-editor-stage">
+                                    <img id="avatar-editor-image" class="avatar-editor-image" alt="Avatar crop preview">
+                                </div>
+                                <div class="avatar-editor-toolbar">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="avatar-editor-reset-btn">
+                                        <i class="fas fa-sync-alt mr-1"></i>Reset
                                     </button>
+                                    <input type="range" id="avatar-editor-zoom" class="form-control-range" min="100" max="400" step="1" value="100">
+                                    <span id="avatar-editor-zoom-value" class="avatar-editor-zoom-value">100%</span>
                                 </div>
-                                <div class="modal-body">
-                                    <p class="avatar-editor-hint mb-3">Geser foto untuk menentukan posisi center, lalu atur zoom sampai komposisinya pas.</p>
-                                    <div class="avatar-editor-stage" id="avatar-editor-stage">
-                                        <img id="avatar-editor-image" class="avatar-editor-image" alt="Avatar crop preview">
-                                    </div>
-                                    <div class="avatar-editor-toolbar">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="avatar-editor-reset-btn">
-                                            <i class="fas fa-sync-alt mr-1"></i>Reset
-                                        </button>
-                                        <input type="range" id="avatar-editor-zoom" class="form-control-range" min="100" max="400" step="1" value="100">
-                                        <span id="avatar-editor-zoom-value" class="avatar-editor-zoom-value">100%</span>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <div class="mt-3 d-flex justify-content-end flex-wrap" style="gap: 8px;">
+                                    <button type="button" class="btn btn-outline-secondary" id="avatar-editor-cancel-btn">
+                                        Batal
+                                    </button>
                                     <button type="button" class="btn btn-primary" id="avatar-editor-apply-btn">
                                         <i class="fas fa-check mr-1"></i>Gunakan Foto Ini
                                     </button>
@@ -262,7 +286,6 @@
     let currentUser = null;
     let selectedProfilePicture = null;
     let avatarEditorBound = false;
-    let avatarEditorBackdrop = null;
     const avatarEditorState = {
         image: null,
         scale: 1,
@@ -304,13 +327,15 @@
 
     function getAvatarEditorElements() {
         return {
-            modal: document.getElementById('profile-picture-editor-modal'),
+            panel: document.getElementById('profile-picture-editor-panel'),
             stage: document.getElementById('avatar-editor-stage'),
             image: document.getElementById('avatar-editor-image'),
             zoom: document.getElementById('avatar-editor-zoom'),
             zoomValue: document.getElementById('avatar-editor-zoom-value'),
             resetBtn: document.getElementById('avatar-editor-reset-btn'),
             applyBtn: document.getElementById('avatar-editor-apply-btn'),
+            cancelBtn: document.getElementById('avatar-editor-cancel-btn'),
+            closeBtn: document.getElementById('avatar-editor-close-btn'),
             fileInput: document.getElementById('profile-picture-input')
         };
     }
@@ -333,6 +358,32 @@
         avatarEditorState.originX = 0;
         avatarEditorState.originY = 0;
         avatarEditorState.pointerId = null;
+    }
+
+    function showAvatarEditorPanel() {
+        const elements = getAvatarEditorElements();
+        if (!elements.panel) return;
+        elements.panel.classList.add('is-active');
+        renderAvatarEditor();
+    }
+
+    function hideAvatarEditorPanel() {
+        const elements = getAvatarEditorElements();
+        if (!elements.panel) return;
+
+        elements.panel.classList.remove('is-active');
+        resetAvatarEditorState();
+
+        if (elements.image) {
+            elements.image.removeAttribute('src');
+            elements.image.style.width = '';
+            elements.image.style.height = '';
+            elements.image.style.transform = '';
+        }
+
+        if (elements.fileInput) {
+            elements.fileInput.value = '';
+        }
     }
 
     function clampAvatarEditorOffsets() {
@@ -442,73 +493,6 @@
         return canvas.toDataURL('image/png');
     }
 
-    function hasBootstrapModalPlugin() {
-        return !!(window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function');
-    }
-
-    function cleanupAvatarEditorModal() {
-        const elements = getAvatarEditorElements();
-        resetAvatarEditorState();
-
-        if (elements.image) {
-            elements.image.removeAttribute('src');
-            elements.image.style.width = '';
-            elements.image.style.height = '';
-            elements.image.style.transform = '';
-        }
-
-        if (elements.fileInput) {
-            elements.fileInput.value = '';
-        }
-
-        if (avatarEditorBackdrop) {
-            avatarEditorBackdrop.remove();
-            avatarEditorBackdrop = null;
-        }
-    }
-
-    function showAvatarEditorModal() {
-        const elements = getAvatarEditorElements();
-        if (!elements.modal) return;
-
-        if (hasBootstrapModalPlugin()) {
-            $('#profile-picture-editor-modal').modal('show');
-            return;
-        }
-
-        elements.modal.style.display = 'block';
-        elements.modal.classList.add('show');
-        elements.modal.setAttribute('aria-modal', 'true');
-        elements.modal.removeAttribute('aria-hidden');
-        document.body.classList.add('modal-open');
-
-        if (!avatarEditorBackdrop) {
-            avatarEditorBackdrop = document.createElement('div');
-            avatarEditorBackdrop.className = 'modal-backdrop fade show avatar-editor-modal-backdrop';
-            avatarEditorBackdrop.addEventListener('click', hideAvatarEditorModal);
-            document.body.appendChild(avatarEditorBackdrop);
-        }
-
-        renderAvatarEditor();
-    }
-
-    function hideAvatarEditorModal() {
-        const elements = getAvatarEditorElements();
-        if (!elements.modal) return;
-
-        if (hasBootstrapModalPlugin()) {
-            $('#profile-picture-editor-modal').modal('hide');
-            return;
-        }
-
-        elements.modal.classList.remove('show');
-        elements.modal.style.display = 'none';
-        elements.modal.setAttribute('aria-hidden', 'true');
-        elements.modal.removeAttribute('aria-modal');
-        document.body.classList.remove('modal-open');
-        cleanupAvatarEditorModal();
-    }
-
     async function openAvatarEditor(sourceUrl) {
         const image = await new Promise((resolve, reject) => {
             const img = new Image();
@@ -527,7 +511,7 @@
         avatarEditorState.scale = avatarEditorState.minScale;
 
         recenterAvatarEditor();
-        showAvatarEditorModal();
+        showAvatarEditorPanel();
     }
 
     function bindAvatarEditor() {
@@ -535,7 +519,7 @@
         avatarEditorBound = true;
 
         const elements = getAvatarEditorElements();
-        if (!elements.modal || !elements.stage || !elements.zoom || !elements.applyBtn || !elements.resetBtn) {
+        if (!elements.panel || !elements.stage || !elements.zoom || !elements.applyBtn || !elements.resetBtn) {
             return;
         }
 
@@ -598,24 +582,77 @@
 
             selectedProfilePicture = exported;
             displayProfilePicture(selectedProfilePicture);
-            hideAvatarEditorModal();
+            hideAvatarEditorPanel();
             showToast('Foto siap disimpan. Klik Simpan Perubahan untuk menyimpan.', 'success');
         });
 
-        Array.from(elements.modal.querySelectorAll('[data-dismiss="modal"]')).forEach(function(button) {
+        [elements.cancelBtn, elements.closeBtn].forEach(function(button) {
+            if (!button) return;
             button.addEventListener('click', function() {
-                hideAvatarEditorModal();
+                hideAvatarEditorPanel();
             });
         });
 
-        if (hasBootstrapModalPlugin()) {
-            $('#profile-picture-editor-modal').on('shown.bs.modal', function() {
+        window.addEventListener('resize', function() {
+            if (avatarEditorState.image && elements.panel.classList.contains('is-active')) {
                 renderAvatarEditor();
-            });
+            }
+        });
 
-            $('#profile-picture-editor-modal').on('hidden.bs.modal', function() {
-                cleanupAvatarEditorModal();
-            });
+        elements.stage.addEventListener('wheel', function(event) {
+            if (!avatarEditorState.image) return;
+            event.preventDefault();
+            const currentZoom = Number(elements.zoom.value || 100);
+            const nextZoom = Math.max(100, Math.min(400, currentZoom + (event.deltaY < 0 ? 8 : -8)));
+            elements.zoom.value = String(nextZoom);
+            setAvatarEditorZoom(nextZoom);
+        }, { passive: false });
+
+        elements.stage.addEventListener('dblclick', function() {
+            if (!avatarEditorState.image) return;
+            elements.zoom.value = '100';
+            avatarEditorState.scale = avatarEditorState.minScale;
+            recenterAvatarEditor();
+        });
+
+        elements.stage.addEventListener('pointerleave', function() {
+            if (avatarEditorState.dragging) {
+                avatarEditorState.dragging = false;
+                avatarEditorState.pointerId = null;
+                elements.stage.classList.remove('is-dragging');
+            }
+        });
+
+        document.getElementById('profile-picture-input').addEventListener('click', function() {
+            if (elements.panel.classList.contains('is-active')) {
+                hideAvatarEditorPanel();
+            }
+        });
+    }
+
+    function syncAvatarEditorImageFit() {
+        if (!avatarEditorState.image) return;
+
+        const stageSize = getAvatarEditorStageSize();
+        const fitScale = Math.max(stageSize / avatarEditorState.image.naturalWidth, stageSize / avatarEditorState.image.naturalHeight);
+        const ratio = avatarEditorState.scale / avatarEditorState.minScale;
+
+        avatarEditorState.minScale = fitScale;
+        avatarEditorState.maxScale = fitScale * 4;
+        avatarEditorState.scale = Math.min(avatarEditorState.maxScale, Math.max(fitScale, fitScale * ratio));
+        renderAvatarEditor();
+    }
+
+    window.addEventListener('resize', function() {
+        syncAvatarEditorImageFit();
+    });
+
+    document.addEventListener('keydown', function(event) {
+        const elements = getAvatarEditorElements();
+        if (!elements.panel || !elements.panel.classList.contains('is-active')) return;
+
+        if (event.key === 'Escape') {
+            hideAvatarEditorPanel();
         }
     }
 
