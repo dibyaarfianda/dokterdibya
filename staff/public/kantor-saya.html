@@ -548,4 +548,10 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css">
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack-all.js"></script>
-<script src="./scripts/kantor-saya.js?v=v160"></script>
+<script>
+    (function() {
+        var script = document.createElement('script');
+        script.src = './scripts/kantor-saya.js?v=' + encodeURIComponent(window.__assetVersion || 'v1');
+        document.body.appendChild(script);
+    })();
+</script>
