@@ -5,6 +5,8 @@
             --kantor-accent: #0d6efd;
             --kantor-surface: rgba(255, 255, 255, 0.58);
             --kantor-border: rgba(15, 23, 42, 0.08);
+            --kantor-bg-position-x: 50%;
+            --kantor-bg-position-y: 50%;
             height: calc(100dvh - 148px);
             min-height: 420px;
             border-radius: 16px;
@@ -16,7 +18,7 @@
                         radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.14), transparent 40%),
                         linear-gradient(160deg, #f8fafc 0%, #eef4ff 50%, #f3f8f5 100%);
             background-size: cover;
-            background-position: center calc(50% + var(--kantor-bg-offset-y, 0px));
+            background-position: var(--kantor-bg-position-x) calc(var(--kantor-bg-position-y) + var(--kantor-bg-offset-y, 0px)), center, center, center;
         }
 
         #kantor-saya-page .ks-toolbar {
@@ -251,6 +253,35 @@
             font-size: 11px;
             font-weight: 700;
             color: #16a34a;
+        }
+
+        #kantor-saya-page .ks-wallpaper-tune {
+            display: grid;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.03);
+        }
+
+        #kantor-saya-page .ks-wallpaper-tune-row {
+            display: grid;
+            grid-template-columns: 96px minmax(0, 1fr) 48px;
+            gap: 8px;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        #kantor-saya-page .ks-wallpaper-tune-row label {
+            margin: 0;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        #kantor-saya-page .ks-wallpaper-tune-row output {
+            text-align: right;
+            color: #64748b;
+            font-variant-numeric: tabular-nums;
         }
 
         #kantor-saya-page .ks-list {
@@ -836,6 +867,29 @@
                             <button type="button" class="ks-preset preset-sand" data-preset="sand" title="Sand"></button>
                             <button type="button" class="ks-preset preset-ice" data-preset="ice" title="Ice"></button>
                             <button type="button" class="ks-preset preset-darkglass" data-preset="darkglass" title="Dark Glass"></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Posisi Background</label>
+                        <div class="ks-wallpaper-tune">
+                            <div class="ks-wallpaper-tune-row">
+                                <label for="ks-wallpaper-zoom">Zoom</label>
+                                <input type="range" class="custom-range" id="ks-wallpaper-zoom" min="100" max="240" step="1" value="100">
+                                <output id="ks-wallpaper-zoom-value">100%</output>
+                            </div>
+                            <div class="ks-wallpaper-tune-row">
+                                <label for="ks-wallpaper-offset-x">Horizontal</label>
+                                <input type="range" class="custom-range" id="ks-wallpaper-offset-x" min="-50" max="50" step="1" value="0">
+                                <output id="ks-wallpaper-offset-x-value">0</output>
+                            </div>
+                            <div class="ks-wallpaper-tune-row">
+                                <label for="ks-wallpaper-offset-y">Vertikal</label>
+                                <input type="range" class="custom-range" id="ks-wallpaper-offset-y" min="-50" max="50" step="1" value="0">
+                                <output id="ks-wallpaper-offset-y-value">0</output>
+                            </div>
+                            <button type="button" class="btn btn-light btn-sm align-self-start" id="ks-reset-wallpaper-position">
+                                <i class="fas fa-crosshairs mr-1"></i>Reset Center
+                            </button>
                         </div>
                     </div>
                     <div class="form-group mb-0">
