@@ -914,6 +914,28 @@
             margin-right: -50vw;
             background: transparent;
             z-index: 1;
+            --info-terbaru-accent: rgb(126, 168, 159);
+            --info-terbaru-accent-soft: rgba(126, 168, 159, 0.22);
+        }
+
+        #announcements-container[data-layout='info-terbaru'] [style*="color: rgb(59, 130, 246)"],
+        #announcements-container[data-layout='info-terbaru'] [style*="color:rgb(59, 130, 246)"],
+        #announcements-container[data-layout='info-terbaru'] [style*="color:#3b82f6"],
+        #announcements-container[data-layout='info-terbaru'] [style*="color: #3b82f6"],
+        #announcements-container[data-layout='info-terbaru'] .info-terbaru-item h4 span {
+            color: var(--info-terbaru-accent) !important;
+            -webkit-text-fill-color: var(--info-terbaru-accent) !important;
+        }
+
+        #announcements-container[data-layout='info-terbaru'] [style*="background-color: rgb(59, 130, 246)"],
+        #announcements-container[data-layout='info-terbaru'] [style*="background-color:rgb(59, 130, 246)"],
+        #announcements-container[data-layout='info-terbaru'] [style*="background: rgb(59, 130, 246)"],
+        #announcements-container[data-layout='info-terbaru'] [style*="background:rgb(59, 130, 246)"],
+        #announcements-container[data-layout='info-terbaru'] [style*="background-color:#3b82f6"],
+        #announcements-container[data-layout='info-terbaru'] [style*="background:#3b82f6"] {
+            background: var(--info-terbaru-accent) !important;
+            border-color: var(--info-terbaru-accent) !important;
+            box-shadow: 0 0 0 1px var(--info-terbaru-accent-soft) !important;
         }
 
         #announcements-container::after {
@@ -1109,7 +1131,7 @@
             font-size: clamp(15rem, 28vw, 34rem);
             font-weight: 500;
             line-height: 1;
-            color: rgb(59, 130, 246);
+            color: var(--info-terbaru-accent);
             letter-spacing: -0.04em;
             user-select: none;
             pointer-events: none;
@@ -1134,7 +1156,7 @@
             font-size: clamp(15rem, 28vw, 34rem);
             font-weight: 500;
             line-height: 1;
-            color: rgb(59, 130, 246);
+            color: var(--info-terbaru-accent);
             letter-spacing: -0.04em;
             user-select: none;
             pointer-events: none;
