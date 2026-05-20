@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perjalanan Ibu Promo Mock</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f4f1ea;
+            color: #111827;
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            padding: 58px;
+            background:
+                radial-gradient(circle at top right, rgba(120, 53, 15, 0.08), transparent 30%),
+                radial-gradient(circle at bottom left, rgba(15, 23, 42, 0.05), transparent 24%),
+                #f4f1ea;
+        }
+
+        .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 40px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 44px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #8b5e34;
+        }
+
+        h1 {
+            font-size: 66px;
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            font-weight: 650;
+            max-width: 620px;
+            margin-top: 12px;
+        }
+
+        .lead {
+            font-size: 23px;
+            line-height: 1.6;
+            color: #4b5563;
+            max-width: 780px;
+        }
+
+        .hero-card {
+            border-radius: 30px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: #fff;
+            padding: 28px;
+            display: grid;
+            grid-template-columns: 0.95fr 1.05fr;
+            gap: 20px;
+        }
+
+        .quote-card {
+            border-radius: 24px;
+            background: linear-gradient(180deg, #f4ede2 0%, #ede4d5 100%);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .quote-card .mini {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #8b5e34;
+        }
+
+        .quote-card h2 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-style: italic;
+            font-size: 54px;
+            line-height: 1.08;
+            color: #2b2117;
+            margin: 16px 0;
+        }
+
+        .quote-card p {
+            font-size: 18px;
+            line-height: 1.65;
+            color: #6b5a47;
+        }
+
+        .stages {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .stage {
+            border-radius: 22px;
+            border: 1px solid rgba(17, 24, 39, 0.08);
+            background: #f8f7f4;
+            padding: 18px;
+        }
+
+        .stage-num {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #8b5e34;
+            margin-bottom: 10px;
+        }
+
+        .stage-title {
+            font-size: 25px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stage-copy {
+            font-size: 18px;
+            line-height: 1.55;
+            color: #4b5563;
+        }
+
+        .footer {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .badge {
+            padding: 14px 22px;
+            border-radius: 999px;
+            background: #111827;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .foot-copy {
+            max-width: 420px;
+            text-align: right;
+            font-size: 18px;
+            line-height: 1.55;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="frame">
+            <div>
+                <div class="kicker">Perjalanan Ibu</div>
+                <h1>Langkah demi langkah dari prakonsepsi sampai nifas.</h1>
+            </div>
+            <p class="lead">Promo ini merangkum babak utama yang ada di halaman Perjalanan Ibu: panduan tenang, alat bantu, dan milestone yang relevan di setiap fase.</p>
+
+            <div class="hero-card">
+                <div class="quote-card">
+                    <div class="mini">Langkah Awal Ibu</div>
+                    <h2>Enam babak untuk satu perjalanan baru.</h2>
+                    <p>Mulai dari mempersiapkan kehamilan, memahami perubahan tubuh, memantau gerakan bayi, sampai masa nifas dan menyusui.</p>
+                </div>
+
+                <div class="stages">
+                    <div class="stage"><div class="stage-num">01</div><div class="stage-title">Prakonsepsi</div><div class="stage-copy">Pantau masa subur dan siapkan tubuh sebelum kehamilan dimulai.</div></div>
+                    <div class="stage"><div class="stage-num">02</div><div class="stage-title">Trimester 1</div><div class="stage-copy">Pahami pembentukan awal organ janin dan adaptasi tubuh ibu.</div></div>
+                    <div class="stage"><div class="stage-num">03</div><div class="stage-title">Trimester 2</div><div class="stage-copy">Lihat fase pertumbuhan yang biasanya terasa lebih nyaman.</div></div>
+                    <div class="stage"><div class="stage-num">04</div><div class="stage-title">Trimester 3</div><div class="stage-copy">Siapkan persalinan sambil memantau gerakan bayi dan tanda bahaya.</div></div>
+                    <div class="stage"><div class="stage-num">05</div><div class="stage-title">Persalinan</div><div class="stage-copy">Kenali tanda hari H dan pilihan persalinan sesuai kondisi klinis.</div></div>
+                    <div class="stage"><div class="stage-num">06</div><div class="stage-title">Nifas</div><div class="stage-copy">Fokus pada pemulihan ibu, menyusui, dan dukungan setelah melahirkan.</div></div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="badge">Perjalanan Ibu</div>
+                <div class="foot-copy">Setiap kartu dan copy meniru struktur edukasi bertahap yang dipakai di halaman aslinya.</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

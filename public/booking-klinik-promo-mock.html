@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Klinik Promo Mock</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f7f6f2;
+            color: #141414;
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            padding: 58px;
+            background:
+                radial-gradient(circle at top left, rgba(17, 17, 17, 0.08), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(22, 163, 74, 0.12), transparent 26%),
+                #f7f6f2;
+        }
+
+        .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 40px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: rgba(255, 255, 255, 0.78);
+            padding: 42px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #6b6b6b;
+        }
+
+        h1 {
+            font-size: 64px;
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            font-weight: 650;
+            margin-top: 12px;
+            max-width: 640px;
+        }
+
+        .lead {
+            max-width: 760px;
+            font-size: 23px;
+            line-height: 1.58;
+            color: #444;
+        }
+
+        .steps-card {
+            border-radius: 30px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #fff;
+            padding: 28px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .step-circle {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            border: 2px solid rgba(20, 20, 20, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 700;
+            background: #f4f2ed;
+        }
+
+        .step.active .step-circle {
+            background: #141414;
+            color: #fff;
+            border-color: #141414;
+        }
+
+        .step-title {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #666;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 18px;
+        }
+
+        .date-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .date-card, .session-card, .summary-card {
+            border-radius: 22px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #f6f5f1;
+        }
+
+        .date-card {
+            padding: 20px;
+        }
+
+        .date-day {
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #787878;
+            margin-bottom: 8px;
+        }
+
+        .date-num {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .date-note {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .date-card.selected {
+            background: #141414;
+            color: #fff;
+        }
+
+        .date-card.selected .date-day,
+        .date-card.selected .date-note {
+            color: rgba(255, 255, 255, 0.74);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .session-card,
+        .summary-card {
+            padding: 18px 20px;
+            background: #fff;
+        }
+
+        .label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #6f6f6f;
+            margin-bottom: 10px;
+        }
+
+        .session-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .session-meta,
+        .summary-row {
+            font-size: 18px;
+            line-height: 1.55;
+            color: #555;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .summary-row + .summary-row {
+            margin-top: 10px;
+        }
+
+        .cta {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .pill {
+            padding: 14px 22px;
+            border-radius: 999px;
+            background: #141414;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .cta-note {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #666;
+            text-align: right;
+            max-width: 380px;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="frame">
+            <div>
+                <div class="kicker">Booking Klinik Minggu</div>
+                <h1>Pesan slot konsultasi dalam empat langkah sederhana.</h1>
+            </div>
+            <p class="lead">Pilih tanggal, tentukan sesi, isi ringkasan keluhan, lalu konfirmasi booking Anda secara cepat di Patient Portal.</p>
+
+            <div class="steps-card">
+                <div class="steps">
+                    <div class="step active"><div class="step-circle">1</div><div class="step-title">Tanggal</div></div>
+                    <div class="step"><div class="step-circle">2</div><div class="step-title">Sesi</div></div>
+                    <div class="step"><div class="step-circle">3</div><div class="step-title">Data</div></div>
+                    <div class="step"><div class="step-circle">4</div><div class="step-title">Konfirmasi</div></div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="date-grid">
+                        <div class="date-card selected"><div class="date-day">Minggu</div><div class="date-num">26</div><div class="date-note">Mei 2026</div></div>
+                        <div class="date-card"><div class="date-day">Minggu</div><div class="date-num">02</div><div class="date-note">Juni 2026</div></div>
+                        <div class="date-card"><div class="date-day">Minggu</div><div class="date-num">09</div><div class="date-note">Juni 2026</div></div>
+                        <div class="date-card"><div class="date-day">Minggu</div><div class="date-num">16</div><div class="date-note">Juni 2026</div></div>
+                    </div>
+
+                    <div class="sidebar">
+                        <div class="session-card">
+                            <div class="label">Sesi Tersedia</div>
+                            <div class="session-name">Pagi 08.00</div>
+                            <div class="session-meta">6 slot tersisa untuk konsultasi langsung bersama dr. Dibya.</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="label">Ringkasan Booking</div>
+                            <div class="summary-row"><span>Tanggal</span><strong>26 Mei 2026</strong></div>
+                            <div class="summary-row"><span>Durasi</span><strong>25 menit</strong></div>
+                            <div class="summary-row"><span>Status</span><strong>Langsung terkonfirmasi</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cta">
+                <div class="pill">Booking Sekarang</div>
+                <div class="cta-note">Tampilan promo ini meniru alur booking mingguan yang ada di patient portal.</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
