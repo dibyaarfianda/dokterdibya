@@ -818,12 +818,39 @@
         const onlineNamesEl = document.getElementById('online-names');
         let boundSocket = null;
         let socketWaitTimer = null;
+        let socketWaitAttempts = 0;
 
         function clearSocketWaitTimer() {
           if (socketWaitTimer) {
             clearTimeout(socketWaitTimer);
             socketWaitTimer = null;
           }
+        }
+
+        function scheduleRealtimeSocketRetry() {
+          clearSocketWaitTimer();
+
+          if (boundSocket) {
+            socketWaitAttempts = 0;
+            return;
+          }
+
+          socketWaitTimer = setTimeout(function retryBindRealtimeSocket() {
+            if (boundSocket || tryBindRealtimeSocket()) {
+              socketWaitAttempts = 0;
+              return;
+            }
+
+            socketWaitAttempts += 1;
+
+            if (socketWaitAttempts < 12) {
+              scheduleRealtimeSocketRetry();
+              return;
+            }
+
+            console.info('[ChatPopup] Realtime socket unavailable; chat popup stays in limited mode until realtime-sync is ready');
+            clearSocketWaitTimer();
+          }, socketWaitAttempts === 0 ? 2000 : 5000);
         }
 
         function getRealtimeSocket() {
@@ -930,6 +957,7 @@
             }
 
             boundSocket = socket;
+            socketWaitAttempts = 0;
             clearSocketWaitTimer();
 
             console.log('[ChatPopup] Binding to global Socket.IO connection:', socket.id || 'connecting...');
@@ -963,11 +991,7 @@
 
           if (!tryBindRealtimeSocket()) {
             console.log('[ChatPopup] Waiting for realtime socket from realtime-sync...');
-            socketWaitTimer = setTimeout(function () {
-              if (!boundSocket && !tryBindRealtimeSocket()) {
-                console.warn('[ChatPopup] Realtime socket still not ready after waiting; chat popup stays in limited mode');
-              }
-            }, 10000);
+            scheduleRealtimeSocketRetry();
           }
 
         // Load chat history
