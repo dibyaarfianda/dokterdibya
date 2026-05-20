@@ -1023,6 +1023,23 @@
         body:not(.sidebar-collapse) .content-wrapper {
             padding-bottom: 60px;
         }
+
+        body.kantor-saya-active,
+        body.kantor-saya-active .wrapper,
+        body.kantor-saya-active .content-wrapper {
+            overflow: hidden !important;
+        }
+
+        body.kantor-saya-active:not(.sidebar-collapse) .content-wrapper,
+        body.kantor-saya-active .content-wrapper {
+            padding-bottom: 0 !important;
+        }
+
+        body.kantor-saya-active .content-wrapper > .content,
+        body.kantor-saya-active .content-wrapper > .content .container-fluid {
+            padding-bottom: 0 !important;
+            margin-bottom: 0 !important;
+        }
         
         /* Hide on mobile */
         @media (max-width: 768px) {
@@ -7842,7 +7859,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v205';
+    window.__assetVersion = 'v206';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -11257,6 +11274,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 <script src="./scripts/support-chat-staff.js?v=20260518j"></script>
  <script>
  function showSupportChatPage() {
+     document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
      var kantorPage = document.getElementById('content-kantor-saya');
@@ -11287,6 +11305,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  <script src="./scripts/staff-briefing.js?v=20260518a"></script>
  <script>
  function _scHideAllStaffPages() {
+     document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
      ['content-support-chat-page','content-staff-points','content-staff-briefing','content-kantor-saya'].forEach(function(id) {
