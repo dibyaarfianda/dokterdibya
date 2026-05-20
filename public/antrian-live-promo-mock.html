@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Antrian Live Promo Mock</title>
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background:
+                radial-gradient(circle at top right, rgba(40, 167, 233, 0.12), transparent 28%),
+                radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1), transparent 24%),
+                #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            padding: 28px 0 40px;
+        }
+
+        .promo-wrap {
+            max-width: 1520px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .promo-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 auto 14px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #b8c5d1;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            width: fit-content;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: none;
+            margin: 0 auto;
+            border-radius: 30px;
+            padding: 16px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+            box-shadow: 0 25px 70px rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .phone-screen {
+            overflow: hidden;
+            border-radius: 24px;
+            background: #121212;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #1a1a2e;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.25);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .top-bar .back-btn {
+            color: #28a7e9;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .top-bar h1 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            flex: 1;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 3px 9px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .page-body {
+            padding: 18px 20px 24px;
+        }
+
+        .info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .info-date {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .info-date span {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid rgba(40, 167, 233, 0.35);
+            color: #28a7e9;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-info {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 14px;
+        }
+
+        .legend-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .legend-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            font-size: 12px;
+            color: #cfcfcf;
+        }
+
+        .legend-swatch {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-swatch-menunggu { background: rgba(255,255,255,0.78); }
+        .legend-swatch-anamnesa { background: #10b981; }
+        .legend-swatch-diperiksa { background: #dc3545; }
+        .legend-swatch-selesai { background: #ffc107; }
+
+        .session-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #28a7e9;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 4px 0 8px;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.15);
+            margin: 18px 0 10px;
+        }
+
+        .session-label:first-of-type { margin-top: 0; }
+
+        .session-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .queue-row {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 12px 14px;
+            min-height: 128px;
+        }
+
+        .queue-row.status-anamnesa {
+            background: rgba(16, 185, 129, 0.07);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .queue-row.status-diperiksa {
+            background: rgba(220, 53, 69, 0.07);
+            border-color: rgba(220, 53, 69, 0.35);
+        }
+
+        .queue-row.status-selesai_periksa {
+            background: rgba(255, 193, 7, 0.07);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .slot-num {
+            min-width: 42px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .queue-row-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .status-menunggu .slot-num  { background: rgba(40, 167, 233, 0.15); color: #28a7e9; }
+        .status-anamnesa .slot-num  { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-diperiksa .slot-num { background: rgba(220, 53, 69, 0.2); color: #dc3545; }
+        .status-selesai_periksa .slot-num { background: rgba(255, 193, 7, 0.2); color: #ffc107; }
+
+        .queue-info {
+            min-width: 0;
+        }
+
+        .queue-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e0e0e0;
+            line-height: 1.45;
+            min-height: 40px;
+        }
+
+        .queue-time {
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .queue-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 3px 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        .badge-menunggu        { background: rgba(255,255,255,0.06); color: #f5f5f5; border: 1px solid rgba(255,255,255,0.14); }
+        .badge-anamnesa        { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
+        .badge-diperiksa       { background: rgba(220, 53, 69, 0.12); color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3); }
+        .badge-selesai_periksa { background: rgba(255, 193, 7, 0.12); color: #e6ac00; border: 1px solid rgba(255, 193, 7, 0.3); }
+
+        .privacy-note {
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 1180px) {
+            .legend-grid,
+            .session-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+
+            .legend-grid,
+            .session-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .promo-wrap {
+                padding: 0;
+            }
+
+            .phone-shell {
+                border-radius: 0;
+                max-width: none;
+                padding: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            .phone-screen {
+                border-radius: 0;
+                border: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="promo-wrap">
+        <div class="promo-note"><i class="fa fa-star"></i> DATA SIMULASI UNTUK MATERI PROMOSI</div>
+        <div class="phone-shell">
+            <div class="phone-screen">
+                <div class="top-bar">
+                    <span class="back-btn"><i class="fa fa-arrow-left"></i></span>
+                    <h1>Antrian Klinik Hari Ini</h1>
+                    <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+                </div>
+
+                <div class="page-body">
+                    <div class="info-bar">
+                        <div class="info-date">Tanggal <span>Rabu, 21 Mei 2026</span></div>
+                        <div class="refresh-btn"><i class="fa fa-refresh"></i> Refresh</div>
+                    </div>
+
+                    <div class="refresh-info">Sinkron otomatis setiap 15 detik • dokter sudah datang</div>
+
+                    <div class="legend-card">
+                        <div class="legend-title"><i class="fa fa-info-circle"></i> Status Pasien Hari Ini</div>
+                        <div class="legend-grid">
+                            <div class="legend-item"><span class="legend-swatch legend-swatch-menunggu"></span> Menunggu</div>
+                            <div class="legend-item"><span class="legend-swatch legend-swatch-anamnesa"></span> Anamnesa</div>
+                            <div class="legend-item"><span class="legend-swatch legend-swatch-diperiksa"></span> Diperiksa</div>
+                            <div class="legend-item"><span class="legend-swatch legend-swatch-selesai"></span> Selesai Periksa</div>
+                        </div>
+                    </div>
+
+                    <div id="queue-container"></div>
+
+                    <div class="privacy-note"><i class="fa fa-shield"></i> Seluruh nama pasien di halaman ini adalah akun simulasi untuk kebutuhan materi promosi.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STATUS_LABELS = {
+            menunggu: 'Menunggu',
+            anamnesa: 'Anamnesa',
+            diperiksa: 'Diperiksa',
+            selesai_periksa: 'Selesai Periksa'
+        };
+
+        const fakePatients = [
+            { slot_number: 1, masked_name: 'Ny. Alana K.', slot_time: '07:00', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 2, masked_name: 'Ny. Bianca R.', slot_time: '07:10', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 3, masked_name: 'Ny. Celine T.', slot_time: '07:20', queue_status: 'anamnesa', session_label: 'Pagi', session: 1 },
+            { slot_number: 4, masked_name: 'Ny. Damaris V.', slot_time: '07:30', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 5, masked_name: 'Ny. Elora S.', slot_time: '07:40', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 6, masked_name: 'Ny. Felice M.', slot_time: '07:50', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 7, masked_name: 'Ny. Gisella P.', slot_time: '08:00', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 8, masked_name: 'Ny. Helena D.', slot_time: '08:10', queue_status: 'anamnesa', session_label: 'Pagi', session: 1 },
+            { slot_number: 9, masked_name: 'Ny. Ivana J.', slot_time: '08:20', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+            { slot_number: 10, masked_name: 'Ny. Jasmine L.', slot_time: '08:30', queue_status: 'menunggu', session_label: 'Pagi', session: 1 },
+
+            { slot_number: 11, masked_name: 'Ny. Karin B.', slot_time: '09:00', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 12, masked_name: 'Ny. Larissa F.', slot_time: '09:10', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 13, masked_name: 'Ny. Mireya H.', slot_time: '09:20', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 14, masked_name: 'Ny. Naomi C.', slot_time: '09:30', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 15, masked_name: 'Ny. Olivia W.', slot_time: '09:40', queue_status: 'diperiksa', session_label: 'Siang', session: 2 },
+            { slot_number: 16, masked_name: 'Ny. Priska A.', slot_time: '09:50', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 17, masked_name: 'Ny. Queena G.', slot_time: '10:00', queue_status: 'anamnesa', session_label: 'Siang', session: 2 },
+            { slot_number: 18, masked_name: 'Ny. Regina Y.', slot_time: '10:10', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 19, masked_name: 'Ny. Sabrina N.', slot_time: '10:20', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+            { slot_number: 20, masked_name: 'Ny. Talia E.', slot_time: '10:30', queue_status: 'menunggu', session_label: 'Siang', session: 2 },
+
+            { slot_number: 21, masked_name: 'Ny. Ulani Z.', slot_time: '11:00', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 22, masked_name: 'Ny. Vania O.', slot_time: '11:10', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 23, masked_name: 'Ny. Winda Q.', slot_time: '11:20', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 24, masked_name: 'Ny. Xaviera I.', slot_time: '11:30', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 25, masked_name: 'Ny. Yasmin U.', slot_time: '11:40', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 26, masked_name: 'Ny. Zeline S.', slot_time: '11:50', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 27, masked_name: 'Ny. Amanda X.', slot_time: '12:00', queue_status: 'selesai_periksa', session_label: 'Sore', session: 3 },
+            { slot_number: 28, masked_name: 'Ny. Brenda Y.', slot_time: '12:10', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 29, masked_name: 'Ny. Clarissa Z.', slot_time: '12:20', queue_status: 'menunggu', session_label: 'Sore', session: 3 },
+            { slot_number: 30, masked_name: 'Ny. Danica A.', slot_time: '12:30', queue_status: 'menunggu', session_label: 'Sore', session: 3 }
+        ];
+
+        function renderQueue(data) {
+            const sessions = {};
+            data.forEach(function(item) {
+                if (!sessions[item.session]) sessions[item.session] = { label: item.session_label, items: [] };
+                sessions[item.session].items.push(item);
+            });
+
+            let html = '';
+            Object.keys(sessions).sort(function(a, b) { return Number(a) - Number(b); }).forEach(function(key) {
+                const sess = sessions[key];
+                html += '<div class="session-label"><i class="fa fa-clock-o"></i> Sesi ' + sess.label + '</div>';
+                html += '<div class="session-grid">';
+                sess.items.forEach(function(apt) {
+                    html +=
+                        '<div class="queue-row status-' + apt.queue_status + '">' +
+                            '<div class="queue-row-header">' +
+                                '<div class="slot-num">' + apt.slot_number + '</div>' +
+                                '<span class="queue-status-badge badge-' + apt.queue_status + '">' + STATUS_LABELS[apt.queue_status] + '</span>' +
+                            '</div>' +
+                            '<div class="queue-info">' +
+                                '<div class="queue-name">' + apt.masked_name + '</div>' +
+                                '<div class="queue-time"><i class="fa fa-clock-o" style="font-size:10px;margin-right:3px;"></i>' + apt.slot_time + '</div>' +
+                            '</div>' +
+                        '</div>';
+                });
+                html += '</div>';
+            });
+
+            document.getElementById('queue-container').innerHTML = html;
+        }
+
+        renderQueue(fakePatients);
+    </script>
+</body>
+</html>
