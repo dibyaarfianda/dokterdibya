@@ -1661,9 +1661,9 @@
             opacity: 0;
             pointer-events: none;
             background: rgba(255, 255, 255, 0.18);
-            -webkit-backdrop-filter: blur(20px) saturate(1.08);
-            backdrop-filter: blur(20px) saturate(1.08);
-            transition: opacity 0.52s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.52s ease;
+            -webkit-backdrop-filter: blur(10px) saturate(1.08);
+            backdrop-filter: blur(10px) saturate(1.08);
+            transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1), visibility 1.5s ease;
         }
 
         .queue-promo-modal.is-mounted {
@@ -1690,7 +1690,7 @@
             overflow: visible;
             transform: translateY(38px) scale(0.94);
             opacity: 0;
-            transition: transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.46s ease;
+            transition: transform 1.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 1.5s ease;
         }
 
         .queue-promo-modal.active .queue-promo-modal-card {
@@ -6133,7 +6133,7 @@
         }
 
         const QUEUE_PROMO_IMAGE_URL = '/images/antrian-live-promo-fake.png';
-        const QUEUE_PROMO_ANIMATION_MS = 320;
+        const QUEUE_PROMO_ANIMATION_MS = 1500;
 
         function openQueuePromoModal(event) {
             if (event) {
