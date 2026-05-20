@@ -2309,6 +2309,38 @@
             font-weight: 600;
         }
 
+        @media (max-width: 1320px) and (min-width: 901px) {
+            .welcome-pinned-inner {
+                padding-left: 48px;
+                padding-right: 48px;
+            }
+
+            .welcome-window {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .welcome-window-left {
+                border-right: none;
+                border-bottom: none;
+                padding: 12px 6px 20px;
+                justify-content: flex-start;
+            }
+
+            .welcome-window-left-inner h2 {
+                font-size: clamp(72px, 9vw, 104px);
+            }
+
+            .welcome-window-scroll {
+                padding: 0;
+            }
+
+            .welcome-pinned-content {
+                max-width: 100%;
+                padding: 34px 8px 12px;
+            }
+        }
+
         @media (max-width: 900px) {
             .welcome-pinned-inner {
                 padding-left: 16px;

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260520g'; // 2026-05-20g - Disable all Update Terkini clicks on trial landing
+const CACHE_VERSION = '20260520h'; // 2026-05-20h - Prevent welcome section overlap on resize
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
