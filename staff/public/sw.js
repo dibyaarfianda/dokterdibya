@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v182'; // Force fresh caches for delayed realtime chat socket readiness cleanup
+const STAFF_PWA_VERSION = 'v183'; // Force fresh caches for the lighter Kantor Saya white overlay
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
