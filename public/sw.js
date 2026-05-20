@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260521e'; // 2026-05-21e - Ensure queue promo modal opening transition animates reliably
+const CACHE_VERSION = '20260521f'; // 2026-05-21f - Whitelist queue promo modal classes from reduced-motion kill-switch
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
