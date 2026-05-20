@@ -7,7 +7,7 @@
             --kantor-border: rgba(15, 23, 42, 0.08);
             --kantor-bg-position-x: 50%;
             --kantor-bg-position-y: 50%;
-            height: calc(100dvh - 148px);
+            height: calc(100dvh - 88px);
             min-height: 420px;
             border-radius: 16px;
             padding: 14px;
@@ -19,6 +19,15 @@
                         linear-gradient(160deg, #f8fafc 0%, #eef4ff 50%, #f3f8f5 100%);
             background-size: cover;
             background-position: var(--kantor-bg-position-x) calc(var(--kantor-bg-position-y) + var(--kantor-bg-offset-y, 0px)), center, center, center;
+        }
+
+        #content-kantor-saya {
+            min-height: calc(100dvh - 88px);
+        }
+
+        #content-kantor-saya > .content {
+            min-height: inherit;
+            padding: 0;
         }
 
         #kantor-saya-page .ks-toolbar {
@@ -760,8 +769,12 @@
         @media (max-width: 767.98px) {
             #kantor-saya-page {
                 padding: 10px;
-                height: calc(100dvh - 118px);
+                height: calc(100dvh - 84px);
                 min-height: 360px;
+            }
+
+            #content-kantor-saya {
+                min-height: calc(100dvh - 84px);
             }
 
             #kantor-saya-page .ks-toolbar {
