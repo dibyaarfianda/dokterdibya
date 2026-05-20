@@ -28,6 +28,28 @@ function formatDateLocal(date) {
     return `${year}-${month}-${day}`;
 }
 
+function normalizeVisitDateKey(rawDate) {
+    if (!rawDate) return '';
+
+    if (rawDate instanceof Date) {
+        return formatDateLocal(rawDate);
+    }
+
+    const value = String(rawDate).trim();
+    if (!value) return '';
+
+    // MySQL DATE values can be serialized as ISO timestamps in UTC.
+    // Convert them back to the local calendar day before using them as chart keys.
+    if (value.includes('T') || value.includes(' ')) {
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) {
+            return formatDateLocal(parsed);
+        }
+    }
+
+    return value.substring(0, 10);
+}
+
 function getNextSundayDate(referenceDate = new Date()) {
     const base = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
     const day = base.getDay();
@@ -121,7 +143,7 @@ async function fetchVisitStats(token) {
         const dailyStats = Array.isArray(payload.data) ? payload.data : [];
 
         dailyStats.forEach(item => {
-            const key = (item.visit_date || '').toString().substring(0, 10);
+            const key = normalizeVisitDateKey(item.visit_date);
             const count = Number(item.count) || 0;
             if (key) counts.set(key, count);
         });
@@ -143,7 +165,7 @@ async function fetchVisitStats(token) {
         visits.forEach(visit => {
             const rawDate = visit.visit_date || visit.visitDate || visit.created_at || visit.createdAt;
             if (!rawDate) return;
-            const key = rawDate.substring(0, 10);
+            const key = normalizeVisitDateKey(rawDate);
             counts.set(key, (counts.get(key) || 0) + 1);
         });
     }
