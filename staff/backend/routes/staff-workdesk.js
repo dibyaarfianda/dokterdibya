@@ -735,49 +735,6 @@ router.get('/widgets/briefing-hari-ini', async (req, res) => {
     }
 });
 
-router.get('/widgets/jadwal-jaga', async (req, res) => {
-    try {
-        const userId = getUserId(req);
-        const range = getWeekRangeLocal();
-
-        const [rows] = await db.query(
-            `SELECT duty_date
-             FROM staff_duty_logs
-             WHERE staff_id = ?
-               AND duty_date >= ?
-               AND duty_date <= ?
-             ORDER BY duty_date ASC`,
-            [userId, range.start, range.end]
-        );
-
-        const dutySet = new Set(rows.map((row) => formatDateLocal(row.duty_date)));
-
-        const days = [];
-        for (let i = 0; i < 7; i += 1) {
-            const d = new Date(range.startDate);
-            d.setDate(range.startDate.getDate() + i);
-            const dateStr = formatDateLocal(d);
-            days.push({
-                date: dateStr,
-                day_label: d.toLocaleDateString('id-ID', { weekday: 'short' }),
-                has_duty: dutySet.has(dateStr)
-            });
-        }
-
-        return res.json({
-            success: true,
-            data: {
-                week_start: range.start,
-                week_end: range.end,
-                days
-            }
-        });
-    } catch (error) {
-        console.error('[staff-workdesk] jadwal-jaga widget error:', error);
-        return res.status(500).json({ success: false, message: 'Gagal memuat Jadwal Jaga' });
-    }
-});
-
 router.get('/widgets/online-users', async (req, res) => {
     try {
         const io = req.app.get('io') || global.io;
