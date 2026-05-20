@@ -230,6 +230,7 @@ function executeLoadedScripts(doc, baseUrl) {
     });
 }
 function hideAllPages() {
+    document.body.classList.remove('kantor-saya-active');
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
     document.querySelectorAll('[id$="-page"]').forEach(function (p) {
         if (p.closest('#content-kantor-saya')) {
@@ -3477,6 +3478,7 @@ function showKantorSayaPage() {
     }
 
     hideAllPages();
+    document.body.classList.add('kantor-saya-active');
     pages.kantorSaya?.classList.remove('d-none');
     revealKantorRoot();
 
