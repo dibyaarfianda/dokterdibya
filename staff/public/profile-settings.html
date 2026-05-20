@@ -261,6 +261,7 @@
     let currentUser = null;
     let selectedProfilePicture = null;
     let avatarEditorBound = false;
+    let avatarEditorBackdrop = null;
     const avatarEditorState = {
         image: null,
         scale: 1,
@@ -302,7 +303,7 @@
 
     function getAvatarEditorElements() {
         return {
-            modal: $('#profile-picture-editor-modal'),
+            modal: document.getElementById('profile-picture-editor-modal'),
             stage: document.getElementById('avatar-editor-stage'),
             image: document.getElementById('avatar-editor-image'),
             zoom: document.getElementById('avatar-editor-zoom'),
@@ -440,6 +441,73 @@
         return canvas.toDataURL('image/png');
     }
 
+    function hasBootstrapModalPlugin() {
+        return !!(window.jQuery && window.jQuery.fn && typeof window.jQuery.fn.modal === 'function');
+    }
+
+    function cleanupAvatarEditorModal() {
+        const elements = getAvatarEditorElements();
+        resetAvatarEditorState();
+
+        if (elements.image) {
+            elements.image.removeAttribute('src');
+            elements.image.style.width = '';
+            elements.image.style.height = '';
+            elements.image.style.transform = '';
+        }
+
+        if (elements.fileInput) {
+            elements.fileInput.value = '';
+        }
+
+        if (avatarEditorBackdrop) {
+            avatarEditorBackdrop.remove();
+            avatarEditorBackdrop = null;
+        }
+    }
+
+    function showAvatarEditorModal() {
+        const elements = getAvatarEditorElements();
+        if (!elements.modal) return;
+
+        if (hasBootstrapModalPlugin()) {
+            $('#profile-picture-editor-modal').modal('show');
+            return;
+        }
+
+        elements.modal.style.display = 'block';
+        elements.modal.classList.add('show');
+        elements.modal.setAttribute('aria-modal', 'true');
+        elements.modal.removeAttribute('aria-hidden');
+        document.body.classList.add('modal-open');
+
+        if (!avatarEditorBackdrop) {
+            avatarEditorBackdrop = document.createElement('div');
+            avatarEditorBackdrop.className = 'modal-backdrop fade show avatar-editor-modal-backdrop';
+            avatarEditorBackdrop.addEventListener('click', hideAvatarEditorModal);
+            document.body.appendChild(avatarEditorBackdrop);
+        }
+
+        renderAvatarEditor();
+    }
+
+    function hideAvatarEditorModal() {
+        const elements = getAvatarEditorElements();
+        if (!elements.modal) return;
+
+        if (hasBootstrapModalPlugin()) {
+            $('#profile-picture-editor-modal').modal('hide');
+            return;
+        }
+
+        elements.modal.classList.remove('show');
+        elements.modal.style.display = 'none';
+        elements.modal.setAttribute('aria-hidden', 'true');
+        elements.modal.removeAttribute('aria-modal');
+        document.body.classList.remove('modal-open');
+        cleanupAvatarEditorModal();
+    }
+
     async function openAvatarEditor(sourceUrl) {
         const image = await new Promise((resolve, reject) => {
             const img = new Image();
@@ -458,7 +526,7 @@
         avatarEditorState.scale = avatarEditorState.minScale;
 
         recenterAvatarEditor();
-        getAvatarEditorElements().modal.modal('show');
+        showAvatarEditorModal();
     }
 
     function bindAvatarEditor() {
@@ -466,7 +534,7 @@
         avatarEditorBound = true;
 
         const elements = getAvatarEditorElements();
-        if (!elements.stage || !elements.zoom || !elements.applyBtn || !elements.resetBtn) {
+        if (!elements.modal || !elements.stage || !elements.zoom || !elements.applyBtn || !elements.resetBtn) {
             return;
         }
 
@@ -529,26 +597,25 @@
 
             selectedProfilePicture = exported;
             displayProfilePicture(selectedProfilePicture);
-            elements.modal.modal('hide');
+            hideAvatarEditorModal();
             showToast('Foto siap disimpan. Klik Simpan Perubahan untuk menyimpan.', 'success');
         });
 
-        elements.modal.on('shown.bs.modal', function() {
-            renderAvatarEditor();
+        Array.from(elements.modal.querySelectorAll('[data-dismiss="modal"]')).forEach(function(button) {
+            button.addEventListener('click', function() {
+                hideAvatarEditorModal();
+            });
         });
 
-        elements.modal.on('hidden.bs.modal', function() {
-            resetAvatarEditorState();
-            if (elements.image) {
-                elements.image.removeAttribute('src');
-                elements.image.style.width = '';
-                elements.image.style.height = '';
-                elements.image.style.transform = '';
-            }
-            if (elements.fileInput) {
-                elements.fileInput.value = '';
-            }
-        });
+        if (hasBootstrapModalPlugin()) {
+            $('#profile-picture-editor-modal').on('shown.bs.modal', function() {
+                renderAvatarEditor();
+            });
+
+            $('#profile-picture-editor-modal').on('hidden.bs.modal', function() {
+                cleanupAvatarEditorModal();
+            });
+        }
     }
 
     // Load profile data
