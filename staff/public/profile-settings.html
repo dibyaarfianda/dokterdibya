@@ -217,39 +217,40 @@
                     </div>
                 </div>
             </div>
-        </section>
-
-        <div class="modal fade" id="profile-picture-editor-modal" tabindex="-1" role="dialog" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary">
-                        <h5 class="modal-title text-white"><i class="fas fa-crop-alt mr-2"></i>Atur Foto Profil</h5>
-                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="avatar-editor-hint mb-3">Geser foto untuk menentukan posisi center, lalu atur zoom sampai komposisinya pas.</p>
-                        <div class="avatar-editor-stage" id="avatar-editor-stage">
-                            <img id="avatar-editor-image" class="avatar-editor-image" alt="Avatar crop preview">
+                    <div class="modal fade" id="profile-picture-editor-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary">
+                                    <h5 class="modal-title text-white"><i class="fas fa-crop-alt mr-2"></i>Atur Foto Profil</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="avatar-editor-hint mb-3">Geser foto untuk menentukan posisi center, lalu atur zoom sampai komposisinya pas.</p>
+                                    <div class="avatar-editor-stage" id="avatar-editor-stage">
+                                        <img id="avatar-editor-image" class="avatar-editor-image" alt="Avatar crop preview">
+                                    </div>
+                                    <div class="avatar-editor-toolbar">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="avatar-editor-reset-btn">
+                                            <i class="fas fa-sync-alt mr-1"></i>Reset
+                                        </button>
+                                        <input type="range" id="avatar-editor-zoom" class="form-control-range" min="100" max="400" step="1" value="100">
+                                        <span id="avatar-editor-zoom-value" class="avatar-editor-zoom-value">100%</span>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-primary" id="avatar-editor-apply-btn">
+                                        <i class="fas fa-check mr-1"></i>Gunakan Foto Ini
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="avatar-editor-toolbar">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="avatar-editor-reset-btn">
-                                <i class="fas fa-sync-alt mr-1"></i>Reset
-                            </button>
-                            <input type="range" id="avatar-editor-zoom" class="form-control-range" min="100" max="400" step="1" value="100">
-                            <span id="avatar-editor-zoom-value" class="avatar-editor-zoom-value">100%</span>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                        <button type="button" class="btn btn-primary" id="avatar-editor-apply-btn">
-                            <i class="fas fa-check mr-1"></i>Gunakan Foto Ini
-                        </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 
