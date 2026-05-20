@@ -1642,6 +1642,70 @@
             justify-content: center;
         }
 
+        .queue-promo-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
+            background: rgba(6, 10, 18, 0.88);
+        }
+
+        .queue-promo-modal.active {
+            display: flex;
+        }
+
+        .queue-promo-modal-card {
+            position: relative;
+            width: min(1320px, 100%);
+            max-height: 100%;
+            padding: 14px;
+            border-radius: 24px;
+            background: linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(10, 16, 28, 0.96));
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
+        }
+
+        .queue-promo-modal-media {
+            display: block;
+            width: 100%;
+            max-height: calc(100vh - 96px);
+            object-fit: contain;
+            border-radius: 18px;
+            background: #0f1720;
+        }
+
+        .queue-promo-modal-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 42px;
+            height: 42px;
+            border: none;
+            border-radius: 999px;
+            background: rgba(15, 23, 32, 0.72);
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 640px) {
+            .queue-promo-modal-card {
+                padding: 10px;
+                border-radius: 18px;
+            }
+
+            .queue-promo-modal-media {
+                max-height: calc(100vh - 72px);
+                border-radius: 14px;
+            }
+        }
+
         /* ========== MENU GRID ========== */
         /* ========== DOKUMEN SECTION (Anvil bento layout) ========== */
         .doc-section {
@@ -4583,6 +4647,13 @@
                 <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
             </div>
 
+            <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Antrian Live" onclick="closeQueuePromoModal()">
+                <div class="queue-promo-modal-card" onclick="event.stopPropagation()">
+                    <button type="button" class="queue-promo-modal-close" onclick="closeQueuePromoModal()">&times;</button>
+                    <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="/images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
+                </div>
+            </div>
+
             <!-- INFO TERBARU — ClearPath Scroll-Driven Sticky Showcase -->
             <div class="info-terbaru-block-header">
                 <h2 class="info-terbaru-block-title">Update Terkini</h2>
@@ -4705,7 +4776,7 @@
                     </div>
 
 
-                    <a href="/antrian-trial.html" class="proces-row">
+                    <a href="/images/antrian-live-promo-fake.png" class="proces-row" onclick="return openQueuePromoModal(event)">
                         <span class="proces-step"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ANTRIAN LIVE</h3>
                         <p class="proces-desc">Pantau antrian klinik secara real-time. Lihat posisi antrean, siapa yang sedang dilayani, dan perkirakan giliran Anda dengan lebih jelas.</p>
@@ -5868,10 +5939,42 @@
             document.body.style.paddingRight = '';
         }
 
+        const QUEUE_PROMO_IMAGE_URL = '/images/antrian-live-promo-fake.png';
+
+        function openQueuePromoModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            const modal = document.getElementById('queue-promo-modal');
+            const modalImg = document.getElementById('queue-promo-modal-img');
+            if (!modal || !modalImg) return false;
+
+            modalImg.src = QUEUE_PROMO_IMAGE_URL;
+            modal.classList.add('active');
+            var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
+            document.body.style.overflow = 'hidden';
+            document.body.style.paddingRight = scrollbarW + 'px';
+            return false;
+        }
+
+        function closeQueuePromoModal() {
+            const modal = document.getElementById('queue-promo-modal');
+            if (!modal) return;
+
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+
+        window.openQueuePromoModal = openQueuePromoModal;
+        window.closeQueuePromoModal = closeQueuePromoModal;
+
         // Close modal on escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeBirthPhotoModal();
+                closeQueuePromoModal();
             }
         });
 
