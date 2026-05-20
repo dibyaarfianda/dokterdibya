@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Vitamin Promo Mock</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px;
+            height: 1080px;
+            overflow: hidden;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f7f6f2;
+            color: #141414;
+        }
+
+        .canvas {
+            width: 1080px;
+            height: 1080px;
+            padding: 58px;
+            background:
+                radial-gradient(circle at top right, rgba(20, 20, 20, 0.06), transparent 24%),
+                radial-gradient(circle at bottom left, rgba(148, 163, 184, 0.14), transparent 24%),
+                #f7f6f2;
+        }
+
+        .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 38px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: rgba(255, 255, 255, 0.78);
+            padding: 42px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: #6b6b6b;
+        }
+
+        h1 {
+            font-size: 62px;
+            line-height: 1.02;
+            letter-spacing: -0.04em;
+            font-weight: 650;
+            max-width: 700px;
+            margin-top: 10px;
+        }
+
+        .lead {
+            font-size: 24px;
+            line-height: 1.56;
+            color: #3a3a3a;
+            max-width: 760px;
+        }
+
+        .actions-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .action {
+            border-radius: 999px;
+            padding: 18px 22px;
+            border: 1px solid rgba(20, 20, 20, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .action.primary {
+            background: #141414;
+            color: #fff;
+            border-color: #141414;
+        }
+
+        .action.secondary {
+            background: #fff;
+            color: #141414;
+        }
+
+        .stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .card {
+            border-radius: 24px;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            background: #fff;
+            padding: 18px 18px 16px;
+        }
+
+        .card-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(20, 20, 20, 0.12);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: #6b6b6b;
+            margin-bottom: 12px;
+        }
+
+        .med-card {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .title {
+            font-size: 30px;
+            font-weight: 650;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
+        }
+
+        .desc {
+            font-size: 18px;
+            line-height: 1.55;
+            color: #3a3a3a;
+        }
+
+        .med-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            min-width: 150px;
+        }
+
+        .time-chip {
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: #f1f0ec;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            font-family: "JetBrains Mono", ui-monospace, monospace;
+            font-size: 18px;
+            font-weight: 700;
+            color: #141414;
+        }
+
+        .status {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: #6b6b6b;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px dashed rgba(20, 20, 20, 0.12);
+        }
+
+        .pill-btn {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(20, 20, 20, 0.12);
+            font-size: 14px;
+            font-weight: 700;
+            color: #141414;
+            background: #fff;
+        }
+
+        .pill-btn.danger {
+            color: #a13232;
+            border-color: rgba(161, 50, 50, 0.18);
+            background: rgba(161, 50, 50, 0.03);
+        }
+
+        .footer {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 18px;
+            color: #6b6b6b;
+        }
+
+        .badge {
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: rgba(20, 20, 20, 0.08);
+            color: #141414;
+            border: 1px solid rgba(20, 20, 20, 0.08);
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="frame">
+            <div>
+                <div class="kicker">Jadwal Vitamin</div>
+                <h1>Pengingat harian yang rapi untuk vitamin dan suplemen.</h1>
+            </div>
+
+            <div class="lead">Dummy square ini mengikuti komponen inti fitur asli: tombol aksi utama, kartu vitamin, time chip, dan status harian yang mudah dipahami pasien.</div>
+
+            <div class="actions-row">
+                <div class="action primary">+ Tambah Jadwal</div>
+                <div class="action secondary">Lihat Resep</div>
+            </div>
+
+            <div class="stack">
+                <div class="card">
+                    <div class="card-kicker">Rutinitas Pagi</div>
+                    <div class="med-card">
+                        <div>
+                            <div class="title">Asam Folat</div>
+                            <div class="desc">Menjaga kebutuhan folat harian tetap konsisten sesuai arahan dokter.</div>
+                        </div>
+                        <div class="med-right">
+                            <div class="time-chip">07:00</div>
+                            <div class="status">Aktif</div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <div class="pill-btn">Tandai Sudah</div>
+                        <div class="pill-btn">Ubah</div>
+                        <div class="pill-btn danger">Hapus</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-kicker">Setelah Makan</div>
+                    <div class="med-card">
+                        <div>
+                            <div class="title">Kalsium + Vitamin D</div>
+                            <div class="desc">Pengingat dosis harian tampil jelas dengan jam konsumsi dan status jadwal.</div>
+                        </div>
+                        <div class="med-right">
+                            <div class="time-chip">19:30</div>
+                            <div class="status">Terjadwal</div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <div class="pill-btn">Tandai Sudah</div>
+                        <div class="pill-btn">Ubah</div>
+                        <div class="pill-btn danger">Hapus</div>
+                    </div>
+                </div>
+
+                <div class="card" style="background:#f1f0ec;">
+                    <div class="card-kicker">Catatan</div>
+                    <div class="desc" style="font-size:19px;">Fitur membantu pasien menjaga kepatuhan minum vitamin setiap hari tanpa perlu mengingat manual. Semua jadwal, resep, dan status tersusun dalam kartu sederhana.</div>
+                </div>
+            </div>
+
+            <div class="footer">
+                <span>Preview dummy 1:1 berbasis visual Jadwal Vitamin.</span>
+                <span class="badge">Simulasi</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
