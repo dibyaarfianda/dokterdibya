@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v184'; // Force fresh caches for the lighter Kantor Saya overlay runtime sync
+const STAFF_PWA_VERSION = 'v185'; // Force fresh caches for the Kantor Saya layout persistence fix
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;

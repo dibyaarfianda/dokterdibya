@@ -163,6 +163,22 @@
         slate: 'linear-gradient(135deg, rgba(30,41,59,0.92) 0%, rgba(51,65,85,0.9) 52%, rgba(71,85,105,0.88) 100%)'
     };
 
+    var SINGLETON_WIDGET_IDS = {
+        'clock-greeting': true,
+        'mini-stats': true,
+        'briefing-hari-ini': true,
+        'inbox-page-launcher': true,
+        'chat-page-launcher': true,
+        'tanya-dokter-page-launcher': true,
+        'support-chat-page-launcher': true,
+        'docboard-page-launcher': true,
+        'point-staff-page-launcher': true,
+        'bulk-upload-usg-page-launcher': true,
+        'patient-activity-page-launcher': true,
+        'finance-analysis-page-launcher': true,
+        'staff-activity-page-launcher': true
+    };
+
     var QUOTES = [
         'Kerja teliti hari ini adalah ketenangan pasien besok.',
         'Satu catatan medis yang rapi bisa menyelamatkan waktu satu tim.',
@@ -1457,21 +1473,89 @@
         return body.data || body;
     }
 
+    function dedupeSingletonWidgets(widgets) {
+        var next = Array.isArray(widgets) ? widgets.slice() : [];
+        var seenSingletons = {};
+
+        return next.filter(function (widget) {
+            if (!widget || !widget.widget_id) {
+                return false;
+            }
+
+            if (!SINGLETON_WIDGET_IDS[widget.widget_id]) {
+                return true;
+            }
+
+            if (seenSingletons[widget.widget_id]) {
+                return false;
+            }
+
+            seenSingletons[widget.widget_id] = true;
+            return true;
+        });
+    }
+
+    function getRecommendedStarterWidgets() {
+        var blueprints = [
+            { widgetId: 'clock-greeting', x: 0, y: 0, w: 4, h: 2 },
+            { widgetId: 'shortcut-menu', x: 4, y: 0, w: 8, h: 2 },
+            { widgetId: 'sticky-notes', x: 0, y: 2, w: 6, h: 3 },
+            { widgetId: 'todo-list', x: 6, y: 2, w: 6, h: 3 },
+            { widgetId: 'mini-stats', x: 0, y: 5, w: 12, h: 2 },
+            { widgetId: 'briefing-hari-ini', x: 0, y: 7, w: 4, h: 2 },
+            { widgetId: 'inbox-page-launcher', x: 4, y: 7, w: 4, h: 2 },
+            { widgetId: 'chat-page-launcher', x: 8, y: 7, w: 4, h: 2 },
+            { widgetId: 'tanya-dokter-page-launcher', x: 0, y: 9, w: 4, h: 2 },
+            { widgetId: 'support-chat-page-launcher', x: 4, y: 9, w: 4, h: 2 },
+            { widgetId: 'docboard-page-launcher', x: 8, y: 9, w: 4, h: 2 },
+            { widgetId: 'point-staff-page-launcher', x: 0, y: 11, w: 4, h: 2 },
+            { widgetId: 'bulk-upload-usg-page-launcher', x: 4, y: 11, w: 4, h: 2 }
+        ];
+
+        if (isDokterUser()) {
+            blueprints.push({ widgetId: 'patient-activity-page-launcher', x: 8, y: 11, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'finance-analysis-page-launcher', x: 0, y: 13, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'staff-activity-page-launcher', x: 4, y: 13, w: 4, h: 2 });
+        }
+
+        return blueprints
+            .map(function (blueprint) {
+                return buildWidgetInstance(blueprint.widgetId, blueprint);
+            })
+            .filter(Boolean);
+    }
+
+    function ensureRecommendedStarterWidgets(widgets) {
+        var next = Array.isArray(widgets) ? widgets.slice() : [];
+        var existingWidgetIds = {};
+
+        next.forEach(function (widget) {
+            if (widget && widget.widget_id) {
+                existingWidgetIds[widget.widget_id] = true;
+            }
+        });
+
+        getRecommendedStarterWidgets().forEach(function (starter) {
+            if (!starter || existingWidgetIds[starter.widget_id]) {
+                return;
+            }
+
+            next.push(starter);
+            existingWidgetIds[starter.widget_id] = true;
+        });
+
+        return dedupeSingletonWidgets(next);
+    }
+
     function normalizeLayout(layoutData) {
         var layout = layoutData && typeof layoutData === 'object' ? layoutData : {};
         var widgets = Array.isArray(layout.widgets) ? layout.widgets.slice() : [];
 
         if (!widgets.length) {
-            widgets = [
-                buildWidgetInstance('clock-greeting', { x: 0, y: 0 }),
-                buildWidgetInstance('shortcut-menu', { x: 4, y: 0, w: 8, h: 2 }),
-                buildWidgetInstance('sticky-notes', { x: 0, y: 2, w: 6, h: 3 }),
-                buildWidgetInstance('todo-list', { x: 6, y: 2, w: 6, h: 3 }),
-                buildWidgetInstance('mini-stats', { x: 0, y: 5, w: 12, h: 2 })
-            ];
+            widgets = getRecommendedStarterWidgets();
         }
 
-        widgets = ensureRequiredWidgets(widgets);
+        widgets = dedupeSingletonWidgets(widgets);
         widgets = widgets.filter(function (widget) {
             return isWidgetAvailable(WIDGETS[widget.widget_id]);
         });
@@ -1496,60 +1580,6 @@
             version: Number(layout.version || 1),
             widgets: widgets
         };
-    }
-
-    function ensureRequiredWidgets(widgets) {
-        var next = Array.isArray(widgets) ? widgets.slice() : [];
-        var existingWidgetIds = {};
-        var requiredWidgetIds = [
-            'inbox-page-launcher',
-            'chat-page-launcher',
-            'tanya-dokter-page-launcher',
-            'support-chat-page-launcher',
-            'docboard-page-launcher',
-            'point-staff-page-launcher',
-            'briefing-hari-ini',
-            'bulk-upload-usg-page-launcher'
-        ];
-
-        if (isDokterUser()) {
-            requiredWidgetIds.push('patient-activity-page-launcher');
-            requiredWidgetIds.push('finance-analysis-page-launcher');
-            requiredWidgetIds.push('staff-activity-page-launcher');
-        }
-
-        next.forEach(function (widget) {
-            if (widget && widget.widget_id) {
-                existingWidgetIds[widget.widget_id] = true;
-            }
-        });
-
-        var baseY = next.reduce(function (acc, item) {
-            return Math.max(acc, Number(item.y || 0) + Number(item.h || 0));
-        }, 0);
-        var inserted = 0;
-
-        requiredWidgetIds.forEach(function (widgetId) {
-            var def = WIDGETS[widgetId];
-            if (!def || !isWidgetAvailable(def) || existingWidgetIds[widgetId]) {
-                return;
-            }
-
-            var instance = buildWidgetInstance(widgetId, {
-                x: (inserted % 3) * 4,
-                y: baseY + (Math.floor(inserted / 3) * 2),
-                w: def.defaultSize.w,
-                h: def.defaultSize.h
-            });
-
-            if (!instance) return;
-
-            next.push(instance);
-            existingWidgetIds[widgetId] = true;
-            inserted += 1;
-        });
-
-        return next;
     }
 
     function normalizeTheme(themeData) {
@@ -1856,15 +1886,16 @@
         var def = getWidgetDef(widgetId);
         if (!def) return null;
 
+        var next = overrides && typeof overrides === 'object' ? overrides : {};
         var size = def.defaultSize;
         return {
             instance_id: 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
             widget_id: widgetId,
-            x: 0,
-            y: 0,
-            w: size.w,
-            h: size.h,
-            config: Object.assign({}, def.defaultConfig || {}, overrides && overrides.config ? overrides.config : {})
+            x: Number.isFinite(next.x) ? next.x : 0,
+            y: Number.isFinite(next.y) ? next.y : 0,
+            w: Number.isFinite(next.w) ? Math.max(next.w, Number(size.minW || 1)) : size.w,
+            h: Number.isFinite(next.h) ? Math.max(next.h, Number(size.minH || 1)) : size.h,
+            config: Object.assign({}, def.defaultConfig || {}, next.config || {})
         };
     }
 
@@ -2464,6 +2495,9 @@
             state.isHydrating = true;
             var layoutData = await apiGet('/layout');
             state.layout = normalizeLayout(layoutData.layout);
+            if (!layoutData.updated_at) {
+                state.layout.widgets = ensureRecommendedStarterWidgets(state.layout.widgets);
+            }
             state.theme = mergeThemeWithSignedUrlFallback(state.theme, layoutData.theme);
 
             state.grid = window.GridStack.init({
