@@ -3,7 +3,7 @@
     <style>
         #kantor-saya-page {
             --kantor-accent: #0d6efd;
-            --kantor-surface: rgba(255, 255, 255, 0.88);
+            --kantor-surface: rgba(255, 255, 255, 0.74);
             --kantor-border: rgba(15, 23, 42, 0.08);
             min-height: calc(100vh - 170px);
             border-radius: 16px;
@@ -42,7 +42,7 @@
         #kantor-saya-page .ks-grid-shell {
             border: 1px solid var(--kantor-border);
             border-radius: 14px;
-            background: rgba(255, 255, 255, 0.55);
+            background: rgba(255, 255, 255, 0.28);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
             padding: 6px;
@@ -67,6 +67,8 @@
         }
 
         #kantor-saya-page .ks-widget {
+            --ks-widget-header-bg: linear-gradient(90deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.42) 100%);
+            --ks-widget-header-color: #0f172a;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -78,13 +80,14 @@
             justify-content: space-between;
             padding: 9px 12px;
             border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-            background: linear-gradient(90deg, color-mix(in srgb, var(--kantor-accent) 13%, white) 0%, #ffffff 100%);
+            background: var(--ks-widget-header-bg);
+            color: var(--ks-widget-header-color);
         }
 
         #kantor-saya-page .ks-widget-title {
             font-size: 12px;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--ks-widget-header-color);
             margin: 0;
             white-space: nowrap;
             overflow: hidden;
@@ -102,6 +105,11 @@
             padding: 2px 8px;
             font-size: 11px;
             line-height: 1.3;
+        }
+
+        #kantor-saya-page .ks-widget-header .btn-light {
+            background: rgba(255, 255, 255, 0.72);
+            border-color: rgba(255, 255, 255, 0.32);
         }
 
         #kantor-saya-page .ks-widget-body {
@@ -554,6 +562,75 @@
             transform: translateY(-1px);
         }
 
+        #kantor-saya-page .ks-widget-appearance-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        #kantor-saya-page .ks-widget-appearance-presets {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset {
+            border: 1px solid rgba(15, 23, 42, 0.12);
+            border-radius: 12px;
+            padding: 12px 10px;
+            min-height: 64px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.18s ease;
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            font-weight: 700;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset span {
+            position: relative;
+            z-index: 1;
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.14);
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset.is-selected::after {
+            content: '\2713';
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.92);
+            color: #0f172a;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset.is-aurora {
+            background: linear-gradient(135deg, rgba(14,165,233,0.92) 0%, rgba(59,130,246,0.88) 48%, rgba(167,139,250,0.9) 100%);
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset.is-blossom {
+            background: linear-gradient(135deg, rgba(244,114,182,0.92) 0%, rgba(251,113,133,0.88) 55%, rgba(253,186,116,0.9) 100%);
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset.is-forest {
+            background: linear-gradient(135deg, rgba(22,163,74,0.92) 0%, rgba(101,163,13,0.88) 55%, rgba(20,184,166,0.9) 100%);
+        }
+
+        #kantor-saya-page .ks-widget-appearance-preset.is-slate {
+            background: linear-gradient(135deg, rgba(30,41,59,0.92) 0%, rgba(51,65,85,0.9) 52%, rgba(71,85,105,0.88) 100%);
+        }
+
         #kantor-saya-page .ks-preset-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -623,6 +700,10 @@
 
             #kantor-saya-page .ks-preset-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            #kantor-saya-page .ks-widget-appearance-presets {
+                grid-template-columns: 1fr;
             }
 
             #kantor-saya-page .ks-docboard-modal .modal-dialog {
@@ -714,6 +795,45 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                     <button type="button" class="btn btn-primary" id="ks-save-theme">
                         <i class="fas fa-save mr-1"></i>Simpan Tema
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ks-widget-appearance-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-swatchbook mr-2"></i>Appearance Widget: <span id="ks-widget-appearance-title">Widget</span></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="ks-widget-appearance-grid">
+                        <div class="form-group mb-0">
+                            <label>Warna Header Custom</label>
+                            <input type="color" class="form-control" id="ks-widget-appearance-color" value="#0d6efd">
+                            <small class="text-muted">Saat memilih warna custom, preset motif akan otomatis dilepas.</small>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label>Motif Header</label>
+                            <div class="ks-widget-appearance-presets">
+                                <button type="button" class="ks-widget-appearance-preset is-aurora" data-widget-header-preset="aurora"><span>Aurora</span></button>
+                                <button type="button" class="ks-widget-appearance-preset is-blossom" data-widget-header-preset="blossom"><span>Blossom</span></button>
+                                <button type="button" class="ks-widget-appearance-preset is-forest" data-widget-header-preset="forest"><span>Forest</span></button>
+                                <button type="button" class="ks-widget-appearance-preset is-slate" data-widget-header-preset="slate"><span>Slate</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary mr-auto" id="ks-widget-appearance-advanced">Pengaturan Widget Lainnya</button>
+                    <button type="button" class="btn btn-light" id="ks-reset-widget-appearance">Reset</button>
+                    <button type="button" class="btn btn-primary" id="ks-save-widget-appearance">
+                        <i class="fas fa-save mr-1"></i>Simpan Appearance
                     </button>
                 </div>
             </div>

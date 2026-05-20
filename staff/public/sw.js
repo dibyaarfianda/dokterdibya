@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v177'; // Force fresh caches for Kantor Saya preview formatting and DocBoard modal follow-up fixes
+const STAFF_PWA_VERSION = 'v178'; // Force fresh caches for per-widget appearance customization and lighter wallpaper overlay
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;

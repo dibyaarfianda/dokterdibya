@@ -32,7 +32,9 @@
         wallpaperGuardLastRestoreAt: 0,
         wallpaperFallbackWarnAt: 0,
         lastSuccessfulWallpaperKey: null,
-        lastSuccessfulWallpaperBackground: null
+        lastSuccessfulWallpaperBackground: null,
+        activeAppearanceWidgetId: null,
+        activeAppearancePreset: ''
     };
 
     function getLiveRoot() {
@@ -151,6 +153,13 @@
         sand: 'radial-gradient(circle at 15% 12%, rgba(245,158,11,0.18), transparent 38%), radial-gradient(circle at 85% 0%, rgba(249,115,22,0.14), transparent 35%), linear-gradient(160deg, #fffbeb 0%, #fef3c7 55%, #ffedd5 100%)',
         ice: 'radial-gradient(circle at 10% 10%, rgba(14,165,233,0.16), transparent 38%), radial-gradient(circle at 82% 0%, rgba(59,130,246,0.12), transparent 32%), linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 45%, #dbeafe 100%)',
         darkglass: 'radial-gradient(circle at 20% 20%, rgba(148,163,184,0.18), transparent 40%), radial-gradient(circle at 85% 0%, rgba(99,102,241,0.12), transparent 36%), linear-gradient(160deg, #1f2937 0%, #273449 50%, #374151 100%)'
+    };
+
+    var WIDGET_HEADER_PRESETS = {
+        aurora: 'linear-gradient(135deg, rgba(14,165,233,0.92) 0%, rgba(59,130,246,0.88) 48%, rgba(167,139,250,0.9) 100%)',
+        blossom: 'linear-gradient(135deg, rgba(244,114,182,0.92) 0%, rgba(251,113,133,0.88) 55%, rgba(253,186,116,0.9) 100%)',
+        forest: 'linear-gradient(135deg, rgba(22,163,74,0.92) 0%, rgba(101,163,13,0.88) 55%, rgba(20,184,166,0.9) 100%)',
+        slate: 'linear-gradient(135deg, rgba(30,41,59,0.92) 0%, rgba(51,65,85,0.9) 52%, rgba(71,85,105,0.88) 100%)'
     };
 
     var QUOTES = [
@@ -353,6 +362,111 @@
         if (normalized === 'registration') return 'warning';
         if (normalized === 'pembayaran') return 'danger';
         return 'neutral';
+    }
+
+    function clampColorHex(value) {
+        var text = String(value == null ? '' : value).trim();
+        return /^#[0-9a-fA-F]{6}$/.test(text) ? text : '';
+    }
+
+    function getRgbFromHex(hex) {
+        var normalized = clampColorHex(hex);
+        if (!normalized) return null;
+        return {
+            r: parseInt(normalized.slice(1, 3), 16),
+            g: parseInt(normalized.slice(3, 5), 16),
+            b: parseInt(normalized.slice(5, 7), 16)
+        };
+    }
+
+    function getReadableTextColor(hex) {
+        var rgb = getRgbFromHex(hex);
+        if (!rgb) return '#0f172a';
+        var brightness = ((rgb.r * 299) + (rgb.g * 587) + (rgb.b * 114)) / 1000;
+        return brightness >= 150 ? '#0f172a' : '#ffffff';
+    }
+
+    function getWidgetAppearance(widgetInstance) {
+        var appearance = widgetInstance && widgetInstance.config && widgetInstance.config.appearance && typeof widgetInstance.config.appearance === 'object'
+            ? widgetInstance.config.appearance
+            : {};
+
+        var preset = String(appearance.header_preset || '').trim();
+        return {
+            header_color: clampColorHex(appearance.header_color),
+            header_preset: Object.prototype.hasOwnProperty.call(WIDGET_HEADER_PRESETS, preset) ? preset : ''
+        };
+    }
+
+    function applyWidgetAppearance(itemEl, widgetInstance) {
+        if (!itemEl) return;
+
+        var widgetEl = itemEl.querySelector('.ks-widget');
+        if (!widgetEl) return;
+
+        var appearance = getWidgetAppearance(widgetInstance);
+        var headerBg = 'linear-gradient(90deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.42) 100%)';
+        var headerColor = '#0f172a';
+
+        if (appearance.header_preset && WIDGET_HEADER_PRESETS[appearance.header_preset]) {
+            headerBg = WIDGET_HEADER_PRESETS[appearance.header_preset];
+            headerColor = '#ffffff';
+        } else if (appearance.header_color) {
+            headerBg = appearance.header_color;
+            headerColor = getReadableTextColor(appearance.header_color);
+        }
+
+        widgetEl.style.setProperty('--ks-widget-header-bg', headerBg);
+        widgetEl.style.setProperty('--ks-widget-header-color', headerColor);
+    }
+
+    function setAppearancePresetSelection(preset) {
+        state.activeAppearancePreset = preset || '';
+        var modalEl = document.getElementById('ks-widget-appearance-modal');
+        if (!modalEl) return;
+
+        modalEl.querySelectorAll('[data-widget-header-preset]').forEach(function (button) {
+            var currentPreset = button.getAttribute('data-widget-header-preset') || '';
+            button.classList.toggle('is-selected', currentPreset === state.activeAppearancePreset);
+        });
+    }
+
+    function openWidgetAppearanceModal(widgetInstance) {
+        if (!widgetInstance) return;
+
+        state.activeAppearanceWidgetId = widgetInstance.instance_id;
+        var appearance = getWidgetAppearance(widgetInstance);
+        var modalEl = document.getElementById('ks-widget-appearance-modal');
+        var titleEl = document.getElementById('ks-widget-appearance-title');
+        var colorInput = document.getElementById('ks-widget-appearance-color');
+        var advancedBtn = document.getElementById('ks-widget-appearance-advanced');
+        var def = getWidgetDef(widgetInstance.widget_id);
+
+        if (titleEl) {
+            titleEl.textContent = def && def.label ? def.label : 'Widget';
+        }
+
+        if (colorInput) {
+            colorInput.value = appearance.header_color || '#0d6efd';
+        }
+
+        setAppearancePresetSelection(appearance.header_preset || '');
+
+        if (advancedBtn) {
+            if (def && typeof def.configure === 'function') {
+                advancedBtn.classList.remove('d-none');
+                advancedBtn.onclick = function () {
+                    hideModal('ks-widget-appearance-modal');
+                    def.configure(widgetInstance);
+                };
+            } else {
+                advancedBtn.classList.add('d-none');
+                advancedBtn.onclick = null;
+            }
+        }
+
+        bindModalDismissFallback('ks-widget-appearance-modal');
+        showModal('ks-widget-appearance-modal');
     }
 
     function formatDateChip(value) {
@@ -1939,6 +2053,8 @@
                 '</div>' +
             '</div>';
 
+        applyWidgetAppearance(item, widgetInstance);
+
         return item;
     }
 
@@ -1979,14 +2095,7 @@
             configBtn.addEventListener('click', function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-
-                var def = getWidgetDef(widgetInstance.widget_id);
-                if (def && typeof def.configure === 'function') {
-                    def.configure(widgetInstance);
-                    return;
-                }
-
-                showNoConfigMessage(widgetInstance.widget_id);
+                openWidgetAppearanceModal(widgetInstance);
             });
         }
 
@@ -2138,9 +2247,13 @@
         var btnSaveTheme = document.getElementById('ks-save-theme');
         var btnUploadWallpaper = document.getElementById('ks-btn-upload-wallpaper');
         var wallpaperFile = document.getElementById('ks-wallpaper-file');
+        var btnSaveWidgetAppearance = document.getElementById('ks-save-widget-appearance');
+        var btnResetWidgetAppearance = document.getElementById('ks-reset-widget-appearance');
+        var widgetAppearanceColor = document.getElementById('ks-widget-appearance-color');
 
         bindModalDismissFallback('ks-widget-modal');
         bindModalDismissFallback('ks-theme-modal');
+        bindModalDismissFallback('ks-widget-appearance-modal');
 
         if (btnEdit) {
             btnEdit.onclick = function () {
@@ -2222,6 +2335,62 @@
                     scheduleSave();
                 };
             });
+        }
+
+        var appearanceModal = document.getElementById('ks-widget-appearance-modal');
+        if (appearanceModal) {
+            appearanceModal.querySelectorAll('[data-widget-header-preset]').forEach(function (button) {
+                button.onclick = function () {
+                    var preset = button.getAttribute('data-widget-header-preset') || '';
+                    setAppearancePresetSelection(preset);
+                };
+            });
+        }
+
+        if (widgetAppearanceColor) {
+            widgetAppearanceColor.oninput = function () {
+                if (widgetAppearanceColor.value) {
+                    setAppearancePresetSelection('');
+                }
+            };
+        }
+
+        if (btnResetWidgetAppearance) {
+            btnResetWidgetAppearance.onclick = function () {
+                if (widgetAppearanceColor) {
+                    widgetAppearanceColor.value = '#0d6efd';
+                }
+                setAppearancePresetSelection('');
+            };
+        }
+
+        if (btnSaveWidgetAppearance) {
+            btnSaveWidgetAppearance.onclick = function () {
+                var instanceId = state.activeAppearanceWidgetId;
+                var widget = state.layout && state.layout.widgets
+                    ? state.layout.widgets.find(function (item) { return item.instance_id === instanceId; })
+                    : null;
+                if (!widget) {
+                    hideModal('ks-widget-appearance-modal');
+                    return;
+                }
+
+                var nextConfig = Object.assign({}, widget.config || {});
+                var nextAppearance = {
+                    header_color: state.activeAppearancePreset ? '' : clampColorHex(widgetAppearanceColor && widgetAppearanceColor.value),
+                    header_preset: state.activeAppearancePreset || ''
+                };
+
+                if (!nextAppearance.header_color && !nextAppearance.header_preset) {
+                    delete nextConfig.appearance;
+                } else {
+                    nextConfig.appearance = nextAppearance;
+                }
+
+                setWidgetConfig(instanceId, nextConfig);
+                renderGrid();
+                hideModal('ks-widget-appearance-modal');
+            };
         }
     }
 
