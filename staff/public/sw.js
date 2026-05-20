@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v204'; // Force fresh caches for viewport-fitted Kantor Saya frame
+const STAFF_PWA_VERSION = 'v205'; // Force fresh caches for Kantor Saya white wallpaper layer
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;

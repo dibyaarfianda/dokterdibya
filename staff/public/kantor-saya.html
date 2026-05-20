@@ -11,14 +11,33 @@
             min-height: min(420px, calc(100dvh - 8px));
             border-radius: 16px;
             padding: 14px;
+            position: relative;
             overflow-y: auto;
             overscroll-behavior: contain;
             scrollbar-gutter: stable;
+            isolation: isolate;
             background: radial-gradient(circle at 15% 10%, rgba(13, 110, 253, 0.15), transparent 42%),
                         radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.14), transparent 40%),
                         linear-gradient(160deg, #f8fafc 0%, #eef4ff 50%, #f3f8f5 100%);
             background-size: cover;
             background-position: var(--kantor-bg-position-x) calc(var(--kantor-bg-position-y) + var(--kantor-bg-offset-y, 0px)), center, center, center;
+        }
+
+        #kantor-saya-page::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: rgba(255, 255, 255, 0.38);
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #kantor-saya-page > :not(style) {
+            position: relative;
+            z-index: 1;
         }
 
         #content-kantor-saya {
