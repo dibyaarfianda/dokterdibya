@@ -1980,7 +1980,7 @@
                             <p>Aplikasi Mobile</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-patient-activity">
+                    <li class="nav-item dokter-only d-none" id="nav-patient-activity" hidden>
                         <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-check"></i>
                             <p>Aktivitas Pasien</p>
@@ -2076,7 +2076,7 @@
 
                     <!-- MANAGEMENT -->
                     <li class="nav-header" id="management-header">MANAGEMENT</li>
-                    <li class="nav-item dokter-only d-none" id="finance-analysis-nav">
+                    <li class="nav-item dokter-only d-none" id="finance-analysis-nav" hidden>
                         <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
                             <i class="nav-icon fas fa-chart-line"></i>
                             <p>Analisis Finansial</p>
@@ -2088,7 +2088,7 @@
                             <p>Staff Roles</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-staff-activity">
+                    <li class="nav-item dokter-only d-none" id="nav-staff-activity" hidden>
                         <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-clock"></i>
                             <p>Aktivitas Staff</p>
@@ -7842,7 +7842,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v173';
+    window.__assetVersion = 'v174';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
