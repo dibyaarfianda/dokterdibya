@@ -152,6 +152,125 @@
 
         <!-- Main content -->
         <section class="content">
+            <style id="profile-settings-fragment-styles">
+                .profile-avatar-container {
+                    position: relative;
+                    display: inline-block;
+                }
+
+                .profile-avatar-overlay {
+                    position: absolute;
+                    bottom: 0;
+                    right: 0;
+                    background: white;
+                    border-radius: 50%;
+                    cursor: pointer;
+                }
+
+                .avatar-editor-stage {
+                    position: relative;
+                    width: min(320px, 100%);
+                    max-width: 320px;
+                    aspect-ratio: 1;
+                    margin: 0 auto;
+                    overflow: hidden;
+                    border-radius: 32px;
+                    background: linear-gradient(145deg, #dbeafe 0%, #eff6ff 36%, #e2e8f0 100%);
+                    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24), 0 18px 40px rgba(15, 23, 42, 0.12);
+                    touch-action: none;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    overscroll-behavior: contain;
+                }
+
+                .avatar-editor-stage.is-dragging {
+                    cursor: grabbing;
+                }
+
+                .avatar-editor-stage:not(.is-dragging) {
+                    cursor: grab;
+                }
+
+                .avatar-editor-image {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    transform-origin: top left;
+                    will-change: transform, width, height;
+                    pointer-events: none;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    -webkit-user-drag: none;
+                    display: block;
+                }
+
+                .avatar-editor-stage::after {
+                    content: '';
+                    position: absolute;
+                    inset: 0;
+                    border-radius: 32px;
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(15, 23, 42, 0.08));
+                    pointer-events: none;
+                }
+
+                .avatar-editor-stage::before {
+                    content: '';
+                    position: absolute;
+                    inset: 14px;
+                    border-radius: 50%;
+                    box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.28);
+                    border: 3px solid rgba(255, 255, 255, 0.94);
+                    pointer-events: none;
+                    z-index: 2;
+                }
+
+                .avatar-editor-panel {
+                    display: none;
+                    margin-top: 18px;
+                }
+
+                .avatar-editor-panel.is-active {
+                    display: block;
+                }
+
+                .avatar-editor-panel .card {
+                    border-radius: 20px;
+                    border: 1px solid rgba(13, 110, 253, 0.12);
+                    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+                    overflow: hidden;
+                }
+
+                .avatar-editor-panel .card-header {
+                    background: linear-gradient(135deg, rgba(13, 110, 253, 0.12), rgba(34, 197, 94, 0.08));
+                    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+                }
+
+                .avatar-editor-toolbar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 12px;
+                    margin-top: 14px;
+                    flex-wrap: wrap;
+                }
+
+                .avatar-editor-toolbar .form-control-range {
+                    flex: 1 1 220px;
+                }
+
+                .avatar-editor-hint {
+                    font-size: 12px;
+                    color: #6c757d;
+                    margin-bottom: 12px;
+                }
+
+                .avatar-editor-zoom-value {
+                    min-width: 52px;
+                    text-align: right;
+                    font-weight: 600;
+                    color: #0d6efd;
+                }
+            </style>
             <div class="container-fluid">
                 <div class="row">
                     <!-- Profile Picture & Display Name -->
@@ -241,7 +360,7 @@
                     </div>
                 </div>
             </div>
-                    <div id="profile-picture-editor-panel" class="avatar-editor-panel">
+                    <div id="profile-picture-editor-panel" class="avatar-editor-panel" style="display: none;">
                         <div class="card card-outline card-primary">
                             <div class="card-header d-flex align-items-center justify-content-between">
                                 <h3 class="card-title mb-0"><i class="fas fa-crop-alt mr-2"></i>Atur Foto Profil</h3>
@@ -283,124 +402,6 @@
 <script type="module">
     import { auth, getIdToken } from './scripts/vps-auth-v2.js';
 
-    const PROFILE_SETTINGS_RUNTIME_CSS = `
-        .profile-avatar-container {
-            position: relative;
-            display: inline-block;
-        }
-
-        .profile-avatar-overlay {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .avatar-editor-stage {
-            position: relative;
-            width: min(320px, 100%);
-            max-width: 320px;
-            aspect-ratio: 1;
-            margin: 0 auto;
-            overflow: hidden;
-            border-radius: 32px;
-            background: linear-gradient(145deg, #dbeafe 0%, #eff6ff 36%, #e2e8f0 100%);
-            box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24), 0 18px 40px rgba(15, 23, 42, 0.12);
-            touch-action: none;
-            user-select: none;
-            overscroll-behavior: contain;
-        }
-
-        .avatar-editor-stage.is-dragging {
-            cursor: grabbing;
-        }
-
-        .avatar-editor-stage:not(.is-dragging) {
-            cursor: grab;
-        }
-
-        .avatar-editor-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform-origin: top left;
-            will-change: transform, width, height;
-            pointer-events: none;
-            user-select: none;
-            -webkit-user-drag: none;
-            display: block;
-        }
-
-        .avatar-editor-stage::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 32px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(15, 23, 42, 0.08));
-            pointer-events: none;
-        }
-
-        .avatar-editor-stage::before {
-            content: '';
-            position: absolute;
-            inset: 14px;
-            border-radius: 50%;
-            box-shadow: 0 0 0 999px rgba(15, 23, 42, 0.28);
-            border: 3px solid rgba(255, 255, 255, 0.94);
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .avatar-editor-panel {
-            display: none;
-            margin-top: 18px;
-        }
-
-        .avatar-editor-panel.is-active {
-            display: block;
-        }
-
-        .avatar-editor-panel .card {
-            border-radius: 20px;
-            border: 1px solid rgba(13, 110, 253, 0.12);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
-            overflow: hidden;
-        }
-
-        .avatar-editor-panel .card-header {
-            background: linear-gradient(135deg, rgba(13, 110, 253, 0.12), rgba(34, 197, 94, 0.08));
-            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-        }
-
-        .avatar-editor-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-top: 14px;
-            flex-wrap: wrap;
-        }
-
-        .avatar-editor-toolbar .form-control-range {
-            flex: 1 1 220px;
-        }
-
-        .avatar-editor-hint {
-            font-size: 12px;
-            color: #6c757d;
-            margin-bottom: 12px;
-        }
-
-        .avatar-editor-zoom-value {
-            min-width: 52px;
-            text-align: right;
-            font-weight: 600;
-            color: #0d6efd;
-        }
-    `;
-
     let currentUser = null;
     let selectedProfilePicture = null;
     let avatarEditorBound = false;
@@ -418,17 +419,6 @@
         originY: 0,
         pointerId: null
     };
-
-    function ensureProfileSettingsRuntimeStyles() {
-        if (document.getElementById('profile-settings-runtime-styles')) {
-            return;
-        }
-
-        const style = document.createElement('style');
-        style.id = 'profile-settings-runtime-styles';
-        style.textContent = PROFILE_SETTINGS_RUNTIME_CSS;
-        document.head.appendChild(style);
-    }
 
     // Get token from localStorage
     function getToken() {
@@ -980,7 +970,6 @@
 
     // Initialize on page load
     $(document).ready(function() {
-        ensureProfileSettingsRuntimeStyles();
         bindAvatarEditor();
         loadProfileData();
     });
