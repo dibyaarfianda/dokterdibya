@@ -9,6 +9,11 @@
     var DEFAULT_OFFICE_NAME = 'Kantor Saya';
     var BACKGROUND_PARALLAX_RATIO = 0.01;
     var BACKGROUND_PARALLAX_MAX_OFFSET = 100;
+    var DEFAULT_BACKGROUND_ZOOM = 100;
+    var MIN_BACKGROUND_ZOOM = 100;
+    var MAX_BACKGROUND_ZOOM = 240;
+    var MIN_BACKGROUND_OFFSET = -50;
+    var MAX_BACKGROUND_OFFSET = 50;
 
     var state = {
         initialized: false,
@@ -242,6 +247,20 @@
         var name = String(value || '').replace(/\s+/g, ' ').trim();
         if (!name) return DEFAULT_OFFICE_NAME;
         return name.slice(0, 60);
+    }
+
+    function clampNumber(value, min, max, fallbackValue) {
+        var number = Number(value);
+        if (!Number.isFinite(number)) return fallbackValue;
+        return Math.max(min, Math.min(max, number));
+    }
+
+    function normalizeBackgroundZoom(value) {
+        return Math.round(clampNumber(value, MIN_BACKGROUND_ZOOM, MAX_BACKGROUND_ZOOM, DEFAULT_BACKGROUND_ZOOM));
+    }
+
+    function normalizeBackgroundOffset(value) {
+        return Math.round(clampNumber(value, MIN_BACKGROUND_OFFSET, MAX_BACKGROUND_OFFSET, 0));
     }
 
     function getWidgetCatalogOrder(widgetId) {
@@ -1629,7 +1648,10 @@
             accent_color: theme.accent_color || '#0d6efd',
             wallpaper_url: theme.wallpaper_url || null,
             wallpaper_download_url: theme.wallpaper_download_url || null,
-            wallpaper_preset: theme.wallpaper_preset || null
+            wallpaper_preset: theme.wallpaper_preset || null,
+            background_zoom: normalizeBackgroundZoom(theme.background_zoom || theme.backgroundZoom),
+            background_offset_x: normalizeBackgroundOffset(theme.background_offset_x || theme.backgroundOffsetX),
+            background_offset_y: normalizeBackgroundOffset(theme.background_offset_y || theme.backgroundOffsetY)
         };
     }
 
@@ -1711,7 +1733,24 @@
 
         var offset = clampBackgroundOffset(Math.round(getKantorScrollTop() * BACKGROUND_PARALLAX_RATIO));
         root.style.setProperty('--kantor-bg-offset-y', offset + 'px');
-        root.style.setProperty('background-position', 'center calc(50% + var(--kantor-bg-offset-y, 0px))', 'important');
+        root.style.setProperty('background-position', 'var(--kantor-bg-position-x) calc(var(--kantor-bg-position-y) + var(--kantor-bg-offset-y, 0px)), center, center, center', 'important');
+    }
+
+    function applyBackgroundTuning() {
+        var root = getLiveRoot();
+        if (!root || !state.theme) return;
+
+        var zoom = normalizeBackgroundZoom(state.theme.background_zoom);
+        var offsetX = normalizeBackgroundOffset(state.theme.background_offset_x);
+        var offsetY = normalizeBackgroundOffset(state.theme.background_offset_y);
+        var backgroundSize = zoom === DEFAULT_BACKGROUND_ZOOM
+            ? 'cover, cover, cover, cover'
+            : zoom + '% auto, cover, cover, cover';
+
+        root.style.setProperty('--kantor-bg-position-x', (50 + offsetX) + '%');
+        root.style.setProperty('--kantor-bg-position-y', (50 + offsetY) + '%');
+        root.style.setProperty('background-size', backgroundSize, 'important');
+        updateBackgroundParallax();
     }
 
     function scheduleBackgroundParallax() {
@@ -1763,8 +1802,7 @@
 
         console.warn('[kantor-saya] wallpaper guard restore (' + (reason || 'unknown') + ')');
         state.root.style.setProperty('background-image', getWallpaperBackground(state.theme), 'important');
-        state.root.style.setProperty('background-size', 'cover', 'important');
-        updateBackgroundParallax();
+        applyBackgroundTuning();
 
         if (state.theme.wallpaper_url) {
             refreshWallpaperDownloadUrl('guard-restore-' + (reason || 'unknown'), true);
@@ -1924,8 +1962,7 @@
 
         state.root.style.setProperty('--kantor-accent', state.theme.accent_color || '#0d6efd');
         state.root.style.setProperty('background-image', nextBackground, 'important');
-        state.root.style.setProperty('background-size', 'cover', 'important');
-        state.root.style.setProperty('background-position', 'center', 'important');
+        applyBackgroundTuning();
 
         if (state.theme.wallpaper_url) {
             ensureWallpaperLeaseRefreshLoop();
@@ -2441,6 +2478,39 @@
         var btnSaveWidgetAppearance = document.getElementById('ks-save-widget-appearance');
         var btnResetWidgetAppearance = document.getElementById('ks-reset-widget-appearance');
         var widgetAppearanceColor = document.getElementById('ks-widget-appearance-color');
+        var wallpaperZoom = document.getElementById('ks-wallpaper-zoom');
+        var wallpaperOffsetX = document.getElementById('ks-wallpaper-offset-x');
+        var wallpaperOffsetY = document.getElementById('ks-wallpaper-offset-y');
+        var btnResetWallpaperPosition = document.getElementById('ks-reset-wallpaper-position');
+
+        function updateWallpaperTuneLabels() {
+            var zoomValue = document.getElementById('ks-wallpaper-zoom-value');
+            var offsetXValue = document.getElementById('ks-wallpaper-offset-x-value');
+            var offsetYValue = document.getElementById('ks-wallpaper-offset-y-value');
+            if (zoomValue && wallpaperZoom) zoomValue.textContent = String(wallpaperZoom.value || DEFAULT_BACKGROUND_ZOOM) + '%';
+            if (offsetXValue && wallpaperOffsetX) offsetXValue.textContent = String(wallpaperOffsetX.value || 0);
+            if (offsetYValue && wallpaperOffsetY) offsetYValue.textContent = String(wallpaperOffsetY.value || 0);
+        }
+
+        function syncWallpaperTuneInputs() {
+            if (wallpaperZoom) wallpaperZoom.value = normalizeBackgroundZoom(state.theme && state.theme.background_zoom);
+            if (wallpaperOffsetX) wallpaperOffsetX.value = normalizeBackgroundOffset(state.theme && state.theme.background_offset_x);
+            if (wallpaperOffsetY) wallpaperOffsetY.value = normalizeBackgroundOffset(state.theme && state.theme.background_offset_y);
+            updateWallpaperTuneLabels();
+        }
+
+        function readWallpaperTuneInputs() {
+            if (!state.theme) return;
+            if (wallpaperZoom) state.theme.background_zoom = normalizeBackgroundZoom(wallpaperZoom.value);
+            if (wallpaperOffsetX) state.theme.background_offset_x = normalizeBackgroundOffset(wallpaperOffsetX.value);
+            if (wallpaperOffsetY) state.theme.background_offset_y = normalizeBackgroundOffset(wallpaperOffsetY.value);
+        }
+
+        function previewWallpaperTune() {
+            readWallpaperTuneInputs();
+            updateWallpaperTuneLabels();
+            applyBackgroundTuning();
+        }
 
         bindModalDismissFallback('ks-widget-modal');
         bindModalDismissFallback('ks-theme-modal');
@@ -2477,6 +2547,7 @@
                 if (colorInput) {
                     colorInput.value = state.theme.accent_color || '#0d6efd';
                 }
+                syncWallpaperTuneInputs();
                 showModal('ks-theme-modal');
             };
         }
@@ -2501,6 +2572,7 @@
                 if (colorInput) {
                     state.theme.accent_color = colorInput.value || '#0d6efd';
                 }
+                readWallpaperTuneInputs();
                 updateOfficeNameLabel();
                 applyTheme();
                 scheduleSave();
@@ -2529,6 +2601,20 @@
             };
         }
 
+        [wallpaperZoom, wallpaperOffsetX, wallpaperOffsetY].forEach(function (input) {
+            if (!input) return;
+            input.oninput = previewWallpaperTune;
+        });
+
+        if (btnResetWallpaperPosition) {
+            btnResetWallpaperPosition.onclick = function () {
+                if (wallpaperZoom) wallpaperZoom.value = DEFAULT_BACKGROUND_ZOOM;
+                if (wallpaperOffsetX) wallpaperOffsetX.value = 0;
+                if (wallpaperOffsetY) wallpaperOffsetY.value = 0;
+                previewWallpaperTune();
+            };
+        }
+
         if (state.root) {
             state.root.querySelectorAll('.ks-preset[data-preset]').forEach(function (button) {
                 button.onclick = function () {
@@ -2537,6 +2623,7 @@
                     state.theme.wallpaper_preset = preset;
                     state.theme.wallpaper_url = null;
                     state.theme.wallpaper_download_url = null;
+                    readWallpaperTuneInputs();
                     state.wallpaperProbeFailures = 0;
                     clearWallpaperRetryTimer();
                     applyTheme();
