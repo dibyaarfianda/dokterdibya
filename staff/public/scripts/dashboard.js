@@ -154,10 +154,15 @@ async function fetchVisitStats(token) {
     const prevMonthEndKey = formatDateLocal(prevMonthEnd);
 
     let lastMonthCount = 0;
+    let totalLast30Days = 0;
 
     counts.forEach((count, key) => {
         if (key >= prevMonthStartKey && key <= prevMonthEndKey) {
             lastMonthCount += count;
+        }
+
+        if (key >= thirtyDayStartKey && key <= todayKey) {
+            totalLast30Days += count;
         }
     });
 
@@ -191,8 +196,6 @@ async function fetchVisitStats(token) {
         }
         cursor.setDate(cursor.getDate() + 1);
     }
-
-    const totalLast30Days = daily.reduce((sum, item) => sum + item.count, 0);
 
     return { lastMonthCount, totalLast30Days, daily };
 }
