@@ -7,6 +7,8 @@
     var WALLPAPER_LEASE_REFRESH_MS = 12 * 60 * 1000;
     var GRIDSTACK_CSS_URL = 'https://cdn.jsdelivr.net/npm/gridstack@10.2.0/dist/gridstack.min.css';
     var DEFAULT_OFFICE_NAME = 'Kantor Saya';
+    var BACKGROUND_PARALLAX_RATIO = 0.1;
+    var BACKGROUND_PARALLAX_MAX_OFFSET = 100;
 
     var state = {
         initialized: false,
@@ -32,6 +34,8 @@
         wallpaperGuardTimer: null,
         wallpaperGuardLastRestoreAt: 0,
         wallpaperFallbackWarnAt: 0,
+        backgroundParallaxBound: false,
+        backgroundParallaxRaf: null,
         lastSuccessfulWallpaperKey: null,
         lastSuccessfulWallpaperBackground: null,
         activeAppearanceWidgetId: null,
@@ -1674,6 +1678,57 @@
         state.wallpaperGuardTimer = null;
     }
 
+    function clampBackgroundOffset(value) {
+        if (!Number.isFinite(value)) return 0;
+        return Math.max(-BACKGROUND_PARALLAX_MAX_OFFSET, Math.min(BACKGROUND_PARALLAX_MAX_OFFSET, value));
+    }
+
+    function getKantorScrollTop() {
+        var candidates = [
+            document.querySelector('.content-wrapper'),
+            document.scrollingElement,
+            document.documentElement,
+            document.body
+        ];
+
+        for (var i = 0; i < candidates.length; i += 1) {
+            var el = candidates[i];
+            if (el && Number(el.scrollTop) > 0) {
+                return Number(el.scrollTop);
+            }
+        }
+
+        return Number(window.pageYOffset || window.scrollY || 0);
+    }
+
+    function updateBackgroundParallax() {
+        state.backgroundParallaxRaf = null;
+        var root = getLiveRoot();
+        if (!root || !root.isConnected) return;
+
+        var offset = clampBackgroundOffset(Math.round(getKantorScrollTop() * BACKGROUND_PARALLAX_RATIO));
+        root.style.setProperty('--kantor-bg-offset-y', offset + 'px');
+        root.style.setProperty('background-position', 'center calc(50% + var(--kantor-bg-offset-y, 0px))', 'important');
+    }
+
+    function scheduleBackgroundParallax() {
+        if (state.backgroundParallaxRaf) return;
+        state.backgroundParallaxRaf = window.requestAnimationFrame(updateBackgroundParallax);
+    }
+
+    function bindBackgroundParallax() {
+        if (state.backgroundParallaxBound) {
+            scheduleBackgroundParallax();
+            return;
+        }
+
+        window.addEventListener('scroll', scheduleBackgroundParallax, { passive: true });
+        window.addEventListener('resize', scheduleBackgroundParallax, { passive: true });
+        document.addEventListener('scroll', scheduleBackgroundParallax, { passive: true, capture: true });
+        state.backgroundParallaxBound = true;
+        scheduleBackgroundParallax();
+    }
+
     function isRootLikelyVisible() {
         if (!state.root) return false;
         if (state.root.classList && state.root.classList.contains('d-none')) return false;
@@ -1697,7 +1752,7 @@
         console.warn('[kantor-saya] wallpaper guard restore (' + (reason || 'unknown') + ')');
         state.root.style.setProperty('background-image', getWallpaperBackground(state.theme), 'important');
         state.root.style.setProperty('background-size', 'cover', 'important');
-        state.root.style.setProperty('background-position', 'center', 'important');
+        updateBackgroundParallax();
 
         if (state.theme.wallpaper_url) {
             refreshWallpaperDownloadUrl('guard-restore-' + (reason || 'unknown'), true);
@@ -2632,6 +2687,7 @@
 
             bindGridEvents();
             bindToolbar();
+            bindBackgroundParallax();
             applyTheme();
             renderGrid();
             renderWidgetCatalog();
@@ -2667,6 +2723,7 @@
         }
 
         if (state.theme) {
+            bindBackgroundParallax();
             applyTheme();
             ensureWallpaperVisualIntegrity('on-show');
         }
