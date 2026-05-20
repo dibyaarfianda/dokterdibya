@@ -355,6 +355,56 @@
         return 'neutral';
     }
 
+    function formatDateChip(value) {
+        var raw = String(value == null ? '' : value).trim();
+        if (!raw) return '-';
+
+        var match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            var year = Number(match[1]);
+            var monthIndex = Number(match[2]) - 1;
+            var day = Number(match[3]);
+            if (monthIndex >= 0 && monthIndex < monthNames.length) {
+                return String(day).padStart(2, '0') + ' ' + monthNames[monthIndex] + ' ' + year;
+            }
+        }
+
+        var parsed = new Date(raw);
+        if (Number.isNaN(parsed.getTime())) return raw;
+        return parsed.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    }
+
+    function ensureDocboardModalFrameLoaded(iframe) {
+        if (!iframe) return;
+
+        var targetSrc = '/docboard/';
+        var currentSrc = String(iframe.getAttribute('src') || '').trim();
+        var propSrc = String(iframe.src || '').trim();
+        var needsReset = !currentSrc || currentSrc !== targetSrc || /about:blank/i.test(propSrc);
+
+        if (needsReset) {
+            iframe.removeAttribute('src');
+            iframe.setAttribute('src', targetSrc);
+            iframe.src = targetSrc;
+        }
+
+        window.setTimeout(function () {
+            try {
+                var latestSrc = String(iframe.src || '').trim();
+                if (/about:blank/i.test(latestSrc)) {
+                    iframe.src = targetSrc;
+                }
+            } catch (_error) {
+                iframe.src = targetSrc;
+            }
+        }, 250);
+    }
+
     function openDocboardWidgetModal() {
         var modalId = 'ks-docboard-modal';
         var iframeId = 'ks-docboard-modal-iframe';
@@ -377,11 +427,11 @@
         }
 
         var iframe = document.getElementById(iframeId);
-        if (iframe && !iframe.getAttribute('src')) {
-            iframe.setAttribute('src', '/docboard/');
-        }
-
         showModal(modalId);
+
+        if (iframe) {
+            ensureDocboardModalFrameLoaded(iframe);
+        }
     }
 
     function runPageLauncherAction(options) {
@@ -740,7 +790,7 @@
                         return {
                             eyebrow: item.whatsapp || 'Pasien terbaru',
                             title: truncateText(item.full_name || 'Pasien', 28),
-                            badge: item.appointment_date ? String(item.appointment_date) : 'Baru',
+                            badge: item.appointment_date ? formatDateChip(item.appointment_date) : 'Baru',
                             badgeTone: 'info',
                             meta: 'Masuk antrian Sunday Clinic',
                             tail: formatRelativeTimeCompact(item.created_at)
@@ -918,12 +968,8 @@
             },
             mapData: function (data) {
                 var topUsers = Array.isArray(data.most_active_users) ? data.most_active_users : [];
-                var actionPairs = data.by_action && typeof data.by_action === 'object' ? Object.keys(data.by_action).map(function (key) {
-                    return { action: key, count: Number(data.by_action[key] || 0) };
-                }) : [];
-                actionPairs.sort(function (left, right) {
-                    return right.count - left.count;
-                });
+                var actionPairs = Array.isArray(data.by_action) ? data.by_action.slice() : [];
+                var topAction = actionPairs.length ? actionPairs[0] : null;
 
                 return {
                     summary: data.total_activities ? 'Aktivitas staff 7 hari terakhir terpantau.' : 'Belum ada aktivitas staff yang tercatat.',
@@ -932,17 +978,19 @@
                         { label: 'Staff aktif', value: Number(data.unique_users || 0) }
                     ],
                     items: topUsers.slice(0, 3).map(function (user, index) {
-                        var topAction = actionPairs[index] ? actionPairs[index].action : 'aktivitas';
                         return {
                             eyebrow: 'Top activity #' + String(index + 1),
                             title: truncateText(user.user_name || 'Staff', 28),
                             badge: String(Number(user.action_count || 0)) + ' aksi',
                             badgeTone: 'info',
-                            meta: 'Aksi terbanyak: ' + formatRoleLabel(topAction),
+                            meta: 'Aktif dalam 7 hari terakhir',
                             tail: formatRelativeTimeCompact(user.last_activity)
                         };
                     }),
-                    emptyText: 'Belum ada aktivitas staff yang tercatat.'
+                    emptyText: 'Belum ada aktivitas staff yang tercatat.',
+                    note: topAction && topAction.action
+                        ? ('Aksi global terbanyak: ' + topAction.action + ' (' + String(Number(topAction.count || 0)) + 'x)')
+                        : ''
                 };
             }
         }),
