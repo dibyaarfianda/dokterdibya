@@ -7842,7 +7842,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v180';
+    window.__assetVersion = 'v181';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -8136,36 +8136,6 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
  <!-- Socket.IO initialization for chat -->
  <script>
-    // Validate required functions are loaded before proceeding
-    const requiredFunctions = [
-        'showDashboardPage',
-        'showKlinikPrivatePage',
-        'showFinanceAnalysisPage',
-        'showKelolaPasienPage',
-        'showKelolaPengumumanPage',
-        'showKelolaAppointmentPage',
-        'showKelolaJadwalPage',
-        'showKelolaTindakanPage',
-        'showKelolaObatManagementPage',
-        'showLogPage',
-        'showPatientPage'
-    ];
-
-    // Check which functions are available
-    const missingFunctions = [];
-    requiredFunctions.forEach(fn => {
-        if (typeof window[fn] !== 'function') {
-            missingFunctions.push(fn);
-        }
-    });
-
-    if (missingFunctions.length > 0) {
-        console.warn('[WARN] Some navigation functions not yet loaded:', missingFunctions);
-        console.log('This is normal - they will be available once their modules load');
-    } else {
-        console.log('[OK] All required navigation functions are available');
-    }
-
     // Socket.IO is now initialized via initRealtimeSync() which handles user registration
     // The socket is available as window.socket after initRealtimeSync completes
     
@@ -12483,7 +12453,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     <script src="/staff/public/scripts/tap-feedback.js?v=v117"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v111"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v113"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v181"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">

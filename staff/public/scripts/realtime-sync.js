@@ -18,6 +18,20 @@ if (!window.__realtimeSyncState) {
 
 const state = window.__realtimeSyncState;
 
+function notifyRealtimeSocketReady(eventName) {
+    try {
+        window.dispatchEvent(new CustomEvent(eventName, {
+            detail: {
+                socket: state.socket,
+                currentUser: state.currentUser,
+                connected: !!(state.socket && state.socket.connected)
+            }
+        }));
+    } catch (error) {
+        console.warn('🔄 [REALTIME] Failed to dispatch socket event:', eventName, error);
+    }
+}
+
 // Initialize Socket.io connection
 export function initRealtimeSync(user) {
     console.log('🔄 [REALTIME] initRealtimeSync called with:', JSON.stringify(user));
@@ -95,11 +109,13 @@ export function initRealtimeSync(user) {
 
     // Make socket globally available for other modules
     window.socket = state.socket;
+    notifyRealtimeSocketReady('realtime:socket-ready');
 
     state.socket.on('connect', () => {
         state.isInitializing = false; // Clear flag on successful connect
         state.initialized = true;
         console.log('🔄 [REALTIME] Connected to real-time sync server, socket id:', state.socket.id);
+        notifyRealtimeSocketReady('realtime:socket-connected');
 
         // Validate currentUser before registration
         if (!state.currentUser || !state.currentUser.id || !state.currentUser.name) {
@@ -135,6 +151,7 @@ export function initRealtimeSync(user) {
 
     state.socket.on('reconnect', () => {
         console.log('🔄 [REALTIME] Reconnected to real-time sync server');
+        notifyRealtimeSocketReady('realtime:socket-connected');
 
         // Validate currentUser before re-registration
         if (!state.currentUser || !state.currentUser.id || !state.currentUser.name) {

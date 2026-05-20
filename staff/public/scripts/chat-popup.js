@@ -783,12 +783,7 @@
         // All users have chat access - enable full features
         console.log('[ChatPopup] ✅ Enabling full chat for user:', user.role, user);
 
-        // Check if Socket.IO is available (should be created by global-chat-loader)
-        if (!window.socket) {
-            console.error('[ChatPopup] window.socket not available, real-time chat will not work');
-        } else {
-            console.log('[ChatPopup] Using global Socket.IO connection:', window.socket.id || 'connecting...');
-        }
+        console.log('[ChatPopup] Preparing realtime chat bindings...');
 
         // Ensure chat audio elements exist
         if (!document.getElementById('chat-send-sound')) {
@@ -821,6 +816,19 @@
     const sendAudio = document.getElementById('chat-send-sound');
     const incomingAudio = document.getElementById('chat-incoming-sound');
         const onlineNamesEl = document.getElementById('online-names');
+        let boundSocket = null;
+        let socketWaitTimer = null;
+
+        function clearSocketWaitTimer() {
+          if (socketWaitTimer) {
+            clearTimeout(socketWaitTimer);
+            socketWaitTimer = null;
+          }
+        }
+
+        function getRealtimeSocket() {
+          return window.socket || (window.__realtimeSyncState && window.__realtimeSyncState.socket) || null;
+        }
 
   // isChatOpenBasic already defined above - reuse it
   let isChatOpen = isChatOpenBasic;
@@ -890,26 +898,77 @@
             onlineNamesEl.textContent = uniqueUsers.map((u) => u.name).join(', ');
         }
 
-        // Listen for online users updates via Socket.IO
-        if (window.socket) {
-            // Initial users list
-            window.socket.on('users:list', (users) => {
-                updateOnlineUsers(users);
-            });
-            
-            // User connected
-            window.socket.on('user:connected', (data) => {
-                window.socket.emit('users:get-list');
-            });
-            
-            // User disconnected
-            window.socket.on('user:disconnected', (data) => {
-                window.socket.emit('users:get-list');
-            });
-            
-            // Request initial list
-            window.socket.emit('users:get-list');
-        }
+          function handleUsersList(users) {
+            updateOnlineUsers(users);
+          }
+
+          function handleUserPresenceChange() {
+            if (boundSocket) {
+              boundSocket.emit('users:get-list');
+            }
+          }
+
+          function handleRealtimeChatMessage(data) {
+            console.log('[ChatPopup] 📨 Received chat:message:', data);
+            console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
+            if (data.user_id !== user.id && data.user_id !== user.uid) {
+              console.log('[ChatPopup] Adding received message');
+              addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id);
+            } else {
+              console.log('[ChatPopup] Skipping own message');
+            }
+          }
+
+          function bindRealtimeSocket(socket) {
+            if (!socket || boundSocket === socket) return;
+
+            if (boundSocket && typeof boundSocket.off === 'function') {
+              boundSocket.off('users:list', handleUsersList);
+              boundSocket.off('user:connected', handleUserPresenceChange);
+              boundSocket.off('user:disconnected', handleUserPresenceChange);
+              boundSocket.off('chat:message', handleRealtimeChatMessage);
+            }
+
+            boundSocket = socket;
+            clearSocketWaitTimer();
+
+            console.log('[ChatPopup] Binding to global Socket.IO connection:', socket.id || 'connecting...');
+            socket.on('users:list', handleUsersList);
+            socket.on('user:connected', handleUserPresenceChange);
+            socket.on('user:disconnected', handleUserPresenceChange);
+            socket.on('chat:message', handleRealtimeChatMessage);
+            socket.emit('users:get-list');
+          }
+
+          function tryBindRealtimeSocket() {
+            var socket = getRealtimeSocket();
+            if (socket) {
+              bindRealtimeSocket(socket);
+              return true;
+            }
+            return false;
+          }
+
+          function handleSocketReadyEvent(event) {
+            var socket = event && event.detail ? event.detail.socket : null;
+            if (socket) {
+              bindRealtimeSocket(socket);
+              return;
+            }
+            tryBindRealtimeSocket();
+          }
+
+          window.addEventListener('realtime:socket-ready', handleSocketReadyEvent);
+          window.addEventListener('realtime:socket-connected', handleSocketReadyEvent);
+
+          if (!tryBindRealtimeSocket()) {
+            console.log('[ChatPopup] Waiting for realtime socket from realtime-sync...');
+            socketWaitTimer = setTimeout(function () {
+              if (!boundSocket && !tryBindRealtimeSocket()) {
+                console.warn('[ChatPopup] Realtime socket still not ready after waiting; chat popup stays in limited mode');
+              }
+            }, 10000);
+          }
 
         // Load chat history
         await loadChatHistory();
@@ -1164,23 +1223,6 @@
       return div.innerHTML;
     }
 
-        // Listen for real-time chat messages via Socket.IO
-        if (window.socket) {
-            console.log('[ChatPopup] Setting up chat:message listener, current user:', user.id);
-            window.socket.on('chat:message', (data) => {
-                console.log('[ChatPopup] 📨 Received chat:message:', data);
-                console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
-                if (data.user_id !== user.id && data.user_id !== user.uid) {
-                    console.log('[ChatPopup] Adding received message');
-                    addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id);
-                } else {
-                    console.log('[ChatPopup] Skipping own message');
-                }
-            });
-        } else {
-            console.error('[ChatPopup] window.socket not available, real-time chat disabled');
-        }
-        
         // Clear chat button handler
         if (clearBtn) {
             clearBtn.addEventListener('click', async function() {
