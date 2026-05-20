@@ -1676,7 +1676,7 @@
             max-width: none;
             max-height: none;
             padding: 0;
-            border-radius: 0;
+            border-radius: 26px;
             background: transparent;
             border: none;
             box-shadow: none;
@@ -1697,7 +1697,7 @@
             max-width: min(1320px, calc(100vw - 32px));
             max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
             object-fit: contain;
-            border-radius: 0;
+            border-radius: 26px;
             background: transparent;
             box-shadow: 0 30px 80px rgba(15, 23, 32, 0.18);
         }
@@ -1724,12 +1724,14 @@
 
         @media (max-width: 640px) {
             .queue-promo-modal-card {
+                border-radius: 18px;
                 transform: translateY(28px) scale(0.95);
             }
 
             .queue-promo-modal-media {
                 max-width: calc(100vw - 20px);
                 max-height: calc(100vh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+                border-radius: 18px;
             }
         }
 

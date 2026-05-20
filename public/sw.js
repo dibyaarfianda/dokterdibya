@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260521i'; // 2026-05-21i - Reduce queue modal blur to 5px and set animation to 1s
+const CACHE_VERSION = '20260521j'; // 2026-05-21j - Add rounded corners to queue promo modal
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
