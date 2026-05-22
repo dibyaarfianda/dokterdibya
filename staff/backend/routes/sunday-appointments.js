@@ -663,18 +663,18 @@ router.get('/patient', verifyToken, async (req, res) => {
  */
 router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
     try {
-                res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-                res.set('Pragma', 'no-cache');
-                res.set('Expires', '0');
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         const [rows] = await db.query(
-            `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status
+            `SELECT id, DATE_FORMAT(appointment_date, '%Y-%m-%d') AS appointment_date, session, slot_number, chief_complaint, consultation_category, status
              FROM sunday_appointments
              WHERE patient_id = ?
                AND status = 'pending_confirmation'
-                             AND appointment_date >= CURDATE()
-                         ORDER BY appointment_date ASC, session ASC, slot_number ASC
-                         LIMIT 1`,
+               AND appointment_date >= CURDATE()
+             ORDER BY appointment_date ASC, session ASC, slot_number ASC
+             LIMIT 1`,
             [req.user.id]
         );
 
