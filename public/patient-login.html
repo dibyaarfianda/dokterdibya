@@ -573,6 +573,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const referrer = document.referrer;
         const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+        const shouldAutoGoogle = urlParams.get('autoGoogle') === '1';
 
         if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
             console.log('[Login] Detected mobile app context, redirecting to app');
@@ -583,21 +584,14 @@
         // ==================== AUTH CONFIG ====================
         const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
         let validatedRegCode = null;
-
-        function isTrialThemeActive() {
-            try {
-                return sessionStorage.getItem('patient_portal_theme_mode') === 'newdesign';
-            } catch(e) {
-                return false;
-            }
-        }
+        let hasAutoTriggeredGoogle = false;
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
-                window.location.href = isTrialThemeActive() ? '/patient-menu-trial.html' : '/patient-menu.html';
+                window.location.href = '/patient-menu.html';
             }
         });
 
@@ -618,20 +612,27 @@
 
         // ==================== POST-LOGIN REDIRECT ====================
         function getPostLoginUrl(data) {
-            const trialSuffix = isTrialThemeActive() ? '?theme=newdesign' : '';
             // Check if profile needs completion (name, phone, birth_date)
             if (data.needs_profile_completion) {
-                return '/complete-profile.html' + trialSuffix;
+                return '/complete-profile.html';
             }
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
-                return '/patient-intake.html' + trialSuffix;
+                return '/patient-intake.html';
             }
-            return isTrialThemeActive() ? '/patient-menu-trial.html' : '/patient-menu.html';
+            return '/patient-menu.html';
         }
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
         var googleCodeClient = null;
         var pendingGoogleAction = null; // 'login' or 'register'
+
+        function maybeAutoTriggerGoogleLogin() {
+            if (!shouldAutoGoogle || hasAutoTriggeredGoogle || !googleCodeClient) {
+                return;
+            }
+            hasAutoTriggeredGoogle = true;
+            loginWithGoogle();
+        }
 
         function initGoogleCodeClient() {
             if (!window.google || !google.accounts || !google.accounts.oauth2) {
@@ -645,6 +646,7 @@
                 callback: handleGoogleCodeCallback
             });
             console.log('[GIS] Code client initialized');
+            maybeAutoTriggerGoogleLogin();
         }
         initGoogleCodeClient();
 

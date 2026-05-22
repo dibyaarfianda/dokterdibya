@@ -172,11 +172,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     localStorage.setItem('patient_user', JSON.stringify(storedUser));
 
                     // Redirect to intake form
-                    const isTrialTheme = (() => {
-                        try { return sessionStorage.getItem('patient_portal_theme_mode') === 'newdesign'; }
-                        catch(e) { return false; }
-                    })();
-                    window.location.href = isTrialTheme ? '/patient-intake.html?theme=newdesign' : '/patient-intake.html';
+                    window.location.href = '/patient-intake.html';
                 } else {
                     showError(data.message || 'Gagal menyimpan profil. Silakan coba lagi.');
                     if (submitBtn) {

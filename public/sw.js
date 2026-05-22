@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260522b'; // 2026-05-22b - Keep trial Google auth redirects on new portal
+const CACHE_VERSION = '20260522c'; // 2026-05-22c - Return Google auth redirects to old patient portal
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
