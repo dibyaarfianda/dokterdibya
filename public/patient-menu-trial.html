@@ -5475,6 +5475,7 @@
             loadNotificationCount();
             loadUnreadUsgCount();
             checkActiveBooking();
+            checkAttendanceConfirmation();
             loadBirthData();
             // showEidGreeting(); // Hidden - Hari Raya greeting period ended
 
@@ -5742,6 +5743,124 @@
                 // Silently fail - VIP badge is optional
             }
         }
+
+        // ==================== ATTENDANCE CONFIRMATION POPUP ====================
+        async function checkAttendanceConfirmation() {
+            try {
+                const token = getToken();
+                if (!token) return;
+
+                const response = await fetch('/api/sunday-appointments/my-pending-confirmation?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
+                });
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (!data.success || !data.appointment) return;
+
+                showAttendanceConfirmationPopup(data.appointment);
+            } catch (err) {
+                console.error('[AttendanceConfirmation] Error:', err);
+            }
+        }
+
+        function showAttendanceConfirmationPopup(apt) {
+            var existing = document.getElementById('attendance-confirm-overlay');
+            if (existing) existing.remove();
+
+            var dateParts = String(apt.appointment_date || '').slice(0, 10).split('-');
+            var dateObj = dateParts.length === 3
+                ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]))
+                : new Date(apt.appointment_date);
+            var dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            var chiefComplaint = typeof escapeHtml === 'function' ? escapeHtml(apt.chief_complaint || '-') : (apt.chief_complaint || '-');
+
+            var overlay = document.createElement('div');
+            overlay.id = 'attendance-confirm-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            overlay.innerHTML = `
+                <div style="position:relative;background:#ffffff;border-radius:16px;padding:24px;max-width:390px;width:100%;border:1px solid rgba(0,0,0,0.1);box-shadow:0 18px 48px rgba(0,0,0,0.28);color:#0a0a0a;">
+                    <button type="button" onclick="closeAttendanceConfirmationPopup()" aria-label="Tutup" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(0,0,0,0.12);background:#f5f5f5;color:#333;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <div style="width:56px;height:56px;background:rgba(245,158,11,0.12);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
+                            <i class="fa-solid fa-calendar-check" style="font-size:24px;color:#d97706;"></i>
+                        </div>
+                        <h3 style="margin:0 0 6px;font-size:17px;color:#0a0a0a;font-weight:800;">Konfirmasi Kehadiran</h3>
+                        <p style="margin:0;font-size:12px;color:#666;">Pilih datang atau batal agar slot tidak menggantung</p>
+                    </div>
+                    <div style="background:#f7f7f7;border-radius:10px;padding:14px 16px;margin-bottom:20px;border:1px solid rgba(0,0,0,0.08);">
+                        <div style="display:flex;gap:10px;margin-bottom:8px;">
+                            <i class="fa-solid fa-calendar" style="color:#666;margin-top:2px;width:14px;flex-shrink:0;"></i>
+                            <span style="font-size:13px;color:#262626;">${dateStr}</span>
+                        </div>
+                        <div style="display:flex;gap:10px;margin-bottom:8px;">
+                            <i class="fa-solid fa-clock" style="color:#666;margin-top:2px;width:14px;flex-shrink:0;"></i>
+                            <span style="font-size:13px;color:#262626;">${apt.session_label} &bull; Slot ${apt.slot_number} (${apt.slot_time})</span>
+                        </div>
+                        <div style="display:flex;gap:10px;">
+                            <i class="fa-solid fa-stethoscope" style="color:#666;margin-top:2px;width:14px;flex-shrink:0;"></i>
+                            <span style="font-size:13px;color:#262626;">${chiefComplaint}</span>
+                        </div>
+                    </div>
+                    <p style="font-size:12px;color:#666;text-align:center;margin-bottom:20px;line-height:1.5;">Apakah Anda akan datang sesuai jadwal?<br>Jika belum memilih, popup ini akan muncul lagi saat aplikasi dibuka.</p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <button id="btn-confirm-hadir" onclick="submitAttendanceConfirmation(${apt.id},'confirm')" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;">
+                            <i class="fa-solid fa-circle-check"></i> Datang
+                        </button>
+                        <button id="btn-confirm-batal" onclick="submitAttendanceConfirmation(${apt.id},'cancel')" style="background:#fff;color:#dc2626;border:1.5px solid #dc2626;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;">
+                            <i class="fa-solid fa-circle-xmark"></i> Batal
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+        }
+
+        function closeAttendanceConfirmationPopup() {
+            var overlay = document.getElementById('attendance-confirm-overlay');
+            if (overlay) overlay.remove();
+        }
+
+        async function submitAttendanceConfirmation(appointmentId, action) {
+            var btnConfirm = document.getElementById('btn-confirm-hadir');
+            var btnCancel = document.getElementById('btn-confirm-batal');
+            if (btnConfirm) btnConfirm.disabled = true;
+            if (btnCancel) btnCancel.disabled = true;
+
+            try {
+                const token = getToken();
+                const endpoint = action === 'confirm'
+                    ? '/api/sunday-appointments/' + appointmentId + '/confirm-attendance'
+                    : '/api/sunday-appointments/' + appointmentId + '/cancel-attendance';
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+
+                const data = await response.json();
+                closeAttendanceConfirmationPopup();
+
+                if (data.success) {
+                    alert(data.message || 'Konfirmasi berhasil.');
+                    checkActiveBooking();
+                } else {
+                    alert(data.message || 'Terjadi kesalahan');
+                }
+            } catch (err) {
+                console.error('[AttendanceConfirmation] Submit error:', err);
+                if (btnConfirm) btnConfirm.disabled = false;
+                if (btnCancel) btnCancel.disabled = false;
+                alert('Terjadi kesalahan jaringan');
+            }
+        }
+
+        window.submitAttendanceConfirmation = submitAttendanceConfirmation;
+        window.closeAttendanceConfirmationPopup = closeAttendanceConfirmationPopup;
 
         function getInitials(name) {
             if (!name) return '--';
