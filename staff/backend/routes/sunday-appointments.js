@@ -673,6 +673,7 @@ router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
              WHERE patient_id = ?
                AND status = 'pending_confirmation'
                AND appointment_date >= CURDATE()
+               AND confirmation_popup_enabled_at IS NOT NULL
              ORDER BY appointment_date ASC, session ASC, slot_number ASC
              LIMIT 1`,
             [req.user.id]
