@@ -196,6 +196,7 @@ function renderAppointments(appointments) {
 function getStatusBadge(status, cancellationReason) {
     const labels = {
         'pending': 'Pending',
+        'pending_confirmation': 'Menunggu Konfirmasi',
         'confirmed': 'Confirmed',
         'completed': 'Completed',
         'cancelled': 'Cancelled',
@@ -221,6 +222,7 @@ function toggleCancellationReasonField(status) {
 function updateStatistics(appointments) {
     const stats = {
         pending: 0,
+        pending_confirmation: 0,
         confirmed: 0,
         completed: 0,
         total: appointments.length
@@ -232,7 +234,7 @@ function updateStatistics(appointments) {
         }
     });
 
-    $('#stats-pending').text(stats.pending);
+    $('#stats-pending').text(stats.pending + stats.pending_confirmation);
     $('#stats-confirmed').text(stats.confirmed);
     $('#stats-completed').text(stats.completed);
     $('#stats-total').text(stats.total);

@@ -4416,6 +4416,7 @@
                         <select id="filter-status" class="form-control">
                             <option value="">Semua Status</option>
                             <option value="pending">Pending</option>
+                            <option value="pending_confirmation">Menunggu Konfirmasi</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
@@ -7337,6 +7338,7 @@ Contoh Markdown:
                     <label for="status-select">Status</label>
                     <select id="status-select" class="form-control">
                         <option value="pending">Pending</option>
+                        <option value="pending_confirmation">Menunggu Konfirmasi</option>
                         <option value="confirmed">Confirmed</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
@@ -7862,7 +7864,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v208';
+    window.__assetVersion = 'v209';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
