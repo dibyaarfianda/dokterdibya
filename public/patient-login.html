@@ -584,12 +584,20 @@
         const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
         let validatedRegCode = null;
 
+        function isTrialThemeActive() {
+            try {
+                return sessionStorage.getItem('patient_portal_theme_mode') === 'newdesign';
+            } catch(e) {
+                return false;
+            }
+        }
+
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
-                window.location.href = '/patient-menu.html';
+                window.location.href = isTrialThemeActive() ? '/patient-menu-trial.html' : '/patient-menu.html';
             }
         });
 
@@ -610,14 +618,15 @@
 
         // ==================== POST-LOGIN REDIRECT ====================
         function getPostLoginUrl(data) {
+            const trialSuffix = isTrialThemeActive() ? '?theme=newdesign' : '';
             // Check if profile needs completion (name, phone, birth_date)
             if (data.needs_profile_completion) {
-                return '/complete-profile.html';
+                return '/complete-profile.html' + trialSuffix;
             }
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
-                return '/patient-intake.html';
+                return '/patient-intake.html' + trialSuffix;
             }
-            return '/patient-menu.html';
+            return isTrialThemeActive() ? '/patient-menu-trial.html' : '/patient-menu.html';
         }
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================

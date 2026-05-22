@@ -1256,6 +1256,11 @@
                         // Get token for redirect (preserve auth for mobile app)
                         const redirectToken = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
                         let dashboardUrl = '/patient-menu.html';
+                        try {
+                            if (sessionStorage.getItem('patient_portal_theme_mode') === 'newdesign') {
+                                dashboardUrl = '/patient-menu-trial.html';
+                            }
+                        } catch(e) {}
                         if (redirectToken) {
                             dashboardUrl += '?token=' + encodeURIComponent(redirectToken);
                         }

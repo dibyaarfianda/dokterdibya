@@ -390,7 +390,75 @@
             </button>
 
             <p class="login-foot">
-                Belum punya akun? <a href="#" onclick="showRegInfo(); return false;">Daftar di klinik</a>
+                Belum punya akun? <a href="/patient-login-trial.html?mode=register">Daftar dengan Google</a>
+            </p>
+        </section>
+
+        <section class="trial-card login-card" id="page-register" style="display: none;">
+            <h1 class="login-heading">
+                <span class="green-light" aria-hidden="true">
+                    <span class="green-light-glow"></span>
+                    <span class="green-light-core"></span>
+                </span>
+                Daftar
+            </h1>
+            <p class="login-subtitle">Portal pasien <span class="serif">dr. Dibya</span></p>
+            <div class="maintenance-note">
+                Masukkan kode registrasi dari klinik, lalu lanjutkan pendaftaran dengan akun Google Anda.
+            </div>
+
+            <div class="error-message" id="regcode-error">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="regcode-error-text">Kode registrasi tidak valid</span>
+            </div>
+
+            <div class="error-message" id="register-error">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="register-error-text">Pendaftaran Google gagal</span>
+            </div>
+
+            <form id="regcode-form" novalidate>
+                <div class="trial-field" id="regcode-step1">
+                    <label class="trial-label" for="regcode-input">Kode Registrasi</label>
+                    <input
+                        type="text"
+                        id="regcode-input"
+                        name="registration_code"
+                        class="trial-input"
+                        placeholder="Masukkan 6 karakter kode"
+                        autocomplete="one-time-code"
+                        maxlength="6"
+                        required
+                        style="text-transform: uppercase; letter-spacing: 0.18em; text-align: center;"
+                    >
+                    <button type="submit" class="trial-button" id="btn-validate-code" style="width:100%; margin-top: 14px;">
+                        <span>Validasi Kode</span>
+                    </button>
+                </div>
+            </form>
+
+            <div id="regcode-step2" style="display: none;">
+                <div class="maintenance-note" style="background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.28); color: #166534;">
+                    Kode valid. Lanjutkan pendaftaran dengan Google.
+                </div>
+
+                <button type="button" class="btn-google" id="btn-google-register" onclick="registerWithGoogle()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>Daftar dengan Google</span>
+                </button>
+
+                <p class="login-foot" style="margin-top: 14px;">
+                    <a href="#" onclick="resetRegCodeStep(); return false;">Gunakan kode lain</a>
+                </p>
+            </div>
+
+            <p class="login-foot">
+                Sudah punya akun? <a href="/patient-login-trial.html?mode=login">Masuk dengan Google</a>
             </p>
         </section>
     </main>
@@ -400,6 +468,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const referrer = document.referrer;
         const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+        const requestedMode = (urlParams.get('mode') || 'login').toLowerCase();
+        const shouldAutoGoogle = urlParams.get('autoGoogle') === '1';
 
         if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
             console.log('[Login] Detected mobile app context, redirecting to app');
@@ -409,6 +479,11 @@
 
         // ==================== AUTH CONFIG ====================
         const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        let validatedRegCode = null;
+        let pendingGoogleAction = 'login';
+        let hasAutoTriggeredGoogle = false;
+
+        try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch(e) {}
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
@@ -416,8 +491,27 @@
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
                 window.location.href = '/patient-menu-trial.html';
+                return;
             }
+
+            setAuthMode(requestedMode === 'register' ? 'register' : 'login');
         });
+
+        function setAuthMode(mode) {
+            var isRegister = mode === 'register';
+            document.getElementById('page-login').style.display = isRegister ? 'none' : '';
+            document.getElementById('page-register').style.display = isRegister ? '' : 'none';
+            clearError('login-error');
+            clearError('regcode-error');
+            clearError('register-error');
+
+            if (isRegister) {
+                window.requestAnimationFrame(function() {
+                    var input = document.getElementById('regcode-input');
+                    if (input) input.focus();
+                });
+            }
+        }
 
         // ==================== ERROR HANDLING ====================
         function showError(elementId, message) {
@@ -434,16 +528,27 @@
         // ==================== POST-LOGIN REDIRECT ====================
         function getPostLoginUrl(data) {
             if (data.needs_profile_completion) {
-                return '/complete-profile.html';
+                return '/complete-profile.html?theme=newdesign';
             }
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
-                return '/patient-intake.html';
+                return '/patient-intake.html?theme=newdesign';
             }
             return '/patient-menu-trial.html';
         }
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
         var googleCodeClient = null;
+
+        function maybeAutoTriggerGoogleLogin() {
+            if (requestedMode !== 'login' || !shouldAutoGoogle || hasAutoTriggeredGoogle) {
+                return;
+            }
+            if (!googleCodeClient) {
+                return;
+            }
+            hasAutoTriggeredGoogle = true;
+            loginWithGoogle();
+        }
 
         function initGoogleCodeClient() {
             if (!window.google || !google.accounts || !google.accounts.oauth2) {
@@ -457,13 +562,14 @@
                 callback: handleGoogleCodeCallback
             });
             console.log('[GIS] Code client initialized');
+            maybeAutoTriggerGoogleLogin();
         }
         initGoogleCodeClient();
 
         async function handleGoogleCodeCallback(response) {
             if (response.error) {
                 console.error('[GIS] Error:', response.error);
-                showError('login-error', 'Login Google dibatalkan atau gagal');
+                showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', 'Login Google dibatalkan atau gagal');
                 return;
             }
 
@@ -475,6 +581,10 @@
                     code: response.code,
                     redirectUri: 'postmessage'
                 };
+
+                if (pendingGoogleAction === 'register' && validatedRegCode) {
+                    bodyData.registration_code = validatedRegCode;
+                }
 
                 var res = await fetch('/api/patients/google-auth-code', {
                     method: 'POST',
@@ -494,15 +604,17 @@
                 } else {
                     overlay.classList.add('hidden');
                     if (data.code_required) {
-                        showError('login-error', 'Akun belum terdaftar. Silakan hubungi klinik untuk mendaftar.');
+                        resetRegCodeStep();
+                        setAuthMode('register');
+                        showError('regcode-error', 'Akun belum terdaftar. Masukkan kode registrasi untuk daftar dengan Google.');
                     } else {
-                        showError('login-error', data.message || 'Login Google gagal');
+                        showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', data.message || 'Login Google gagal');
                     }
                 }
             } catch (err) {
                 console.error('[GIS] Auth error:', err);
                 overlay.classList.add('hidden');
-                showError('login-error', 'Terjadi kesalahan. Silakan coba lagi.');
+                showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', 'Terjadi kesalahan. Silakan coba lagi.');
             }
         }
 
@@ -512,6 +624,73 @@
                 showError('login-error', 'Google Sign-In belum siap. Tunggu sebentar lalu coba lagi.');
                 return;
             }
+            pendingGoogleAction = 'login';
+            googleCodeClient.requestCode();
+        }
+
+        // ==================== REGISTRATION CODE + GOOGLE REGISTER ====================
+        document.getElementById('regcode-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearError('regcode-error');
+
+            var code = document.getElementById('regcode-input').value.trim().toUpperCase();
+            if (!code || code.length !== 6) {
+                showError('regcode-error', 'Masukkan kode 6 karakter');
+                return;
+            }
+
+            validateRegCode(code);
+        });
+
+        async function validateRegCode(code) {
+            var btn = document.getElementById('btn-validate-code');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="btn-spinner"></div>';
+
+            try {
+                var res = await fetch('/api/registration-codes/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+
+                var data = await res.json();
+                if (res.ok && data.success) {
+                    validatedRegCode = code;
+                    document.getElementById('regcode-step1').style.display = 'none';
+                    document.getElementById('regcode-step2').style.display = 'block';
+                } else {
+                    showError('regcode-error', data.message || 'Kode registrasi tidak valid');
+                }
+            } catch (err) {
+                console.error('[Register] Validate code error:', err);
+                showError('regcode-error', 'Tidak dapat terhubung ke server');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>Validasi Kode</span>';
+        }
+
+        function resetRegCodeStep() {
+            validatedRegCode = null;
+            document.getElementById('regcode-input').value = '';
+            document.getElementById('regcode-step1').style.display = 'block';
+            document.getElementById('regcode-step2').style.display = 'none';
+            clearError('regcode-error');
+            clearError('register-error');
+        }
+
+        function registerWithGoogle() {
+            clearError('register-error');
+            if (!validatedRegCode) {
+                showError('register-error', 'Kode registrasi belum divalidasi');
+                return;
+            }
+            if (!googleCodeClient) {
+                showError('register-error', 'Google Sign-In belum siap. Tunggu sebentar lalu coba lagi.');
+                return;
+            }
+            pendingGoogleAction = 'register';
             googleCodeClient.requestCode();
         }
 
@@ -587,10 +766,6 @@
             }
         }
 
-        // ==================== REGISTRATION INFO ====================
-        function showRegInfo() {
-            alert('Pendaftaran akun baru dilakukan di klinik.\n\nSilakan hubungi resepsionis klinik dr. Dibya untuk mendapatkan kode registrasi.');
-        }
     </script>
 </body>
 </html>
