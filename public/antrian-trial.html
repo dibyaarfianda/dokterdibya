@@ -1005,7 +1005,7 @@
             }
 
             try {
-                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending', {
+                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending,pending_confirmation', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 

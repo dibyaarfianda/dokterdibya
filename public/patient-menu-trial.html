@@ -6093,7 +6093,7 @@
         async function checkActiveBooking() {
             const token = getToken();
             try {
-                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending', {
+                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending,pending_confirmation', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (response.status === 401) {
@@ -6118,7 +6118,7 @@
                     document.getElementById('booking-status-desc').textContent =
                         dateStr + ' - ' + (booking.slot_time || '-');
 
-                    if (booking.status === 'pending') {
+                    if (booking.status === 'pending' || booking.status === 'pending_confirmation') {
                         document.getElementById('booking-status-card').classList.add('warning');
                     }
 

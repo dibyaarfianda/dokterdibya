@@ -728,7 +728,7 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
                                         LIMIT 1
                                 )
              WHERE sa.appointment_date = ?
-               AND sa.status IN ('confirmed', 'completed')
+               AND sa.status IN ('pending_confirmation', 'confirmed', 'completed')
              ORDER BY sa.session ASC, sa.slot_number ASC`,
                         [todayStart, tomorrowStart, todayStr]
         );
@@ -879,7 +879,7 @@ async function loadTodayQueueForReminderChecks() {
                                 LIMIT 1
                         )
          WHERE sa.appointment_date = ?
-           AND sa.status IN ('confirmed', 'completed')
+           AND sa.status IN ('pending_confirmation', 'confirmed', 'completed')
          ORDER BY sa.session ASC, sa.slot_number ASC`,
         [todayStart, tomorrowStart, todayStr]
     );
@@ -1186,7 +1186,7 @@ router.get('/queue/public', async (req, res, next) => {
                     ORDER BY scry.created_at DESC, scry.id DESC LIMIT 1
                 )
              WHERE sa.appointment_date = ?
-               AND sa.status IN ('confirmed', 'completed')
+               AND sa.status IN ('pending_confirmation', 'confirmed', 'completed')
              ORDER BY sa.session ASC, sa.slot_number ASC`,
             [todayStart, tomorrowStart, todayStr]
         );

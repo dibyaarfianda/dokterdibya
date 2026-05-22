@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260522f'; // 2026-05-22f - Force cache refresh, add no-cache for login pages
+const CACHE_VERSION = '20260523a'; // 2026-05-23a - Include pending confirmation in queue displays
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
