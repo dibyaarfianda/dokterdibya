@@ -490,8 +490,10 @@ router.post('/book', verifyToken, async (req, res) => {
         const crypto = require('crypto');
         const confirmationToken = crypto.randomBytes(32).toString('hex');
 
-        // Bookings are auto-confirmed when created.
-        const bookingStatus = 'confirmed';
+        // Sunday bookings require attendance confirmation by the weekend cron flow.
+        const appointmentDayOfWeekForBooking = new Date(appointment_date + 'T00:00:00Z').getUTCDay();
+        const requiresConfirmation = appointmentDayOfWeekForBooking === 0; // 0 = Sunday
+        const bookingStatus = requiresConfirmation ? 'pending_confirmation' : 'confirmed';
 
         // Create appointment
         const [result] = await db.query(
