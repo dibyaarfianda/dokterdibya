@@ -659,16 +659,22 @@ router.get('/patient', verifyToken, async (req, res) => {
 
 /**
  * GET /api/sunday-appointments/my-pending-confirmation
- * Returns today's pending_confirmation appointment for the logged-in patient (before 09:00 WIB)
+ * Returns the next pending_confirmation appointment for the logged-in patient.
  */
 router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
     try {
+                res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+                res.set('Pragma', 'no-cache');
+                res.set('Expires', '0');
+
         const [rows] = await db.query(
             `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status
              FROM sunday_appointments
              WHERE patient_id = ?
                AND status = 'pending_confirmation'
-               AND appointment_date = CURDATE()`,
+                             AND appointment_date >= CURDATE()
+                         ORDER BY appointment_date ASC, session ASC, slot_number ASC
+                         LIMIT 1`,
             [req.user.id]
         );
 

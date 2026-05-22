@@ -2532,22 +2532,28 @@
             var existing = document.getElementById('attendance-confirm-overlay');
             if (existing) existing.remove();
 
-            var dateObj = new Date(apt.appointment_date);
-            var gmt7 = new Date(dateObj.getTime() + 7 * 3600 * 1000);
-            var dateStr = gmt7.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            var dateParts = String(apt.appointment_date || '').slice(0, 10).split('-');
+            var dateObj = dateParts.length === 3
+                ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]))
+                : new Date(apt.appointment_date);
+            var dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            var chiefComplaint = typeof escapeHtml === 'function' ? escapeHtml(apt.chief_complaint || '-') : (apt.chief_complaint || '-');
 
             var overlay = document.createElement('div');
             overlay.id = 'attendance-confirm-overlay';
             overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
 
             overlay.innerHTML = `
-                <div style="background:#1a1a1a;border-radius:16px;padding:24px;max-width:380px;width:100%;border:1px solid #333;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+                <div style="position:relative;background:#1a1a1a;border-radius:16px;padding:24px;max-width:380px;width:100%;border:1px solid #333;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+                    <button type="button" onclick="closeAttendanceConfirmationPopup()" aria-label="Tutup" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:1px solid #333;background:#111;color:#ddd;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;">
+                        <i class="fa fa-times"></i>
+                    </button>
                     <div style="text-align:center;margin-bottom:20px;">
                         <div style="width:56px;height:56px;background:rgba(255,193,7,0.15);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;">
                             <i class="fa fa-calendar-check-o" style="font-size:24px;color:#ffc107;"></i>
                         </div>
                         <h3 style="margin:0 0 6px;font-size:17px;color:#fff;font-weight:700;">Konfirmasi Kehadiran</h3>
-                        <p style="margin:0;font-size:12px;color:#aaa;">Diperlukan sebelum jam 05.00 WIB</p>
+                        <p style="margin:0;font-size:12px;color:#aaa;">Pilih datang atau batal agar slot tidak menggantung</p>
                     </div>
                     <div style="background:#111;border-radius:10px;padding:14px 16px;margin-bottom:20px;border:1px solid #2a2a2a;">
                         <div style="display:flex;gap:10px;margin-bottom:8px;">
@@ -2560,22 +2566,27 @@
                         </div>
                         <div style="display:flex;gap:10px;">
                             <i class="fa fa-stethoscope" style="color:#aaa;margin-top:2px;width:14px;flex-shrink:0;"></i>
-                            <span style="font-size:13px;color:#ddd;">${apt.chief_complaint}</span>
+                            <span style="font-size:13px;color:#ddd;">${chiefComplaint}</span>
                         </div>
                     </div>
-                    <p style="font-size:12px;color:#999;text-align:center;margin-bottom:20px;line-height:1.5;">Apakah Anda dapat hadir hari ini?<br>Jika tidak konfirmasi, slot akan hangus jam 05.00.</p>
+                    <p style="font-size:12px;color:#999;text-align:center;margin-bottom:20px;line-height:1.5;">Apakah Anda akan datang sesuai jadwal?<br>Jika belum memilih, popup ini akan muncul lagi saat aplikasi dibuka.</p>
                     <div style="display:flex;flex-direction:column;gap:10px;">
                         <button id="btn-confirm-hadir" onclick="submitAttendanceConfirmation(${apt.id},'confirm')" style="background:#28a745;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;">
-                            <i class="fa fa-check-circle"></i> Ya, Saya Hadir
+                            <i class="fa fa-check-circle"></i> Datang
                         </button>
                         <button id="btn-confirm-batal" onclick="submitAttendanceConfirmation(${apt.id},'cancel')" style="background:transparent;color:#e74c3c;border:1.5px solid #e74c3c;border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;">
-                            <i class="fa fa-times-circle"></i> Batalkan Jadwal
+                            <i class="fa fa-times-circle"></i> Batal
                         </button>
                     </div>
                 </div>
             `;
 
             document.body.appendChild(overlay);
+        }
+
+        function closeAttendanceConfirmationPopup() {
+            var overlay = document.getElementById('attendance-confirm-overlay');
+            if (overlay) overlay.remove();
         }
 
         async function submitAttendanceConfirmation(appointmentId, action) {
@@ -2615,6 +2626,7 @@
         }
 
         window.submitAttendanceConfirmation = submitAttendanceConfirmation;
+        window.closeAttendanceConfirmationPopup = closeAttendanceConfirmationPopup;
 
         function getInitials(name) {
             if (!name) return '--';
