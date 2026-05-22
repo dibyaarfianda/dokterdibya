@@ -348,7 +348,7 @@ async function ensureSundayConfirmationSchema() {
             `SELECT COLUMN_NAME FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE()
                AND TABLE_NAME = 'sunday_appointments'
-               AND COLUMN_NAME IN ('confirmation_token', 'confirmed_at')`
+               AND COLUMN_NAME IN ('confirmation_token', 'confirmed_at', 'confirmation_popup_enabled_at')`
         );
         const existing = cols.map(c => c.COLUMN_NAME);
 
@@ -366,6 +366,14 @@ async function ensureSundayConfirmationSchema() {
                  ADD COLUMN confirmed_at DATETIME NULL AFTER confirmation_token`
             );
             logger.info('[Scheduler] Added confirmed_at column to sunday_appointments');
+        }
+
+        if (!existing.includes('confirmation_popup_enabled_at')) {
+            await db.query(
+                `ALTER TABLE sunday_appointments
+                 ADD COLUMN confirmation_popup_enabled_at DATETIME NULL AFTER confirmed_at`
+            );
+            logger.info('[Scheduler] Added confirmation_popup_enabled_at column to sunday_appointments');
         }
 
         // Ensure pending_confirmation is a valid status value
@@ -386,77 +394,27 @@ async function ensureSundayConfirmationSchema() {
 }
 
 /**
- * Saturday 18:00 WIB — send WhatsApp confirmation link to all pending_confirmation bookings for tomorrow (Sunday)
+ * Saturday 18:00 WIB — enable the in-app confirmation popup for tomorrow's pending_confirmation bookings.
  */
 function startSundayConfirmationSender() {
     cron.schedule('0 18 * * 6', async () => {
         try {
-            logger.info('[Scheduler] Running Sunday confirmation sender (Saturday 18:00)...');
-            const notificationService = require('../utils/notification');
+            logger.info('[Scheduler] Enabling Sunday confirmation popup (Saturday 18:00)...');
 
-            const [appointments] = await db.query(
-                `SELECT sa.id, sa.patient_id, sa.patient_name, sa.patient_phone,
-                        sa.appointment_date, sa.session, sa.slot_number,
-                        sa.confirmation_token, sa.chief_complaint
-                 FROM sunday_appointments sa
-                 WHERE sa.status = 'pending_confirmation'
-                   AND sa.appointment_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY)`
+            const [result] = await db.query(
+                `UPDATE sunday_appointments
+                 SET confirmation_popup_enabled_at = COALESCE(confirmation_popup_enabled_at, NOW())
+                 WHERE status = 'pending_confirmation'
+                   AND appointment_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY)`
             );
 
-            if (appointments.length === 0) {
-                logger.info('[Scheduler] No pending_confirmation appointments today');
-                return;
-            }
-
-            const BASE_URL = process.env.BASE_URL || 'https://dokterdibya.com';
-            let sent = 0;
-
-            for (const apt of appointments) {
-                try {
-                    const confirmUrl = `${BASE_URL}/konfirmasi-hadir.html?token=${apt.confirmation_token}`;
-                    const sessionLabel = apt.session === 1 ? 'Pagi (09:00-11:30)' :
-                                        apt.session === 2 ? 'Siang (12:00-14:30)' :
-                                        apt.session === 3 ? 'Sore (15:00-17:30)' : `Sesi ${apt.session}`;
-
-                    const slotStart = { 1: [9,0], 2: [12,0], 3: [15,0] }[apt.session] || [9,0];
-                    const totalMins = slotStart[0]*60 + slotStart[1] + (apt.slot_number - 1) * 15;
-                    const slotTime = `${String(Math.floor(totalMins/60)).padStart(2,'0')}:${String(totalMins%60).padStart(2,'0')}`;
-
-                    const message = `Halo ${apt.patient_name},\n\nAnda memiliki jadwal praktek BESOK (Minggu):\n📅 Sesi: ${sessionLabel}\n🕐 Jam: ${slotTime} WIB\n📋 Keluhan: ${apt.chief_complaint}\n\nMohon konfirmasi kehadiran Anda SEBELUM jam 05.00 WIB hari Minggu:\n${confirmUrl}\n\nJika tidak dikonfirmasi, slot akan hangus otomatis jam 05.00.\n\nTerima kasih.`;
-
-                    if (apt.patient_phone) {
-                        await notificationService.sendWhatsAppAuto(apt.patient_phone, message);
-                    }
-
-                    // Create in-app notification
-                    try {
-                        const { createPatientNotification } = require('../routes/patient-notifications');
-                        await createPatientNotification({
-                            patient_id: apt.patient_id,
-                            type: 'appointment',
-                            title: 'Konfirmasi Kehadiran Diperlukan',
-                            message: `Jadwal Anda besok (${sessionLabel}, slot ${apt.slot_number}) menunggu konfirmasi. Konfirmasi sebelum jam 05.00 WIB hari Minggu agar nama Anda muncul di antrian.`,
-                            link: confirmUrl,
-                            icon: 'fa fa-calendar-check-o',
-                            icon_color: 'text-warning'
-                        });
-                    } catch (notifErr) {
-                        logger.warn('[Scheduler] Failed to create in-app notification:', notifErr.message);
-                    }
-
-                    sent++;
-                } catch (aptErr) {
-                    logger.error(`[Scheduler] Failed to send confirmation to ${apt.patient_name}:`, aptErr.message);
-                }
-            }
-
-            logger.info(`[Scheduler] Sunday confirmation sender completed: ${sent}/${appointments.length} sent`);
+            logger.info(`[Scheduler] Sunday confirmation popup enabled for ${result.affectedRows || 0} appointment(s)`);
         } catch (error) {
-            logger.error('[Scheduler] Error in Sunday confirmation sender:', error);
+            logger.error('[Scheduler] Error enabling Sunday confirmation popup:', error);
         }
     }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday confirmation sender started (runs Saturdays at 18:00 WIB)');
+    logger.info('[Scheduler] Sunday confirmation popup scheduler started (runs Saturdays at 18:00 WIB)');
 }
 
 /**
@@ -552,7 +510,7 @@ async function ensureAttendanceAnnouncementSeeded() {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [
                 TITLE,
-                'Mulai sekarang, dikarenakan sering terjadi blocking jadwal namun pasien tidak dapat hadir, setiap jadwal praktek hari Minggu memerlukan konfirmasi kehadiran di hari-H.\n\nCara konfirmasi:\n- Buka aplikasi, pilih "Ya, Saya Hadir" pada popup yang muncul\n- Atau klik link konfirmasi yang dikirim via WhatsApp\n\nBatas waktu konfirmasi: pukul 09.00 WIB.\n\nJika belum konfirmasi hingga pukul 09.00, slot akan hangus otomatis dan dibuka untuk pasien lain.\n\nTerima kasih atas pengertiannya.',
+                'Mulai sekarang, dikarenakan sering terjadi blocking jadwal namun pasien tidak dapat hadir, setiap jadwal praktek hari Minggu memerlukan konfirmasi kehadiran melalui popup di aplikasi.\n\nCara konfirmasi:\n- Buka aplikasi setelah popup konfirmasi aktif\n- Pilih "Datang" jika akan hadir\n- Pilih "Batal" jika tidak dapat hadir\n\nBatas waktu konfirmasi: pukul 05.00 WIB hari Minggu.\n\nJika belum konfirmasi hingga pukul 05.00, slot akan hangus otomatis dan dibuka untuk pasien lain.\n\nTerima kasih atas pengertiannya.',
                 'system',
                 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
                 'important',
