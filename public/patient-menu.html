@@ -2611,6 +2611,7 @@
                 if (overlay) overlay.remove();
 
                 if (data.success) {
+                    await checkActiveBooking();
                     if (typeof showSuccess === 'function') showSuccess(data.message);
                     else alert(data.message);
                 } else {
@@ -3352,9 +3353,14 @@
         // ==================== ACTIVE BOOKING ====================
         async function checkActiveBooking() {
             const token = getToken();
+            const quickStatus = document.getElementById('quick-status');
+            const statusCard = document.getElementById('booking-status-card');
+            if (quickStatus) quickStatus.style.display = 'none';
+            if (statusCard) statusCard.classList.remove('warning');
+
             try {
-                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending,pending_confirmation', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending,pending_confirmation&_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' }
                 });
                 if (response.status === 401) {
                     localStorage.removeItem('vps_auth_token');
@@ -3373,16 +3379,14 @@
                         month: 'long'
                     });
 
+                    if (statusCard) statusCard.classList.toggle('warning', booking.status === 'pending' || booking.status === 'pending_confirmation');
+
                     document.getElementById('booking-status-title').textContent =
                         booking.status === 'confirmed' ? 'Booking Dikonfirmasi' : 'Menunggu Konfirmasi';
                     document.getElementById('booking-status-desc').textContent =
                         `${dateStr} - ${booking.slot_time || '-'}`;
 
-                    if (booking.status === 'pending' || booking.status === 'pending_confirmation') {
-                        document.getElementById('booking-status-card').classList.add('warning');
-                    }
-
-                    document.getElementById('quick-status').style.display = 'block';
+                    if (quickStatus) quickStatus.style.display = 'block';
                 }
             } catch (error) {
                 // Silently fail
