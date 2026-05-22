@@ -219,6 +219,7 @@ function getStatusMeta(status) {
     const normalized = (status || '').toLowerCase();
     const map = {
         pending: { label: 'Pending', className: 'badge-warning' },
+        pending_confirmation: { label: 'Menunggu Konfirmasi', className: 'badge-warning' },
         confirmed: { label: 'Confirmed', className: 'badge-success' },
         completed: { label: 'Completed', className: 'badge-secondary' },
         cancelled: { label: 'Cancelled', className: 'badge-danger' },
@@ -442,7 +443,7 @@ function filterAndSortAppointments(appointments) {
     return appointments
         .filter(apt => {
             const status = (apt.status || '').toLowerCase();
-            return status === 'pending' || status === 'confirmed' || status === 'completed';
+            return status === 'pending' || status === 'pending_confirmation' || status === 'confirmed' || status === 'completed';
         })
         .sort((a, b) => {
             const sessionDiff = (a.session || 0) - (b.session || 0);
