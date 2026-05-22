@@ -1055,7 +1055,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
             appointment_date: appointment.appointment_date
         });
 
-        res.json({ message: 'Janji temu berhasil dibatalkan', reason: cancellationReason });
+        res.json({ success: true, message: 'Janji temu berhasil dibatalkan', reason: cancellationReason });
         
     } catch (error) {
         console.error('Error cancelling appointment:', error);

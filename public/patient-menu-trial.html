@@ -1491,6 +1491,26 @@
             color: var(--text-muted);
         }
 
+        .booking-cancel-btn {
+            border: 1px solid rgba(220, 38, 38, 0.38);
+            background: rgba(220, 38, 38, 0.06);
+            color: #dc2626;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .booking-cancel-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
         /* ========== BIRTH CONGRATULATIONS CARD ========== */
         .birth-congrats-card {
             border: 1px solid var(--line-soft);
@@ -4778,6 +4798,9 @@
                         <h4 id="booking-status-title">Booking Aktif</h4>
                         <p id="booking-status-desc">-</p>
                     </div>
+                    <button type="button" class="booking-cancel-btn" id="booking-cancel-btn" onclick="cancelActiveBooking()">
+                        <i class="fa-solid fa-circle-xmark"></i> Batalkan
+                    </button>
                 </div>
             </div>
 
@@ -6213,8 +6236,14 @@
             const token = getToken();
             const quickStatus = document.getElementById('quick-status');
             const statusCard = document.getElementById('booking-status-card');
+            const cancelButton = document.getElementById('booking-cancel-btn');
             if (quickStatus) quickStatus.style.display = 'none';
             if (statusCard) statusCard.classList.remove('warning');
+            if (cancelButton) {
+                cancelButton.style.display = 'none';
+                cancelButton.disabled = false;
+                cancelButton.dataset.appointmentId = '';
+            }
 
             try {
                 const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending,pending_confirmation&_t=' + Date.now(), {
@@ -6238,6 +6267,10 @@
                     });
 
                     if (statusCard) statusCard.classList.toggle('warning', booking.status === 'pending' || booking.status === 'pending_confirmation');
+                    if (cancelButton && ['confirmed', 'pending', 'pending_confirmation'].includes(booking.status)) {
+                        cancelButton.dataset.appointmentId = String(booking.id);
+                        cancelButton.style.display = 'inline-flex';
+                    }
 
                     document.getElementById('booking-status-title').textContent =
                         booking.status === 'confirmed' ? 'Booking Dikonfirmasi' : 'Menunggu Konfirmasi';
@@ -6250,6 +6283,49 @@
                 // Silently fail
             }
         }
+
+        async function cancelActiveBooking() {
+            const cancelButton = document.getElementById('booking-cancel-btn');
+            const appointmentId = cancelButton ? cancelButton.dataset.appointmentId : '';
+            if (!appointmentId) return;
+
+            const reasonInput = window.prompt('Tulis alasan pembatalan janji temu (minimal 10 karakter):', 'Tidak dapat hadir sesuai jadwal');
+            if (reasonInput === null) return;
+
+            const reason = reasonInput.trim();
+            if (reason.length < 10) {
+                alert('Alasan pembatalan minimal 10 karakter');
+                return;
+            }
+
+            try {
+                const token = getToken();
+                if (cancelButton) cancelButton.disabled = true;
+
+                const response = await fetch('/api/sunday-appointments/' + appointmentId + '/cancel', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    body: JSON.stringify({ reason: reason })
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal membatalkan janji temu');
+                }
+
+                await checkActiveBooking();
+                alert(data.message || 'Janji temu berhasil dibatalkan');
+            } catch (error) {
+                if (cancelButton) cancelButton.disabled = false;
+                alert(error.message || 'Gagal membatalkan janji temu');
+            }
+        }
+
+        window.cancelActiveBooking = cancelActiveBooking;
 
         // ==================== BOTTOM SHEET MENU DATA ====================
         // FA6 icon mapping applied to all menu items
