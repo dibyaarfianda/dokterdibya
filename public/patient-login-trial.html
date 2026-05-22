@@ -483,14 +483,14 @@
         let pendingGoogleAction = 'login';
         let hasAutoTriggeredGoogle = false;
 
-        try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch(e) {}
+        try { sessionStorage.removeItem('patient_portal_theme_mode'); } catch(e) {}
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
-                window.location.href = '/patient-menu-trial.html';
+                window.location.href = '/patient-menu.html';
                 return;
             }
 
@@ -528,12 +528,12 @@
         // ==================== POST-LOGIN REDIRECT ====================
         function getPostLoginUrl(data) {
             if (data.needs_profile_completion) {
-                return '/complete-profile.html?theme=newdesign';
+                return '/complete-profile.html';
             }
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
-                return '/patient-intake.html?theme=newdesign';
+                return '/patient-intake.html';
             }
-            return '/patient-menu-trial.html';
+            return '/patient-menu.html';
         }
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
