@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Ruang Membaca - dokterDIBYA</title>
+    <title>Ruang Membaca - SISIwanita</title>
 
     <!-- Fonts (Inter + Plus Jakarta Sans + Crimson Text) come from trial theme CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -403,7 +403,7 @@
         <div class="topbar-trial-inner">
             <div class="brand">
                 <div>
-                    <div class="brand-title">dokter<span>DIBYA</span></div>
+                    <div class="brand-title">SISI<span>wanita</span></div>
                     <div class="brand-sub">Portal Privat Kandungan Anda</div>
                 </div>
             </div>
@@ -485,7 +485,7 @@
                 <div class="modal-meta">
                     <div class="modal-meta-item">
                         <i class="fa-solid fa-book"></i>
-                        <span id="modalSource">dokterDIBYA</span>
+                        <span id="modalSource">SISIwanita</span>
                     </div>
                     <div class="modal-meta-item">
                         <i class="fa-solid fa-calendar"></i>
@@ -512,7 +512,7 @@
             <div class="footer-inner">
                 <div class="footer-hero">
                     <div class="footer-copy">
-                        <span class="footer-newsletter-kicker">Portal Pasien dokterDIBYA</span>
+                        <span class="footer-newsletter-kicker">Portal Pasien SISIwanita</span>
                         <h2>Kabar dari Dokter.</h2>
                         <p>
                             Kami berbagi catatan berkala seputar kehamilan, kesehatan perempuan,
@@ -527,7 +527,7 @@
                         <button class="footer-subscribe-button" type="submit">Berlangganan</button>
                     </form>
                     <p class="footer-policy">
-                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi dokterDIBYA.
+                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi SISIwanita.
                     </p>
                 </div>
 
@@ -556,7 +556,7 @@
                 </div>
 
                 <div class="footer-bottom">
-                    <span>&copy; 2026 dokterDIBYA</span>
+                    <span>&copy; 2026 SISIwanita</span>
                     <span>Portal Pasien</span>
                     <span>Seluruh hak cipta dilindungi</span>
                 </div>
@@ -639,7 +639,7 @@
 
             container.innerHTML = articles.map(article => {
                 const dateStr = formatDate(article.created_at);
-                const source = article.source || 'dokterDIBYA';
+                const source = article.source || 'SISIwanita';
                 const category = article.category || 'Kehamilan';
 
                 return `
@@ -700,7 +700,7 @@
 
                 document.getElementById('modalCategory').textContent = article.category || 'Kehamilan';
                 document.getElementById('modalTitle').textContent = article.title;
-                document.getElementById('modalSource').textContent = article.source || 'dokterDIBYA';
+                document.getElementById('modalSource').textContent = article.source || 'SISIwanita';
                 document.getElementById('modalDate').textContent = dateStr;
                 // Parse markdown content
                 const content = article.content || 'Konten tidak tersedia';
