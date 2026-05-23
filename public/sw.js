@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zd'; // 2026-05-24zd - Refresh smaller home bottom navigation
+const CACHE_VERSION = '20260524ze'; // 2026-05-24ze - Refresh home bottom nav tap-only active background
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
