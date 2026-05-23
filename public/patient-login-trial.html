@@ -289,7 +289,7 @@
         }
     </style>
 
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <script src="/scripts/patient-theme-trial.js?v=20260524q"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524o">
 </head>
 <body class="trial-themed">
@@ -302,12 +302,14 @@
         <p>Memproses login...</p>
     </div>
 
-    <!-- Minimal topbar: brand only -->
-    <header class="mini-topbar">
-        <div>
-            <div class="brand-title">SISI<span style="font-weight:400">wanita</span></div>
-            <div class="brand-sub">Portal Privat Kandungan Anda</div>
-        </div>
+    <header class="trial-unified-header">
+        <a class="trial-unified-brand" href="/patient-menu-simple-trial.html" aria-label="Beranda SISIwanita">
+            <div class="brand-title">SISI<span>wanita</span></div>
+            <div class="brand-sub">Masuk</div>
+        </a>
+        <button type="button" class="trial-unified-back" onclick="window.location.href='/patient-menu-simple-trial.html'" aria-label="Kembali ke portal">
+            <i class="fa-solid fa-arrow-left"></i><span>Portal</span>
+        </button>
     </header>
 
     <!-- Centered login -->

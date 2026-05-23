@@ -61,7 +61,7 @@
 
     var active   = get() === MODE;
     var pathname = window.location.pathname;
-    var isTrialPage = !!REVERSE[pathname];
+    var isTrialPage = !!REVERSE[pathname] || /-trial\.html$/i.test(pathname);
 
     if (isTrialPage && !forceOld) {
         active = true;
@@ -144,7 +144,70 @@
         } catch (error) {}
     }
 
+    function getCurrentPageLabel() {
+        var title = document.title || '';
+        return title
+            .replace(/\s*-\s*SISIwanita\s*$/i, '')
+            .replace(/\s*-\s*dokterDIBYA\s*$/i, '')
+            .trim() || 'Portal Pasien';
+    }
+
+    function installUnifiedTrialHeader() {
+        if (!isTrialPage || window.__patientTrialHeaderInstalled) return;
+        if (pathname === TRIAL_HOME || pathname === '/patient-menu-trial.html') return;
+        window.__patientTrialHeaderInstalled = true;
+
+        function run() {
+            if (!document.body || document.querySelector('.trial-unified-header')) return;
+
+            var existingHeader = document.querySelector('.topbar, .mini-topbar, .visit-topbar, .topbar-trial');
+
+            var mount = document.querySelector('.app, .visit-app, .feedback-container, .content, .main-content, .page-wrap, .screen, .app-wrapper, .page-body, .fc-container') || document.body;
+            var header = document.createElement('header');
+            header.className = 'trial-unified-header';
+
+            var brand = document.createElement('a');
+            brand.className = 'trial-unified-brand';
+            brand.href = trialHomeUrl();
+            brand.setAttribute('aria-label', 'Beranda SISIwanita');
+
+            var brandTitle = document.createElement('div');
+            brandTitle.className = 'brand-title';
+            brandTitle.innerHTML = 'SISI<span>wanita</span>';
+
+            var brandSub = document.createElement('div');
+            brandSub.className = 'brand-sub';
+            brandSub.textContent = getCurrentPageLabel();
+
+            brand.appendChild(brandTitle);
+            brand.appendChild(brandSub);
+
+            var back = document.createElement('button');
+            back.type = 'button';
+            back.className = 'trial-unified-back';
+            back.setAttribute('aria-label', 'Kembali ke portal');
+            back.innerHTML = '<i class="fa-solid fa-arrow-left"></i><span>Portal</span>';
+            back.addEventListener('click', function () {
+                window.goPatientTrialBack();
+            });
+
+            header.appendChild(brand);
+            header.appendChild(back);
+
+            mount.insertBefore(header, mount.firstChild || null);
+            document.body.classList.add('trial-header-normalized');
+            if (existingHeader) existingHeader.classList.add('trial-legacy-header');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', run, { once: true });
+        } else {
+            run();
+        }
+    }
+
     installTrialBrandNormalizer();
+    installUnifiedTrialHeader();
 
     // ---- Redirect logic ----
     // Strip theme param, keep the rest (token, etc.)
