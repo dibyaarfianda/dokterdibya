@@ -118,13 +118,13 @@
 
     function updateDashboard(data) {
         var theme = (data && data.theme) || getFallbackData().theme;
-        var name = normalizeText(theme.corner_name, 'My Corner');
+        var name = normalizeText(theme.corner_name, 'Ruang Saya');
         var note = normalizeText(theme.note, DEFAULT_NOTE);
         var cornerName = document.getElementById('corner-name');
         var cornerTitle = document.getElementById('corner-card-title');
         var cornerDesc = document.getElementById('corner-desc');
         if (cornerName) cornerName.textContent = name;
-        if (cornerTitle) cornerTitle.textContent = name.length > 14 ? 'My Corner' : name;
+        if (cornerTitle) cornerTitle.textContent = name.length > 14 ? 'Ruang' : name;
         if (cornerDesc) cornerDesc.textContent = note;
         document.documentElement.style.setProperty('--pmc-accent', theme.accent || '#5c7f72');
     }
@@ -176,9 +176,9 @@
             state.data = mergeData(data);
             updateDashboard(state.data);
             renderPanel();
-            if (showMessage !== false && window.showToast) window.showToast('My Corner tersimpan');
+            if (showMessage !== false && window.showToast) window.showToast('Ruang tersimpan');
         } catch (error) {
-            if (window.showToast) window.showToast(error.message || 'Gagal menyimpan My Corner');
+            if (window.showToast) window.showToast(error.message || 'Gagal menyimpan Ruang');
         } finally {
             state.saving = false;
         }
@@ -189,7 +189,7 @@
         if (root) return root;
         root = document.createElement('div');
         root.id = 'pmc-root';
-        root.innerHTML = '<div class="pmc-backdrop" data-pmc-close="1"></div><section class="pmc-shell" role="dialog" aria-modal="true" aria-label="My Corner"><div id="pmc-panel"></div></section>';
+        root.innerHTML = '<div class="pmc-backdrop" data-pmc-close="1"></div><section class="pmc-shell" role="dialog" aria-modal="true" aria-label="Ruang Saya"><div id="pmc-panel"></div></section>';
         document.body.appendChild(root);
         root.addEventListener('click', function (event) {
             if (event.target && event.target.getAttribute('data-pmc-close') === '1') closeMyCorner();
@@ -238,21 +238,21 @@
         var publicWidgets = Array.isArray(settings.public_widgets) ? settings.public_widgets : [];
 
         panel.innerHTML = '<header class="pmc-header">' +
-            '<div><div class="pmc-kicker">Mobile My Corner</div><h2 class="pmc-title">' + escapeHtml(theme.corner_name || 'My Corner') + '</h2></div>' +
+            '<div><div class="pmc-kicker">Ruang Mobile</div><h2 class="pmc-title">' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h2></div>' +
             '<button class="pmc-close" onclick="PatientMyCorner.close()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>' +
             '</header>' +
             '<div class="pmc-content">' +
-                '<section class="pmc-hero"><div class="pmc-hero-main"><h1 class="pmc-hero-name">' + escapeHtml(theme.corner_name || 'My Corner') + '</h1><p class="pmc-hero-note">' + escapeHtml(theme.note || DEFAULT_NOTE) + '</p></div></section>' +
+                '<section class="pmc-hero"><div class="pmc-hero-main"><h1 class="pmc-hero-name">' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h1><p class="pmc-hero-note">' + escapeHtml(theme.note || DEFAULT_NOTE) + '</p></div></section>' +
                 '<div class="pmc-section-title">Personalisasi</div>' +
                 '<section class="pmc-card">' +
-                    '<div class="pmc-field"><label for="pmc-name">Nama ruang</label><input id="pmc-name" maxlength="32" value="' + escapeHtml(theme.corner_name || 'My Corner') + '"></div>' +
+                    '<div class="pmc-field"><label for="pmc-name">Nama ruang</label><input id="pmc-name" maxlength="32" value="' + escapeHtml(theme.corner_name || 'Ruang Saya') + '"></div>' +
                     '<div class="pmc-field"><label for="pmc-note">Catatan pribadi</label><textarea id="pmc-note" maxlength="500">' + escapeHtml(theme.note || DEFAULT_NOTE) + '</textarea></div>' +
                     '<div class="pmc-field"><label for="pmc-accent">Accent color</label><input id="pmc-accent" type="color" value="' + escapeHtml(theme.accent || '#5c7f72') + '"></div>' +
                 '</section>' +
-                '<div class="pmc-section-title">Kunjungi Corner</div>' +
+                '<div class="pmc-section-title">Kunjungi Ruang</div>' +
                 '<section class="pmc-card">' +
                     '<div class="pmc-card-row"><div><h3 class="pmc-card-title">Izinkan dikunjungi</h3><p class="pmc-card-copy">Pasien lain hanya melihat versi publik yang Anda pilih.</p></div>' +
-                    '<button class="pmc-switch ' + (publicEnabled ? 'is-on' : '') + '" onclick="PatientMyCorner.togglePublic()" aria-label="Toggle public corner"></button></div>' +
+                    '<button class="pmc-switch ' + (publicEnabled ? 'is-on' : '') + '" onclick="PatientMyCorner.togglePublic()" aria-label="Toggle ruang publik"></button></div>' +
                     '<div class="pmc-field"><label for="pmc-public-name">Nama publik</label><input id="pmc-public-name" maxlength="32" value="' + escapeHtml(publicProfile.display_name || getPatientFirstName()) + '"></div>' +
                     '<div class="pmc-field"><label for="pmc-public-intro">Intro publik</label><textarea id="pmc-public-intro" maxlength="220">' + escapeHtml(publicProfile.intro || '') + '</textarea></div>' +
                     '<div class="pmc-chip-row">' + ['intro', 'favorites', 'journey-note', 'public-links'].map(function (id) {
@@ -277,7 +277,7 @@
         var accent = document.getElementById('pmc-accent');
         var publicName = document.getElementById('pmc-public-name');
         var publicIntro = document.getElementById('pmc-public-intro');
-        if (name) state.data.theme.corner_name = normalizeText(name.value, 'My Corner').slice(0, 32);
+        if (name) state.data.theme.corner_name = normalizeText(name.value, 'Ruang Saya').slice(0, 32);
         if (note) state.data.theme.note = String(note.value || DEFAULT_NOTE).slice(0, 500);
         if (accent && /^#[0-9a-fA-F]{6}$/.test(accent.value)) state.data.theme.accent = accent.value;
         if (!state.data.public_settings.public_profile) state.data.public_settings.public_profile = {};
@@ -327,7 +327,7 @@
                 state.data = mergeData(data);
                 updateDashboard(state.data);
                 renderPanel();
-                if (window.showToast) window.showToast('My Corner direset');
+                if (window.showToast) window.showToast('Ruang direset');
             } catch (error) {
                 if (window.showToast) window.showToast(error.message || 'Gagal reset');
             }
@@ -362,7 +362,7 @@
                 await navigator.clipboard.writeText(url);
                 if (window.showToast) window.showToast('Link disalin');
             } catch (_error) {
-                window.prompt('Copy link My Corner', url);
+                window.prompt('Copy link Ruang', url);
             }
         },
         previewPublic: function () {

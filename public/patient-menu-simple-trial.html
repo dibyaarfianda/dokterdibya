@@ -712,8 +712,8 @@
                         <span><h3>Tanya Dokter</h3><p>Privat & aman</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openMyCorner()">
-                        <span class="icon corner-color"><i class="fa-solid fa-sparkles"></i></span>
-                        <span><h3 id="corner-card-title">My Corner</h3><p>Catatan pribadi</p></span>
+                        <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
+                        <span><h3 id="corner-card-title">Ruang Saya</h3><p>Catatan pribadi</p></span>
                     </button>
                 </div>
             </section>
@@ -722,7 +722,7 @@
                 <div class="corner-panel">
                     <div>
                         <div class="section-kicker">Ruang Personal</div>
-                        <div class="corner-name" id="corner-name">My Corner</div>
+                        <div class="corner-name" id="corner-name">Ruang Saya</div>
                         <p class="corner-desc" id="corner-desc">Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.</p>
                     </div>
                     <button class="primary-action soundable" onclick="openMyCorner()"><i class="fa-solid fa-pen"></i> Atur</button>
@@ -779,7 +779,7 @@
             <button class="nav-item soundable" onclick="openSheet('dokumen')"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
             <button class="nav-item soundable" onclick="openSheet('aplikasi')"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
             <button class="nav-item soundable" onclick="openSheet('jadwal')"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
-            <button class="nav-item soundable" onclick="openMyCorner()"><i class="fa-solid fa-sparkles"></i><span>Corner</span></button>
+            <button class="nav-item soundable" onclick="openMyCorner()"><i class="fa-solid fa-door-open"></i><span>Ruang</span></button>
         </div>
     </nav>
 
@@ -874,14 +874,14 @@
         }, true);
 
         function applyMyCorner() {
-            const fallback = currentProfile && currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'My Corner';
+            const fallback = currentProfile && currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'Ruang Saya';
             const name = localStorage.getItem(CORNER_NAME_KEY) || fallback;
             const note = localStorage.getItem(CORNER_NOTE_KEY) || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
             const cornerName = document.getElementById('corner-name');
             const cornerCardTitle = document.getElementById('corner-card-title');
             const cornerDesc = document.getElementById('corner-desc');
             if (cornerName) cornerName.textContent = name;
-            if (cornerCardTitle) cornerCardTitle.textContent = name.length > 14 ? 'My Corner' : name;
+            if (cornerCardTitle) cornerCardTitle.textContent = name.length > 14 ? 'Ruang' : name;
             if (cornerDesc) cornerDesc.textContent = note;
         }
 
@@ -889,14 +889,14 @@
             if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
                 return window.PatientMyCorner.open();
             }
-            showToast('My Corner sedang dimuat');
+            showToast('Ruang sedang dimuat');
         }
 
         function saveMyCorner() {
             if (window.PatientMyCorner && typeof window.PatientMyCorner.save === 'function') {
                 return window.PatientMyCorner.save();
             }
-            showToast('My Corner sedang dimuat');
+            showToast('Ruang sedang dimuat');
         }
 
         function openModal(id) {
@@ -1206,6 +1206,6 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260524f"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260524g"></script>
 </body>
 </html>
