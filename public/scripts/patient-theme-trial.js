@@ -13,6 +13,7 @@
 
     var KEY  = 'patient_portal_theme_mode';
     var MODE = 'newdesign';
+    var TRIAL_HOME = '/patient-menu-trial.html';
 
     // ---- Centralized route map (old ↔ trial) ----
     // Add entries here as new trial pages are created.
@@ -55,11 +56,17 @@
     var fromUrl   = params.get('theme');
     var forceOld  = fromUrl === 'off' || fromUrl === 'old' || fromUrl === 'default';
 
-    if (fromUrl === MODE)                                         set(MODE);
+    if (fromUrl === MODE || fromUrl === 'trial')                  set(MODE);
     else if (forceOld) set(null);
 
     var active   = get() === MODE;
     var pathname = window.location.pathname;
+    var isTrialPage = !!REVERSE[pathname];
+
+    if (isTrialPage && !forceOld) {
+        active = true;
+        set(MODE);
+    }
 
     // ---- Redirect logic ----
     // Strip theme param, keep the rest (token, etc.)
@@ -82,11 +89,56 @@
         return;
     }
 
+    function trialHomeUrl() {
+        return TRIAL_HOME;
+    }
+
+    window.goPatientTrialBack = function () {
+        window.location.href = trialHomeUrl();
+    };
+
+    if (isTrialPage && pathname !== TRIAL_HOME && !window.__patientTrialBackGuardInstalled) {
+        window.__patientTrialBackGuardInstalled = true;
+        try {
+            window.history.pushState({ patientTrialBackGuard: true }, document.title, window.location.href);
+            window.addEventListener('popstate', function () {
+                window.goPatientTrialBack();
+            });
+        } catch (error) {}
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!isTrialPage) return;
+
+        var target = e.target && e.target.closest
+            ? e.target.closest('a[href], button[onclick], .back-btn, .back-link, .topbar-trial-back, .btn-back, .visit-back')
+            : null;
+        if (!target) return;
+
+        var href = target.getAttribute('href') || '';
+        var onclick = target.getAttribute('onclick') || '';
+        var label = (target.textContent || target.getAttribute('aria-label') || '').toLowerCase();
+        var isBackTarget =
+            href === '/patient-menu.html' ||
+            href === '/patient-menu-trial.html' ||
+            href.indexOf('javascript:history.back') === 0 ||
+            onclick.indexOf('history.back') !== -1 ||
+            onclick.indexOf("'/patient-menu-trial.html'") !== -1 ||
+            label.indexOf('kembali') !== -1 ||
+            label.indexOf('portal') !== -1;
+
+        if (!isBackTarget) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        window.goPatientTrialBack();
+    }, true);
+
     // Trial is OFF and we're on a normal page → nothing to do
     if (!active) return;
 
     // ---- We are in trial mode on a page (trial or old-without-counterpart) ----
-    var isTrialPage = !!REVERSE[pathname];
 
     // For old pages that have NO trial counterpart: apply lightweight CSS
     if (!isTrialPage) {
@@ -122,6 +174,11 @@
         try {
             var u = new URL(link.href, window.location.origin);
             if (u.origin !== window.location.origin) return;
+
+            if (u.pathname === '/patient-menu.html') {
+                link.href = trialHomeUrl();
+                return;
+            }
 
             // If the link points to an old page that has a trial counterpart → rewrite
             if (TRIAL_ROUTES[u.pathname]) {
