@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zv'; // 2026-05-24zv - Refresh patient home reveal whitelist for reduced motion
+const CACHE_VERSION = '20260524zw'; // 2026-05-24zw - Refresh patient home reveal duration to 1.5s
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
