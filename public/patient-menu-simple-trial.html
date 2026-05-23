@@ -40,7 +40,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html { background: var(--bg); scroll-behavior: smooth; }
+        html { background: var(--bg); scroll-behavior: smooth; overscroll-behavior: contain; }
         body {
             min-height: 100vh;
             background:
@@ -51,6 +51,7 @@
             -webkit-font-smoothing: antialiased;
             padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(var(--nav-height) + env(safe-area-inset-bottom, 0) + 18px) env(safe-area-inset-left, 0);
             overflow-x: hidden;
+            touch-action: pan-y;
         }
 
         button, a { font-family: inherit; }
@@ -1209,26 +1210,15 @@
 
         function scrollTopHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-        function getNavigationType() {
-            try {
-                const entries = performance.getEntriesByType && performance.getEntriesByType('navigation');
-                if (entries && entries.length && entries[0].type) return entries[0].type;
-            } catch (error) {}
-            return 'navigate';
-        }
-
-        function shouldResetScrollOnEntry() {
-            return getNavigationType() !== 'back_forward';
-        }
-
         function resetScrollToTop() {
-            if (!shouldResetScrollOnEntry()) return;
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
             window.scrollTo(0, 0);
             document.documentElement.scrollTop = 0;
             document.body.scrollTop = 0;
             requestAnimationFrame(function() {
-                window.scrollTo(0, 0);
+                requestAnimationFrame(function() {
+                    window.scrollTo(0, 0);
+                });
             });
         }
 
@@ -1280,9 +1270,12 @@
         window.scrollTopHome = scrollTopHome;
         window.showToast = showToast;
 
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        window.scrollTo(0, 0);
+
         document.addEventListener('DOMContentLoaded', init);
         window.addEventListener('pageshow', function(event) {
-            if (!event.persisted) resetScrollToTop();
+            resetScrollToTop();
             if (event.persisted) {
                 loadNotificationCount();
                 loadUnreadDocCounts();
