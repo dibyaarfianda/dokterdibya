@@ -394,34 +394,42 @@ async function ensureSundayConfirmationSchema() {
 }
 
 /**
- * Saturday 18:00 WIB — enable the in-app confirmation popup for tomorrow's pending_confirmation bookings.
+ * Saturday 18:00 WIB and Sunday 07:00 WIB — enable the in-app confirmation popup.
  */
 function startSundayConfirmationSender() {
-    cron.schedule('0 18 * * 6', async () => {
+    async function enableSundayConfirmationPopup(targetDateSql, scheduleLabel) {
         try {
-            logger.info('[Scheduler] Enabling Sunday confirmation popup (Saturday 18:00)...');
+            logger.info(`[Scheduler] Enabling Sunday confirmation popup (${scheduleLabel})...`);
 
             const [result] = await db.query(
                 `UPDATE sunday_appointments
                  SET confirmation_popup_enabled_at = COALESCE(confirmation_popup_enabled_at, NOW())
                  WHERE status = 'pending_confirmation'
-                   AND appointment_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY)`
+                   AND appointment_date = ${targetDateSql}`
             );
 
             logger.info(`[Scheduler] Sunday confirmation popup enabled for ${result.affectedRows || 0} appointment(s)`);
         } catch (error) {
             logger.error('[Scheduler] Error enabling Sunday confirmation popup:', error);
         }
+    }
+
+    cron.schedule('0 18 * * 6', async () => {
+        await enableSundayConfirmationPopup('DATE_ADD(CURDATE(), INTERVAL 1 DAY)', 'Saturday 18:00');
     }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday confirmation popup scheduler started (runs Saturdays at 18:00 WIB)');
+    cron.schedule('0 7 * * 0', async () => {
+        await enableSundayConfirmationPopup('CURDATE()', 'Sunday 07:00');
+    }, { timezone: 'Asia/Jakarta' });
+
+    logger.info('[Scheduler] Sunday confirmation popup scheduler started (runs Saturdays at 18:00 and Sundays at 07:00 WIB)');
 }
 
 /**
- * Sunday 05:00 WIB — expire all unconfirmed pending_confirmation appointments
+ * Sunday 09:00 WIB — expire all unconfirmed pending_confirmation appointments
  */
 function startSundayExpiryJob() {
-    cron.schedule('0 5 * * 0', async () => {
+    cron.schedule('0 9 * * 0', async () => {
         try {
             logger.info('[Scheduler] Running Sunday expiry job...');
 
@@ -442,7 +450,7 @@ function startSundayExpiryJob() {
                 `UPDATE sunday_appointments
                  SET status = 'cancelled',
                      cancelled_by = 'system',
-                     cancellation_reason = 'Tidak konfirmasi kehadiran sebelum jam 05.00 WIB',
+                     cancellation_reason = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB',
                      cancelled_at = NOW()
                  WHERE id IN (?)`,
                 [ids]
@@ -460,7 +468,7 @@ function startSundayExpiryJob() {
                             patient_id: apt.patient_id,
                             type: 'appointment',
                             title: 'Jadwal Hangus — Tidak Ada Konfirmasi',
-                            message: `Slot Anda (${sessionLabel}, nomor ${apt.slot_number}) hangus karena tidak ada konfirmasi kehadiran sebelum jam 05.00 WIB. Slot telah dibuka kembali untuk pasien lain.`,
+                            message: `Slot Anda (${sessionLabel}, nomor ${apt.slot_number}) hangus karena tidak ada konfirmasi kehadiran sebelum jam 09.00 WIB. Slot telah dibuka kembali untuk pasien lain.`,
                             link: '/riwayat-kunjungan.html',
                             icon: 'fa fa-times-circle',
                             icon_color: 'text-danger'
@@ -490,7 +498,7 @@ function startSundayExpiryJob() {
         }
     }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday expiry job started (runs Sundays at 05:00 WIB)');
+    logger.info('[Scheduler] Sunday expiry job started (runs Sundays at 09:00 WIB)');
 }
 
 /**
@@ -510,7 +518,7 @@ async function ensureAttendanceAnnouncementSeeded() {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [
                 TITLE,
-                'Mulai sekarang, dikarenakan sering terjadi blocking jadwal namun pasien tidak dapat hadir, setiap jadwal praktek hari Minggu memerlukan konfirmasi kehadiran melalui popup di aplikasi.\n\nCara konfirmasi:\n- Buka aplikasi setelah popup konfirmasi aktif\n- Pilih "Datang" jika akan hadir\n- Pilih "Batal" jika tidak dapat hadir\n\nBatas waktu konfirmasi: pukul 05.00 WIB hari Minggu.\n\nJika belum konfirmasi hingga pukul 05.00, slot akan hangus otomatis dan dibuka untuk pasien lain.\n\nTerima kasih atas pengertiannya.',
+                'Mulai sekarang, dikarenakan sering terjadi blocking jadwal namun pasien tidak dapat hadir, setiap jadwal praktek hari Minggu memerlukan konfirmasi kehadiran melalui popup di aplikasi.\n\nCara konfirmasi:\n- Buka aplikasi setelah popup konfirmasi aktif\n- Popup diaktifkan Sabtu pukul 18.00 WIB dan diperbarui lagi Minggu pukul 07.00 WIB\n- Pilih "Datang" jika akan hadir\n- Pilih "Batal" jika tidak dapat hadir\n\nBatas waktu konfirmasi: pukul 09.00 WIB hari Minggu.\n\nJika belum konfirmasi hingga pukul 09.00, slot akan hangus otomatis dan dibuka untuk pasien lain.\n\nTerima kasih atas pengertiannya.',
                 'system',
                 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
                 'important',
