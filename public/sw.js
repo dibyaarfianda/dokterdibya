@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zu'; // 2026-05-24zu - Refresh patient home delayed section fade-in on first scroll
+const CACHE_VERSION = '20260524zv'; // 2026-05-24zv - Refresh patient home reveal whitelist for reduced motion
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
