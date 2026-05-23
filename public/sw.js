@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524d'; // 2026-05-24d - Add mobile My Corner workdesk trial
+const CACHE_VERSION = '20260524e'; // 2026-05-24e - Fix mobile My Corner panel scroll
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
