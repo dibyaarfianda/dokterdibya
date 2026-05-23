@@ -1,8 +1,7 @@
 /* ==========================================================================
-   Patient Portal — Shared Trial Theme
-   Consumed by all pages linked from patient-menu-trial.html so the portal
-   speaks one visual language (Inter + Plus Jakarta Sans + monochrome palette).
-   Reference: public/patient-menu-trial.html
+    Patient Portal — Shared Trial Theme
+    Consumed by all trial pages so the portal speaks one visual language.
+    Reference: public/patient-menu-simple-trial.html
    ========================================================================== */
 
 /* Fonts — pages should also include this <link> themselves for preload hints,
@@ -11,6 +10,22 @@
 
 /* ========== TOKENS ========== */
 :root {
+    --bg: #f7f7f4;
+    --surface: rgba(255, 255, 255, 0.88);
+    --surface-solid: #ffffff;
+    --surface-muted: #f0f0ec;
+    --ink: #111111;
+    --ink-soft: #3f3f3f;
+    --muted: #717171;
+    --line: rgba(17, 17, 17, 0.09);
+    --line-strong: rgba(17, 17, 17, 0.16);
+    --green: #5c7f72;
+    --green-soft: rgba(92, 127, 114, 0.13);
+    --blue: #4a6f9d;
+    --rose: #b35f7b;
+    --amber: #b7792e;
+    --purple: #7357a8;
+    --shadow: 0 14px 38px rgba(17, 17, 17, 0.08);
     --bg-page: #f7f7f4;
     --bg-secondary: #f0f0ec;
     --bg-surface: rgba(255, 255, 255, 0.88);
@@ -31,9 +46,10 @@
     --font-serif: 'Crimson Text', Georgia, serif;
     --shadow-soft: 0 1px 2px rgba(17, 17, 17, 0.05);
     --shadow-hard: 0 14px 38px rgba(17, 17, 17, 0.08);
-    --radius: 16px;
-    --radius-sm: 10px;
+    --radius: 18px;
+    --radius-sm: 12px;
     --radius-lg: 24px;
+    --nav-height: 74px;
 }
 
 /* ========== RESET + BASE ========== */
@@ -88,8 +104,8 @@ body.trial-themed h2,
 body.trial-themed h3,
 body.trial-themed h4 {
     font-family: var(--font-display);
-    font-weight: 700;
-    letter-spacing: 0;
+    font-weight: 800;
+    letter-spacing: -0.03em;
     color: var(--text-primary);
 }
 
@@ -623,80 +639,240 @@ body.trial-themed p {
     .green-light-glow { animation: none !important; }
 }
 
-/* ==========================================================================
+/* ===========================================================================
    Mobile-First Portal Harmonization
-   Loaded last on *-trial.html pages. This keeps older trial pages visually
-   aligned with patient-menu-simple-trial.html without rewriting their logic.
+   Loaded last on *-trial.html pages. These overrides mirror the home portal
+   dashboard without touching the My Corner editor internals.
    ========================================================================== */
 
-body:not(.pmc-visit-body) {
-    --surface-solid: #ffffff;
-    --surface-muted: #f0f0ec;
-    --ink-soft: #3f3f3f;
-    --green: #5c7f72;
-    --green-soft: rgba(92, 127, 114, 0.13);
+html {
+    background: var(--bg-page) !important;
+    scroll-behavior: smooth;
+}
+
+body {
     font-family: var(--font-main) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
     background:
         radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
         linear-gradient(180deg, #fbfbf8 0%, var(--bg-page) 52%, #ffffff 100%) !important;
     color: var(--text-primary) !important;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
-body :where(h1, h2, h3, h4, .topbar-title, .section-title, .trial-card-title, .page-title, .hero-title, .visit-title):not(#pmc-root *) {
+body :where(button, a, input, textarea, select):not(#pmc-root *) {
+    font-family: inherit !important;
+}
+
+body :where(h1, h2, h3, h4, .brand-title, .topbar-title, .section-title, .trial-card-title, .page-title, .hero-title, .hero-greeting, .visit-title, .corner-name, .tracker-panel .big):not(#pmc-root *) {
     font-family: var(--font-display) !important;
-    letter-spacing: 0 !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.035em !important;
     color: var(--text-primary) !important;
 }
 
-body :where(p, .subtitle, .description, .step-desc, .empty-text, .card-desc, .trial-card-desc):not(#pmc-root *) {
-    color: var(--text-body) !important;
+body :where(.brand-title):not(#pmc-root *) {
+    font-size: 20px !important;
+    line-height: 1.08 !important;
 }
 
-body :where(.topbar, .top-bar, .app-header):not(#pmc-root *) {
-    background: rgba(255, 255, 255, 0.74) !important;
-    border-bottom: 1px solid var(--line-soft) !important;
+body :where(.brand-title span):not(#pmc-root *) {
+    color: var(--accent) !important;
+    font-weight: 600 !important;
+}
+
+body :where(.brand-sub, .topbar-subtitle):not(#pmc-root *) {
+    margin-top: 1px !important;
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+body :where(.hero-title, .hero-greeting):not(#pmc-root *) {
+    font-size: clamp(28px, 8vw, 54px) !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.055em !important;
+}
+
+body :where(.page-title):not(#pmc-root *) {
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+}
+
+body :where(.section-title):not(#pmc-root *) {
+    font-size: 19px !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.03em !important;
+}
+
+body :where(.trial-card-title, .card-title, .status-body h3, .tracker-panel h3, .announcement-panel h3, .tap-card h3):not(#pmc-root *) {
+    font-size: 13px !important;
+    line-height: 1.22 !important;
+    letter-spacing: -0.01em !important;
+}
+
+body :where(p, .subtitle, .description, .step-desc, .empty-text, .card-desc, .trial-card-desc, .hero-copy, .corner-desc, .tracker-panel p, .announcement-panel p, .tap-card p):not(#pmc-root *) {
+    color: var(--text-body) !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+}
+
+body :where(.hero-copy):not(#pmc-root *) {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+}
+
+body :where(.section, section):not(#pmc-root *) {
+    scroll-margin-top: 84px;
+}
+
+body :where(.section-head, .quick-card-header, .page-header-copy):not(#pmc-root *) {
+    margin-bottom: 10px !important;
+}
+
+body :where(.section-kicker, .quick-card-kicker):not(#pmc-root *) {
+    display: block !important;
+    padding: 0 !important;
+    margin-bottom: 4px !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: var(--text-muted) !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.1em !important;
+    text-transform: uppercase !important;
+}
+
+body :where(.status-chip, .trial-card-kicker, .visit-label, .quota-chip, .badge-chip, .pill, .tag, .chip):not(#pmc-root *) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    background: var(--accent-soft) !important;
+    color: var(--accent) !important;
+    border: 1px solid rgba(92, 127, 114, 0.16) !important;
+    border-radius: 999px !important;
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    letter-spacing: 0.02em !important;
+    text-transform: none !important;
+}
+
+body :where(.topbar):not(#pmc-root *) {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: var(--text-primary) !important;
+}
+
+body :where(.top-bar, .app-header, .header, .navbar, .mini-topbar, .topbar-trial):not(#pmc-root *) {
+    background: rgba(255, 255, 255, 0.78) !important;
+    border: 1px solid rgba(17, 17, 17, 0.08) !important;
+    border-radius: 0 0 18px 18px !important;
+    box-shadow: var(--shadow-soft) !important;
     -webkit-backdrop-filter: blur(18px) !important;
     backdrop-filter: blur(18px) !important;
+    color: var(--text-primary) !important;
 }
 
-body :where(.main-content, .content, .page-wrap, .container, .app, .screen):not(#pmc-root *) {
-    width: min(100%, 860px);
-    margin-left: auto;
-    margin-right: auto;
+body :where(.topbar-trial-inner, .nav-container, .topbar-inner, .header-inner):not(#pmc-root *) {
+    width: min(100%, 860px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
 }
 
-body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .profile-header, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card):not(#pmc-root *) {
-    background: var(--bg-surface) !important;
+body :where(.app, .main-content, .content, .page-wrap, .container, .screen, .page-body, .feedback-container, .fc-container, .visit-app, .app-wrapper):not(#pmc-root *) {
+    width: min(100%, 860px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+body :where(.hero-card, .page-hero, .hero-section, .profile-header, .welcome-card):not(#pmc-root *) {
+    border: 1px solid var(--line-soft) !important;
+    border-radius: 24px !important;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(240, 242, 236, 0.86)) !important;
+    box-shadow: var(--shadow-hard) !important;
+    overflow: hidden !important;
+}
+
+body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card, .schedule-card, .appointment-card, .menu-card, .dash-card, .status-card):not(#pmc-root *) {
+    background: rgba(255, 255, 255, 0.82) !important;
     border: 1px solid var(--line-soft) !important;
     border-radius: 18px !important;
     box-shadow: var(--shadow-soft) !important;
+    color: var(--text-primary) !important;
 }
 
-body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .trial-card):not(#pmc-root *) {
+body :where(.trial-card, .form-card, .result-card, .profile-header, .status-panel, .corner-panel, .tracker-panel, .announcement-panel):not(#pmc-root *) {
+    padding: 14px !important;
+}
+
+body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .trial-card, .schedule-card, .appointment-card):not(#pmc-root *) {
     transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease !important;
 }
 
-body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .trial-card):active:not(#pmc-root *) {
-    transform: scale(0.98) !important;
+body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .trial-card, .schedule-card, .appointment-card):active:not(#pmc-root *) {
+    transform: scale(0.97) !important;
 }
 
-body :where(button, .btn, .button, .trial-button, .primary-btn, .primary-action, .submit-btn, .action-btn):not(#pmc-root *) {
+body :where(.tap-card:hover, .date-card:hover, .time-card:hover, .slot-card:hover, .menu-card:hover, .article-card:hover, .document-card:hover, .notification-card:hover, .trial-card:hover):not(#pmc-root *) {
+    border-color: var(--line-strong) !important;
+    box-shadow: 0 12px 26px rgba(17, 17, 17, 0.08) !important;
+}
+
+body :where(.icon, .card-icon, .doc-card-icon, .status-icon):not(#pmc-root *) {
+    border-radius: 13px !important;
+    background: var(--surface-muted) !important;
+}
+
+body :where(button, .btn, .button, .trial-button, .primary-btn, .primary-action, .submit-btn, .action-btn, .btn-submit, .book-btn, .btn-confirm, .save-btn, .download-btn, .footer-subscribe-button):not(#pmc-root *) {
     border-radius: 14px !important;
     font-family: var(--font-main) !important;
+    font-size: 12px !important;
     font-weight: 800 !important;
+    letter-spacing: 0 !important;
+    min-height: 40px;
     -webkit-tap-highlight-color: transparent;
 }
 
-body :where(.trial-button, .primary-btn, .primary-action, .submit-btn, .btn-primary, button[type="submit"]):not(#pmc-root *) {
+body :where(.trial-button, .primary-btn, .primary-action, .submit-btn, .btn-submit, .btn-primary, .book-btn, .btn-confirm, .save-btn, button[type="submit"]):not(#pmc-root *) {
     background: var(--text-primary) !important;
     color: #ffffff !important;
-    border-color: var(--text-primary) !important;
+    border: 1px solid var(--text-primary) !important;
+    box-shadow: none !important;
 }
 
-body :where(.ghost-action, .secondary-btn, .btn-secondary, .trial-button-ghost, .back-btn, .topbar-back, .visit-back, .icon-btn):not(#pmc-root *) {
+body :where(.trial-button, .primary-btn, .primary-action, .submit-btn, .btn-submit, .btn-primary, .book-btn, .btn-confirm, .save-btn, button[type="submit"]):active:not(#pmc-root *) {
+    transform: scale(0.97) !important;
+}
+
+body :where(.ghost-action, .secondary-btn, .btn-secondary, .trial-button-ghost, .back-btn, .topbar-back, .visit-back, .icon-btn, .circle-btn, .avatar, .btn-cancel, .cancel-btn, .btn-google):not(#pmc-root *) {
     background: rgba(255, 255, 255, 0.86) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--line-strong) !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+body :where(.icon-btn, .circle-btn, .avatar, .topbar-back, .back-btn):not(#pmc-root *) {
+    border-radius: 14px !important;
+}
+
+body :where(.star-btn):not(#pmc-root *) {
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.86) !important;
+    border: 1px solid var(--line-soft) !important;
+    color: var(--amber) !important;
 }
 
 body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-select):not(#pmc-root *) {
@@ -705,6 +881,8 @@ body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-selec
     background: #fbfbf8 !important;
     color: var(--text-primary) !important;
     font-family: var(--font-main) !important;
+    font-size: 13px !important;
+    box-shadow: none !important;
 }
 
 body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-select):focus:not(#pmc-root *) {
@@ -713,30 +891,48 @@ body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-selec
     outline: none !important;
 }
 
-body :where(.section-kicker, .trial-card-kicker, .status-chip, .visit-label, .quota-chip, .badge-chip, .pill):not(#pmc-root *) {
-    background: var(--green-soft) !important;
-    color: var(--accent) !important;
-    border: 1px solid rgba(92, 127, 114, 0.16) !important;
-    border-radius: 999px !important;
-    letter-spacing: 0.08em !important;
+body :where(label, .trial-label, .field label):not(#pmc-root *) {
+    color: var(--text-muted) !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
 }
 
 body :where(.bottom-nav, .mobile-nav, nav[aria-label="Navigasi bawah"]):not(#pmc-root *) {
-    background: rgba(255, 255, 255, 0.82) !important;
-    border: 1px solid var(--line-soft) !important;
-    box-shadow: 0 -8px 28px rgba(17, 17, 17, 0.08) !important;
-    -webkit-backdrop-filter: blur(18px) !important;
-    backdrop-filter: blur(18px) !important;
+    position: fixed !important;
+    left: 50% !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    transform: translateX(-50%) !important;
+    width: min(520px, calc(100% - 24px)) !important;
+    z-index: 40 !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+    border: 1px solid rgba(17, 17, 17, 0.1) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 18px 42px rgba(17, 17, 17, 0.13) !important;
+    padding: 8px !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    backdrop-filter: blur(20px) !important;
+}
+
+body :where(.bottom-nav .nav-item, .mobile-nav .nav-item):not(#pmc-root *) {
+    border: 0 !important;
+    border-radius: 17px !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
 }
 
 body :where(.nav-item.active, .bottom-nav .active, .mobile-nav .active):not(#pmc-root *) {
-    color: var(--accent) !important;
+    background: var(--text-primary) !important;
+    color: #ffffff !important;
 }
 
-body :where(.modal-card, .bottom-sheet, .sheet-panel, .popup-card):not(#pmc-root *) {
+body :where(.modal-card, .bottom-sheet, .sheet-panel, .popup-card, .modal-content):not(#pmc-root *) {
     background: rgba(255, 255, 255, 0.96) !important;
     border: 1px solid var(--line-soft) !important;
-    border-radius: 18px !important;
+    border-radius: 24px !important;
     box-shadow: var(--shadow-hard) !important;
 }
 
@@ -744,13 +940,30 @@ body :where(.loading, .empty-state, .skeleton):not(#pmc-root *) {
     color: var(--text-muted) !important;
 }
 
+body :where(.toast, .alert-success, .success-message):not(#pmc-root *) {
+    border-radius: 999px !important;
+    background: var(--text-primary) !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+}
+
 @media (max-width: 640px) {
-    body :where(.main-content, .content, .page-wrap, .container, .app, .screen):not(#pmc-root *) {
+    body {
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    body :where(.app, .main-content, .content, .page-wrap, .container, .screen, .page-body, .feedback-container, .fc-container, .visit-app, .app-wrapper):not(#pmc-root *) {
         padding-left: max(14px, env(safe-area-inset-left, 0px)) !important;
         padding-right: max(14px, env(safe-area-inset-right, 0px)) !important;
     }
 
-    body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .profile-header, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card):not(#pmc-root *) {
-        border-radius: 16px !important;
+    body :where(.page-hero, .hero-card, .hero-section):not(#pmc-root *) {
+        border-radius: 24px !important;
+    }
+
+    body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .profile-header, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card, .schedule-card, .appointment-card, .menu-card, .dash-card, .status-card):not(#pmc-root *) {
+        border-radius: 18px !important;
     }
 }

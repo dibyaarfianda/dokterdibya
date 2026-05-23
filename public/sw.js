@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524n'; // 2026-05-24n - Replace split trial brand text
+const CACHE_VERSION = '20260524o'; // 2026-05-24o - Match trial pages to simple portal styling
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
