@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Portal Pasien - SISIwanita</title>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260516pwa2">
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f7f7f4;
+            --surface: rgba(255, 255, 255, 0.88);
+            --surface-solid: #ffffff;
+            --surface-muted: #f0f0ec;
+            --ink: #111111;
+            --ink-soft: #3f3f3f;
+            --muted: #717171;
+            --line: rgba(17, 17, 17, 0.09);
+            --line-strong: rgba(17, 17, 17, 0.16);
+            --green: #5c7f72;
+            --green-soft: rgba(92, 127, 114, 0.13);
+            --blue: #4a6f9d;
+            --rose: #b35f7b;
+            --amber: #b7792e;
+            --purple: #7357a8;
+            --shadow: 0 14px 38px rgba(17, 17, 17, 0.08);
+            --shadow-soft: 0 1px 2px rgba(17, 17, 17, 0.05);
+            --radius: 18px;
+            --radius-sm: 12px;
+            --nav-height: 74px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { background: var(--bg); scroll-behavior: smooth; }
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
+                linear-gradient(180deg, #fbfbf8 0%, var(--bg) 52%, #ffffff 100%);
+            color: var(--ink);
+            font-family: var(--font);
+            -webkit-font-smoothing: antialiased;
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(var(--nav-height) + env(safe-area-inset-bottom, 0) + 18px) env(safe-area-inset-left, 0);
+            overflow-x: hidden;
+        }
+
+        button, a { font-family: inherit; }
+        a { color: inherit; text-decoration: none; }
+
+        .top-blur, .bottom-blur {
+            position: fixed;
+            left: 0;
+            right: 0;
+            pointer-events: none;
+            z-index: 20;
+            overflow: hidden;
+        }
+        .top-blur { top: 0; height: 120px; }
+        .bottom-blur { bottom: 0; height: 150px; }
+        .top-blur::before, .bottom-blur::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(247, 247, 244, 0.58);
+        }
+        .top-blur::before { mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.86) 42%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.86) 42%, transparent 100%); }
+        .bottom-blur::before { mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.86) 42%, transparent 100%); -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.86) 42%, transparent 100%); }
+
+        .app {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 14px 16px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .topbar {
+            position: sticky;
+            top: env(safe-area-inset-top, 0);
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 10px 0 12px;
+        }
+        .brand-title { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+        .brand-title span { font-weight: 600; color: var(--green); }
+        .brand-sub { color: var(--muted); font-size: 11px; line-height: 1.2; margin-top: 1px; }
+        .top-actions { display: flex; align-items: center; gap: 9px; }
+        .icon-btn, .avatar {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.82);
+            box-shadow: var(--shadow-soft);
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        }
+        .icon-btn:active, .avatar:active, .tap-card:active, .primary-action:active { transform: scale(0.97); }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; display: none; }
+        .avatar span { font-size: 12px; font-weight: 800; }
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            background: #dc2626;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+        .vip-badge {
+            display: none;
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: #111;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 2px 4px;
+        }
+        .vip-badge.show { display: block; }
+
+        .loading {
+            min-height: 70vh;
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            gap: 10px;
+            text-align: center;
+        }
+        #content-wrapper { display: none; }
+
+        .hero-card {
+            margin-top: 4px;
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86));
+            box-shadow: var(--shadow);
+            padding: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            right: -120px;
+            top: -130px;
+            background: radial-gradient(circle, rgba(92,127,114,0.22), transparent 68%);
+            pointer-events: none;
+        }
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--green);
+            background: var(--green-soft);
+            border: 1px solid rgba(92,127,114,0.16);
+            border-radius: 999px;
+            padding: 7px 10px;
+            margin-bottom: 14px;
+        }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,0.12); }
+        .hero-title {
+            font-family: var(--display);
+            font-size: clamp(28px, 8vw, 54px);
+            letter-spacing: -0.055em;
+            line-height: 0.98;
+            max-width: 9ch;
+            margin-bottom: 12px;
+        }
+        .hero-copy { color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 52ch; }
+        .today-row {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        .today-label { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
+        .today-value { font-weight: 800; font-size: 14px; }
+        .sound-toggle {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.72);
+            border-radius: 999px;
+            padding: 8px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            color: var(--ink);
+        }
+
+        .section { margin-top: 18px; }
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+        .section-kicker { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; margin-bottom: 4px; }
+        .section-title { font-family: var(--display); font-size: 19px; line-height: 1.1; letter-spacing: -0.03em; }
+        .section-note { font-size: 11px; color: var(--muted); text-align: right; }
+
+        .status-panel, .corner-panel, .tracker-panel, .announcement-panel {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--surface);
+            box-shadow: var(--shadow-soft);
+            padding: 14px;
+        }
+        .status-panel { display: none; align-items: center; gap: 12px; }
+        .status-panel.show { display: flex; animation: cardIn 0.42s ease both; }
+        .status-panel.warning { border-color: rgba(183,121,46,0.28); background: rgba(255,248,235,0.9); }
+        .status-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: var(--green-soft);
+            color: var(--green);
+            flex: 0 0 auto;
+        }
+        .status-body { flex: 1; min-width: 0; }
+        .status-body h3 { font-size: 14px; margin-bottom: 3px; }
+        .status-body p { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+        .cancel-btn {
+            border: 1px solid rgba(220,38,38,0.25);
+            color: #b91c1c;
+            background: rgba(254,242,242,0.9);
+            border-radius: 11px;
+            padding: 9px 11px;
+            font-weight: 800;
+            font-size: 11px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .tap-card {
+            min-height: 112px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: rgba(255,255,255,0.82);
+            box-shadow: var(--shadow-soft);
+            padding: 14px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            color: var(--ink);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .tap-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(17,17,17,0.08); border-color: var(--line-strong); }
+        .tap-card .icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 13px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 12px;
+            font-size: 16px;
+            background: var(--surface-muted);
+        }
+        .tap-card h3 { font-size: 13px; margin-bottom: 2px; }
+        .tap-card p { color: var(--muted); font-size: 10.5px; line-height: 1.35; }
+        .doc-color { color: var(--blue); background: rgba(74,111,157,0.11) !important; }
+        .app-color { color: var(--rose); background: rgba(179,95,123,0.12) !important; }
+        .schedule-color { color: var(--green); background: rgba(92,127,114,0.13) !important; }
+        .edu-color { color: var(--amber); background: rgba(183,121,46,0.13) !important; }
+        .doctor-color { color: var(--purple); background: rgba(115,87,168,0.12) !important; }
+        .corner-color { color: #111; background: rgba(17,17,17,0.07) !important; }
+
+        .corner-panel { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
+        .corner-name { font-family: var(--display); font-size: 22px; letter-spacing: -0.04em; margin-bottom: 4px; }
+        .corner-desc { color: var(--muted); font-size: 12px; line-height: 1.45; }
+        .primary-action {
+            border: none;
+            background: #111;
+            color: #fff;
+            border-radius: 14px;
+            padding: 11px 14px;
+            font-size: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: transform 0.18s ease, background 0.18s ease;
+        }
+        .ghost-action {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.75);
+            color: var(--ink);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+        }
+
+        .mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .tracker-panel h3, .announcement-panel h3 { font-size: 13px; margin-bottom: 5px; }
+        .tracker-panel p, .announcement-panel p { color: var(--muted); font-size: 12px; line-height: 1.45; }
+        .tracker-panel .big { font-family: var(--display); font-size: 28px; letter-spacing: -0.04em; color: var(--ink); margin: 4px 0; }
+
+        .bottom-nav {
+            position: fixed;
+            left: 50%;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+            transform: translateX(-50%);
+            width: min(520px, calc(100% - 24px));
+            z-index: 40;
+            border: 1px solid rgba(17,17,17,0.1);
+            border-radius: 24px;
+            background: rgba(255,255,255,0.78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 18px 42px rgba(17,17,17,0.13);
+            padding: 8px;
+        }
+        .bottom-inner { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .nav-item {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            border-radius: 17px;
+            padding: 8px 4px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            position: relative;
+        }
+        .nav-item i { font-size: 15px; }
+        .nav-item.active { background: #111; color: #fff; }
+        .nav-badge {
+            position: absolute;
+            top: 3px;
+            right: 14px;
+            min-width: 15px;
+            height: 15px;
+            border-radius: 8px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 9px;
+            display: none;
+            place-items: center;
+            padding: 0 4px;
+        }
+
+        .sheet-overlay, .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(17,17,17,0.28);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 60;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease;
+        }
+        .sheet-overlay.active, .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .bottom-sheet {
+            position: fixed;
+            left: 50%;
+            bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 18px);
+            transform: translate(-50%, 18px) scale(0.98);
+            width: min(420px, calc(100% - 28px));
+            z-index: 70;
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: rgba(255,255,255,0.94);
+            box-shadow: var(--shadow);
+            padding: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .bottom-sheet.active { opacity: 1; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
+        .sheet-title { font-weight: 900; font-size: 13px; padding: 8px 10px 10px; }
+        .sheet-menu { display: grid; gap: 6px; }
+        .sheet-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 15px;
+            color: var(--ink);
+            background: rgba(17,17,17,0.035);
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .sheet-item i { width: 20px; color: var(--green); }
+
+        .modal-card {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -46%) scale(0.98);
+            width: min(430px, calc(100% - 28px));
+            max-height: 82vh;
+            overflow: auto;
+            z-index: 80;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: 18px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .modal-card.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        .modal-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+        .modal-head h2 { font-family: var(--display); font-size: 21px; letter-spacing: -0.04em; }
+        .close-btn { border: 1px solid var(--line); background: #f7f7f4; width: 34px; height: 34px; border-radius: 13px; cursor: pointer; color: var(--ink); }
+        .field { margin-top: 12px; }
+        .field label { display: block; font-size: 11px; color: var(--muted); font-weight: 800; margin-bottom: 6px; }
+        .field input, .field textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #fbfbf8;
+            color: var(--ink);
+            padding: 12px;
+            outline: none;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        .field textarea { min-height: 104px; resize: vertical; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
+        .modal-actions button { flex: 1; justify-content: center; }
+        .pref-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 15px; padding: 12px; margin-top: 10px; }
+        .pref-row span { font-size: 13px; font-weight: 800; }
+        .pref-row small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .switch { width: 46px; height: 26px; border-radius: 999px; border: none; background: #d7d7d2; position: relative; cursor: pointer; flex: 0 0 auto; }
+        .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: white; transition: transform 0.2s ease; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+        .switch.on { background: #111; }
+        .switch.on::after { transform: translateX(20px); }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 28px);
+            transform: translateX(-50%) translateY(12px);
+            z-index: 100;
+            background: #111;
+            color: #fff;
+            border-radius: 999px;
+            padding: 11px 15px;
+            font-size: 12px;
+            font-weight: 800;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            white-space: nowrap;
+            max-width: calc(100% - 32px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .reveal { animation: cardIn 0.42s ease both; }
+        .reveal:nth-child(2) { animation-delay: 0.04s; }
+        .reveal:nth-child(3) { animation-delay: 0.08s; }
+        @keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 520px) {
+            .app { padding-left: 14px; padding-right: 14px; }
+            .hero-card { padding: 18px; border-radius: 24px; }
+            .today-row { grid-template-columns: 1fr; align-items: start; }
+            .action-grid { grid-template-columns: repeat(2, 1fr); }
+            .tap-card { min-height: 104px; }
+            .corner-panel { grid-template-columns: 1fr; }
+            .primary-action { width: 100%; justify-content: center; }
+            .section-note { display: none; }
+            .mini-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-blur" aria-hidden="true"></div>
+    <div class="bottom-blur" aria-hidden="true"></div>
+
+    <main class="app">
+        <header class="topbar">
+            <a href="/patient-menu-simple-trial.html" class="soundable" aria-label="Beranda SISIwanita">
+                <div class="brand-title">SISI<span>wanita</span></div>
+                <div class="brand-sub">Portal pasien pribadi</div>
+            </a>
+            <div class="top-actions">
+                <button class="icon-btn soundable" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="badge" id="notif-badge">0</span>
+                </button>
+                <button class="avatar soundable" id="user-avatar" onclick="go('/profil-trial.html')" aria-label="Profil">
+                    <img id="user-avatar-img" alt="">
+                    <span id="user-avatar-initials">--</span>
+                    <span class="vip-badge" id="vip-badge">VIP</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="loading" id="loading-state">
+            <div><i class="fa-solid fa-spinner fa-spin"></i></div>
+            <div>Menyiapkan ruang pasien...</div>
+        </div>
+
+        <div id="content-wrapper">
+            <section class="hero-card reveal">
+                <div class="status-chip"><span class="status-dot"></span><span id="time-greeting">Selamat datang</span></div>
+                <h1 class="hero-title" id="hero-title">Ruang Anda.</h1>
+                <p class="hero-copy" id="hero-copy">Dashboard ringkas untuk jadwal, dokumen, catatan, dan pengingat penting Anda.</p>
+                <div class="today-row">
+                    <div>
+                        <div class="today-label">Hari ini</div>
+                        <div class="today-value" id="today-value">-</div>
+                    </div>
+                    <button class="sound-toggle soundable" id="sound-toggle" onclick="toggleTapSound()">
+                        <i class="fa-solid fa-volume-low"></i>
+                        <span id="sound-toggle-label">Sound On</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="status-panel" id="quick-status">
+                    <div class="status-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="status-body">
+                        <h3 id="booking-status-title">Booking Aktif</h3>
+                        <p id="booking-status-desc">-</p>
+                    </div>
+                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
+                </div>
+            </section>
+
+            <section class="section reveal">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Aksi Utama</div>
+                        <h2 class="section-title">Buka yang dibutuhkan</h2>
+                    </div>
+                    <div class="section-note">Ringkas seperti app</div>
+                </div>
+                <div class="action-grid">
+                    <button class="tap-card soundable" onclick="openSheet('dokumen')">
+                        <span class="icon doc-color"><i class="fa-solid fa-folder-open"></i></span>
+                        <span><h3>Dokumen</h3><p>USG, lab, resume</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="openSheet('aplikasi')">
+                        <span class="icon app-color"><i class="fa-solid fa-heart-pulse"></i></span>
+                        <span><h3>Aplikasi</h3><p>Tracker & reminder</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="openSheet('jadwal')">
+                        <span class="icon schedule-color"><i class="fa-solid fa-calendar-days"></i></span>
+                        <span><h3>Jadwal</h3><p>Booking & RS</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="openSheet('edukasi')">
+                        <span class="icon edu-color"><i class="fa-solid fa-book-open"></i></span>
+                        <span><h3>Edukasi</h3><p>Artikel & panduan</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="go('/tanya-dokter-trial.html')">
+                        <span class="icon doctor-color"><i class="fa-solid fa-comments"></i></span>
+                        <span><h3>Tanya Dokter</h3><p>Privat & aman</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="openMyCorner()">
+                        <span class="icon corner-color"><i class="fa-solid fa-sparkles"></i></span>
+                        <span><h3 id="corner-card-title">My Corner</h3><p>Catatan pribadi</p></span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="section reveal">
+                <div class="corner-panel">
+                    <div>
+                        <div class="section-kicker">Ruang Personal</div>
+                        <div class="corner-name" id="corner-name">My Corner</div>
+                        <p class="corner-desc" id="corner-desc">Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.</p>
+                    </div>
+                    <button class="primary-action soundable" onclick="openMyCorner()"><i class="fa-solid fa-pen"></i> Atur</button>
+                </div>
+            </section>
+
+            <section class="section reveal">
+                <div class="mini-grid">
+                    <div class="tracker-panel" id="tracker-panel">
+                        <h3>Pregnancy Tracker</h3>
+                        <div class="big" id="tracker-big">-</div>
+                        <p id="tracker-desc">Memuat ringkasan kehamilan...</p>
+                    </div>
+                    <div class="announcement-panel">
+                        <h3>Info Terbaru</h3>
+                        <p id="announcement-preview">Pengumuman dan update klinik akan tampil ringkas di sini.</p>
+                        <button class="ghost-action soundable" style="margin-top:12px;" onclick="go('/notifikasi-trial.html')"><i class="fa-solid fa-bell"></i> Lihat Info</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
+
+    <div class="modal-overlay" id="modal-overlay" onclick="closeAllModals()"></div>
+    <section class="modal-card" id="corner-modal" aria-label="My Corner">
+        <div class="modal-head">
+            <div>
+                <div class="section-kicker">Sudut Saya</div>
+                <h2>Personalisasi ruang Anda</h2>
+            </div>
+            <button class="close-btn soundable" onclick="closeAllModals()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="field">
+            <label for="corner-name-input">Nama ruang</label>
+            <input id="corner-name-input" maxlength="32" placeholder="Contoh: Ruang Nanda">
+        </div>
+        <div class="field">
+            <label for="corner-note-input">Catatan pribadi</label>
+            <textarea id="corner-note-input" maxlength="500" placeholder="Tulis catatan kecil untuk diri sendiri..."></textarea>
+        </div>
+        <div class="pref-row">
+            <div>
+                <span>Suara tombol</span>
+                <small>Soft tap sound saat menekan tombol utama.</small>
+            </div>
+            <button class="switch soundable" id="corner-sound-switch" onclick="toggleTapSound()" aria-label="Toggle suara tombol"></button>
+        </div>
+        <div class="modal-actions">
+            <button class="ghost-action soundable" onclick="closeAllModals()">Batal</button>
+            <button class="primary-action soundable" onclick="saveMyCorner()">Simpan</button>
+        </div>
+    </section>
+
+    <section class="modal-card" id="cancel-modal" aria-label="Batalkan booking">
+        <div class="modal-head">
+            <div>
+                <div class="section-kicker">Booking</div>
+                <h2>Batalkan janji temu?</h2>
+            </div>
+            <button class="close-btn soundable" onclick="closeCancelBookingModal()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p style="color:var(--muted);font-size:12px;line-height:1.5;">Mohon tuliskan alasan pembatalan agar tim klinik dapat mencatat perubahan jadwal Anda.</p>
+        <div class="field">
+            <label for="booking-cancel-reason">Alasan pembatalan</label>
+            <textarea id="booking-cancel-reason">Tidak dapat hadir sesuai jadwal</textarea>
+        </div>
+        <p id="booking-cancel-error" style="display:none;color:#b91c1c;font-size:12px;margin-top:8px;"></p>
+        <div class="modal-actions">
+            <button class="ghost-action soundable" id="booking-cancel-close-btn" onclick="closeCancelBookingModal()">Batal</button>
+            <button class="primary-action soundable" id="booking-cancel-submit-btn" onclick="submitCancelBooking()">Ya, Batalkan</button>
+        </div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner">
+            <button class="nav-item active soundable" onclick="scrollTopHome()"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
+            <button class="nav-item soundable" onclick="openSheet('dokumen')"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
+            <button class="nav-item soundable" onclick="openSheet('aplikasi')"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
+            <button class="nav-item soundable" onclick="openSheet('jadwal')"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
+            <button class="nav-item soundable" onclick="openMyCorner()"><i class="fa-solid fa-sparkles"></i><span>Corner</span></button>
+        </div>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const CORNER_NAME_KEY = 'patient_my_corner_name';
+        const CORNER_NOTE_KEY = 'patient_my_corner_note';
+        const TAP_SOUND_KEY = 'patient_tap_sound_enabled';
+        let currentProfile = null;
+        let audioContext = null;
+        const cancelBookingState = { appointmentId: '' };
+
+        function getToken() {
+            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text == null ? '' : String(text);
+            return div.innerHTML;
+        }
+
+        function getInitials(name) {
+            if (!name) return '--';
+            return String(name).split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+        }
+
+        function go(url) {
+            window.location.href = url;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function isTapSoundEnabled() {
+            return localStorage.getItem(TAP_SOUND_KEY) !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        }
+
+        function updateSoundUI() {
+            const enabled = isTapSoundEnabled();
+            const label = document.getElementById('sound-toggle-label');
+            const toggle = document.getElementById('sound-toggle');
+            const sw = document.getElementById('corner-sound-switch');
+            if (label) label.textContent = enabled ? 'Sound On' : 'Sound Off';
+            if (toggle) toggle.querySelector('i').className = enabled ? 'fa-solid fa-volume-low' : 'fa-solid fa-volume-xmark';
+            if (sw) sw.classList.toggle('on', enabled);
+        }
+
+        function playTapSound() {
+            if (!isTapSoundEnabled()) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!audioContext) audioContext = new AudioCtx();
+                if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+                const now = audioContext.currentTime;
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(720, now);
+                osc.frequency.exponentialRampToValueAtTime(420, now + 0.055);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.045, now + 0.006);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            } catch (error) {}
+        }
+
+        function toggleTapSound() {
+            const currently = isTapSoundEnabled();
+            localStorage.setItem(TAP_SOUND_KEY, currently ? '0' : '1');
+            updateSoundUI();
+            if (!currently) {
+                setTimeout(playTapSound, 20);
+                showToast('Suara tombol aktif');
+            } else {
+                showToast('Suara tombol dimatikan');
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            if (event.target.closest('.soundable')) playTapSound();
+        }, true);
+
+        function applyMyCorner() {
+            const fallback = currentProfile && currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'My Corner';
+            const name = localStorage.getItem(CORNER_NAME_KEY) || fallback;
+            const note = localStorage.getItem(CORNER_NOTE_KEY) || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
+            document.getElementById('corner-name').textContent = name;
+            document.getElementById('corner-card-title').textContent = name.length > 14 ? 'My Corner' : name;
+            document.getElementById('corner-desc').textContent = note;
+            document.getElementById('corner-name-input').value = name;
+            document.getElementById('corner-note-input').value = note;
+        }
+
+        function openMyCorner() {
+            applyMyCorner();
+            updateSoundUI();
+            openModal('corner-modal');
+        }
+
+        function saveMyCorner() {
+            const name = document.getElementById('corner-name-input').value.trim() || 'My Corner';
+            const note = document.getElementById('corner-note-input').value.trim() || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
+            localStorage.setItem(CORNER_NAME_KEY, name.slice(0, 32));
+            localStorage.setItem(CORNER_NOTE_KEY, note.slice(0, 500));
+            applyMyCorner();
+            closeAllModals();
+            showToast('My Corner tersimpan');
+        }
+
+        function openModal(id) {
+            closeSheet();
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById(id).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAllModals() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.querySelectorAll('.modal-card').forEach(modal => modal.classList.remove('active'));
+            document.body.style.overflow = '';
+        }
+
+        function todayLabel() {
+            document.getElementById('today-value').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            const hour = new Date().getHours();
+            const greeting = hour >= 5 && hour < 11 ? 'Selamat Pagi' : hour >= 11 && hour < 15 ? 'Selamat Siang' : hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+            document.getElementById('time-greeting').textContent = greeting;
+        }
+
+        async function loadProfile() {
+            const token = getToken();
+            const response = await fetch('/api/patients/profile?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' } });
+            if (response.status === 401) throw new Error('unauthorized');
+            if (!response.ok) throw new Error('profile failed');
+            const data = await response.json();
+            currentProfile = data.user || {};
+            window.currentProfile = currentProfile;
+            const firstName = (currentProfile.fullname || currentProfile.full_name || 'Pasien').split(' ')[0];
+            document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
+            document.getElementById('hero-copy').textContent = 'Semua yang penting hari ini: jadwal, dokumen, pengingat, dan catatan pribadi dalam satu layar ringkas.';
+            if (currentProfile.profile_picture || currentProfile.photo_url) {
+                const img = document.getElementById('user-avatar-img');
+                img.src = currentProfile.profile_picture || currentProfile.photo_url;
+                img.style.display = 'block';
+                document.getElementById('user-avatar-initials').style.display = 'none';
+            } else {
+                document.getElementById('user-avatar-initials').textContent = getInitials(currentProfile.fullname || currentProfile.full_name);
+            }
+            applyMyCorner();
+            checkVipSubscription();
+        }
+
+        async function checkVipSubscription() {
+            try {
+                const response = await fetch('/api/patient-questions/can-ask', { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.success && data.tier === 'vip') document.getElementById('vip-badge').classList.add('show');
+            } catch (error) {}
+        }
+
+        async function loadNotificationCount() {
+            try {
+                const response = await fetch('/api/patient-notifications/count?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
+                const data = await response.json();
+                const badge = document.getElementById('notif-badge');
+                if (data.success && data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'flex';
+                } else badge.style.display = 'none';
+            } catch (error) {}
+        }
+
+        async function loadUnreadDocCounts() {
+            try {
+                const response = await fetch('/api/patient-documents/unread-counts?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
+                const data = await response.json();
+                const total = data.success && data.counts ? Number(data.counts.total || 0) : 0;
+                const badge = document.getElementById('doc-nav-badge');
+                if (total > 0) {
+                    badge.textContent = total > 99 ? '99+' : total;
+                    badge.style.display = 'grid';
+                } else badge.style.display = 'none';
+            } catch (error) {}
+        }
+
+        async function checkActiveBooking() {
+            const panel = document.getElementById('quick-status');
+            const card = document.getElementById('booking-status-card');
+            const cancelButton = document.getElementById('booking-cancel-btn');
+            panel.classList.remove('show', 'warning');
+            cancelButton.style.display = 'none';
+            cancelButton.dataset.appointmentId = '';
+            try {
+                const response = await fetch('/api/sunday-appointments/my-bookings?status=confirmed,pending,pending_confirmation&_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
+                if (response.status === 401) throw new Error('unauthorized');
+                const data = await response.json();
+                if (!data.success || !data.bookings || data.bookings.length === 0) return;
+                const booking = data.bookings[0];
+                const dateParts = String(booking.appointment_date || '').slice(0, 10).split('-');
+                const date = dateParts.length === 3 ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])) : new Date(booking.appointment_date);
+                const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+                document.getElementById('booking-status-title').textContent = booking.status === 'confirmed' ? 'Booking Dikonfirmasi' : 'Menunggu Konfirmasi';
+                document.getElementById('booking-status-desc').textContent = dateStr + ' - ' + (booking.slot_time || '-');
+                panel.classList.add('show');
+                if (booking.status === 'pending' || booking.status === 'pending_confirmation') panel.classList.add('warning');
+                if (['confirmed', 'pending', 'pending_confirmation'].includes(booking.status)) {
+                    cancelButton.dataset.appointmentId = String(booking.id);
+                    cancelButton.style.display = 'inline-flex';
+                }
+            } catch (error) {
+                if (error.message === 'unauthorized') logout();
+            }
+        }
+
+        async function loadPregnancyTrackerHome() {
+            const big = document.getElementById('tracker-big');
+            const desc = document.getElementById('tracker-desc');
+            try {
+                const response = await fetch('/api/patients/pregnancy-tracker?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
+                const result = await response.json();
+                if (!result.success || !result.data) {
+                    big.textContent = 'Belum ada';
+                    desc.textContent = 'Buka tracker untuk mulai mengisi data kehamilan.';
+                    return;
+                }
+                const data = result.data;
+                big.textContent = (data.weeksPregnant || 0) + 'w ' + (data.daysExtra || 0) + 'd';
+                desc.textContent = 'HPL ' + (data.eddFormatted || '-') + ' • ' + (typeof data.daysUntilEdd === 'number' ? data.daysUntilEdd + ' hari lagi' : 'pantau berkala');
+            } catch (error) {
+                big.textContent = '-';
+                desc.textContent = 'Tracker belum dapat dimuat saat ini.';
+            }
+        }
+
+        async function checkAttendanceConfirmation() {
+            try {
+                const response = await fetch('/api/sunday-appointments/my-pending-confirmation?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.success && data.appointment) showAttendanceConfirmationPopup(data.appointment);
+            } catch (error) {}
+        }
+
+        function showAttendanceConfirmationPopup(apt) {
+            const existing = document.getElementById('attendance-confirm-overlay');
+            if (existing) existing.remove();
+            const dateParts = String(apt.appointment_date || '').slice(0, 10).split('-');
+            const date = dateParts.length === 3 ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])) : new Date(apt.appointment_date);
+            const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const overlay = document.createElement('div');
+            overlay.id = 'attendance-confirm-overlay';
+            overlay.className = 'modal-overlay active';
+            overlay.style.zIndex = '90';
+            overlay.innerHTML = '<div class="modal-card active" style="pointer-events:auto;">' +
+                '<div class="modal-head"><div><div class="section-kicker">Konfirmasi</div><h2>Kehadiran Klinik</h2></div><button class="close-btn soundable" onclick="closeAttendanceConfirmationPopup()"><i class="fa-solid fa-xmark"></i></button></div>' +
+                '<p style="color:var(--muted);font-size:12px;line-height:1.55;margin-bottom:12px;">' + dateStr + '<br>' + escapeHtml(apt.session_label || '') + ' • Slot ' + escapeHtml(apt.slot_number || '-') + ' (' + escapeHtml(apt.slot_time || '-') + ')</p>' +
+                '<div class="modal-actions"><button class="primary-action soundable" onclick="submitAttendanceConfirmation(' + apt.id + ',\'confirm\')"><i class="fa-solid fa-circle-check"></i> Datang</button><button class="ghost-action soundable" style="color:#b91c1c;" onclick="submitAttendanceConfirmation(' + apt.id + ',\'cancel\')"><i class="fa-solid fa-circle-xmark"></i> Batal</button></div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAttendanceConfirmationPopup() {
+            const overlay = document.getElementById('attendance-confirm-overlay');
+            if (overlay) overlay.remove();
+            document.body.style.overflow = '';
+        }
+
+        async function submitAttendanceConfirmation(appointmentId, action) {
+            try {
+                const endpoint = action === 'confirm' ? '/api/sunday-appointments/' + appointmentId + '/confirm-attendance' : '/api/sunday-appointments/' + appointmentId + '/cancel-attendance';
+                const response = await fetch(endpoint, { method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' } });
+                const data = await response.json().catch(() => ({}));
+                closeAttendanceConfirmationPopup();
+                if (!response.ok || !data.success) throw new Error(data.message || 'Konfirmasi gagal');
+                showToast(data.message || 'Konfirmasi berhasil');
+                checkActiveBooking();
+            } catch (error) { showToast(error.message || 'Konfirmasi gagal'); }
+        }
+
+        function cancelActiveBooking(event) {
+            if (event) event.preventDefault();
+            const id = document.getElementById('booking-cancel-btn').dataset.appointmentId || '';
+            if (!id) return;
+            cancelBookingState.appointmentId = id;
+            document.getElementById('booking-cancel-reason').value = 'Tidak dapat hadir sesuai jadwal';
+            document.getElementById('booking-cancel-error').style.display = 'none';
+            openModal('cancel-modal');
+        }
+
+        function closeCancelBookingModal() { closeAllModals(); cancelBookingState.appointmentId = ''; }
+
+        async function submitCancelBooking() {
+            const id = cancelBookingState.appointmentId;
+            const reason = document.getElementById('booking-cancel-reason').value.trim();
+            const err = document.getElementById('booking-cancel-error');
+            if (!id) return;
+            if (reason.length < 10) { err.textContent = 'Alasan pembatalan minimal 10 karakter.'; err.style.display = 'block'; return; }
+            try {
+                const btn = document.getElementById('booking-cancel-submit-btn');
+                btn.disabled = true;
+                btn.textContent = 'Memproses...';
+                const response = await fetch('/api/sunday-appointments/' + id + '/cancel', { method: 'PUT', headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }, body: JSON.stringify({ reason }) });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.message || 'Gagal membatalkan janji temu');
+                closeCancelBookingModal();
+                showToast(data.message || 'Janji temu berhasil dibatalkan');
+                checkActiveBooking();
+            } catch (error) {
+                err.textContent = error.message || 'Gagal membatalkan janji temu';
+                err.style.display = 'block';
+            } finally {
+                const btn = document.getElementById('booking-cancel-submit-btn');
+                btn.disabled = false;
+                btn.textContent = 'Ya, Batalkan';
+            }
+        }
+
+        const menuData = {
+            dokumen: { title: 'Dokumen', items: [
+                ['fa-solid fa-image', 'Album USG', '/album-usg-trial.html'],
+                ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab-trial.html'],
+                ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
+            ]},
+            aplikasi: { title: 'Aplikasi', items: [
+                ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
+                ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
+                ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
+                ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin-trial.html']
+            ]},
+            jadwal: { title: 'Jadwal', items: [
+                ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik-trial.html'],
+                ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs-trial.html'],
+                ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
+                ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
+            ]},
+            edukasi: { title: 'Edukasi', items: [
+                ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
+                ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
+                ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
+            ]}
+        };
+
+        function openSheet(category) {
+            const data = menuData[category];
+            if (!data) return;
+            document.getElementById('sheet-title').textContent = data.title;
+            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '"><i class="' + item[0] + '"></i><span>' + item[1] + '</span></a>').join('');
+            document.getElementById('sheet-overlay').classList.add('active');
+            document.getElementById('bottom-sheet').classList.add('active');
+        }
+
+        function closeSheet() {
+            document.getElementById('sheet-overlay').classList.remove('active');
+            document.getElementById('bottom-sheet').classList.remove('active');
+        }
+
+        function scrollTopHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+        function logout() {
+            localStorage.removeItem('vps_auth_token');
+            sessionStorage.removeItem('vps_auth_token');
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('patient_user');
+            window.location.href = '/patient-login.html';
+        }
+
+        async function init() {
+            todayLabel();
+            updateSoundUI();
+            const token = getToken();
+            let user = {};
+            try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
+            if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
+
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+            try { await loadProfile(); } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+            loadNotificationCount();
+            loadUnreadDocCounts();
+            checkActiveBooking();
+            checkAttendanceConfirmation();
+            loadPregnancyTrackerHome();
+        }
+
+        window.openMyCorner = openMyCorner;
+        window.saveMyCorner = saveMyCorner;
+        window.toggleTapSound = toggleTapSound;
+        window.go = go;
+        window.openSheet = openSheet;
+        window.closeSheet = closeSheet;
+        window.closeAllModals = closeAllModals;
+        window.cancelActiveBooking = cancelActiveBooking;
+        window.closeCancelBookingModal = closeCancelBookingModal;
+        window.submitCancelBooking = submitCancelBooking;
+        window.submitAttendanceConfirmation = submitAttendanceConfirmation;
+        window.closeAttendanceConfirmationPopup = closeAttendanceConfirmationPopup;
+        window.scrollTopHome = scrollTopHome;
+
+        document.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                loadNotificationCount();
+                loadUnreadDocCounts();
+                checkActiveBooking();
+            }
+        });
+    </script>
+</body>
+</html>
