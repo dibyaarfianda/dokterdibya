@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260524e">
+    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260524f">
     <style>
         :root {
             --bg: #f7f7f4;
@@ -659,35 +659,6 @@
     </aside>
 
     <div class="modal-overlay" id="modal-overlay" onclick="closeAllModals()"></div>
-    <section class="modal-card" id="corner-modal" aria-label="My Corner">
-        <div class="modal-head">
-            <div>
-                <div class="section-kicker">Sudut Saya</div>
-                <h2>Personalisasi ruang Anda</h2>
-            </div>
-            <button class="close-btn soundable" onclick="closeAllModals()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div class="field">
-            <label for="corner-name-input">Nama ruang</label>
-            <input id="corner-name-input" maxlength="32" placeholder="Contoh: Ruang Nanda">
-        </div>
-        <div class="field">
-            <label for="corner-note-input">Catatan pribadi</label>
-            <textarea id="corner-note-input" maxlength="500" placeholder="Tulis catatan kecil untuk diri sendiri..."></textarea>
-        </div>
-        <div class="pref-row">
-            <div>
-                <span>Suara tombol</span>
-                <small>Soft tap sound saat menekan tombol utama.</small>
-            </div>
-            <button class="switch soundable" id="corner-sound-switch" onclick="toggleTapSound()" aria-label="Toggle suara tombol"></button>
-        </div>
-        <div class="modal-actions">
-            <button class="ghost-action soundable" onclick="closeAllModals()">Batal</button>
-            <button class="primary-action soundable" onclick="saveMyCorner()">Simpan</button>
-        </div>
-    </section>
-
     <section class="modal-card" id="cancel-modal" aria-label="Batalkan booking">
         <div class="modal-head">
             <div>
@@ -812,27 +783,26 @@
             const fallback = currentProfile && currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'My Corner';
             const name = localStorage.getItem(CORNER_NAME_KEY) || fallback;
             const note = localStorage.getItem(CORNER_NOTE_KEY) || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
-            document.getElementById('corner-name').textContent = name;
-            document.getElementById('corner-card-title').textContent = name.length > 14 ? 'My Corner' : name;
-            document.getElementById('corner-desc').textContent = note;
-            document.getElementById('corner-name-input').value = name;
-            document.getElementById('corner-note-input').value = note;
+            const cornerName = document.getElementById('corner-name');
+            const cornerCardTitle = document.getElementById('corner-card-title');
+            const cornerDesc = document.getElementById('corner-desc');
+            if (cornerName) cornerName.textContent = name;
+            if (cornerCardTitle) cornerCardTitle.textContent = name.length > 14 ? 'My Corner' : name;
+            if (cornerDesc) cornerDesc.textContent = note;
         }
 
         function openMyCorner() {
-            applyMyCorner();
-            updateSoundUI();
-            openModal('corner-modal');
+            if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
+                return window.PatientMyCorner.open();
+            }
+            showToast('My Corner sedang dimuat');
         }
 
         function saveMyCorner() {
-            const name = document.getElementById('corner-name-input').value.trim() || 'My Corner';
-            const note = document.getElementById('corner-note-input').value.trim() || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
-            localStorage.setItem(CORNER_NAME_KEY, name.slice(0, 32));
-            localStorage.setItem(CORNER_NOTE_KEY, note.slice(0, 500));
-            applyMyCorner();
-            closeAllModals();
-            showToast('My Corner tersimpan');
+            if (window.PatientMyCorner && typeof window.PatientMyCorner.save === 'function') {
+                return window.PatientMyCorner.save();
+            }
+            showToast('My Corner sedang dimuat');
         }
 
         function openModal(id) {
@@ -1102,7 +1072,11 @@
             try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js?v=20260524f', { scope: '/' })
+                    .then(registration => registration.update().catch(() => {}))
+                    .catch(() => {});
+            }
 
             try { await loadProfile(); } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
             document.getElementById('loading-state').style.display = 'none';
@@ -1138,6 +1112,6 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260524e"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260524f"></script>
 </body>
 </html>
