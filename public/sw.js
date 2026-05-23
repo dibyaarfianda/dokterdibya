@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524h'; // 2026-05-24h - Keep trial back navigation on menu trial
+const CACHE_VERSION = '20260524i'; // 2026-05-24i - Booking trial back returns to patient portal
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
