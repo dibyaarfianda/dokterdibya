@@ -967,3 +967,152 @@ body :where(.toast, .alert-success, .success-message):not(#pmc-root *) {
         border-radius: 18px !important;
     }
 }
+
+/* ===========================================================================
+   Final Shell Normalization
+   Force consistent header rhythm, cleaner paragraph measure, and remove older
+   landing-style footers from all trial pages.
+   ========================================================================== */
+
+body :where(.site-footer, footer.site-footer, .page-footer, .trial-footer, .footer-card-frame, .site-footer-inner, .site-footer-bottom):not(#pmc-root *) {
+    display: none !important;
+}
+
+body.trial-header-normalized :where(.trial-legacy-header):not(#pmc-root *) {
+    display: none !important;
+}
+
+body :where(.trial-unified-header):not(#pmc-root *) {
+    position: sticky !important;
+    top: env(safe-area-inset-top, 0px) !important;
+    z-index: 34 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+    padding: 10px 0 12px !important;
+    margin-bottom: 14px !important;
+}
+
+body :where(.trial-unified-brand):not(#pmc-root *) {
+    display: block !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+}
+
+body :where(.trial-unified-back):not(#pmc-root *) {
+    border-radius: 14px !important;
+    border: 1px solid var(--line-strong) !important;
+    background: rgba(255, 255, 255, 0.86) !important;
+    color: var(--text-primary) !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    font-family: var(--font-main) !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+body :where(.visit-topbar, .mini-topbar, .topbar, .topbar-trial):not(#pmc-root *) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+    padding: 10px 0 12px !important;
+    margin-bottom: 14px !important;
+}
+
+body :where(.mini-topbar, .visit-topbar, .topbar-trial):not(#pmc-root *) {
+    position: sticky !important;
+    top: env(safe-area-inset-top, 0px) !important;
+    z-index: 30 !important;
+}
+
+body :where(.topbar-inner, .topbar-trial-inner):not(#pmc-root *) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+body :where(.topbar-title, .page-header h1, .step-title, .login-heading, .history-title, .visit-title):not(#pmc-root *) {
+    font-family: var(--font-display) !important;
+    font-size: 19px !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.03em !important;
+    color: var(--text-primary) !important;
+}
+
+body :where(.page-header, .page-header-copy):not(#pmc-root *) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    margin: 4px 0 12px !important;
+    padding: 0 2px !important;
+    text-align: left !important;
+}
+
+body :where(.page-header .icon-wrap):not(#pmc-root *) {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 13px !important;
+    display: grid !important;
+    place-items: center !important;
+    background: var(--surface-muted) !important;
+    color: var(--accent) !important;
+    margin-bottom: 2px !important;
+}
+
+body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .trial-card-desc, .section-note, .brand-sub):not(#pmc-root *) {
+    max-width: 34ch !important;
+    text-wrap: pretty;
+}
+
+body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .trial-card-desc):not(#pmc-root *) {
+    margin: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+    color: var(--text-body) !important;
+}
+
+body :where(.page-header p br, .step-desc br, .login-subtitle br, .visit-intro br):not(#pmc-root *) {
+    display: none !important;
+}
+
+body :where(.feedback-container, .fc-container, .visit-app, .content, .main-content, .page-wrap, .screen):not(#pmc-root *) {
+    padding-top: 6px !important;
+}
+
+body :where(.back-btn, .visit-back, .topbar-back):not(#pmc-root *) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 0 12px !important;
+    min-height: 40px !important;
+    white-space: nowrap !important;
+}
+
+body :where(.back-btn i, .visit-back i, .topbar-back i):not(#pmc-root *) {
+    font-size: 13px !important;
+}
+
+body :where(.brand-sub, .login-foot, .forgot-link, .char-count, small, .field small):not(#pmc-root *) {
+    color: var(--text-muted) !important;
+}
+
+body :where(.login-foot, .char-count, small, .field small):not(#pmc-root *) {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+}
+
+@media (max-width: 640px) {
+    body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .trial-card-desc, .brand-sub):not(#pmc-root *) {
+        max-width: none !important;
+    }
+}

@@ -38,15 +38,20 @@
         .visit-action { border: 1px solid rgba(17,17,17,0.09); border-radius: 15px; padding: 12px; background: rgba(17,17,17,0.035); display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #111; text-decoration: none; font-weight: 900; font-size: 13px; }
         .visit-action i { color: var(--pmc-accent); }
     </style>
+    <script src="/scripts/patient-theme-trial.js?v=20260524q"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524o">
 </head>
 <body>
     <main class="visit-app">
-        <header class="visit-topbar">
-            <a class="visit-back" href="/patient-menu.html"><i class="fa-solid fa-arrow-left"></i> Portal</a>
-            <div class="visit-label"><i class="fa-solid fa-eye"></i> Public Corner</div>
+        <header class="trial-unified-header">
+            <a class="trial-unified-brand" href="/patient-menu-simple-trial.html" aria-label="Beranda SISIwanita">
+                <div class="brand-title">SISI<span>wanita</span></div>
+                <div class="brand-sub">Public My Corner</div>
+            </a>
+            <button type="button" class="trial-unified-back" onclick="window.location.href='/patient-menu-simple-trial.html'" aria-label="Kembali ke portal">
+                <i class="fa-solid fa-arrow-left"></i><span>Portal</span>
+            </button>
         </header>
-        <div class="visit-brand">SISI<span>wanita</span></div>
         <div id="visit-root" class="visit-loading">
             <div><i class="fa-solid fa-spinner fa-spin"></i></div>
             <div>Memuat public corner...</div>
