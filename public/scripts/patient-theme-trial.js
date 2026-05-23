@@ -13,7 +13,7 @@
 
     var KEY  = 'patient_portal_theme_mode';
     var MODE = 'newdesign';
-    var TRIAL_HOME = '/patient-menu-trial.html';
+    var TRIAL_HOME = '/patient-menu-simple-trial.html';
 
     // ---- Centralized route map (old ↔ trial) ----
     // Add entries here as new trial pages are created.
@@ -121,9 +121,11 @@
         var isBackTarget =
             href === '/patient-menu.html' ||
             href === '/patient-menu-trial.html' ||
+            href === '/patient-menu-simple-trial.html' ||
             href.indexOf('javascript:history.back') === 0 ||
             onclick.indexOf('history.back') !== -1 ||
             onclick.indexOf("'/patient-menu-trial.html'") !== -1 ||
+            onclick.indexOf("'/patient-menu-simple-trial.html'") !== -1 ||
             label.indexOf('kembali') !== -1 ||
             label.indexOf('portal') !== -1;
 
@@ -175,7 +177,7 @@
             var u = new URL(link.href, window.location.origin);
             if (u.origin !== window.location.origin) return;
 
-            if (u.pathname === '/patient-menu.html') {
+            if (u.pathname === '/patient-menu.html' || u.pathname === '/patient-menu-trial.html') {
                 link.href = trialHomeUrl();
                 return;
             }
