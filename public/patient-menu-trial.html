@@ -2641,6 +2641,48 @@
             padding: 0 0 16px;
         }
 
+        .quick-card-section {
+            margin: 28px 0 34px;
+        }
+
+        .quick-card-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .quick-card-kicker {
+            font-size: 11px;
+            line-height: 1;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .quick-card-title {
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .quick-card-note {
+            max-width: 250px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: var(--text-secondary);
+            margin: 0;
+            text-align: right;
+        }
+
+        .quick-card-section .menu-grid {
+            margin-bottom: 0;
+        }
+
         .menu-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -2710,6 +2752,23 @@
         .menu-card p {
             font-size: 10px;
             color: var(--text-muted);
+        }
+
+        @media (max-width: 600px) {
+            .quick-card-header {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .quick-card-title {
+                font-size: 22px;
+            }
+
+            .quick-card-note {
+                max-width: none;
+                text-align: left;
+            }
         }
 
         .journey-showcase {
@@ -4738,6 +4797,66 @@
                     <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="/images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
                 </div>
             </div>
+
+            <!-- Kartu Cepat - familiar entry points from the old patient-menu home -->
+            <section class="quick-card-section" aria-labelledby="quick-card-title">
+                <div class="quick-card-header">
+                    <div>
+                        <div class="quick-card-kicker">Akses Cepat</div>
+                        <h2 class="quick-card-title" id="quick-card-title">Kartu Menu Pasien</h2>
+                    </div>
+                    <p class="quick-card-note">Pola card seperti halaman lama, dipertahankan agar navigasi tetap akrab saat mencoba visual baru.</p>
+                </div>
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="navigateTo('dokumen')" role="button" tabindex="0" aria-label="Buka menu Dokumen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('dokumen');}">
+                        <div class="menu-icon" style="background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(29,78,216,0.08)); color:#1d4ed8;">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <h3>Dokumen</h3>
+                        <p>USG, Lab, Resume</p>
+                    </div>
+
+                    <div class="menu-card" onclick="navigateTo('aplikasi')" role="button" tabindex="0" aria-label="Buka menu Aplikasi" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('aplikasi');}">
+                        <div class="menu-icon" style="background: linear-gradient(135deg, rgba(236,72,153,0.18), rgba(190,24,93,0.08)); color:#be185d;">
+                            <i class="fa-solid fa-heart-pulse"></i>
+                        </div>
+                        <h3>Aplikasi</h3>
+                        <p>Tracker, Kalender</p>
+                    </div>
+
+                    <div class="menu-card" onclick="navigateTo('jadwal')" role="button" tabindex="0" aria-label="Buka menu Jadwal" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('jadwal');}">
+                        <div class="menu-icon" style="background: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(5,150,105,0.08)); color:#059669;">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                        <h3>Jadwal</h3>
+                        <p>Booking, RS</p>
+                    </div>
+
+                    <div class="menu-card" onclick="navigateTo('edukasi')" role="button" tabindex="0" aria-label="Buka menu Edukasi" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navigateTo('edukasi');}">
+                        <div class="menu-icon" style="background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(217,119,6,0.08)); color:#d97706;">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <h3>Edukasi</h3>
+                        <p>Artikel, Panduan</p>
+                    </div>
+
+                    <div class="menu-card" onclick="window.location.href='/tanya-dokter-trial.html'" role="button" tabindex="0" aria-label="Buka Tanya Dokter" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='/tanya-dokter-trial.html';}">
+                        <div class="menu-icon" style="background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(109,40,217,0.08)); color:#6d28d9;">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <h3>Tanya Dokter</h3>
+                        <p>Tanya jawab privat</p>
+                    </div>
+
+                    <div class="menu-card" onclick="window.location.href='/community-chat.html?theme=newdesign'" role="button" tabindex="0" aria-label="Buka Community Chat" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.href='/community-chat.html?theme=newdesign';}">
+                        <div class="menu-icon" style="background: linear-gradient(135deg, rgba(6,182,212,0.18), rgba(37,99,235,0.08)); color:#2563eb;">
+                            <i class="fa-solid fa-user-group"></i>
+                        </div>
+                        <h3>Community</h3>
+                        <p>Chat & ruang pasien</p>
+                    </div>
+                </div>
+            </section>
 
             <!-- INFO TERBARU — ClearPath Scroll-Driven Sticky Showcase -->
             <div class="info-terbaru-block-header">

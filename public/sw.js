@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524a'; // 2026-05-24a - Enable Nanda-only trial preview gate
+const CACHE_VERSION = '20260524b'; // 2026-05-24b - Add familiar cards to Nanda trial home
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
