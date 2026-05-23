@@ -1058,6 +1058,136 @@
             cursor: not-allowed;
         }
 
+        .booking-cancel-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.68);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .booking-cancel-modal.active {
+            display: flex;
+        }
+
+        .booking-cancel-panel {
+            width: 100%;
+            max-width: 430px;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 16px;
+            background: linear-gradient(180deg, #151515, #0b0b0b);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+            padding: 18px;
+        }
+
+        .booking-cancel-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .booking-cancel-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.14);
+            color: #fca5a5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 17px;
+        }
+
+        .booking-cancel-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .booking-cancel-subtitle {
+            color: rgba(255, 255, 255, 0.64);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .booking-cancel-label {
+            display: block;
+            color: rgba(255, 255, 255, 0.84);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .booking-cancel-textarea {
+            width: 100%;
+            min-height: 98px;
+            resize: vertical;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            padding: 12px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            outline: none;
+        }
+
+        .booking-cancel-textarea:focus {
+            border-color: rgba(239, 68, 68, 0.62);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+        }
+
+        .booking-cancel-error {
+            display: none;
+            color: #fca5a5;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 8px;
+        }
+
+        .booking-cancel-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .booking-cancel-action {
+            flex: 1;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .booking-cancel-action.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .booking-cancel-action.danger {
+            background: #ef4444;
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(239, 68, 68, 0.22);
+        }
+
+        .booking-cancel-action:disabled {
+            opacity: 0.62;
+            cursor: not-allowed;
+        }
+
         /* Version Footer */
         .version-footer {
             text-align: center;
@@ -1615,6 +1745,76 @@
     <!-- Markdown and sanitization libraries for announcements -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script>
+        (function() {
+            var TRIAL_MODE_KEY = 'patient_portal_theme_mode';
+            var TRIAL_DISABLED_KEY = 'patient_portal_nanda_trial_disabled';
+            var TRIAL_MODE = 'newdesign';
+            var TRIAL_HOME = '/patient-menu-trial.html';
+
+            function normalizeName(value) {
+                return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            }
+
+            function getStoredPatientUser() {
+                try {
+                    return JSON.parse(localStorage.getItem('patient_user') || '{}');
+                } catch (error) {
+                    return {};
+                }
+            }
+
+            function isNandaTrialTester(profile) {
+                var user = profile || getStoredPatientUser();
+                var patientId = String(user.id || user.patient_id || user.medicalRecordId || '').trim();
+                var patientName = normalizeName(user.fullname || user.full_name || user.name || '');
+                return patientId === 'P2025091' || patientName === 'nanda ananda';
+            }
+
+            function buildTrialQuery() {
+                var params = new URLSearchParams(window.location.search);
+                params.delete('theme');
+                var query = params.toString();
+                return query ? '?' + query : '';
+            }
+
+            function routeNandaTrialTester() {
+                var params = new URLSearchParams(window.location.search);
+                var theme = params.get('theme');
+                var forceOld = theme === 'old' || theme === 'off' || theme === 'default';
+
+                if (forceOld) {
+                    try {
+                        sessionStorage.removeItem(TRIAL_MODE_KEY);
+                        sessionStorage.setItem(TRIAL_DISABLED_KEY, '1');
+                    } catch (error) {}
+                    return false;
+                }
+
+                if (theme === TRIAL_MODE) {
+                    try { sessionStorage.removeItem(TRIAL_DISABLED_KEY); } catch (error) {}
+                }
+
+                try {
+                    if (sessionStorage.getItem(TRIAL_DISABLED_KEY) === '1') return false;
+                } catch (error) {}
+
+                if (!isNandaTrialTester()) return false;
+
+                try { sessionStorage.setItem(TRIAL_MODE_KEY, TRIAL_MODE); } catch (error) {}
+
+                if (window.location.pathname === '/patient-menu.html') {
+                    window.location.replace(TRIAL_HOME + buildTrialQuery() + window.location.hash);
+                    return true;
+                }
+                return false;
+            }
+
+            window.__isNandaTrialTester = isNandaTrialTester;
+            window.__routeNandaTrialTester = routeNandaTrialTester;
+            routeNandaTrialTester();
+        })();
+    </script>
     <script src="/scripts/patient-theme-trial.js"></script>
     <!-- Support Chat widget (bot + staff escalation) -->
     <script src="/scripts/support-chat.js?v=20260518t"></script>
@@ -1966,9 +2166,28 @@
                             <h4 id="booking-status-title">Booking Aktif</h4>
                             <p id="booking-status-desc">-</p>
                         </div>
-                        <button type="button" class="booking-cancel-btn" id="booking-cancel-btn" onclick="cancelActiveBooking()">
+                        <button type="button" class="booking-cancel-btn" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">
                             <i class="fa fa-times-circle"></i> Batalkan
                         </button>
+                    </div>
+                </div>
+
+                <div class="booking-cancel-modal" id="booking-cancel-modal" aria-hidden="true" onclick="if(event.target===this){closeCancelBookingModal();}">
+                    <div class="booking-cancel-panel" role="dialog" aria-modal="true" aria-labelledby="booking-cancel-modal-title">
+                        <div class="booking-cancel-header">
+                            <div class="booking-cancel-icon"><i class="fa fa-times-circle"></i></div>
+                            <div>
+                                <div class="booking-cancel-title" id="booking-cancel-modal-title">Batalkan Janji Temu?</div>
+                                <div class="booking-cancel-subtitle">Mohon tuliskan alasan pembatalan agar tim klinik dapat mencatat perubahan jadwal Anda.</div>
+                            </div>
+                        </div>
+                        <label class="booking-cancel-label" for="booking-cancel-reason">Alasan pembatalan</label>
+                        <textarea class="booking-cancel-textarea" id="booking-cancel-reason" placeholder="Contoh: Tidak dapat hadir sesuai jadwal"></textarea>
+                        <div class="booking-cancel-error" id="booking-cancel-error"></div>
+                        <div class="booking-cancel-actions">
+                            <button type="button" class="booking-cancel-action secondary" id="booking-cancel-close-btn" onclick="closeCancelBookingModal()">Batal</button>
+                            <button type="button" class="booking-cancel-action danger" id="booking-cancel-submit-btn" onclick="submitCancelBooking()">Ya, Batalkan</button>
+                        </div>
                     </div>
                 </div>
 
@@ -2239,6 +2458,10 @@
                 localStorage.setItem('from_mobile_app', 'true');
                 // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            if (window.__routeNandaTrialTester && window.__routeNandaTrialTester()) {
+                return;
             }
 
             const token = getToken();
@@ -3426,24 +3649,96 @@
             }
         }
 
-        async function cancelActiveBooking() {
+        const cancelBookingState = {
+            appointmentId: ''
+        };
+
+        function showCancelBookingError(message) {
+            const errorEl = document.getElementById('booking-cancel-error');
+            if (!errorEl) return;
+            errorEl.textContent = message || 'Gagal membatalkan janji temu';
+            errorEl.style.display = 'block';
+        }
+
+        function clearCancelBookingError() {
+            const errorEl = document.getElementById('booking-cancel-error');
+            if (!errorEl) return;
+            errorEl.textContent = '';
+            errorEl.style.display = 'none';
+        }
+
+        function setCancelBookingLoading(isLoading) {
+            const submitButton = document.getElementById('booking-cancel-submit-btn');
+            const closeButton = document.getElementById('booking-cancel-close-btn');
+            const reasonInput = document.getElementById('booking-cancel-reason');
+            const activeButton = document.getElementById('booking-cancel-btn');
+
+            if (submitButton) {
+                submitButton.disabled = !!isLoading;
+                submitButton.textContent = isLoading ? 'Memproses...' : 'Ya, Batalkan';
+            }
+            if (closeButton) closeButton.disabled = !!isLoading;
+            if (reasonInput) reasonInput.disabled = !!isLoading;
+            if (activeButton) activeButton.disabled = !!isLoading;
+        }
+
+        function closeCancelBookingModal() {
+            const modal = document.getElementById('booking-cancel-modal');
+            const reasonInput = document.getElementById('booking-cancel-reason');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            if (reasonInput) reasonInput.value = '';
+            clearCancelBookingError();
+            setCancelBookingLoading(false);
+            cancelBookingState.appointmentId = '';
+            document.body.style.overflow = '';
+        }
+
+        function cancelActiveBooking(event) {
+            if (event && typeof event.preventDefault === 'function') event.preventDefault();
             const cancelButton = document.getElementById('booking-cancel-btn');
             const appointmentId = cancelButton ? cancelButton.dataset.appointmentId : '';
             if (!appointmentId) return;
 
-            const reasonInput = window.prompt('Tulis alasan pembatalan janji temu (minimal 10 karakter):', 'Tidak dapat hadir sesuai jadwal');
-            if (reasonInput === null) return;
+            cancelBookingState.appointmentId = appointmentId;
+            clearCancelBookingError();
 
-            const reason = reasonInput.trim();
+            const modal = document.getElementById('booking-cancel-modal');
+            const reasonInput = document.getElementById('booking-cancel-reason');
+            if (modal) {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            if (reasonInput) {
+                reasonInput.value = 'Tidak dapat hadir sesuai jadwal';
+                setTimeout(function() {
+                    reasonInput.focus();
+                    reasonInput.select();
+                }, 80);
+            }
+        }
+
+        async function submitCancelBooking() {
+            const appointmentId = cancelBookingState.appointmentId;
+            const reasonInput = document.getElementById('booking-cancel-reason');
+            const reason = reasonInput ? reasonInput.value.trim() : '';
+            if (!appointmentId) {
+                showCancelBookingError('Data janji temu tidak ditemukan. Muat ulang halaman lalu coba lagi.');
+                return;
+            }
             if (reason.length < 10) {
-                if (typeof showError === 'function') showError('Alasan pembatalan minimal 10 karakter');
-                else alert('Alasan pembatalan minimal 10 karakter');
+                showCancelBookingError('Alasan pembatalan minimal 10 karakter.');
+                if (reasonInput) reasonInput.focus();
                 return;
             }
 
             try {
                 const token = getToken();
-                if (cancelButton) cancelButton.disabled = true;
+                clearCancelBookingError();
+                setCancelBookingLoading(true);
 
                 const response = await fetch('/api/sunday-appointments/' + appointmentId + '/cancel', {
                     method: 'PUT',
@@ -3460,17 +3755,30 @@
                     throw new Error(data.message || 'Gagal membatalkan janji temu');
                 }
 
+                closeCancelBookingModal();
                 await checkActiveBooking();
                 if (typeof showSuccess === 'function') showSuccess(data.message || 'Janji temu berhasil dibatalkan');
                 else alert(data.message || 'Janji temu berhasil dibatalkan');
             } catch (error) {
-                if (cancelButton) cancelButton.disabled = false;
-                if (typeof showError === 'function') showError(error.message || 'Gagal membatalkan janji temu');
-                else alert(error.message || 'Gagal membatalkan janji temu');
+                setCancelBookingLoading(false);
+                showCancelBookingError(error.message || 'Gagal membatalkan janji temu');
             }
         }
 
+        document.addEventListener('DOMContentLoaded', function() {
+            const cancelButton = document.getElementById('booking-cancel-btn');
+            if (cancelButton && !cancelButton.dataset.cancelListenerBound) {
+                cancelButton.dataset.cancelListenerBound = '1';
+                cancelButton.addEventListener('click', function(event) {
+                    if (event.defaultPrevented) return;
+                    cancelActiveBooking(event);
+                });
+            }
+        });
+
         window.cancelActiveBooking = cancelActiveBooking;
+        window.closeCancelBookingModal = closeCancelBookingModal;
+        window.submitCancelBooking = submitCancelBooking;
 
         // ==================== BOTTOM SHEET MENU DATA ====================
         const menuData = {
