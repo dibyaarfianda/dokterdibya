@@ -115,13 +115,13 @@
         .topbar-inner {
             width: min(100%, 860px);
             margin: 0 auto;
-            padding: 10px 16px 12px;
+            padding: 8px 13px 10px;
             display: grid;
             grid-template-columns: 1fr auto;
             align-items: center;
-            gap: 14px;
+            gap: 11px;
         }
-        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand { display: flex; align-items: center; gap: 10px; }
         .brand-link {
             display: inline-flex;
             flex-direction: column;
@@ -133,14 +133,14 @@
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
         }
-        .top-actions { display: flex; align-items: center; gap: 9px; }
+        .top-actions { display: flex; align-items: center; gap: 7px; }
         .icon-btn, .avatar {
             border: 1px solid var(--line);
             background: rgba(255,255,255,0.82);
             box-shadow: var(--shadow-soft);
-            width: 40px;
-            height: 40px;
-            border-radius: 14px;
+            width: 32px;
+            height: 32px;
+            border-radius: 11px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -150,35 +150,35 @@
             transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
         }
         .icon-btn:active, .avatar:active, .tap-card:active, .primary-action:active { transform: scale(0.97); }
-        .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; display: none; }
-        .avatar span { font-size: 12px; font-weight: 800; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 11px; display: none; }
+        .avatar span { font-size: 10px; font-weight: 800; }
         .badge {
             position: absolute;
-            top: -5px;
-            right: -5px;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 9px;
+            top: -4px;
+            right: -4px;
+            min-width: 15px;
+            height: 15px;
+            border-radius: 8px;
             background: #dc2626;
             color: white;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 800;
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 0 5px;
+            padding: 0 4px;
         }
         .vip-badge {
             display: none;
             position: absolute;
-            bottom: -5px;
-            right: -5px;
+            bottom: -4px;
+            right: -4px;
             background: #111;
             color: #fff;
-            border-radius: 8px;
-            font-size: 8px;
+            border-radius: 6px;
+            font-size: 6px;
             font-weight: 800;
-            padding: 2px 4px;
+            padding: 2px 3px;
         }
         .vip-badge.show { display: block; }
 
@@ -575,7 +575,7 @@
 
         body #home-brand-title {
             font-family: var(--display) !important;
-            font-size: 20px !important;
+            font-size: 16px !important;
             line-height: 1.02 !important;
             font-weight: 800 !important;
             letter-spacing: -0.04em !important;
@@ -591,13 +591,45 @@
         body #home-brand-sub {
             margin-top: 3px !important;
             max-width: none !important;
-            font-size: 9px !important;
+            font-size: 7.2px !important;
             line-height: 1.2 !important;
             font-weight: 700 !important;
             letter-spacing: 0.24em !important;
             text-transform: uppercase !important;
             color: #7EA89F !important;
             text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14) !important;
+        }
+
+        body #home-topbar-inner {
+            padding: 8px 13px 10px !important;
+            gap: 11px !important;
+        }
+
+        body #home-top-actions {
+            gap: 7px !important;
+        }
+
+        body #home-notif-btn,
+        body #user-avatar {
+            width: 32px !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            padding: 0 !important;
+            border-radius: 11px !important;
+        }
+
+        body #home-notif-btn i {
+            font-size: 13px !important;
+            line-height: 1 !important;
+        }
+
+        body #user-avatar img {
+            border-radius: 11px !important;
+        }
+
+        body #user-avatar-initials {
+            font-size: 10px !important;
+            line-height: 1 !important;
         }
     </style>
 </head>
@@ -616,15 +648,15 @@
 
     <main class="app">
         <header class="topbar">
-            <div class="topbar-inner">
+            <div class="topbar-inner" id="home-topbar-inner">
                 <div class="brand">
                     <a href="/patient-menu-simple-trial.html" class="brand-link soundable" id="home-brand-link" aria-label="Beranda SISIwanita">
                         <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
                         <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
                     </a>
                 </div>
-                <div class="top-actions">
-                    <button class="icon-btn soundable" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
                         <i class="fa-solid fa-bell"></i>
                         <span class="badge" id="notif-badge">0</span>
                     </button>
