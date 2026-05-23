@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524z'; // 2026-05-24z - Refresh home portal top blur height to 150px
+const CACHE_VERSION = '20260524za'; // 2026-05-24za - Refresh home portal top blur height restored to 220px
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
