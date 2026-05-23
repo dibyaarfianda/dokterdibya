@@ -102,15 +102,13 @@
         .app {
             width: min(100%, 860px);
             margin: 0 auto;
-            padding: 74px 16px 0;
+            padding: 0 16px 0;
             position: relative;
         }
 
         .topbar {
-            position: fixed;
+            position: sticky;
             top: env(safe-area-inset-top, 0px);
-            left: 0;
-            right: 0;
             z-index: 30;
             background: transparent;
         }
