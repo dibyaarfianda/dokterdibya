@@ -68,6 +68,84 @@
         set(MODE);
     }
 
+    function normalizeTrialBrandText(root) {
+        if (!isTrialPage) return;
+        var scope = root || document.body;
+        if (!scope) return;
+
+        if (document.title) {
+            document.title = document.title
+                .replace(/dokterDIBYA/g, 'SISIwanita')
+                .replace(/Dokter Dibya/g, 'SISIwanita')
+                .replace(/DokterDibya/g, 'SISIwanita');
+        }
+
+        scope.querySelectorAll && scope.querySelectorAll('.brand-title, .site-footer-logo').forEach(function (element) {
+            if (/dokter\s*DIBYA|dokterDIBYA|Dokter Dibya|DokterDibya/i.test(element.textContent || '')) {
+                element.textContent = 'SISIwanita';
+            }
+        });
+
+        var walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
+            acceptNode: function (node) {
+                if (!node || !node.nodeValue) return NodeFilter.FILTER_REJECT;
+                if (!/dokterDIBYA|Dokter Dibya|DokterDibya/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+                var parent = node.parentElement;
+                if (!parent || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT)$/i.test(parent.tagName)) return NodeFilter.FILTER_REJECT;
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        });
+
+        var nodes = [];
+        var node;
+        while ((node = walker.nextNode())) nodes.push(node);
+        nodes.forEach(function (textNode) {
+            textNode.nodeValue = textNode.nodeValue
+                .replace(/dokterDIBYA/g, 'SISIwanita')
+                .replace(/Dokter Dibya/g, 'SISIwanita')
+                .replace(/DokterDibya/g, 'SISIwanita');
+        });
+    }
+
+    function installTrialBrandNormalizer() {
+        if (!isTrialPage || window.__patientTrialBrandNormalizerInstalled) return;
+        window.__patientTrialBrandNormalizerInstalled = true;
+        var scheduled = false;
+        var observer = null;
+
+        function run() {
+            scheduled = false;
+            try { if (observer) observer.disconnect(); } catch (error) {}
+            normalizeTrialBrandText(document.body);
+            try {
+                if (observer && document.body) {
+                    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+                }
+            } catch (error) {}
+        }
+
+        function schedule() {
+            if (scheduled) return;
+            scheduled = true;
+            window.setTimeout(run, 120);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', schedule, { once: true });
+        } else {
+            schedule();
+        }
+
+        try {
+            observer = new MutationObserver(function () {
+                schedule();
+            });
+            if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        } catch (error) {}
+    }
+
+    installTrialBrandNormalizer();
+
     // ---- Redirect logic ----
     // Strip theme param, keep the rest (token, etc.)
     function buildQS() {
