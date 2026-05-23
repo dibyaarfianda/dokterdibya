@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524c'; // 2026-05-24c - Add simple Nanda trial dashboard
+const CACHE_VERSION = '20260524d'; // 2026-05-24d - Add mobile My Corner workdesk trial
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -14,6 +14,10 @@ const PRECACHE_FILES = [
   '/',
   '/patient-menu.html',
   '/patient-menu-simple-trial.html',
+  '/my-corner-visit-trial.html',
+  '/styles/patient-my-corner.css',
+  '/scripts/patient-my-corner.js',
+  '/scripts/patient-my-corner-visit.js',
   '/patient-login.html',
   '/offline.html',
   '/images/dibya-logo.png',
