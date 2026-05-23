@@ -534,7 +534,7 @@
         @media (max-width: 520px) {
             .app { padding-left: 14px; padding-right: 14px; }
             .hero-card { padding: 18px; border-radius: 24px; }
-            .today-row { grid-template-columns: 1fr; align-items: start; row-gap: 40px; }
+            .today-row { grid-template-columns: 1fr; align-items: start; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
             .corner-panel { grid-template-columns: 1fr; }
@@ -584,6 +584,10 @@
         body #home-topbar-inner {
             padding: 8px 13px 10px !important;
             gap: 11px !important;
+        }
+
+        body #home-topbar {
+            margin-bottom: 40px !important;
         }
 
         body #home-top-actions {
@@ -682,7 +686,7 @@
     </div>
 
     <main class="app">
-        <header class="topbar">
+        <header class="topbar" id="home-topbar">
             <div class="topbar-inner" id="home-topbar-inner">
                 <div class="brand">
                     <a href="/patient-menu-simple-trial.html" class="brand-link soundable" id="home-brand-link" aria-label="Beranda SISIwanita">
