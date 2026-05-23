@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zx'; // 2026-05-24zx - Refresh patient home with landing-style intro animation
+const CACHE_VERSION = '20260524zy'; // 2026-05-24zy - Hold patient home intro elements at opacity 0 during animation delay
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
