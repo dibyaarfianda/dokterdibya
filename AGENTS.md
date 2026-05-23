@@ -1714,3 +1714,47 @@ User confirmed with "perfect" after the final gap fix for the Kantor Saya frame.
 
 **Lesson:**
 - When layout math looks correct but the visual result is still short, check CSS `zoom` on `html` or `body`. In this staff panel, viewport-based calculations must account for `browser-zoom-80`.
+
+### 48. Session Log - 24 May 2026
+
+**Nanda Simple Patient Portal Trial (User Reacted Positively)**
+
+User reacted with "wow" after the first simple trial dashboard implementation.
+
+**Problem:**
+- The earlier patient portal trial felt like reopening a landing page every time.
+- User wanted a simpler daily portal that still felt animatic, plus optional tap sound and a personal patient space similar in spirit to Staff Panel's Kantor Saya.
+
+**What worked:**
+1. Keep production safe by routing only the beta tester account to the new page:
+    - Nanda tester detection stayed in `public/patient-menu.html`.
+    - `TRIAL_HOME` was switched to `/patient-menu-simple-trial.html`.
+    - Non-Nanda patients stayed on the old production home.
+    - `?theme=old` continued to suppress the trial redirect.
+2. Build the new portal as an isolated page instead of replacing production:
+    - New page: `public/patient-menu-simple-trial.html`.
+    - First viewport behaves like a compact dashboard: greeting, today's context, booking status, quick actions, tracker summary, and personal corner.
+3. Add patient-owned personalization locally for the trial:
+    - `patient_my_corner_name`
+    - `patient_my_corner_note`
+    - This keeps My Corner separate from official medical records while testing the concept.
+4. Add subtle optional button tap sound:
+    - Web Audio oscillator, very short and low volume.
+    - Preference stored in `patient_tap_sound_enabled`.
+    - Avoid double playback by letting `.soundable` click capture handle sound instead of also playing inside navigation helpers.
+5. Bump patient PWA cache after adding the trial:
+    - `CACHE_VERSION` in `public/sw.js` -> `20260524c`.
+    - Include `/patient-menu-simple-trial.html` in precache.
+
+**Verification pattern:**
+1. Check inline JavaScript syntax with `new Function()` against script blocks.
+2. Check duplicate HTML IDs before committing.
+3. Run `git diff --check`.
+4. Verify `/api/health` returns 200.
+5. Simulate the Nanda gate in Node:
+    - Nanda redirects to `/patient-menu-simple-trial.html`.
+    - Other patients do not redirect.
+    - `?theme=old` does not redirect.
+
+**Lesson:**
+- For daily patient portal redesign, use animation as microinteraction and atmosphere, not as repeated landing-page structure. Keep the first screen immediately useful, and isolate beta pages behind account-specific routing until the pattern is proven.
