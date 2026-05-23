@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524q'; // 2026-05-24q - Refresh latest trial shell, header, and footer assets
+const CACHE_VERSION = '20260524r'; // 2026-05-24r - Refresh home portal logo and motto styling
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
