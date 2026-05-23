@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zm'; // 2026-05-24zm - Refresh home bottom nav without border
+const CACHE_VERSION = '20260524zn'; // 2026-05-24zn - Refresh hero card mobile vertical gap to 40px
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
