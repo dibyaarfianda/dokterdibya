@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524f'; // 2026-05-24f - Remove old My Corner modal conflict
+const CACHE_VERSION = '20260524g'; // 2026-05-24g - Harmonize trial page theme
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -15,6 +15,7 @@ const PRECACHE_FILES = [
   '/patient-menu.html',
   '/patient-menu-simple-trial.html',
   '/my-corner-visit-trial.html',
+  '/styles/patient-trial-theme.css',
   '/styles/patient-my-corner.css',
   '/scripts/patient-my-corner.js',
   '/scripts/patient-my-corner-visit.js',
