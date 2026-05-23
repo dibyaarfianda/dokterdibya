@@ -242,6 +242,7 @@
             margin-bottom: 12px;
         }
         .hero-copy { color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 52ch; }
+        .hero-copy-strong { font-weight: 800; font-size: 1.05em; }
         .today-row {
             margin-top: 18px;
             display: grid;
@@ -823,7 +824,7 @@
             <section class="hero-card reveal">
                 <div class="status-chip"><span class="status-dot"></span><span id="time-greeting">Selamat datang</span></div>
                 <h1 class="hero-title" id="hero-title">Ruang Anda.</h1>
-                <p class="hero-copy" id="hero-copy">Dashboard ringkas untuk jadwal, dokumen, catatan, dan pengingat penting Anda.</p>
+                <p class="hero-copy" id="hero-copy">Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.</p>
                 <div class="today-row">
                     <div>
                         <div class="today-label">Hari ini</div>
@@ -1094,7 +1095,7 @@
             window.currentProfile = currentProfile;
             const firstName = (currentProfile.fullname || currentProfile.full_name || 'Pasien').split(' ')[0];
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
-            document.getElementById('hero-copy').textContent = 'Semua yang penting hari ini: jadwal, dokumen, pengingat, dan catatan pribadi dalam satu layar ringkas.';
+            document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.';
             if (currentProfile.profile_picture || currentProfile.photo_url) {
                 const img = document.getElementById('user-avatar-img');
                 img.src = currentProfile.profile_picture || currentProfile.photo_url;
