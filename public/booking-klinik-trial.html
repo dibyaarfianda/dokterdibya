@@ -673,7 +673,7 @@
     <!-- Top Bar -->
     <header class="topbar">
         <div class="topbar-inner">
-            <button class="back-btn" onclick="window.location.href='/patient-menu-trial.html'">
+            <button class="back-btn" onclick="window.location.href='/patient-menu-simple-trial.html'">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             <span class="topbar-title">Booking Klinik</span>
@@ -1163,11 +1163,11 @@
                     Tanggal: ${data.details.date}<br>
                     Waktu: ${data.details.time}<br><br>
                     Status: <strong>Menunggu Konfirmasi</strong><br>
-                    Anda akan dialihkan ke menu...
+                    Anda akan dialihkan ke portal...
                 `, 'success');
 
                 setTimeout(() => {
-                    window.location.href = '/patient-menu-trial.html';
+                    window.location.href = '/patient-menu-simple-trial.html';
                 }, 3000);
 
             } catch (error) {
