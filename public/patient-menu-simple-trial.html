@@ -532,6 +532,22 @@
         .reveal:nth-child(3) { animation-delay: 0.08s; }
         @keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
+        body.home-sections-locked #content-wrapper > .section {
+            opacity: 0;
+            transform: translateY(18px);
+            pointer-events: none;
+        }
+
+        body.home-sections-unlocked #content-wrapper > .section {
+            animation: cardIn 0.42s ease both;
+            pointer-events: auto;
+        }
+
+        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(1) { animation-delay: 0.04s; }
+        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(2) { animation-delay: 0.08s; }
+        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(3) { animation-delay: 0.12s; }
+        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(4) { animation-delay: 0.16s; }
+
         @media (max-width: 520px) {
             .app { padding-left: 14px; padding-right: 14px; }
             .hero-card { padding: 18px; border-radius: 24px; }
@@ -674,7 +690,7 @@
         }
     </style>
 </head>
-<body>
+<body class="home-sections-locked">
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
         <div class="topbar-blur-2"></div>
@@ -1210,6 +1226,25 @@
 
         function scrollTopHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
+        let homeSectionsUnlocked = false;
+
+        function lockHomeSections() {
+            homeSectionsUnlocked = false;
+            document.body.classList.add('home-sections-locked');
+            document.body.classList.remove('home-sections-unlocked');
+        }
+
+        function unlockHomeSections() {
+            if (homeSectionsUnlocked) return;
+            homeSectionsUnlocked = true;
+            document.body.classList.remove('home-sections-locked');
+            document.body.classList.add('home-sections-unlocked');
+        }
+
+        function handleHomeScrollReveal() {
+            if (window.scrollY > 8) unlockHomeSections();
+        }
+
         function resetScrollToTop() {
             if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
             window.scrollTo(0, 0);
@@ -1232,6 +1267,7 @@
 
         async function init() {
             resetScrollToTop();
+            lockHomeSections();
             todayLabel();
             updateSoundUI();
             const token = getToken();
@@ -1274,8 +1310,10 @@
         window.scrollTo(0, 0);
 
         document.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('scroll', handleHomeScrollReveal, { passive: true });
         window.addEventListener('pageshow', function(event) {
             resetScrollToTop();
+            lockHomeSections();
             if (event.persisted) {
                 loadNotificationCount();
                 loadUnreadDocCounts();
