@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zb'; // 2026-05-24zb - Refresh home portal bottom blur removal
+const CACHE_VERSION = '20260524zc'; // 2026-05-24zc - Refresh Ruang terminology and icon update
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

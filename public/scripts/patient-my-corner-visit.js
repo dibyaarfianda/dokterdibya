@@ -17,7 +17,7 @@
         root.className = 'visit-card';
         root.innerHTML = '<div class="visit-avatar"><i class="fa-solid fa-lock"></i></div>' +
             '<h1 class="visit-title">Tidak tersedia</h1>' +
-            '<p class="visit-intro">' + escapeHtml(message || 'Public corner belum tersedia atau link sudah berubah.') + '</p>' +
+            '<p class="visit-intro">' + escapeHtml(message || 'Ruang publik belum tersedia atau link sudah berubah.') + '</p>' +
             '<a class="visit-action" href="/patient-menu.html"><span>Kembali ke portal</span><i class="fa-solid fa-arrow-right"></i></a>';
     }
 
@@ -31,12 +31,12 @@
         root.className = '';
         root.innerHTML = '<section class="visit-card">' +
             '<div class="visit-avatar">' + escapeHtml(profile.avatar_initials || 'PA') + '</div>' +
-            '<h1 class="visit-title">' + escapeHtml(profile.corner_name || theme.corner_name || 'My Corner') + '</h1>' +
+            '<h1 class="visit-title">' + escapeHtml(profile.corner_name || theme.corner_name || 'Ruang Saya') + '</h1>' +
             '<p class="visit-intro">' + escapeHtml(profile.intro || 'Ruang publik pasien.') + '</p>' +
             '<div class="visit-label" style="margin-top:12px;"><i class="fa-solid fa-user-shield"></i> Read-only, public-safe</div>' +
             '</section>' +
             '<section class="visit-card visit-widget ' + (widgets.indexOf('intro') !== -1 ? 'is-visible' : '') + '">' +
-                '<div class="pmc-kicker">Pemilik Corner</div>' +
+                '<div class="pmc-kicker">Pemilik Ruang</div>' +
                 '<h2 class="pmc-card-title">' + escapeHtml(profile.display_name || 'Pasien') + '</h2>' +
                 '<p class="visit-empty">Pemilik memilih sendiri informasi yang tampil di halaman publik ini.</p>' +
             '</section>' +
@@ -60,7 +60,7 @@
     async function init() {
         var code = getCode();
         if (!code) {
-            renderError('Kode public corner tidak ditemukan.');
+            renderError('Kode ruang publik tidak ditemukan.');
             return;
         }
 
@@ -71,11 +71,11 @@
             });
             var body = await response.json().catch(function () { return {}; });
             if (!response.ok || body.success === false) {
-                throw new Error(body.message || 'Public corner tidak tersedia.');
+                throw new Error(body.message || 'Ruang publik tidak tersedia.');
             }
             render(body.data || {});
         } catch (error) {
-            renderError(error.message || 'Gagal memuat public corner.');
+            renderError(error.message || 'Gagal memuat ruang publik.');
         }
     }
 
