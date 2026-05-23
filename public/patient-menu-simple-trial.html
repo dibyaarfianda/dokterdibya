@@ -56,25 +56,6 @@
         button, a { font-family: inherit; }
         a { color: inherit; text-decoration: none; }
 
-        .bottom-blur {
-            position: fixed;
-            left: 0;
-            right: 0;
-            pointer-events: none;
-            z-index: 20;
-            overflow: hidden;
-        }
-        .bottom-blur { bottom: 0; height: 150px; }
-        .bottom-blur::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            background: rgba(247, 247, 244, 0.58);
-        }
-        .bottom-blur::before { mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.86) 42%, transparent 100%); -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0,0,0,0.86) 42%, transparent 100%); }
-
         .topbar-blur-fade {
             position: fixed;
             left: 0;
@@ -644,7 +625,6 @@
         <div class="topbar-blur-7"></div>
         <div class="topbar-blur-8"></div>
     </div>
-    <div class="bottom-blur" aria-hidden="true"></div>
 
     <main class="app">
         <header class="topbar">
