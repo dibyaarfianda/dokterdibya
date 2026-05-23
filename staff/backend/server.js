@@ -210,6 +210,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/sunday-clinic/queue/public', // Live queue for patient portal (names masked)
     '/api/sunday-clinic/queue/settings', // Queue visibility toggle (patients need to check)
     '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
+    '/api/patient-workdesk',   // Patient My Corner / workdesk sync
     '/api/support-chat',       // Support chat (bot + staff escalation)
 ];
 
@@ -477,6 +478,10 @@ app.use('/api/patient-questions', patientQuestionsRoutes);
 // Patient Feedback (masukan untuk pengembang portal)
 const patientFeedbackRoutes = require('./routes/patient-feedback');
 app.use('/api/patient-feedback', patientFeedbackRoutes);
+
+// Patient My Corner / Workdesk
+const patientWorkdeskRoutes = require('./routes/patient-workdesk');
+app.use('/api/patient-workdesk', patientWorkdeskRoutes);
 
 // Support Chat — bot + staff escalation
 app.use('/api/support-chat', supportChatRoutes);
