@@ -562,6 +562,11 @@
 
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+
+            body.home-sections-unlocked #content-wrapper > .section {
+                animation-duration: 0.42s !important;
+                transition-duration: 0.42s !important;
+            }
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
@@ -1227,6 +1232,7 @@
         function scrollTopHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
         let homeSectionsUnlocked = false;
+        let homeTouchStartY = null;
 
         function lockHomeSections() {
             homeSectionsUnlocked = false;
@@ -1243,6 +1249,21 @@
 
         function handleHomeScrollReveal() {
             if (window.scrollY > 8) unlockHomeSections();
+        }
+
+        function handleHomeWheelReveal(event) {
+            if (event.deltaY > 0) unlockHomeSections();
+        }
+
+        function handleHomeTouchStart(event) {
+            const touch = event.touches && event.touches[0];
+            homeTouchStartY = touch ? touch.clientY : null;
+        }
+
+        function handleHomeTouchMove(event) {
+            const touch = event.touches && event.touches[0];
+            if (!touch || homeTouchStartY === null) return;
+            if (homeTouchStartY - touch.clientY > 10) unlockHomeSections();
         }
 
         function resetScrollToTop() {
@@ -1311,6 +1332,9 @@
 
         document.addEventListener('DOMContentLoaded', init);
         window.addEventListener('scroll', handleHomeScrollReveal, { passive: true });
+        window.addEventListener('wheel', handleHomeWheelReveal, { passive: true });
+        window.addEventListener('touchstart', handleHomeTouchStart, { passive: true });
+        window.addEventListener('touchmove', handleHomeTouchMove, { passive: true });
         window.addEventListener('pageshow', function(event) {
             resetScrollToTop();
             lockHomeSections();
