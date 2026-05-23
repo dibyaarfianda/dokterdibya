@@ -612,6 +612,38 @@
             font-size: 10px !important;
             line-height: 1 !important;
         }
+
+        body #home-bottom-nav {
+            width: min(460px, calc(100% - 28px)) !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+            border-radius: 19px !important;
+            padding: 6px !important;
+        }
+
+        body #home-bottom-inner {
+            gap: 3px !important;
+        }
+
+        body #home-bottom-nav .nav-item {
+            border-radius: 14px !important;
+            padding: 6px 3px !important;
+            font-size: 8px !important;
+            line-height: 1.1 !important;
+        }
+
+        body #home-bottom-nav .nav-item i {
+            font-size: 12px !important;
+        }
+
+        body #home-bottom-nav .nav-badge {
+            top: 2px !important;
+            right: 10px !important;
+            min-width: 12px !important;
+            height: 12px !important;
+            border-radius: 6px !important;
+            font-size: 7px !important;
+            padding: 0 3px !important;
+        }
     </style>
 </head>
 <body>
@@ -773,8 +805,8 @@
         </div>
     </section>
 
-    <nav class="bottom-nav" aria-label="Navigasi bawah">
-        <div class="bottom-inner">
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
             <button class="nav-item active soundable" onclick="scrollTopHome()"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
             <button class="nav-item soundable" onclick="openSheet('dokumen')"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
             <button class="nav-item soundable" onclick="openSheet('aplikasi')"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
