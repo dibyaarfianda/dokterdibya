@@ -639,6 +639,13 @@
             pointer-events: auto;
         }
 
+        body.home-sections-unlocked:not(.home-actions-revealed) #primary-actions-section ~ .section {
+            animation: none !important;
+            opacity: 0 !important;
+            transform: translateY(18px) !important;
+            pointer-events: none;
+        }
+
         body.home-actions-revealed #primary-actions-section .section-kicker {
             animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 120ms both;
         }
@@ -889,17 +896,6 @@
                 </div>
             </section>
 
-            <section class="section">
-                <div class="status-panel" id="quick-status">
-                    <div class="status-icon"><i class="fa-solid fa-calendar-check"></i></div>
-                    <div class="status-body">
-                        <h3 id="booking-status-title">Booking Aktif</h3>
-                        <p id="booking-status-desc">-</p>
-                    </div>
-                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
-                </div>
-            </section>
-
             <section class="section reveal" id="primary-actions-section">
                 <div class="section-head">
                     <div>
@@ -933,6 +929,17 @@
                         <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
                         <span><h3 id="corner-card-title">Ruang Saya</h3><p>Catatan pribadi</p></span>
                     </button>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="status-panel" id="quick-status">
+                    <div class="status-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="status-body">
+                        <h3 id="booking-status-title">Booking Aktif</h3>
+                        <p id="booking-status-desc">-</p>
+                    </div>
+                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
                 </div>
             </section>
 
