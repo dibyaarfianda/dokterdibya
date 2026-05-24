@@ -677,6 +677,18 @@
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(5) { animation-delay: 740ms; }
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(6) { animation-delay: 820ms; }
 
+        body.home-actions-settled #primary-actions-section,
+        body.home-actions-settled #primary-actions-section .section-kicker,
+        body.home-actions-settled #primary-actions-section .section-title,
+        body.home-actions-settled #primary-actions-section .section-note,
+        body.home-actions-settled #primary-actions-section .tap-card {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            filter: none !important;
+            pointer-events: auto;
+        }
+
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(3) { animation-delay: 0.08s; }
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(4) { animation-delay: 0.12s; }
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(5) { animation-delay: 0.16s; }
@@ -1386,6 +1398,8 @@
 
         let homeSectionsUnlocked = false;
         let homeTouchStartY = null;
+        let homeActionGapFrozen = false;
+        let homeActionSettleTimer = null;
 
         function getHomeViewportHeight() {
             if (window.visualViewport && window.visualViewport.height) return window.visualViewport.height;
@@ -1398,10 +1412,22 @@
             if (!hero || !actionSection) return;
             const viewportHeight = getHomeViewportHeight();
             document.documentElement.style.setProperty('--home-viewport-height', Math.ceil(viewportHeight) + 'px');
+            if (homeActionGapFrozen || window.scrollY > 4 || document.body.classList.contains('home-actions-revealed')) return;
             const heroBottom = hero.getBoundingClientRect().bottom;
             const targetTop = viewportHeight + 28;
             const gap = Math.max(96, Math.ceil(targetTop - heroBottom));
             document.documentElement.style.setProperty('--home-action-gap', gap + 'px');
+        }
+
+        function freezeHomeActionGap() {
+            if (homeActionGapFrozen) return;
+            updateHomeActionGap();
+            homeActionGapFrozen = true;
+        }
+
+        function settlePrimaryActions() {
+            if (!document.body.classList.contains('home-actions-revealed')) return;
+            document.body.classList.add('home-actions-settled');
         }
 
         function revealLaterSectionsIfReady() {
@@ -1422,7 +1448,10 @@
             const viewportHeight = getHomeViewportHeight();
             const rect = actionSection.getBoundingClientRect();
             if (rect.top < viewportHeight * 0.98) {
+                freezeHomeActionGap();
                 document.body.classList.add('home-actions-revealed');
+                window.clearTimeout(homeActionSettleTimer);
+                homeActionSettleTimer = window.setTimeout(settlePrimaryActions, 1550);
                 requestAnimationFrame(revealLaterSectionsIfReady);
             }
         }
@@ -1432,7 +1461,10 @@
             document.body.classList.add('home-sections-locked');
             document.body.classList.remove('home-sections-unlocked');
             document.body.classList.remove('home-actions-revealed');
+            document.body.classList.remove('home-actions-settled');
             document.body.classList.remove('home-later-revealed');
+            window.clearTimeout(homeActionSettleTimer);
+            homeActionGapFrozen = false;
         }
 
         function unlockHomeSections() {
