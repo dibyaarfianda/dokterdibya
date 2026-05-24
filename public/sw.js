@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zzg'; // 2026-05-24zzg - Smooth patient home primary actions reveal on mobile
+const CACHE_VERSION = '20260524swa'; // 2026-05-24swa - Refresh patient PWA icons with swlogo
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -22,7 +22,7 @@ const PRECACHE_FILES = [
   '/patient-login.html',
   '/offline.html',
   '/images/dibya-logo.png',
-  '/images/pwa-icons/icon-192x192.png',
+  '/images/pwa-icons/swlogo-pwa-192x192.png',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
   'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
@@ -172,8 +172,8 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.body || 'Notifikasi baru dari Dokter Dibya',
-    icon: '/images/pwa-icons/icon-192x192.png',
-    badge: '/images/pwa-icons/icon-72x72.png',
+    icon: '/images/pwa-icons/swlogo-pwa-192x192.png',
+    badge: '/images/pwa-icons/swlogo-pwa-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/patient-menu.html'
