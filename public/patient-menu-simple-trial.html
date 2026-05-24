@@ -269,6 +269,10 @@
         .section { margin-top: 18px; }
         #primary-actions-section {
             margin-top: var(--home-action-gap, max(180px, 42svh));
+            min-height: calc(var(--home-viewport-height, 100svh) - 96px);
+            padding-bottom: 42px;
+            display: flex;
+            flex-direction: column;
         }
         .section-head {
             display: flex;
@@ -634,16 +638,21 @@
             filter: blur(5px);
         }
 
-        body.home-sections-unlocked #content-wrapper > .section {
+        body.home-sections-unlocked #primary-actions-section {
             animation: cardIn 1.5s ease both;
             pointer-events: auto;
         }
 
-        body.home-sections-unlocked:not(.home-actions-revealed) #primary-actions-section ~ .section {
+        body:not(.home-later-revealed) #primary-actions-section ~ .section {
             animation: none !important;
             opacity: 0 !important;
             transform: translateY(18px) !important;
             pointer-events: none;
+        }
+
+        body.home-later-revealed #primary-actions-section ~ .section {
+            animation: cardIn 1.5s ease both;
+            pointer-events: auto;
         }
 
         body.home-actions-revealed #primary-actions-section .section-kicker {
@@ -668,10 +677,9 @@
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(5) { animation-delay: 740ms; }
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(6) { animation-delay: 820ms; }
 
-        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(1) { animation-delay: 0.04s; }
-        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(2) { animation-delay: 0.08s; }
-        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(3) { animation-delay: 0.12s; }
-        body.home-sections-unlocked #content-wrapper > .section:nth-of-type(4) { animation-delay: 0.16s; }
+        body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(3) { animation-delay: 0.08s; }
+        body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(4) { animation-delay: 0.12s; }
+        body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(5) { animation-delay: 0.16s; }
 
         @media (max-width: 520px) {
             .app { padding-left: 14px; padding-right: 14px; }
@@ -688,7 +696,8 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 
-            body.home-sections-unlocked #content-wrapper > .section {
+            body.home-sections-unlocked #primary-actions-section,
+            body.home-later-revealed #primary-actions-section ~ .section {
                 animation-duration: 1.5s !important;
                 transition-duration: 1.5s !important;
             }
@@ -1388,10 +1397,22 @@
             const actionSection = document.getElementById('primary-actions-section');
             if (!hero || !actionSection) return;
             const viewportHeight = getHomeViewportHeight();
+            document.documentElement.style.setProperty('--home-viewport-height', Math.ceil(viewportHeight) + 'px');
             const heroBottom = hero.getBoundingClientRect().bottom;
             const targetTop = viewportHeight + 28;
             const gap = Math.max(96, Math.ceil(targetTop - heroBottom));
             document.documentElement.style.setProperty('--home-action-gap', gap + 'px');
+        }
+
+        function revealLaterSectionsIfReady() {
+            if (!document.body.classList.contains('home-actions-revealed') || document.body.classList.contains('home-later-revealed')) return;
+            const actionSection = document.getElementById('primary-actions-section');
+            if (!actionSection) return;
+            const viewportHeight = getHomeViewportHeight();
+            const rect = actionSection.getBoundingClientRect();
+            if (rect.bottom < viewportHeight * 0.98) {
+                document.body.classList.add('home-later-revealed');
+            }
         }
 
         function revealPrimaryActionsIfReady() {
@@ -1402,6 +1423,7 @@
             const rect = actionSection.getBoundingClientRect();
             if (rect.top < viewportHeight * 0.98) {
                 document.body.classList.add('home-actions-revealed');
+                requestAnimationFrame(revealLaterSectionsIfReady);
             }
         }
 
@@ -1410,6 +1432,7 @@
             document.body.classList.add('home-sections-locked');
             document.body.classList.remove('home-sections-unlocked');
             document.body.classList.remove('home-actions-revealed');
+            document.body.classList.remove('home-later-revealed');
         }
 
         function unlockHomeSections() {
@@ -1423,6 +1446,7 @@
         function handleHomeScrollReveal() {
             if (window.scrollY > 8) unlockHomeSections();
             revealPrimaryActionsIfReady();
+            revealLaterSectionsIfReady();
         }
 
         function handleHomeWheelReveal(event) {
