@@ -7979,7 +7979,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v214';
+    window.__assetVersion = 'v215';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -9170,6 +9170,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
         const statusBadge = patient.status === 'active' ?
             '<span class="badge badge-success">Aktif</span>' :
             '<span class="badge badge-secondary">Nonaktif</span>';
+        const accessBlockBadge = (patient.is_access_blocked === true || Number(patient.is_access_blocked) === 1)
+            ? '<span class="badge badge-danger ml-1"><i class="fas fa-ban mr-1"></i>Blocked</span>'
+            : '';
         const locationLabels = { 'klinik_private': 'Prv', 'rsia_melinda': 'Mel', 'rsud_gambiran': 'Gmb', 'rs_bhayangkara': 'Bhy' };
         const locationBadge = patient.visit_location
             ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>` : '';
@@ -9222,7 +9225,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 <td>${resumeStatusBadge}</td>
                 <td data-order="${registerDateSort}">${registerDate}</td>
                 <td data-order="${visitDateSort}">${visitDate}</td>
-                <td>${statusBadge}</td>
+                <td>${statusBadge}${accessBlockBadge}</td>
             </tr>
         `;
     }
