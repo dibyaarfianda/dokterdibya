@@ -9,6 +9,7 @@ const patientActivityLogger = require('../services/patientActivityLogger');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 let bookingSettingsDaySchemaReady = false;
+let confirmationPopupSchemaReady = false;
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -58,6 +59,30 @@ async function ensureBookingSettingsDayColumn() {
     }
 
     bookingSettingsDaySchemaReady = true;
+}
+
+async function ensureConfirmationPopupColumn() {
+    if (confirmationPopupSchemaReady) {
+        return;
+    }
+
+    const [rows] = await db.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_schema = DATABASE()
+           AND table_name = 'sunday_appointments'
+           AND column_name = 'confirmation_popup_enabled_at'
+         LIMIT 1`
+    );
+
+    if (rows.length === 0) {
+        await db.query(
+            `ALTER TABLE sunday_appointments
+             ADD COLUMN confirmation_popup_enabled_at DATETIME NULL AFTER confirmation_token`
+        );
+    }
+
+    confirmationPopupSchemaReady = true;
 }
 
 // Helper function to get next available practice dates based on configured days
@@ -663,6 +688,8 @@ router.get('/patient', verifyToken, async (req, res) => {
  */
 router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
     try {
+        await ensureConfirmationPopupColumn();
+
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.set('Pragma', 'no-cache');
         res.set('Expires', '0');
@@ -698,6 +725,86 @@ router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
         });
     } catch (error) {
         console.error('Error getting pending confirmation:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * POST /api/sunday-appointments/:id/trigger-confirmation-popup (STAFF ONLY)
+ * Enable the patient portal attendance confirmation popup for one pending booking.
+ */
+router.post('/:id/trigger-confirmation-popup', verifyToken, async (req, res) => {
+    try {
+        if (req.user && req.user.user_type === 'patient') {
+            return res.status(403).json({ success: false, message: 'Akses hanya untuk staff' });
+        }
+
+        const { id } = req.params;
+        await ensureConfirmationPopupColumn();
+
+        const [rows] = await db.query(
+            `SELECT id, patient_id, patient_name, appointment_date, session, slot_number, status, confirmation_popup_enabled_at
+             FROM sunday_appointments
+             WHERE id = ?
+             LIMIT 1`,
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Appointment tidak ditemukan' });
+        }
+
+        const appointment = rows[0];
+        if (appointment.status !== 'pending_confirmation') {
+            return res.status(400).json({ success: false, message: 'Popup hanya bisa dikirim untuk booking yang masih menunggu konfirmasi' });
+        }
+
+        await db.query(
+            `UPDATE sunday_appointments
+             SET confirmation_popup_enabled_at = NOW(), updated_at = NOW()
+             WHERE id = ?`,
+            [id]
+        );
+
+        try {
+            const appointmentDate = new Date(appointment.appointment_date);
+            const formattedDate = appointmentDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            await createPatientNotification({
+                patient_id: appointment.patient_id,
+                type: 'appointment',
+                title: 'Konfirmasi Kehadiran',
+                message: `Mohon konfirmasi kehadiran Anda untuk janji temu ${formattedDate}, ${getSessionLabel(appointment.session)} slot ${appointment.slot_number}.`,
+                link: '/patient-menu-simple-trial.html',
+                icon: 'fa fa-calendar-check',
+                icon_color: 'text-warning'
+            });
+        } catch (notifError) {
+            console.error('Failed to create confirmation popup notification:', notifError);
+        }
+
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'appointment:confirmation_popup_triggered',
+                appointment_id: Number(id),
+                patient_id: appointment.patient_id,
+                patient_name: appointment.patient_name
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Popup konfirmasi dikirim untuk ${appointment.patient_name}`,
+            appointmentId: Number(id),
+            patientId: appointment.patient_id
+        });
+    } catch (error) {
+        console.error('Error triggering confirmation popup:', error);
         res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
     }
 });

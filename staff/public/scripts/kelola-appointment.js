@@ -164,6 +164,12 @@ function renderAppointments(appointments) {
         const complaintRaw = (apt.chief_complaint || '').trim();
         const complaintPreview = complaintRaw.length > 80 ? `${complaintRaw.substring(0, 80)}...` : complaintRaw;
         const complaintHtml = complaintRaw ? escapeHtml(complaintPreview) : '-';
+        const confirmationAlreadySent = Boolean(apt.confirmation_popup_enabled_at);
+        const confirmationButton = apt.status === 'pending_confirmation' ? `
+                <button class="btn btn-xs btn-${confirmationAlreadySent ? 'success' : 'primary'}" onclick="triggerConfirmationPopup(${apt.id})" title="${confirmationAlreadySent ? 'Kirim ulang popup konfirmasi' : 'Kirim popup konfirmasi ke pasien'}">
+                    <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'}"></i>
+                </button>
+                ` : '';
         
         appointmentsTable.row.add([
             apt.id,
@@ -181,6 +187,7 @@ function renderAppointments(appointments) {
                 <button class="btn btn-xs btn-warning" onclick="showStatusModal(${apt.id}, '${apt.status}')" title="Update Status">
                     <i class="fas fa-edit"></i>
                 </button>
+                ${confirmationButton}
                 ${['cancelled', 'completed', 'no_show'].includes(apt.status) ? `
                 <button class="btn btn-xs btn-secondary" onclick="archiveAppointment(${apt.id})" title="Arsipkan">
                     <i class="fas fa-archive"></i>
@@ -402,6 +409,42 @@ async function archiveAppointment(appointmentId) {
     }
 }
 
+async function triggerConfirmationPopup(appointmentId) {
+    const apt = allAppointments.find(a => a.id === appointmentId);
+    if (!apt) return;
+
+    if (apt.status !== 'pending_confirmation') {
+        showToast('Popup hanya untuk booking yang masih menunggu konfirmasi', 'error');
+        return;
+    }
+
+    if (!confirm(`Kirim popup konfirmasi kehadiran untuk ${apt.patient_name}?\n\nPopup akan muncul saat pasien membuka portal pasien.`)) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const response = await fetch(`${API_BASE}/${appointmentId}/trigger-confirmation-popup`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Gagal mengirim popup konfirmasi');
+        }
+
+        showToast(data.message || 'Popup konfirmasi dikirim', 'success');
+        await loadAppointments();
+    } catch (error) {
+        console.error('Error triggering confirmation popup:', error);
+        showToast(error.message || 'Gagal mengirim popup konfirmasi', 'error');
+    }
+}
+
 function logout() {
     localStorage.removeItem('vps_auth_token');
     sessionStorage.removeItem('vps_auth_token');
@@ -419,6 +462,7 @@ window.resetFilters = resetFilters;
 window.logout = logout;
 window.loadAppointments = loadAppointments;
 window.archiveAppointment = archiveAppointment;
+window.triggerConfirmationPopup = triggerConfirmationPopup;
 
 
 })(); // End IIFE
