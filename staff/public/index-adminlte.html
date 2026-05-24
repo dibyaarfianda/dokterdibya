@@ -2108,6 +2108,12 @@
                             <p>Staff Roles</p>
                         </a>
                     </li>
+                    <li class="nav-item dokter-only d-none" id="management-nav-block-list">
+                        <a href="#" class="nav-link" onclick="showPatientBlockListPage(); return false;">
+                            <i class="nav-icon fas fa-ban"></i>
+                            <p>Block List</p>
+                        </a>
+                    </li>
                     <li class="nav-item dokter-only d-none" id="nav-staff-activity" hidden>
                         <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-clock"></i>
@@ -3943,6 +3949,115 @@
                                     </thead>
                                     <tbody id="batch-details-body"></tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PATIENT BLOCK LIST PAGE -->
+                <div id="patient-block-list-page" class="d-none">
+                    <div class="container-fluid">
+                        <div class="row mb-3">
+                            <div class="col-lg-4 col-md-6 col-12">
+                                <div class="small-box bg-danger">
+                                    <div class="inner">
+                                        <h3 id="blocklist-stat-active">0</h3>
+                                        <p>Aktif</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-ban"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-6 col-12">
+                                <div class="small-box bg-info">
+                                    <div class="inner">
+                                        <h3 id="blocklist-stat-names">0</h3>
+                                        <p>Nama</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-user-slash"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-6 col-12">
+                                <div class="small-box bg-warning">
+                                    <div class="inner">
+                                        <h3 id="blocklist-stat-ips">0</h3>
+                                        <p>IP</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-network-wired"></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-plus-circle mr-2"></i>Tambah Block</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="patient-blocklist-form">
+                                    <div class="row align-items-end">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="patient-blocklist-type">Jenis</label>
+                                                <select class="form-control" id="patient-blocklist-type" required>
+                                                    <option value="name">Nama Pasien</option>
+                                                    <option value="ip">IP Address</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label for="patient-blocklist-value">Data</label>
+                                                <input type="text" class="form-control" id="patient-blocklist-value" placeholder="Nama atau IP" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label for="patient-blocklist-reason">Catatan</label>
+                                                <input type="text" class="form-control" id="patient-blocklist-reason" placeholder="Opsional">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
+                                                <button type="submit" class="btn btn-danger btn-block">
+                                                    <i class="fas fa-ban mr-1"></i> Block
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-list mr-2"></i>Daftar Block List</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="loadPatientBlockList()">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body no-padding">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover mb-0">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th width="12%">Jenis</th>
+                                                <th width="28%">Data</th>
+                                                <th>Catatan</th>
+                                                <th width="12%">Status</th>
+                                                <th width="18%">Update</th>
+                                                <th width="10%">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="patient-blocklist-tbody">
+                                            <tr>
+                                                <td colspan="6" class="text-center py-4">
+                                                    <i class="fas fa-spinner fa-spin"></i> Memuat...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -7864,7 +7979,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v213';
+    window.__assetVersion = 'v214';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 

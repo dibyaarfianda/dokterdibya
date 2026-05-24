@@ -118,6 +118,7 @@ function initPages() {
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
+    pages.patientBlockList = grab('patient-block-list-page');
     pages.supportChat = grab('content-support-chat-page') || grab('content-support-chat');
     pages.staffPoints = grab('content-staff-points');
     pages.staffBriefing = grab('content-staff-briefing');
@@ -2417,6 +2418,20 @@ function showKelolaRolesPage() {
     });
 }
 
+function showPatientBlockListPage() {
+    hideAllPages();
+    pages.patientBlockList?.classList.remove('d-none');
+    setTitleAndActive('Block List', 'management-nav-block-list', 'patient-block-list');
+
+    importWithVersion('./patient-block-list.js').then(module => {
+        if (module.initPatientBlockList) {
+            module.initPatientBlockList();
+        }
+    }).catch(error => {
+        console.error('Failed to load patient-block-list.js:', error);
+    });
+}
+
 function showStaffActivityPage() {
     hideAllPages();
     pages.staffActivity?.classList.remove('d-none');
@@ -4678,6 +4693,7 @@ function restoreLastPage() {
             'nav-medify-sync':                      () => showMedifySyncPage(),
             'nav-mobile-app':                       () => showMobileAppPage(),
             'management-nav-kelola-roles':          () => showKelolaRolesPage(),
+            'management-nav-block-list':            () => showPatientBlockListPage(),
             'nav-staff-activity':                   () => showStaffActivityPage(),
             'nav-staff-points':                     () => showStaffPointsPage(),
             'nav-staff-briefing':                   () => showStaffBriefingPage(),
@@ -5954,6 +5970,7 @@ window.showPenjualanObatPage = showPenjualanObatPage;
 window.showBulkUploadUSGPage = showBulkUploadUSGPage;
 window.showMedifySyncPage = showMedifySyncPage;
 window.showMobileAppPage = showMobileAppPage;
+window.showPatientBlockListPage = showPatientBlockListPage;
 window.loadMobileAppStats = loadMobileAppStats;
 window.loadMobileAppLogs = loadMobileAppLogs;
 window.copyDownloadLink = copyDownloadLink;
