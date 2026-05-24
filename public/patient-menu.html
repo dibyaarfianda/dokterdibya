@@ -1812,7 +1812,6 @@
 
             window.__isNandaTrialTester = isNandaTrialTester;
             window.__routeNandaTrialTester = routeNandaTrialTester;
-            routeNandaTrialTester();
         })();
     </script>
     <script src="/scripts/patient-theme-trial.js"></script>
@@ -2460,10 +2459,6 @@
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
 
-            if (window.__routeNandaTrialTester && window.__routeNandaTrialTester()) {
-                return;
-            }
-
             const token = getToken();
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
 
@@ -2661,6 +2656,20 @@
                 const profile = data.user;
 
                 if (profile) {
+                    try {
+                        localStorage.setItem('patient_user', JSON.stringify(profile));
+                    } catch (error) {}
+
+                    if (window.__isNandaTrialTester && window.__isNandaTrialTester(profile)) {
+                        if (window.__routeNandaTrialTester && window.__routeNandaTrialTester()) {
+                            return;
+                        }
+                    } else {
+                        try {
+                            sessionStorage.removeItem('patient_portal_theme_mode');
+                            sessionStorage.setItem('patient_portal_nanda_trial_disabled', '1');
+                        } catch (error) {}
+                    }
 
                     // Set global profile for announcements-dashboard.js
                     window.currentProfile = profile;
