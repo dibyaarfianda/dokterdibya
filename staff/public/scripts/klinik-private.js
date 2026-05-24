@@ -267,6 +267,13 @@ function renderAppointments(appointments) {
         const complaint = appointment.chief_complaint ? escapeHtml(appointment.chief_complaint) : '-';
         const statusMeta = getStatusMeta(appointment.status);
         const statusBadge = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
+        const isPendingConfirmation = (appointment.status || '').toLowerCase() === 'pending_confirmation';
+        const confirmationAlreadySent = Boolean(appointment.confirmation_popup_enabled_at);
+        const confirmationButton = isPendingConfirmation ? `
+                <button type="button" class="btn btn-sm btn-${confirmationAlreadySent ? 'success' : 'warning'} klinik-private-popup-btn ml-1" onclick="window.handleKlinikConfirmationPopup && window.handleKlinikConfirmationPopup(${index})" title="${confirmationAlreadySent ? 'Kirim ulang popup konfirmasi' : 'Kirim popup konfirmasi ke pasien'}">
+                    <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'} mr-1"></i>Popup
+                </button>
+            ` : '';
 
         // Check if patient has completed examination
         const isSelesai = (appointment.status || '').toLowerCase() === 'completed';
@@ -286,6 +293,7 @@ function renderAppointments(appointments) {
                 <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${index})">
                     <i class="fas fa-stethoscope mr-1"></i>Periksa
                 </button>
+                ${confirmationButton}
             </td>
         `;
 
@@ -309,6 +317,47 @@ window.handleKlinikPeriksa = function(index) {
     const appointment = window._klinikPrivateState.appointments[index];
     if (appointment) {
         handlePeriksa(appointment);
+    }
+};
+
+window.handleKlinikConfirmationPopup = async function(index) {
+    const appointment = window._klinikPrivateState.appointments[index];
+    if (!appointment) return;
+
+    if ((appointment.status || '').toLowerCase() !== 'pending_confirmation') {
+        showTemporaryToast('Popup hanya untuk pasien yang masih menunggu konfirmasi.');
+        return;
+    }
+
+    if (!confirm(`Kirim popup konfirmasi kehadiran untuk ${appointment.patient_name || 'pasien ini'}?\n\nPopup akan muncul saat pasien membuka portal pasien.`)) {
+        return;
+    }
+
+    try {
+        const token = getToken();
+        const response = await fetch(`${API_BASE}/${appointment.id}/trigger-confirmation-popup`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Gagal mengirim popup konfirmasi');
+        }
+
+        if (typeof window.showToast === 'function') {
+            window.showToast('success', data.message || 'Popup konfirmasi dikirim');
+        } else {
+            showTemporaryToast(data.message || 'Popup konfirmasi dikirim');
+        }
+
+        await loadUpcomingAppointments({ force: true });
+    } catch (error) {
+        console.error('Klinik Private: gagal mengirim popup konfirmasi', error);
+        showTemporaryToast(error.message || 'Gagal mengirim popup konfirmasi.');
     }
 };
 
