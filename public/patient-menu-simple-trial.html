@@ -138,6 +138,7 @@
         body:not(.header-animated) .brand,
         body:not(.header-animated) #home-notif-btn,
         body:not(.header-animated) #user-avatar,
+        body:not(.header-animated) #live-queue-home-section.show,
         body:not(.header-animated) .hero-card .status-chip,
         body:not(.header-animated) .hero-card .hero-title,
         body:not(.header-animated) .hero-card .hero-copy,
@@ -148,6 +149,7 @@
         body:not(.header-animated) .brand,
         body:not(.header-animated) #home-notif-btn,
         body:not(.header-animated) #user-avatar,
+        body:not(.header-animated) #live-queue-home-section.show,
         body:not(.header-animated) .hero-card .status-chip,
         body:not(.header-animated) .hero-card .hero-copy,
         body:not(.header-animated) .hero-card .today-row {
@@ -265,6 +267,115 @@
             cursor: pointer;
             color: var(--ink);
         }
+
+        .live-queue-home {
+            display: none;
+            margin-top: 4px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(92, 127, 114, 0.18);
+            border-radius: 24px;
+            background: linear-gradient(145deg, rgba(17, 17, 17, 0.92), rgba(63, 79, 72, 0.9));
+            color: #fff;
+            box-shadow: var(--shadow);
+            padding: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+        .live-queue-home.show { display: block; animation: cardIn 0.58s ease both; }
+        .live-queue-home::before {
+            content: '';
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            right: -70px;
+            top: -90px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(134, 239, 172, 0.22), transparent 68%);
+            pointer-events: none;
+        }
+        .live-queue-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            position: relative;
+        }
+        .live-queue-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.66);
+            margin-bottom: 5px;
+        }
+        .live-queue-pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #86efac;
+            box-shadow: 0 0 0 5px rgba(134, 239, 172, 0.14);
+        }
+        .live-queue-title { font-family: var(--display); font-size: 18px; line-height: 1.1; letter-spacing: -0.03em; }
+        .live-queue-sub { color: rgba(255, 255, 255, 0.68); font-size: 11px; margin-top: 4px; }
+        .live-queue-link {
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .live-queue-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+            position: relative;
+        }
+        .live-queue-stat {
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 10px;
+        }
+        .live-queue-stat span { display: block; font-size: 10px; color: rgba(255,255,255,0.58); margin-bottom: 3px; }
+        .live-queue-stat strong { display: block; font-size: 15px; line-height: 1.15; }
+        .live-queue-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+            margin-top: 12px;
+            position: relative;
+        }
+        .live-queue-item {
+            min-width: 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 8px 6px;
+            text-align: center;
+        }
+        .live-queue-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 9px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 5px;
+            background: rgba(134, 239, 172, 0.18);
+            color: #bbf7d0;
+            font-size: 12px;
+            font-weight: 900;
+        }
+        .live-queue-name { font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .live-queue-time { margin-top: 2px; font-size: 9px; color: rgba(255,255,255,0.54); }
+        .live-queue-empty { margin-top: 12px; color: rgba(255,255,255,0.68); font-size: 12px; position: relative; }
 
         .section { margin-top: 18px; }
         #primary-actions-section {
@@ -733,6 +844,10 @@
             body.header-animated .brand,
             body.header-animated #home-notif-btn,
             body.header-animated #user-avatar,
+
+            body.header-animated #live-queue-home-section.show {
+                animation: cardIn 820ms cubic-bezier(0.2, 0.75, 0.22, 1) 120ms both;
+            }
             body.header-animated .hero-card .status-chip,
             body.header-animated .hero-card .hero-title,
             body.header-animated .hero-card .hero-copy,
@@ -917,6 +1032,23 @@
         </div>
 
         <div id="content-wrapper">
+            <section class="live-queue-home" id="live-queue-home-section" aria-live="polite">
+                <div class="live-queue-head">
+                    <div>
+                        <div class="live-queue-kicker"><span class="live-queue-pulse"></span>Antrian Live</div>
+                        <h2 class="live-queue-title">Klinik hari ini</h2>
+                        <p class="live-queue-sub" id="live-queue-doctor-status">Memuat status antrian...</p>
+                    </div>
+                    <button type="button" class="live-queue-link soundable" onclick="go('/antrian-trial.html')">Lihat</button>
+                </div>
+                <div class="live-queue-meta">
+                    <div class="live-queue-stat"><span>Total</span><strong id="live-queue-total">-</strong></div>
+                    <div class="live-queue-stat"><span>Sedang</span><strong id="live-queue-current">-</strong></div>
+                </div>
+                <div class="live-queue-list" id="live-queue-home-list"></div>
+                <div class="live-queue-empty" id="live-queue-empty" style="display:none;">Belum ada antrian hari ini.</div>
+            </section>
+
             <section class="hero-card reveal">
                 <div class="status-chip"><span class="status-dot"></span><span id="time-greeting">Selamat datang</span></div>
                 <h1 class="hero-title" id="hero-title">Ruang Anda.</h1>
@@ -1054,6 +1186,7 @@
         let currentProfile = null;
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
+        let liveQueueHomeTimer = null;
 
         function getToken() {
             return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
@@ -1266,6 +1399,76 @@
             } catch (error) {
                 if (error.message === 'unauthorized') logout();
             }
+        }
+
+        function getQueueStatusLabel(status) {
+            const labels = {
+                menunggu: 'Menunggu',
+                anamnesa: 'Hadir',
+                diperiksa: 'Diperiksa',
+                selesai_periksa: 'Selesai',
+                lunas: 'Lunas'
+            };
+            return labels[status] || 'Menunggu';
+        }
+
+        function renderLiveQueueHome(queueItems) {
+            const list = document.getElementById('live-queue-home-list');
+            const empty = document.getElementById('live-queue-empty');
+            const total = document.getElementById('live-queue-total');
+            const current = document.getElementById('live-queue-current');
+            if (!list || !empty || !total || !current) return;
+
+            const items = Array.isArray(queueItems) ? queueItems : [];
+            total.textContent = String(items.length);
+            const active = items.find(item => item.queue_status === 'diperiksa') || items.find(item => item.queue_status === 'anamnesa') || items[0];
+            current.textContent = active ? '#' + (active.queue_position || active.slot_number || '-') : '-';
+
+            if (items.length === 0) {
+                list.innerHTML = '';
+                empty.style.display = 'block';
+                return;
+            }
+
+            empty.style.display = 'none';
+            list.innerHTML = items.slice(0, 4).map(function(item, index) {
+                const position = item.queue_position || item.slot_number || (index + 1);
+                return '<div class="live-queue-item">' +
+                    '<div class="live-queue-number">' + escapeHtml(position) + '</div>' +
+                    '<div class="live-queue-name">' + escapeHtml(item.masked_name || 'Pasien') + '</div>' +
+                    '<div class="live-queue-time">' + escapeHtml(item.slot_time || getQueueStatusLabel(item.queue_status)) + '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        async function loadLiveQueueHome() {
+            const section = document.getElementById('live-queue-home-section');
+            if (!section) return;
+            try {
+                const settingsResponse = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
+                const settings = await settingsResponse.json();
+                if (!settings.success || !settings.is_queue_visible) {
+                    section.classList.remove('show');
+                    requestAnimationFrame(updateHomeActionGap);
+                    return;
+                }
+
+                document.getElementById('live-queue-doctor-status').textContent = settings.doctor_arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang';
+                section.classList.add('show');
+                requestAnimationFrame(updateHomeActionGap);
+
+                const queueResponse = await fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
+                const queue = await queueResponse.json();
+                if (queue.success) renderLiveQueueHome(queue.data);
+            } catch (error) {
+                section.classList.remove('show');
+            }
+        }
+
+        function initializeLiveQueueHome() {
+            loadLiveQueueHome();
+            window.clearInterval(liveQueueHomeTimer);
+            liveQueueHomeTimer = window.setInterval(loadLiveQueueHome, 15000);
         }
 
         async function loadPregnancyTrackerHome() {
@@ -1618,6 +1821,7 @@
             triggerHomeIntroAnimation();
             loadNotificationCount();
             loadUnreadDocCounts();
+            initializeLiveQueueHome();
             checkActiveBooking();
             checkAttendanceConfirmation();
             loadPregnancyTrackerHome();

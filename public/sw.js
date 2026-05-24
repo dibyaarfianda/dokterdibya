@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524swc'; // 2026-05-24swc - Show active booking below patient welcome card
+const CACHE_VERSION = '20260524swd'; // 2026-05-24swd - Show live queue before patient welcome when enabled
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
