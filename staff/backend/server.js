@@ -9,6 +9,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const logger = require('./utils/logger');
+const {
+    BLOCKED_PATIENT_MESSAGE,
+    isPatientIdentityBlocked,
+    isPatientRequestIpBlocked,
+    rememberBlockedPatientRequestIp
+} = require('./utils/patientAccessBlocklist');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { requestLogger, performanceLogger } = require('./middleware/requestLogger');
 const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/metrics');
@@ -214,7 +220,22 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/support-chat',       // Support chat (bot + staff escalation)
 ];
 
-app.use('/api', (req, res, next) => {
+app.use('/api', async (req, res, next) => {
+    const fullPath = req.originalUrl || req.url;
+    const isPatientFacingRoute = fullPath.startsWith('/api/auth/patient-login')
+        || PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
+
+    if (isPatientFacingRoute && await isPatientRequestIpBlocked(req)) {
+        logger.warn('Patient API request blocked by IP blocklist', {
+            path: fullPath,
+            ip: req.ip
+        });
+        return res.status(403).json({
+            success: false,
+            message: BLOCKED_PATIENT_MESSAGE
+        });
+    }
+
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
 
     // No auth header = let route handle it
@@ -229,8 +250,21 @@ app.use('/api', (req, res, next) => {
 
         // Check if this is a patient token
         if (payload.user_type === 'patient' || payload.role === 'patient') {
+            if (isPatientIdentityBlocked(payload)) {
+                rememberBlockedPatientRequestIp(req);
+                logger.warn('Blocked patient token rejected', {
+                    userId: payload.id,
+                    email: payload.email,
+                    path: req.originalUrl || req.url,
+                    ip: req.ip
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: BLOCKED_PATIENT_MESSAGE
+                });
+            }
+
             // Check if route is whitelisted for patients
-            const fullPath = req.originalUrl || req.url;
             const isAllowed = PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
 
             if (!isAllowed) {

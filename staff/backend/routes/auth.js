@@ -14,6 +14,12 @@ const { deletePatientWithRelations, deletePatientByEmail } = require('../service
 const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
 const PatientPasswordService = require('../services/PatientPasswordService');
+const {
+    BLOCKED_PATIENT_MESSAGE,
+    isPatientIdentityBlocked,
+    isPatientRequestIpBlocked,
+    rememberBlockedPatientRequestIp
+} = require('../utils/patientAccessBlocklist');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
@@ -151,6 +157,11 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
         throw new AppError(ERROR_MESSAGES.MISSING_CREDENTIALS, HTTP_STATUS.BAD_REQUEST);
     }
 
+    if (await isPatientRequestIpBlocked(req)) {
+        logger.warn('Patient login blocked by IP blocklist', { email, ip: req.ip });
+        throw new AppError(BLOCKED_PATIENT_MESSAGE, HTTP_STATUS.FORBIDDEN);
+    }
+
     const [rows] = await db.query(
         `SELECT
             u.new_id,
@@ -181,6 +192,17 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
     if (user.user_type !== 'patient') {
         logger.warn(`Non-patient attempted patient login: ${user.email}`);
         throw new AppError('Akses ditolak. Silakan gunakan halaman login staff.', HTTP_STATUS.FORBIDDEN);
+    }
+
+    if (isPatientIdentityBlocked({ name: user.name })) {
+        rememberBlockedPatientRequestIp(req);
+        logger.warn(`Patient login blocked by name blocklist: ${user.email}`);
+        throw new AppError(BLOCKED_PATIENT_MESSAGE, HTTP_STATUS.FORBIDDEN);
+    }
+
+    if (!isPatientTrialLoginAllowed({ email: user.email, name: user.name })) {
+        logger.warn(`Patient login blocked by trial maintenance gate: ${user.email}`);
+        throw new AppError(PATIENT_TRIAL_LOCK_MESSAGE, 503);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
