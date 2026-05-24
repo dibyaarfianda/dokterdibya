@@ -13,6 +13,10 @@ const { validatePatient } = require('../middleware/validation');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
+const {
+    normalizePatientName,
+    refreshConfiguredBlocklist
+} = require('../utils/patientAccessBlocklist');
 
 // Enrichment failure counters — exposed via getEnrichmentStats() for /api/metrics
 const _enrichFailures = {
@@ -30,6 +34,22 @@ function _enrichFail(key, err) {
     _enrichFailures[key]++;
     _enrichFailures.total++;
     logger.warn(`Enrichment batch failed: ${key}`, { error: err.message || err });
+}
+
+async function getActiveBlockedPatientNames() {
+    try {
+        const blocklist = await refreshConfiguredBlocklist();
+        return blocklist.names || new Set();
+    } catch (err) {
+        logger.warn('Patient blocklist status enrichment failed', { error: err.message || err });
+        return new Set();
+    }
+}
+
+function isPatientAccessBlocked(patient, blockedNames) {
+    if (!patient || !blockedNames || blockedNames.size === 0) return false;
+    const patientName = normalizePatientName(patient.full_name || patient.name || patient.fullname);
+    return patientName.length > 0 && blockedNames.has(patientName);
 }
 
 // Configure multer for birth photo upload
@@ -489,6 +509,8 @@ router.get('/api/patients', verifyToken, async (req, res) => {
             } catch (err) { _enrichFail('birthRecords', err); }
         }
 
+        const blockedPatientNames = await getActiveBlockedPatientNames();
+
         // Map results using lookup sets
         const mappedRows = rows.map(patient => {
             let resume_status = null;
@@ -544,7 +566,8 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 hpl,
                 days_pregnant,
                 is_obstetri,
-                has_delivered
+                has_delivered,
+                is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames)
             };
         });
 
@@ -784,6 +807,8 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        const blockedPatientNames = await getActiveBlockedPatientNames();
+
         const mappedRows = uniqueRows.map((patient) => {
             const last_visit_type = lastVisitTypeMap[patient.id] || null;
             const hpht_str = obstetriMap[patient.id] || null;
@@ -809,7 +834,8 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
                 hpl,
                 days_pregnant,
                 is_obstetri,
-                has_delivered
+                has_delivered,
+                is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames)
             };
         });
 
