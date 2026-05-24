@@ -200,11 +200,6 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
         throw new AppError(BLOCKED_PATIENT_MESSAGE, HTTP_STATUS.FORBIDDEN);
     }
 
-    if (!isPatientTrialLoginAllowed({ email: user.email, name: user.name })) {
-        logger.warn(`Patient login blocked by trial maintenance gate: ${user.email}`);
-        throw new AppError(PATIENT_TRIAL_LOCK_MESSAGE, 503);
-    }
-
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {

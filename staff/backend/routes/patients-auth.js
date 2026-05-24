@@ -227,13 +227,6 @@ async function handlePatientRegister(req, res) {
             });
         }
 
-        if (!isPatientTrialLoginAllowed({ email, name: fullname })) {
-            return res.status(503).json({
-                success: false,
-                message: PATIENT_TRIAL_LOCK_MESSAGE
-            });
-        }
-
         // Check if registration code is required
         const codeRequired = await isRegistrationCodeRequired();
         if (codeRequired && !registration_code) {
@@ -416,13 +409,6 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        if (!isPatientTrialLoginAllowed({ email: patient.email, name: patient.full_name })) {
-            return res.status(503).json({
-                success: false,
-                message: PATIENT_TRIAL_LOCK_MESSAGE
-            });
-        }
-        
         // Check if patient has a password (might be Google auth only)
         if (!patient.password) {
             return res.status(401).json({ message: 'Akun ini terdaftar dengan Google. Silakan login dengan Google.' });
@@ -543,14 +529,6 @@ router.post('/auth/google', async (req, res) => {
             return res.status(403).json({
                 success: false,
                 message: BLOCKED_PATIENT_MESSAGE
-            });
-        }
-
-        if (!isPatientTrialLoginAllowed({ email, name })) {
-            logger.warn(`[GOOGLE-AUTH] Blocked by trial maintenance gate: ${email}`);
-            return res.status(503).json({
-                success: false,
-                message: PATIENT_TRIAL_LOCK_MESSAGE
             });
         }
 
@@ -868,14 +846,6 @@ router.post('/google-auth-code', async (req, res) => {
             return res.status(403).json({
                 success: false,
                 message: BLOCKED_PATIENT_MESSAGE
-            });
-        }
-
-        if (!isPatientTrialLoginAllowed({ email, name })) {
-            logger.warn(`[GOOGLE-AUTH-CODE] Blocked by trial maintenance gate: ${email}`);
-            return res.status(503).json({
-                success: false,
-                message: PATIENT_TRIAL_LOCK_MESSAGE
             });
         }
 

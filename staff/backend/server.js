@@ -457,6 +457,10 @@ app.use('/api/polls', pollsRoutes);
 const patientActivityRoutes = require('./routes/patient-activity');
 app.use('/api/patient-activity', patientActivityRoutes);
 
+// Patient Access Blocklist routes (dokter/superadmin only)
+const patientAccessBlocklistRoutes = require('./routes/patient-access-blocklist');
+app.use('/api/patient-access-blocklist', patientAccessBlocklistRoutes);
+
 // Registration Codes routes (for patient registration control)
 const registrationCodesRoutes = require('./routes/registration-codes');
 app.use('/api/registration-codes', registrationCodesRoutes);
