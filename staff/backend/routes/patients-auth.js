@@ -15,6 +15,12 @@ const PatientPasswordService = require('../services/PatientPasswordService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
+const {
+    BLOCKED_PATIENT_MESSAGE,
+    isPatientIdentityBlocked,
+    isPatientRequestIpBlocked,
+    rememberBlockedPatientRequestIp
+} = require('../utils/patientAccessBlocklist');
 
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
@@ -195,6 +201,14 @@ async function handlePatientRegister(req, res) {
     try {
         const { fullname, email, phone, password, registration_code } = req.body;
 
+        if (await isPatientRequestIpBlocked(req)) {
+            logger.warn(`Patient registration blocked by IP blocklist: ${email}`);
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
         // Validation
         if (!fullname || !email || !phone || !password) {
             return res.status(400).json({ message: 'Semua field harus diisi' });
@@ -202,6 +216,22 @@ async function handlePatientRegister(req, res) {
 
         if (password.length < 6) {
             return res.status(400).json({ message: 'Password minimal 6 karakter' });
+        }
+
+        if (isPatientIdentityBlocked({ name: fullname })) {
+            rememberBlockedPatientRequestIp(req);
+            logger.warn(`Patient registration blocked by name blocklist: ${email}`);
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
+        if (!isPatientTrialLoginAllowed({ email, name: fullname })) {
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
         }
 
         // Check if registration code is required
@@ -348,6 +378,14 @@ router.post('/register', handlePatientRegister);
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        if (await isPatientRequestIpBlocked(req)) {
+            logger.warn(`Patient login blocked by IP blocklist: ${email}`);
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
         
         // Validation
         if (!email || !password) {
@@ -369,6 +407,22 @@ router.post('/login', async (req, res) => {
         const patient = patients[0];
         console.log('Patient found:', patient.id, 'Has password:', !!patient.password);
 
+        if (isPatientIdentityBlocked({ name: patient.full_name })) {
+            rememberBlockedPatientRequestIp(req);
+            logger.warn(`Patient login blocked by name blocklist: ${patient.email}`);
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
+        if (!isPatientTrialLoginAllowed({ email: patient.email, name: patient.full_name })) {
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
+        }
+        
         // Check if patient has a password (might be Google auth only)
         if (!patient.password) {
             return res.status(401).json({ message: 'Akun ini terdaftar dengan Google. Silakan login dengan Google.' });
@@ -437,6 +491,14 @@ router.post('/login', async (req, res) => {
 // Google OAuth Login/Register
 router.post('/auth/google', async (req, res) => {
     try {
+        if (await isPatientRequestIpBlocked(req)) {
+            logger.warn('[GOOGLE-AUTH] Blocked by IP blocklist');
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
         // Accept both 'credential' (web) and 'idToken' (mobile native) field names
         const idToken = req.body.credential || req.body.idToken;
         const registrationCode = req.body.registration_code || req.body.registrationCode;
@@ -475,6 +537,23 @@ router.post('/auth/google', async (req, res) => {
         const payload = ticket.getPayload();
         const { email, name, sub: googleId, picture } = payload;
 
+        if (isPatientIdentityBlocked({ name })) {
+            rememberBlockedPatientRequestIp(req);
+            logger.warn(`[GOOGLE-AUTH] Blocked by name blocklist: ${email}`);
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
+        if (!isPatientTrialLoginAllowed({ email, name })) {
+            logger.warn(`[GOOGLE-AUTH] Blocked by trial maintenance gate: ${email}`);
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
+        }
+
         // Check if patient exists
         const [existingPatients] = await db.query(
             'SELECT * FROM patients WHERE email = ?',
@@ -487,6 +566,15 @@ router.post('/auth/google', async (req, res) => {
         if (existingPatients.length > 0) {
             // Update Google ID if not set
             patient = existingPatients[0];
+
+            if (isPatientIdentityBlocked({ name: patient.full_name })) {
+                rememberBlockedPatientRequestIp(req);
+                logger.warn(`[GOOGLE-AUTH] Existing patient blocked by name blocklist: ${patient.email}`);
+                return res.status(403).json({
+                    success: false,
+                    message: BLOCKED_PATIENT_MESSAGE
+                });
+            }
 
             // Generate medical record ID if not exists
             if (!patient.id) {
@@ -715,6 +803,14 @@ router.post('/auth/google', async (req, res) => {
 // Google OAuth Code Exchange (for mobile app)
 router.post('/google-auth-code', async (req, res) => {
     try {
+        if (await isPatientRequestIpBlocked(req)) {
+            logger.warn('[GOOGLE-AUTH-CODE] Blocked by IP blocklist');
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
         const { code, redirectUri, registration_code: registrationCode } = req.body;
         console.log('[GOOGLE-AUTH-CODE] Received request with code length:', code?.length || 0, 'regCode:', registrationCode || 'none');
 
@@ -766,6 +862,23 @@ router.post('/google-auth-code', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Tidak dapat mengambil email dari akun Google' });
         }
 
+        if (isPatientIdentityBlocked({ name })) {
+            rememberBlockedPatientRequestIp(req);
+            logger.warn(`[GOOGLE-AUTH-CODE] Blocked by name blocklist: ${email}`);
+            return res.status(403).json({
+                success: false,
+                message: BLOCKED_PATIENT_MESSAGE
+            });
+        }
+
+        if (!isPatientTrialLoginAllowed({ email, name })) {
+            logger.warn(`[GOOGLE-AUTH-CODE] Blocked by trial maintenance gate: ${email}`);
+            return res.status(503).json({
+                success: false,
+                message: PATIENT_TRIAL_LOCK_MESSAGE
+            });
+        }
+
         // Check if patient exists
         const [existingPatients] = await db.query(
             'SELECT * FROM patients WHERE email = ?',
@@ -777,6 +890,16 @@ router.post('/google-auth-code', async (req, res) => {
         if (existingPatients.length > 0) {
             patient = existingPatients[0];
             console.log('[GOOGLE-AUTH] Existing patient found:', patient.id);
+
+            if (isPatientIdentityBlocked({ name: patient.full_name })) {
+                rememberBlockedPatientRequestIp(req);
+                logger.warn(`[GOOGLE-AUTH-CODE] Existing patient blocked by name blocklist: ${patient.email}`);
+                return res.status(403).json({
+                    success: false,
+                    message: BLOCKED_PATIENT_MESSAGE
+                });
+            }
+
             // Update Google ID and photo if needed
             await db.query(
                 'UPDATE patients SET google_id = COALESCE(google_id, ?), photo_url = ?, email_verified = 1 WHERE id = ?',
