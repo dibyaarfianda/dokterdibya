@@ -167,7 +167,7 @@ function renderAppointments(appointments) {
         const confirmationAlreadySent = Boolean(apt.confirmation_popup_enabled_at);
         const confirmationButton = apt.status === 'pending_confirmation' ? `
                 <button class="btn btn-xs btn-${confirmationAlreadySent ? 'success' : 'primary'}" onclick="triggerConfirmationPopup(${apt.id})" title="${confirmationAlreadySent ? 'Kirim ulang popup konfirmasi' : 'Kirim popup konfirmasi ke pasien'}">
-                    <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'}"></i>
+                    <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'}"></i> Popup
                 </button>
                 ` : '';
         
