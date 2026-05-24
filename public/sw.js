@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524swh'; // 2026-05-24swh - Trial landing info CTA heading color and copy cleanup
+const CACHE_VERSION = '20260525swa'; // 2026-05-25swa - Trial landing USG preview image
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
