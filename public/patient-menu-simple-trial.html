@@ -267,6 +267,9 @@
         }
 
         .section { margin-top: 18px; }
+        #primary-actions-section {
+            margin-top: var(--home-action-gap, max(180px, 42svh));
+        }
         .section-head {
             display: flex;
             justify-content: space-between;
@@ -607,15 +610,56 @@
         }
 
         body.home-sections-locked #content-wrapper > .section {
-            opacity: 0;
-            transform: translateY(18px);
+            animation: none !important;
+            opacity: 0 !important;
+            transform: translateY(18px) !important;
             pointer-events: none;
+        }
+
+        body:not(.home-actions-revealed) #primary-actions-section .section-kicker,
+        body:not(.home-actions-revealed) #primary-actions-section .section-title,
+        body:not(.home-actions-revealed) #primary-actions-section .section-note,
+        body:not(.home-actions-revealed) #primary-actions-section .tap-card {
+            opacity: 0;
+        }
+
+        body:not(.home-actions-revealed) #primary-actions-section .section-kicker,
+        body:not(.home-actions-revealed) #primary-actions-section .section-note,
+        body:not(.home-actions-revealed) #primary-actions-section .tap-card {
+            transform: translateY(12px);
+        }
+
+        body:not(.home-actions-revealed) #primary-actions-section .section-title {
+            transform: translateY(20px);
+            filter: blur(5px);
         }
 
         body.home-sections-unlocked #content-wrapper > .section {
             animation: cardIn 1.5s ease both;
             pointer-events: auto;
         }
+
+        body.home-actions-revealed #primary-actions-section .section-kicker {
+            animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 120ms both;
+        }
+
+        body.home-actions-revealed #primary-actions-section .section-title {
+            animation: titleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 240ms both;
+        }
+
+        body.home-actions-revealed #primary-actions-section .section-note {
+            animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 360ms both;
+        }
+
+        body.home-actions-revealed #primary-actions-section .tap-card {
+            animation: fadeUp 980ms cubic-bezier(0.2, 0.75, 0.22, 1) 420ms both;
+        }
+
+        body.home-actions-revealed #primary-actions-section .tap-card:nth-child(2) { animation-delay: 500ms; }
+        body.home-actions-revealed #primary-actions-section .tap-card:nth-child(3) { animation-delay: 580ms; }
+        body.home-actions-revealed #primary-actions-section .tap-card:nth-child(4) { animation-delay: 660ms; }
+        body.home-actions-revealed #primary-actions-section .tap-card:nth-child(5) { animation-delay: 740ms; }
+        body.home-actions-revealed #primary-actions-section .tap-card:nth-child(6) { animation-delay: 820ms; }
 
         body.home-sections-unlocked #content-wrapper > .section:nth-of-type(1) { animation-delay: 0.04s; }
         body.home-sections-unlocked #content-wrapper > .section:nth-of-type(2) { animation-delay: 0.08s; }
@@ -649,6 +693,14 @@
             body.header-animated .hero-card .hero-title,
             body.header-animated .hero-card .hero-copy,
             body.header-animated .hero-card .today-row {
+                animation-duration: 1.05s !important;
+                transition-duration: 1.05s !important;
+            }
+
+            body.home-actions-revealed #primary-actions-section .section-kicker,
+            body.home-actions-revealed #primary-actions-section .section-title,
+            body.home-actions-revealed #primary-actions-section .section-note,
+            body.home-actions-revealed #primary-actions-section .tap-card {
                 animation-duration: 1.05s !important;
                 transition-duration: 1.05s !important;
             }
@@ -848,7 +900,7 @@
                 </div>
             </section>
 
-            <section class="section reveal">
+            <section class="section reveal" id="primary-actions-section">
                 <div class="section-head">
                     <div>
                         <div class="section-kicker">Aksi Utama</div>
@@ -1319,10 +1371,38 @@
         let homeSectionsUnlocked = false;
         let homeTouchStartY = null;
 
+        function getHomeViewportHeight() {
+            if (window.visualViewport && window.visualViewport.height) return window.visualViewport.height;
+            return window.innerHeight || document.documentElement.clientHeight || 720;
+        }
+
+        function updateHomeActionGap() {
+            const hero = document.querySelector('.hero-card');
+            const actionSection = document.getElementById('primary-actions-section');
+            if (!hero || !actionSection) return;
+            const viewportHeight = getHomeViewportHeight();
+            const heroBottom = hero.getBoundingClientRect().bottom;
+            const targetTop = viewportHeight + 28;
+            const gap = Math.max(96, Math.ceil(targetTop - heroBottom));
+            document.documentElement.style.setProperty('--home-action-gap', gap + 'px');
+        }
+
+        function revealPrimaryActionsIfReady() {
+            if (!homeSectionsUnlocked || document.body.classList.contains('home-actions-revealed')) return;
+            const actionSection = document.getElementById('primary-actions-section');
+            if (!actionSection) return;
+            const viewportHeight = getHomeViewportHeight();
+            const rect = actionSection.getBoundingClientRect();
+            if (rect.top < viewportHeight * 0.98) {
+                document.body.classList.add('home-actions-revealed');
+            }
+        }
+
         function lockHomeSections() {
             homeSectionsUnlocked = false;
             document.body.classList.add('home-sections-locked');
             document.body.classList.remove('home-sections-unlocked');
+            document.body.classList.remove('home-actions-revealed');
         }
 
         function unlockHomeSections() {
@@ -1330,10 +1410,12 @@
             homeSectionsUnlocked = true;
             document.body.classList.remove('home-sections-locked');
             document.body.classList.add('home-sections-unlocked');
+            requestAnimationFrame(revealPrimaryActionsIfReady);
         }
 
         function handleHomeScrollReveal() {
             if (window.scrollY > 8) unlockHomeSections();
+            revealPrimaryActionsIfReady();
         }
 
         function handleHomeWheelReveal(event) {
@@ -1399,6 +1481,10 @@
             try { await loadProfile(); } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
+            requestAnimationFrame(function() {
+                updateHomeActionGap();
+                revealPrimaryActionsIfReady();
+            });
             triggerHomeIntroAnimation();
             loadNotificationCount();
             loadUnreadDocCounts();
@@ -1430,9 +1516,12 @@
         window.addEventListener('wheel', handleHomeWheelReveal, { passive: true });
         window.addEventListener('touchstart', handleHomeTouchStart, { passive: true });
         window.addEventListener('touchmove', handleHomeTouchMove, { passive: true });
+        window.addEventListener('resize', updateHomeActionGap, { passive: true });
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', updateHomeActionGap, { passive: true });
         window.addEventListener('pageshow', function(event) {
             resetScrollToTop();
             lockHomeSections();
+            requestAnimationFrame(updateHomeActionGap);
             triggerHomeIntroAnimation();
             if (event.persisted) {
                 loadNotificationCount();
