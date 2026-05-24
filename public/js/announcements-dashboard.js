@@ -356,7 +356,6 @@ function displayInfoTerbaruAnnouncements(announcements) {
         <div class="info-terbaru-item info-terbaru-item-cta">
             <div class="info-terbaru-content" onclick="window.location.href='/announcements.html'">
                 <h4>Lihat Info Lainnya</h4>
-                <p>Baca semua pengumuman dan informasi terbaru dari dokter.</p>
             </div>
         </div>
     `;
