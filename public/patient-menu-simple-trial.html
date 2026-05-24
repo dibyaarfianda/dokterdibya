@@ -702,6 +702,10 @@
             pointer-events: auto;
         }
 
+        body.home-scroll-braking {
+            overscroll-behavior: contain;
+        }
+
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(3) { animation-delay: 0.08s; }
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(4) { animation-delay: 0.12s; }
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(5) { animation-delay: 0.16s; }
@@ -1412,6 +1416,9 @@
         let homeTouchStartY = null;
         let homeActionGapFrozen = false;
         let homeActionSettleTimer = null;
+        let homeScrollBrakeUntil = 0;
+        let homeScrollBrakeTimer = null;
+        let homeScrollBrakeTarget = null;
 
         function getHomeViewportHeight() {
             if (window.visualViewport && window.visualViewport.height) return window.visualViewport.height;
@@ -1442,6 +1449,49 @@
             document.body.classList.add('home-actions-settled');
         }
 
+        function getHomeSectionStopY(section) {
+            const topbar = document.getElementById('home-topbar');
+            const topbarHeight = topbar ? topbar.offsetHeight : 0;
+            const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+            return Math.max(0, Math.round(sectionTop - topbarHeight - 12));
+        }
+
+        function releaseHomeScrollBrake() {
+            homeScrollBrakeUntil = 0;
+            homeScrollBrakeTarget = null;
+            document.body.classList.remove('home-scroll-braking');
+        }
+
+        function brakeHomeScrollAt(section, duration) {
+            if (!section) return;
+            const now = Date.now();
+            if (homeScrollBrakeUntil > now) return;
+            homeScrollBrakeTarget = getHomeSectionStopY(section);
+            homeScrollBrakeUntil = now + duration;
+            document.body.classList.add('home-scroll-braking');
+            window.clearTimeout(homeScrollBrakeTimer);
+            window.scrollTo({ top: homeScrollBrakeTarget, behavior: 'smooth' });
+            homeScrollBrakeTimer = window.setTimeout(releaseHomeScrollBrake, duration);
+        }
+
+        function isHomeScrollBraking() {
+            return homeScrollBrakeUntil > Date.now();
+        }
+
+        function preventHomeScrollDuringBrake(event) {
+            if (!isHomeScrollBraking()) return;
+            if (event.target && event.target.closest && event.target.closest('.bottom-sheet.active, .modal-card.active')) return;
+            event.preventDefault();
+        }
+
+        function getNextVisibleHomeSection(section) {
+            let nextSection = section ? section.nextElementSibling : null;
+            while (nextSection && nextSection.offsetHeight < 24) {
+                nextSection = nextSection.nextElementSibling;
+            }
+            return nextSection;
+        }
+
         function revealLaterSectionsIfReady() {
             if (!document.body.classList.contains('home-actions-revealed') || document.body.classList.contains('home-later-revealed')) return;
             const actionSection = document.getElementById('primary-actions-section');
@@ -1450,6 +1500,7 @@
             const rect = actionSection.getBoundingClientRect();
             if (rect.bottom < viewportHeight * 0.98) {
                 document.body.classList.add('home-later-revealed');
+                brakeHomeScrollAt(getNextVisibleHomeSection(actionSection), 1500);
             }
         }
 
@@ -1462,6 +1513,7 @@
             if (rect.top < viewportHeight * 0.98) {
                 freezeHomeActionGap();
                 document.body.classList.add('home-actions-revealed');
+                brakeHomeScrollAt(actionSection, 1850);
                 window.clearTimeout(homeActionSettleTimer);
                 homeActionSettleTimer = window.setTimeout(settlePrimaryActions, 2050);
                 requestAnimationFrame(revealLaterSectionsIfReady);
@@ -1476,6 +1528,8 @@
             document.body.classList.remove('home-actions-settled');
             document.body.classList.remove('home-later-revealed');
             window.clearTimeout(homeActionSettleTimer);
+            window.clearTimeout(homeScrollBrakeTimer);
+            releaseHomeScrollBrake();
             homeActionGapFrozen = false;
         }
 
@@ -1589,8 +1643,10 @@
         document.addEventListener('DOMContentLoaded', init);
         window.addEventListener('scroll', handleHomeScrollReveal, { passive: true });
         window.addEventListener('wheel', handleHomeWheelReveal, { passive: true });
+        window.addEventListener('wheel', preventHomeScrollDuringBrake, { passive: false, capture: true });
         window.addEventListener('touchstart', handleHomeTouchStart, { passive: true });
         window.addEventListener('touchmove', handleHomeTouchMove, { passive: true });
+        window.addEventListener('touchmove', preventHomeScrollDuringBrake, { passive: false, capture: true });
         window.addEventListener('resize', updateHomeActionGap, { passive: true });
         if (window.visualViewport) window.visualViewport.addEventListener('resize', updateHomeActionGap, { passive: true });
         window.addEventListener('pageshow', function(event) {
