@@ -635,11 +635,13 @@
 
         body:not(.home-actions-revealed) #primary-actions-section .section-title {
             transform: translateY(20px);
-            filter: blur(5px);
+            filter: none;
         }
 
         body.home-sections-unlocked #primary-actions-section {
-            animation: cardIn 1.5s ease both;
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
             pointer-events: auto;
         }
 
@@ -660,7 +662,7 @@
         }
 
         body.home-actions-revealed #primary-actions-section .section-title {
-            animation: titleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 240ms both;
+            animation: actionTitleIn 860ms cubic-bezier(0.2, 0.75, 0.22, 1) 240ms both;
         }
 
         body.home-actions-revealed #primary-actions-section .section-note {
@@ -676,6 +678,17 @@
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(4) { animation-delay: 660ms; }
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(5) { animation-delay: 740ms; }
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(6) { animation-delay: 820ms; }
+
+        @keyframes actionTitleIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         body.home-actions-settled #primary-actions-section,
         body.home-actions-settled #primary-actions-section .section-kicker,
@@ -708,7 +721,6 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 
-            body.home-sections-unlocked #primary-actions-section,
             body.home-later-revealed #primary-actions-section ~ .section {
                 animation-duration: 1.5s !important;
                 transition-duration: 1.5s !important;
@@ -1451,7 +1463,7 @@
                 freezeHomeActionGap();
                 document.body.classList.add('home-actions-revealed');
                 window.clearTimeout(homeActionSettleTimer);
-                homeActionSettleTimer = window.setTimeout(settlePrimaryActions, 1550);
+                homeActionSettleTimer = window.setTimeout(settlePrimaryActions, 2050);
                 requestAnimationFrame(revealLaterSectionsIfReady);
             }
         }
