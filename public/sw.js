@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zzc'; // 2026-05-24zzc - Keep primary actions first and hide later sections until reveal
+const CACHE_VERSION = '20260524zze'; // 2026-05-24zze - Reveal later patient home sections after primary actions page
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
