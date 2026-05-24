@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260524zzf'; // 2026-05-24zzf - Freeze patient home action gap after reveal to stop mobile jerky repeats
+const CACHE_VERSION = '20260524zzg'; // 2026-05-24zzg - Smooth patient home primary actions reveal on mobile
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
