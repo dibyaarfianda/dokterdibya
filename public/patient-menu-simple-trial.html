@@ -1192,6 +1192,26 @@
             return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
         }
 
+        function normalizePatientName(value) {
+            return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function isNandaTrialProfile(profile) {
+            const patientId = String(profile?.id || profile?.patient_id || profile?.medicalRecordId || '').trim();
+            const patientName = normalizePatientName(profile?.fullname || profile?.full_name || profile?.name || '');
+            return patientId === 'P2025091' || patientName === 'nanda ananda';
+        }
+
+        function redirectNonTrialPatient(profile) {
+            if (isNandaTrialProfile(profile)) return false;
+            try {
+                sessionStorage.removeItem('patient_portal_theme_mode');
+                sessionStorage.setItem('patient_portal_nanda_trial_disabled', '1');
+            } catch (error) {}
+            window.location.replace('/patient-menu.html?theme=old');
+            return true;
+        }
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text == null ? '' : String(text);
@@ -1321,6 +1341,8 @@
             if (!response.ok) throw new Error('profile failed');
             const data = await response.json();
             currentProfile = data.user || {};
+            try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
+            if (redirectNonTrialPatient(currentProfile)) return;
             window.currentProfile = currentProfile;
             const firstName = (currentProfile.fullname || currentProfile.full_name || 'Pasien').split(' ')[0];
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
