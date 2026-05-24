@@ -933,6 +933,17 @@
                 </div>
             </section>
 
+            <section class="section" id="booking-status-section">
+                <div class="status-panel" id="quick-status">
+                    <div class="status-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="status-body">
+                        <h3 id="booking-status-title">Booking Aktif</h3>
+                        <p id="booking-status-desc">-</p>
+                    </div>
+                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
+                </div>
+            </section>
+
             <section class="section reveal" id="primary-actions-section">
                 <div class="section-head">
                     <div>
@@ -966,17 +977,6 @@
                         <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
                         <span><h3 id="corner-card-title">Ruang Saya</h3><p>Catatan pribadi</p></span>
                     </button>
-                </div>
-            </section>
-
-            <section class="section">
-                <div class="status-panel" id="quick-status">
-                    <div class="status-icon"><i class="fa-solid fa-calendar-check"></i></div>
-                    <div class="status-body">
-                        <h3 id="booking-status-title">Booking Aktif</h3>
-                        <p id="booking-status-desc">-</p>
-                    </div>
-                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
                 </div>
             </section>
 
@@ -1257,6 +1257,7 @@
                 document.getElementById('booking-status-title').textContent = booking.status === 'confirmed' ? 'Booking Dikonfirmasi' : 'Menunggu Konfirmasi';
                 document.getElementById('booking-status-desc').textContent = dateStr + ' - ' + (booking.slot_time || '-');
                 panel.classList.add('show');
+                requestAnimationFrame(updateHomeActionGap);
                 if (booking.status === 'pending' || booking.status === 'pending_confirmation') panel.classList.add('warning');
                 if (['confirmed', 'pending', 'pending_confirmation'].includes(booking.status)) {
                     cancelButton.dataset.appointmentId = String(booking.id);
