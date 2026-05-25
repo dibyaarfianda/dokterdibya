@@ -159,12 +159,45 @@ class InventoryService {
                 logger.info(`Stock deducted (legacy/no batch): obat_id=${obatId}, qty=${quantity}`);
             } else {
                 // FIFO MODE: Deduct from batches
-                const totalAvailable = batches.reduce((sum, b) => sum + b.quantity_remaining, 0);
+                const totalAvailable = batches.reduce((sum, b) => sum + Number(b.quantity_remaining || 0), 0);
+                let legacyQuantity = 0;
+                let legacyCostPrice = 0;
+
                 if (totalAvailable < quantity) {
-                    throw new Error(`Insufficient stock. Available: ${totalAvailable}, Required: ${quantity}`);
+                    const [[obatData]] = await connection.query(
+                        `SELECT stock, default_cost_price FROM obat WHERE id = ? FOR UPDATE`,
+                        [obatId]
+                    );
+
+                    const availableStock = Number(obatData?.stock || 0);
+                    if (!obatData || availableStock < quantity) {
+                        throw new Error(`Insufficient stock. Available: ${Math.max(totalAvailable, availableStock)}, Required: ${quantity}`);
+                    }
+
+                    const [latestBatchRows] = await connection.query(
+                        `SELECT cost_price
+                         FROM obat_batches
+                         WHERE obat_id = ? AND cost_price > 0
+                         ORDER BY purchase_date DESC, id DESC
+                         LIMIT 1`,
+                        [obatId]
+                    );
+
+                    const defaultCost = parseFloat(obatData.default_cost_price) || 0;
+                    const latestBatchCost = parseFloat(latestBatchRows[0]?.cost_price) || 0;
+                    legacyCostPrice = defaultCost > 0 ? defaultCost : latestBatchCost;
+                    legacyQuantity = quantity - totalAvailable;
+
+                    logger.warn('FIFO batch quantity below obat stock, using legacy remainder', {
+                        obatId,
+                        requestedQuantity: quantity,
+                        batchAvailable: totalAvailable,
+                        legacyQuantity,
+                        availableStock
+                    });
                 }
 
-                let remainingToDeduct = quantity;
+                let remainingToDeduct = Math.min(quantity, totalAvailable);
 
                 for (const batch of batches) {
                     if (remainingToDeduct <= 0) break;
@@ -199,11 +232,34 @@ class InventoryService {
                     remainingToDeduct -= deductFromBatch;
                 }
 
+                if (legacyQuantity > 0) {
+                    await connection.query(
+                        `INSERT INTO stock_movements
+                         (obat_id, batch_id, movement_type, quantity, cost_price,
+                          reference_type, reference_id, notes, created_by)
+                         VALUES (?, NULL, 'sale', ?, ?, ?, ?, 'Legacy stock remainder (batch total below stock)', ?)`,
+                        [obatId, -legacyQuantity, legacyCostPrice, referenceType, referenceId, createdBy]
+                    );
+
+                    deductions.push({
+                        batchId: null,
+                        quantity: legacyQuantity,
+                        costPrice: legacyCostPrice,
+                        legacy: true
+                    });
+
+                    totalCost += legacyQuantity * parseFloat(legacyCostPrice || 0);
+                }
+
                 // Lock and update obat stock total atomically
-                await connection.query(
+                const [stockUpdate] = await connection.query(
                     `UPDATE obat SET stock = stock - ? WHERE id = ? AND stock >= ?`,
                     [quantity, obatId, quantity]
                 );
+
+                if (!stockUpdate.affectedRows) {
+                    throw new Error(`Insufficient stock. Required: ${quantity}`);
+                }
 
                 // Verify update actually happened (guards against race condition)
                 const [[obatCheck]] = await connection.query(
