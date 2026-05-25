@@ -9,11 +9,29 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526k';
+            var PAGE_VERSION = '20260526l';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
                     url.searchParams.set('_v', PAGE_VERSION);
+                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.getRegistrations()
+                            .then(function(registrations) {
+                                return Promise.all(registrations.map(function(registration) {
+                                    return registration.unregister();
+                                }));
+                            })
+                            .then(function() {
+                                if (window.caches && caches.keys) {
+                                    return caches.keys().then(function(names) {
+                                        return Promise.all(names.map(function(name) { return caches.delete(name); }));
+                                    });
+                                }
+                            })
+                            .catch(function() {})
+                            .then(function() { window.location.replace(url.toString()); });
+                        return;
+                    }
                     window.location.replace(url.toString());
                 }
             } catch (e) {}
