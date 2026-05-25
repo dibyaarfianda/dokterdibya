@@ -91,6 +91,24 @@ export default {
             };
         }
 
+        window.toggleUSGMultipleFormat = function(prefix) {
+            const countName = prefix === 't1' ? 't1_embryo_count' : `${prefix}_fetus_count`;
+            const selected = document.querySelector(`input[name="${countName}"]:checked`)?.value;
+            const isMultiple = selected === 'multiple';
+
+            document.querySelectorAll(`.${prefix}-single-format`).forEach(el => {
+                el.style.display = isMultiple ? 'none' : '';
+            });
+
+            document.querySelectorAll(`.${prefix}-multiple-format`).forEach(el => {
+                el.style.display = isMultiple ? '' : 'none';
+            });
+        };
+
+        setTimeout(() => {
+            ['t1', 't2', 't3'].forEach(prefix => window.toggleUSGMultipleFormat(prefix));
+        }, 0);
+
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
@@ -178,6 +196,187 @@ export default {
         `;
     },
 
+    renderTwinFirstTrimesterFields(prefix, data) {
+        const escapeHtml = (str) => str ? String(str).replace(/"/g, '&quot;') : '';
+        const embryos = data.embryos || {};
+        const renderEmbryo = (key, label) => {
+            const embryo = embryos[key] || {};
+            return `
+                <div class="col-md-6 mb-3">
+                    <div class="border rounded p-3 h-100 bg-light">
+                        <h6 class="font-weight-bold text-primary mb-3">${label}</h6>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Kantung Kehamilan (GS)</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control usg-field" name="${prefix}_${key}_gs" value="${escapeHtml(embryo.gs || '')}" placeholder="0.0">
+                                    <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>CRL</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control usg-field" name="${prefix}_${key}_crl" value="${escapeHtml(embryo.crl || '')}" placeholder="0.0">
+                                    <div class="input-group-append"><span class="input-group-text">cm</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Usia Kehamilan (by CRL)</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control usg-field" name="${prefix}_${key}_ga_weeks" value="${escapeHtml(embryo.ga_weeks || '')}" placeholder="0">
+                                    <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Detak Jantung</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control usg-field" name="${prefix}_${key}_heart_rate" value="${escapeHtml(embryo.heart_rate || '')}" placeholder="0">
+                                    <div class="input-group-append"><span class="input-group-text">x/menit</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        return `
+            <div class="${prefix}-multiple-format" style="display:none;">
+                <h5 class="mt-3 mb-2">Biometri Kehamilan Kembar</h5>
+                <div class="form-row">
+                    ${renderEmbryo('a', 'Embrio A')}
+                    ${renderEmbryo('b', 'Embrio B')}
+                </div>
+            </div>
+        `;
+    },
+
+    renderTwinFetusFields(prefix, data) {
+        const escapeHtml = (str) => str ? String(str).replace(/"/g, '&quot;') : '';
+        const fetuses = data.fetuses || {};
+        const renderFetus = (key, label) => {
+            const fetus = fetuses[key] || {};
+            return `
+                <div class="col-md-6 mb-3">
+                    <div class="border rounded p-3 h-100 bg-light">
+                        <h6 class="font-weight-bold text-primary mb-3">${label}</h6>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Jenis Kelamin</label>
+                                <select class="form-control usg-field" name="${prefix}_${key}_gender">
+                                    <option value="" ${!fetus.gender ? 'selected' : ''}>Belum dinilai</option>
+                                    <option value="male" ${fetus.gender === 'male' ? 'selected' : ''}>Laki-laki</option>
+                                    <option value="female" ${fetus.gender === 'female' ? 'selected' : ''}>Perempuan</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Presentasi</label>
+                                <select class="form-control usg-field" name="${prefix}_${key}_presentation">
+                                    <option value="" ${!fetus.presentation ? 'selected' : ''}>Belum dinilai</option>
+                                    <option value="cephalic" ${fetus.presentation === 'cephalic' ? 'selected' : ''}>Kepala</option>
+                                    <option value="breech" ${fetus.presentation === 'breech' ? 'selected' : ''}>Bokong</option>
+                                    <option value="shoulder" ${fetus.presentation === 'shoulder' ? 'selected' : ''}>Bahu/Punggung</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-3">
+                                <label>BPD</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control usg-field" name="${prefix}_${key}_bpd" value="${escapeHtml(fetus.bpd || '')}">
+                                    <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label>AC</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control usg-field" name="${prefix}_${key}_ac" value="${escapeHtml(fetus.ac || '')}">
+                                    <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label>FL</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" class="form-control usg-field" name="${prefix}_${key}_fl" value="${escapeHtml(fetus.fl || '')}">
+                                    <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label>DJJ</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control usg-field" name="${prefix}_${key}_heart_rate" value="${escapeHtml(fetus.heart_rate || '')}">
+                                    <div class="input-group-append"><span class="input-group-text">x/m</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>EFW</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control usg-field" name="${prefix}_${key}_efw" value="${escapeHtml(fetus.efw || '')}">
+                                    <div class="input-group-append"><span class="input-group-text">gram</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Catatan ${label}</label>
+                                <input type="text" class="form-control usg-field" name="${prefix}_${key}_notes" value="${escapeHtml(fetus.notes || '')}" placeholder="Letak/plasenta/catatan khusus">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        return `
+            <div class="${prefix}-multiple-format" style="display:none;">
+                <h5 class="mt-3 mb-2">Biometri Kehamilan Kembar</h5>
+                <div class="form-row">
+                    ${renderFetus('a', 'Janin A')}
+                    ${renderFetus('b', 'Janin B')}
+                </div>
+            </div>
+        `;
+    },
+
+    collectTwinFirstTrimesterData(prefix) {
+        const read = (name) => document.querySelector(`[name="${name}"]`)?.value || '';
+        return {
+            a: {
+                gs: read(`${prefix}_a_gs`),
+                crl: read(`${prefix}_a_crl`),
+                ga_weeks: read(`${prefix}_a_ga_weeks`),
+                heart_rate: read(`${prefix}_a_heart_rate`)
+            },
+            b: {
+                gs: read(`${prefix}_b_gs`),
+                crl: read(`${prefix}_b_crl`),
+                ga_weeks: read(`${prefix}_b_ga_weeks`),
+                heart_rate: read(`${prefix}_b_heart_rate`)
+            }
+        };
+    },
+
+    collectTwinFetusData(prefix) {
+        const read = (name) => document.querySelector(`[name="${name}"]`)?.value || '';
+        const collect = (key) => ({
+            gender: read(`${prefix}_${key}_gender`),
+            presentation: read(`${prefix}_${key}_presentation`),
+            bpd: read(`${prefix}_${key}_bpd`),
+            ac: read(`${prefix}_${key}_ac`),
+            fl: read(`${prefix}_${key}_fl`),
+            heart_rate: read(`${prefix}_${key}_heart_rate`),
+            efw: read(`${prefix}_${key}_efw`),
+            notes: read(`${prefix}_${key}_notes`)
+        });
+
+        return {
+            a: collect('a'),
+            b: collect('b')
+        };
+    },
+
     /**
      * Render Trimester 1 (1-13 weeks)
      */
@@ -196,22 +395,22 @@ export default {
                     <label class="font-weight-bold">Jumlah Embrio</label>
                     <div class="d-flex gap-3">
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-not-visible" value="not_visible" ${t1.embryo_count === 'not_visible' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-not-visible" value="not_visible" ${t1.embryo_count === 'not_visible' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t1')">
                             <label class="custom-control-label" for="t1-not-visible">Belum Tampak</label>
                         </div>
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-single" value="single" ${(t1.embryo_count || 'single') === 'single' && t1.embryo_count !== 'not_visible' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-single" value="single" ${(t1.embryo_count || 'single') === 'single' && t1.embryo_count !== 'not_visible' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t1')">
                             <label class="custom-control-label" for="t1-single">Tunggal</label>
                         </div>
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-multiple" value="multiple" ${t1.embryo_count === 'multiple' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-multiple" value="multiple" ${t1.embryo_count === 'multiple' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t1')">
                             <label class="custom-control-label" for="t1-multiple">Multipel</label>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-row t1-single-format">
                 <div class="form-group col-md-3">
                     <label>Kantung Kehamilan (GS)</label>
                     <div class="input-group">
@@ -241,6 +440,8 @@ export default {
                     </div>
                 </div>
             </div>
+
+            ${this.renderTwinFirstTrimesterFields('t1', t1)}
 
             <div class="form-row">
                 <div class="form-group col-md-4">
@@ -306,16 +507,16 @@ export default {
                     <label class="font-weight-bold">Jumlah Janin</label>
                     <div class="d-flex gap-3">
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t2_fetus_count" id="t2-single" value="single" ${(t2.fetus_count || 'single') === 'single' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t2_fetus_count" id="t2-single" value="single" ${(t2.fetus_count || 'single') === 'single' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t2')">
                             <label class="custom-control-label" for="t2-single">Tunggal</label>
                         </div>
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t2_fetus_count" id="t2-multiple" value="multiple" ${t2.fetus_count === 'multiple' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t2_fetus_count" id="t2-multiple" value="multiple" ${t2.fetus_count === 'multiple' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t2')">
                             <label class="custom-control-label" for="t2-multiple">Multipel</label>
                         </div>
                     </div>
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-4 t2-single-format">
                     <label class="font-weight-bold">Jenis Kelamin</label>
                     <div class="d-flex gap-3">
                         <div class="custom-control custom-radio mr-4">
@@ -330,7 +531,7 @@ export default {
                 </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-row t2-single-format">
                 <div class="form-group col-md-6">
                     <label class="font-weight-bold">Letak Janin</label>
                     <div class="d-flex gap-3">
@@ -367,8 +568,8 @@ export default {
                 </div>
             </div>
 
-            <h5 class="mt-3 mb-2">Biometri</h5>
-            <div class="form-row">
+            <h5 class="mt-3 mb-2 t2-single-format">Biometri</h5>
+            <div class="form-row t2-single-format">
                 <div class="form-group col-md-3">
                     <label>BPD (Diameter Parietal)</label>
                     <div class="input-group">
@@ -398,6 +599,8 @@ export default {
                     </div>
                 </div>
             </div>
+
+            ${this.renderTwinFetusFields('t2', t2)}
 
             <h5 class="mt-3 mb-2">Plasenta & Ketuban</h5>
             <div class="form-row">
@@ -635,16 +838,16 @@ export default {
                     <label class="font-weight-bold">Jumlah Janin</label>
                     <div class="d-flex gap-3">
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t3_fetus_count" id="t3-single" value="single" ${(t3.fetus_count || 'single') === 'single' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t3_fetus_count" id="t3-single" value="single" ${(t3.fetus_count || 'single') === 'single' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t3')">
                             <label class="custom-control-label" for="t3-single">Tunggal</label>
                         </div>
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t3_fetus_count" id="t3-multiple" value="multiple" ${t3.fetus_count === 'multiple' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t3_fetus_count" id="t3-multiple" value="multiple" ${t3.fetus_count === 'multiple' ? 'checked' : ''} onchange="window.toggleUSGMultipleFormat && window.toggleUSGMultipleFormat('t3')">
                             <label class="custom-control-label" for="t3-multiple">Multipel</label>
                         </div>
                     </div>
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-4 t3-single-format">
                     <label class="font-weight-bold">Jenis Kelamin</label>
                     <div class="d-flex gap-3">
                         <div class="custom-control custom-radio mr-4">
@@ -659,7 +862,7 @@ export default {
                 </div>
             </div>
 
-            <div class="form-row">
+            <div class="form-row t3-single-format">
                 <div class="form-group col-md-6">
                     <label class="font-weight-bold">Letak Janin</label>
                     <div class="d-flex gap-3">
@@ -696,8 +899,8 @@ export default {
                 </div>
             </div>
 
-            <h5 class="mt-3 mb-2">Biometri</h5>
-            <div class="form-row">
+            <h5 class="mt-3 mb-2 t3-single-format">Biometri</h5>
+            <div class="form-row t3-single-format">
                 <div class="form-group col-md-3">
                     <label>BPD</label>
                     <div class="input-group">
@@ -727,6 +930,8 @@ export default {
                     </div>
                 </div>
             </div>
+
+            ${this.renderTwinFetusFields('t3', t3)}
 
             <h5 class="mt-3 mb-2">Plasenta & Ketuban</h5>
             <div class="form-row">
@@ -902,13 +1107,16 @@ export default {
     },
 
     collectTrimester1Data() {
+        const embryoCount = document.querySelector('input[name="t1_embryo_count"]:checked')?.value;
+
         return {
             date: document.querySelector('[name="t1_date"]')?.value,
-            embryo_count: document.querySelector('input[name="t1_embryo_count"]:checked')?.value,
+            embryo_count: embryoCount,
             gs: document.querySelector('[name="t1_gs"]')?.value,
             crl: document.querySelector('[name="t1_crl"]')?.value,
             ga_weeks: document.querySelector('[name="t1_ga_weeks"]')?.value,
             heart_rate: document.querySelector('[name="t1_heart_rate"]')?.value,
+            embryos: embryoCount === 'multiple' ? this.collectTwinFirstTrimesterData('t1') : undefined,
             implantation: document.querySelector('input[name="t1_implantation"]:checked')?.value,
             edd: document.querySelector('[name="t1_edd"]')?.value,
             lmp: document.querySelector('[name="t1_lmp"]')?.value,
@@ -919,9 +1127,11 @@ export default {
     },
 
     collectTrimester2Data() {
+        const fetusCount = document.querySelector('input[name="t2_fetus_count"]:checked')?.value;
+
         return {
             date: document.querySelector('[name="t2_date"]')?.value,
-            fetus_count: document.querySelector('input[name="t2_fetus_count"]:checked')?.value,
+            fetus_count: fetusCount,
             gender: document.querySelector('input[name="t2_gender"]:checked')?.value,
             fetus_lie: document.querySelector('input[name="t2_fetus_lie"]:checked')?.value,
             presentation: document.querySelector('input[name="t2_presentation"]:checked')?.value,
@@ -929,6 +1139,7 @@ export default {
             ac: document.querySelector('[name="t2_ac"]')?.value,
             fl: document.querySelector('[name="t2_fl"]')?.value,
             heart_rate: document.querySelector('[name="t2_heart_rate"]')?.value,
+            fetuses: fetusCount === 'multiple' ? this.collectTwinFetusData('t2') : undefined,
             placenta: document.querySelector('input[name="t2_placenta"]:checked')?.value,
             placenta_previa: document.querySelector('[name="t2_placenta_previa"]')?.value,
             afi: document.querySelector('[name="t2_afi"]')?.value,
@@ -969,9 +1180,11 @@ export default {
             }
         });
 
+        const fetusCount = document.querySelector('input[name="t3_fetus_count"]:checked')?.value;
+
         return {
             date: document.querySelector('[name="t3_date"]')?.value,
-            fetus_count: document.querySelector('input[name="t3_fetus_count"]:checked')?.value,
+            fetus_count: fetusCount,
             gender: document.querySelector('input[name="t3_gender"]:checked')?.value,
             fetus_lie: document.querySelector('input[name="t3_fetus_lie"]:checked')?.value,
             presentation: document.querySelector('input[name="t3_presentation"]:checked')?.value,
@@ -979,6 +1192,7 @@ export default {
             ac: document.querySelector('[name="t3_ac"]')?.value,
             fl: document.querySelector('[name="t3_fl"]')?.value,
             heart_rate: document.querySelector('[name="t3_heart_rate"]')?.value,
+            fetuses: fetusCount === 'multiple' ? this.collectTwinFetusData('t3') : undefined,
             placenta: document.querySelector('input[name="t3_placenta"]:checked')?.value,
             placenta_previa: document.querySelector('[name="t3_placenta_previa"]')?.value,
             afi: document.querySelector('[name="t3_afi"]')?.value,
