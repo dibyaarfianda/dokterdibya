@@ -795,15 +795,20 @@ async function handlePaymentSuccess(payment, webhookData) {
 
         // Get billing items for stock deduction
         const [billingItems] = await connection.query(`
-            SELECT item_code, item_name, quantity,
-                   CAST(JSON_EXTRACT(item_data, '$.obatId') AS UNSIGNED) as obat_id
-            FROM sunday_clinic_billing_items
-            WHERE billing_id = ? AND item_type = 'obat'
+            SELECT bi.item_code, bi.item_name, bi.quantity,
+                   COALESCE(
+                       NULLIF(CAST(JSON_UNQUOTE(JSON_EXTRACT(bi.item_data, '$.obatId')) AS UNSIGNED), 0),
+                       (SELECT o.id FROM obat o WHERE bi.item_code IS NOT NULL AND o.code = bi.item_code LIMIT 1),
+                       (SELECT o.id FROM obat o WHERE bi.item_code REGEXP '^[0-9]+$' AND o.id = CAST(bi.item_code AS UNSIGNED) LIMIT 1),
+                       (SELECT o.id FROM obat o WHERE LOWER(TRIM(o.name)) = LOWER(TRIM(bi.item_name)) ORDER BY o.is_active DESC, o.id ASC LIMIT 1)
+                   ) AS obat_id
+            FROM sunday_clinic_billing_items bi
+            WHERE bi.billing_id = ? AND bi.item_type = 'obat'
         `, [payment.billing_id]);
 
         const invalidBillingItems = billingItems.filter(item => !item.obat_id);
         if (invalidBillingItems.length > 0) {
-            throw new Error(`Data obat tidak valid: ${invalidBillingItems.map(i => i.item_name).join(', ')}`);
+            throw new Error(`Data obat tidak valid: ${invalidBillingItems.map(i => i.item_name || i.item_code || 'tanpa nama').join(', ')}`);
         }
 
         // Deduct stock for each medication

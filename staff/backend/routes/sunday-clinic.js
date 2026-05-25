@@ -2860,7 +2860,12 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
         // If mapping or stock is invalid, do not allow billing to be marked paid.
         const [obatItemsRaw] = await db.query(
             `SELECT bi.item_code, bi.item_name, bi.quantity,
-                    CAST(JSON_EXTRACT(bi.item_data, '$.obatId') AS UNSIGNED) as obat_id
+                    COALESCE(
+                        NULLIF(CAST(JSON_UNQUOTE(JSON_EXTRACT(bi.item_data, '$.obatId')) AS UNSIGNED), 0),
+                        (SELECT o.id FROM obat o WHERE bi.item_code IS NOT NULL AND o.code = bi.item_code LIMIT 1),
+                        (SELECT o.id FROM obat o WHERE bi.item_code REGEXP '^[0-9]+$' AND o.id = CAST(bi.item_code AS UNSIGNED) LIMIT 1),
+                        (SELECT o.id FROM obat o WHERE LOWER(TRIM(o.name)) = LOWER(TRIM(bi.item_name)) ORDER BY o.is_active DESC, o.id ASC LIMIT 1)
+                    ) AS obat_id
              FROM sunday_clinic_billing_items bi
              WHERE bi.billing_id = ? AND bi.item_type = 'obat'`,
             [billingLocked.id]
@@ -2870,7 +2875,7 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
         if (invalidObatItems.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: `Data obat tidak valid: ${invalidObatItems.map(i => i.item_name).join(', ')}. Simpan ulang item obat sebelum menandai lunas.`
+                message: `Data obat tidak valid: ${invalidObatItems.map(i => i.item_name || i.item_code || 'tanpa nama').join(', ')}. Simpan ulang item obat sebelum menandai lunas.`
             });
         }
 
