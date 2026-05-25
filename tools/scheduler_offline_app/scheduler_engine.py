@@ -67,12 +67,16 @@ class SchedulerConfig:
     enforce_uniform_group_night: bool = True
     enforce_night_monotonic: bool = True
     enforce_off_monotonic: bool = True
+    enforce_exact_off_targets: bool = True
 
     assign_colors: bool = True
     yellow_only_max_rank: int = 11
     polos_per_shift: int = 2
     yellow_per_shift: int = 1
     keep_x_gray: bool = True
+
+    # Soft objective: keep each staff's P and S load as balanced as possible.
+    enforce_ps_balance_soft: bool = True
 
 
 class OfflineSchedulerEngine:
@@ -349,16 +353,28 @@ class OfflineSchedulerEngine:
 
         off_by_rank = []
         m_by_rank = []
+        ps_by_rank = []
         mll_missing = []
 
         for s in team_staff:
             codes = {d: code_of(s.name, d) for d in active_days}
             off = sum(1 for d in active_days if codes[d] == "L")
             night = sum(1 for d in active_days if codes[d] == "M")
+            p_count = sum(1 for d in active_days if codes[d] == "P")
+            s_count = sum(1 for d in active_days if codes[d] == "S")
             mll = self._mll_hits(codes, active_days)
 
             off_by_rank.append({"rank": s.no, "name": s.name, "L": off})
             m_by_rank.append({"rank": s.no, "name": s.name, "M": night})
+            ps_by_rank.append(
+                {
+                    "rank": s.no,
+                    "name": s.name,
+                    "P": p_count,
+                    "S": s_count,
+                    "diff": abs(p_count - s_count),
+                }
+            )
             if not mll:
                 mll_missing.append(s.name)
 
@@ -436,11 +452,14 @@ class OfflineSchedulerEngine:
             "group_together_bad_count": len(group_together_bad),
             "m_to_p_count": len(m_to_p_pairs),
             "mll_missing_count": len(mll_missing),
+            "mll_missing_names": mll_missing,
             "off_monotonic_bad_count": len(off_monotonic_bad),
             "night_monotonic_bad_count": len(night_monotonic_bad),
             "color_errors_count": len(color_errors),
             "off_by_rank": off_by_rank,
             "m_by_rank": m_by_rank,
+            "ps_by_rank": ps_by_rank,
+            "ps_balance_total_diff": sum(item["diff"] for item in ps_by_rank),
             "coverage_bad_preview": coverage_bad[:5],
             "off_monotonic_bad_preview": off_monotonic_bad[:5],
             "night_monotonic_bad_preview": night_monotonic_bad[:5],
@@ -531,6 +550,20 @@ class OfflineSchedulerEngine:
             total_off_required=total_off_required,
             uniform_group=uniform_group,
         )
+
+        hard_issues = self._check_hard_off_target_feasibility(
+            config=config,
+            team_staff=team_staff,
+            off_targets=off_targets,
+            expected_l=expected_l,
+            active_days=active_days,
+            uniform_group=uniform_group,
+        )
+        if hard_issues:
+            raise ValueError(
+                "Hard rule infeasible for current configuration.\n"
+                + "\n".join(f"- {issue}" for issue in hard_issues)
+            )
 
         # Simulated annealing with same-day swaps.
         current = copy.deepcopy(schedule)
@@ -633,7 +666,31 @@ class OfflineSchedulerEngine:
             config=config,
         )
 
+        best, best_score = self._repair_exact_off_targets(
+            schedule=best,
+            current_score=best_score,
+            team_names=team_names,
+            name_by_no=name_by_no,
+            no_by_name=no_by_name,
+            active_days=active_days,
+            off_targets=off_targets,
+            uniform_group=uniform_group,
+            config=config,
+        )
+
         best, best_score = self._repair_night_monotonic(
+            schedule=best,
+            current_score=best_score,
+            team_names=team_names,
+            name_by_no=name_by_no,
+            no_by_name=no_by_name,
+            active_days=active_days,
+            off_targets=off_targets,
+            uniform_group=uniform_group,
+            config=config,
+        )
+
+        best, best_score = self._repair_mll_each(
             schedule=best,
             current_score=best_score,
             team_names=team_names,
@@ -737,6 +794,17 @@ class OfflineSchedulerEngine:
         if save_errors:
             report["_save_errors"] = save_errors
         report["solver_score"] = best_score
+
+        hard_violations = self._check_post_generation_hard_rules(
+            report=report,
+            off_targets=off_targets,
+            config=config,
+        )
+        if hard_violations:
+            raise RuntimeError(
+                "Hard rule violation after generation.\n"
+                + "\n".join(f"- {issue}" for issue in hard_violations)
+            )
 
         self._emit_progress(
             progress_callback,
@@ -878,7 +946,106 @@ class OfflineSchedulerEngine:
             uniform_group=uniform_group,
         )
 
+        if config.enforce_exact_off_targets:
+            # Hard mode: preserve the configured strata exactly (no auto-rebalancing).
+            adjusted_values = [max(0, int(v)) for v in base_values]
+
         return {staff.name: adjusted_values[i] for i, staff in enumerate(ordered_staff)}
+
+    def _check_hard_off_target_feasibility(
+        self,
+        config: SchedulerConfig,
+        team_staff: List[StaffMember],
+        off_targets: Dict[str, int],
+        expected_l: int,
+        active_days: List[int],
+        uniform_group: List[int],
+    ) -> List[str]:
+        if not config.enforce_exact_off_targets:
+            return []
+
+        issues: List[str] = []
+        day_count = len(active_days)
+        expected_total = expected_l * day_count
+        current_total = sum(int(off_targets.get(s.name, 0)) for s in team_staff)
+
+        if current_total != expected_total:
+            delta = expected_total - current_total
+            issues.append(
+                f"Total target libur harus {expected_total}, saat ini {current_total}. "
+                f"Ubah total strata sebesar {delta:+d} agar coverage harian tetap 3P-3S-3M."
+            )
+
+        for s in team_staff:
+            t = int(off_targets.get(s.name, 0))
+            if t < 0 or t > day_count:
+                issues.append(
+                    f"Target libur rank {s.no} ({s.name}) = {t} di luar rentang 0..{day_count}."
+                )
+
+        if config.enforce_uniform_group_off and uniform_group:
+            name_by_rank = {s.no: s.name for s in team_staff}
+            group_vals = [
+                int(off_targets.get(name_by_rank[r], 0))
+                for r in uniform_group
+                if r in name_by_rank
+            ]
+            if group_vals and (max(group_vals) != min(group_vals)):
+                issues.append(
+                    "Rank grup seragam memiliki target libur berbeda. "
+                    "Samakan target libur untuk semua rank pada uniform_group."
+                )
+
+        if config.enforce_off_monotonic:
+            ordered = sorted(team_staff, key=lambda s: s.no)
+            for i in range(len(ordered) - 1):
+                a = ordered[i]
+                b = ordered[i + 1]
+                ta = int(off_targets.get(a.name, 0))
+                tb = int(off_targets.get(b.name, 0))
+                if ta < tb:
+                    issues.append(
+                        f"Monotonic libur dilanggar oleh target: rank {a.no}={ta} < rank {b.no}={tb}."
+                    )
+
+        return issues
+
+    def _check_post_generation_hard_rules(
+        self,
+        report: Dict[str, object],
+        off_targets: Dict[str, int],
+        config: SchedulerConfig,
+    ) -> List[str]:
+        issues: List[str] = []
+
+        if config.enforce_mll_each:
+            missing = int(report.get("mll_missing_count", 0) or 0)
+            if missing > 0:
+                missing_names = report.get("mll_missing_names", []) or []
+                detail = ""
+                if missing_names:
+                    detail = " (" + ", ".join(str(n) for n in missing_names) + ")"
+                issues.append(
+                    f"Masih ada {missing} staff tanpa pola M-L-L{detail}. "
+                    "Kurangi keketatan rule lain (mis. nonaktifkan rank group tidak bersamaan) "
+                    "atau naikkan iterasi agar ruang swap lebih luas."
+                )
+
+        if config.enforce_exact_off_targets:
+            violations = []
+            for row in report.get("off_by_rank", []):
+                name = str(row.get("name"))
+                actual = int(row.get("L", 0))
+                target = int(off_targets.get(name, actual))
+                if actual != target:
+                    rank = int(row.get("rank", 0))
+                    violations.append(f"rank {rank} ({name}) target {target}, aktual {actual}")
+            if violations:
+                issues.append(
+                    "Target libur strata belum tercapai untuk: " + "; ".join(violations)
+                )
+
+        return issues
 
     def _rebalance_off_targets(
         self,
@@ -1045,6 +1212,8 @@ class OfflineSchedulerEngine:
 
         off = {n: 0 for n in team_names}
         nights = {n: 0 for n in team_names}
+        p_counts = {n: 0 for n in team_names}
+        s_counts = {n: 0 for n in team_names}
 
         for day in active_days:
             cnt = Counter(schedule[n]["codes"][day] for n in team_names)
@@ -1075,6 +1244,10 @@ class OfflineSchedulerEngine:
                     off[n] += 1
                 if code == "M":
                     nights[n] += 1
+                if code == "P":
+                    p_counts[n] += 1
+                if code == "S":
+                    s_counts[n] += 1
 
         if config.enforce_no_m_to_p:
             for n in team_names:
@@ -1143,6 +1316,18 @@ class OfflineSchedulerEngine:
             rank_weight = 1.0 + max(0.0, (config.max_core_rank - rank) * 0.3)
             off_target_pen += abs(off[n] - off_targets.get(n, off[n])) * rank_weight
         penalties += off_target_pen * 60000
+
+        if config.enforce_exact_off_targets:
+            exact_off_pen = 0
+            for n in team_names:
+                exact_off_pen += abs(off[n] - off_targets.get(n, off[n]))
+            penalties += exact_off_pen * 300000
+
+        if config.enforce_ps_balance_soft:
+            ps_balance_pen = 0
+            for n in team_names:
+                ps_balance_pen += abs(p_counts[n] - s_counts[n])
+            penalties += ps_balance_pen * 800
 
         # Strongly discourage top ranks from exceeding their off-day targets.
         if config.top_rank_count > 0:
@@ -1354,6 +1539,208 @@ class OfflineSchedulerEngine:
             name_a, name_b, day, code_b = best_move
             repaired[name_a]["codes"][day] = code_b
             repaired[name_b]["codes"][day] = "M"
+            current_score = best_score
+
+        return repaired, current_score
+
+    def _repair_exact_off_targets(
+        self,
+        schedule: Dict[str, Dict[str, object]],
+        current_score: float,
+        team_names: List[str],
+        name_by_no: Dict[int, str],
+        no_by_name: Dict[str, int],
+        active_days: List[int],
+        off_targets: Dict[str, int],
+        uniform_group: List[int],
+        config: SchedulerConfig,
+    ) -> Tuple[Dict[str, Dict[str, object]], float]:
+        if not config.enforce_exact_off_targets:
+            return schedule, current_score
+
+        repaired = copy.deepcopy(schedule)
+
+        off = {
+            n: sum(1 for d in active_days if repaired[n]["codes"][d] == "L")
+            for n in team_names
+        }
+
+        guard = 0
+        while guard < 1500:
+            guard += 1
+
+            over = [n for n in team_names if off[n] > off_targets.get(n, off[n])]
+            under = [n for n in team_names if off[n] < off_targets.get(n, off[n])]
+            if not over or not under:
+                break
+
+            best_move = None
+            best_score = current_score
+
+            for src in over:
+                for dst in under:
+                    if src == dst:
+                        continue
+
+                    for day in active_days:
+                        if repaired[src]["codes"][day] != "L":
+                            continue
+
+                        dst_code = repaired[dst]["codes"][day]
+                        if dst_code not in {"P", "S", "M"}:
+                            continue
+
+                        repaired[src]["codes"][day] = dst_code
+                        repaired[dst]["codes"][day] = "L"
+
+                        cand_score = self._score(
+                            repaired,
+                            team_names,
+                            name_by_no,
+                            no_by_name,
+                            active_days,
+                            off_targets,
+                            uniform_group,
+                            config,
+                        )
+
+                        repaired[src]["codes"][day] = "L"
+                        repaired[dst]["codes"][day] = dst_code
+
+                        if cand_score > best_score:
+                            best_score = cand_score
+                            best_move = (src, dst, day, dst_code)
+
+            if best_move is None:
+                break
+
+            src, dst, day, dst_code = best_move
+            repaired[src]["codes"][day] = dst_code
+            repaired[dst]["codes"][day] = "L"
+            off[src] -= 1
+            off[dst] += 1
+            current_score = best_score
+
+        return repaired, current_score
+
+    def _repair_mll_each(
+        self,
+        schedule: Dict[str, Dict[str, object]],
+        current_score: float,
+        team_names: List[str],
+        name_by_no: Dict[int, str],
+        no_by_name: Dict[str, int],
+        active_days: List[int],
+        off_targets: Dict[str, int],
+        uniform_group: List[int],
+        config: SchedulerConfig,
+    ) -> Tuple[Dict[str, Dict[str, object]], float]:
+        if not config.enforce_mll_each:
+            return schedule, current_score
+
+        repaired = copy.deepcopy(schedule)
+
+        for name in team_names:
+            if self._mll_hits(repaired[name]["codes"], active_days):
+                continue
+
+            best_move = None
+            best_score = current_score
+
+            for i in range(len(active_days) - 2):
+                d1 = active_days[i]
+                d2 = active_days[i + 1]
+                d3 = active_days[i + 2]
+
+                # M at d1 via swap with existing M holder.
+                m_donors = [n for n in team_names if n != name and repaired[n]["codes"][d1] == "M"]
+                if repaired[name]["codes"][d1] == "M":
+                    m_donors = [None]
+                if not m_donors:
+                    continue
+
+                # L at d2 and d3 via swap with existing L holders.
+                l2_donors = [n for n in team_names if n != name and repaired[n]["codes"][d2] == "L"]
+                if repaired[name]["codes"][d2] == "L":
+                    l2_donors = [None]
+                l3_donors = [n for n in team_names if n != name and repaired[n]["codes"][d3] == "L"]
+                if repaired[name]["codes"][d3] == "L":
+                    l3_donors = [None]
+
+                if not l2_donors or not l3_donors:
+                    continue
+
+                for m_donor in m_donors:
+                    for l2_donor in l2_donors:
+                        for l3_donor in l3_donors:
+                            backups = []
+
+                            if m_donor is not None:
+                                backups.append((name, d1, repaired[name]["codes"][d1]))
+                                backups.append((m_donor, d1, repaired[m_donor]["codes"][d1]))
+                                repaired[name]["codes"][d1], repaired[m_donor]["codes"][d1] = (
+                                    repaired[m_donor]["codes"][d1],
+                                    repaired[name]["codes"][d1],
+                                )
+
+                            if l2_donor is not None:
+                                backups.append((name, d2, repaired[name]["codes"][d2]))
+                                backups.append((l2_donor, d2, repaired[l2_donor]["codes"][d2]))
+                                repaired[name]["codes"][d2], repaired[l2_donor]["codes"][d2] = (
+                                    repaired[l2_donor]["codes"][d2],
+                                    repaired[name]["codes"][d2],
+                                )
+
+                            if l3_donor is not None:
+                                backups.append((name, d3, repaired[name]["codes"][d3]))
+                                backups.append((l3_donor, d3, repaired[l3_donor]["codes"][d3]))
+                                repaired[name]["codes"][d3], repaired[l3_donor]["codes"][d3] = (
+                                    repaired[l3_donor]["codes"][d3],
+                                    repaired[name]["codes"][d3],
+                                )
+
+                            if not self._mll_hits(repaired[name]["codes"], active_days):
+                                for n, d, old_code in reversed(backups):
+                                    repaired[n]["codes"][d] = old_code
+                                continue
+
+                            cand_score = self._score(
+                                repaired,
+                                team_names,
+                                name_by_no,
+                                no_by_name,
+                                active_days,
+                                off_targets,
+                                uniform_group,
+                                config,
+                            )
+
+                            for n, d, old_code in reversed(backups):
+                                repaired[n]["codes"][d] = old_code
+
+                            if cand_score > best_score:
+                                best_score = cand_score
+                                best_move = (d1, d2, d3, m_donor, l2_donor, l3_donor)
+
+            if best_move is None:
+                continue
+
+            d1, d2, d3, m_donor, l2_donor, l3_donor = best_move
+            if m_donor is not None:
+                repaired[name]["codes"][d1], repaired[m_donor]["codes"][d1] = (
+                    repaired[m_donor]["codes"][d1],
+                    repaired[name]["codes"][d1],
+                )
+            if l2_donor is not None:
+                repaired[name]["codes"][d2], repaired[l2_donor]["codes"][d2] = (
+                    repaired[l2_donor]["codes"][d2],
+                    repaired[name]["codes"][d2],
+                )
+            if l3_donor is not None:
+                repaired[name]["codes"][d3], repaired[l3_donor]["codes"][d3] = (
+                    repaired[l3_donor]["codes"][d3],
+                    repaired[name]["codes"][d3],
+                )
             current_score = best_score
 
         return repaired, current_score
