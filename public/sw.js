@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526q'; // 2026-05-26q - Keep trial landing topbar left-aligned at wider widths
+const CACHE_VERSION = '20260526r'; // 2026-05-26r - Reduce standalone PWA scroll jitter
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
