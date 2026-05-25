@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526k'; // 2026-05-26k - Trial landing mobile footer background fit
+const CACHE_VERSION = '20260526l'; // 2026-05-26l - Remove trial landing SW version redirect
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -94,12 +94,6 @@ self.addEventListener('fetch', (event) => {
 
   // For navigation requests (HTML pages)
   if (request.mode === 'navigate') {
-    if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== CACHE_VERSION) {
-      url.searchParams.set('_v', CACHE_VERSION);
-      event.respondWith(Response.redirect(url.toString(), 302));
-      return;
-    }
-
     event.respondWith(
       fetch(freshRequest)
         .then((response) => {
