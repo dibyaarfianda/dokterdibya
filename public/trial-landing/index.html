@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526s';
+            var PAGE_VERSION = '20260526t';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -111,6 +111,31 @@
             display: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
+        }
+
+        html.standalone-pwa .patient-features-section {
+            padding-top: 96px !important;
+        }
+
+        html.standalone-pwa .patient-features-section .proces-row {
+            position: relative !important;
+            top: auto !important;
+            z-index: auto !important;
+            padding-top: 20px !important;
+            padding-bottom: 28px !important;
+            transform: none !important;
+            will-change: auto !important;
+            contain: layout paint;
+        }
+
+        html.standalone-pwa .patient-features-section .proces-desc {
+            opacity: 1 !important;
+            max-height: none !important;
+            will-change: auto !important;
+        }
+
+        html.standalone-pwa .patient-features-section .proces-spacer {
+            height: 64px !important;
         }
 
         body {
@@ -7666,6 +7691,11 @@
             function assignStickyTops() {
                 COLLAPSED_H = getCollapsedH();
                 sections.forEach(function(section) {
+                    if (reducePwaScrollWork && section.classList.contains('patient-features-section')) {
+                        applyStaticPwaSection(section);
+                        return;
+                    }
+
                     var rows = Array.from(section.querySelectorAll('.proces-row'));
                     if (!rows.length) return;
 
@@ -7706,6 +7736,30 @@
                 });
             });
 
+            var reducePwaScrollWork = window.__trialReducePwaScrollWork === true;
+            var staticPwaSections = Array.prototype.filter.call(sections, function(section) {
+                return reducePwaScrollWork && section.classList.contains('patient-features-section');
+            });
+
+            function applyStaticPwaSection(section) {
+                var rows = Array.from(section.querySelectorAll('.proces-row'));
+                rows.forEach(function(row) {
+                    row.style.setProperty('position', 'relative', 'important');
+                    row.style.setProperty('top', 'auto', 'important');
+                    row.style.setProperty('z-index', 'auto', 'important');
+                    row.style.setProperty('padding-top', '20px', 'important');
+                    row.style.setProperty('padding-bottom', '28px', 'important');
+
+                    var desc = row.querySelector('.proces-desc');
+                    if (desc) {
+                        desc.style.setProperty('opacity', '1', 'important');
+                        desc.style.setProperty('max-height', 'none', 'important');
+                    }
+                });
+            }
+
+            staticPwaSections.forEach(applyStaticPwaSection);
+
             function getDocTop(el) {
                 return el.getBoundingClientRect().top + window.scrollY;
             }
@@ -7715,6 +7769,15 @@
                 if (contentWrapper && contentWrapper.style.display === 'none') return;
                 assignStickyTops();
                 sectionData.forEach(function(sd) {
+                    if (reducePwaScrollWork && sd.el.classList.contains('patient-features-section')) {
+                        applyStaticPwaSection(sd.el);
+                        sd.startY = 0;
+                        sd.endY = 0;
+                        sd.rowStartY = [];
+                        sd.descHeights = [];
+                        return;
+                    }
+
                     var firstRow = sd.rows[0];
                     var sampleMetrics = measureExpandedRow(firstRow);
                     var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
@@ -7824,6 +7887,11 @@
                 var scrollY = window.scrollY;
 
                 sectionData.forEach(function(sd) {
+                    if (reducePwaScrollWork && sd.el.classList.contains('patient-features-section')) {
+                        applyStaticPwaSection(sd.el);
+                        return;
+                    }
+
                     var count = sd.rows.length;
                     if (count === 0) return;
 
