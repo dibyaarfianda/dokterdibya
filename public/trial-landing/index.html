@@ -1873,16 +1873,18 @@
 
         .doc-links-row {
             display: flex;
-            gap: 10px;
+            gap: clamp(8px, 2.5vw, 18px);
             margin-top: 32px;
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: space-between;
             margin-left: auto;
             margin-right: auto;
+            width: 100%;
         }
 
         .doc-links-row .doc-card-side {
-            flex: 0 1 280px;
+            flex: 0 0 248px;
+            max-width: 248px;
         }
 
         .doc-section .doc-heading,
@@ -2143,6 +2145,14 @@
         }
 
         @media (max-width: 420px) {
+            .doc-links-row {
+                justify-content: center;
+            }
+
+            .doc-links-row .doc-card-side {
+                flex-basis: min(100%, 248px);
+            }
+
             .doc-img-col {
                 height: 340px;
                 max-width: 100%;
