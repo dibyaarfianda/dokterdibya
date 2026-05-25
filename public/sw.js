@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526i'; // 2026-05-26i - Trial landing footer reduced-motion whitelist
+const CACHE_VERSION = '20260526j'; // 2026-05-26j - Trial landing forced page version
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -13,6 +13,7 @@ const OFFLINE_URL = '/offline.html';
 const PRECACHE_FILES = [
   '/',
   '/patient-menu.html',
+  '/trial-landing/index.html',
   '/patient-menu-simple-trial.html',
   '/my-corner-visit-trial.html',
   '/styles/patient-trial-theme.css',
@@ -93,6 +94,12 @@ self.addEventListener('fetch', (event) => {
 
   // For navigation requests (HTML pages)
   if (request.mode === 'navigate') {
+    if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== CACHE_VERSION) {
+      url.searchParams.set('_v', CACHE_VERSION);
+      event.respondWith(Response.redirect(url.toString(), 302));
+      return;
+    }
+
     event.respondWith(
       fetch(freshRequest)
         .then((response) => {
