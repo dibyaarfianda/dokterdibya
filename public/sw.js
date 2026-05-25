@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526l'; // 2026-05-26l - Remove trial landing SW version redirect
+const CACHE_VERSION = '20260526m'; // 2026-05-26m - Blob trampoline out of stale trial landing SW
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
