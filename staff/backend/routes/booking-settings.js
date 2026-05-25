@@ -275,7 +275,8 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
                 sa.created_at,
                 bs.session_name,
                 bs.start_time,
-                bs.end_time
+                bs.end_time,
+                bs.slot_duration
             FROM sunday_appointments sa
             LEFT JOIN booking_settings bs ON sa.session = bs.session_number
             WHERE sa.appointment_date >= CURDATE()
@@ -306,7 +307,8 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
         const enrichedBookings = bookings.map(b => {
             const startTime = b.start_time ? b.start_time.substring(0, 5) : '09:00';
             const [hours, mins] = startTime.split(':').map(Number);
-            const totalMinutes = (hours * 60 + mins) + (b.slot_number - 1) * 15;
+            const slotDuration = parseInt(b.slot_duration, 10) || 15;
+            const totalMinutes = (hours * 60 + mins) + (b.slot_number - 1) * slotDuration;
             const slotHour = Math.floor(totalMinutes / 60);
             const slotMinute = totalMinutes % 60;
             const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;
@@ -340,7 +342,7 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
 
         // Get booking details first
         const [bookings] = await db.query(
-            `SELECT sa.*, p.email as patient_email, bs.session_name, bs.start_time
+            `SELECT sa.*, p.email as patient_email, bs.session_name, bs.start_time, bs.slot_duration
              FROM sunday_appointments sa
              LEFT JOIN patients p ON sa.patient_id = p.id
              LEFT JOIN booking_settings bs ON sa.session = bs.session_number
@@ -361,7 +363,8 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
         // Calculate slot time
         const startTime = booking.start_time ? booking.start_time.substring(0, 5) : '09:00';
         const [hours, mins] = startTime.split(':').map(Number);
-        const totalMinutes = (hours * 60 + mins) + (booking.slot_number - 1) * 15;
+        const slotDuration = parseInt(booking.slot_duration, 10) || 15;
+        const totalMinutes = (hours * 60 + mins) + (booking.slot_number - 1) * slotDuration;
         const slotHour = Math.floor(totalMinutes / 60);
         const slotMinute = totalMinutes % 60;
         const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;

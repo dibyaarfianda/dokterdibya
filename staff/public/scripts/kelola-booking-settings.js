@@ -102,6 +102,63 @@
             return;
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function timeToMinutes(value) {
+            const parts = String(value || '').split(':').map(Number);
+            if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) {
+                return null;
+            }
+            return (parts[0] * 60) + parts[1];
+        }
+
+        function formatMinutes(totalMinutes) {
+            const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+            const hours = Math.floor(normalized / 60);
+            const minutes = normalized % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        function renderSlotPreview(session) {
+            const startMinutes = timeToMinutes(session.start_time);
+            const duration = Number.parseInt(session.slot_duration, 10) || 15;
+            const maxSlots = Number.parseInt(session.max_slots, 10) || 0;
+
+            if (startMinutes === null || maxSlots <= 0) {
+                return '<div class="text-muted small">Preview slot belum tersedia.</div>';
+            }
+
+            const slots = Array.from({ length: maxSlots }, (_, index) => {
+                const slotNumber = index + 1;
+                const slotTime = formatMinutes(startMinutes + (index * duration));
+                return `
+                    <span class="badge badge-light border text-dark mr-1 mb-1 px-2 py-1">
+                        <span class="text-primary font-weight-bold">Slot ${slotNumber}</span>
+                        <span class="ml-1">${slotTime}</span>
+                    </span>
+                `;
+            }).join('');
+
+            return `
+                <div class="mt-3 pt-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small font-weight-bold text-muted text-uppercase">Prediksi Slot</span>
+                        <span class="small text-muted">${maxSlots} slot x ${duration} menit</span>
+                    </div>
+                    <div class="booking-slot-preview">
+                        ${slots}
+                    </div>
+                </div>
+            `;
+        }
+
         container.innerHTML = settings.map(s => `
             <div class="col-lg-4 col-md-6 mb-3">
                 <div class="card ${s.is_active ? 'card-primary' : 'card-secondary'} card-outline h-100">
@@ -120,7 +177,7 @@
                         <h4 class="text-center mb-3">
                             <span class="text-primary">${s.start_time}</span> - <span class="text-primary">${s.end_time}</span>
                         </h4>
-                        <p class="text-center text-muted mb-3">${s.session_name}</p>
+                        <p class="text-center text-muted mb-3">${escapeHtml(s.session_name)}</p>
 
                         <div class="row text-center">
                             <div class="col-6">
@@ -140,6 +197,8 @@
                                 </div>
                             </div>
                         </div>
+
+                        ${renderSlotPreview(s)}
                     </div>
                     <div class="card-footer text-center">
                         <button class="btn btn-sm btn-info mr-1" onclick="window.editSession(${s.id})">
