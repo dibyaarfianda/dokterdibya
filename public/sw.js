@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526n'; // 2026-05-26n - Trial landing hero copy mobile gutters
+const CACHE_VERSION = '20260526o'; // 2026-05-26o - Larger trial landing brand title
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
