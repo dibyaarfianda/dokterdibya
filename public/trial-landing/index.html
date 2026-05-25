@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526j';
+            var PAGE_VERSION = '20260526k';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -3756,8 +3756,8 @@
             --journey-stretch: 0px;
             --journey-parallax-y: var(--footer-shift-photo);
             --journey-shadow-alpha: 0.14;
-            --journey-bg-size: 156% auto;
-            --journey-position: center center;
+            --journey-bg-size: auto 118%;
+            --journey-position: center 56%;
             --footer-shift-photo: 0px;
             --footer-shift-a: 0px;
             --footer-shift-b: 0px;
@@ -4055,6 +4055,8 @@
                 margin-top: 150px;
                 padding: 0;
                 overflow: visible;
+                --journey-bg-size: 156% auto;
+                --journey-position: center center;
             }
             .site-footer .footer-card-frame {
                 min-height: 620px;
