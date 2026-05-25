@@ -544,6 +544,13 @@
             font-size: 0.7rem !important;
             padding: 0.25rem 0.5rem !important;
         }
+        #booking-settings-page .booking-slot-preview {
+            line-height: 2 !important;
+        }
+        #booking-settings-page .booking-slot-preview .badge {
+            font-size: 0.76rem !important;
+            white-space: nowrap !important;
+        }
 
         /* Notifications Page - Staff Announcements */
         #notifications-page .staff-announcement-item,
@@ -7979,7 +7986,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v215';
+    window.__assetVersion = 'v216';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
