@@ -3753,13 +3753,13 @@
             --footer-shift-d: 0px;
             --footer-progress: 0;
             position: relative;
-            margin-top: 150px;
+            margin-top: 0;
             padding: 0;
             min-height: 0;
-            background: none;
+            background: #0d1415;
             color: rgba(255, 255, 255, 0.78);
             margin-bottom: 0;
-            overflow: visible;
+            overflow: hidden;
             isolation: isolate;
         }
         .site-footer .footer-card-frame {
@@ -3816,21 +3816,25 @@
             will-change: transform;
         }
         .site-footer .footer-photo::after {
-            content: '';
-            position: absolute;
-            inset: 0;
+            content: none;
+        }
+        .site-footer .footer-backdrop,
+        .site-footer .footer-grid {
+            display: none;
+        }
+        .site-footer .footer-vignette {
+            display: block;
+            background: linear-gradient(180deg, rgba(8, 12, 13, 0) 0%, rgba(8, 12, 13, 0.16) 44%, rgba(8, 12, 13, 0.42) 100%);
+            z-index: 3;
+        }
+        .site-footer .footer-grain {
+            display: block;
             background-image: url('/images/grain.avif');
             background-size: 90px 90px;
             background-repeat: repeat;
             mix-blend-mode: soft-light;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        .site-footer .footer-backdrop,
-        .site-footer .footer-grid,
-        .site-footer .footer-vignette,
-        .site-footer .footer-grain {
-            display: none;
+            opacity: 0.46;
+            z-index: 4;
         }
         .site-footer .footer-orb {
             inset: -4% auto auto -8%;
@@ -3854,7 +3858,7 @@
         }
         .site-footer .footer-inner {
             position: relative;
-            z-index: 3;
+            z-index: 5;
         }
         /* Page bg behind footer = dark (prevents white below footer in overscroll/rubber-band) */
         html { background-color: #0d0d0d !important; }
@@ -4029,7 +4033,9 @@
         }
         @media (min-width: 900px) {
             .site-footer {
+                margin-top: 150px;
                 padding: 0;
+                overflow: visible;
             }
             .site-footer .footer-card-frame {
                 min-height: 620px;

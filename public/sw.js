@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526d'; // 2026-05-26d - Trial landing mobile PWA viewport
+const CACHE_VERSION = '20260526e'; // 2026-05-26e - Trial landing mobile footer layer
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
