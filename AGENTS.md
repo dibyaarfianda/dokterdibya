@@ -1758,3 +1758,65 @@ User reacted with "wow" after the first simple trial dashboard implementation.
 
 **Lesson:**
 - For daily patient portal redesign, use animation as microinteraction and atmosphere, not as repeated landing-page structure. Keep the first screen immediately useful, and isolate beta pages behind account-specific routing until the pattern is proven.
+
+### 49. Session Log - 26 May 2026
+
+**Trial Landing Mobile Footer + Stale Service Worker Escape (User Confirmed Success)**
+
+User confirmed with "berhasil! you did it" after the footer background and cache trap were fixed.
+
+**Problem:**
+- On mobile-first trial landing, footer grain/background looked separated and later the footer image looked under-zoomed/cropped at top and bottom.
+- Version bumps appeared to do nothing because an old active patient service worker kept serving/redirecting the page to an older `_v`.
+
+**Root Causes:**
+1. `.footer-photo` used parallax transform but `.footer-grain` did not follow the same transform, so the layers visually separated while scrolling.
+2. The reduced-motion kill-switch used high-specificity `:not()` chains, so footer animation/layer classes had to be added to the whitelist directly.
+3. Mobile footer background used desktop-style sizing (`156% auto`), which was too wide and not tall enough for the mobile viewport.
+4. A service-worker-level navigation redirect tied to cache version caused stale SW versions to trap newer URLs back to old `_v` values.
+
+**What actually fixed it:**
+1. Move `.footer-grain` with the same `--journey-parallax-y` transform as `.footer-photo`.
+2. Add footer classes to the reduced-motion whitelist:
+    - `.site-footer`
+    - `.footer-card-frame`
+    - `.footer-photo`
+    - `.footer-grain`
+    - `.footer-vignette`
+    - `.footer-inner`
+3. Use mobile-first background fit:
+    ```css
+    .site-footer {
+         --journey-bg-size: auto 118%;
+         --journey-position: center 56%;
+    }
+
+    @media (min-width: 900px) {
+         .site-footer {
+              --journey-bg-size: 156% auto;
+              --journey-position: center center;
+         }
+    }
+    ```
+4. Remove SW-level `Response.redirect(...)` for trial landing navigation.
+5. Add early page-version escape in `public/trial-landing/index.html`:
+    - unregister stale service workers
+    - delete old caches
+    - navigate through a `blob:` trampoline before returning to the fresh `_v`, so the old SW no longer controls the next navigation
+6. Bump versions:
+    - `PAGE_VERSION = '20260526m'`
+    - `CACHE_VERSION = '20260526m'`
+
+**Verification that mattered:**
+- Use browser/Playwright, not just source inspection.
+- Old URL `_v=20260526j` must land on `_v=20260526m`.
+- Mobile viewport `421x705` should report:
+  - `cssVarSize: "auto 118%"`
+  - `cssVarPosition: "center 56%"`
+  - `navigator.serviceWorker.controller === false` after the escape
+- Desktop viewport `1280x800` should remain:
+  - `cssVarSize: "156% auto"`
+  - `cssVarPosition: "center center"`
+
+**Lesson:**
+- Do not use service-worker navigation redirects for version enforcement on this patient PWA; old active workers can trap newer versions. Prefer an early HTML version script that unregisters stale workers, clears caches, and navigates through a `blob:` trampoline.

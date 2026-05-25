@@ -1331,3 +1331,46 @@ User requested: "Tanya Dokter tidak tepat posisi tabelnya, betulkan".
 
 **Lesson:**
 - For staff page layout drift, use page-scoped CSS (`#page-id ...`) first; avoid broad global table overrides.
+
+### 39. Session Log - 26 May 2026
+
+**Trial Landing Mobile Footer + Stale Service Worker Escape (User Confirmed Success)**
+
+User confirmed with "berhasil! you did it" after the footer background and cache trap were fixed.
+
+**What worked:**
+1. Sync footer grain with footer photo parallax by applying the same `--journey-parallax-y` transform to `.footer-grain`.
+2. Add footer classes directly to the high-specificity reduced-motion whitelist:
+   - `.site-footer`
+   - `.footer-card-frame`
+   - `.footer-photo`
+   - `.footer-grain`
+   - `.footer-vignette`
+   - `.footer-inner`
+3. Use mobile-first footer background sizing:
+   ```css
+   .site-footer {
+       --journey-bg-size: auto 118%;
+       --journey-position: center 56%;
+   }
+   @media (min-width: 900px) {
+       .site-footer {
+           --journey-bg-size: 156% auto;
+           --journey-position: center center;
+       }
+   }
+   ```
+4. Remove service-worker-level `Response.redirect(...)` version enforcement for trial landing; stale active SWs can trap new versions back to old `_v` values.
+5. Use an early HTML version script in `public/trial-landing/index.html` that unregisters stale service workers, deletes caches, then navigates via a `blob:` trampoline before returning to the fresh `_v`.
+6. Bump both versions together:
+   - `PAGE_VERSION = '20260526m'`
+   - `CACHE_VERSION = '20260526m'`
+
+**Verification pattern:**
+- Browser/Playwright verification is required for this page.
+- Old URL `_v=20260526j` must land on `_v=20260526m`.
+- Mobile `421x705` should show `auto 118%` and `center 56%`.
+- Desktop `1280x800` should remain `156% auto` and `center center`.
+
+**Lesson:**
+- For patient PWA trial landing cache issues, avoid SW navigation redirects. Use page-level stale-worker escape and verify with a real browser.
