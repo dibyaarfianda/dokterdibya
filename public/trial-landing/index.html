@@ -3859,6 +3859,9 @@
         .site-footer .footer-inner {
             position: relative;
             z-index: 5;
+            min-height: var(--app-height, 100dvh);
+            display: flex;
+            flex-direction: column;
         }
         /* Page bg behind footer = dark (prevents white below footer in overscroll/rubber-band) */
         html { background-color: #0d0d0d !important; }
@@ -4042,6 +4045,7 @@
             }
             .site-footer .footer-inner {
                 display: grid;
+                min-height: 0;
                 grid-template-columns: minmax(0, 1.16fr) minmax(340px, 0.84fr);
                 gap: 68px;
                 align-items: start;
@@ -4062,6 +4066,12 @@
             }
             .footer-bottom {
                 grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 899px) {
+            .footer-meta {
+                margin-top: auto;
             }
         }
         @media (min-width: 1200px) {
