@@ -7,6 +7,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Menu - SISIwanita</title>
+    <script>
+        (function enforceTrialLandingVersion() {
+            var PAGE_VERSION = '20260526j';
+            try {
+                var url = new URL(window.location.href);
+                if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
+                    url.searchParams.set('_v', PAGE_VERSION);
+                    window.location.replace(url.toString());
+                }
+            } catch (e) {}
+        })();
+    </script>
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
