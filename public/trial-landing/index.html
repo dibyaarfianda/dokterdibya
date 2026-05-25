@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526r';
+            var PAGE_VERSION = '20260526s';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -100,6 +100,17 @@
             overscroll-behavior: contain;
             min-height: 100%;
             min-height: var(--app-height, 100dvh);
+        }
+
+        html.standalone-pwa {
+            scroll-behavior: auto;
+        }
+
+        html.standalone-pwa .topbar-blur-fade,
+        html.standalone-pwa .nav-blur-fade {
+            display: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
 
         body {
@@ -5226,6 +5237,9 @@
                 document.documentElement.classList.add('standalone-pwa');
             }
 
+            window.__trialReducePwaScrollWork = isStandalonePwa &&
+                (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
+
             function getViewportHeight() {
                 if (!isStandalonePwa && window.visualViewport && window.visualViewport.height) {
                     return window.visualViewport.height;
@@ -6808,19 +6822,21 @@
 
             // Keep parallax updated on scroll for ALL cards (including off-screen),
             // so there is never a jump when a card first enters the viewport.
-            window.addEventListener('scroll', function() {
-                var allCards = document.querySelectorAll('.journey-card');
-                allCards.forEach(function(card) {
-                    var rect = card.getBoundingClientRect();
-                    var viewportHeight = window.innerHeight || 1;
-                    var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
-                    var eased = Math.max(0, Math.min(1, progress));
-                    eased = eased * eased * (3 - (2 * eased));
-                    var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
-                    card.dataset.parallaxShift = String(parallax);
-                    card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
-                });
-            }, { passive: true });
+            if (!window.__trialReducePwaScrollWork) {
+                window.addEventListener('scroll', function() {
+                    var allCards = document.querySelectorAll('.journey-card');
+                    allCards.forEach(function(card) {
+                        var rect = card.getBoundingClientRect();
+                        var viewportHeight = window.innerHeight || 1;
+                        var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+                        var eased = Math.max(0, Math.min(1, progress));
+                        eased = eased * eased * (3 - (2 * eased));
+                        var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
+                        card.dataset.parallaxShift = String(parallax);
+                        card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
+                    });
+                }, { passive: true });
+            }
 
             function resetJourneyCard(card) {
                 // Off-screen cleanup only resets hover/stretch state.
@@ -7033,7 +7049,9 @@
                     }
                 }, { passive: true });
 
-                window.addEventListener('scroll', refresh, { passive: true });
+                if (!window.__trialReducePwaScrollWork) {
+                    window.addEventListener('scroll', refresh, { passive: true });
+                }
                 window.addEventListener('resize', function() {
                     refresh();
                 });
@@ -7142,6 +7160,10 @@
                     backImg.style.transform = backTransform;
                 }
                 requestAnimationFrame(animate);
+            }
+
+            if (window.__trialReducePwaScrollWork) {
+                return;
             }
 
             window.addEventListener('scroll', recalcTargets, { passive: true });
@@ -7305,6 +7327,7 @@
             var nav = document.querySelector('.bottom-nav');
             var blurFade = document.getElementById('nav-blur-fade');
             if (!nav) return;
+            if (window.__trialReducePwaScrollWork) return;
             var threshold = 50;
 
             function parseRgb(color) {
@@ -7518,6 +7541,10 @@
             var infoHeader = document.querySelector('.info-terbaru-block-header');
             var infoContainer = document.getElementById('announcements-container');
             if (!fixedBg || !infoHeader || !infoContainer) return;
+            if (window.__trialReducePwaScrollWork) {
+                fixedBg.style.opacity = '0';
+                return;
+            }
 
             var MAX_OPACITY = 0.68;
 
@@ -7888,6 +7915,12 @@
         (function() {
             // Set up curves with stroke-dasharray; offset starts partial, decreases on scroll.
             var curvePaths = Array.from(document.querySelectorAll('#hero-curves .hero-curve path'));
+            if (window.__trialReducePwaScrollWork) {
+                document.documentElement.style.setProperty('--hero-green-opacity', '1', 'important');
+                document.documentElement.style.setProperty('--hero-preg-opacity', '0.8', 'important');
+                document.documentElement.style.setProperty('--hero-curve-lift', '0');
+                return;
+            }
             var curveLens = curvePaths.map(function(p) {
                 var len = typeof p.getTotalLength === 'function' ? p.getTotalLength() : 2420;
                 p.style.strokeDasharray = len + 'px';

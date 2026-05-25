@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526r'; // 2026-05-26r - Reduce standalone PWA scroll jitter
+const CACHE_VERSION = '20260526s'; // 2026-05-26s - Standalone PWA scroll-lite mode
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
