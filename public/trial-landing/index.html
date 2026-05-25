@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526q';
+            var PAGE_VERSION = '20260526r';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -5216,16 +5216,30 @@
 
     <script>
         (function setupMobilePwaViewport() {
+            function isStandalonePwaMode() {
+                return window.navigator.standalone === true ||
+                    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+            }
+
+            var isStandalonePwa = isStandalonePwaMode();
+            if (isStandalonePwa) {
+                document.documentElement.classList.add('standalone-pwa');
+            }
+
             function getViewportHeight() {
-                if (window.visualViewport && window.visualViewport.height) {
+                if (!isStandalonePwa && window.visualViewport && window.visualViewport.height) {
                     return window.visualViewport.height;
                 }
                 return window.innerHeight || document.documentElement.clientHeight || 0;
             }
 
+            var lastSyncedHeight = 0;
+
             function syncViewportHeight() {
-                var height = getViewportHeight();
+                var height = Math.round(getViewportHeight());
                 if (!height) return;
+                if (Math.abs(height - lastSyncedHeight) < 2) return;
+                lastSyncedHeight = height;
                 document.documentElement.style.setProperty('--app-vh', (height * 0.01) + 'px');
                 document.documentElement.style.setProperty('--app-height', height + 'px');
             }
@@ -5235,7 +5249,6 @@
             window.addEventListener('orientationchange', syncViewportHeight, { passive: true });
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', syncViewportHeight, { passive: true });
-                window.visualViewport.addEventListener('scroll', syncViewportHeight, { passive: true });
             }
         })();
 
@@ -5420,6 +5433,9 @@
             (function() {
                 var footer = document.querySelector('.site-footer');
                 if (!footer) return;
+                var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
+                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
                 var ticking = false;
 
                 function updateFooterParallax() {
@@ -5462,10 +5478,14 @@
                 }
 
                 window.addEventListener('scroll', scheduleFooterParallax, { passive: true });
-                window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
-                window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
+                if (!reduceScrollWork) {
+                    window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
+                    window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
+                }
                 window.addEventListener('resize', scheduleFooterParallax, { passive: true });
-                window.setInterval(scheduleFooterParallax, 90);
+                if (!reduceScrollWork) {
+                    window.setInterval(scheduleFooterParallax, 90);
+                }
                 scheduleFooterParallax();
                 setTimeout(scheduleFooterParallax, 180);
             })();
@@ -5620,11 +5640,18 @@
                 // Multi-source sync (same pattern as hero curves) — scroll, wheel, touchmove,
                 // plus a 33ms interval to catch frames that don't fire scroll events
                 // (scroll restoration, momentum, trackpad gaps).
+                var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
+                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
                 window.addEventListener('scroll', onScroll, { passive: true });
-                window.addEventListener('wheel', onScroll, { passive: true });
-                window.addEventListener('touchmove', onScroll, { passive: true });
+                if (!reduceScrollWork) {
+                    window.addEventListener('wheel', onScroll, { passive: true });
+                    window.addEventListener('touchmove', onScroll, { passive: true });
+                }
                 window.addEventListener('resize', function() { update(true); });
-                window.setInterval(onScroll, 33);
+                if (!reduceScrollWork) {
+                    window.setInterval(onScroll, 33);
+                }
                 update(true);
                 setTimeout(function() { update(true); }, 150);
                 setTimeout(function() { update(true); }, 800);
@@ -7852,7 +7879,9 @@
             // causing "stuck" feel when tapping and dragging slowly over sticky rows.
 
             onScroll();
-            scrollSyncInterval = window.setInterval(onScroll, 60);
+            if (!document.documentElement.classList.contains('standalone-pwa')) {
+                scrollSyncInterval = window.setInterval(onScroll, 60);
+            }
         })();
 
         // ==================== HERO FIXED BG FADE ON SCROLL ====================
