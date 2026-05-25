@@ -1050,6 +1050,25 @@
             padding-bottom: 0 !important;
             margin-bottom: 0 !important;
         }
+
+        #patient-activity-page:not(.d-none) {
+            display: block !important;
+            min-height: calc(100vh - 120px) !important;
+            overflow: visible !important;
+        }
+
+        #patient-activity-page .card-body {
+            overflow: visible !important;
+        }
+
+        @media (max-width: 991.98px) {
+            body:not(.kantor-saya-active) #patient-activity-page:not(.d-none) {
+                max-height: none !important;
+                padding-bottom: 96px !important;
+                overflow-y: visible !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+        }
         
         /* Hide on mobile */
         @media (max-width: 768px) {
@@ -2007,7 +2026,7 @@
                             <p>Aplikasi Mobile</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-patient-activity" hidden>
+                    <li class="nav-item dokter-only d-none" id="nav-patient-activity">
                         <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-check"></i>
                             <p>Aktivitas Pasien</p>
@@ -7986,7 +8005,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v217';
+    window.__assetVersion = 'v218';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -10639,6 +10658,11 @@ Apakah Anda yakin ingin melanjutkan?`;
     let patientActivitySearchTimeout = null;
 
     window.showPatientActivityPage = function() {
+        document.documentElement.classList.remove('kantor-saya-active');
+        document.body.classList.remove('kantor-saya-active');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+
         // Hide all pages
         document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
 
@@ -10647,6 +10671,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('nav-patient-activity')?.removeAttribute('hidden');
+        document.getElementById('nav-patient-activity')?.classList.remove('d-none');
         document.querySelector('#nav-patient-activity .nav-link')?.classList.add('active');
 
         // Hide floating panel
@@ -10679,7 +10705,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><p class="mb-0">Memuat data...</p></td></tr>';
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : '';
             const typeFilter = document.getElementById('pa-filter-type')?.value || '';
             const fromDate = document.getElementById('pa-filter-from')?.value || '';
             const toDate = document.getElementById('pa-filter-to')?.value || '';
