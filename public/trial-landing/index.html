@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
@@ -47,6 +47,8 @@
             --shadow-hard: 0 4px 16px rgba(0, 0, 0, 0.08);
             --radius: 14px;
             --radius-sm: 10px;
+            --app-vh: 1vh;
+            --app-height: 100dvh;
         }
 
         /* ========== RESET ========== */
@@ -61,12 +63,15 @@
             background: var(--bg-page);
             scroll-behavior: smooth;
             overscroll-behavior: contain;
+            min-height: 100%;
+            min-height: var(--app-height, 100dvh);
         }
 
         body {
             font-family: var(--font-main);
             background: transparent;
             min-height: 100%;
+            min-height: var(--app-height, 100dvh);
             color: var(--text-primary);
             font-size: 14px;
             line-height: 1.5;
@@ -114,6 +119,7 @@
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
             min-height: 100%;
+            min-height: var(--app-height, 100dvh);
             background: var(--bg-page);
         }
 
@@ -396,6 +402,7 @@
             padding-left: 16px;
             padding-right: 16px;
             position: relative;
+                min-height: calc(var(--app-height, 100dvh) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
             /* No z-index here — avoids creating a stacking context that would
                trap .welcome-pinned (z-1001) below #welcome-bg-overlay (z-1000). */
         }
@@ -618,7 +625,7 @@
             padding: 128px 28px;
             margin-top: 400px;
             margin-bottom: 320px;
-            min-height: 100vh;
+            min-height: var(--app-height, 100dvh);
             display: flex;
             flex-direction: column;
             align-items: flex-start;
@@ -677,7 +684,7 @@
         @media (min-width: 768px) {
             .cta-card {
                 padding: 176px 80px;
-                min-height: 100vh;
+                min-height: var(--app-height, 100dvh);
             }
         }
 
@@ -1725,7 +1732,7 @@
             display: block;
             width: auto;
             max-width: min(1320px, calc(100vw - 32px));
-            max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+            max-height: calc(var(--app-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
             object-fit: contain;
             border-radius: 26px;
             background: transparent;
@@ -1760,7 +1767,7 @@
 
             .queue-promo-modal-media {
                 max-width: calc(100vw - 20px);
-                max-height: calc(100vh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+                max-height: calc(var(--app-height, 100dvh) - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
                 border-radius: 18px;
             }
         }
@@ -2292,7 +2299,7 @@
         .welcome-pinned-inner {
             position: sticky;
             top: 0;
-            height: 100vh;
+            height: var(--app-height, 100dvh);
             display: flex;
             flex-direction: column;
             padding-top: 25vh;
@@ -4084,8 +4091,8 @@
             position: relative;
             padding-top: 10px;
             text-align: center;
-            min-height: 100vh;
-            height: 100vh;
+            min-height: var(--app-height, 100dvh);
+            height: var(--app-height, 100dvh);
             width: 100vw;
             margin-left: calc(50% - 50vw);
             margin-right: calc(50% - 50vw);
@@ -4115,7 +4122,7 @@
             left: 50%;
             width: 780px;
             max-width: 100vw;
-            height: 100vh;
+            height: var(--app-height, 100dvh);
             pointer-events: none;
             z-index: 1;
             will-change: transform;
@@ -5148,6 +5155,30 @@
     </nav>
 
     <script>
+        (function setupMobilePwaViewport() {
+            function getViewportHeight() {
+                if (window.visualViewport && window.visualViewport.height) {
+                    return window.visualViewport.height;
+                }
+                return window.innerHeight || document.documentElement.clientHeight || 0;
+            }
+
+            function syncViewportHeight() {
+                var height = getViewportHeight();
+                if (!height) return;
+                document.documentElement.style.setProperty('--app-vh', (height * 0.01) + 'px');
+                document.documentElement.style.setProperty('--app-height', height + 'px');
+            }
+
+            syncViewportHeight();
+            window.addEventListener('resize', syncViewportHeight, { passive: true });
+            window.addEventListener('orientationchange', syncViewportHeight, { passive: true });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncViewportHeight, { passive: true });
+                window.visualViewport.addEventListener('scroll', syncViewportHeight, { passive: true });
+            }
+        })();
+
         // ==================== TRIAL THEME SWITCH ====================
         (function() {
             var params = new URLSearchParams(window.location.search);
