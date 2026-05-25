@@ -3829,11 +3829,15 @@
         }
         .site-footer .footer-grain {
             display: block;
+            top: calc(-88px + var(--journey-stretch) * 0.5);
+            bottom: calc(-240px + var(--journey-stretch) * 0.5);
             background-image: url('/images/grain.avif');
             background-size: 90px 90px;
             background-repeat: repeat;
             mix-blend-mode: soft-light;
             opacity: 0.46;
+            transform: translateY(var(--journey-parallax-y));
+            will-change: transform;
             z-index: 4;
         }
         .site-footer .footer-orb {
