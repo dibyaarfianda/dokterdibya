@@ -4233,9 +4233,15 @@ async function applyMenuVisibility(user) {
     const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
     if (isDokter) {
         // Show dokter-only elements
-        document.querySelectorAll('.dokter-only').forEach(el => el.classList.remove('d-none'));
+        document.querySelectorAll('.dokter-only').forEach(el => {
+            el.classList.remove('d-none');
+            el.removeAttribute('hidden');
+        });
         // Show superadmin-exclusive elements
-        document.querySelectorAll('.superadmin-exclusive').forEach(el => el.classList.remove('d-none'));
+        document.querySelectorAll('.superadmin-exclusive').forEach(el => {
+            el.classList.remove('d-none');
+            el.removeAttribute('hidden');
+        });
         // Show invoice history for dokter
         const invoiceNav = document.getElementById('nav-invoice-history');
         if (invoiceNav) invoiceNav.classList.remove('d-none');
@@ -4281,6 +4287,7 @@ async function applyMenuVisibility(user) {
                         element.style.display = '';
                         // Also remove d-none class if present
                         element.classList.remove('d-none');
+                        element.removeAttribute('hidden');
                     }
                 }
             }
