@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526g'; // 2026-05-26g - Trial landing mobile footer inner fill
+const CACHE_VERSION = '20260526h'; // 2026-05-26h - Trial landing footer grain parallax sync
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
