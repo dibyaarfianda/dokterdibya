@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526m';
+            var PAGE_VERSION = '20260526n';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -4351,8 +4351,11 @@
 
         .hero-copy {
             margin-top: 31px;
+            margin-left: auto;
+            margin-right: auto;
             color: var(--text-muted);
-            max-width: 60ch;
+            width: min(calc(100vw - 48px), 58ch);
+            max-width: calc(100vw - 48px);
             line-height: 1.7;
             font-size: 18px;
             font-style: italic;
