@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526x';
+            var PAGE_VERSION = '20260526y';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -222,12 +222,15 @@
             color: var(--topbar-ink);
         }
 
-        /* Brand area text follows the dynamic --topbar-ink (white → black). */
+        /* Brand area text follows the dynamic --topbar-ink (white -> black). */
         .topbar .brand-title,
-        .topbar .brand-title span,
         .topbar .brand-sub,
         .topbar .brand-mark {
             color: var(--topbar-ink) !important;
+        }
+
+        .topbar .brand-title span {
+            color: #7EA89F !important;
         }
 
         /* Bell + avatar icons stay solid black regardless of background. */
@@ -315,7 +318,7 @@
             letter-spacing: -0.01em;
         }
 
-        .brand-title span { color: var(--text-primary); }
+        .brand-title span { color: #7EA89F; }
 
         .brand-sub {
             margin-top: 2px;
