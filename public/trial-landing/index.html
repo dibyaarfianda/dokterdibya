@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ab';
+            var PAGE_VERSION = '20260526ad';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -7683,9 +7683,15 @@
 
             // Compute COLLAPSED_H from the actual collapsed title block.
             function getCollapsedH() {
-                var sample = document.querySelector('.proces-title');
-                if (!sample) return 76;
-                var titleH = sample.getBoundingClientRect().height;
+                var titles = Array.from(document.querySelectorAll('.proces-row')).filter(function(row) {
+                    return window.getComputedStyle(row).display !== 'none';
+                }).map(function(row) {
+                    return row.querySelector('.proces-title');
+                }).filter(Boolean);
+                if (!titles.length) return 76;
+                var titleH = titles.reduce(function(max, title) {
+                    return Math.max(max, title.getBoundingClientRect().height || 0);
+                }, 0);
                 return Math.round(PAD_TOP_MIN + titleH + PAD_BOT_MIN);
             }
 
@@ -7728,10 +7734,16 @@
 
             var COLLAPSED_H = getCollapsedH();
 
+            function getVisibleRows(section) {
+                return Array.from(section.querySelectorAll('.proces-row')).filter(function(row) {
+                    return window.getComputedStyle(row).display !== 'none';
+                });
+            }
+
             function assignStickyTops() {
                 COLLAPSED_H = getCollapsedH();
                 sections.forEach(function(section) {
-                    var rows = Array.from(section.querySelectorAll('.proces-row'));
+                    var rows = getVisibleRows(section);
                     if (!rows.length) return;
 
                     rows.forEach(function(row, i) {
@@ -7761,7 +7773,7 @@
 
             var sectionData = [];
             sections.forEach(function(section) {
-                var rows = Array.from(section.querySelectorAll('.proces-row'));
+                var rows = getVisibleRows(section);
                 sectionData.push({
                     el: section,
                     rows: rows,
@@ -7783,9 +7795,26 @@
                 if (contentWrapper && contentWrapper.style.display === 'none') return;
                 assignStickyTops();
                 sectionData.forEach(function(sd) {
+                    sd.rows = getVisibleRows(sd.el);
                     var firstRow = sd.rows[0];
                     var sampleMetrics = measureExpandedRow(firstRow);
                     var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
+                    if (isPatientFeaturesSection) {
+                        var sectionStyle = window.getComputedStyle(sd.el);
+                        var paddingTop = parseFloat(sectionStyle.paddingTop) || 0;
+                        var paddingBottom = parseFloat(sectionStyle.paddingBottom) || 0;
+                        var header = sd.el.querySelector('.proces-header');
+                        var headerStyle = header ? window.getComputedStyle(header) : null;
+                        var headerHeight = header ? header.getBoundingClientRect().height : 0;
+                        var headerMarginBottom = headerStyle ? (parseFloat(headerStyle.marginBottom) || 0) : 0;
+                        var spacer = sd.el.querySelector('.proces-spacer');
+                        var spacerHeight = spacer ? spacer.getBoundingClientRect().height : 0;
+                        var expandedRowsHeight = sd.rows.reduce(function(total, row) {
+                            return total + measureExpandedRow(row).rowHeight;
+                        }, 0);
+                        var stableSectionHeight = paddingTop + paddingBottom + headerHeight + headerMarginBottom + expandedRowsHeight + spacerHeight;
+                        sd.el.style.minHeight = Math.ceil(stableSectionHeight) + 'px';
+                    }
                     sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
                     sd.startY = firstRow ? (getDocTop(firstRow) - STICKY_OFFSET) : 0;
                     sd.rowStartY = sd.rows.map(function(row, i) {
@@ -7860,6 +7889,7 @@
                 if (!reducePwaStickyWork) return;
                 sectionData.forEach(function(sd) {
                     if (!sd.el.classList.contains('patient-features-section')) return;
+                    sd.rows = getVisibleRows(sd.el);
                     sd.rows.forEach(function(_, i) {
                         applyPwaStableRowState(sd, i, sd.targetP[i] || 0);
                     });
