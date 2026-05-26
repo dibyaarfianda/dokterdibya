@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526w';
+            var PAGE_VERSION = '20260526x';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -135,6 +135,12 @@
 
         html.standalone-pwa .cta-card .cta-bg-img {
             transform: none !important;
+            will-change: auto !important;
+        }
+
+        html.standalone-pwa .patient-features-section .proces-row,
+        html.standalone-pwa .patient-features-section .proces-desc {
+            transition: none !important;
             will-change: auto !important;
         }
 
@@ -5549,6 +5555,7 @@
             // Hide bottom-nav when footer is visible (scroll to bottom)
             (function() {
                 var footer = document.querySelector('.site-footer');
+                if (window.__trialReducePwaScrollWork) return;
                 if (!footer || !('IntersectionObserver' in window)) return;
                 var io = new IntersectionObserver(function(entries) {
                     entries.forEach(function(e) {
@@ -7729,7 +7736,7 @@
                         row.style.zIndex = 100 + i; // later rows on top (card-deck)
                     });
                 });
-                console.log('[PROCES] COLLAPSED_H =', COLLAPSED_H);
+                if (PROCES_DEBUG) console.log('[PROCES] COLLAPSED_H =', COLLAPSED_H);
             }
 
             assignStickyTops();
@@ -7745,6 +7752,9 @@
             var lastObservedScrollY = window.scrollY;
             var stableFrames = 0;
             var scrollSyncInterval = 0;
+            var reducePwaStickyWork = window.__trialReducePwaScrollWork === true;
+            var pwaStickySettleTimer = 0;
+            var PROCES_DEBUG = /(?:^|[?&])procesDebug=1(?:&|$)/.test(window.location.search || '');
 
             var sectionData = [];
             sections.forEach(function(section) {
@@ -7796,11 +7806,14 @@
                     sd.renderP = sd.rows.map(function(_, i) { return sd.renderP[i] || 0; });
                 });
                 metricsReady = true;
-                console.log('[PROCES] metrics rebuilt:', { COLLAPSED_H: COLLAPSED_H }, sectionData.map(function(sd) {
-                    return { startY: Math.round(sd.startY), endY: Math.round(sd.endY), rowCount: sd.rows.length, segment: sd.segment, rowStarts: sd.rowStartY.map(Math.round) };
-                }));
+                if (PROCES_DEBUG) {
+                    console.log('[PROCES] metrics rebuilt:', { COLLAPSED_H: COLLAPSED_H }, sectionData.map(function(sd) {
+                        return { startY: Math.round(sd.startY), endY: Math.round(sd.endY), rowCount: sd.rows.length, segment: sd.segment, rowStarts: sd.rowStartY.map(Math.round) };
+                    }));
+                }
 
                 onScroll();
+                if (reducePwaStickyWork) flushPwaStickyState();
             }
 
             // Rebuild after content-wrapper is shown (profile loaded) + on resize
@@ -7815,6 +7828,49 @@
             // Rebuild at 500ms and 1500ms — content-wrapper may become visible at any time
             setTimeout(rebuildMetrics, 500);
             setTimeout(rebuildMetrics, 1500);
+
+            function applyPwaStableRowState(sd, i, p) {
+                var row = sd.rows[i];
+                if (!row) return;
+
+                var descH = (sd.descHeights && sd.descHeights[i]) || 80;
+                var desc = row.querySelector('.proces-desc');
+                var isLastRow = (i === sd.rows.length - 1);
+                var collapsed = !isLastRow && p >= 0.55;
+                var stateName = collapsed ? 'collapsed' : 'expanded';
+                var layer = collapsed ? (800 + i) : ((p > 0) ? (900 + i) : (1000 + i));
+                var stateKey = stateName + ':' + layer + ':' + Math.round(descH);
+
+                if (row.dataset.pwaStickyState === stateKey) return;
+                row.dataset.pwaStickyState = stateKey;
+                row.style.zIndex = String(layer);
+                row.style.paddingTop = PAD_TOP_MAX + 'px';
+                row.style.paddingBottom = (collapsed ? PAD_BOT_MIN : PAD_BOT_MAX) + 'px';
+
+                if (desc) {
+                    desc.style.setProperty('opacity', collapsed ? '0' : '1', 'important');
+                    desc.style.setProperty('max-height', collapsed ? '0px' : (descH + 'px'), 'important');
+                }
+            }
+
+            function flushPwaStickyState() {
+                if (!reducePwaStickyWork) return;
+                sectionData.forEach(function(sd) {
+                    if (!sd.el.classList.contains('patient-features-section')) return;
+                    sd.rows.forEach(function(_, i) {
+                        applyPwaStableRowState(sd, i, sd.targetP[i] || 0);
+                    });
+                });
+            }
+
+            function schedulePwaStickyFlush() {
+                if (!reducePwaStickyWork) return;
+                if (pwaStickySettleTimer) window.clearTimeout(pwaStickySettleTimer);
+                pwaStickySettleTimer = window.setTimeout(function() {
+                    pwaStickySettleTimer = 0;
+                    flushPwaStickyState();
+                }, 120);
+            }
 
             function applyRowState(sd, i, p) {
                 var row = sd.rows[i];
@@ -7836,6 +7892,11 @@
                 var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
                 var isLastRow = (i === sd.rows.length - 1);
                 var layoutP;
+                if (reducePwaStickyWork && isPatientFeaturesSection) {
+                    applyPwaStableRowState(sd, i, p);
+                    return;
+                }
+
                 if (isPatientFeaturesSection && isLastRow) {
                     // Last row (JADWAL VITAMIN): desc always visible, no shrink.
                     if (desc) {
@@ -7881,6 +7942,7 @@
                 sectionData.forEach(function(sd) {
                     var count = sd.rows.length;
                     if (count === 0) return;
+                    var isPwaPatientFeaturesSection = reducePwaStickyWork && sd.el.classList.contains('patient-features-section');
 
                     var segment = sd.segment || 96;
                     var activeIndex = -1;
@@ -7900,8 +7962,14 @@
 
                         sd.targetP[i] = p;
                         sd.renderP[i] = p;
-                        applyRowState(sd, i, p);
+                        if (!isPwaPatientFeaturesSection) {
+                            applyRowState(sd, i, p);
+                        }
                     });
+
+                    if (isPwaPatientFeaturesSection) {
+                        schedulePwaStickyFlush();
+                    }
 
                     if (activeIndex === -1) {
                         if (rowProgress.every(function(p) { return p >= 1; })) {
@@ -7914,15 +7982,17 @@
                     sd.activeIndex = activeIndex;
 
                     // Debug: log 1 in every 30 frames
-                    if (!sd._dbg) sd._dbg = 0;
-                    if (sd._dbg++ % 30 === 0) {
-                        console.log('[PROCES]', {
-                            scrollY: Math.round(scrollY),
-                            startY: Math.round(sd.startY),
-                            endY: Math.round(sd.endY),
-                            rowStarts: sd.rowStartY.map(Math.round),
-                            rowCount: count
-                        });
+                    if (PROCES_DEBUG) {
+                        if (!sd._dbg) sd._dbg = 0;
+                        if (sd._dbg++ % 30 === 0) {
+                            console.log('[PROCES]', {
+                                scrollY: Math.round(scrollY),
+                                startY: Math.round(sd.startY),
+                                endY: Math.round(sd.endY),
+                                rowStarts: sd.rowStartY.map(Math.round),
+                                rowCount: count
+                            });
+                        }
                     }
                 });
             }
