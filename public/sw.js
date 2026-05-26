@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526af'; // 2026-05-26af - Restore PWA background fade
+const CACHE_VERSION = '20260526ag'; // 2026-05-26ag - Keep PWA background fade after preview mode
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

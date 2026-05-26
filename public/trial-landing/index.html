@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526af';
+            var PAGE_VERSION = '20260526ag';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -5481,6 +5481,12 @@
                 rootStyle.setProperty('--hero-preg-opacity', '1', 'important');
             } catch (e) {}
 
+            try {
+                if (typeof window.__trialUpdatePwaHeroBgFade === 'function') {
+                    window.requestAnimationFrame(window.__trialUpdatePwaHeroBgFade);
+                }
+            } catch (e) {}
+
             if (loading) loading.style.display = 'none';
             if (wrapper) wrapper.style.display = 'block';
 
@@ -8121,9 +8127,13 @@
                     });
                 }
 
+                window.__trialUpdatePwaHeroBgFade = updatePwaHeroBgFade;
                 window.addEventListener('scroll', schedulePwaHeroBgFade, { passive: true });
+                window.addEventListener('touchmove', schedulePwaHeroBgFade, { passive: true });
                 window.addEventListener('resize', schedulePwaHeroBgFade, { passive: true });
                 window.addEventListener('orientationchange', schedulePwaHeroBgFade, { passive: true });
+                window.setTimeout(updatePwaHeroBgFade, 500);
+                window.setTimeout(updatePwaHeroBgFade, 1500);
                 updatePwaHeroBgFade();
                 return;
             }
