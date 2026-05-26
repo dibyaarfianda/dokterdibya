@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526aj'; // 2026-05-26aj - Use relative trial landing image paths
+const CACHE_VERSION = '20260526al'; // 2026-05-26al - Restore all PWA parallax and header blur
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526aj';
+            var PAGE_VERSION = '20260526al';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -114,30 +114,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        html.standalone-pwa .site-footer {
-            --footer-progress: 1 !important;
-            --footer-shift-photo: 0px !important;
-            --footer-shift-a: 0px !important;
-            --footer-shift-b: 0px !important;
-            --footer-shift-c: 0px !important;
-            --footer-shift-d: 0px !important;
-        }
-
-        html.standalone-pwa .site-footer .footer-photo,
-        html.standalone-pwa .site-footer .footer-grain {
-            transform: none !important;
-            will-change: auto !important;
-        }
-
-        html.standalone-pwa .cta-card {
-            --cta-arc-scale: 0 !important;
-        }
-
-        html.standalone-pwa .cta-card .cta-bg-img {
-            transform: none !important;
-            will-change: auto !important;
-        }
-
         html.standalone-pwa .patient-features-section .proces-row,
         html.standalone-pwa .patient-features-section .proces-desc {
             transition: none !important;
@@ -148,13 +124,6 @@
         html.standalone-pwa .patient-features-section {
             overflow-anchor: none !important;
             background: var(--bg-page) !important;
-        }
-
-        html.standalone-pwa .topbar-blur-fade,
-        html.standalone-pwa .nav-blur-fade {
-            display: none !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
         }
 
         body {
@@ -5505,16 +5474,6 @@
                 var reduceScrollWork = isStandalonePwa && isCoarsePointer;
                 var ticking = false;
 
-                if (reduceScrollWork) {
-                    footer.style.setProperty('--footer-progress', '1');
-                    footer.style.setProperty('--footer-shift-photo', '0px');
-                    footer.style.setProperty('--footer-shift-a', '0px');
-                    footer.style.setProperty('--footer-shift-b', '0px');
-                    footer.style.setProperty('--footer-shift-c', '0px');
-                    footer.style.setProperty('--footer-shift-d', '0px');
-                    return;
-                }
-
                 function updateFooterParallax() {
                     ticking = false;
 
@@ -5555,14 +5514,10 @@
                 }
 
                 window.addEventListener('scroll', scheduleFooterParallax, { passive: true });
-                if (!reduceScrollWork) {
-                    window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
-                    window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
-                }
+                window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
+                window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
                 window.addEventListener('resize', scheduleFooterParallax, { passive: true });
-                if (!reduceScrollWork) {
-                    window.setInterval(scheduleFooterParallax, 90);
-                }
+                window.setInterval(scheduleFooterParallax, 90);
                 scheduleFooterParallax();
                 setTimeout(scheduleFooterParallax, 180);
             })();
@@ -5570,7 +5525,6 @@
             // Hide bottom-nav when footer is visible (scroll to bottom)
             (function() {
                 var footer = document.querySelector('.site-footer');
-                if (window.__trialReducePwaScrollWork) return;
                 if (!footer || !('IntersectionObserver' in window)) return;
                 var io = new IntersectionObserver(function(entries) {
                     entries.forEach(function(e) {
@@ -5722,27 +5676,11 @@
                 var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
                 var reduceScrollWork = isStandalonePwa && isCoarsePointer;
 
-                if (reduceScrollWork) {
-                    card.style.setProperty('--cta-arc-scale', '0');
-                    if (bgImg) bgImg.style.transform = 'none';
-                    if (curvesWrap) curvesWrap.style.opacity = '1';
-                    curvePaths.forEach(function(p, idx) {
-                        var len = curveLens[idx];
-                        if (!len) return;
-                        p.style.strokeDashoffset = '0px';
-                    });
-                    return;
-                }
-
                 window.addEventListener('scroll', onScroll, { passive: true });
-                if (!reduceScrollWork) {
-                    window.addEventListener('wheel', onScroll, { passive: true });
-                    window.addEventListener('touchmove', onScroll, { passive: true });
-                }
+                window.addEventListener('wheel', onScroll, { passive: true });
+                window.addEventListener('touchmove', onScroll, { passive: true });
                 window.addEventListener('resize', function() { update(true); });
-                if (!reduceScrollWork) {
-                    window.setInterval(onScroll, 33);
-                }
+                window.setInterval(onScroll, 33);
                 update(true);
                 setTimeout(function() { update(true); }, 150);
                 setTimeout(function() { update(true); }, 800);
@@ -6899,21 +6837,25 @@
 
             // Keep parallax updated on scroll for ALL cards (including off-screen),
             // so there is never a jump when a card first enters the viewport.
-            if (!window.__trialReducePwaScrollWork) {
-                window.addEventListener('scroll', function() {
-                    var allCards = document.querySelectorAll('.journey-card');
-                    allCards.forEach(function(card) {
-                        var rect = card.getBoundingClientRect();
-                        var viewportHeight = window.innerHeight || 1;
-                        var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
-                        var eased = Math.max(0, Math.min(1, progress));
-                        eased = eased * eased * (3 - (2 * eased));
-                        var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
-                        card.dataset.parallaxShift = String(parallax);
-                        card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
-                    });
-                }, { passive: true });
+            function updateAllJourneyParallax() {
+                var allCards = document.querySelectorAll('.journey-card');
+                allCards.forEach(function(card) {
+                    var rect = card.getBoundingClientRect();
+                    var viewportHeight = window.innerHeight || 1;
+                    var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+                    var eased = Math.max(0, Math.min(1, progress));
+                    eased = eased * eased * (3 - (2 * eased));
+                    var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
+                    card.dataset.parallaxShift = String(parallax);
+                    card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
+                });
             }
+
+            window.addEventListener('scroll', updateAllJourneyParallax, { passive: true });
+            window.addEventListener('wheel', updateAllJourneyParallax, { passive: true });
+            window.addEventListener('touchmove', updateAllJourneyParallax, { passive: true });
+            window.addEventListener('resize', updateAllJourneyParallax, { passive: true });
+            window.setInterval(updateAllJourneyParallax, 90);
 
             function resetJourneyCard(card) {
                 // Off-screen cleanup only resets hover/stretch state.
