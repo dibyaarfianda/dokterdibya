@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ae';
+            var PAGE_VERSION = '20260526af';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -147,6 +147,7 @@
 
         html.standalone-pwa .patient-features-section {
             overflow-anchor: none !important;
+            background: var(--bg-page) !important;
         }
 
         html.standalone-pwa .topbar-blur-fade,
@@ -8081,9 +8082,49 @@
             // Set up curves with stroke-dasharray; offset starts partial, decreases on scroll.
             var curvePaths = Array.from(document.querySelectorAll('#hero-curves .hero-curve path'));
             if (window.__trialReducePwaScrollWork) {
-                document.documentElement.style.setProperty('--hero-green-opacity', '1', 'important');
-                document.documentElement.style.setProperty('--hero-preg-opacity', '0.8', 'important');
-                document.documentElement.style.setProperty('--hero-curve-lift', '0');
+                var pwaHeroBgEl = document.getElementById('hero-fixed-bg');
+                var pwaHeroPreg = document.querySelector('.hero-fixed-bg-preg');
+                var pwaFadeTicking = false;
+
+                function updatePwaHeroBgFade() {
+                    var h = window.innerHeight || document.documentElement.clientHeight || 1;
+                    var welcomePinned = document.querySelector('.welcome-pinned');
+                    var pregFadeSpan = 200;
+                    var greenFadeStart = 1000;
+                    var greenFadeEnd = 50;
+                    var pregT = 0;
+                    var greenT = 0;
+
+                    if (welcomePinned && welcomePinned.offsetParent !== null) {
+                        var rect = welcomePinned.getBoundingClientRect();
+                        if (rect.height > 0) {
+                            pregT = Math.max(0, Math.min(1, (h - rect.top) / pregFadeSpan));
+                            greenT = Math.max(0, Math.min(1, (greenFadeStart - rect.bottom) / (greenFadeStart - greenFadeEnd)));
+                        }
+                    }
+
+                    var pregFadeVal = ((1 - pregT) * 0.8).toFixed(3);
+                    var greenFadeVal = (1 - greenT).toFixed(3);
+                    document.documentElement.style.setProperty('--hero-green-opacity', greenFadeVal, 'important');
+                    document.documentElement.style.setProperty('--hero-preg-opacity', pregFadeVal, 'important');
+                    document.documentElement.style.setProperty('--hero-curve-lift', '0');
+                    if (pwaHeroBgEl) pwaHeroBgEl.style.setProperty('opacity', greenFadeVal, 'important');
+                    if (pwaHeroPreg) pwaHeroPreg.style.setProperty('opacity', pregFadeVal, 'important');
+                }
+
+                function schedulePwaHeroBgFade() {
+                    if (pwaFadeTicking) return;
+                    pwaFadeTicking = true;
+                    window.requestAnimationFrame(function() {
+                        pwaFadeTicking = false;
+                        updatePwaHeroBgFade();
+                    });
+                }
+
+                window.addEventListener('scroll', schedulePwaHeroBgFade, { passive: true });
+                window.addEventListener('resize', schedulePwaHeroBgFade, { passive: true });
+                window.addEventListener('orientationchange', schedulePwaHeroBgFade, { passive: true });
+                updatePwaHeroBgFade();
                 return;
             }
             var curveLens = curvePaths.map(function(p) {
