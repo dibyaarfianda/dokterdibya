@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526aa'; // 2026-05-26aa - Reduce mobile post-stack scroll effects
+const CACHE_VERSION = '20260526ab'; // 2026-05-26ab - Restore images after mobile scroll regression
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
