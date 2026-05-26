@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526am';
+            var PAGE_VERSION = '20260526an';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -7942,12 +7942,30 @@
         (function() {
             // Set up curves with stroke-dasharray; offset starts partial, decreases on scroll.
             var curvePaths = Array.from(document.querySelectorAll('#hero-curves .hero-curve path'));
+            var PWA_CURVE_INITIAL_RATIO = 0.88;
+            var pwaCurveLens = curvePaths.map(function(p) {
+                var len = typeof p.getTotalLength === 'function' ? p.getTotalLength() : 2420;
+                if (len > 0) p.style.strokeDasharray = len + 'px';
+                return len;
+            });
+            function updateHeroCurveDraw() {
+                var y = window.scrollY;
+                var drawDistance = 2800;
+                var drawProgress = Math.max(0, Math.min(1, y / drawDistance));
+                curvePaths.forEach(function(p, idx) {
+                    var len = pwaCurveLens[idx];
+                    if (!len) return;
+                    var offset = len * PWA_CURVE_INITIAL_RATIO * (1 - drawProgress);
+                    p.style.strokeDashoffset = offset.toFixed(1) + 'px';
+                });
+            }
             if (window.__trialReducePwaScrollWork) {
                 var pwaHeroBgEl = document.getElementById('hero-fixed-bg');
                 var pwaHeroPreg = document.querySelector('.hero-fixed-bg-preg');
                 var pwaFadeTicking = false;
 
                 function updatePwaHeroBgFade() {
+                    updateHeroCurveDraw();
                     var h = window.innerHeight || document.documentElement.clientHeight || 1;
                     var welcomePinned = document.querySelector('.welcome-pinned');
                     var pregFadeSpan = 200;
