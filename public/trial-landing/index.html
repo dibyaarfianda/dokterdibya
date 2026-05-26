@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526z';
+            var PAGE_VERSION = '20260526aa';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -114,7 +114,8 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        html.standalone-pwa .site-footer {
+        html.standalone-pwa .site-footer,
+        html.mobile-reduced-scroll .site-footer {
             --footer-progress: 1 !important;
             --footer-shift-photo: 0px !important;
             --footer-shift-a: 0px !important;
@@ -124,17 +125,27 @@
         }
 
         html.standalone-pwa .site-footer .footer-photo,
-        html.standalone-pwa .site-footer .footer-grain {
+        html.standalone-pwa .site-footer .footer-grain,
+        html.mobile-reduced-scroll .site-footer .footer-photo,
+        html.mobile-reduced-scroll .site-footer .footer-grain {
             transform: none !important;
             will-change: auto !important;
         }
 
-        html.standalone-pwa .cta-card {
+        html.standalone-pwa .cta-card,
+        html.mobile-reduced-scroll .cta-card {
             --cta-arc-scale: 0 !important;
         }
 
-        html.standalone-pwa .cta-card .cta-bg-img {
+        html.standalone-pwa .cta-card .cta-bg-img,
+        html.mobile-reduced-scroll .cta-card .cta-bg-img {
             transform: none !important;
+            will-change: auto !important;
+        }
+
+        html.mobile-reduced-scroll .journey-card,
+        html.mobile-reduced-scroll .journey-card-media,
+        html.mobile-reduced-scroll .journey-card-frame {
             will-change: auto !important;
         }
 
@@ -5281,6 +5292,16 @@
             window.__trialReducePwaScrollWork = isStandalonePwa &&
                 (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
+            var isCoarsePointer = !window.matchMedia || window.matchMedia('(pointer: coarse)').matches;
+            var isSmallScreen = !window.matchMedia || window.matchMedia('(max-width: 768px)').matches;
+            var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            window.__trialReduceMobileScrollEffects = window.__trialReducePwaScrollWork ||
+                (isSmallScreen && (isCoarsePointer || hasTouch));
+
+            if (window.__trialReduceMobileScrollEffects) {
+                document.documentElement.classList.add('mobile-reduced-scroll');
+            }
+
             function getViewportHeight() {
                 if (!isStandalonePwa && window.visualViewport && window.visualViewport.height) {
                     return window.visualViewport.height;
@@ -5488,9 +5509,7 @@
             (function() {
                 var footer = document.querySelector('.site-footer');
                 if (!footer) return;
-                var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
-                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
+                var reduceScrollWork = window.__trialReduceMobileScrollEffects === true;
                 var ticking = false;
 
                 if (reduceScrollWork) {
@@ -5706,9 +5725,7 @@
                 // Multi-source sync (same pattern as hero curves) — scroll, wheel, touchmove,
                 // plus a 33ms interval to catch frames that don't fire scroll events
                 // (scroll restoration, momentum, trackpad gaps).
-                var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
-                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
+                var reduceScrollWork = window.__trialReduceMobileScrollEffects === true;
 
                 if (reduceScrollWork) {
                     card.style.setProperty('--cta-arc-scale', '0');
@@ -6848,6 +6865,7 @@
             var MAX_STRETCH = 160;
             var PARALLAX_TRAVEL = 106;
             var PARALLAX_START = -200;
+            var reduceMobileScrollEffects = window.__trialReduceMobileScrollEffects === true;
             var SPRING_STIFFNESS = 0.006;
             var SPRING_DAMPING = 0.15;
             var lastClientX = window.innerWidth * 0.5;
@@ -6871,10 +6889,15 @@
                     card.dataset.baseHeight = String(h);
                     var rect = card.getBoundingClientRect();
                     var viewportHeight = window.innerHeight || 1;
-                    var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
-                    var eased = Math.max(0, Math.min(1, progress));
-                    eased = eased * eased * (3 - (2 * eased));
-                    var parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
+                    var parallax;
+                    if (reduceMobileScrollEffects) {
+                        parallax = PARALLAX_START + PARALLAX_TRAVEL;
+                    } else {
+                        var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+                        var eased = Math.max(0, Math.min(1, progress));
+                        eased = eased * eased * (3 - (2 * eased));
+                        parallax = PARALLAX_START + (PARALLAX_TRAVEL * eased);
+                    }
                     card.dataset.parallaxShift = String(parallax);
                     card.style.setProperty('--journey-parallax-y', parallax.toFixed(2) + 'px');
                 });
@@ -6887,7 +6910,7 @@
 
             // Keep parallax updated on scroll for ALL cards (including off-screen),
             // so there is never a jump when a card first enters the viewport.
-            if (!window.__trialReducePwaScrollWork) {
+            if (!reduceMobileScrollEffects) {
                 window.addEventListener('scroll', function() {
                     var allCards = document.querySelectorAll('.journey-card');
                     allCards.forEach(function(card) {
@@ -6915,6 +6938,10 @@
             }
 
             function getParallaxShift(card) {
+                if (reduceMobileScrollEffects) {
+                    return PARALLAX_START + PARALLAX_TRAVEL;
+                }
+
                 var rect = card.getBoundingClientRect();
                 var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
                 var progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
@@ -7114,7 +7141,7 @@
                     }
                 }, { passive: true });
 
-                if (!window.__trialReducePwaScrollWork) {
+                if (!reduceMobileScrollEffects) {
                     window.addEventListener('scroll', refresh, { passive: true });
                 }
                 window.addEventListener('resize', function() {
@@ -7124,6 +7151,11 @@
                 // Pre-warm: cache geometry + parallax state before entry.
                 // Stretch stays passive until real pointer interaction turns it on.
                 function preWarm() {
+                    if (reduceMobileScrollEffects) {
+                        prePositionAllCards();
+                        return;
+                    }
+
                     rebuildMetrics();
                     var gridRect = grid.getBoundingClientRect();
                     metrics.forEach(function(metric) {
