@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526z';
+            var PAGE_VERSION = '20260526y';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -139,34 +139,9 @@
         }
 
         html.standalone-pwa .patient-features-section .proces-row,
-        html.standalone-pwa .patient-features-section .proces-desc,
-        html.static-feature-stack .patient-features-section .proces-row,
-        html.static-feature-stack .patient-features-section .proces-desc {
+        html.standalone-pwa .patient-features-section .proces-desc {
             transition: none !important;
             will-change: auto !important;
-        }
-
-        html.static-feature-stack .patient-features-section {
-            padding-top: 120px !important;
-        }
-
-        html.static-feature-stack .patient-features-section .proces-row {
-            position: relative !important;
-            top: auto !important;
-            z-index: auto !important;
-            padding-top: 18px !important;
-            padding-bottom: 34px !important;
-            transform: none !important;
-        }
-
-        html.static-feature-stack .patient-features-section .proces-desc {
-            opacity: 1 !important;
-            max-height: none !important;
-            overflow: visible !important;
-        }
-
-        html.static-feature-stack .patient-features-section .proces-spacer {
-            height: 48px !important;
         }
 
         html.standalone-pwa .topbar-blur-fade,
@@ -5303,17 +5278,8 @@
                 document.documentElement.classList.add('standalone-pwa');
             }
 
-            var isCoarsePointer = !window.matchMedia || window.matchMedia('(pointer: coarse)').matches;
-            var isSmallScreen = !window.matchMedia || window.matchMedia('(max-width: 768px)').matches;
-            var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            var shouldUseStaticFeatureStack = isSmallScreen && (isCoarsePointer || hasTouch);
-
-            if (shouldUseStaticFeatureStack) {
-                document.documentElement.classList.add('static-feature-stack');
-            }
-
-            window.__trialStaticFeatureStack = shouldUseStaticFeatureStack;
-            window.__trialReducePwaScrollWork = (isStandalonePwa || shouldUseStaticFeatureStack) && isCoarsePointer;
+            window.__trialReducePwaScrollWork = isStandalonePwa &&
+                (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
             function getViewportHeight() {
                 if (!isStandalonePwa && window.visualViewport && window.visualViewport.height) {
@@ -7765,10 +7731,6 @@
             function assignStickyTops() {
                 COLLAPSED_H = getCollapsedH();
                 sections.forEach(function(section) {
-                    if (window.__trialStaticFeatureStack && section.classList.contains('patient-features-section')) {
-                        return;
-                    }
-
                     var rows = Array.from(section.querySelectorAll('.proces-row'));
                     if (!rows.length) return;
 
@@ -7799,8 +7761,7 @@
 
             var sectionData = [];
             sections.forEach(function(section) {
-                var skipStickyStack = window.__trialStaticFeatureStack && section.classList.contains('patient-features-section');
-                var rows = skipStickyStack ? [] : Array.from(section.querySelectorAll('.proces-row'));
+                var rows = Array.from(section.querySelectorAll('.proces-row'));
                 sectionData.push({
                     el: section,
                     rows: rows,
