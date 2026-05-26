@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526v';
+            var PAGE_VERSION = '20260526w';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -112,6 +112,30 @@
             overscroll-behavior-x: none;
             overscroll-behavior-y: auto;
             -webkit-overflow-scrolling: touch;
+        }
+
+        html.standalone-pwa .site-footer {
+            --footer-progress: 1 !important;
+            --footer-shift-photo: 0px !important;
+            --footer-shift-a: 0px !important;
+            --footer-shift-b: 0px !important;
+            --footer-shift-c: 0px !important;
+            --footer-shift-d: 0px !important;
+        }
+
+        html.standalone-pwa .site-footer .footer-photo,
+        html.standalone-pwa .site-footer .footer-grain {
+            transform: none !important;
+            will-change: auto !important;
+        }
+
+        html.standalone-pwa .cta-card {
+            --cta-arc-scale: 0 !important;
+        }
+
+        html.standalone-pwa .cta-card .cta-bg-img {
+            transform: none !important;
+            will-change: auto !important;
         }
 
         html.standalone-pwa .topbar-blur-fade,
@@ -5460,6 +5484,16 @@
                 var reduceScrollWork = isStandalonePwa && isCoarsePointer;
                 var ticking = false;
 
+                if (reduceScrollWork) {
+                    footer.style.setProperty('--footer-progress', '1');
+                    footer.style.setProperty('--footer-shift-photo', '0px');
+                    footer.style.setProperty('--footer-shift-a', '0px');
+                    footer.style.setProperty('--footer-shift-b', '0px');
+                    footer.style.setProperty('--footer-shift-c', '0px');
+                    footer.style.setProperty('--footer-shift-d', '0px');
+                    return;
+                }
+
                 function updateFooterParallax() {
                     ticking = false;
 
@@ -5665,6 +5699,19 @@
                 var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
                 var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
                 var reduceScrollWork = isStandalonePwa && isCoarsePointer;
+
+                if (reduceScrollWork) {
+                    card.style.setProperty('--cta-arc-scale', '0');
+                    if (bgImg) bgImg.style.transform = 'none';
+                    if (curvesWrap) curvesWrap.style.opacity = '1';
+                    curvePaths.forEach(function(p, idx) {
+                        var len = curveLens[idx];
+                        if (!len) return;
+                        p.style.strokeDashoffset = '0px';
+                    });
+                    return;
+                }
+
                 window.addEventListener('scroll', onScroll, { passive: true });
                 if (!reduceScrollWork) {
                     window.addEventListener('wheel', onScroll, { passive: true });
