@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ag';
+            var PAGE_VERSION = '20260526ai';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -7779,10 +7779,6 @@
             var lastObservedScrollY = window.scrollY;
             var stableFrames = 0;
             var scrollSyncInterval = 0;
-            // Android PWA scroll anchoring can jump back when rows are collapsed by a delayed flush.
-            // Keep the normal per-scroll sticky timeline and only reduce transitions via CSS.
-            var reducePwaStickyWork = false;
-            var pwaStickySettleTimer = 0;
             var PROCES_DEBUG = /(?:^|[?&])procesDebug=1(?:&|$)/.test(window.location.search || '');
 
             var sectionData = [];
@@ -7830,15 +7826,16 @@
                         sd.el.style.minHeight = Math.ceil(stableSectionHeight) + 'px';
                     }
                     sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
-                    sd.startY = firstRow ? (getDocTop(firstRow) - STICKY_OFFSET) : 0;
+                    sd.startY = firstRow ? (firstRow.offsetTop - STICKY_OFFSET) : 0;
                     sd.rowStartY = sd.rows.map(function(row, i) {
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
-                        // Patient features: collapse starts exactly when row's top hits its sticky slot.
-                        // Other sections keep the original lead-in feel.
-                        var rowLead = isPatientFeaturesSection ? 0 : COLLAPSE_LEAD_PX;
-                        var start = getDocTop(row) - slotTop - rowLead;
+                        var rowLead = COLLAPSE_LEAD_PX;
+                        if (isPatientFeaturesSection) {
+                            rowLead += i * 56;
+                        }
+                        var start = row.offsetTop - slotTop - rowLead;
                         if (i === sd.rows.length - 1 && sd.rows.length > 1) {
-                            start += isPatientFeaturesSection ? 20 : DELAY_BEFORE_LAST;
+                            start += isPatientFeaturesSection ? 40 : DELAY_BEFORE_LAST;
                         }
                         return start;
                     });
@@ -7859,7 +7856,6 @@
                 }
 
                 onScroll();
-                if (reducePwaStickyWork) flushPwaStickyState();
             }
 
             // Rebuild after content-wrapper is shown (profile loaded) + on resize
@@ -7874,50 +7870,6 @@
             // Rebuild at 500ms and 1500ms — content-wrapper may become visible at any time
             setTimeout(rebuildMetrics, 500);
             setTimeout(rebuildMetrics, 1500);
-
-            function applyPwaStableRowState(sd, i, p) {
-                var row = sd.rows[i];
-                if (!row) return;
-
-                var descH = (sd.descHeights && sd.descHeights[i]) || 80;
-                var desc = row.querySelector('.proces-desc');
-                var isLastRow = (i === sd.rows.length - 1);
-                var collapsed = !isLastRow && p >= 0.55;
-                var stateName = collapsed ? 'collapsed' : 'expanded';
-                var layer = collapsed ? (800 + i) : ((p > 0) ? (900 + i) : (1000 + i));
-                var stateKey = stateName + ':' + layer + ':' + Math.round(descH);
-
-                if (row.dataset.pwaStickyState === stateKey) return;
-                row.dataset.pwaStickyState = stateKey;
-                row.style.zIndex = String(layer);
-                row.style.paddingTop = PAD_TOP_MAX + 'px';
-                row.style.paddingBottom = (collapsed ? PAD_BOT_MIN : PAD_BOT_MAX) + 'px';
-
-                if (desc) {
-                    desc.style.setProperty('opacity', collapsed ? '0' : '1', 'important');
-                    desc.style.setProperty('max-height', collapsed ? '0px' : (descH + 'px'), 'important');
-                }
-            }
-
-            function flushPwaStickyState() {
-                if (!reducePwaStickyWork) return;
-                sectionData.forEach(function(sd) {
-                    if (!sd.el.classList.contains('patient-features-section')) return;
-                    sd.rows = getVisibleRows(sd.el);
-                    sd.rows.forEach(function(_, i) {
-                        applyPwaStableRowState(sd, i, sd.targetP[i] || 0);
-                    });
-                });
-            }
-
-            function schedulePwaStickyFlush() {
-                if (!reducePwaStickyWork) return;
-                if (pwaStickySettleTimer) window.clearTimeout(pwaStickySettleTimer);
-                pwaStickySettleTimer = window.setTimeout(function() {
-                    pwaStickySettleTimer = 0;
-                    flushPwaStickyState();
-                }, 120);
-            }
 
             function applyRowState(sd, i, p) {
                 var row = sd.rows[i];
@@ -7935,49 +7887,20 @@
                 // then continues shrinking after the text is already gone.
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
-                var collapseCompleteP = 0.70;
-                var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
-                var isLastRow = (i === sd.rows.length - 1);
-                var layoutP;
-                if (reducePwaStickyWork && isPatientFeaturesSection) {
-                    applyPwaStableRowState(sd, i, p);
-                    return;
+                if (desc) {
+                    var fadeWindow = 0.18;
+                    var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
+                    var opacity = 1 - Math.pow(fadeP, 0.72);
+                    var heightEndP = 0.88;
+                    var heightP = Math.max(0, Math.min(1, p / heightEndP));
+                    var remainingDescRatio = Math.max(0, 1 - heightP);
+
+                    desc.style.setProperty('opacity', Math.max(0, opacity).toFixed(3), 'important');
+                    desc.style.setProperty('max-height', (descH * remainingDescRatio).toFixed(1) + 'px', 'important');
                 }
 
-                if (isPatientFeaturesSection && isLastRow) {
-                    // Last row (JADWAL VITAMIN): desc always visible, no shrink.
-                    if (desc) {
-                        desc.style.setProperty('opacity', '1', 'important');
-                        desc.style.setProperty('max-height', descH + 'px', 'important');
-                    }
-                    layoutP = Math.max(0, Math.min(1, p / collapseCompleteP));
-                } else if (isPatientFeaturesSection) {
-                    // Opacity fade: row 1 = p=0.40. Rows 2-4 = p=0.20 (lebih cepat).
-                    // Shrink fisik (maxHeight + padding): JALAN SAMPAI p=1.0, cocok dengan
-                    // pergerakan row berikutnya yang approach dari bawah — tidak ada gap putih.
-                    var FADE_END = (i === 0) ? 0.40 : 0.30;
-                    var shrinkP = Math.max(0, Math.min(1, p));
-                    var fadeP = Math.max(0, Math.min(1, p / FADE_END));
-                    layoutP = shrinkP;
-                    if (desc) {
-                        desc.style.setProperty('opacity', (1 - fadeP).toFixed(3), 'important');
-                        desc.style.setProperty('max-height', (descH * (1 - shrinkP)).toFixed(1) + 'px', 'important');
-                    }
-                } else {
-                    // Other sections: original combined fade + collapse over 0.70.
-                    var fadeWindow2 = collapseCompleteP;
-                    var fadeP2 = Math.max(0, Math.min(1, p / fadeWindow2));
-                    var opacity2 = 1 - Math.pow(fadeP2, 0.72);
-                    var remainingDescRatio2 = Math.max(0, 1 - fadeP2);
-                    if (desc) {
-                        desc.style.opacity = Math.max(0, opacity2).toFixed(3);
-                        desc.style.maxHeight = (descH * remainingDescRatio2).toFixed(1) + 'px';
-                    }
-                    layoutP = Math.max(0, Math.min(1, p / collapseCompleteP));
-                }
-
-                var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * layoutP;
-                var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * layoutP;
+                var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
+                var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * p;
                 row.style.paddingTop = padTop.toFixed(1) + 'px';
                 row.style.paddingBottom = padBot.toFixed(1) + 'px';
             }
@@ -7989,7 +7912,6 @@
                 sectionData.forEach(function(sd) {
                     var count = sd.rows.length;
                     if (count === 0) return;
-                    var isPwaPatientFeaturesSection = reducePwaStickyWork && sd.el.classList.contains('patient-features-section');
 
                     var segment = sd.segment || 96;
                     var activeIndex = -1;
@@ -8009,14 +7931,8 @@
 
                         sd.targetP[i] = p;
                         sd.renderP[i] = p;
-                        if (!isPwaPatientFeaturesSection) {
-                            applyRowState(sd, i, p);
-                        }
+                        applyRowState(sd, i, p);
                     });
-
-                    if (isPwaPatientFeaturesSection) {
-                        schedulePwaStickyFlush();
-                    }
 
                     if (activeIndex === -1) {
                         if (rowProgress.every(function(p) { return p >= 1; })) {
@@ -8073,14 +7989,10 @@
 
             window.addEventListener('scroll', scheduleScrollSync, { passive: true });
             window.addEventListener('wheel', scheduleScrollSync, { passive: true });
-            // touchmove listener removed — scroll event already fires during touch scroll
-            // and the extra listener was triggering heavy onScroll() work mid-drag on mobile,
-            // causing "stuck" feel when tapping and dragging slowly over sticky rows.
+            window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
 
             onScroll();
-            if (!document.documentElement.classList.contains('standalone-pwa')) {
-                scrollSyncInterval = window.setInterval(onScroll, 60);
-            }
+            scrollSyncInterval = window.setInterval(onScroll, 33);
         })();
 
         // ==================== HERO FIXED BG FADE ON SCROLL ====================
@@ -8107,6 +8019,15 @@
                             pregT = Math.max(0, Math.min(1, (h - rect.top) / pregFadeSpan));
                             greenT = Math.max(0, Math.min(1, (greenFadeStart - rect.bottom) / (greenFadeStart - greenFadeEnd)));
                         }
+                    }
+
+                    var patientFeaturesSection = document.querySelector('.patient-features-section');
+                    if (patientFeaturesSection) {
+                        var featureRect = patientFeaturesSection.getBoundingClientRect();
+                        var featureFadeSpan = Math.max(260, h * 0.55);
+                        var featureT = Math.max(0, Math.min(1, (h - featureRect.top) / featureFadeSpan));
+                        greenT = Math.max(greenT, featureT);
+                        pregT = Math.max(pregT, featureT);
                     }
 
                     var pregFadeVal = ((1 - pregT) * 0.8).toFixed(3);
