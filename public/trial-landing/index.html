@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ad';
+            var PAGE_VERSION = '20260526ae';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -142,6 +142,11 @@
         html.standalone-pwa .patient-features-section .proces-desc {
             transition: none !important;
             will-change: auto !important;
+            overflow-anchor: none !important;
+        }
+
+        html.standalone-pwa .patient-features-section {
+            overflow-anchor: none !important;
         }
 
         html.standalone-pwa .topbar-blur-fade,
@@ -7767,7 +7772,9 @@
             var lastObservedScrollY = window.scrollY;
             var stableFrames = 0;
             var scrollSyncInterval = 0;
-            var reducePwaStickyWork = window.__trialReducePwaScrollWork === true;
+            // Android PWA scroll anchoring can jump back when rows are collapsed by a delayed flush.
+            // Keep the normal per-scroll sticky timeline and only reduce transitions via CSS.
+            var reducePwaStickyWork = false;
             var pwaStickySettleTimer = 0;
             var PROCES_DEBUG = /(?:^|[?&])procesDebug=1(?:&|$)/.test(window.location.search || '');
 
