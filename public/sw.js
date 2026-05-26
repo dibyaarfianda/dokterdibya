@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526u'; // 2026-05-26u - Bypass portal feature sticky stack in standalone PWA
+const CACHE_VERSION = '20260526v'; // 2026-05-26v - Native PWA mobile scroll behavior
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
