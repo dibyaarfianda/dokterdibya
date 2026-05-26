@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526ap'; // 2026-05-26ap - Preserve translateX(-50%) center on CTA curves transform
+const CACHE_VERSION = '20260526aq'; // 2026-05-26aq - Amplify CTA curves motion (drift x3.4, scale 1.45, rotate ±11deg)
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
