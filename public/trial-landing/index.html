@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ai';
+            var PAGE_VERSION = '20260526aj';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -49,8 +49,8 @@
     <meta name="apple-mobile-web-app-title" content="Portal Pasien">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <link rel="icon" type="image/png" href="../images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/pwa-icons/swlogo-pwa-180x180.png">
 
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
@@ -766,7 +766,7 @@
             height: 130%;
             background-image:
                 linear-gradient(rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0.36)),
-                url('/images/bg/tangan.avif');
+                url('../images/bg/tangan.avif');
             background-position: center center;
             background-size: cover;
             background-repeat: no-repeat;
@@ -1094,7 +1094,7 @@
             content: '';
             position: absolute;
             inset: -2%;
-            background-image: url('/images/bg/clearpath-curves.svg');
+            background-image: url('../images/bg/clearpath-curves.svg');
             background-repeat: no-repeat;
             background-size: cover;
             background-position: center;
@@ -2938,7 +2938,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background-image: url('/images/grain.avif');
+            background-image: url('../images/grain.avif');
             background-size: 90px 90px;
             background-repeat: repeat;
             mix-blend-mode: soft-light;
@@ -3023,13 +3023,13 @@
         }
 
         .journey-card.card-perjalanan {
-            --journey-image: url('/images/hamil.png');
+            --journey-image: url('../images/hamil.png');
                 --journey-position: 50% 61%;
             --journey-bg-size: 156% auto;
         }
 
         .journey-card.card-membaca {
-            --journey-image: url('/images/buku.png');
+            --journey-image: url('../images/buku.png');
                 --journey-position: 50% calc(100% + 40px);
             --journey-bg-size: 156% auto;
         }
@@ -3053,13 +3053,13 @@
         }
 
         .journey-card.card-update {
-            --journey-image: url('/images/mata.png');
+            --journey-image: url('../images/mata.png');
                 --journey-position: 52% calc(63% + 220px);
             --journey-bg-size: 150% auto;
         }
 
         .journey-card.card-obgyn {
-            --journey-image: url('/images/uterus.png');
+            --journey-image: url('../images/uterus.png');
                 --journey-position: 54% 69%;
             --journey-bg-size: 142% auto;
         }
@@ -3898,7 +3898,7 @@
             bottom: calc(-240px + var(--journey-stretch) * 0.5);
             left: 0;
             right: 0;
-            background-image: url('/images/bg/footer.avif');
+            background-image: url('../images/bg/footer.avif');
             background-repeat: no-repeat;
             background-size: var(--journey-bg-size, cover);
             background-position: var(--journey-position, center center);
@@ -3924,7 +3924,7 @@
             display: block;
             top: calc(-88px + var(--journey-stretch) * 0.5);
             bottom: calc(-240px + var(--journey-stretch) * 0.5);
-            background-image: url('/images/grain.avif');
+            background-image: url('../images/grain.avif');
             background-size: 90px 90px;
             background-repeat: repeat;
             mix-blend-mode: soft-light;
@@ -4225,7 +4225,7 @@
             inset: 0;
             z-index: 0;
             pointer-events: none;
-            background: url('/images/bg/green_bg.avif') center center / cover no-repeat;
+            background: url('../images/bg/green_bg.avif') center center / cover no-repeat;
             opacity: var(--hero-green-opacity, 1);
             --hero-green-opacity: 1;
         }
@@ -4275,7 +4275,7 @@
         #hero-fixed-bg .hero-fixed-bg-preg {
             position: absolute;
             inset: 0;
-            background: url('/images/bg/docdaf.jpg') center 0 / cover no-repeat;
+            background: url('../images/bg/docdaf.jpg') center 0 / cover no-repeat;
             mix-blend-mode: overlay;
             opacity: calc(var(--hero-preg-opacity, 1) * 0.8);
             --hero-preg-opacity: 1;
@@ -4693,7 +4693,7 @@
                 </div>
                 <div class="kicker" id="hero-kicker"><span class="green-light"><span class="green-light-glow"></span><span class="green-light-core"></span></span> <span id="hero-kicker-text">Selamat Pagi</span></div>
                 <h1 class="hero-greeting" id="hero-greeting">
-                    <span id="hero-patient-name" class="hero-wordmark"><img src="/images/bg/sisiwanita.svg" alt="SISIwanita"></span>
+                    <span id="hero-patient-name" class="hero-wordmark"><img src="../images/bg/sisiwanita.svg" alt="SISIwanita"></span>
                 </h1>
                 <p class="hero-copy" id="hero-copy">&nbsp;</p>
                 <script>
@@ -4858,7 +4858,7 @@
             <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Fitur Pasien Portal" onclick="closeQueuePromoModal()">
                 <div class="queue-promo-modal-card" onclick="event.stopPropagation()">
                     <button type="button" class="queue-promo-modal-close" onclick="closeQueuePromoModal()">&times;</button>
-                    <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="/images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
+                    <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="../images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
                 </div>
             </div>
 
@@ -4944,29 +4944,29 @@
                         </div>
                         <div class="doc-img-col">
                             <div class="usg-layer usg-layer-back" id="usg-thumb-back">
-                                <img src="/images/usg2.svg" alt="Preview Album USG kedua" loading="eager" fetchpriority="high" decoding="async">
+                                <img src="../images/usg2.svg" alt="Preview Album USG kedua" loading="eager" fetchpriority="high" decoding="async">
                             </div>
                             <div class="usg-layer usg-layer-front" id="usg-thumb-main">
-                                <img src="/images/usg1.svg" alt="Preview Album USG" loading="eager" fetchpriority="high" decoding="async">
+                                <img src="../images/usg1.svg" alt="Preview Album USG" loading="eager" fetchpriority="high" decoding="async">
                             </div>
                         </div>
                     </div>
                     <div class="doc-links-row">
-                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Album USG" data-promo-src="/images/album-usg-promo-fake.png" data-promo-alt="Preview Album USG dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
+                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Album USG" data-promo-src="../images/album-usg-promo-fake.png" data-promo-alt="Preview Album USG dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
                             <div class="doc-card-icon"><i class="fa-solid fa-camera"></i></div>
                             <div class="doc-card-label">
                                 <h3>Album USG</h3>
                                 <p>Foto USG kehamilan Anda</p>
                             </div>
                         </div>
-                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Resume Medis" data-promo-src="/images/resume-medis-promo-fake.png" data-promo-alt="Preview Resume Medis dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
+                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Resume Medis" data-promo-src="../images/resume-medis-promo-fake.png" data-promo-alt="Preview Resume Medis dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
                             <div class="doc-card-icon"><i class="fa-solid fa-file-medical"></i></div>
                             <div class="doc-card-label">
                                 <h3>Resume Medis</h3>
                                 <p>Catatan medis Anda</p>
                             </div>
                         </div>
-                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Hasil Lab" data-promo-src="/images/hasil-lab-promo-fake.png" data-promo-alt="Preview Hasil Lab dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
+                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Hasil Lab" data-promo-src="../images/hasil-lab-promo-fake.png" data-promo-alt="Preview Hasil Lab dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
                             <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
                             <div class="doc-card-label">
                                 <h3>Hasil Lab</h3>
@@ -4984,35 +4984,35 @@
                     </div>
 
 
-                    <a href="/images/antrian-live-promo-fake.png" class="proces-row" data-promo-src="/images/antrian-live-promo-fake.png" data-promo-alt="Preview Antrian Live dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/antrian-live-promo-fake.png" class="proces-row" data-promo-src="../images/antrian-live-promo-fake.png" data-promo-alt="Preview Antrian Live dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ANTRIAN LIVE</h3>
                         <p class="proces-desc">Pantau antrian klinik secara real-time. Lihat posisi antrean, siapa yang sedang dilayani, dan perkirakan giliran Anda dengan lebih jelas.</p>
                     </a>
 
 
-                    <a href="/images/gerakan-bayi-promo-fake.png" class="proces-row" data-promo-src="/images/gerakan-bayi-promo-fake.png" data-promo-alt="Preview Gerakan Bayi dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/gerakan-bayi-promo-fake.png" class="proces-row" data-promo-src="../images/gerakan-bayi-promo-fake.png" data-promo-alt="Preview Gerakan Bayi dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-baby" aria-hidden="true"></i></span>
                         <h3 class="proces-title">GERAKAN BAYI</h3>
                         <p class="proces-desc">Hitung dan pantau gerakan bayi Anda setiap hari. Catat setiap tendangan untuk memastikan kesehatan janin tetap terjaga dengan baik.</p>
                     </a>
 
 
-                    <a href="/images/monitoring-kehamilan-promo-fake.png" class="proces-row" data-promo-src="/images/monitoring-kehamilan-promo-fake.png" data-promo-alt="Preview Monitoring Kehamilan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/monitoring-kehamilan-promo-fake.png" class="proces-row" data-promo-src="../images/monitoring-kehamilan-promo-fake.png" data-promo-alt="Preview Monitoring Kehamilan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-person-pregnant" aria-hidden="true"></i></span>
                         <h3 class="proces-title">MONITORING KEHAMILAN</h3>
                         <p class="proces-desc">Pantau perkembangan kehamilan minggu demi minggu. Lihat estimasi berat janin, ukuran, dan milestone penting setiap tahap kehamilan Anda.</p>
                     </a>
 
 
-                    <a href="/images/kalender-kesuburan-promo-fake.png" class="proces-row" data-promo-src="/images/kalender-kesuburan-promo-fake.png" data-promo-alt="Preview Kalender Kesuburan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/kalender-kesuburan-promo-fake.png" class="proces-row" data-promo-src="../images/kalender-kesuburan-promo-fake.png" data-promo-alt="Preview Kalender Kesuburan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
                         <h3 class="proces-title">KALENDER KESUBURAN</h3>
                         <p class="proces-desc">Prediksi masa subur dan ovulasi berdasarkan siklus menstruasi Anda. Rencanakan kehamilan dengan lebih tepat dan terukur setiap bulannya.</p>
                     </a>
 
 
-                    <a href="/images/jadwal-vitamin-promo-fake.png" class="proces-row" data-promo-src="/images/jadwal-vitamin-promo-fake.png" data-promo-alt="Preview Jadwal Vitamin dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/jadwal-vitamin-promo-fake.png" class="proces-row" data-promo-src="../images/jadwal-vitamin-promo-fake.png" data-promo-alt="Preview Jadwal Vitamin dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
                         <span class="proces-step"><i class="fa-solid fa-pills" aria-hidden="true"></i></span>
                         <h3 class="proces-title">JADWAL VITAMIN</h3>
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
@@ -5070,7 +5070,7 @@
                     </div>
 
                     <div class="journey-showcase-grid">
-                        <button type="button" class="journey-card card-perjalanan is-short" data-promo-src="/images/perjalanan-ibu-promo-fake.png" data-promo-alt="Preview Perjalanan Ibu dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Perjalanan Ibu: Langkah Awal Ibu">
+                        <button type="button" class="journey-card card-perjalanan is-short" data-promo-src="../images/perjalanan-ibu-promo-fake.png" data-promo-alt="Preview Perjalanan Ibu dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Perjalanan Ibu: Langkah Awal Ibu">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Perjalanan Ibu</span>
@@ -5081,7 +5081,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-membaca is-tall" data-promo-src="/images/ruang-membaca-promo-fake.png" data-promo-alt="Preview Ruang Membaca dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Ruang Membaca: Nadi Pengetahuan">
+                        <button type="button" class="journey-card card-membaca is-tall" data-promo-src="../images/ruang-membaca-promo-fake.png" data-promo-alt="Preview Ruang Membaca dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Ruang Membaca: Nadi Pengetahuan">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Ruang Membaca</span>
@@ -5092,7 +5092,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-update is-taller" data-promo-src="/images/update-terkini-promo-fake.png" data-promo-alt="Preview Update Terkini dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Update Terkini: Kabar Sehat Hari Ini">
+                        <button type="button" class="journey-card card-update is-taller" data-promo-src="../images/update-terkini-promo-fake.png" data-promo-alt="Preview Update Terkini dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Update Terkini: Kabar Sehat Hari Ini">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Update Terkini</span>
@@ -5103,7 +5103,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-obgyn is-short" data-promo-src="/images/tanya-dokter-promo-fake.png" data-promo-alt="Preview Fitur Tanya Dokter dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Fitur Tanya Dokter">
+                        <button type="button" class="journey-card card-obgyn is-short" data-promo-src="../images/tanya-dokter-promo-fake.png" data-promo-alt="Preview Fitur Tanya Dokter dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Fitur Tanya Dokter">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Fitur Tanya Dokter</span>
@@ -5464,7 +5464,7 @@
 
             if (heroName) {
                 heroName.classList.add('hero-wordmark');
-                heroName.innerHTML = '<img src="/images/bg/sisiwanita.svg" alt="SISIwanita">';
+                heroName.innerHTML = '<img src="../images/bg/sisiwanita.svg" alt="SISIwanita">';
             }
             if (heroKicker) heroKicker.textContent = getJakartaGreeting();
             if (avatarInitials) avatarInitials.textContent = 'D';
@@ -6096,7 +6096,7 @@
                 var fallbackHeroNameEl = document.getElementById('hero-patient-name');
                 if (fallbackHeroNameEl) {
                     fallbackHeroNameEl.classList.add('hero-wordmark');
-                    fallbackHeroNameEl.innerHTML = '<img src="/images/bg/sisiwanita.svg" alt="SISIwanita">';
+                    fallbackHeroNameEl.innerHTML = '<img src="../images/bg/sisiwanita.svg" alt="SISIwanita">';
                 }
                 document.getElementById('user-avatar-initials').textContent = '--';
                 document.getElementById('loading-state').style.display = 'none';
@@ -6400,7 +6400,7 @@
             document.body.style.paddingRight = '';
         }
 
-        const QUEUE_PROMO_IMAGE_URL = '/images/antrian-live-promo-fake.png';
+        const QUEUE_PROMO_IMAGE_URL = '../images/antrian-live-promo-fake.png';
         const QUEUE_PROMO_IMAGE_ALT = 'Preview Antrian Live dengan data simulasi';
         const QUEUE_PROMO_ANIMATION_MS = 1000;
 
