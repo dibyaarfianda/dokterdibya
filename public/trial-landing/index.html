@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ao';
+            var PAGE_VERSION = '20260526ap';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -5619,11 +5619,12 @@
                         // Parallax + scale on the curves themselves so they visibly move while scrolling,
                         // not just reveal. Curves drift up faster than bg for layered depth, and grow
                         // slightly as the card anchors so the swirl feels alive.
+                        // IMPORTANT: base CSS sets translateX(-50%) to center the wrapper; we must keep it.
                         var curveShift = state.parallaxY * 1.6; // moves faster than bg
                         var curveScale = 1 + (state.curveReveal * 0.18);
                         var curveRotate = (state.curveReveal - 0.5) * 6; // -3deg → +3deg
                         curvesWrap.style.transform =
-                            'translate3d(0,' + curveShift.toFixed(1) + 'px,0)' +
+                            'translate(-50%, ' + curveShift.toFixed(1) + 'px)' +
                             ' scale(' + curveScale.toFixed(3) + ')' +
                             ' rotate(' + curveRotate.toFixed(2) + 'deg)';
                         curvesWrap.style.transformOrigin = '50% 60%';
