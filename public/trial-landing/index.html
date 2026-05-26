@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526al';
+            var PAGE_VERSION = '20260526am';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -7181,11 +7181,9 @@
                 requestAnimationFrame(animate);
             }
 
-            if (window.__trialReducePwaScrollWork) {
-                return;
-            }
-
             window.addEventListener('scroll', recalcTargets, { passive: true });
+            window.addEventListener('wheel', recalcTargets, { passive: true });
+            window.addEventListener('touchmove', recalcTargets, { passive: true });
             window.addEventListener('resize', recalcTargets);
             recalcTargets();
             animate();
@@ -7773,7 +7771,7 @@
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
                         var rowLead = COLLAPSE_LEAD_PX;
                         if (isPatientFeaturesSection) {
-                            rowLead += i * 56;
+                            rowLead = i * 56;
                         }
                         var start = row.offsetTop - slotTop - rowLead;
                         if (i === sd.rows.length - 1 && sd.rows.length > 1) {
@@ -7830,11 +7828,14 @@
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
                 if (desc) {
-                    var fadeWindow = 0.18;
-                    var fadeP = Math.max(0, Math.min(1, p / fadeWindow));
+                    var isPatientFeaturesRow = sd.el && sd.el.classList.contains('patient-features-section');
+                    var fadeStart = isPatientFeaturesRow ? 0.28 : 0;
+                    var fadeWindow = isPatientFeaturesRow ? 0.28 : 0.18;
+                    var fadeP = Math.max(0, Math.min(1, (p - fadeStart) / fadeWindow));
                     var opacity = 1 - Math.pow(fadeP, 0.72);
-                    var heightEndP = 0.88;
-                    var heightP = Math.max(0, Math.min(1, p / heightEndP));
+                    var heightStart = isPatientFeaturesRow ? 0.22 : 0;
+                    var heightEndP = isPatientFeaturesRow ? 0.92 : 0.88;
+                    var heightP = Math.max(0, Math.min(1, (p - heightStart) / Math.max(0.01, heightEndP - heightStart)));
                     var remainingDescRatio = Math.max(0, 1 - heightP);
 
                     desc.style.setProperty('opacity', Math.max(0, opacity).toFixed(3), 'important');
