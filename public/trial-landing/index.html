@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ap';
+            var PAGE_VERSION = '20260526aq';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -5616,13 +5616,11 @@
                     if (bgImg) bgImg.style.transform = 'translate3d(0, ' + state.parallaxY.toFixed(1) + 'px, 0)';
                     if (curvesWrap) {
                         curvesWrap.style.opacity = state.curveReveal.toFixed(3);
-                        // Parallax + scale on the curves themselves so they visibly move while scrolling,
-                        // not just reveal. Curves drift up faster than bg for layered depth, and grow
-                        // slightly as the card anchors so the swirl feels alive.
-                        // IMPORTANT: base CSS sets translateX(-50%) to center the wrapper; we must keep it.
-                        var curveShift = state.parallaxY * 1.6; // moves faster than bg
-                        var curveScale = 1 + (state.curveReveal * 0.18);
-                        var curveRotate = (state.curveReveal - 0.5) * 6; // -3deg → +3deg
+                        // Amplified motion so curves visibly swirl on real mobile PWA, not just probe.
+                        // translateX(-50%) MUST stay to keep wrapper centered (base CSS depends on it).
+                        var curveShift = state.parallaxY * 3.4;        // was 1.6 → much more drift
+                        var curveScale = 1 + (state.curveReveal * 0.45); // was 0.18 → grows up to 1.45
+                        var curveRotate = (state.curveReveal - 0.5) * 22; // was 6 → ±11deg sweep
                         curvesWrap.style.transform =
                             'translate(-50%, ' + curveShift.toFixed(1) + 'px)' +
                             ' scale(' + curveScale.toFixed(3) + ')' +
