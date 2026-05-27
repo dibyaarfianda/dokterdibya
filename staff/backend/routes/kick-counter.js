@@ -93,9 +93,10 @@ function setNoCacheHeaders(req, res, next) {
     next();
 }
 
+router.use(setNoCacheHeaders);
+
 // All routes require patient authentication
 router.use(verifyPatientToken);
-router.use(setNoCacheHeaders);
 router.use(async (req, res, next) => {
     try {
         await ensureKickCounterTables();
