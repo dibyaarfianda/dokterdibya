@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id" data-trial-nav="off">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Template Tool - SISIwanita</title>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch (error) {}
+        window.__patientTrialHeaderInstalled = true;
+    </script>
+    <script src="/scripts/patient-theme-trial.js?v=20260528kickui1"></script>
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528m">
+</head>
+<body class="home-sections-locked patient-tool-shell" data-tool-shell-active="aplikasi">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
+
+    <main class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu-simple-trial.html" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </button>
+                    <button class="avatar soundable" id="user-avatar" onclick="go('/profil-trial.html')" aria-label="Profil">
+                        <img id="user-avatar-img" alt="">
+                        <span id="user-avatar-initials">--</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-card reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Nama Tool</span></div>
+            <h1 class="hero-title">Judul tool.</h1>
+            <p class="hero-copy">Tulis konteks ringkas tool di sini. Konten halaman berikutnya tinggal mengisi area utama.</p>
+            <div class="today-row">
+                <div>
+                    <div class="today-label">Status</div>
+                    <div class="today-value">Siap digunakan</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="openSheet('aplikasi')">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Menu</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="loading" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Menyiapkan...</span>
+        </div>
+
+        <div id="content-wrapper">
+            <section class="section reveal">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Section</div>
+                        <h2 class="section-title">Konten utama</h2>
+                    </div>
+                    <div class="section-note">Template</div>
+                </div>
+                <div class="tool-panel">
+                    <div class="status-body">
+                        <h3>Ganti panel ini dengan fitur halaman</h3>
+                        <p>Gunakan shell ini untuk header, jarak, font, nav, bottom sheet, dan animasi standar.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
+
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu-simple-trial.html')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
+            <button class="nav-item soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang"><i class="fa-solid fa-door-open"></i><span>Ruang</span></button>
+        </div>
+    </nav>
+
+    <div id="toast-container"></div>
+    <script src="/scripts/patient-tool-shell.js?v=20260528m"></script>
+    <script>
+        PatientToolShell.init({ activeNav: 'aplikasi', unlockOnReady: true });
+    </script>
+</body>
+</html>

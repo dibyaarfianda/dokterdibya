@@ -827,6 +827,7 @@
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528m">
     <style>
         :root {
             --blue: #4a6f9d;
@@ -1202,7 +1203,7 @@
         }
     </style>
 </head>
-<body class="home-sections-locked kick-counter-page">
+<body class="home-sections-locked patient-tool-shell kick-counter-page" data-tool-shell-active="aplikasi">
 
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
@@ -1362,51 +1363,29 @@
 
     <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
         <div class="bottom-inner" id="home-bottom-inner">
-            <button class="nav-item soundable" onclick="go('/patient-menu-simple-trial.html')" aria-label="Beranda">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu-simple-trial.html')" aria-label="Beranda">
                 <i class="fa-solid fa-house"></i><span>Beranda</span>
             </button>
-            <button class="nav-item soundable" onclick="openSheet('dokumen')" aria-label="Dokumen">
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen">
                 <i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span>
             </button>
-            <button class="nav-item active soundable" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
+            <button class="nav-item active soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
                 <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
             </button>
-            <button class="nav-item soundable" onclick="openSheet('jadwal')" aria-label="Jadwal">
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal">
                 <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
             </button>
-            <button class="nav-item soundable" onclick="openMyCorner()" aria-label="Ruang">
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang">
                 <i class="fa-solid fa-door-open"></i><span>Ruang</span>
             </button>
         </div>
     </nav>
 
+    <script src="/scripts/patient-tool-shell.js?v=20260528m"></script>
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, formatTime, showLoading, showEmptyState } from '/scripts/patient-utils.js';
 
-        const menuData = {
-            dokumen: { title: 'Dokumen', items: [
-                ['fa-solid fa-image', 'Album USG', '/album-usg-trial.html'],
-                ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab-trial.html'],
-                ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
-            ]},
-            aplikasi: { title: 'Aplikasi', items: [
-                ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
-                ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
-                ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
-                ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin-trial.html']
-            ]},
-            jadwal: { title: 'Jadwal', items: [
-                ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik-trial.html'],
-                ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs-trial.html'],
-                ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
-                ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
-            ]},
-            edukasi: { title: 'Edukasi', items: [
-                ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
-                ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
-                ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
-            ]}
-        };
+        window.PatientToolShell?.init({ activeNav: 'aplikasi' });
 
         const urlParams = new URLSearchParams(window.location.search);
         const isMockKickMode = urlParams.has('mockApi') || urlParams.has('mockKick');
@@ -1432,22 +1411,6 @@
                 total_sessions: totalSessions,
                 avg_per_session: totalSessions > 0 ? Math.round((mockKickState.totalKicks / totalSessions) * 10) / 10 : 0
             };
-        }
-
-        function triggerHomeIntroAnimation() {
-            document.body.classList.remove('header-animated');
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => document.body.classList.add('header-animated'));
-            });
-        }
-
-        function updateAvatarInitials() {
-            let user = {};
-            try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
-            const name = user.fullname || user.full_name || user.name || 'SISIwanita';
-            const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SW';
-            const initialsEl = document.getElementById('user-avatar-initials');
-            if (initialsEl) initialsEl.textContent = initials;
         }
 
         async function kickApiRequest(url, options = {}) {
@@ -1528,38 +1491,6 @@
             return { success: true };
         }
 
-        window.go = function go(url) {
-            if (!url) return;
-            window.location.href = url;
-        };
-
-        window.openSheet = function openSheet(category) {
-            const data = menuData[category];
-            const overlay = document.getElementById('sheet-overlay');
-            const sheet = document.getElementById('bottom-sheet');
-            const title = document.getElementById('sheet-title');
-            const menu = document.getElementById('sheet-menu');
-            if (!data || !overlay || !sheet || !title || !menu) return;
-            title.textContent = data.title;
-            menu.innerHTML = data.items.map(item => `
-                <a class="sheet-item soundable" href="${item[2]}">
-                    <i class="${item[0]}"></i>
-                    <span>${item[1]}</span>
-                </a>
-            `).join('');
-            overlay.classList.add('active');
-            sheet.classList.add('active');
-        };
-
-        window.closeSheet = function closeSheet() {
-            document.getElementById('sheet-overlay')?.classList.remove('active');
-            document.getElementById('bottom-sheet')?.classList.remove('active');
-        };
-
-        window.openMyCorner = function openMyCorner() {
-            window.location.href = '/patient-menu-simple-trial.html#my-corner';
-        };
-
         // State
         let activeSession = null;
         let kickTimer = null;
@@ -1583,14 +1514,10 @@
         // Init
         document.addEventListener('DOMContentLoaded', async function() {
             if (!checkAuth()) return;
-            updateAvatarInitials();
+            window.PatientToolShell?.updateAvatarInitials();
 
             await loadKickCounter();
-            document.getElementById('loading-state').style.display = 'none';
-            document.getElementById('content-wrapper').style.display = 'block';
-            document.body.classList.remove('home-sections-locked');
-            document.body.classList.add('home-sections-unlocked');
-            triggerHomeIntroAnimation();
+            window.PatientToolShell?.showContent({ loadingId: 'loading-state', contentId: 'content-wrapper' });
         });
 
         async function loadKickCounter() {
