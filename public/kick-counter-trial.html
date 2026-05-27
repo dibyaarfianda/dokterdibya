@@ -191,6 +191,26 @@
             padding: 0 4px;
         }
 
+        .vip-badge {
+            display: none;
+        }
+
+        .kick-hero {
+            margin-bottom: 16px;
+        }
+
+        .kick-hero .hero-title {
+            max-width: 10ch;
+        }
+
+        .kick-hero-actions {
+            margin-top: 18px;
+        }
+
+        .kick-hero .sound-toggle {
+            white-space: nowrap;
+        }
+
         /* Hero */
         .hero {
             border: 1px solid var(--line);
@@ -832,29 +852,38 @@
                 </a>
             </div>
             <div class="top-actions">
-                <button class="icon-btn soundable" onclick="showFullHistory()" aria-label="Riwayat gerakan">
-                    <i class="fa-regular fa-clock"></i>
+                <button class="icon-btn soundable" id="kick-notif-btn" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="badge" id="notif-badge">0</span>
                 </button>
-                <button class="icon-btn soundable" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
-                    <i class="fa-regular fa-bell"></i>
-                    <span class="badge" id="notification-badge">0</span>
+                <button class="avatar soundable" id="user-avatar" onclick="go('/profil-trial.html')" aria-label="Profil">
+                    <img id="user-avatar-img" alt="">
+                    <span id="user-avatar-initials">--</span>
+                    <span class="vip-badge" id="vip-badge">VIP</span>
                 </button>
-                <a href="/profil-trial.html" class="avatar soundable" aria-label="Profil">
-                    <span>SW</span>
-                </a>
             </div>
         </div>
         </header>
 
         <!-- Hero -->
-        <section class="hero">
-            <span class="section-kicker"><span class="green-light"></span> Gerakan Bayi</span>
-            <h1 class="section-title">Setiap <span class="serif">tendangan</span> berarti</h1>
-            <p class="section-lead">
+        <section class="hero-card kick-hero reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Gerakan Bayi</span></div>
+            <h1 class="hero-title">Setiap tendangan berarti.</h1>
+            <p class="hero-copy">
                 Hitung gerakan bayi setiap hari sebagai cara sederhana memantau kesehatannya.
                 Targetnya adalah merasakan minimal sepuluh gerakan dalam dua jam, waktu yang
                 terasa seperti percakapan kecil antara Anda dan calon buah hati.
             </p>
+            <div class="today-row kick-hero-actions">
+                <div>
+                    <div class="today-label">Target</div>
+                    <div class="today-value">10 gerakan / 2 jam</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="showFullHistory()">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Riwayat</span>
+                </button>
+            </div>
         </section>
 
         <!-- Loading -->
@@ -951,13 +980,13 @@
                 <i class="fa-regular fa-folder-open"></i><span>Dokumen</span>
             </button>
             <button class="nav-item active soundable" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
-                <i class="fa-solid fa-heart-pulse"></i><span>Aplikasi</span>
+                <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
             </button>
             <button class="nav-item soundable" onclick="openSheet('jadwal')" aria-label="Jadwal">
-                <i class="fa-regular fa-calendar-check"></i><span>Jadwal</span>
+                <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
             </button>
             <button class="nav-item soundable" onclick="openMyCorner()" aria-label="Ruang">
-                <i class="fa-regular fa-user"></i><span>Ruang</span>
+                <i class="fa-solid fa-door-open"></i><span>Ruang</span>
             </button>
         </div>
     </nav>
@@ -993,6 +1022,91 @@
                 ]
             }
         };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMockKickMode = urlParams.has('mockApi') || urlParams.has('mockKick');
+        const mockKickState = {
+            session: null,
+            totalKicks: 0,
+            sessions: []
+        };
+
+        if (isMockKickMode && !getToken()) {
+            localStorage.setItem('vps_auth_token', 'mock-kick-token');
+        }
+
+        function updateAvatarInitials() {
+            let user = {};
+            try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
+            const name = user.fullname || user.full_name || user.name || 'SISIwanita';
+            const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'SW';
+            const initialsEl = document.getElementById('user-avatar-initials');
+            if (initialsEl) initialsEl.textContent = initials;
+        }
+
+        async function kickApiRequest(url, options = {}) {
+            if (!isMockKickMode) return apiRequest(url, options);
+            const method = String(options.method || 'GET').toUpperCase();
+            await new Promise(resolve => setTimeout(resolve, 120));
+
+            if (url.startsWith('/api/kick-counter/today')) {
+                return {
+                    success: true,
+                    sessions: mockKickState.session ? [mockKickState.session] : [],
+                    today: {
+                        total_kicks: mockKickState.totalKicks,
+                        sessions_count: mockKickState.sessions.length + (mockKickState.session ? 1 : 0),
+                        goal_reached: mockKickState.totalKicks >= GOAL_KICKS
+                    }
+                };
+            }
+
+            if (url.startsWith('/api/kick-counter/session') && method === 'POST') {
+                mockKickState.session = {
+                    id: Date.now(),
+                    start_time: new Date().toISOString(),
+                    kick_count: 0,
+                    duration_minutes: 0,
+                    status: 'active'
+                };
+                return { success: true, session: mockKickState.session };
+            }
+
+            if (url.startsWith('/api/kick-counter/kick')) {
+                if (!mockKickState.session) return { success: false, message: 'Belum ada sesi aktif' };
+                mockKickState.session.kick_count += 1;
+                mockKickState.totalKicks = Math.max(mockKickState.totalKicks, mockKickState.session.kick_count);
+                mockKickState.session.duration_minutes = Math.max(1, Math.floor((Date.now() - new Date(mockKickState.session.start_time).getTime()) / 60000));
+                return { success: true, session: mockKickState.session };
+            }
+
+            if (url.includes('/end')) {
+                if (mockKickState.session) {
+                    mockKickState.session.status = 'completed';
+                    mockKickState.session.end_time = new Date().toISOString();
+                    mockKickState.sessions.unshift(mockKickState.session);
+                    mockKickState.session = null;
+                }
+                return { success: true };
+            }
+
+            if (url.startsWith('/api/kick-counter/stats')) {
+                return {
+                    success: true,
+                    stats: [6, 8, 10, 7, 12, 9, mockKickState.totalKicks].map((count, index) => {
+                        const d = new Date();
+                        d.setDate(d.getDate() - (6 - index));
+                        return { date: d.toISOString().slice(0, 10), total_kicks: count };
+                    })
+                };
+            }
+
+            if (url.startsWith('/api/kick-counter/history')) {
+                return { success: true, sessions: mockKickState.sessions, pagination: { totalPages: 1 } };
+            }
+
+            return { success: true };
+        }
 
         window.go = function go(url) {
             if (!url) return;
@@ -1048,6 +1162,7 @@
         // Init
         document.addEventListener('DOMContentLoaded', async function() {
             if (!checkAuth()) return;
+            updateAvatarInitials();
 
             await loadKickCounter();
             document.getElementById('loading-state').style.display = 'none';
@@ -1056,7 +1171,7 @@
 
         async function loadKickCounter() {
             try {
-                const result = await apiRequest('/api/kick-counter/today');
+                const result = await kickApiRequest('/api/kick-counter/today');
 
                 if (result && result.success) {
                     activeSession = result.sessions?.find(s => s.status === 'active') || null;
@@ -1204,7 +1319,7 @@
 
         async function startKickSession() {
             try {
-                const result = await apiRequest('/api/kick-counter/session', { method: 'POST' });
+                const result = await kickApiRequest('/api/kick-counter/session', { method: 'POST' });
 
                 if (result && result.success) {
                     activeSession = result.session;
@@ -1233,7 +1348,7 @@
             if (navigator.vibrate) navigator.vibrate(40);
 
             try {
-                const result = await apiRequest('/api/kick-counter/kick', {
+                const result = await kickApiRequest('/api/kick-counter/kick', {
                     method: 'POST',
                     body: JSON.stringify({ session_id: activeSession.id })
                 });
@@ -1261,7 +1376,7 @@
             if (!activeSession) return;
 
             try {
-                const result = await apiRequest(`/api/kick-counter/session/${activeSession.id}/end`, { method: 'PUT' });
+                const result = await kickApiRequest(`/api/kick-counter/session/${activeSession.id}/end`, { method: 'PUT' });
 
                 if (result && result.success) {
                     stopKickTimer();
@@ -1306,7 +1421,7 @@
 
         async function loadKickStats() {
             try {
-                const result = await apiRequest('/api/kick-counter/stats');
+                const result = await kickApiRequest('/api/kick-counter/stats');
                 if (result && result.success && result.stats.week) {
                     renderKickChart(result.stats.week);
                 }
@@ -1350,7 +1465,7 @@
             const container = document.getElementById('recent-sessions');
 
             try {
-                const result = await apiRequest('/api/kick-counter/history?limit=5');
+                const result = await kickApiRequest('/api/kick-counter/history?limit=5');
 
                 if (result && result.success && result.sessions && result.sessions.length > 0) {
                     container.innerHTML = result.sessions.map(session => {
@@ -1397,7 +1512,7 @@
             container.innerHTML = '<div class="loading"><i class="fa fa-spinner fa-spin"></i><span>Memuat...</span></div>';
 
             try {
-                const result = await apiRequest(`/api/kick-counter/history?page=${page}&limit=10`);
+                const result = await kickApiRequest(`/api/kick-counter/history?page=${page}&limit=10`);
 
                 if (result && result.success) {
                     if (!result.sessions || result.sessions.length === 0) {
