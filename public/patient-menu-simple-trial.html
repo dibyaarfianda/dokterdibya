@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260524f">
+    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260528portal1">
     <style>
         :root {
             --bg: #f7f7f4;
@@ -379,9 +379,9 @@
 
         .section { margin-top: 18px; }
         #primary-actions-section {
-            margin-top: var(--home-action-gap, max(180px, 42svh));
-            min-height: calc(var(--home-viewport-height, 100svh) - 96px);
-            padding-bottom: 42px;
+            margin-top: var(--home-action-gap, clamp(36px, 16svh, 132px));
+            min-height: 0;
+            padding-bottom: 18px;
             display: flex;
             flex-direction: column;
         }
@@ -508,6 +508,45 @@
         .tracker-panel h3, .announcement-panel h3 { font-size: 13px; margin-bottom: 5px; }
         .tracker-panel p, .announcement-panel p { color: var(--muted); font-size: 12px; line-height: 1.45; }
         .tracker-panel .big { font-family: var(--display); font-size: 28px; letter-spacing: -0.04em; color: var(--ink); margin: 4px 0; }
+        .announcement-panel { min-height: 162px; display: flex; flex-direction: column; }
+        .announcement-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .announcement-count-pill {
+            border: 1px solid rgba(92,127,114,0.18);
+            background: var(--green-soft);
+            color: var(--green);
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1;
+            display: none;
+            white-space: nowrap;
+        }
+        .announcement-list { display: grid; gap: 8px; margin-top: 10px; }
+        .announcement-mini {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            align-items: flex-start;
+            padding: 9px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.62);
+            border-radius: 14px;
+        }
+        .announcement-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            margin-top: 5px;
+            background: var(--green);
+            box-shadow: 0 0 0 5px var(--green-soft);
+        }
+        .announcement-mini.is-urgent .announcement-dot { background: #dc2626; box-shadow: 0 0 0 5px rgba(220,38,38,0.1); }
+        .announcement-mini.is-important .announcement-dot { background: var(--amber); box-shadow: 0 0 0 5px rgba(183,121,46,0.12); }
+        .announcement-mini-title { font-size: 12px; font-weight: 900; line-height: 1.28; margin-bottom: 2px; color: var(--ink); }
+        .announcement-mini-copy { color: var(--muted); font-size: 11px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .announcement-mini-meta { margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 800; }
+        .announcement-panel .ghost-action { margin-top: auto; justify-content: center; }
 
         .bottom-nav {
             position: fixed;
@@ -865,7 +904,7 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
     <style>
         body #home-brand-link {
             position: relative;
@@ -905,7 +944,7 @@
         }
 
         body #home-topbar {
-            margin-bottom: 80px !important;
+            margin-bottom: clamp(22px, 4vh, 42px) !important;
         }
 
         body #home-top-actions {
@@ -1131,9 +1170,15 @@
                         <p id="tracker-desc">Memuat ringkasan kehamilan...</p>
                     </div>
                     <div class="announcement-panel">
-                        <h3>Info Terbaru</h3>
-                        <p id="announcement-preview">Pengumuman dan update klinik akan tampil ringkas di sini.</p>
-                        <button class="ghost-action soundable" style="margin-top:12px;" onclick="go('/notifikasi-trial.html')"><i class="fa-solid fa-bell"></i> Lihat Info</button>
+                        <div class="announcement-panel-head">
+                            <div>
+                                <h3>Info Terbaru</h3>
+                                <p id="announcement-preview">Memuat kabar klinik...</p>
+                            </div>
+                            <span class="announcement-count-pill" id="announcement-count-pill">0</span>
+                        </div>
+                        <div class="announcement-list" id="announcement-list" aria-live="polite"></div>
+                        <button class="ghost-action soundable" id="announcement-action" onclick="go('/notifikasi-trial.html')"><i class="fa-solid fa-bell"></i> Lihat Info</button>
                     </div>
                 </div>
             </section>
@@ -1380,6 +1425,102 @@
             } catch (error) {}
         }
 
+        function cleanPreviewText(value, fallback) {
+            return String(value || fallback || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function truncatePreviewText(value, maxLength) {
+            const text = cleanPreviewText(value, '');
+            if (text.length <= maxLength) return text;
+            return text.slice(0, maxLength).replace(/\s+\S*$/, '') + '...';
+        }
+
+        function formatInfoTime(value) {
+            const date = new Date(value || '');
+            if (Number.isNaN(date.getTime())) return 'Baru';
+            const diffMs = Date.now() - date.getTime();
+            const diffMinutes = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            if (diffMinutes < 1) return 'Baru saja';
+            if (diffMinutes < 60) return diffMinutes + ' menit lalu';
+            if (diffHours < 24) return diffHours + ' jam lalu';
+            if (diffDays < 7) return diffDays + ' hari lalu';
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        }
+
+        function getInfoTone(item) {
+            const source = String(item?.source || item?.type || '').toLowerCase();
+            const color = String(item?.icon_color || '').toLowerCase();
+            const title = String(item?.title || '').toLowerCase();
+            if (color.includes('danger') || title.includes('urgent') || title.includes('mendesak')) return 'urgent';
+            if (color.includes('warning') || title.includes('penting')) return 'important';
+            if (source === 'notification' && item?.is_read === 0) return 'important';
+            return 'normal';
+        }
+
+        function renderHomeAnnouncements(items, unreadCount) {
+            const preview = document.getElementById('announcement-preview');
+            const list = document.getElementById('announcement-list');
+            const pill = document.getElementById('announcement-count-pill');
+            const action = document.getElementById('announcement-action');
+            if (!preview || !list || !pill || !action) return;
+
+            const safeItems = Array.isArray(items) ? items.filter(Boolean).slice(0, 2) : [];
+            const count = Number(unreadCount || 0);
+            if (count > 0) {
+                pill.textContent = count > 99 ? '99+' : String(count);
+                pill.style.display = 'inline-flex';
+            } else {
+                pill.style.display = 'none';
+            }
+
+            if (safeItems.length === 0) {
+                preview.textContent = 'Belum ada kabar baru. Semua informasi klinik akan muncul di sini saat tersedia.';
+                list.innerHTML = '<div class="announcement-mini"><span class="announcement-dot"></span><div><div class="announcement-mini-title">Semua tenang hari ini</div><div class="announcement-mini-copy">Tidak ada pengumuman aktif atau notifikasi baru untuk saat ini.</div></div></div>';
+                action.innerHTML = '<i class="fa-solid fa-bell"></i> Buka Notifikasi';
+                return;
+            }
+
+            const first = safeItems[0];
+            preview.textContent = truncatePreviewText(first.message || first.title, 86);
+            list.innerHTML = safeItems.map(function(item) {
+                const tone = getInfoTone(item);
+                const title = cleanPreviewText(item.title, item.source === 'announcement' ? 'Pengumuman Klinik' : 'Notifikasi');
+                const message = truncatePreviewText(item.message, 104);
+                const meta = item.source === 'announcement' ? 'Pengumuman' : 'Notifikasi';
+                return '<div class="announcement-mini is-' + tone + '">' +
+                    '<span class="announcement-dot"></span>' +
+                    '<div>' +
+                        '<div class="announcement-mini-title">' + escapeHtml(title) + '</div>' +
+                        '<div class="announcement-mini-copy">' + escapeHtml(message || 'Buka notifikasi untuk melihat detail.') + '</div>' +
+                        '<div class="announcement-mini-meta">' + escapeHtml(meta) + ' - ' + escapeHtml(formatInfoTime(item.created_at)) + '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            action.innerHTML = '<i class="fa-solid fa-bell"></i> Lihat Semua Info';
+        }
+
+        async function loadHomeAnnouncements() {
+            const preview = document.getElementById('announcement-preview');
+            const list = document.getElementById('announcement-list');
+            if (preview) preview.textContent = 'Memuat kabar klinik...';
+            if (list) list.innerHTML = '';
+            try {
+                const response = await fetch('/api/patient-notifications/with-announcements?limit=3&_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                    cache: 'no-store'
+                });
+                if (response.status === 401) throw new Error('unauthorized');
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || 'info failed');
+                renderHomeAnnouncements(data.items, data.unread_count);
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                renderHomeAnnouncements([], 0);
+            }
+        }
+
         async function loadUnreadDocCounts() {
             try {
                 const response = await fetch('/api/patient-documents/unread-counts?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
@@ -1395,7 +1536,6 @@
 
         async function checkActiveBooking() {
             const panel = document.getElementById('quick-status');
-            const card = document.getElementById('booking-status-card');
             const cancelButton = document.getElementById('booking-cancel-btn');
             panel.classList.remove('show', 'warning');
             cancelButton.style.display = 'none';
@@ -1645,6 +1785,8 @@
         let homeScrollBrakeUntil = 0;
         let homeScrollBrakeTimer = null;
         let homeScrollBrakeTarget = null;
+        let homeUnlockTimer = null;
+        let homeAutoRevealMode = false;
 
         function getHomeViewportHeight() {
             if (window.visualViewport && window.visualViewport.height) return window.visualViewport.height;
@@ -1658,9 +1800,11 @@
             const viewportHeight = getHomeViewportHeight();
             document.documentElement.style.setProperty('--home-viewport-height', Math.ceil(viewportHeight) + 'px');
             if (homeActionGapFrozen || window.scrollY > 4 || document.body.classList.contains('home-actions-revealed')) return;
-            const heroBottom = hero.getBoundingClientRect().bottom;
-            const targetTop = viewportHeight + 28;
-            const gap = Math.max(96, Math.ceil(targetTop - heroBottom));
+            const statusPanel = document.getElementById('quick-status');
+            const anchor = statusPanel && statusPanel.classList.contains('show') ? statusPanel : hero;
+            const anchorBottom = anchor.getBoundingClientRect().bottom;
+            const targetTop = viewportHeight * 0.78;
+            const gap = Math.max(32, Math.min(168, Math.ceil(targetTop - anchorBottom)));
             document.documentElement.style.setProperty('--home-action-gap', gap + 'px');
         }
 
@@ -1726,7 +1870,7 @@
             const rect = actionSection.getBoundingClientRect();
             if (rect.bottom < viewportHeight * 0.98) {
                 document.body.classList.add('home-later-revealed');
-                brakeHomeScrollAt(getNextVisibleHomeSection(actionSection), 1500);
+                brakeHomeScrollAt(getNextVisibleHomeSection(actionSection), 680);
             }
         }
 
@@ -1739,9 +1883,9 @@
             if (rect.top < viewportHeight * 0.98) {
                 freezeHomeActionGap();
                 document.body.classList.add('home-actions-revealed');
-                brakeHomeScrollAt(actionSection, 1850);
+                if (!homeAutoRevealMode) brakeHomeScrollAt(actionSection, 760);
                 window.clearTimeout(homeActionSettleTimer);
-                homeActionSettleTimer = window.setTimeout(settlePrimaryActions, 2050);
+                homeActionSettleTimer = window.setTimeout(settlePrimaryActions, 980);
                 requestAnimationFrame(revealLaterSectionsIfReady);
             }
         }
@@ -1755,8 +1899,10 @@
             document.body.classList.remove('home-later-revealed');
             window.clearTimeout(homeActionSettleTimer);
             window.clearTimeout(homeScrollBrakeTimer);
+            window.clearTimeout(homeUnlockTimer);
             releaseHomeScrollBrake();
             homeActionGapFrozen = false;
+            homeAutoRevealMode = false;
         }
 
         function unlockHomeSections() {
@@ -1771,6 +1917,18 @@
             if (window.scrollY > 8) unlockHomeSections();
             revealPrimaryActionsIfReady();
             revealLaterSectionsIfReady();
+        }
+
+        function scheduleHomeAutoUnlock() {
+            window.clearTimeout(homeUnlockTimer);
+            homeUnlockTimer = window.setTimeout(function() {
+                homeAutoRevealMode = true;
+                unlockHomeSections();
+                requestAnimationFrame(function() {
+                    revealPrimaryActionsIfReady();
+                    homeAutoRevealMode = false;
+                });
+            }, 980);
         }
 
         function handleHomeWheelReveal(event) {
@@ -1828,7 +1986,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260524f', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528g', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -1841,7 +1999,9 @@
                 revealPrimaryActionsIfReady();
             });
             triggerHomeIntroAnimation();
+            scheduleHomeAutoUnlock();
             loadNotificationCount();
+            loadHomeAnnouncements();
             loadUnreadDocCounts();
             initializeLiveQueueHome();
             checkActiveBooking();
@@ -1881,13 +2041,15 @@
             lockHomeSections();
             requestAnimationFrame(updateHomeActionGap);
             triggerHomeIntroAnimation();
+            scheduleHomeAutoUnlock();
             if (event.persisted) {
                 loadNotificationCount();
+                loadHomeAnnouncements();
                 loadUnreadDocCounts();
                 checkActiveBooking();
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260524g"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260528portal1"></script>
 </body>
 </html>
