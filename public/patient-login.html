@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0f0f1a">
+    <meta name="theme-color" content="#223a34">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Login Pasien - dokterDIBYA</title>
@@ -24,13 +24,13 @@
 
     <style>
         :root {
-            --primary: #0066FF;
-            --primary-dark: #0052CC;
-            --bg-dark: #0f0f1a;
-            --bg-card: #1a1a2e;
+            --primary: #7EA89F;
+            --primary-dark: #557d73;
+            --bg-dark: #223a34;
+            --bg-card: rgba(255, 255, 255, 0.12);
             --text: #ffffff;
-            --text-muted: rgba(255,255,255,0.6);
-            --border: rgba(255,255,255,0.1);
+            --text-muted: rgba(255,255,255,0.72);
+            --border: rgba(255,255,255,0.18);
             --success: #10b981;
             --error: #ef4444;
             --safe-top: env(safe-area-inset-top, 0px);
@@ -93,8 +93,7 @@
             right: 0;
             bottom: 0;
             background:
-                radial-gradient(ellipse at 20% 20%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                linear-gradient(180deg, rgba(21, 38, 34, 0.98) 0%, rgba(33, 58, 52, 0.97) 44%, rgba(89, 126, 117, 0.94) 100%),
                 var(--bg-dark);
             z-index: 0;
         }
@@ -208,8 +207,8 @@
             transition: all 0.2s;
         }
         input:focus {
-            border-color: var(--primary);
-            background: rgba(0, 102, 255, 0.05);
+            border-color: rgba(190, 220, 214, 0.72);
+            background: rgba(126, 168, 159, 0.16);
         }
         input:focus + .input-icon,
         input:focus ~ .input-icon {
@@ -261,11 +260,11 @@
         .btn-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+            box-shadow: 0 8px 24px rgba(126, 168, 159, 0.28);
         }
         .btn-primary:active {
             transform: scale(0.98);
-            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(126, 168, 159, 0.28);
         }
         .btn-primary:disabled {
             opacity: 0.6;
