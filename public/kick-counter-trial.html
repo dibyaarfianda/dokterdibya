@@ -496,7 +496,7 @@
         }
         .summary-stat { text-align: center; }
         .summary-stat .value {
-            font-family: 'Crimson Pro', serif;
+            font-family: var(--display);
             font-style: italic;
             font-weight: 500;
             font-size: 32px;
@@ -610,7 +610,7 @@
             letter-spacing: 0.05em;
         }
         .session-count {
-            font-family: 'Crimson Pro', serif;
+            font-family: var(--display);
             font-style: italic;
             font-weight: 500;
             font-size: 24px;
@@ -827,8 +827,379 @@
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
+    <style>
+        :root {
+            --blue: #4a6f9d;
+            --rose: #b35f7b;
+            --amber: #b7792e;
+            --purple: #7357a8;
+            --radius-sm: 12px;
+        }
+
+        body.kick-counter-page {
+            min-height: 100vh !important;
+            background:
+                radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
+                linear-gradient(180deg, #fbfbf8 0%, var(--bg) 52%, #ffffff 100%) !important;
+            color: var(--ink) !important;
+            font-family: var(--font) !important;
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(var(--nav-height) + env(safe-area-inset-bottom, 0) + 18px) env(safe-area-inset-left, 0) !important;
+            overflow-x: hidden !important;
+            touch-action: pan-y;
+        }
+
+        body.kick-counter-page .app {
+            width: min(100%, 860px) !important;
+            margin: 0 auto !important;
+            padding: 0 16px 0 !important;
+            position: relative;
+        }
+
+        body.kick-counter-page .topbar {
+            position: sticky !important;
+            top: env(safe-area-inset-top, 0px) !important;
+            z-index: 30 !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+        }
+
+        body.kick-counter-page .topbar-inner {
+            width: min(100%, 860px) !important;
+            margin: 0 auto !important;
+            padding: 8px 13px 10px !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            align-items: center !important;
+            gap: 11px !important;
+        }
+
+        body.kick-counter-page #home-brand-link {
+            position: relative;
+            z-index: 1;
+            display: inline-flex !important;
+            flex-direction: column !important;
+            gap: 1px !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+        }
+
+        body.kick-counter-page #home-brand-title {
+            font-family: var(--display) !important;
+            font-size: 16px !important;
+            line-height: 1.02 !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.04em !important;
+            color: #7EA89F !important;
+            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.22), 0 1px 2px rgba(26, 45, 38, 0.16) !important;
+        }
+
+        body.kick-counter-page #home-brand-title span {
+            color: #7EA89F !important;
+            font-weight: 700 !important;
+        }
+
+        body.kick-counter-page #home-brand-sub {
+            margin-top: 3px !important;
+            max-width: none !important;
+            font-size: 7.2px !important;
+            line-height: 1.2 !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.24em !important;
+            text-transform: uppercase !important;
+            color: #7EA89F !important;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14) !important;
+        }
+
+        body.kick-counter-page .top-actions { display: flex !important; align-items: center !important; gap: 7px !important; }
+        body.kick-counter-page .icon-btn,
+        body.kick-counter-page .avatar {
+            border: 1px solid var(--line) !important;
+            background: rgba(255,255,255,0.82) !important;
+            box-shadow: var(--shadow-soft) !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            padding: 0 !important;
+            border-radius: 11px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: var(--ink) !important;
+            position: relative;
+            cursor: pointer;
+        }
+
+        body.kick-counter-page .avatar span { font-size: 10px !important; font-weight: 800 !important; }
+        body.kick-counter-page .vip-badge { display: none !important; }
+
+        body:not(.header-animated).kick-counter-page .brand,
+        body:not(.header-animated).kick-counter-page #home-notif-btn,
+        body:not(.header-animated).kick-counter-page #user-avatar,
+        body:not(.header-animated).kick-counter-page .hero-card .status-chip,
+        body:not(.header-animated).kick-counter-page .hero-card .hero-title,
+        body:not(.header-animated).kick-counter-page .hero-card .hero-copy,
+        body:not(.header-animated).kick-counter-page .hero-card .today-row { opacity: 0; }
+
+        body:not(.header-animated).kick-counter-page .brand,
+        body:not(.header-animated).kick-counter-page #home-notif-btn,
+        body:not(.header-animated).kick-counter-page #user-avatar,
+        body:not(.header-animated).kick-counter-page .hero-card .status-chip,
+        body:not(.header-animated).kick-counter-page .hero-card .hero-copy,
+        body:not(.header-animated).kick-counter-page .hero-card .today-row { transform: translateY(12px); }
+
+        body:not(.header-animated).kick-counter-page .hero-card .hero-title {
+            transform: translateY(20px);
+            filter: blur(5px);
+        }
+
+        body.kick-counter-page #loading-state.loading {
+            min-height: 40vh;
+            display: grid;
+            place-items: center;
+            color: var(--muted) !important;
+            gap: 10px;
+            text-align: center;
+            padding: 42px 16px !important;
+        }
+
+        body.kick-counter-page #kick-chart .loading {
+            min-height: 96px !important;
+            display: grid !important;
+            place-items: center !important;
+            padding: 16px !important;
+            color: var(--muted) !important;
+        }
+
+        body.kick-counter-page #content-wrapper { display: none; }
+
+        body.kick-counter-page .hero-card {
+            margin-top: 4px !important;
+            border: 1px solid var(--line) !important;
+            border-radius: 28px !important;
+            background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86)) !important;
+            box-shadow: var(--shadow) !important;
+            padding: 16px !important;
+            overflow: hidden !important;
+            position: relative;
+        }
+
+        body.kick-counter-page .hero-card::before {
+            content: '';
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            right: -120px;
+            top: -130px;
+            background: radial-gradient(circle, rgba(92,127,114,0.22), transparent 68%);
+            pointer-events: none;
+        }
+
+        body.kick-counter-page .status-chip {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            color: var(--green) !important;
+            background: var(--green-soft) !important;
+            border: 1px solid rgba(92,127,114,0.16) !important;
+            border-radius: 999px !important;
+            padding: 7px 10px !important;
+            margin-bottom: 14px !important;
+            letter-spacing: 0.02em !important;
+            text-transform: none !important;
+        }
+
+        body.kick-counter-page .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,0.12); }
+        body.kick-counter-page .hero-title {
+            font-family: var(--display) !important;
+            font-size: clamp(27px, 8vw, 46px) !important;
+            letter-spacing: -0.055em !important;
+            line-height: 0.98 !important;
+            max-width: none !important;
+            margin-bottom: 10px !important;
+            color: var(--ink) !important;
+            white-space: nowrap !important;
+        }
+        body.kick-counter-page .hero-copy { color: var(--ink-soft) !important; font-size: 13px !important; line-height: 1.48 !important; max-width: 52ch !important; }
+        body.kick-counter-page .today-row { margin-top: 14px !important; display: grid !important; grid-template-columns: 1fr auto !important; gap: 12px !important; align-items: end !important; }
+        body.kick-counter-page .today-label { color: var(--muted) !important; font-size: 11px !important; margin-bottom: 3px !important; }
+        body.kick-counter-page .today-value { font-weight: 800 !important; font-size: 14px !important; }
+        body.kick-counter-page .sound-toggle {
+            border: 1px solid var(--line) !important;
+            background: rgba(255,255,255,0.72) !important;
+            border-radius: 999px !important;
+            padding: 8px 10px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            cursor: pointer;
+            color: var(--ink) !important;
+        }
+
+        body.kick-counter-page .section { margin-top: 18px !important; }
+        body.kick-counter-page .section-head { display: flex !important; justify-content: space-between !important; align-items: end !important; gap: 14px !important; margin-bottom: 10px !important; }
+        body.kick-counter-page .section-kicker { font-size: 10px !important; color: var(--muted) !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; font-weight: 800 !important; margin-bottom: 4px !important; }
+        body.kick-counter-page .section-title { font-family: var(--display) !important; font-size: 19px !important; line-height: 1.1 !important; letter-spacing: -0.03em !important; color: var(--ink) !important; }
+        body.kick-counter-page .section-note { font-size: 11px !important; color: var(--muted) !important; text-align: right !important; }
+
+        body.kick-counter-page .status-panel,
+        body.kick-counter-page .tracker-panel,
+        body.kick-counter-page .announcement-panel,
+        body.kick-counter-page .kick-counter-panel {
+            border: 1px solid var(--line) !important;
+            border-radius: var(--radius) !important;
+            background: var(--surface) !important;
+            box-shadow: var(--shadow-soft) !important;
+            padding: 14px !important;
+            color: var(--ink) !important;
+        }
+
+        body.kick-counter-page .status-panel { display: flex !important; align-items: center !important; gap: 12px !important; }
+        body.kick-counter-page .status-icon { width: 42px !important; height: 42px !important; border-radius: 14px !important; display: grid !important; place-items: center !important; background: var(--green-soft) !important; color: var(--green) !important; flex: 0 0 auto !important; }
+        body.kick-counter-page .status-body { flex: 1; min-width: 0; }
+        body.kick-counter-page .status-body h3 { font-size: 14px !important; margin-bottom: 3px !important; color: var(--ink) !important; }
+        body.kick-counter-page .status-body p { color: var(--muted) !important; font-size: 12px !important; line-height: 1.45 !important; margin: 0 !important; }
+
+        body.kick-counter-page .kick-counter-panel {
+            background: rgba(255,255,255,0.86) !important;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        body.kick-counter-page .idle-state { padding: 2px 0 0 !important; }
+        body.kick-counter-page .idle-icon { display: none !important; }
+        body.kick-counter-page .idle-text {
+            max-width: 260px !important;
+            margin: 0 auto 12px !important;
+            color: var(--muted) !important;
+            font-size: 12px !important;
+            line-height: 1.42 !important;
+        }
+
+        body.kick-counter-page .count-display { margin: 4px 0 18px !important; line-height: 1 !important; }
+        body.kick-counter-page .count-value { font-family: var(--display) !important; font-size: clamp(78px, 21vw, 126px) !important; font-style: normal !important; font-weight: 800 !important; letter-spacing: -0.055em !important; color: var(--ink) !important; }
+        body.kick-counter-page .count-label { display: block; margin-top: 8px; color: var(--muted) !important; font-size: 10px !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.14em !important; }
+        body.kick-counter-page .tap-button-wrap { display: flex; justify-content: center; margin: 8px 0 18px !important; }
+        body.kick-counter-page .tap-button {
+            width: clamp(174px, 54vw, 214px) !important;
+            height: clamp(174px, 54vw, 214px) !important;
+            border-radius: 50% !important;
+            border: 1px solid var(--line-strong) !important;
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(240,242,236,0.9)) !important;
+            color: var(--ink) !important;
+            font-family: var(--font) !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.12em !important;
+            box-shadow: 0 16px 34px rgba(17,17,17,0.08) !important;
+        }
+        body.kick-counter-page .kick-timer { font-family: var(--font), monospace !important; font-size: 21px !important; font-weight: 700 !important; color: var(--ink) !important; background: var(--surface-muted) !important; border: 1px solid var(--line) !important; border-radius: 999px !important; }
+        body.kick-counter-page .goal-indicator { color: var(--muted) !important; font-size: 12px !important; font-weight: 700 !important; }
+
+        body.kick-counter-page .summary-stats { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; margin-top: 14px !important; padding-top: 12px !important; border-top: 1px solid var(--line) !important; }
+        body.kick-counter-page .summary-stat { border: 1px solid var(--line) !important; background: rgba(255,255,255,0.58) !important; border-radius: 15px !important; padding: 10px 6px !important; }
+        body.kick-counter-page .summary-stat .value { font-family: var(--display) !important; font-style: normal !important; font-weight: 800 !important; font-size: 25px !important; color: var(--ink) !important; }
+        body.kick-counter-page .summary-stat .label { color: var(--muted) !important; font-size: 9px !important; font-weight: 800 !important; letter-spacing: 0.1em !important; }
+
+        body.kick-counter-page .trial-button,
+        body.kick-counter-page .trial-button-ghost,
+        body.kick-counter-page .primary-action,
+        body.kick-counter-page .ghost-action {
+            border-radius: 14px !important;
+            font-family: var(--font) !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0 !important;
+            min-height: 40px;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            padding: 10px 12px !important;
+            text-decoration: none !important;
+        }
+        body.kick-counter-page .trial-button { background: var(--ink) !important; color: #fff !important; border: 1px solid var(--ink) !important; }
+        body.kick-counter-page .trial-button-ghost,
+        body.kick-counter-page .ghost-action { background: rgba(255,255,255,0.75) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
+
+        body.kick-counter-page .chart-bars { height: 132px !important; padding: 18px 0 10px !important; border-bottom: 1px solid var(--line) !important; }
+        body.kick-counter-page .chart-bar { background: var(--ink) !important; border-radius: 7px 7px 0 0 !important; }
+        body.kick-counter-page .chart-bar.low { background: var(--muted) !important; opacity: 0.55; }
+        body.kick-counter-page .chart-bar.today { background: var(--green) !important; }
+        body.kick-counter-page .chart-value { color: var(--ink) !important; font-size: 11px !important; font-weight: 800 !important; }
+        body.kick-counter-page .chart-label { color: var(--muted) !important; font-size: 10px !important; font-weight: 800 !important; }
+
+        body.kick-counter-page .session-row { border-bottom: 1px solid var(--line) !important; padding: 12px 2px !important; }
+        body.kick-counter-page .session-info .time { color: var(--ink) !important; font-size: 13px !important; font-weight: 800 !important; }
+        body.kick-counter-page .session-info .duration { color: var(--muted) !important; font-size: 11px !important; }
+        body.kick-counter-page .session-count { font-family: var(--display) !important; font-style: normal !important; font-weight: 800 !important; color: var(--ink) !important; }
+        body.kick-counter-page .empty-state { color: var(--muted) !important; font-size: 12px !important; padding: 24px 12px !important; }
+
+        body.kick-counter-page .bottom-nav {
+            position: fixed !important;
+            left: 50% !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+            transform: translateX(-50%) !important;
+            width: min(520px, calc(100% - 24px)) !important;
+            z-index: 40 !important;
+            border: 1px solid rgba(17,17,17,0.1) !important;
+            border-radius: 24px !important;
+            background: rgba(255,255,255,0.78) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            backdrop-filter: blur(20px) !important;
+            box-shadow: 0 18px 42px rgba(17,17,17,0.13) !important;
+            padding: 8px !important;
+        }
+        body.kick-counter-page .bottom-inner { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 4px !important; }
+        body.kick-counter-page .nav-item { border: none !important; background: transparent !important; color: var(--muted) !important; border-radius: 17px !important; padding: 8px 4px !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; align-items: center !important; gap: 3px !important; font-size: 10px !important; font-weight: 700 !important; box-shadow: none !important; }
+        body.kick-counter-page .nav-item i { font-size: 15px !important; color: inherit !important; }
+        body.kick-counter-page .nav-item.active { background: #111 !important; color: #fff !important; }
+        body.kick-counter-page .nav-badge { position: absolute; top: 3px; right: 14px; min-width: 15px; height: 15px; border-radius: 8px; background: #dc2626; color: #fff; font-size: 9px; display: none; place-items: center; padding: 0 4px; }
+
+        body.kick-counter-page .sheet-overlay { background: rgba(17,17,17,0.28) !important; -webkit-backdrop-filter: blur(8px) !important; backdrop-filter: blur(8px) !important; }
+        body.kick-counter-page .bottom-sheet { bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 18px) !important; width: min(420px, calc(100% - 28px)) !important; border: 1px solid var(--line) !important; border-radius: 24px !important; background: rgba(255,255,255,0.94) !important; box-shadow: var(--shadow) !important; padding: 10px !important; }
+        body.kick-counter-page .sheet-title { font-weight: 900 !important; font-size: 13px !important; padding: 8px 10px 10px !important; }
+        body.kick-counter-page .sheet-menu { display: grid !important; gap: 6px !important; }
+        body.kick-counter-page .sheet-item { display: flex !important; align-items: center !important; gap: 10px !important; padding: 12px !important; border-radius: 15px !important; color: var(--ink) !important; background: rgba(17,17,17,0.035) !important; font-size: 13px !important; font-weight: 700 !important; text-decoration: none !important; }
+        body.kick-counter-page .sheet-item i { width: 20px !important; color: var(--green) !important; }
+
+        body.kick-counter-page #toast-container { bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 28px) !important; }
+        body.kick-counter-page #toast-container .toast { background: #111 !important; color: #fff !important; border-radius: 999px !important; padding: 11px 15px !important; font-size: 12px !important; font-weight: 800 !important; box-shadow: none !important; }
+
+        body.header-animated.kick-counter-page .brand { animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 120ms both; }
+        body.header-animated.kick-counter-page #home-notif-btn,
+        body.header-animated.kick-counter-page #user-avatar { animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 220ms both; }
+        body.header-animated.kick-counter-page .hero-card .status-chip { animation: fadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 180ms both; }
+        body.header-animated.kick-counter-page .hero-card .hero-title { animation: titleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 300ms both; }
+        body.header-animated.kick-counter-page .hero-card .hero-copy { animation: fadeUp 940ms cubic-bezier(0.2, 0.75, 0.22, 1) 500ms both; }
+        body.header-animated.kick-counter-page .hero-card .today-row { animation: fadeUp 980ms cubic-bezier(0.2, 0.75, 0.22, 1) 620ms both; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes titleIn { from { opacity: 0; transform: translateY(20px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+        @media (max-width: 520px) {
+            body.kick-counter-page .app { padding-left: 14px !important; padding-right: 14px !important; }
+            body.kick-counter-page .hero-card { padding: 16px !important; border-radius: 24px !important; }
+            body.kick-counter-page .today-row { grid-template-columns: 1fr auto !important; align-items: end !important; }
+            body.kick-counter-page .section-note { display: none !important; }
+        }
+    </style>
 </head>
-<body class="trial-themed">
+<body class="home-sections-locked kick-counter-page">
 
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
@@ -843,16 +1214,16 @@
 
     <!-- Main -->
     <main class="app">
-        <header class="topbar" id="kick-topbar">
-            <div class="topbar-inner" id="kick-topbar-inner">
-            <div class="brand">
-                <a class="brand-link" href="/patient-menu-simple-trial.html" aria-label="Kembali ke beranda SISIwanita">
-                    <div class="brand-title">SISI<span>wanita</span></div>
-                    <div class="brand-sub">Portal Privat Kandungan Anda</div>
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                <a class="brand-link soundable" id="home-brand-link" href="/patient-menu-simple-trial.html" aria-label="Beranda SISIwanita">
+                    <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                    <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
                 </a>
-            </div>
-            <div class="top-actions">
-                <button class="icon-btn soundable" id="kick-notif-btn" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                <button class="icon-btn soundable" id="home-notif-btn" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
                     <i class="fa-solid fa-bell"></i>
                     <span class="badge" id="notif-badge">0</span>
                 </button>
@@ -861,18 +1232,16 @@
                     <span id="user-avatar-initials">--</span>
                     <span class="vip-badge" id="vip-badge">VIP</span>
                 </button>
+                </div>
             </div>
-        </div>
         </header>
 
         <!-- Hero -->
         <section class="hero-card kick-hero reveal">
             <div class="status-chip"><span class="status-dot"></span><span>Gerakan Bayi</span></div>
-            <h1 class="hero-title">Setiap tendangan berarti.</h1>
+            <h1 class="hero-title">Gerakan bayi.</h1>
             <p class="hero-copy">
-                Hitung gerakan bayi setiap hari sebagai cara sederhana memantau kesehatannya.
-                Targetnya adalah merasakan minimal sepuluh gerakan dalam dua jam, waktu yang
-                terasa seperti percakapan kecil antara Anda dan calon buah hati.
+                Catat tendangan harian dengan tenang. Mulai sesi, lalu tap setiap kali gerakan terasa.
             </p>
             <div class="today-row kick-hero-actions">
                 <div>
@@ -895,14 +1264,9 @@
         <!-- Content -->
         <div id="content-wrapper">
 
-            <!-- Info -->
-            <div class="info-card">
-                <i class="fa-regular fa-circle-info info-icon"></i>
-                <p><strong>Minimal 10 gerakan dalam 2 jam</strong> adalah patokan normal. Jika terasa kurang, beristirahatlah miring ke kiri, minum air, dan coba hitung ulang. Hubungi Dokter bila tetap sedikit.</p>
-            </div>
-
             <!-- Main Counter Card -->
-            <section class="counter-card">
+            <section class="section reveal kick-counter-section">
+                <div class="kick-counter-panel">
                 <!-- Alert Container -->
                 <div id="kick-alert-container"></div>
 
@@ -915,28 +1279,50 @@
                 <div id="kick-summary">
                     <!-- Summary populated by JS -->
                 </div>
+                </div>
+            </section>
+
+            <section class="section reveal kick-info-section">
+                <div class="status-panel show kick-info-panel">
+                    <div class="status-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <div class="status-body">
+                        <h3>Minimal 10 gerakan dalam 2 jam</h3>
+                        <p>Jika terasa kurang, beristirahatlah miring ke kiri, minum air, dan coba hitung ulang. Hubungi Dokter bila tetap sedikit.</p>
+                    </div>
+                </div>
             </section>
 
             <!-- Weekly Chart -->
-            <div class="section-heading">
-                <span class="section-kicker">Minggu ini</span>
-            </div>
-            <div class="trial-card">
+            <section class="section reveal kick-chart-section">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Minggu Ini</div>
+                        <h2 class="section-title">Ritme gerakan</h2>
+                    </div>
+                    <div class="section-note">7 hari</div>
+                </div>
+            <div class="tracker-panel kick-chart-card">
                 <div id="kick-chart">
                     <div class="loading"><i class="fa fa-spinner fa-spin"></i></div>
                 </div>
             </div>
+            </section>
 
             <!-- Recent Sessions -->
-            <div class="section-heading">
-                <span class="section-kicker">Sesi terakhir</span>
-                <a href="#" onclick="showFullHistory(); return false;">Lihat semua</a>
-            </div>
-            <div class="trial-card">
+            <section class="section reveal kick-recent-section">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Sesi Terakhir</div>
+                        <h2 class="section-title">Catatan terbaru</h2>
+                    </div>
+                    <button class="ghost-action soundable" type="button" onclick="showFullHistory()"><i class="fa-solid fa-clock-rotate-left"></i> Lihat</button>
+                </div>
+            <div class="announcement-panel kick-recent-card">
                 <div id="recent-sessions">
                     <!-- Populated by JS -->
                 </div>
             </div>
+            </section>
         </div>
     </main>
 
@@ -966,18 +1352,18 @@
     <div id="toast-container"></div>
 
     <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
-    <section class="bottom-sheet" id="bottom-sheet" aria-live="polite">
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
         <div class="sheet-title" id="sheet-title">Menu</div>
         <div class="sheet-menu" id="sheet-menu"></div>
-    </section>
+    </aside>
 
-    <nav class="bottom-nav" id="kick-bottom-nav" aria-label="Navigasi bawah">
-        <div class="bottom-inner" id="kick-bottom-inner">
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
             <button class="nav-item soundable" onclick="go('/patient-menu-simple-trial.html')" aria-label="Beranda">
                 <i class="fa-solid fa-house"></i><span>Beranda</span>
             </button>
             <button class="nav-item soundable" onclick="openSheet('dokumen')" aria-label="Dokumen">
-                <i class="fa-regular fa-folder-open"></i><span>Dokumen</span>
+                <i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span>
             </button>
             <button class="nav-item active soundable" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
                 <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
@@ -995,32 +1381,28 @@
         import { getToken, checkAuth, apiRequest, showToast, formatDate, formatTime, showLoading, showEmptyState } from '/scripts/patient-utils.js';
 
         const menuData = {
-            dokumen: {
-                title: 'Dokumen',
-                items: [
-                    { label: 'Dashboard Pasien', icon: 'fa-regular fa-id-card', url: '/patient-dashboard.html' },
-                    { label: 'Album USG', icon: 'fa-regular fa-images', url: '/album-usg-trial.html' },
-                    { label: 'Resep & Etiket', icon: 'fa-solid fa-prescription-bottle-medical', url: '/resep-trial.html' },
-                    { label: 'Invoice', icon: 'fa-regular fa-file-lines', url: '/invoices-trial.html' }
-                ]
-            },
-            aplikasi: {
-                title: 'Aplikasi',
-                items: [
-                    { label: 'Gerakan Bayi', icon: 'fa-solid fa-heart-pulse', url: '/kick-counter-trial.html' },
-                    { label: 'Tanya Dokter', icon: 'fa-regular fa-comments', url: '/tanya-dokter-trial.html' },
-                    { label: 'Pengingat Vitamin', icon: 'fa-solid fa-pills', url: '/vitamin-trial.html' },
-                    { label: 'Komunitas', icon: 'fa-regular fa-heart', url: '/community-trial.html' }
-                ]
-            },
-            jadwal: {
-                title: 'Jadwal',
-                items: [
-                    { label: 'Buat Janji', icon: 'fa-regular fa-calendar-plus', url: '/buat-janji-trial.html' },
-                    { label: 'Antrian Hari Ini', icon: 'fa-solid fa-list-ol', url: '/antrian-trial.html' },
-                    { label: 'Riwayat Kunjungan', icon: 'fa-regular fa-clock', url: '/riwayat-kunjungan-trial.html' }
-                ]
-            }
+            dokumen: { title: 'Dokumen', items: [
+                ['fa-solid fa-image', 'Album USG', '/album-usg-trial.html'],
+                ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab-trial.html'],
+                ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
+            ]},
+            aplikasi: { title: 'Aplikasi', items: [
+                ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
+                ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
+                ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
+                ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin-trial.html']
+            ]},
+            jadwal: { title: 'Jadwal', items: [
+                ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik-trial.html'],
+                ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs-trial.html'],
+                ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
+                ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
+            ]},
+            edukasi: { title: 'Edukasi', items: [
+                ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
+                ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
+                ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
+            ]}
         };
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -1033,6 +1415,27 @@
 
         if (isMockKickMode && !getToken()) {
             localStorage.setItem('vps_auth_token', 'mock-kick-token');
+        }
+
+        function formatLocalDateForKick(date = new Date()) {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function createKickSummary() {
+            const totalSessions = mockKickState.sessions.length + (mockKickState.session ? 1 : 0);
+            return {
+                total_kicks: mockKickState.totalKicks,
+                total_sessions: totalSessions,
+                avg_per_session: totalSessions > 0 ? Math.round((mockKickState.totalKicks / totalSessions) * 10) / 10 : 0
+            };
+        }
+
+        function triggerHomeIntroAnimation() {
+            document.body.classList.remove('header-animated');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => document.body.classList.add('header-animated'));
+            });
         }
 
         function updateAvatarInitials() {
@@ -1050,13 +1453,16 @@
             await new Promise(resolve => setTimeout(resolve, 120));
 
             if (url.startsWith('/api/kick-counter/today')) {
+                const summary = createKickSummary();
                 return {
                     success: true,
                     sessions: mockKickState.session ? [mockKickState.session] : [],
+                    summary,
+                    alert: false,
+                    alert_message: null,
                     today: {
-                        total_kicks: mockKickState.totalKicks,
-                        sessions_count: mockKickState.sessions.length + (mockKickState.session ? 1 : 0),
-                        goal_reached: mockKickState.totalKicks >= GOAL_KICKS
+                        kicks: summary.total_kicks,
+                        sessions: summary.total_sessions
                     }
                 };
             }
@@ -1091,13 +1497,24 @@
             }
 
             if (url.startsWith('/api/kick-counter/stats')) {
+                const week = [6, 8, 10, 7, 12, 9, mockKickState.totalKicks].map((count, index) => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - (6 - index));
+                    return {
+                        date: formatLocalDateForKick(d),
+                        kicks: count,
+                        sessions: count > 0 ? 1 : 0
+                    };
+                });
                 return {
                     success: true,
-                    stats: [6, 8, 10, 7, 12, 9, mockKickState.totalKicks].map((count, index) => {
-                        const d = new Date();
-                        d.setDate(d.getDate() - (6 - index));
-                        return { date: d.toISOString().slice(0, 10), total_kicks: count };
-                    })
+                    stats: {
+                        today: { kicks: mockKickState.totalKicks, sessions: mockKickState.session ? 1 : 0 },
+                        week,
+                        average_daily: 8.8,
+                        alert: false,
+                        alert_message: null
+                    }
                 };
             }
 
@@ -1122,9 +1539,9 @@
             if (!data || !overlay || !sheet || !title || !menu) return;
             title.textContent = data.title;
             menu.innerHTML = data.items.map(item => `
-                <a class="sheet-item soundable" href="${item.url}">
-                    <i class="${item.icon}"></i>
-                    <span>${item.label}</span>
+                <a class="sheet-item soundable" href="${item[2]}">
+                    <i class="${item[0]}"></i>
+                    <span>${item[1]}</span>
                 </a>
             `).join('');
             overlay.classList.add('active');
@@ -1146,6 +1563,7 @@
         let elapsedSeconds = 0;
         let currentHistoryPage = 1;
         let totalHistoryPages = 1;
+        let todaySummary = { total_kicks: 0, total_sessions: 0, avg_per_session: 0 };
         const GOAL_KICKS = 10;
         const TRIAL_HOME = '/patient-menu-simple-trial.html';
 
@@ -1167,6 +1585,9 @@
             await loadKickCounter();
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
+            document.body.classList.remove('home-sections-locked');
+            document.body.classList.add('home-sections-unlocked');
+            triggerHomeIntroAnimation();
         });
 
         async function loadKickCounter() {
@@ -1239,7 +1660,17 @@
         function renderKickCounter(data) {
             const container = document.getElementById('kick-counter-main');
             const alertContainer = document.getElementById('kick-alert-container');
-            const summaryContainer = document.getElementById('kick-summary');
+            const summary = data.summary || {
+                total_kicks: data.today?.kicks ?? data.today?.total_kicks ?? 0,
+                total_sessions: data.today?.sessions ?? data.today?.sessions_count ?? (data.sessions ? data.sessions.length : 0),
+                avg_per_session: 0
+            };
+            if (!summary.avg_per_session) {
+                summary.avg_per_session = summary.total_sessions > 0
+                    ? Math.round((summary.total_kicks / summary.total_sessions) * 10) / 10
+                    : 0;
+            }
+                    todaySummary = { ...summary };
 
             if (data.alert) {
                 alertContainer.innerHTML = `
@@ -1297,24 +1728,29 @@
                 `;
             }
 
-            if (data.summary) {
-                summaryContainer.innerHTML = `
-                    <div class="summary-stats">
-                        <div class="summary-stat">
-                            <div class="value">${data.summary.total_kicks}</div>
-                            <div class="label">Hari ini</div>
-                        </div>
-                        <div class="summary-stat">
-                            <div class="value">${data.summary.total_sessions}</div>
-                            <div class="label">Sesi</div>
-                        </div>
-                        <div class="summary-stat">
-                            <div class="value">${data.summary.avg_per_session}</div>
-                            <div class="label">Rata-rata</div>
-                        </div>
+            renderKickSummary(summary);
+        }
+
+        function renderKickSummary(summary) {
+            const summaryContainer = document.getElementById('kick-summary');
+            if (!summaryContainer) return;
+
+            summaryContainer.innerHTML = `
+                <div class="summary-stats">
+                    <div class="summary-stat">
+                        <div class="value">${summary.total_kicks}</div>
+                        <div class="label">Hari ini</div>
                     </div>
-                `;
-            }
+                    <div class="summary-stat">
+                        <div class="value">${summary.total_sessions}</div>
+                        <div class="label">Sesi</div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="value">${summary.avg_per_session}</div>
+                        <div class="label">Rata-rata</div>
+                    </div>
+                </div>
+            `;
         }
 
         async function startKickSession() {
@@ -1337,6 +1773,7 @@
 
         async function recordKick() {
             if (!activeSession) return;
+            const previousCount = activeSession.kick_count || 0;
 
             const button = document.getElementById('kick-btn');
             button.classList.remove('pulse');
@@ -1358,6 +1795,13 @@
                     const el = document.getElementById('kickCount');
                     if (el) el.textContent = newCount;
                     activeSession.kick_count = newCount;
+                    todaySummary.total_kicks = Math.max(0, (todaySummary.total_kicks || 0) - previousCount + newCount);
+                    todaySummary.total_sessions = Math.max(todaySummary.total_sessions || 0, 1);
+                    todaySummary.avg_per_session = todaySummary.total_sessions > 0
+                        ? Math.round((todaySummary.total_kicks / todaySummary.total_sessions) * 10) / 10
+                        : 0;
+                    renderKickSummary(todaySummary);
+                    loadKickStats();
 
                     // Update goal indicator when reached
                     const goalEl = document.getElementById('goal-indicator');
@@ -1422,8 +1866,16 @@
         async function loadKickStats() {
             try {
                 const result = await kickApiRequest('/api/kick-counter/stats');
-                if (result && result.success && result.stats.week) {
-                    renderKickChart(result.stats.week);
+                if (result && result.success) {
+                    const rawWeek = Array.isArray(result.stats)
+                        ? result.stats
+                        : (result.stats?.week || []);
+                    const week = rawWeek.map(day => ({
+                        date: day.date,
+                        kicks: Number(day.kicks ?? day.total_kicks ?? 0),
+                        sessions: Number(day.sessions ?? day.total_sessions ?? 0)
+                    }));
+                    renderKickChart(week);
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
@@ -1438,7 +1890,7 @@
             }
 
             const maxKicks = Math.max(...weekData.map(d => d.kicks), 30);
-            const today = new Date().toISOString().split('T')[0];
+            const today = formatLocalDateForKick();
 
             let barsHtml = '<div class="chart-bars">';
             weekData.forEach(day => {
