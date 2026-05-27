@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-trial-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#f7f6f2">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Gerakan Bayi - SISIwanita</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
-    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
 
-    <!-- Fonts: Inter + Crimson Pro italic (trial theme) -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@1,400;1,500;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -24,99 +24,259 @@
     <!-- Shared trial theme -->
     <script>
         try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch (error) {}
+        window.__patientTrialHeaderInstalled = true;
     </script>
-    <script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
+    <script src="/scripts/patient-theme-trial.js?v=20260528kickui1"></script>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f7f7f4;
+            --surface: rgba(255, 255, 255, 0.88);
+            --surface-solid: #ffffff;
+            --surface-muted: #f0f0ec;
+            --ink: #111111;
+            --ink-soft: #3f3f3f;
+            --muted: #717171;
+            --line: rgba(17, 17, 17, 0.09);
+            --line-strong: rgba(17, 17, 17, 0.16);
+            --green: #5c7f72;
+            --green-soft: rgba(92, 127, 114, 0.13);
+            --shadow: 0 14px 38px rgba(17, 17, 17, 0.08);
+            --shadow-soft: 0 1px 2px rgba(17, 17, 17, 0.05);
+            --radius: 18px;
+            --nav-height: 74px;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html {
+            background: var(--bg);
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+        }
 
         body.trial-themed {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-canvas, #f7f6f2);
-            color: var(--text-primary, #141414);
+            font-family: var(--font);
+            background:
+                radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
+                linear-gradient(180deg, #fbfbf8 0%, var(--bg) 52%, #ffffff 100%);
+            color: var(--ink);
             min-height: 100vh;
-            padding-bottom: 40px;
+            padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(var(--nav-height) + env(safe-area-inset-bottom, 0) + 20px) env(safe-area-inset-left, 0);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            touch-action: pan-y;
         }
 
-        .serif {
-            font-family: 'Crimson Pro', 'Times New Roman', serif;
-            font-style: italic;
-            font-weight: 500;
+        button, a { font-family: inherit; }
+        a { color: inherit; text-decoration: none; }
+        .serif { font-family: var(--display); font-style: normal; font-weight: 800; }
+
+        .topbar-blur-fade {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 220px;
+            z-index: 29;
+            pointer-events: none;
         }
+        .topbar-blur-fade div[class^="topbar-blur-"] { opacity: 1; position: absolute; inset: 0; pointer-events: none; }
+        .topbar-blur-1 { z-index: 1; -webkit-backdrop-filter: blur(0.15625px); backdrop-filter: blur(0.15625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
+        .topbar-blur-2 { z-index: 2; -webkit-backdrop-filter: blur(0.3125px); backdrop-filter: blur(0.3125px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); }
+        .topbar-blur-3 { z-index: 3; -webkit-backdrop-filter: blur(0.625px); backdrop-filter: blur(0.625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); }
+        .topbar-blur-4 { z-index: 4; -webkit-backdrop-filter: blur(1.25px); backdrop-filter: blur(1.25px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); }
+        .topbar-blur-5 { z-index: 5; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); }
+        .topbar-blur-6 { z-index: 6; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
+        .topbar-blur-7 { z-index: 7; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
+        .topbar-blur-8 { z-index: 8; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
 
         /* Layout */
-        .page-wrap {
-            max-width: 720px;
+        .app {
+            width: min(100%, 860px);
             margin: 0 auto;
-            padding: 24px clamp(16px, 4vw, 32px) 64px;
+            padding: 0 16px 64px;
+            position: relative;
+        }
+
+        #content-wrapper,
+        #history-pagination {
+            display: none;
+        }
+
+        .topbar {
+            position: sticky;
+            top: env(safe-area-inset-top, 0px);
+            z-index: 30;
+            background: transparent;
+            margin-bottom: clamp(18px, 3vh, 34px);
+        }
+        .topbar-inner {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 8px 13px 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 11px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-link {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 1px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+        }
+        .brand-title {
+            font-family: var(--display);
+            font-size: 16px;
+            line-height: 1.02;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: #7EA89F;
+            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.22), 0 1px 2px rgba(26, 45, 38, 0.16);
+        }
+        .brand-title span { color: #7EA89F; font-weight: 700; }
+        .brand-sub {
+            margin-top: 3px;
+            font-size: 7.2px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #7EA89F;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14);
+        }
+        .top-actions { display: flex; align-items: center; gap: 7px; }
+        .icon-btn, .avatar {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.82);
+            box-shadow: var(--shadow-soft);
+            width: 32px;
+            height: 32px;
+            min-height: 32px;
+            padding: 0;
+            border-radius: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        }
+        .icon-btn i { font-size: 13px; line-height: 1; }
+        .icon-btn:active, .avatar:active, .nav-item:active, .trial-button:active, .trial-button-ghost:active { transform: scale(0.97); }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 11px; display: none; }
+        .avatar span { font-size: 10px; font-weight: 800; }
+        .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 15px;
+            height: 15px;
+            border-radius: 8px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
         }
 
         /* Hero */
         .hero {
-            padding: 32px 4px 28px;
-            border-bottom: 1px solid var(--line-soft, rgba(20,20,20,0.08));
-            margin-bottom: 28px;
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86));
+            box-shadow: var(--shadow);
+            padding: 19px;
+            margin: 0 0 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            right: -112px;
+            top: -124px;
+            background: radial-gradient(circle, rgba(92,127,114,0.22), transparent 68%);
+            pointer-events: none;
         }
         .hero .section-kicker {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            font-size: 10px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.22em;
-            color: var(--text-muted, #6b6b6b);
-            margin-bottom: 18px;
+            letter-spacing: 0.1em;
+            color: var(--green);
+            background: var(--green-soft);
+            border: 1px solid rgba(92,127,114,0.16);
+            border-radius: 999px;
+            padding: 7px 10px;
+            margin-bottom: 14px;
         }
         .hero .section-title {
-            font-family: 'Inter', sans-serif;
-            font-size: clamp(32px, 7vw, 46px);
-            font-weight: 600;
-            line-height: 1.05;
-            letter-spacing: -0.02em;
-            color: var(--text-primary, #141414);
-            margin-bottom: 16px;
+            font-family: var(--display);
+            font-size: clamp(27px, 7vw, 42px);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.055em;
+            color: var(--ink);
+            margin-bottom: 12px;
+            max-width: 11ch;
         }
         .hero .section-lead {
-            font-size: 15px;
-            line-height: 1.6;
-            color: var(--text-secondary, #3a3a3a);
-            max-width: 540px;
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--ink-soft);
+            max-width: 56ch;
         }
 
         /* Info card */
         .info-card {
-            background: var(--bg-surface, #fff);
-            border: 1px solid var(--line-soft, rgba(20,20,20,0.08));
-            border-radius: 16px;
-            padding: 16px 18px;
-            margin-bottom: 20px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px 15px;
+            margin-bottom: 13px;
             display: flex;
             align-items: flex-start;
             gap: 12px;
         }
         .info-card i.info-icon {
-            color: var(--text-primary, #141414);
+            color: var(--ink);
             font-size: 16px;
             margin-top: 2px;
         }
         .info-card p {
             font-size: 13px;
             line-height: 1.6;
-            color: var(--text-secondary, #3a3a3a);
+            color: var(--ink-soft);
             margin: 0;
         }
-        .info-card strong { color: var(--text-primary, #141414); font-weight: 600; }
+        .info-card strong { color: var(--ink); font-weight: 800; }
 
         /* Counter card (primary) */
         .counter-card {
-            background: var(--bg-surface, #fff);
-            border: 1px solid var(--line-soft, rgba(20,20,20,0.08));
-            border-radius: 20px;
-            padding: 32px 24px 28px;
-            margin-bottom: 20px;
+            background: var(--surface-solid);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            padding: clamp(20px, 5vw, 28px) 18px 22px;
+            margin-bottom: 18px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -124,8 +284,8 @@
 
         /* Alert (reached goal / low count) */
         .kick-alert {
-            background: var(--bg-elevated, #f1f0ec);
-            border: 1px solid var(--line-strong, rgba(20,20,20,0.14));
+            background: var(--surface-muted);
+            border: 1px solid var(--line-strong);
             border-radius: 12px;
             padding: 14px 16px;
             margin-bottom: 20px;
@@ -134,20 +294,21 @@
             gap: 12px;
             text-align: left;
         }
-        .kick-alert i { color: var(--text-primary, #141414); font-size: 18px; margin-top: 2px; }
-        .kick-alert strong { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary, #141414); margin-bottom: 2px; }
-        .kick-alert p { font-size: 12px; color: var(--text-secondary, #3a3a3a); margin: 0; line-height: 1.55; }
+        .kick-alert i { color: var(--ink); font-size: 18px; margin-top: 2px; }
+        .kick-alert strong { display: block; font-size: 13px; font-weight: 800; color: var(--ink); margin-bottom: 2px; }
+        .kick-alert p { font-size: 12px; color: var(--ink-soft); margin: 0; line-height: 1.55; }
 
         /* Count display */
         .count-display {
-            margin: 10px 0 24px;
+            margin: 4px 0 20px;
             line-height: 1;
         }
         .count-value {
             display: block;
-            font-size: clamp(88px, 22vw, 140px);
+            font-size: clamp(76px, 20vw, 124px);
             line-height: 0.95;
-            color: var(--text-primary, #141414);
+            color: var(--ink);
+            letter-spacing: -0.055em;
         }
         .count-label {
             display: block;
@@ -155,7 +316,7 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.24em;
-            color: var(--text-muted, #6b6b6b);
+            color: var(--muted);
             margin-top: 10px;
         }
 
@@ -166,19 +327,19 @@
             margin: 10px 0 20px;
         }
         .tap-button {
-            width: 240px;
-            height: 240px;
-            max-width: 70vw;
-            max-height: 70vw;
-            min-width: 220px;
-            min-height: 220px;
+            width: clamp(178px, 56vw, 218px);
+            height: clamp(178px, 56vw, 218px);
+            max-width: 68vw;
+            max-height: 68vw;
+            min-width: 174px;
+            min-height: 174px;
             border-radius: 50%;
-            border: 2px solid var(--text-primary, #141414);
-            background: var(--bg-elevated, #f1f0ec);
-            color: var(--text-primary, #141414);
-            font-family: 'Inter', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
+            border: 1px solid var(--line-strong);
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(240,242,236,0.9));
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 800;
             letter-spacing: 0.14em;
             text-transform: uppercase;
             cursor: pointer;
@@ -188,11 +349,12 @@
             flex-direction: column;
             gap: 10px;
             position: relative;
-            transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+            box-shadow: 0 16px 34px rgba(17,17,17,0.08);
+            transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
         .tap-button i { font-size: 30px; opacity: 0.85; }
-        .tap-button:hover { background: #fff; }
+        .tap-button:hover { background: #fff; box-shadow: 0 18px 38px rgba(17,17,17,0.11); }
         .tap-button:active { transform: scale(0.96); }
         .tap-button::after {
             content: '';
@@ -219,14 +381,14 @@
         /* Timer */
         .kick-timer {
             display: inline-block;
-            font-family: 'Inter', monospace;
+            font-family: var(--font), monospace;
             font-feature-settings: 'tnum';
             font-size: 22px;
             font-weight: 500;
-            color: var(--text-primary, #141414);
+            color: var(--ink);
             padding: 8px 16px;
-            background: var(--bg-elevated, #f1f0ec);
-            border: 1px solid var(--line-soft, rgba(20,20,20,0.08));
+            background: var(--surface-muted);
+            border: 1px solid var(--line);
             border-radius: 999px;
             letter-spacing: 0.06em;
             margin-top: 4px;
@@ -236,14 +398,14 @@
         .goal-indicator {
             margin-top: 18px;
             font-size: 12px;
-            color: var(--text-muted, #6b6b6b);
+            color: var(--muted);
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
         .goal-indicator.reached {
-            color: var(--success, #16a34a);
-            font-weight: 600;
+            color: var(--green);
+            font-weight: 800;
         }
 
         /* Idle (no active session) state */
@@ -553,42 +715,136 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
+        .bottom-nav {
+            position: fixed;
+            left: 50%;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+            transform: translateX(-50%);
+            width: min(460px, calc(100% - 28px));
+            z-index: 40;
+            border: 0;
+            border-radius: 19px;
+            background: rgba(0, 0, 0, 0.1);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            box-shadow: none;
+            padding: 6px;
+        }
+        .bottom-inner { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+        .nav-item {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            border-radius: 14px;
+            padding: 6px 3px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+            font-size: 8px;
+            line-height: 1.1;
+            font-weight: 700;
+            position: relative;
+        }
+        .nav-item i { font-size: 12px; }
+        .nav-item.active { background: transparent; color: var(--ink); }
+        .nav-item:not(.active) i { color: #5a5a5a; }
+        .nav-item:active { background: var(--ink); color: #fff; }
+        .nav-item:active i { color: #fff; }
+
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(17,17,17,0.28);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            z-index: 60;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease;
+        }
+        .sheet-overlay.active { opacity: 1; pointer-events: auto; }
+        .bottom-sheet {
+            position: fixed;
+            left: 50%;
+            bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 18px);
+            transform: translate(-50%, 18px) scale(0.98);
+            width: min(420px, calc(100% - 28px));
+            z-index: 70;
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: rgba(255,255,255,0.94);
+            box-shadow: var(--shadow);
+            padding: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .bottom-sheet.active { opacity: 1; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
+        .sheet-title { font-weight: 900; font-size: 13px; padding: 8px 10px 10px; }
+        .sheet-menu { display: grid; gap: 6px; }
+        .sheet-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 15px;
+            color: var(--ink);
+            background: rgba(17,17,17,0.035);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .sheet-item i { width: 20px; color: var(--green); }
+
         @media (max-width: 480px) {
             .summary-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .summary-stat .value { font-size: 26px; }
-            .tap-button { font-size: 13px; }
+            .summary-stat .value { font-size: 25px; }
+            .tap-button { font-size: 12px; }
+            .hero { border-radius: 24px; padding: 18px; }
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
 </head>
 <body class="trial-themed">
 
-    <!-- Topbar -->
-    <header class="topbar-trial">
-        <div class="topbar-trial-inner">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
+
+    <!-- Main -->
+    <main class="app">
+        <header class="topbar" id="kick-topbar">
+            <div class="topbar-inner" id="kick-topbar-inner">
             <div class="brand">
-                <button class="back-link" onclick="window.goPatientTrialBack ? window.goPatientTrialBack() : (window.location.href = '/patient-menu-simple-trial.html')" aria-label="Kembali">
-                    <i class="fa-solid fa-chevron-left"></i> Kembali
-                </button>
-                <div>
+                <a class="brand-link" href="/patient-menu-simple-trial.html" aria-label="Kembali ke beranda SISIwanita">
                     <div class="brand-title">SISI<span>wanita</span></div>
-                    <div class="brand-sub">Portal Pasien</div>
-                </div>
+                    <div class="brand-sub">Portal Privat Kandungan Anda</div>
+                </a>
             </div>
             <div class="top-actions">
-                <button class="circle-btn" onclick="showFullHistory()" aria-label="Riwayat">
+                <button class="icon-btn soundable" onclick="showFullHistory()" aria-label="Riwayat gerakan">
                     <i class="fa-regular fa-clock"></i>
                 </button>
-                <a href="/profil-trial.html" class="avatar" aria-label="Profil">
-                    <i class="fa-regular fa-user"></i>
+                <button class="icon-btn soundable" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="badge" id="notification-badge">0</span>
+                </button>
+                <a href="/profil-trial.html" class="avatar soundable" aria-label="Profil">
+                    <span>SW</span>
                 </a>
             </div>
         </div>
-    </header>
-    <div class="topbar-trial-spacer"></div>
-
-    <!-- Main -->
-    <main class="page-wrap">
+        </header>
 
         <!-- Hero -->
         <section class="hero">
@@ -608,7 +864,7 @@
         </div>
 
         <!-- Content -->
-        <div id="content-wrapper" style="display: none;">
+        <div id="content-wrapper">
 
             <!-- Info -->
             <div class="info-card">
@@ -666,7 +922,7 @@
         <div class="history-modal-body" id="history-modal-body">
             <!-- Populated by JS -->
         </div>
-        <div class="history-pagination" id="history-pagination" style="display: none;">
+        <div class="history-pagination" id="history-pagination">
             <button onclick="loadHistoryPage(currentHistoryPage - 1)" id="prev-page-btn">
                 <i class="fa fa-chevron-left"></i> Sebelumnya
             </button>
@@ -680,73 +936,95 @@
     <!-- Toast -->
     <div id="toast-container"></div>
 
-    <!-- Footer -->
-    <footer class="site-footer">
-        <div class="footer-card-frame">
-            <div class="footer-photo" aria-hidden="true"></div>
-            <div class="footer-backdrop" aria-hidden="true"></div>
-            <div class="footer-grid" aria-hidden="true"></div>
-            <div class="footer-orb" aria-hidden="true"></div>
-            <div class="footer-orb-right" aria-hidden="true"></div>
-            <div class="footer-vignette" aria-hidden="true"></div>
-            <div class="footer-grain" aria-hidden="true"></div>
-            <div class="footer-inner">
-                <div class="footer-hero">
-                    <div class="footer-copy">
-                        <span class="footer-newsletter-kicker">Portal Pasien SISIwanita</span>
-                        <h2>Kabar dari Dokter.</h2>
-                        <p>
-                            Kami berbagi catatan berkala seputar kehamilan, kesehatan perempuan,
-                            dan panduan praktis agar setiap tahap terasa lebih jelas dan tenang.
-                        </p>
-                    </div>
-                </div>
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <section class="bottom-sheet" id="bottom-sheet" aria-live="polite">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </section>
 
-                <div class="footer-subscribe">
-                    <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
-                        <input class="footer-subscribe-input" type="email" placeholder="Masukkan alamat email Anda" aria-label="Alamat email">
-                        <button class="footer-subscribe-button" type="submit">Berlangganan</button>
-                    </form>
-                    <p class="footer-policy">
-                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi SISIwanita.
-                    </p>
-                </div>
-
-                <div class="footer-meta">
-                    <div class="footer-meta-col">
-                        <span class="footer-meta-title">Peta Situs</span>
-                        <div class="footer-links">
-                            <a href="/patient-menu-simple-trial.html">Halaman Utama</a>
-                            <a href="/artikel-trial.html">Ruang Membaca</a>
-                            <a href="/artikel-kesehatan-trial.html">Istilah Obgyn</a>
-                            <a href="/perjalanan-ibu-trial.html">Perjalanan Ibu</a>
-                            <a href="/patient-dashboard.html">Dashboard Pasien</a>
-                            <a href="/patient-login-trial.html">Masuk</a>
-                        </div>
-                    </div>
-                    <div class="footer-meta-col">
-                        <span class="footer-meta-title">Hubungi Kami</span>
-                        <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
-                        <div class="footer-social" aria-label="Tautan sosial">
-                            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                            <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
-                            <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="footer-bottom">
-                    <span>&copy; 2026 SISIwanita</span>
-                    <span>Portal Pasien</span>
-                    <span>Seluruh hak cipta dilindungi</span>
-                </div>
-            </div>
+    <nav class="bottom-nav" id="kick-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="kick-bottom-inner">
+            <button class="nav-item soundable" onclick="go('/patient-menu-simple-trial.html')" aria-label="Beranda">
+                <i class="fa-solid fa-house"></i><span>Beranda</span>
+            </button>
+            <button class="nav-item soundable" onclick="openSheet('dokumen')" aria-label="Dokumen">
+                <i class="fa-regular fa-folder-open"></i><span>Dokumen</span>
+            </button>
+            <button class="nav-item active soundable" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
+                <i class="fa-solid fa-heart-pulse"></i><span>Aplikasi</span>
+            </button>
+            <button class="nav-item soundable" onclick="openSheet('jadwal')" aria-label="Jadwal">
+                <i class="fa-regular fa-calendar-check"></i><span>Jadwal</span>
+            </button>
+            <button class="nav-item soundable" onclick="openMyCorner()" aria-label="Ruang">
+                <i class="fa-regular fa-user"></i><span>Ruang</span>
+            </button>
         </div>
-    </footer>
+    </nav>
 
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, formatTime, showLoading, showEmptyState } from '/scripts/patient-utils.js';
+
+        const menuData = {
+            dokumen: {
+                title: 'Dokumen',
+                items: [
+                    { label: 'Dashboard Pasien', icon: 'fa-regular fa-id-card', url: '/patient-dashboard.html' },
+                    { label: 'Album USG', icon: 'fa-regular fa-images', url: '/album-usg-trial.html' },
+                    { label: 'Resep & Etiket', icon: 'fa-solid fa-prescription-bottle-medical', url: '/resep-trial.html' },
+                    { label: 'Invoice', icon: 'fa-regular fa-file-lines', url: '/invoices-trial.html' }
+                ]
+            },
+            aplikasi: {
+                title: 'Aplikasi',
+                items: [
+                    { label: 'Gerakan Bayi', icon: 'fa-solid fa-heart-pulse', url: '/kick-counter-trial.html' },
+                    { label: 'Tanya Dokter', icon: 'fa-regular fa-comments', url: '/tanya-dokter-trial.html' },
+                    { label: 'Pengingat Vitamin', icon: 'fa-solid fa-pills', url: '/vitamin-trial.html' },
+                    { label: 'Komunitas', icon: 'fa-regular fa-heart', url: '/community-trial.html' }
+                ]
+            },
+            jadwal: {
+                title: 'Jadwal',
+                items: [
+                    { label: 'Buat Janji', icon: 'fa-regular fa-calendar-plus', url: '/buat-janji-trial.html' },
+                    { label: 'Antrian Hari Ini', icon: 'fa-solid fa-list-ol', url: '/antrian-trial.html' },
+                    { label: 'Riwayat Kunjungan', icon: 'fa-regular fa-clock', url: '/riwayat-kunjungan-trial.html' }
+                ]
+            }
+        };
+
+        window.go = function go(url) {
+            if (!url) return;
+            window.location.href = url;
+        };
+
+        window.openSheet = function openSheet(category) {
+            const data = menuData[category];
+            const overlay = document.getElementById('sheet-overlay');
+            const sheet = document.getElementById('bottom-sheet');
+            const title = document.getElementById('sheet-title');
+            const menu = document.getElementById('sheet-menu');
+            if (!data || !overlay || !sheet || !title || !menu) return;
+            title.textContent = data.title;
+            menu.innerHTML = data.items.map(item => `
+                <a class="sheet-item soundable" href="${item.url}">
+                    <i class="${item.icon}"></i>
+                    <span>${item.label}</span>
+                </a>
+            `).join('');
+            overlay.classList.add('active');
+            sheet.classList.add('active');
+        };
+
+        window.closeSheet = function closeSheet() {
+            document.getElementById('sheet-overlay')?.classList.remove('active');
+            document.getElementById('bottom-sheet')?.classList.remove('active');
+        };
+
+        window.openMyCorner = function openMyCorner() {
+            window.location.href = '/patient-menu-simple-trial.html#my-corner';
+        };
 
         // State
         let activeSession = null;
@@ -1189,6 +1467,5 @@
     </script>
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
-    <script src="/scripts/trial-bottom-nav.js?v=20260528home1" defer></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528h'; // 2026-05-28h - fix trial kick counter
+const CACHE_VERSION = '20260528i'; // 2026-05-28i - align kick counter trial UI with home portal
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
