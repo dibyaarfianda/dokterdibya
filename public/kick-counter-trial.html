@@ -827,7 +827,7 @@
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528r">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528s">
     <style>
         :root {
             --blue: #4a6f9d;
@@ -1227,11 +1227,11 @@
                 </a>
                 </div>
                 <div class="top-actions" id="home-top-actions">
-                <button class="icon-btn soundable" id="home-notif-btn" onclick="go('/notifikasi-trial.html')" aria-label="Notifikasi">
+                <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
                     <i class="fa-solid fa-bell"></i>
                     <span class="badge" id="notif-badge">0</span>
                 </button>
-                <button class="avatar soundable" id="user-avatar" onclick="go('/profil-trial.html')" aria-label="Profil">
+                <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
                     <img id="user-avatar-img" alt="">
                     <span id="user-avatar-initials">--</span>
                     <span class="vip-badge" id="vip-badge">VIP</span>
@@ -1381,7 +1381,7 @@
         </div>
     </nav>
 
-    <script src="/scripts/patient-tool-shell.js?v=20260528r"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260528s"></script>
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, formatTime, showLoading, showEmptyState } from '/scripts/patient-utils.js';
 

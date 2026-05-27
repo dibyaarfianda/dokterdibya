@@ -224,7 +224,9 @@
         return data && data.success && Array.isArray(data.notifications) ? data.notifications : [];
     }
 
-    async function openNotificationModal() {
+    async function openNotificationModal(event) {
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         openTopbarModal('Notifikasi', 'Update pasien', renderModalLoading('Memuat notifikasi...'));
         try {
             state.notifications = await fetchNotifications();
@@ -304,7 +306,9 @@
             '</div>';
     }
 
-    async function openProfileModal() {
+    async function openProfileModal(event) {
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         openTopbarModal('Profil', 'Akun pasien', renderProfileModal(getStoredPatient()));
         try {
             var profile = await fetchProfile();
@@ -328,7 +332,7 @@
             notifButton.onclick = function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                openNotificationModal();
+                openNotificationModal(event);
                 return false;
             };
         }
@@ -337,7 +341,7 @@
             avatarButton.onclick = function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                openProfileModal();
+                openProfileModal(event);
                 return false;
             };
         }
