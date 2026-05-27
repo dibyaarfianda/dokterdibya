@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526aq'; // 2026-05-26aq - Amplify CTA curves motion (drift x3.4, scale 1.45, rotate ±11deg)
+const CACHE_VERSION = '20260526ar'; // 2026-05-26ar - CTA curves now use hero-style progressive stroke-draw on scroll
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

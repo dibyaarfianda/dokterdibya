@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526aq';
+            var PAGE_VERSION = '20260526ar';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -5616,21 +5616,24 @@
                     if (bgImg) bgImg.style.transform = 'translate3d(0, ' + state.parallaxY.toFixed(1) + 'px, 0)';
                     if (curvesWrap) {
                         curvesWrap.style.opacity = state.curveReveal.toFixed(3);
-                        // Amplified motion so curves visibly swirl on real mobile PWA, not just probe.
-                        // translateX(-50%) MUST stay to keep wrapper centered (base CSS depends on it).
-                        var curveShift = state.parallaxY * 3.4;        // was 1.6 → much more drift
-                        var curveScale = 1 + (state.curveReveal * 0.45); // was 0.18 → grows up to 1.45
-                        var curveRotate = (state.curveReveal - 0.5) * 22; // was 6 → ±11deg sweep
-                        curvesWrap.style.transform =
-                            'translate(-50%, ' + curveShift.toFixed(1) + 'px)' +
-                            ' scale(' + curveScale.toFixed(3) + ')' +
-                            ' rotate(' + curveRotate.toFixed(2) + 'deg)';
-                        curvesWrap.style.transformOrigin = '50% 60%';
+                        // Keep wrapper centered; no swirl transform — motion comes from stroke-draw below.
+                        curvesWrap.style.transform = 'translateX(-50%)';
                     }
+                    // Hero-style progressive stroke-draw: curves paint themselves as user scrolls
+                    // through the CTA card. Drive offset by absolute scroll position relative to
+                    // card center, over a wide ~1800px window, so it feels like #hero-curves draw.
+                    var DRAW_INITIAL_RATIO = 0.92;     // start almost fully undrawn
+                    var DRAW_SPAN = 1800;              // px of scroll over which curves fully paint
+                    var cardRect = card.getBoundingClientRect();
+                    var cardCenterY = cardRect.top + cardRect.height / 2 + window.scrollY;
+                    var viewportMid = window.scrollY + (window.innerHeight || 1) / 2;
+                    // progress 0 when viewport mid is DRAW_SPAN above card center, 1 when at/below it.
+                    var rawProgress = (viewportMid - (cardCenterY - DRAW_SPAN)) / DRAW_SPAN;
+                    var drawProgress = Math.max(0, Math.min(1, rawProgress));
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
                         if (!len) return;
-                        var offset = len * 0.5 * (1 - state.curveReveal);
+                        var offset = len * DRAW_INITIAL_RATIO * (1 - drawProgress);
                         p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                     });
                 }
