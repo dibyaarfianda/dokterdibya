@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260527b';
+            var PAGE_VERSION = '20260527c';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -7781,7 +7781,7 @@
                     }
                     sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
                     sd.startY = firstRow ? (firstRow.offsetTop - STICKY_OFFSET) : 0;
-                    sd.finalRowCompleteP = isPatientFeaturesSection ? 0.9 : 1;
+                    sd.finalRowCompleteP = isPatientFeaturesSection ? 0.78 : 1;
                     sd.rowStartY = sd.rows.map(function(row, i) {
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
                         var rowLead = COLLAPSE_LEAD_PX;
