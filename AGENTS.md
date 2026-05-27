@@ -1820,3 +1820,57 @@ User confirmed with "berhasil! you did it" after the footer background and cache
 
 **Lesson:**
 - Do not use service-worker navigation redirects for version enforcement on this patient PWA; old active workers can trap newer versions. Prefer an early HTML version script that unregisters stale workers, clears caches, and navigates through a `blob:` trampoline.
+
+### 50. Session Log - 28 May 2026
+
+**SISIwanita Gerakan Bayi Home Shell + Bottom Nav (User Confirmed "GPT JOB")**
+
+User confirmed with "luar biasa, ini baru GPT JOB" after the Gerakan Bayi trial page finally matched the home portal.
+
+**Problem:**
+- `public/kick-counter-trial.html` looked and felt different from `public/patient-menu-simple-trial.html` even after earlier header/nav fixes.
+- The page was a hybrid: home-like hero/header, but old kick-counter CSS and a different bottom nav style still leaked through.
+
+**Root Causes:**
+1. Matching the home portal requires using the same shell IDs/classes, not just similar CSS:
+    - `#home-topbar`, `#home-topbar-inner`, `#home-brand-link`, `#home-brand-title`, `#home-brand-sub`
+    - `#home-bottom-nav`, `#home-bottom-inner`
+2. `patient-menu-simple-trial.html` has a final override block after `patient-trial-theme.css` that changes the bottom nav from the larger white base style to the compact translucent style.
+3. Gerakan Bayi initially copied the larger base nav (`520px`, white glass, active black pill) instead of the final home override (`460px`, translucent black tint, active transparent).
+4. The counter idle state was too tall, so the start button could fall behind the fixed bottom nav on mobile.
+
+**What actually fixed it:**
+1. Rebased Gerakan Bayi shell on the actual home portal DOM IDs and disabled generic injected trial nav with `data-trial-nav="off"` and `window.__patientTrialHeaderInstalled = true`.
+2. Added a final post-theme CSS layer in `kick-counter-trial.html` for home-style brand/header/hero/content and page-scoped `body.kick-counter-page #home-bottom-nav` overrides.
+3. Matched the home bottom nav final computed style exactly:
+    - width `min(460px, calc(100% - 28px))`
+    - bottom `safe-area + 8px`
+    - border `0`, radius `19px`, padding `6px`
+    - background `rgba(0, 0, 0, 0.1)`, blur `5px`, no shadow
+    - nav item font `8px`, icon `12px`, radius `14px`, padding `6px 3px`
+    - active item stays transparent; only `:active` turns dark
+4. Moved the counter directly under the hero and compressed idle state so `Mulai Menghitung` is visible above the nav on mobile.
+5. Normalized mock API response shape to match real backend (`stats.week`, `summary`) and kept summary/chart in sync after taps.
+6. Bumped `public/sw.js` cache versions after each patient-facing frontend fix:
+    - `20260528k` for shell adoption
+    - `20260528l` for final bottom nav parity
+
+**Verification pattern that mattered:**
+1. Compare computed styles with Playwright, not screenshots alone:
+    - home nav and kick nav should both report height `48px`, background `rgba(0, 0, 0, 0.1)`, icon `12px`, text `8px`, active transparent.
+2. Check old shell count is zero:
+    - `.trial-unified-header`, `.topbar-trial`, `#kick-topbar`, `#kick-bottom-nav`
+3. Browser smoke test with `?mockApi=1`:
+    - load page
+    - start session
+    - tap once
+    - count, summary, and chart update to `1`
+    - save session
+    - recent session and history modal render
+4. Verify live deploy:
+    - `/api/health` returns `200`
+    - `public/sw.js` serves the new `CACHE_VERSION`
+    - live HTML contains the final bottom nav CSS markers
+
+**Lesson:**
+- When adopting a home portal component, inspect the final override block, not only the first/base definition. In this patient portal, the actual home bottom nav appearance comes from `body #home-bottom-nav` overrides near the end of `patient-menu-simple-trial.html`.

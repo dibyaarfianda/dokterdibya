@@ -1374,3 +1374,39 @@ User confirmed with "berhasil! you did it" after the footer background and cache
 
 **Lesson:**
 - For patient PWA trial landing cache issues, avoid SW navigation redirects. Use page-level stale-worker escape and verify with a real browser.
+
+### 40. Session Log - 28 May 2026
+
+**SISIwanita Gerakan Bayi Home Shell + Bottom Nav (User Confirmed "GPT JOB")**
+
+User confirmed with "luar biasa, ini baru GPT JOB" after the Gerakan Bayi trial page finally matched the home portal.
+
+**What worked:**
+1. Rebase `public/kick-counter-trial.html` on the actual home shell IDs/classes from `public/patient-menu-simple-trial.html`:
+    - `#home-topbar`, `#home-topbar-inner`, `#home-brand-link`, `#home-brand-title`, `#home-brand-sub`
+    - `#home-bottom-nav`, `#home-bottom-inner`
+2. Keep generic trial header/nav disabled:
+    - `<html data-trial-nav="off">`
+    - `window.__patientTrialHeaderInstalled = true`
+3. Add a final post-theme CSS layer after `patient-trial-theme.css`; order matters because shared theme overrides brand/nav/card styles.
+4. Match home bottom nav from the **final** home override block, not the first/base `.bottom-nav` rule:
+    - width `min(460px, calc(100% - 28px))`
+    - bottom `safe-area + 8px`
+    - border `0`, radius `19px`, padding `6px`
+    - background `rgba(0, 0, 0, 0.1)`, blur `5px`, no shadow
+    - nav item font `8px`, icon `12px`, radius `14px`, padding `6px 3px`
+    - active item transparent; only `:active` darkens
+5. Move the counter directly under the hero and compress idle state so `Mulai Menghitung` appears above the fixed nav on mobile.
+6. Normalize mock API responses to real backend shape (`summary`, `stats.week`) and update summary/chart immediately after taps.
+7. Bump `public/sw.js` after patient-facing frontend fixes:
+    - `20260528k` for shell adoption
+    - `20260528l` for final bottom nav parity
+
+**Verification pattern:**
+- Use Playwright computed styles to compare home vs Gerakan Bayi nav; screenshots alone are not enough.
+- Confirm old shell count is zero: `.trial-unified-header`, `.topbar-trial`, `#kick-topbar`, `#kick-bottom-nav`.
+- Smoke test with `?mockApi=1`: load, start session, tap once, summary/chart update, save session, recent/history render.
+- Verify production `/api/health` is `200` and live `sw.js` serves the new cache version.
+
+**Lesson:**
+- For SISIwanita trial pages, final parity with home often depends on late `body #home-*` override blocks. Always inspect and copy those final overrides before declaring the page visually matched.
