@@ -10,8 +10,104 @@ const router = express.Router();
 const db = require('../db');
 const { verifyPatientToken } = require('../middleware/auth');
 
+let tablesReady = false;
+let tablesPromise = null;
+
+async function ensureKickCounterTables() {
+    if (tablesReady) return;
+    if (tablesPromise) return tablesPromise;
+
+    tablesPromise = (async () => {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS kick_counter_sessions (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                patient_id VARCHAR(50) NOT NULL,
+                session_date DATE NOT NULL,
+                start_time DATETIME NOT NULL,
+                end_time DATETIME NULL,
+                kick_count INT NOT NULL DEFAULT 0,
+                duration_minutes INT NULL,
+                status ENUM('active','completed') NOT NULL DEFAULT 'active',
+                notes TEXT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_kick_sessions_patient_date (patient_id, session_date),
+                KEY idx_kick_sessions_patient_status (patient_id, status),
+                KEY idx_kick_sessions_start_time (start_time)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS kick_counter_kicks (
+                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                session_id INT UNSIGNED NOT NULL,
+                kick_time DATETIME NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_kicks_session (session_id),
+                KEY idx_kicks_time (kick_time)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        tablesReady = true;
+    })().catch((error) => {
+        tablesPromise = null;
+        throw error;
+    });
+
+    return tablesPromise;
+}
+
+function formatDateLocal(dateValue = new Date()) {
+    const d = new Date(dateValue);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getPatientId(req) {
+    return req.patient?.id ||
+        req.patient?.patientId ||
+        req.patient?.patient_id ||
+        req.user?.id ||
+        req.user?.patientId ||
+        req.user?.patient_id ||
+        req.user?.medicalRecordId;
+}
+
+function requirePatientId(req, res) {
+    const patientId = getPatientId(req);
+    if (!patientId) {
+        res.status(401).json({
+            success: false,
+            message: 'Patient ID tidak ditemukan di token'
+        });
+        return null;
+    }
+    return patientId;
+}
+
+function setNoCacheHeaders(req, res, next) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+}
+
 // All routes require patient authentication
 router.use(verifyPatientToken);
+router.use(setNoCacheHeaders);
+router.use(async (req, res, next) => {
+    try {
+        await ensureKickCounterTables();
+        next();
+    } catch (error) {
+        console.error('Error ensuring kick counter tables:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal menyiapkan data kick counter'
+        });
+    }
+});
 
 /**
  * POST /api/kick-counter/session
@@ -19,9 +115,10 @@ router.use(verifyPatientToken);
  */
 router.post('/session', async (req, res) => {
     try {
-        const patientId = req.user.id;
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
         const now = new Date();
-        const sessionDate = now.toISOString().split('T')[0];
+        const sessionDate = formatDateLocal(now);
 
         // Check if there's already an active session
         const [existing] = await db.query(
@@ -70,7 +167,8 @@ router.post('/session', async (req, res) => {
  */
 router.post('/kick', async (req, res) => {
     try {
-        const patientId = req.user.id;
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
         const { session_id } = req.body;
 
         if (!session_id) {
@@ -138,7 +236,8 @@ router.post('/kick', async (req, res) => {
  */
 router.put('/session/:id/end', async (req, res) => {
     try {
-        const patientId = req.user.id;
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
         const sessionId = req.params.id;
 
         // Verify session belongs to patient
@@ -190,8 +289,9 @@ router.put('/session/:id/end', async (req, res) => {
  */
 router.get('/today', async (req, res) => {
     try {
-        const patientId = req.user.id;
-        const today = new Date().toISOString().split('T')[0];
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
+        const today = formatDateLocal();
 
         const [sessions] = await db.query(
             `SELECT * FROM kick_counter_sessions
@@ -234,7 +334,8 @@ router.get('/today', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
     try {
-        const patientId = req.user.id;
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
 
         // Get last 7 days data
         const [weekData] = await db.query(
@@ -255,10 +356,10 @@ router.get('/stats', async (req, res) => {
         for (let i = 6; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = formatDateLocal(date);
 
             const dayData = weekData.find(d => {
-                const dDate = new Date(d.date).toISOString().split('T')[0];
+                const dDate = formatDateLocal(d.date);
                 return dDate === dateStr;
             });
 
@@ -307,9 +408,11 @@ router.get('/stats', async (req, res) => {
  */
 router.get('/history', async (req, res) => {
     try {
-        const patientId = req.user.id;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const requestedLimit = parseInt(req.query.limit, 10) || 20;
+        const limit = Math.min(Math.max(requestedLimit, 1), 50);
         const offset = (page - 1) * limit;
 
         const [sessions] = await db.query(
@@ -350,7 +453,8 @@ router.get('/history', async (req, res) => {
  */
 router.delete('/session/:id', async (req, res) => {
     try {
-        const patientId = req.user.id;
+        const patientId = requirePatientId(req, res);
+        if (!patientId) return;
         const sessionId = req.params.id;
 
         // Verify session belongs to patient

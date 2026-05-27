@@ -22,7 +22,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <!-- Shared trial theme -->
-<script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
+    <script>
+        try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch (error) {}
+    </script>
+    <script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -556,7 +559,7 @@
             .tap-button { font-size: 13px; }
         }
     </style>
-    <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
 </head>
 <body class="trial-themed">
 
@@ -564,7 +567,7 @@
     <header class="topbar-trial">
         <div class="topbar-trial-inner">
             <div class="brand">
-                <button class="back-link" onclick="history.back()" aria-label="Kembali">
+                <button class="back-link" onclick="window.goPatientTrialBack ? window.goPatientTrialBack() : (window.location.href = '/patient-menu-simple-trial.html')" aria-label="Kembali">
                     <i class="fa-solid fa-chevron-left"></i> Kembali
                 </button>
                 <div>
@@ -576,7 +579,7 @@
                 <button class="circle-btn" onclick="showFullHistory()" aria-label="Riwayat">
                     <i class="fa-regular fa-clock"></i>
                 </button>
-                <a href="/profil.html" class="avatar" aria-label="Profil">
+                <a href="/profil-trial.html" class="avatar" aria-label="Profil">
                     <i class="fa-regular fa-user"></i>
                 </a>
             </div>
@@ -752,6 +755,7 @@
         let currentHistoryPage = 1;
         let totalHistoryPages = 1;
         const GOAL_KICKS = 10;
+        const TRIAL_HOME = '/patient-menu-simple-trial.html';
 
         // Expose globally for onclick handlers
         window.startKickSession = startKickSession;
@@ -760,6 +764,7 @@
         window.showFullHistory = showFullHistory;
         window.closeHistoryModal = closeHistoryModal;
         window.loadHistoryPage = loadHistoryPage;
+        window.loadKickCounter = loadKickCounter;
         window.currentHistoryPage = currentHistoryPage;
 
         // Init
@@ -782,22 +787,60 @@
                     loadKickStats();
                     loadRecentSessions();
                 } else {
-                    document.getElementById('content-wrapper').innerHTML = `
-                        <div class="trial-card">
-                            <div class="empty-state">
-                                <i class="fa-regular fa-circle-info"></i>
-                                <p>Fitur Gerakan Bayi hanya tersedia untuk pasien yang sedang dalam program kehamilan.</p>
-                                <a href="/patient-menu.html" class="trial-button-ghost" style="margin-top: 16px;">
-                                    <i class="fa fa-arrow-left"></i> Kembali ke Menu
-                                </a>
-                            </div>
-                        </div>
-                    `;
+                    renderKickCounterUnavailable(
+                        result?.message || 'Fitur Gerakan Bayi hanya tersedia untuk pasien yang sedang dalam program kehamilan.',
+                        false
+                    );
                 }
             } catch (error) {
                 console.error('Error loading kick counter:', error);
+                renderKickCounterUnavailable('Gagal memuat data Gerakan Bayi. Periksa koneksi Anda lalu coba lagi.', true);
                 showToast('Gagal memuat data', 'error');
             }
+        }
+
+        function renderKickCounterUnavailable(message, showRetry) {
+            stopKickTimer();
+            activeSession = null;
+            const safeMessage = escapeHtml(message || 'Gagal memuat data Gerakan Bayi.');
+            const counterContainer = document.getElementById('kick-counter-main');
+            const alertContainer = document.getElementById('kick-alert-container');
+            const summaryContainer = document.getElementById('kick-summary');
+            const chartContainer = document.getElementById('kick-chart');
+            const recentContainer = document.getElementById('recent-sessions');
+
+            if (alertContainer) alertContainer.innerHTML = '';
+            if (summaryContainer) summaryContainer.innerHTML = '';
+            if (chartContainer) chartContainer.innerHTML = '<div class="empty-state"><p>Belum ada data</p></div>';
+            if (recentContainer) recentContainer.innerHTML = '<div class="empty-state"><p>Belum ada riwayat sesi</p></div>';
+
+            if (!counterContainer) return;
+
+            counterContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-regular fa-circle-info"></i>
+                    <p>${safeMessage}</p>
+                    <div class="action-row">
+                        ${showRetry ? `
+                            <button type="button" class="trial-button" onclick="loadKickCounter()">
+                                <i class="fa fa-refresh"></i> Coba Lagi
+                            </button>
+                        ` : ''}
+                        <a href="${TRIAL_HOME}" class="trial-button-ghost">
+                            <i class="fa fa-arrow-left"></i> Kembali ke Portal
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function renderKickCounter(data) {
