@@ -1,0 +1,28 @@
+{
+  "id": "/",
+  "name": "SISIwanita",
+  "short_name": "SISIwanita",
+  "description": "Landing page SISIwanita untuk akses Google login dan portal pasien.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "lang": "id-ID",
+  "categories": ["health", "medical"],
+  "icons": [
+    {
+      "src": "/images/pwa-icons/swlogo-pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/images/pwa-icons/swlogo-pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}
