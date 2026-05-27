@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528e'; // 2026-05-28e - match login background to SISIwanita palette
+const CACHE_VERSION = '20260528f'; // 2026-05-28f - canonicalize trial portal home route
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

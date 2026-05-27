@@ -18,7 +18,7 @@
     // ---- Centralized route map (old ↔ trial) ----
     // Add entries here as new trial pages are created.
     var TRIAL_ROUTES = {
-        '/patient-menu.html':       '/patient-menu-trial.html',
+        '/patient-menu.html':       TRIAL_HOME,
         '/profil.html':             '/profil-trial.html',
         '/notifikasi.html':         '/notifikasi-trial.html',
         '/album-usg.html':          '/album-usg-trial.html',

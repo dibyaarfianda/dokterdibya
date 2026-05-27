@@ -28,6 +28,7 @@
 
     // ==================== URL → ACTIVE MAPPING ====================
     var pageToCategory = {
+        '/patient-menu-simple-trial.html': 'beranda',
         '/patient-menu-trial.html': 'beranda',
         '/album-usg-trial.html': 'dokumen',
         '/dokumen-medis-trial.html': 'dokumen',
@@ -149,7 +150,7 @@
         '    <div class="tbn-bottom-sheet-menu" id="tbn-sheet-menu"></div>',
         '  </div>',
         '  <div class="tbn-bottom-inner">',
-        '    <a href="/patient-menu-trial.html" class="tbn-nav-item" data-tbn-cat="beranda">',
+        '    <a href="/patient-menu-simple-trial.html" class="tbn-nav-item" data-tbn-cat="beranda">',
         '      <i class="fa-solid fa-house"></i><span>Beranda</span>',
         '    </a>',
         '    <a href="#" class="tbn-nav-item" data-tbn-cat="dokumen">',
