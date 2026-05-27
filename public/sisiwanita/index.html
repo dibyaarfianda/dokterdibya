@@ -15,7 +15,7 @@
     <title>SISIwanita</title>
     <script>
         (function enforceSisiwanitaVersion() {
-            var PAGE_VERSION = '20260527s3';
+            var PAGE_VERSION = '20260527s4';
             try {
                 if (window.location.protocol === 'file:') return;
                 var url = new URL(window.location.href);
@@ -54,7 +54,7 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260527s3">
+    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260527s4">
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -994,66 +994,6 @@
             z-index: 1;
             --info-terbaru-accent: rgb(126, 168, 159);
             --info-terbaru-accent-soft: rgba(126, 168, 159, 0.22);
-        }
-
-        .sisiwanita-static-update {
-            width: min(1040px, calc(100vw - 40px));
-            margin: 0 auto;
-            padding: 28px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            background: rgba(255, 255, 255, 0.86);
-            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.06);
-            display: grid;
-            grid-template-columns: auto minmax(0, 1fr) auto;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .sisiwanita-static-update-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 999px;
-            display: inline-grid;
-            place-items: center;
-            color: #ffffff;
-            background: #7ea89f;
-            box-shadow: 0 10px 24px rgba(126, 168, 159, 0.28);
-        }
-
-        .sisiwanita-static-update h3 {
-            margin: 0 0 5px;
-            font-size: 18px;
-            line-height: 1.25;
-            font-weight: 800;
-            color: var(--text-primary);
-        }
-
-        .sisiwanita-static-update p {
-            margin: 0;
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.55;
-        }
-
-        .sisiwanita-static-update a {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 800;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.35);
-            white-space: nowrap;
-        }
-
-        @media (max-width: 720px) {
-            .sisiwanita-static-update {
-                grid-template-columns: 1fr;
-                align-items: start;
-                padding: 22px;
-            }
-
-            .sisiwanita-static-update a {
-                width: fit-content;
-            }
         }
 
         #announcements-container[data-layout='info-terbaru'] [style*="color: rgb(59, 130, 246)"],
@@ -4898,24 +4838,6 @@
                 <div class="queue-promo-modal-card" onclick="event.stopPropagation()">
                     <button type="button" class="queue-promo-modal-close" onclick="closeQueuePromoModal()">&times;</button>
                     <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="../images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
-                </div>
-            </div>
-
-            <!-- INFO TERBARU — ClearPath Scroll-Driven Sticky Showcase -->
-            <div class="info-terbaru-block-header">
-                <h2 class="info-terbaru-block-title">Update Terkini</h2>
-                <p class="info-terbaru-block-desc">Lihat pengumuman, perubahan jadwal, dan pembaruan penting terbaru dari dokter di satu tempat.</p>
-            </div>
-            <div id="announcements-container" data-layout="info-terbaru">
-                <div class="sisiwanita-static-update">
-                    <div class="sisiwanita-static-update-icon" aria-hidden="true">
-                        <i class="fa-solid fa-bell"></i>
-                    </div>
-                    <div>
-                        <h3>Kabar terbaru tersedia di portal pasien</h3>
-                        <p>Masuk dengan Google untuk melihat pengumuman, perubahan jadwal, dan pembaruan yang relevan untuk Anda.</p>
-                    </div>
-                    <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">Masuk dengan Google</a>
                 </div>
             </div>
 
