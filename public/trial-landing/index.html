@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260527a';
+            var PAGE_VERSION = '20260527b';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -7743,6 +7743,7 @@
                     startY: 0,
                     endY: 0,
                     rowStartY: [],
+                    finalRowCompleteP: 1,
                     activeIndex: -1,
                     targetP: rows.map(function() { return 0; }),
                     renderP: rows.map(function() { return 0; })
@@ -7780,6 +7781,7 @@
                     }
                     sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
                     sd.startY = firstRow ? (firstRow.offsetTop - STICKY_OFFSET) : 0;
+                    sd.finalRowCompleteP = isPatientFeaturesSection ? 0.9 : 1;
                     sd.rowStartY = sd.rows.map(function(row, i) {
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
                         var rowLead = COLLAPSE_LEAD_PX;
@@ -7788,11 +7790,13 @@
                         }
                         var start = row.offsetTop - slotTop - rowLead;
                         if (i === sd.rows.length - 1 && sd.rows.length > 1) {
-                            start += isPatientFeaturesSection ? 40 : DELAY_BEFORE_LAST;
+                            start += isPatientFeaturesSection ? 16 : DELAY_BEFORE_LAST;
                         }
                         return start;
                     });
-                    sd.endY = sd.rowStartY.length ? (sd.rowStartY[sd.rowStartY.length - 1] + sd.segment) : sd.startY;
+                    sd.endY = sd.rowStartY.length
+                        ? (sd.rowStartY[sd.rowStartY.length - 1] + (sd.segment * sd.finalRowCompleteP))
+                        : sd.startY;
 
                     sd.descHeights = sd.rows.map(function(row) {
                         return Math.min(measureExpandedRow(row).descHeight, 120);
@@ -7872,7 +7876,11 @@
                     var segment = sd.segment || 96;
                     var activeIndex = -1;
                     var rowProgress = sd.rowStartY.map(function(start, i) {
-                        var p = (scrollY - start) / segment;
+                        var effectiveSegment = segment;
+                        if (i === count - 1) {
+                            effectiveSegment = Math.max(48, segment * (sd.finalRowCompleteP || 1));
+                        }
+                        var p = (scrollY - start) / effectiveSegment;
                         if (i === count - 1 && scrollY > sd.endY + WIPE_HOLD_PX) {
                             p = 1;
                         }
