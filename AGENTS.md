@@ -1874,3 +1874,61 @@ User confirmed with "luar biasa, ini baru GPT JOB" after the Gerakan Bayi trial 
 
 **Lesson:**
 - When adopting a home portal component, inspect the final override block, not only the first/base definition. In this patient portal, the actual home bottom nav appearance comes from `body #home-bottom-nav` overrides near the end of `patient-menu-simple-trial.html`.
+
+### 51. Session Log - 28 May 2026
+
+**SISIwanita Fertility Calendar Tool Shell Adoption (User Confirmed "luar biasa")**
+
+User confirmed with "luar biasa" after `public/fertility-calendar-trial.html` was standardized to the approved SISIwanita tool shell and deployed.
+
+**What worked:**
+
+1. Replace the old page shell with the shared Patient Tool Shell pattern:
+    - `<html data-trial-nav="off">`
+    - `window.__patientTrialHeaderInstalled = true`
+    - `body.home-sections-locked.patient-tool-shell.fertility-calendar-page`
+    - `#home-topbar`, `#home-bottom-nav`, `#bottom-sheet`, `#sheet-overlay`, `#toast-container`
+    - load `/styles/patient-tool-shell.css` and `/scripts/patient-tool-shell.js`
+2. Remove legacy shell drift:
+    - no `trial-bottom-nav.js`
+    - no `.topbar-trial`
+    - no `.site-footer`
+3. Preserve real app behavior while changing the UI:
+    - real API stays on relative `/api/fertility-calendar` endpoints
+    - calendar month navigation works
+    - period date selection fills the form
+    - save cycle, delete cycle, and intercourse toggle remain functional
+4. Add mock review mode for browser testing without patient auth:
+    - `?mockApi=1` seeds cycles and intercourse dates
+    - mock save/delete updates stats, calendar, and history immediately
+5. Bump patient PWA cache after frontend deploy:
+    - `CACHE_VERSION` in `public/sw.js` -> `20260528o`
+    - add `/fertility-calendar-trial.html` to `PRECACHE_FILES`
+
+**Verification pattern that mattered:**
+
+1. Static checks:
+    - `get_errors` clean for fertility page and `sw.js`
+    - inline scripts extracted and checked with `node --check`
+    - `node --check public/sw.js`
+    - `git diff --check`
+2. Shell markers:
+    - required home shell IDs/classes present
+    - old shell markers count is zero
+    - inline `onclick` handlers are exported to `window`, except shared shell globals (`go`, `openSheet`, `closeSheet`, `openMyCorner`)
+3. Browser smoke with `?mockApi=1`:
+    - calendar renders
+    - selecting start/end dates fills `#period-start` and `#period-end`
+    - saving adds a cycle and updates stats/history
+    - intercourse mode adds heart markers
+    - delete modal removes cycle
+    - Aplikasi bottom sheet opens and contains tool links
+4. Production checks:
+    - `/api/health` returns `200`
+    - live HTML contains `patient-tool-shell.css/js`
+    - live HTML has no `trial-bottom-nav.js` or `.topbar-trial`
+    - live `sw.js` contains `CACHE_VERSION = '20260528o'` and `/fertility-calendar-trial.html`
+    - VPS checkout matches pushed commit `f95adf36`
+
+**Lesson:**
+- For SISIwanita tool pages, keep the visual shell and the domain logic separate: adopt the shared Patient Tool Shell first, then rewire only the page-specific panels and existing API behavior. Always include `?mockApi=1` browser smoke so visual parity and app behavior can be verified together before deploy.
