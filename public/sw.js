@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528l'; // 2026-05-28l - match kick counter bottom nav to home portal
+const CACHE_VERSION = '20260528m'; // 2026-05-28m - add reusable patient tool shell template
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -15,10 +15,13 @@ const PRECACHE_FILES = [
   '/patient-menu.html',
   '/trial-landing/index.html',
   '/patient-menu-simple-trial.html',
+  '/patient-tool-template.html',
   '/kick-counter-trial.html',
   '/my-corner-visit-trial.html',
   '/styles/patient-trial-theme.css',
+  '/styles/patient-tool-shell.css',
   '/styles/patient-my-corner.css',
+  '/scripts/patient-tool-shell.js',
   '/scripts/patient-my-corner.js',
   '/scripts/patient-my-corner-visit.js',
   '/patient-login.html',

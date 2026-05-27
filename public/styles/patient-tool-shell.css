@@ -1,0 +1,527 @@
+/* SISIwanita Patient Tool Shell
+   Shared header, content rhythm, bottom nav, sheet, and intro motion for trial tool pages. */
+
+:root {
+    --bg: #f7f7f4;
+    --surface: rgba(255, 255, 255, 0.88);
+    --surface-solid: #ffffff;
+    --surface-muted: #f0f0ec;
+    --ink: #111111;
+    --ink-soft: #3f3f3f;
+    --muted: #717171;
+    --line: rgba(17, 17, 17, 0.09);
+    --line-strong: rgba(17, 17, 17, 0.16);
+    --green: #5c7f72;
+    --green-soft: rgba(92, 127, 114, 0.13);
+    --blue: #4a6f9d;
+    --rose: #b35f7b;
+    --amber: #b7792e;
+    --purple: #7357a8;
+    --shadow: 0 14px 38px rgba(17, 17, 17, 0.08);
+    --shadow-soft: 0 1px 2px rgba(17, 17, 17, 0.05);
+    --radius: 18px;
+    --radius-sm: 12px;
+    --nav-height: 74px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    --text-primary: var(--ink);
+    --text-body: var(--ink-soft);
+    --text-muted: var(--muted);
+    --line-soft: var(--line);
+}
+
+body.patient-tool-shell,
+body.patient-tool-shell * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    background: var(--bg);
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+}
+
+body.patient-tool-shell {
+    min-height: 100vh !important;
+    background:
+        radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
+        linear-gradient(180deg, #fbfbf8 0%, var(--bg) 52%, #ffffff 100%) !important;
+    color: var(--ink) !important;
+    font-family: var(--font) !important;
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) calc(var(--nav-height) + env(safe-area-inset-bottom, 0) + 18px) env(safe-area-inset-left, 0) !important;
+    overflow-x: hidden !important;
+    touch-action: pan-y;
+    -webkit-font-smoothing: antialiased;
+}
+
+body.patient-tool-shell button,
+body.patient-tool-shell a {
+    font-family: inherit;
+}
+
+body.patient-tool-shell a {
+    color: inherit;
+    text-decoration: none;
+}
+
+body.patient-tool-shell .serif {
+    font-family: var(--display);
+    font-style: normal;
+    font-weight: 800;
+}
+
+.topbar-blur-fade {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 220px;
+    z-index: 29;
+    pointer-events: none;
+}
+
+.topbar-blur-fade div[class^="topbar-blur-"] {
+    opacity: 1;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.topbar-blur-1 { z-index: 1; -webkit-backdrop-filter: blur(0.15625px); backdrop-filter: blur(0.15625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
+.topbar-blur-2 { z-index: 2; -webkit-backdrop-filter: blur(0.3125px); backdrop-filter: blur(0.3125px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); }
+.topbar-blur-3 { z-index: 3; -webkit-backdrop-filter: blur(0.625px); backdrop-filter: blur(0.625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); }
+.topbar-blur-4 { z-index: 4; -webkit-backdrop-filter: blur(1.25px); backdrop-filter: blur(1.25px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); }
+.topbar-blur-5 { z-index: 5; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); }
+.topbar-blur-6 { z-index: 6; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
+.topbar-blur-7 { z-index: 7; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
+.topbar-blur-8 { z-index: 8; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
+
+body.patient-tool-shell .app {
+    width: min(100%, 860px) !important;
+    margin: 0 auto !important;
+    padding: 0 16px 0 !important;
+    position: relative;
+}
+
+body.patient-tool-shell .topbar {
+    position: sticky !important;
+    top: env(safe-area-inset-top, 0px) !important;
+    z-index: 30 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+}
+
+body.patient-tool-shell .topbar-inner {
+    width: min(100%, 860px) !important;
+    margin: 0 auto !important;
+    padding: 8px 13px 10px !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+    gap: 11px !important;
+}
+
+body.patient-tool-shell .brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body.patient-tool-shell #home-brand-link,
+body.patient-tool-shell .brand-link {
+    position: relative;
+    z-index: 1;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+body.patient-tool-shell #home-brand-title,
+body.patient-tool-shell .brand-title {
+    font-family: var(--display) !important;
+    font-size: 16px !important;
+    line-height: 1.02 !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
+    color: #7EA89F !important;
+    text-shadow: 0 2px 10px rgba(26, 45, 38, 0.22), 0 1px 2px rgba(26, 45, 38, 0.16) !important;
+}
+
+body.patient-tool-shell #home-brand-title span,
+body.patient-tool-shell .brand-title span {
+    color: #7EA89F !important;
+    font-weight: 700 !important;
+}
+
+body.patient-tool-shell #home-brand-sub,
+body.patient-tool-shell .brand-sub {
+    margin-top: 3px !important;
+    max-width: none !important;
+    font-size: 7.2px !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.24em !important;
+    text-transform: uppercase !important;
+    color: #7EA89F !important;
+    text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14) !important;
+}
+
+body.patient-tool-shell .top-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+body.patient-tool-shell .icon-btn,
+body.patient-tool-shell .avatar {
+    border: 1px solid var(--line) !important;
+    background: rgba(255,255,255,0.82) !important;
+    box-shadow: var(--shadow-soft) !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    border-radius: 11px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--ink) !important;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+body.patient-tool-shell .icon-btn:active,
+body.patient-tool-shell .avatar:active,
+body.patient-tool-shell .tap-card:active,
+body.patient-tool-shell .primary-action:active,
+body.patient-tool-shell .ghost-action:active,
+body.patient-tool-shell .trial-button:active,
+body.patient-tool-shell .trial-button-ghost:active {
+    transform: scale(0.97);
+}
+
+body.patient-tool-shell .icon-btn i { font-size: 13px !important; line-height: 1 !important; }
+body.patient-tool-shell .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 11px !important; display: none; }
+body.patient-tool-shell .avatar span { font-size: 10px !important; font-weight: 800 !important; }
+body.patient-tool-shell .vip-badge { display: none !important; }
+
+body.patient-tool-shell .badge,
+body.patient-tool-shell .nav-badge {
+    position: absolute;
+    min-width: 12px;
+    height: 12px;
+    border-radius: 6px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 7px;
+    font-weight: 800;
+    display: none;
+    place-items: center;
+    padding: 0 3px;
+}
+
+body.patient-tool-shell .loading {
+    min-height: 40vh;
+    display: grid;
+    place-items: center;
+    color: var(--muted) !important;
+    gap: 10px;
+    text-align: center;
+    padding: 42px 16px !important;
+    font-size: 13px;
+}
+
+body.patient-tool-shell #content-wrapper {
+    display: none;
+}
+
+body.patient-tool-shell .hero-card {
+    margin-top: 4px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 28px !important;
+    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86)) !important;
+    box-shadow: var(--shadow) !important;
+    padding: 16px !important;
+    overflow: hidden !important;
+    position: relative;
+}
+
+body.patient-tool-shell .hero-card::before {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    right: -120px;
+    top: -130px;
+    background: radial-gradient(circle, rgba(92,127,114,0.22), transparent 68%);
+    pointer-events: none;
+}
+
+body.patient-tool-shell .status-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    color: var(--green) !important;
+    background: var(--green-soft) !important;
+    border: 1px solid rgba(92,127,114,0.16) !important;
+    border-radius: 999px !important;
+    padding: 7px 10px !important;
+    margin-bottom: 14px !important;
+    letter-spacing: 0.02em !important;
+    text-transform: none !important;
+}
+
+body.patient-tool-shell .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 5px rgba(34,197,94,0.12);
+}
+
+body.patient-tool-shell .hero-title {
+    font-family: var(--display) !important;
+    font-size: clamp(27px, 8vw, 46px) !important;
+    letter-spacing: -0.055em !important;
+    line-height: 0.98 !important;
+    max-width: none !important;
+    margin-bottom: 10px !important;
+    color: var(--ink) !important;
+}
+
+body.patient-tool-shell .hero-copy {
+    color: var(--ink-soft) !important;
+    font-size: 13px !important;
+    line-height: 1.48 !important;
+    max-width: 52ch !important;
+}
+
+body.patient-tool-shell .today-row {
+    margin-top: 14px !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 12px !important;
+    align-items: end !important;
+}
+
+body.patient-tool-shell .today-label { color: var(--muted) !important; font-size: 11px !important; margin-bottom: 3px !important; }
+body.patient-tool-shell .today-value { font-weight: 800 !important; font-size: 14px !important; }
+
+body.patient-tool-shell .sound-toggle {
+    border: 1px solid var(--line) !important;
+    background: rgba(255,255,255,0.72) !important;
+    border-radius: 999px !important;
+    padding: 8px 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    cursor: pointer;
+    color: var(--ink) !important;
+}
+
+body.patient-tool-shell .section { margin-top: 18px !important; }
+body.patient-tool-shell .section-head { display: flex !important; justify-content: space-between !important; align-items: end !important; gap: 14px !important; margin-bottom: 10px !important; }
+body.patient-tool-shell .section-kicker { font-size: 10px !important; color: var(--muted) !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; font-weight: 800 !important; margin-bottom: 4px !important; }
+body.patient-tool-shell .section-title { font-family: var(--display) !important; font-size: 19px !important; line-height: 1.1 !important; letter-spacing: -0.03em !important; color: var(--ink) !important; }
+body.patient-tool-shell .section-note { font-size: 11px !important; color: var(--muted) !important; text-align: right !important; }
+
+body.patient-tool-shell .status-panel,
+body.patient-tool-shell .tracker-panel,
+body.patient-tool-shell .announcement-panel,
+body.patient-tool-shell .tool-panel {
+    border: 1px solid var(--line) !important;
+    border-radius: var(--radius) !important;
+    background: var(--surface) !important;
+    box-shadow: var(--shadow-soft) !important;
+    padding: 14px !important;
+    color: var(--ink) !important;
+}
+
+body.patient-tool-shell .status-panel { display: flex !important; align-items: center !important; gap: 12px !important; }
+body.patient-tool-shell .status-icon { width: 42px !important; height: 42px !important; border-radius: 14px !important; display: grid !important; place-items: center !important; background: var(--green-soft) !important; color: var(--green) !important; flex: 0 0 auto !important; }
+body.patient-tool-shell .status-body { flex: 1; min-width: 0; }
+body.patient-tool-shell .status-body h3 { font-size: 14px !important; margin-bottom: 3px !important; color: var(--ink) !important; }
+body.patient-tool-shell .status-body p { color: var(--muted) !important; font-size: 12px !important; line-height: 1.45 !important; margin: 0 !important; }
+
+body.patient-tool-shell .trial-button,
+body.patient-tool-shell .trial-button-ghost,
+body.patient-tool-shell .primary-action,
+body.patient-tool-shell .ghost-action {
+    border-radius: 14px !important;
+    font-family: var(--font) !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+    min-height: 40px;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    text-decoration: none !important;
+    cursor: pointer;
+}
+
+body.patient-tool-shell .trial-button,
+body.patient-tool-shell .primary-action { background: var(--ink) !important; color: #fff !important; border: 1px solid var(--ink) !important; }
+body.patient-tool-shell .trial-button-ghost,
+body.patient-tool-shell .ghost-action { background: rgba(255,255,255,0.75) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
+
+body.patient-tool-shell #home-bottom-nav {
+    position: fixed !important;
+    left: 50% !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    transform: translateX(-50%) !important;
+    width: min(460px, calc(100% - 28px)) !important;
+    z-index: 40 !important;
+    border: 0 !important;
+    border-radius: 19px !important;
+    background: rgba(0, 0, 0, 0.1) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    backdrop-filter: blur(5px) !important;
+    box-shadow: none !important;
+    padding: 6px !important;
+}
+
+body.patient-tool-shell #home-bottom-inner {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 3px !important;
+}
+
+body.patient-tool-shell #home-bottom-nav .nav-item {
+    border: none !important;
+    background: transparent !important;
+    color: var(--muted) !important;
+    border-radius: 14px !important;
+    padding: 6px 3px !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 3px !important;
+    font-size: 8px !important;
+    line-height: 1.1 !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+    position: relative !important;
+    cursor: pointer;
+}
+
+body.patient-tool-shell #home-bottom-nav .nav-item.active { background: transparent !important; color: var(--text-primary) !important; }
+body.patient-tool-shell #home-bottom-nav .nav-item:active { background: var(--text-primary) !important; color: #ffffff !important; }
+body.patient-tool-shell #home-bottom-nav .nav-item:not(.active) i { color: #5a5a5a !important; }
+body.patient-tool-shell #home-bottom-nav .nav-item:active i { color: #ffffff !important; }
+body.patient-tool-shell #home-bottom-nav .nav-item i { font-size: 12px !important; color: inherit; }
+body.patient-tool-shell #home-bottom-nav .nav-badge { top: 2px !important; right: 10px !important; min-width: 12px !important; height: 12px !important; border-radius: 6px !important; font-size: 7px !important; padding: 0 3px !important; }
+
+body.patient-tool-shell .sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(17,17,17,0.28) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+}
+
+body.patient-tool-shell .sheet-overlay.active { opacity: 1; pointer-events: auto; }
+
+body.patient-tool-shell .bottom-sheet {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 18px) !important;
+    transform: translate(-50%, 18px) scale(0.98);
+    width: min(420px, calc(100% - 28px)) !important;
+    z-index: 70;
+    border: 1px solid var(--line) !important;
+    border-radius: 24px !important;
+    background: rgba(255,255,255,0.94) !important;
+    box-shadow: var(--shadow) !important;
+    padding: 10px !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.patient-tool-shell .bottom-sheet.active { opacity: 1; pointer-events: auto; transform: translate(-50%, 0) scale(1); }
+body.patient-tool-shell .sheet-title { font-weight: 900 !important; font-size: 13px !important; padding: 8px 10px 10px !important; }
+body.patient-tool-shell .sheet-menu { display: grid !important; gap: 6px !important; }
+body.patient-tool-shell .sheet-item { display: flex !important; align-items: center !important; gap: 10px !important; padding: 12px !important; border-radius: 15px !important; color: var(--ink) !important; background: rgba(17,17,17,0.035) !important; font-size: 13px !important; font-weight: 700 !important; text-decoration: none !important; }
+body.patient-tool-shell .sheet-item i { width: 20px !important; color: var(--green) !important; }
+
+body.patient-tool-shell #toast-container { position: fixed; left: 50%; bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 28px) !important; transform: translateX(-50%); z-index: 10000; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+body.patient-tool-shell #toast-container .toast,
+body.patient-tool-shell .toast { background: #111 !important; color: #fff !important; border-radius: 999px !important; padding: 11px 15px !important; font-size: 12px !important; font-weight: 800 !important; box-shadow: none !important; }
+
+body:not(.header-animated).patient-tool-shell .brand,
+body:not(.header-animated).patient-tool-shell #home-notif-btn,
+body:not(.header-animated).patient-tool-shell #user-avatar,
+body:not(.header-animated).patient-tool-shell .hero-card .status-chip,
+body:not(.header-animated).patient-tool-shell .hero-card .hero-title,
+body:not(.header-animated).patient-tool-shell .hero-card .hero-copy,
+body:not(.header-animated).patient-tool-shell .hero-card .today-row {
+    opacity: 0;
+}
+
+body:not(.header-animated).patient-tool-shell .brand,
+body:not(.header-animated).patient-tool-shell #home-notif-btn,
+body:not(.header-animated).patient-tool-shell #user-avatar,
+body:not(.header-animated).patient-tool-shell .hero-card .status-chip,
+body:not(.header-animated).patient-tool-shell .hero-card .hero-copy,
+body:not(.header-animated).patient-tool-shell .hero-card .today-row {
+    transform: translateY(12px);
+}
+
+body:not(.header-animated).patient-tool-shell .hero-card .hero-title {
+    transform: translateY(20px);
+    filter: blur(5px);
+}
+
+body.header-animated.patient-tool-shell .brand { animation: shellFadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 120ms both; }
+body.header-animated.patient-tool-shell #home-notif-btn,
+body.header-animated.patient-tool-shell #user-avatar { animation: shellFadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 220ms both; }
+body.header-animated.patient-tool-shell .hero-card .status-chip { animation: shellFadeUp 900ms cubic-bezier(0.2, 0.75, 0.22, 1) 180ms both; }
+body.header-animated.patient-tool-shell .hero-card .hero-title { animation: shellTitleIn 1050ms cubic-bezier(0.2, 0.75, 0.22, 1) 300ms both; }
+body.header-animated.patient-tool-shell .hero-card .hero-copy { animation: shellFadeUp 940ms cubic-bezier(0.2, 0.75, 0.22, 1) 500ms both; }
+body.header-animated.patient-tool-shell .hero-card .today-row { animation: shellFadeUp 980ms cubic-bezier(0.2, 0.75, 0.22, 1) 620ms both; }
+
+@keyframes shellFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shellTitleIn { from { opacity: 0; transform: translateY(20px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+@media (max-width: 520px) {
+    body.patient-tool-shell .app { padding-left: 14px !important; padding-right: 14px !important; }
+    body.patient-tool-shell .hero-card { padding: 16px !important; border-radius: 24px !important; }
+    body.patient-tool-shell .today-row { grid-template-columns: 1fr auto !important; align-items: end !important; }
+    body.patient-tool-shell .section-note { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.patient-tool-shell *,
+    body.patient-tool-shell *::before,
+    body.patient-tool-shell *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
