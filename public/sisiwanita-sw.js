@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260527s3';
+const CACHE_VERSION = '20260527s4';
 const CACHE_PREFIX = 'sisiwanita-landing-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
