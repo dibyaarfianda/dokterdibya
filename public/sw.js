@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528m'; // 2026-05-28m - add reusable patient tool shell template
+const CACHE_VERSION = '20260528n'; // 2026-05-28n - adopt tool shell for pregnancy tracker trial
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -17,6 +17,7 @@ const PRECACHE_FILES = [
   '/patient-menu-simple-trial.html',
   '/patient-tool-template.html',
   '/kick-counter-trial.html',
+  '/pregnancy-tracker-trial.html',
   '/my-corner-visit-trial.html',
   '/styles/patient-trial-theme.css',
   '/styles/patient-tool-shell.css',
