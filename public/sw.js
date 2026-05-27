@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260526ar'; // 2026-05-26ar - CTA curves now use hero-style progressive stroke-draw on scroll
+const CACHE_VERSION = '20260527a'; // 2026-05-27a - CTA curves now draw across the CTA card viewport with a fresh patient cache
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

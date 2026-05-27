@@ -9,7 +9,7 @@
     <title>Menu - SISIwanita</title>
     <script>
         (function enforceTrialLandingVersion() {
-            var PAGE_VERSION = '20260526ar';
+            var PAGE_VERSION = '20260527a';
             try {
                 var url = new URL(window.location.href);
                 if (url.pathname === '/trial-landing/index.html' && url.searchParams.get('_v') !== PAGE_VERSION) {
@@ -5619,16 +5619,14 @@
                         // Keep wrapper centered; no swirl transform — motion comes from stroke-draw below.
                         curvesWrap.style.transform = 'translateX(-50%)';
                     }
-                    // Hero-style progressive stroke-draw: curves paint themselves as user scrolls
-                    // through the CTA card. Drive offset by absolute scroll position relative to
-                    // card center, over a wide ~1800px window, so it feels like #hero-curves draw.
-                    var DRAW_INITIAL_RATIO = 0.92;     // start almost fully undrawn
-                    var DRAW_SPAN = 1800;              // px of scroll over which curves fully paint
+                    // Draw against the card's own viewport travel so the stroke remains visibly
+                    // unfinished when the CTA first appears, then completes while the card passes through view.
+                    var DRAW_INITIAL_RATIO = 1.06;
                     var cardRect = card.getBoundingClientRect();
-                    var cardCenterY = cardRect.top + cardRect.height / 2 + window.scrollY;
-                    var viewportMid = window.scrollY + (window.innerHeight || 1) / 2;
-                    // progress 0 when viewport mid is DRAW_SPAN above card center, 1 when at/below it.
-                    var rawProgress = (viewportMid - (cardCenterY - DRAW_SPAN)) / DRAW_SPAN;
+                    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;
+                    var drawStartY = viewportHeight * 0.92;
+                    var drawEndY = -cardRect.height * 0.18;
+                    var rawProgress = (drawStartY - cardRect.top) / (drawStartY - drawEndY);
                     var drawProgress = Math.max(0, Math.min(1, rawProgress));
                     curvePaths.forEach(function(p, idx) {
                         var len = curveLens[idx];
