@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260527d'; // 2026-05-27d - last sticky-stack patient-features row now completes by 0.45 of its segment
+const CACHE_VERSION = '20260527e'; // 2026-05-27e - patient-features sticky section spacer shortened so the next CTA arrives soon after full collapse
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
