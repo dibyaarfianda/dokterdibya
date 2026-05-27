@@ -680,7 +680,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" type="button" onclick="closeModal()">Batal</button>
-                <button class="trial-button" type="button" onclick="saveMedication()"><i class="fa-solid fa-check"></i> Simpan</button>
+                <button class="trial-button" id="save-medication-button" type="button" onclick="saveMedication()"><i class="fa-solid fa-check"></i> <span id="save-medication-label">Simpan</span></button>
             </div>
         </div>
     </div>
@@ -732,6 +732,7 @@
         let mockMeds = [];
         let mockPrescriptions = [];
         let prescriptionsData = [];
+        let editingMedicationIndex = null;
 
         if (isMockMode && !getToken()) {
             localStorage.setItem(TOKEN_KEY, 'mock-vitamin-token');
@@ -842,7 +843,7 @@
             return best ? best.time : '--';
         }
 
-        function updateTimeInputs() {
+        function updateTimeInputs(preferredTimes = null) {
             const freqEl = document.getElementById('med-freq');
             const container = document.getElementById('time-inputs');
             if (!freqEl || !container) return;
@@ -850,7 +851,7 @@
             container.innerHTML = times.map((time, index) => `
                 <div class="trial-field">
                     <label for="time-${index + 1}">Waktu ${index + 1}</label>
-                    <input type="time" class="trial-input" id="time-${index + 1}" value="${time}">
+                    <input type="time" class="trial-input" id="time-${index + 1}" value="${preferredTimes?.[index] || time}">
                 </div>
             `).join('');
         }
@@ -858,6 +859,9 @@
         function openAddModal() {
             const modal = document.getElementById('add-modal');
             if (!modal) return;
+            editingMedicationIndex = null;
+            document.getElementById('add-modal-title').textContent = 'Tambah Vitamin';
+            document.getElementById('save-medication-label').textContent = 'Simpan';
             document.getElementById('med-name').value = '';
             document.getElementById('med-qty').value = '1';
             document.getElementById('med-unit').value = 'tablet';
@@ -868,8 +872,35 @@
             setTimeout(() => document.getElementById('med-name')?.focus(), 80);
         }
 
+        function openEditModal(index) {
+            const meds = getMedications();
+            const med = meds[index];
+            const modal = document.getElementById('add-modal');
+            if (!med || !modal) return;
+
+            editingMedicationIndex = index;
+            document.getElementById('add-modal-title').textContent = 'Edit Vitamin';
+            document.getElementById('save-medication-label').textContent = 'Update';
+            document.getElementById('med-name').value = med.name || '';
+            document.getElementById('med-qty').value = med.quantity || 1;
+            setSelectValue(document.getElementById('med-unit'), med.unit || 'tablet');
+            setSelectValue(document.getElementById('med-freq'), String(med.frequency || 1));
+            document.getElementById('med-reminder').checked = Boolean(med.reminder);
+            updateTimeInputs(med.reminderTimes || []);
+            modal.classList.add('show');
+            setTimeout(() => document.getElementById('med-name')?.focus(), 80);
+        }
+
+        function setSelectValue(select, value) {
+            if (!select) return;
+            const stringValue = String(value || '');
+            const hasOption = Array.from(select.options).some(option => option.value === stringValue);
+            select.value = hasOption ? stringValue : select.options[0]?.value || '';
+        }
+
         function closeModal() {
             document.getElementById('add-modal')?.classList.remove('show');
+            editingMedicationIndex = null;
         }
 
         async function scheduleReminderForMedication(medication) {
@@ -899,7 +930,10 @@
                 if (input && input.value) reminderTimes.push(input.value);
             }
 
+            const meds = getMedications();
+            const existingMedication = Number.isInteger(editingMedicationIndex) ? meds[editingMedicationIndex] : null;
             const newMedication = {
+                ...(existingMedication || {}),
                 name,
                 quantity,
                 unit,
@@ -907,23 +941,31 @@
                 reminder,
                 reminderTimes,
                 notificationIds: [],
-                createdAt: new Date().toISOString()
+                createdAt: existingMedication?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
+
+            if (existingMedication) {
+                await cancelStoredReminders(existingMedication);
+            }
 
             if (reminder) {
                 newMedication.notificationIds = await scheduleReminderForMedication(newMedication);
             }
 
-            const meds = getMedications();
-            meds.push(newMedication);
+            if (existingMedication) {
+                meds[editingMedicationIndex] = newMedication;
+            } else {
+                meds.push(newMedication);
+            }
             saveMedications(meds);
             closeModal();
             renderAll(meds, prescriptionsData);
 
             if (reminder && newMedication.notificationIds.length === 0 && !isMockMode) {
-                showToast('Vitamin tersimpan. Izin notifikasi belum aktif di perangkat ini.', 'warning');
+                showToast(existingMedication ? 'Vitamin diperbarui. Izin notifikasi belum aktif di perangkat ini.' : 'Vitamin tersimpan. Izin notifikasi belum aktif di perangkat ini.', 'warning');
             } else {
-                showToast(reminder ? 'Vitamin tersimpan dengan pengingat' : 'Vitamin berhasil ditambahkan');
+                showToast(existingMedication ? 'Vitamin berhasil diperbarui' : reminder ? 'Vitamin tersimpan dengan pengingat' : 'Vitamin berhasil ditambahkan');
             }
         }
 
@@ -1048,6 +1090,9 @@
                             <div class="time-stack">${timeChips}</div>
                         </div>
                         <div class="vitamin-actions-row">
+                            <button class="mini-btn" type="button" onclick="openEditModal(${index})">
+                                <i class="fa-solid fa-pen"></i>Edit
+                            </button>
                             <button class="mini-btn" type="button" onclick="toggleReminder(${index})">
                                 <i class="fa-solid fa-bell${med.reminder ? '' : '-slash'}"></i>${med.reminder ? 'Matikan' : 'Aktifkan'}
                             </button>
@@ -1154,6 +1199,7 @@
         window.openAddModal = openAddModal;
         window.closeModal = closeModal;
         window.updateTimeInputs = updateTimeInputs;
+        window.openEditModal = openEditModal;
         window.saveMedication = saveMedication;
         window.toggleReminder = toggleReminder;
         window.deleteMedication = deleteMedication;
