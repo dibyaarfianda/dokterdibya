@@ -9,7 +9,8 @@
         initialized: false,
         activeNav: DEFAULT_ACTIVE_NAV,
         homeUrl: DEFAULT_HOME_URL,
-        menuData: null
+        menuData: null,
+        notifications: []
     };
     window.__patientToolShellState = state;
 
@@ -56,6 +57,14 @@
         try { return JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) { return {}; }
     }
 
+    function getToken() {
+        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || '';
+    }
+
+    function isMockToken(token) {
+        return !token || String(token).indexOf('mock-') === 0;
+    }
+
     function getInitials(name) {
         var parts = String(name || '').split(/\s+/).filter(Boolean);
         var initials = parts.slice(0, 2).map(function (part) { return part.charAt(0); }).join('').toUpperCase();
@@ -66,6 +75,289 @@
         if (!url) return;
         window.location.href = url;
     }
+
+    function formatRelativeTime(value) {
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        var diffMs = Date.now() - date.getTime();
+        var diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+        if (diffMinutes < 1) return 'Baru saja';
+        if (diffMinutes < 60) return diffMinutes + ' menit lalu';
+        var diffHours = Math.floor(diffMinutes / 60);
+        if (diffHours < 24) return diffHours + ' jam lalu';
+        var diffDays = Math.floor(diffHours / 24);
+        if (diffDays < 7) return diffDays + ' hari lalu';
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function formatProfileDate(value) {
+        if (!value) return '-';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function ensureTopbarModal() {
+        var existing = document.getElementById('shell-modal');
+        if (existing) return existing;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'shell-modal-overlay';
+        overlay.id = 'shell-modal-overlay';
+
+        var modal = document.createElement('section');
+        modal.className = 'shell-modal';
+        modal.id = 'shell-modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'shell-modal-title');
+        modal.innerHTML = '' +
+            '<div class="shell-modal-header">' +
+                '<div>' +
+                    '<div class="shell-modal-kicker" id="shell-modal-kicker">SISIwanita</div>' +
+                    '<h3 id="shell-modal-title">Menu</h3>' +
+                '</div>' +
+                '<button type="button" class="shell-modal-close" id="shell-modal-close" aria-label="Tutup">&times;</button>' +
+            '</div>' +
+            '<div class="shell-modal-body" id="shell-modal-body"></div>';
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(modal);
+        overlay.addEventListener('click', closeTopbarModal);
+        modal.querySelector('#shell-modal-close').addEventListener('click', closeTopbarModal);
+        return modal;
+    }
+
+    function openTopbarModal(title, kicker, bodyHtml) {
+        closeSheet();
+        var modal = ensureTopbarModal();
+        var overlay = document.getElementById('shell-modal-overlay');
+        var titleEl = modal.querySelector('#shell-modal-title');
+        var kickerEl = modal.querySelector('#shell-modal-kicker');
+        var bodyEl = modal.querySelector('#shell-modal-body');
+        if (titleEl) titleEl.textContent = title || 'Menu';
+        if (kickerEl) kickerEl.textContent = kicker || 'SISIwanita';
+        if (bodyEl) bodyEl.innerHTML = bodyHtml || '';
+        document.body.classList.add('shell-modal-open');
+        if (overlay) overlay.classList.add('active');
+        modal.classList.add('active');
+    }
+
+    function closeTopbarModal() {
+        var overlay = document.getElementById('shell-modal-overlay');
+        var modal = document.getElementById('shell-modal');
+        if (overlay) overlay.classList.remove('active');
+        if (modal) modal.classList.remove('active');
+        document.body.classList.remove('shell-modal-open');
+    }
+
+    function renderModalLoading(text) {
+        return '<div class="shell-modal-empty"><i class="fa-solid fa-spinner fa-spin"></i><p>' + escapeHtml(text || 'Memuat...') + '</p></div>';
+    }
+
+    function getNotificationIcon(type) {
+        var iconMap = {
+            question_reply: 'fa-solid fa-reply',
+            thread_closed: 'fa-solid fa-circle-check',
+            booking_confirmed: 'fa-regular fa-calendar-check',
+            booking_cancelled: 'fa-regular fa-calendar-xmark',
+            appointment: 'fa-regular fa-calendar',
+            new_document: 'fa-regular fa-file-lines',
+            document: 'fa-regular fa-file-lines',
+            new_usg: 'fa-regular fa-image',
+            new_lab: 'fa-solid fa-flask',
+            announcement: 'fa-solid fa-bullhorn',
+            reminder: 'fa-solid fa-bell'
+        };
+        return iconMap[type] || 'fa-solid fa-bell';
+    }
+
+    function renderNotificationsModal(notifications) {
+        notifications = notifications || [];
+        var unreadCount = notifications.filter(function (notification) { return !notification.read_at; }).length;
+        var header = '<div class="shell-modal-summary">' +
+            '<div><strong>' + notifications.length + '</strong><span>Total notifikasi</span></div>' +
+            '<div><strong>' + unreadCount + '</strong><span>Belum dibaca</span></div>' +
+            '</div>';
+        if (!notifications.length) {
+            return header + '<div class="shell-modal-empty"><i class="fa-regular fa-bell-slash"></i><p>Belum ada notifikasi baru.</p></div>';
+        }
+        var actions = unreadCount ? '<button type="button" class="shell-modal-link" data-shell-action="read-all-notifications"><i class="fa-solid fa-check-double"></i>Tandai semua dibaca</button>' : '';
+        var items = notifications.slice(0, 12).map(function (notification) {
+            var unreadClass = notification.read_at ? '' : ' unread';
+            return '<button type="button" class="shell-notification-item' + unreadClass + '" data-notification-id="' + escapeHtml(notification.id) + '">' +
+                '<span class="shell-notification-icon"><i class="' + getNotificationIcon(notification.type) + '"></i></span>' +
+                '<span class="shell-notification-copy">' +
+                    '<strong>' + escapeHtml(notification.title || 'Notifikasi') + '</strong>' +
+                    '<span>' + escapeHtml(notification.message || '') + '</span>' +
+                    '<small>' + escapeHtml(formatRelativeTime(notification.created_at)) + '</small>' +
+                '</span>' +
+                (notification.read_at ? '' : '<span class="shell-unread-dot"></span>') +
+            '</button>';
+        }).join('');
+        return header + actions + '<div class="shell-notification-list">' + items + '</div>';
+    }
+
+    function updateNotificationBadge(unreadCount) {
+        var badge = document.getElementById('notif-badge');
+        if (!badge) return;
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+            badge.style.display = 'grid';
+        } else {
+            badge.textContent = '0';
+            badge.style.display = 'none';
+        }
+    }
+
+    async function fetchNotifications() {
+        var token = getToken();
+        if (isMockToken(token)) return [];
+        var response = await fetch('/api/patient-notifications?_t=' + Date.now(), {
+            headers: {
+                Authorization: 'Bearer ' + token,
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!response.ok) throw new Error('notifications failed');
+        var data = await response.json();
+        return data && data.success && Array.isArray(data.notifications) ? data.notifications : [];
+    }
+
+    async function openNotificationModal() {
+        openTopbarModal('Notifikasi', 'Update pasien', renderModalLoading('Memuat notifikasi...'));
+        try {
+            state.notifications = await fetchNotifications();
+            updateNotificationBadge(state.notifications.filter(function (notification) { return !notification.read_at; }).length);
+            openTopbarModal('Notifikasi', 'Update pasien', renderNotificationsModal(state.notifications));
+        } catch (error) {
+            openTopbarModal('Notifikasi', 'Update pasien', '<div class="shell-modal-empty"><i class="fa-regular fa-bell-slash"></i><p>Notifikasi belum bisa dimuat.</p></div>');
+        }
+    }
+
+    async function markNotificationRead(id) {
+        var token = getToken();
+        var notification = state.notifications.find(function (item) { return String(item.id) === String(id); });
+        if (notification) notification.read_at = new Date().toISOString();
+        updateNotificationBadge(state.notifications.filter(function (item) { return !item.read_at; }).length);
+        openTopbarModal('Notifikasi', 'Update pasien', renderNotificationsModal(state.notifications));
+        if (isMockToken(token)) return;
+        try {
+            await fetch('/api/patient-notifications/' + encodeURIComponent(id) + '/read', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token }
+            });
+        } catch (error) {}
+    }
+
+    async function markAllNotificationsRead() {
+        var token = getToken();
+        state.notifications.forEach(function (notification) { notification.read_at = new Date().toISOString(); });
+        updateNotificationBadge(0);
+        openTopbarModal('Notifikasi', 'Update pasien', renderNotificationsModal(state.notifications));
+        if (isMockToken(token)) return;
+        try {
+            await fetch('/api/patient-notifications/read-all', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token }
+            });
+        } catch (error) {}
+    }
+
+    async function fetchProfile() {
+        var token = getToken();
+        var stored = getStoredPatient();
+        if (isMockToken(token)) return stored;
+        var response = await fetch('/api/patients/profile?_t=' + Date.now(), {
+            headers: {
+                Authorization: 'Bearer ' + token,
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!response.ok) return stored;
+        var data = await response.json();
+        var profile = data && (data.user || data.patient || data.profile) ? (data.user || data.patient || data.profile) : stored;
+        try { localStorage.setItem('patient_user', JSON.stringify(profile)); } catch (error) {}
+        return profile;
+    }
+
+    function renderProfileModal(profile) {
+        profile = profile || {};
+        var name = profile.fullname || profile.full_name || profile.name || 'Pasien SISIwanita';
+        var medicalId = profile.medical_record_id || profile.medicalRecordId || profile.mr_id || profile.id || '-';
+        var email = profile.email || '-';
+        var phone = profile.phone || profile.phone_number || profile.no_hp || '-';
+        var birthDate = profile.birth_date || profile.date_of_birth || profile.dob || '';
+        return '<div class="shell-profile-head">' +
+            '<div class="shell-profile-avatar">' + escapeHtml(getInitials(name)) + '</div>' +
+            '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
+            '</div>' +
+            '<div class="shell-profile-grid">' +
+                '<div><span>No. Rekam Medis</span><strong>' + escapeHtml(medicalId) + '</strong></div>' +
+                '<div><span>Email</span><strong>' + escapeHtml(email) + '</strong></div>' +
+                '<div><span>Telepon</span><strong>' + escapeHtml(phone) + '</strong></div>' +
+                '<div><span>Tanggal Lahir</span><strong>' + escapeHtml(formatProfileDate(birthDate)) + '</strong></div>' +
+            '</div>' +
+            '<div class="shell-modal-actions">' +
+                '<button type="button" class="shell-modal-link" data-shell-action="close-modal"><i class="fa-solid fa-check"></i>Tutup</button>' +
+                '<button type="button" class="shell-modal-link danger" data-shell-action="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i>Keluar</button>' +
+            '</div>';
+    }
+
+    async function openProfileModal() {
+        openTopbarModal('Profil', 'Akun pasien', renderProfileModal(getStoredPatient()));
+        try {
+            var profile = await fetchProfile();
+            updateAvatarInitials(profile);
+            openTopbarModal('Profil', 'Akun pasien', renderProfileModal(profile));
+        } catch (error) {}
+    }
+
+    function logout() {
+        localStorage.removeItem('vps_auth_token');
+        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('patient_user');
+        window.location.href = '/patient-login-trial.html';
+    }
+
+    function bindTopbarModalActions() {
+        var notifButton = document.getElementById('home-notif-btn');
+        var avatarButton = document.getElementById('user-avatar');
+        if (notifButton) {
+            notifButton.setAttribute('aria-haspopup', 'dialog');
+            notifButton.onclick = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                openNotificationModal();
+                return false;
+            };
+        }
+        if (avatarButton) {
+            avatarButton.setAttribute('aria-haspopup', 'dialog');
+            avatarButton.onclick = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                openProfileModal();
+                return false;
+            };
+        }
+    }
+
+    document.addEventListener('click', function (event) {
+        var notificationButton = event.target.closest('[data-notification-id]');
+        if (notificationButton) {
+            event.preventDefault();
+            markNotificationRead(notificationButton.getAttribute('data-notification-id'));
+            return;
+        }
+        var action = event.target.closest('[data-shell-action]');
+        if (!action) return;
+        event.preventDefault();
+        var actionName = action.getAttribute('data-shell-action');
+        if (actionName === 'read-all-notifications') markAllNotificationsRead();
+        if (actionName === 'close-modal') closeTopbarModal();
+        if (actionName === 'logout') logout();
+    });
 
     function closeSheet() {
         var overlay = document.getElementById('sheet-overlay');
@@ -151,7 +443,12 @@
 
         ready(function () {
             updateAvatarInitials(options.profile);
+            bindTopbarModalActions();
             setActiveNav(state.activeNav);
+            fetchNotifications().then(function (notifications) {
+                state.notifications = notifications;
+                updateNotificationBadge(notifications.filter(function (notification) { return !notification.read_at; }).length);
+            }).catch(function () {});
             if (options.unlockOnReady) showContent(options);
         });
 
@@ -164,6 +461,11 @@
         openSheet: openSheet,
         closeSheet: closeSheet,
         openMyCorner: openMyCorner,
+        openNotificationModal: openNotificationModal,
+        openProfileModal: openProfileModal,
+        closeModal: closeTopbarModal,
+        markNotificationRead: markNotificationRead,
+        markAllNotificationsRead: markAllNotificationsRead,
         scrollTopHome: scrollTopHome,
         updateAvatarInitials: updateAvatarInitials,
         setActiveNav: setActiveNav,
@@ -177,5 +479,7 @@
     window.openSheet = openSheet;
     window.closeSheet = closeSheet;
     window.openMyCorner = openMyCorner;
+    window.openNotificationModal = openNotificationModal;
+    window.openProfileModal = openProfileModal;
     window.scrollTopHome = scrollTopHome;
 })();
