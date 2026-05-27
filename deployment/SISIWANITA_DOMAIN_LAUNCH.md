@@ -37,9 +37,27 @@ cp deployment/sisiwanita.id.nginx.conf.example /etc/nginx/sites-available/sisiwa
 ln -sf /etc/nginx/sites-available/sisiwanita.id /etc/nginx/sites-enabled/sisiwanita.id
 ```
 
-3. Fill in the TLS certificate paths inside the nginx file.
+3. Issue the TLS certificate after DNS points to the VPS:
 
-4. Test nginx and reload:
+```bash
+certbot certonly --webroot \
+  -w /var/www/dokterdibya/public \
+  -d sisiwanita.id \
+  -d www.sisiwanita.id \
+  --non-interactive \
+  --agree-tos \
+  -m admin@dokterdibya.com \
+  --keep-until-expiring
+```
+
+4. Fill in the TLS certificate paths inside the nginx file:
+
+```nginx
+ssl_certificate /etc/letsencrypt/live/sisiwanita.id/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/sisiwanita.id/privkey.pem;
+```
+
+5. Test nginx and reload:
 
 ```bash
 nginx -t

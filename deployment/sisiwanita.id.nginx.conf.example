@@ -4,7 +4,16 @@ server {
     listen [::]:80;
     server_name sisiwanita.id www.sisiwanita.id;
 
-    return 301 https://sisiwanita.id$request_uri;
+    root /var/www/dokterdibya/public;
+
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/dokterdibya/public;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://sisiwanita.id$request_uri;
+    }
 }
 
 server {
@@ -28,23 +37,28 @@ server {
     # ssl_certificate /etc/letsencrypt/live/sisiwanita.id/fullchain.pem;
     # ssl_certificate_key /etc/letsencrypt/live/sisiwanita.id/privkey.pem;
 
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/dokterdibya/public;
+        default_type "text/plain";
+    }
+
     # Root landing page
     location = / {
-        alias /var/www/dokterdibya/public/sisiwanita/index.html;
+        try_files /sisiwanita/index.html =404;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
 
     location = /index.html {
-        alias /var/www/dokterdibya/public/sisiwanita/index.html;
+        try_files /sisiwanita/index.html =404;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
 
     location = /sisiwanita/index.html {
-        alias /var/www/dokterdibya/public/sisiwanita/index.html;
+        try_files /sisiwanita/index.html =404;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
@@ -52,7 +66,7 @@ server {
 
     # Standalone PWA files
     location = /sisiwanita.webmanifest {
-        alias /var/www/dokterdibya/public/sisiwanita.webmanifest;
+        try_files /sisiwanita.webmanifest =404;
         default_type application/manifest+json;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
@@ -60,7 +74,7 @@ server {
     }
 
     location = /sisiwanita-sw.js {
-        alias /var/www/dokterdibya/public/sisiwanita-sw.js;
+        try_files /sisiwanita-sw.js =404;
         default_type application/javascript;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
@@ -77,19 +91,19 @@ server {
 
     # Shared public assets that the landing still uses
     location ^~ /images/ {
-        alias /var/www/dokterdibya/public/images/;
+        try_files $uri =404;
         add_header Cache-Control "public, max-age=604800" always;
     }
 
     location ^~ /scripts/ {
-        alias /var/www/dokterdibya/public/scripts/;
+        try_files $uri =404;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;
     }
 
     location ^~ /js/ {
-        alias /var/www/dokterdibya/public/js/;
+        try_files $uri =404;
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
         add_header Pragma "no-cache" always;
         add_header Expires "0" always;

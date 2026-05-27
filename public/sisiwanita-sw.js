@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260527s1';
+const CACHE_VERSION = '20260527s2';
 const CACHE_PREFIX = 'sisiwanita-landing-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -47,6 +47,11 @@ self.addEventListener('fetch', function(event) {
   }
 
   var request = event.request;
+  var requestUrl = new URL(request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
   var isNavigation = request.mode === 'navigate';
 
   if (isNavigation) {
