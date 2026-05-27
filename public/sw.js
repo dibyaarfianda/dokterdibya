@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528o'; // 2026-05-28o - adopt tool shell for fertility calendar trial
+const CACHE_VERSION = '20260528p'; // 2026-05-28p - adopt tool shell for vitamin schedule trial
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -19,6 +19,7 @@ const PRECACHE_FILES = [
   '/kick-counter-trial.html',
   '/pregnancy-tracker-trial.html',
   '/fertility-calendar-trial.html',
+  '/jadwal-vitamin-trial.html',
   '/my-corner-visit-trial.html',
   '/styles/patient-trial-theme.css',
   '/styles/patient-tool-shell.css',
