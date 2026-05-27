@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528p'; // 2026-05-28p - adopt tool shell for vitamin schedule trial
+const CACHE_VERSION = '20260528q'; // 2026-05-28q - add edit per vitamin schedule item
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
