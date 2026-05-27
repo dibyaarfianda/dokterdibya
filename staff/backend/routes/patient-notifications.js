@@ -275,6 +275,10 @@ router.get('/with-announcements', verifyPatientToken, async (req, res) => {
             return res.status(401).json({ success: false, message: 'Patient not authenticated' });
         }
 
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
         // Get patient notifications
         const [notifications] = await db.query(`
             SELECT 
