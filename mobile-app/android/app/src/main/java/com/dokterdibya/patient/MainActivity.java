@@ -1,12 +1,12 @@
 package com.dokterdibya.patient;
 
 import android.content.Intent;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebStorage;
 import android.webkit.CookieManager;
-import android.widget.Toast;
 import android.net.Uri;
 
 import com.getcapacitor.Bridge;
@@ -15,8 +15,7 @@ import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
 
-    private long backPressedTime = 0;
-    private Toast backToast;
+    private AlertDialog exitAppDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +30,7 @@ public class MainActivity extends BridgeActivity {
 
                 // Intercept our custom schemes
                 if (url.startsWith("dokterdibya://") || url.startsWith("intent://")) {
-                    handleLogoutUrl(url);
+                    handleAppCommandUrl(url);
                     return true;
                 }
 
@@ -43,7 +42,7 @@ public class MainActivity extends BridgeActivity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 // Intercept our custom schemes
                 if (url != null && (url.startsWith("dokterdibya://") || url.startsWith("intent://"))) {
-                    handleLogoutUrl(url);
+                    handleAppCommandUrl(url);
                     return true;
                 }
 
@@ -56,11 +55,44 @@ public class MainActivity extends BridgeActivity {
         handleIntent(getIntent());
     }
 
-    private void handleLogoutUrl(String url) {
+    private void handleAppCommandUrl(String url) {
         // Handle both dokterdibya://logout and intent://logout#Intent;...
         if (url.contains("logout")) {
             performLogout();
+        } else if (url.contains("background")) {
+            moveAppToBackground();
         }
+    }
+
+    private void moveAppToBackground() {
+        if (exitAppDialog != null && exitAppDialog.isShowing()) {
+            exitAppDialog.dismiss();
+        }
+        moveTaskToBack(true);
+    }
+
+    private boolean isPatientHomeUrl(String url) {
+        if (url == null) return false;
+        try {
+            Uri uri = Uri.parse(url);
+            String path = uri.getPath();
+            return "/patient-menu-simple-trial.html".equals(path) || "/patient-menu.html".equals(path);
+        } catch (Exception e) {
+            return url.contains("/patient-menu-simple-trial.html") || url.contains("/patient-menu.html");
+        }
+    }
+
+    private void showExitAppDialog() {
+        if (isFinishing()) return;
+        if (exitAppDialog != null && exitAppDialog.isShowing()) return;
+
+        exitAppDialog = new AlertDialog.Builder(this)
+            .setTitle("Keluar dari aplikasi?")
+            .setMessage("Aplikasi akan ditutup ke background. Notifikasi tetap masuk.")
+            .setNegativeButton("Tidak", null)
+            .setPositiveButton("Ya", (dialog, which) -> moveAppToBackground())
+            .create();
+        exitAppDialog.show();
     }
 
     private void performLogout() {
@@ -99,21 +131,14 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onBackPressed() {
         WebView webView = getBridge().getWebView();
+        String currentUrl = webView != null ? webView.getUrl() : null;
 
-        if (webView.canGoBack()) {
+        if (isPatientHomeUrl(currentUrl)) {
+            showExitAppDialog();
+        } else if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
-            if (backPressedTime + 2000 > System.currentTimeMillis()) {
-                if (backToast != null) {
-                    backToast.cancel();
-                }
-                super.onBackPressed();
-                finish();
-            } else {
-                backToast = Toast.makeText(this, "Tekan back sekali lagi untuk keluar aplikasi", Toast.LENGTH_SHORT);
-                backToast.show();
-                backPressedTime = System.currentTimeMillis();
-            }
+            showExitAppDialog();
         }
     }
 }

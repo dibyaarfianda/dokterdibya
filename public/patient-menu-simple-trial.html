@@ -663,6 +663,21 @@
         .modal-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
         .modal-head h2 { font-family: var(--display); font-size: 21px; letter-spacing: -0.04em; }
         .close-btn { border: 1px solid var(--line); background: #f7f7f4; width: 34px; height: 34px; border-radius: 13px; cursor: pointer; color: var(--ink); }
+        .exit-modal-copy { color: var(--ink-soft); font-size: 13px; line-height: 1.55; }
+        .exit-modal-note {
+            display: flex;
+            gap: 9px;
+            align-items: flex-start;
+            margin-top: 12px;
+            padding: 11px 12px;
+            border-radius: 16px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-size: 11px;
+            line-height: 1.45;
+            font-weight: 700;
+        }
+        .exit-modal-note i { margin-top: 1px; }
         .field { margin-top: 12px; }
         .field label { display: block; font-size: 11px; color: var(--muted); font-weight: 800; margin-bottom: 6px; }
         .field input, .field textarea {
@@ -1276,6 +1291,22 @@
         <div class="topbar-modal-body" id="topbar-modal-body"></div>
     </section>
 
+    <section class="modal-card" id="exit-app-modal" role="dialog" aria-modal="true" aria-labelledby="exit-app-title">
+        <div class="modal-head">
+            <div>
+                <div class="section-kicker">SISIwanita</div>
+                <h2 id="exit-app-title">Keluar dari aplikasi?</h2>
+            </div>
+            <button class="close-btn soundable" onclick="cancelExitApp(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p class="exit-modal-copy">Aplikasi akan ditutup ke background. Notifikasi tetap aktif dan akan masuk seperti biasa.</p>
+        <div class="exit-modal-note"><i class="fa-solid fa-bell"></i><span>Anda tetap login. Saat dibuka lagi, portal kembali ke ruang pasien.</span></div>
+        <div class="modal-actions">
+            <button class="ghost-action soundable" onclick="cancelExitApp(event)">Tidak</button>
+            <button class="primary-action soundable" onclick="confirmExitApp(event)">Ya, keluar</button>
+        </div>
+    </section>
+
     <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
         <div class="bottom-inner" id="home-bottom-inner">
             <button class="nav-item active soundable" onclick="scrollTopHome()"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
@@ -1297,6 +1328,8 @@
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
         let topbarNotifications = [];
+        let homeBackGuardInstalled = false;
+        let homeBackExitConfirmed = false;
 
         function getToken() {
             return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
@@ -1528,6 +1561,103 @@
             toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
         }
 
+        function isPatientHomeRoute() {
+            return window.location.pathname === '/patient-menu-simple-trial.html';
+        }
+
+        function hasActiveHomeSurface() {
+            return !!document.querySelector('.bottom-sheet.active, .modal-card.active:not(#exit-app-modal)');
+        }
+
+        function rearmHomeBackGuard() {
+            if (homeBackExitConfirmed || !homeBackGuardInstalled || !isPatientHomeRoute()) return;
+            try {
+                history.pushState({ patientHomeBackGuard: true }, '', window.location.href);
+            } catch (error) {}
+        }
+
+        function showExitAppModal() {
+            closeSheet();
+            const overlay = document.getElementById('modal-overlay');
+            const modal = document.getElementById('exit-app-modal');
+            if (!overlay || !modal) return;
+            overlay.classList.add('active');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cancelExitApp(event) {
+            stopTopbarEvent(event);
+            closeAllModals();
+        }
+
+        function isAndroidWebView() {
+            return /;\s*wv\)|\bwv\b|Version\/\d+(?:\.\d+)?\s+Chrome\/\d+.*Mobile Safari/i.test(navigator.userAgent || '');
+        }
+
+        function requestNativeBackground() {
+            try {
+                const appPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+                if (appPlugin && typeof appPlugin.minimizeApp === 'function') {
+                    appPlugin.minimizeApp();
+                    return true;
+                }
+            } catch (error) {}
+
+            if (isAndroidWebView()) {
+                try {
+                    window.location.href = 'dokterdibya://background';
+                    return true;
+                } catch (error) {}
+            }
+
+            try {
+                window.close();
+            } catch (error) {}
+            return false;
+        }
+
+        function confirmExitApp(event) {
+            stopTopbarEvent(event);
+            homeBackExitConfirmed = true;
+            const overlay = document.getElementById('modal-overlay');
+            const modal = document.getElementById('exit-app-modal');
+            if (overlay) overlay.classList.remove('active');
+            if (modal) modal.classList.remove('active');
+            document.body.style.overflow = '';
+
+            const nativeHandled = requestNativeBackground();
+            if (!nativeHandled) {
+                window.setTimeout(function() {
+                    if (document.visibilityState !== 'hidden') {
+                        homeBackExitConfirmed = false;
+                        rearmHomeBackGuard();
+                        showToast('Notifikasi tetap aktif. Gunakan tombol Home untuk menutup aplikasi.');
+                    }
+                }, 600);
+            }
+        }
+
+        function installHomeBackExitGuard() {
+            if (homeBackGuardInstalled || !isPatientHomeRoute() || !history.pushState) return;
+            homeBackGuardInstalled = true;
+            try {
+                history.replaceState(Object.assign({}, history.state || {}, { patientHomeRoot: true }), '', window.location.href);
+                history.pushState({ patientHomeBackGuard: true }, '', window.location.href);
+            } catch (error) {}
+
+            window.addEventListener('popstate', function() {
+                if (homeBackExitConfirmed || !isPatientHomeRoute()) return;
+                if (hasActiveHomeSurface()) {
+                    closeSheet();
+                    closeAllModals();
+                    rearmHomeBackGuard();
+                    return;
+                }
+                showExitAppModal();
+            });
+        }
+
         function getTapSoundPreference() {
             return localStorage.getItem(TAP_SOUND_KEY) !== '0';
         }
@@ -1623,9 +1753,12 @@
         }
 
         function closeAllModals() {
+            const exitModal = document.getElementById('exit-app-modal');
+            const exitWasActive = exitModal && exitModal.classList.contains('active');
             document.getElementById('modal-overlay').classList.remove('active');
             document.querySelectorAll('.modal-card').forEach(modal => modal.classList.remove('active'));
             document.body.style.overflow = '';
+            if (exitWasActive) rearmHomeBackGuard();
         }
 
         function todayLabel() {
@@ -2233,6 +2366,7 @@
 
         async function init() {
             resetScrollToTop();
+            installHomeBackExitGuard();
             lockHomeSections();
             todayLabel();
             updateSoundUI();
@@ -2242,7 +2376,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528ad', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528ae', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -2280,6 +2414,8 @@
         window.cancelActiveBooking = cancelActiveBooking;
         window.closeCancelBookingModal = closeCancelBookingModal;
         window.submitCancelBooking = submitCancelBooking;
+        window.cancelExitApp = cancelExitApp;
+        window.confirmExitApp = confirmExitApp;
         window.submitAttendanceConfirmation = submitAttendanceConfirmation;
         window.closeAttendanceConfirmationPopup = closeAttendanceConfirmationPopup;
         window.scrollTopHome = scrollTopHome;
