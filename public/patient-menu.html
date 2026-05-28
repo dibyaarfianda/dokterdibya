@@ -1776,6 +1776,8 @@
             var TRIAL_DISABLED_KEY = 'patient_portal_nanda_trial_disabled';
             var TRIAL_MODE = 'newdesign';
             var TRIAL_HOME = '/patient-menu-simple-trial.html';
+            var TRIAL_TESTER_IDS = ['P2025091', 'P001'];
+            var TRIAL_TESTER_NAMES = ['nanda ananda', 'feby kumalasari'];
 
             function normalizeName(value) {
                 return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -1793,7 +1795,7 @@
                 var user = profile || getStoredPatientUser();
                 var patientId = String(user.id || user.patient_id || user.medicalRecordId || '').trim();
                 var patientName = normalizeName(user.fullname || user.full_name || user.name || '');
-                return patientId === 'P2025091' || patientName === 'nanda ananda';
+                return TRIAL_TESTER_IDS.indexOf(patientId) !== -1 || TRIAL_TESTER_NAMES.indexOf(patientName) !== -1;
             }
 
             function buildTrialQuery() {
