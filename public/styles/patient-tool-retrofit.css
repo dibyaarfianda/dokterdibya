@@ -59,7 +59,7 @@ body.legacy-tool-retrofit #home-topbar.topbar {
     justify-content: initial !important;
     gap: 0 !important;
     width: 100vw !important;
-    margin: 0 0 clamp(22px, 4vh, 42px) !important;
+    margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
