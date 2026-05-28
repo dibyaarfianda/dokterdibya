@@ -354,117 +354,99 @@ function showTroubleshootingPage() {
     hideAllPages();
     pages.troubleshooting?.classList.remove('d-none');
     setTitleAndActive('Troubleshooting', 'nav-troubleshooting', 'troubleshooting');
-    setTimeout(openTroubleshootingReportModal, 120);
+    loadTroubleshootingReports();
 }
 
-function openTroubleshootingReportModal() {
-    const textarea = document.getElementById('troubleshooting-report-message');
-    if (textarea) textarea.value = '';
-    updateTroubleshootingReportCount();
-    document.body.classList.add('troubleshooting-modal-open');
+function setTroubleshootingStatus(message, type = 'info') {
+    const status = document.getElementById('troubleshooting-status');
+    if (!status) return;
+    status.className = `alert alert-${type} py-2 small mb-3`;
+    status.textContent = message;
+}
 
-    const contextLabel = document.getElementById('troubleshooting-context-label');
-    if (contextLabel) {
-        contextLabel.textContent = `Konteks otomatis: ${window.__currentPage || document.title || 'staff panel'}`;
-    }
+function formatTroubleshootingDate(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
 
-    const jq = window.jQuery || window.$;
-    if (jq && jq.fn && jq.fn.modal) {
-        jq('#troubleshooting-report-modal')
-            .off('hidden.bs.modal.troubleshooting')
-            .on('hidden.bs.modal.troubleshooting', function() {
-                document.body.classList.remove('troubleshooting-modal-open');
-            })
-            .one('shown.bs.modal', function() {
-                const reportBox = document.getElementById('troubleshooting-report-message');
-                if (reportBox) reportBox.focus();
-            })
-            .modal('show');
+function renderTroubleshootingReports(reports) {
+    const tbody = document.getElementById('troubleshooting-reports-body');
+    if (!tbody) return;
+
+    if (!Array.isArray(reports) || reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4"><i class="far fa-check-circle mr-1"></i> Belum ada laporan bug/error pasien.</td></tr>';
         return;
     }
 
-    if (textarea) textarea.focus();
+    tbody.innerHTML = reports.map(report => {
+        const patientName = report.is_anonymous ? 'Anonim' : (report.patient_name || 'Pasien');
+        const patientId = report.patient_id || '-';
+        const message = escapeHtml(report.message || '-').replace(/\n/g, '<br>');
+        return `
+            <tr>
+                <td><small>${escapeHtml(formatTroubleshootingDate(report.created_at))}</small></td>
+                <td>
+                    <div class="font-weight-bold">${escapeHtml(patientName)}</div>
+                    <small class="text-muted">ID: ${escapeHtml(patientId)}</small>
+                </td>
+                <td class="troubleshooting-message-cell">${message}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
-function updateTroubleshootingReportCount() {
-    const textarea = document.getElementById('troubleshooting-report-message');
-    const counter = document.getElementById('troubleshooting-report-count');
-    if (!textarea || !counter) return;
-    counter.textContent = String(textarea.value.length);
-}
-
-function setTroubleshootingSubmitting(isSubmitting) {
-    const button = document.getElementById('troubleshooting-submit-btn');
-    const textarea = document.getElementById('troubleshooting-report-message');
-    if (button) {
-        button.disabled = isSubmitting;
-        button.innerHTML = isSubmitting
-            ? '<i class="fas fa-spinner fa-spin mr-1"></i>Mengirim...'
-            : '<i class="fas fa-paper-plane mr-1"></i>Kirim Laporan';
+async function loadTroubleshootingReports() {
+    const tbody = document.getElementById('troubleshooting-reports-body');
+    const totalEl = document.getElementById('troubleshooting-total-count');
+    const loadedEl = document.getElementById('troubleshooting-last-loaded');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat laporan...</td></tr>';
     }
-    if (textarea) textarea.disabled = isSubmitting;
-}
-
-async function submitTroubleshootingReport() {
-    const textarea = document.getElementById('troubleshooting-report-message');
-    const message = (textarea?.value || '').trim();
-    if (!message) {
-        showWarning('Tuliskan detail bug/error terlebih dahulu.');
-        if (textarea) textarea.focus();
-        return;
-    }
-
-    if (message.length > 3000) {
-        showWarning('Laporan maksimal 3000 karakter.');
-        return;
-    }
+    setTroubleshootingStatus('Memuat laporan bug/error pasien...', 'info');
 
     const token = getAuthToken();
     if (!token) {
-        showError('Sesi login tidak ditemukan. Silakan login ulang.');
+        setTroubleshootingStatus('Sesi login tidak ditemukan. Silakan login ulang.', 'danger');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger py-4">Sesi login tidak ditemukan.</td></tr>';
         return;
     }
 
-    setTroubleshootingSubmitting(true);
     try {
-        const response = await fetch('/api/staff-troubleshooting/reports', {
-            method: 'POST',
+        const response = await fetch('/api/patient-feedback?category=bug&limit=50&offset=0&_=' + Date.now(), {
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                message,
-                page_url: window.location.href,
-                page_title: document.title || '',
-                asset_version: window.__assetVersion || '',
-                viewport: `${window.innerWidth || 0}x${window.innerHeight || 0}`,
-                user_agent: navigator.userAgent || ''
-            })
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
         });
-
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Gagal mengirim laporan');
+            if (response.status === 403) {
+                throw new Error('Akses laporan troubleshooting hanya tersedia untuk superadmin.');
+            }
+            throw new Error(result.message || 'Gagal memuat laporan troubleshooting');
         }
 
-        const jq = window.jQuery || window.$;
-        if (jq && jq.fn && jq.fn.modal) {
-            jq('#troubleshooting-report-modal').modal('hide');
-        }
-
-        const lastResult = document.getElementById('troubleshooting-last-result');
-        if (lastResult) {
-            const reportId = result.report_id ? ` #${result.report_id}` : '';
-            lastResult.textContent = `Laporan${reportId} berhasil dikirim pada ${new Date().toLocaleString('id-ID')}.`;
-        }
-
-        showSuccess(result.message || 'Laporan bug/error berhasil dikirim.');
+        const reports = Array.isArray(result.data) ? result.data : [];
+        renderTroubleshootingReports(reports);
+        if (totalEl) totalEl.textContent = String(result.total ?? reports.length);
+        if (loadedEl) loadedEl.textContent = new Date().toLocaleString('id-ID');
+        setTroubleshootingStatus(reports.length ? 'Menampilkan laporan bug/error pasien terbaru.' : 'Belum ada laporan bug/error pasien.', reports.length ? 'success' : 'secondary');
     } catch (error) {
-        console.error('[Troubleshooting] submit error:', error);
-        showError(error.message || 'Gagal mengirim laporan bug/error.');
-    } finally {
-        setTroubleshootingSubmitting(false);
+        console.error('[Troubleshooting] load reports error:', error);
+        const message = error && error.message ? error.message : String(error || 'Gagal memuat laporan');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">${escapeHtml(message)}</td></tr>`;
+        }
+        if (totalEl) totalEl.textContent = '-';
+        setTroubleshootingStatus(message || 'Gagal memuat laporan troubleshooting.', 'danger');
     }
 }
 
@@ -6040,9 +6022,7 @@ window.showDashboardPage = showDashboardPage;
 window.showCommunityChatPage = showCommunityChatPage;
 window.openCommunityChatPopup = openCommunityChatPopup;
 window.showTroubleshootingPage = showTroubleshootingPage;
-window.openTroubleshootingReportModal = openTroubleshootingReportModal;
-window.updateTroubleshootingReportCount = updateTroubleshootingReportCount;
-window.submitTroubleshootingReport = submitTroubleshootingReport;
+window.loadTroubleshootingReports = loadTroubleshootingReports;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
 window.showTindakanPage = showTindakanPage;

@@ -461,17 +461,22 @@
             background: linear-gradient(135deg, var(--color-info) 0%, rgba(23, 162, 184, 0.9) 100%);
         }
 
-        body.troubleshooting-modal-open #troubleshooting-report-modal {
-            z-index: 1000001 !important;
+        #troubleshooting-reports-table td {
+            vertical-align: top !important;
         }
 
-        body.troubleshooting-modal-open .modal-backdrop {
-            z-index: 1000000 !important;
+        .troubleshooting-message-cell {
+            min-width: 260px !important;
+            white-space: pre-wrap !important;
+            overflow-wrap: anywhere !important;
         }
 
-        body.troubleshooting-modal-open #mobile-action-bar {
-            display: none !important;
-            pointer-events: none !important;
+        #troubleshooting-reports-table .troubleshooting-time-column {
+            width: 170px !important;
+        }
+
+        #troubleshooting-reports-table .troubleshooting-patient-column {
+            width: 220px !important;
         }
 
         /* ========================================
@@ -7149,55 +7154,51 @@ Contoh Markdown:
                 <!-- TROUBLESHOOTING PAGE -->
                 <div id="troubleshooting-page" class="d-none">
                     <div class="row">
-                        <div class="col-lg-8 col-md-10 col-12">
+                        <div class="col-12">
                             <div class="card">
                                 <div class="card-header bg-danger d-flex justify-content-between align-items-center">
                                     <h3 class="card-title mb-0"><i class="fas fa-bug mr-2"></i>Troubleshooting</h3>
-                                    <button type="button" class="btn btn-sm btn-light" onclick="openTroubleshootingReportModal()">
-                                        <i class="fas fa-edit mr-1"></i>Buat Laporan
+                                    <button type="button" class="btn btn-sm btn-light" onclick="loadTroubleshootingReports()">
+                                        <i class="fas fa-sync-alt mr-1"></i>Refresh
                                     </button>
                                 </div>
                                 <div class="card-body">
                                     <div class="alert alert-light border mb-3">
-                                        <div class="font-weight-bold mb-1">Laporan bug/error staff panel</div>
-                                        <div class="small text-muted">Catatan tersimpan ke Activity Log agar bisa ditindaklanjuti.</div>
+                                        <div class="font-weight-bold mb-1">Laporan bug/error pasien pemakai portal</div>
+                                        <div class="small text-muted">Data diambil dari masukan pasien kategori bug pada portal pasien trial.</div>
                                     </div>
-                                    <div id="troubleshooting-last-result" class="text-muted small">
-                                        Belum ada laporan baru dari sesi ini.
+                                    <div class="row mb-3">
+                                        <div class="col-md-4 col-sm-6 mb-2">
+                                            <div class="small text-muted">Total laporan</div>
+                                            <div class="h4 mb-0" id="troubleshooting-total-count">-</div>
+                                        </div>
+                                        <div class="col-md-8 col-sm-6 mb-2">
+                                            <div class="small text-muted">Terakhir dimuat</div>
+                                            <div class="font-weight-bold" id="troubleshooting-last-loaded">-</div>
+                                        </div>
+                                    </div>
+                                    <div id="troubleshooting-status" class="alert alert-info py-2 small mb-3">
+                                        Memuat laporan bug/error pasien...
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped mb-0" id="troubleshooting-reports-table">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th class="troubleshooting-time-column">Waktu</th>
+                                                    <th class="troubleshooting-patient-column">Pasien</th>
+                                                    <th>Laporan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="troubleshooting-reports-body">
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Memuat laporan...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Troubleshooting Report Modal -->
-                <div class="modal fade" id="troubleshooting-report-modal" tabindex="-1" role="dialog" aria-labelledby="troubleshooting-report-title" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger">
-                                <h5 class="modal-title" id="troubleshooting-report-title">
-                                    <i class="fas fa-bug mr-2"></i>Laporan Bug/Error
-                                </h5>
-                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="form-group mb-2">
-                                    <label for="troubleshooting-report-message">Detail bug/error <span class="text-danger">*</span></label>
-                                    <textarea id="troubleshooting-report-message" class="form-control" rows="8" maxlength="3000" oninput="updateTroubleshootingReportCount()" placeholder="Tuliskan halaman, tombol/menu yang ditekan, pesan error, dan apa yang seharusnya terjadi."></textarea>
-                                    <div class="d-flex justify-content-between mt-1">
-                                        <small class="form-text text-muted" id="troubleshooting-context-label">Konteks otomatis: halaman staff panel saat ini</small>
-                                        <small class="form-text text-muted"><span id="troubleshooting-report-count">0</span>/3000</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                <button type="button" class="btn btn-danger" id="troubleshooting-submit-btn" onclick="submitTroubleshootingReport()">
-                                    <i class="fas fa-paper-plane mr-1"></i>Kirim Laporan
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -8081,7 +8082,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v219';
+    window.__assetVersion = 'v220';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
