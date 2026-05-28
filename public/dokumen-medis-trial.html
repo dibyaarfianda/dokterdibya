@@ -581,7 +581,7 @@
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
     <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528y">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260528y">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529a">
     <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit dokumen-medis-page" data-tool-shell-active="dokumen" data-tool-kicker="Resume Medis" data-tool-title="Resume medis." data-tool-copy="Buka ringkasan kunjungan dan dokumen medis yang sudah dikirim dokter dalam satu ruang yang rapi." data-tool-meta-label="Dokumen" data-tool-meta-value="Resume Kunjungan">
@@ -825,12 +825,15 @@
             currentDoc = filteredDocuments[index];
 
             document.getElementById('preview-modal').classList.add('active');
+            document.body.classList.add('document-viewer-open');
             document.body.style.overflow = 'hidden';
 
             document.getElementById('preview-title').textContent = currentDoc.title || 'Dokumen';
 
             const previewBody = document.getElementById('preview-body');
             const btnDownload = document.getElementById('btn-download');
+            const previewActions = document.querySelector('#preview-modal .preview-actions');
+            if (previewActions) previewActions.classList.remove('single-action');
 
             // Check document type
             if (currentDoc.document_type === 'resume_medis' && (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
@@ -842,6 +845,7 @@
                     </div>
                 `;
                 btnDownload.style.display = 'none';
+                if (previewActions) previewActions.classList.add('single-action');
 
                 try {
                     const data = await apiRequest(`/api/patient-documents/${currentDoc.id}/content`);
@@ -872,6 +876,7 @@
             } else if (currentDoc.file_url) {
                 const fileType = getFileType(currentDoc.file_url);
                 btnDownload.style.display = 'flex';
+                if (previewActions) previewActions.classList.remove('single-action');
 
                 if (fileType === 'image') {
                     previewBody.innerHTML = `<img src="${currentDoc.file_url}" alt="${escapeHtml(currentDoc.title || 'Document')}">`;
@@ -894,6 +899,7 @@
                 }
             } else {
                 btnDownload.style.display = 'none';
+                if (previewActions) previewActions.classList.add('single-action');
                 previewBody.innerHTML = `
                     <div class="resume-loading">
                         <i class="fa-regular fa-file"></i>
@@ -926,6 +932,7 @@
         // Close preview
         function closePreview() {
             document.getElementById('preview-modal').classList.remove('active');
+            document.body.classList.remove('document-viewer-open');
             document.body.style.overflow = '';
             currentDoc = null;
         }
