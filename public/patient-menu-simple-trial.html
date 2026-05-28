@@ -1235,7 +1235,7 @@
                     </button>
                     <button class="tap-card soundable" onclick="openBugReportModal(event)">
                         <span class="icon report-color"><i class="fa-solid fa-bug"></i></span>
-                        <span><h3>Lapor Bug</h3><p>Bantu perbaiki portal</p></span>
+                        <span><h3>Lapor Bug/Error</h3><p>Pengembangan Portal</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openMyCorner()">
                         <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
@@ -2528,7 +2528,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528af', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528ag', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
