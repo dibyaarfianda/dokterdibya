@@ -255,8 +255,9 @@
 
     function renderHeader(theme) {
         var isDecorating = state.mode === 'decorate';
+        var headerTitle = isDecorating ? 'Atur Ruang' : 'Ruang Saya';
         return '<header class="pmc-header">' +
-            '<div><div class="pmc-kicker">' + (isDecorating ? 'Dekorasi Ruang' : 'Ruang Mobile') + '</div><h2 class="pmc-title">' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h2></div>' +
+            '<div><div class="pmc-kicker">' + (isDecorating ? 'Dekorasi Ruang' : 'Ruang Mobile') + '</div><h2 class="pmc-title">' + headerTitle + '</h2></div>' +
             '<div class="pmc-header-actions">' +
                 '<button class="pmc-close" onclick="PatientMyCorner.close()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>' +
             '</div>' +
