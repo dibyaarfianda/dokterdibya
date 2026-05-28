@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260528w';
+    var VERSION = '20260528x';
     var pageDefaults = {
         '/album-usg-trial.html': {
             activeNav: 'dokumen',
