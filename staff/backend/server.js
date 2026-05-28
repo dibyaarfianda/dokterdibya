@@ -517,6 +517,10 @@ app.use('/api/patient-questions', patientQuestionsRoutes);
 const patientFeedbackRoutes = require('./routes/patient-feedback');
 app.use('/api/patient-feedback', patientFeedbackRoutes);
 
+// Staff Troubleshooting (laporan bug/error dari staff panel)
+const staffTroubleshootingRoutes = require('./routes/staff-troubleshooting');
+app.use('/api/staff-troubleshooting', staffTroubleshootingRoutes);
+
 // Patient My Corner / Workdesk
 const patientWorkdeskRoutes = require('./routes/patient-workdesk');
 app.use('/api/patient-workdesk', patientWorkdeskRoutes);

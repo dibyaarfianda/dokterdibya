@@ -461,6 +461,19 @@
             background: linear-gradient(135deg, var(--color-info) 0%, rgba(23, 162, 184, 0.9) 100%);
         }
 
+        body.troubleshooting-modal-open #troubleshooting-report-modal {
+            z-index: 1000001 !important;
+        }
+
+        body.troubleshooting-modal-open .modal-backdrop {
+            z-index: 1000000 !important;
+        }
+
+        body.troubleshooting-modal-open #mobile-action-bar {
+            display: none !important;
+            pointer-events: none !important;
+        }
+
         /* ========================================
            UTILITY CLASSES
            ======================================== */
@@ -2012,6 +2025,12 @@
                                 Chat Bantuan
                                 <span class="badge badge-danger right d-none" id="support-chat-badge">0</span>
                             </p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-troubleshooting">
+                        <a href="#" class="nav-link" onclick="showTroubleshootingPage(); return false;">
+                            <i class="nav-icon fas fa-bug text-danger"></i>
+                            <p>Troubleshooting</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
@@ -7127,6 +7146,63 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- TROUBLESHOOTING PAGE -->
+                <div id="troubleshooting-page" class="d-none">
+                    <div class="row">
+                        <div class="col-lg-8 col-md-10 col-12">
+                            <div class="card">
+                                <div class="card-header bg-danger d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title mb-0"><i class="fas fa-bug mr-2"></i>Troubleshooting</h3>
+                                    <button type="button" class="btn btn-sm btn-light" onclick="openTroubleshootingReportModal()">
+                                        <i class="fas fa-edit mr-1"></i>Buat Laporan
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-light border mb-3">
+                                        <div class="font-weight-bold mb-1">Laporan bug/error staff panel</div>
+                                        <div class="small text-muted">Catatan tersimpan ke Activity Log agar bisa ditindaklanjuti.</div>
+                                    </div>
+                                    <div id="troubleshooting-last-result" class="text-muted small">
+                                        Belum ada laporan baru dari sesi ini.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting Report Modal -->
+                <div class="modal fade" id="troubleshooting-report-modal" tabindex="-1" role="dialog" aria-labelledby="troubleshooting-report-title" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header bg-danger">
+                                <h5 class="modal-title" id="troubleshooting-report-title">
+                                    <i class="fas fa-bug mr-2"></i>Laporan Bug/Error
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group mb-2">
+                                    <label for="troubleshooting-report-message">Detail bug/error <span class="text-danger">*</span></label>
+                                    <textarea id="troubleshooting-report-message" class="form-control" rows="8" maxlength="3000" oninput="updateTroubleshootingReportCount()" placeholder="Tuliskan halaman, tombol/menu yang ditekan, pesan error, dan apa yang seharusnya terjadi."></textarea>
+                                    <div class="d-flex justify-content-between mt-1">
+                                        <small class="form-text text-muted" id="troubleshooting-context-label">Konteks otomatis: halaman staff panel saat ini</small>
+                                        <small class="form-text text-muted"><span id="troubleshooting-report-count">0</span>/3000</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-danger" id="troubleshooting-submit-btn" onclick="submitTroubleshootingReport()">
+                                    <i class="fas fa-paper-plane mr-1"></i>Kirim Laporan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- STAFF POINTS PAGE -->
                 <div id="content-staff-points" class="d-none">
                     <div class="row">
@@ -8005,7 +8081,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v218';
+    window.__assetVersion = 'v219';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
