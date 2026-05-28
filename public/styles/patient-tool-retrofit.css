@@ -93,8 +93,10 @@ body.legacy-tool-retrofit #home-bottom-nav.bottom-nav {
     transform: translateX(-50%) !important;
     width: min(460px, calc(100vw - 28px)) !important;
     z-index: 40 !important;
+    display: block !important;
     margin: 0 !important;
     padding: 6px !important;
+    box-sizing: border-box !important;
     border: 0 !important;
     border-radius: 19px !important;
     background: rgba(0, 0, 0, 0.1) !important;
@@ -104,9 +106,20 @@ body.legacy-tool-retrofit #home-bottom-nav.bottom-nav {
 }
 
 body.legacy-tool-retrofit #home-bottom-nav #home-bottom-inner.bottom-inner {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
     gap: 3px !important;
+}
+
+body.legacy-tool-retrofit #home-bottom-nav .nav-item {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
 }
 
 body.legacy-tool-retrofit .bottom-sheet {
