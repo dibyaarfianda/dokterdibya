@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" data-trial-nav-active="dokumen">
+<html lang="id" data-trial-nav="off" data-trial-nav-active="dokumen">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -14,6 +14,7 @@
 
     <!-- Fonts & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Shared Styles -->
@@ -273,8 +274,11 @@
     </style>
     <script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528v">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260528v">
+    <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit hasil-lab-page" data-tool-shell-active="dokumen" data-tool-kicker="Hasil Lab" data-tool-title="Hasil laboratorium." data-tool-copy="Lihat hasil pemeriksaan laboratorium yang dikirim dokter, dengan preview dan unduhan saat file tersedia." data-tool-meta-label="Dokumen" data-tool-meta-value="Lab Result">
     <!-- Safe Area Overlays -->
     <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
     <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
@@ -328,11 +332,11 @@
             <i class="fa fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="/notifikasi-trial.html" class="nav-item">
+        <a href="#" class="nav-item" onclick="openNotificationModal(event); return false;">
             <i class="fa fa-bell"></i>
             <span>Notifikasi</span>
         </a>
-        <a href="/profil-trial.html" class="nav-item">
+        <a href="#" class="nav-item" onclick="openProfileModal(event); return false;">
             <i class="fa fa-user"></i>
             <span>Profil</span>
         </a>
@@ -605,6 +609,7 @@
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
 
-    <script src="/scripts/trial-bottom-nav.js?v=20260528home1" defer></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260528v"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260528v"></script>
 </body>
 </html>

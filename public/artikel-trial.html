@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-trial-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -395,8 +395,11 @@
     </style>
     <script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528v">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260528v">
+    <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
-<body class="trial-themed">
+<body class="trial-themed home-sections-locked patient-tool-shell legacy-tool-retrofit artikel-page" data-tool-shell-active="beranda" data-tool-kicker="Ruang Membaca" data-tool-title="Nadi pengetahuan." data-tool-copy="Kurasi artikel seputar kehamilan, program hamil, dan kesehatan kandungan dalam tampilan yang nyaman dibaca." data-tool-meta-label="Konten" data-tool-meta-value="Artikel">
 
     <!-- Topbar (trial theme) -->
     <header class="topbar-trial" role="banner">
@@ -412,10 +415,10 @@
                     <i class="fa-solid fa-chevron-left"></i>
                     <span>Kembali</span>
                 </a>
-                <button class="circle-btn" onclick="window.location.href='/notifikasi.html'" aria-label="Notifikasi">
+                <button class="circle-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
                     <i class="fa-solid fa-bell"></i>
                 </button>
-                <a class="avatar" href="/profil-trial.html" aria-label="Profil">
+                <a class="avatar" href="#" onclick="openProfileModal(event); return false;" aria-label="Profil">
                     <i class="fa-solid fa-user"></i>
                 </a>
             </div>
@@ -768,6 +771,7 @@
     </script>
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
-    <script src="/scripts/trial-bottom-nav.js?v=20260528home1" defer></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260528v"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260528v"></script>
 </body>
 </html>

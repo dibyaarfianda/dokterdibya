@@ -1,0 +1,300 @@
+/* SISIwanita legacy trial page adapter styles. Loaded after older page CSS. */
+
+html[data-trial-nav="off"] {
+    background: var(--bg, #f7f7f4) !important;
+}
+
+body.legacy-tool-retrofit {
+    margin: 0 !important;
+    padding-bottom: calc(var(--nav-height, 74px) + env(safe-area-inset-bottom, 0px) + 20px) !important;
+}
+
+body.legacy-tool-retrofit .safe-area-top,
+body.legacy-tool-retrofit .safe-area-bottom,
+body.legacy-tool-retrofit .nav-bar,
+body.legacy-tool-retrofit .top-bar,
+body.legacy-tool-retrofit .topbar-trial,
+body.legacy-tool-retrofit .topbar-trial-spacer,
+body.legacy-tool-retrofit .trial-unified-header,
+body.legacy-tool-retrofit header.topbar:not(#home-topbar),
+body.legacy-tool-retrofit .bottom-nav:not(#home-bottom-nav),
+body.legacy-tool-retrofit .site-footer,
+body.legacy-tool-retrofit .page-hero,
+body.legacy-tool-retrofit .grain-overlay {
+    display: none !important;
+}
+
+body.legacy-tool-retrofit main.main-content,
+body.legacy-tool-retrofit .main-content,
+body.legacy-tool-retrofit main.content,
+body.legacy-tool-retrofit .page-body,
+body.legacy-tool-retrofit main.page-wrap,
+body.legacy-tool-retrofit main.reading-room,
+body.legacy-tool-retrofit .reading-room {
+    width: min(100%, 860px) !important;
+    max-width: 860px !important;
+    margin: 0 auto !important;
+    padding: 0 16px 24px !important;
+    position: relative !important;
+}
+
+body.legacy-tool-retrofit .tool-retrofit-hero {
+    margin-bottom: 18px !important;
+}
+
+body.legacy-tool-retrofit .tanya-hero {
+    padding: 0 !important;
+    margin: 0 0 14px !important;
+}
+
+html body.legacy-tool-retrofit main.page-wrap .tanya-hero > .section-kicker,
+html body.legacy-tool-retrofit main.page-wrap .tanya-hero > .section-title,
+html body.legacy-tool-retrofit main.page-wrap .tanya-hero > .section-lead,
+body.legacy-tool-retrofit .tanya-hero > .section-kicker,
+body.legacy-tool-retrofit .tanya-hero > .section-title,
+body.legacy-tool-retrofit .tanya-hero > .section-lead {
+    display: none !important;
+}
+
+body.legacy-tool-retrofit .tanya-tabs,
+body.legacy-tool-retrofit .filter-tabs,
+body.legacy-tool-retrofit .step-indicator {
+    border: 1px solid var(--line) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    box-shadow: var(--shadow-soft) !important;
+    padding: 6px !important;
+    margin: 0 0 14px !important;
+}
+
+body.legacy-tool-retrofit .tanya-tab,
+body.legacy-tool-retrofit .filter-tab,
+body.legacy-tool-retrofit .step {
+    border-radius: 14px !important;
+    color: var(--muted) !important;
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+body.legacy-tool-retrofit .tanya-tab.active,
+body.legacy-tool-retrofit .filter-tab.active,
+body.legacy-tool-retrofit .step.active,
+body.legacy-tool-retrofit .step.completed {
+    background: var(--ink) !important;
+    color: #fff !important;
+    border-color: var(--ink) !important;
+}
+
+body.legacy-tool-retrofit .loading-state,
+body.legacy-tool-retrofit .loading,
+body.legacy-tool-retrofit .state-block {
+    border: 1px solid var(--line) !important;
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.76) !important;
+    color: var(--muted) !important;
+    box-shadow: var(--shadow-soft) !important;
+}
+
+body.legacy-tool-retrofit .stats-row,
+body.legacy-tool-retrofit .vitamin-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin: 0 0 14px !important;
+}
+
+body.legacy-tool-retrofit .stat-box,
+body.legacy-tool-retrofit .trial-card,
+body.legacy-tool-retrofit .ask-card,
+body.legacy-tool-retrofit .doc-card,
+body.legacy-tool-retrofit .lab-card,
+body.legacy-tool-retrofit .visit-card,
+body.legacy-tool-retrofit .session-card,
+body.legacy-tool-retrofit .summary-card,
+body.legacy-tool-retrofit .info-box,
+body.legacy-tool-retrofit .legend-card,
+body.legacy-tool-retrofit .state-card,
+body.legacy-tool-retrofit .article-card,
+body.legacy-tool-retrofit .empty-info,
+body.legacy-tool-retrofit .empty-state {
+    border: 1px solid var(--line) !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.84) !important;
+    box-shadow: var(--shadow-soft) !important;
+    color: var(--ink) !important;
+}
+
+body.legacy-tool-retrofit .doc-card,
+body.legacy-tool-retrofit .lab-card,
+body.legacy-tool-retrofit .visit-card,
+body.legacy-tool-retrofit .session-card,
+body.legacy-tool-retrofit .article-card {
+    overflow: hidden !important;
+}
+
+body.legacy-tool-retrofit .doc-card-inner,
+body.legacy-tool-retrofit .lab-card-inner,
+body.legacy-tool-retrofit .visit-card,
+body.legacy-tool-retrofit .article-card,
+body.legacy-tool-retrofit .trial-card {
+    padding: 16px !important;
+}
+
+body.legacy-tool-retrofit .doc-title,
+body.legacy-tool-retrofit .lab-title,
+body.legacy-tool-retrofit .visit-date,
+body.legacy-tool-retrofit .session-title,
+body.legacy-tool-retrofit .trial-card-title,
+body.legacy-tool-retrofit .section-title,
+body.legacy-tool-retrofit .modal-title {
+    color: var(--ink) !important;
+    font-family: var(--display) !important;
+    letter-spacing: -0.02em !important;
+}
+
+body.legacy-tool-retrofit .doc-date,
+body.legacy-tool-retrofit .lab-date,
+body.legacy-tool-retrofit .lab-description,
+body.legacy-tool-retrofit .visit-info,
+body.legacy-tool-retrofit .section-lead,
+body.legacy-tool-retrofit .trial-card-desc,
+body.legacy-tool-retrofit .empty-info p,
+body.legacy-tool-retrofit .privacy-note,
+body.legacy-tool-retrofit .refresh-info,
+body.legacy-tool-retrofit .reminder-helper,
+body.legacy-tool-retrofit .modal-meta,
+body.legacy-tool-retrofit .modal-text {
+    color: var(--muted) !important;
+}
+
+body.legacy-tool-retrofit .trial-input,
+body.legacy-tool-retrofit .trial-textarea,
+body.legacy-tool-retrofit textarea,
+body.legacy-tool-retrofit input,
+body.legacy-tool-retrofit select {
+    background: rgba(255,255,255,0.92) !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line-strong) !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+}
+
+body.legacy-tool-retrofit .trial-button,
+body.legacy-tool-retrofit .btn-next,
+body.legacy-tool-retrofit .btn-submit,
+body.legacy-tool-retrofit .btn-download,
+body.legacy-tool-retrofit .btn-share,
+body.legacy-tool-retrofit .refresh-btn,
+body.legacy-tool-retrofit .settings-btn,
+body.legacy-tool-retrofit .doc-btn,
+body.legacy-tool-retrofit .slot-btn.selected,
+body.legacy-tool-retrofit .date-card.selected,
+body.legacy-tool-retrofit .category-card.selected,
+body.legacy-tool-retrofit .mini-btn.primary {
+    background: var(--ink) !important;
+    color: #fff !important;
+    border-color: var(--ink) !important;
+}
+
+body.legacy-tool-retrofit .trial-button-ghost,
+body.legacy-tool-retrofit .btn-back,
+body.legacy-tool-retrofit .btn-cancel,
+body.legacy-tool-retrofit .btn-invoice,
+body.legacy-tool-retrofit .image-upload-btn,
+body.legacy-tool-retrofit .slot-btn,
+body.legacy-tool-retrofit .date-card,
+body.legacy-tool-retrofit .category-card,
+body.legacy-tool-retrofit .mini-btn {
+    background: rgba(255,255,255,0.72) !important;
+    color: var(--ink) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 14px !important;
+}
+
+body.legacy-tool-retrofit .slot-btn.disabled,
+body.legacy-tool-retrofit .date-card.disabled,
+body.legacy-tool-retrofit button:disabled {
+    opacity: 0.48 !important;
+}
+
+body.legacy-tool-retrofit .usg-gallery,
+body.legacy-tool-retrofit .articles-grid,
+body.legacy-tool-retrofit .date-grid,
+body.legacy-tool-retrofit .category-grid,
+body.legacy-tool-retrofit .slot-grid,
+body.legacy-tool-retrofit .legend-grid {
+    gap: 10px !important;
+}
+
+body.legacy-tool-retrofit .usg-item {
+    border-radius: 20px !important;
+    border: 1px solid var(--line) !important;
+    overflow: hidden !important;
+    box-shadow: var(--shadow-soft) !important;
+    background: var(--surface-solid) !important;
+}
+
+body.legacy-tool-retrofit .preview-modal,
+body.legacy-tool-retrofit .lightbox-modal,
+body.legacy-tool-retrofit .thread-modal,
+body.legacy-tool-retrofit .modal-overlay.active,
+body.legacy-tool-retrofit .reminder-modal.show,
+body.legacy-tool-retrofit .queue-reminder-popup {
+    z-index: 2100 !important;
+}
+
+body.legacy-tool-retrofit .preview-header,
+body.legacy-tool-retrofit .lightbox-header,
+body.legacy-tool-retrofit .thread-modal-header,
+body.legacy-tool-retrofit .modal-header {
+    background: rgba(255,255,255,0.96) !important;
+    color: var(--ink) !important;
+    border-color: var(--line) !important;
+}
+
+body.legacy-tool-retrofit .preview-body,
+body.legacy-tool-retrofit .lightbox-footer,
+body.legacy-tool-retrofit .thread-modal-body,
+body.legacy-tool-retrofit .thread-modal-footer,
+body.legacy-tool-retrofit .modal-content,
+body.legacy-tool-retrofit .reminder-card,
+body.legacy-tool-retrofit .queue-reminder-popup-card {
+    background: var(--surface-solid) !important;
+    color: var(--ink) !important;
+}
+
+body.legacy-tool-retrofit .thread-card,
+body.legacy-tool-retrofit .message,
+body.legacy-tool-retrofit .reminder-note,
+body.legacy-tool-retrofit .upload-box {
+    border: 1px solid var(--line) !important;
+    border-radius: 18px !important;
+    background: rgba(255,255,255,0.82) !important;
+    color: var(--ink) !important;
+}
+
+body.legacy-tool-retrofit .toast {
+    z-index: 2300 !important;
+}
+
+body.legacy-tool-retrofit .pull-indicator {
+    z-index: 2200 !important;
+}
+
+@media (max-width: 560px) {
+    body.legacy-tool-retrofit .stats-row,
+    body.legacy-tool-retrofit .vitamin-stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    body.legacy-tool-retrofit main.main-content,
+    body.legacy-tool-retrofit .main-content,
+    body.legacy-tool-retrofit main.content,
+    body.legacy-tool-retrofit .page-body,
+    body.legacy-tool-retrofit main.page-wrap,
+    body.legacy-tool-retrofit main.reading-room,
+    body.legacy-tool-retrofit .reading-room {
+        padding-left: 14px !important;
+        padding-right: 14px !important;
+    }
+}
