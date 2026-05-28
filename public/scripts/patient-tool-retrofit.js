@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260528y';
+    var VERSION = '20260528z';
     var pageDefaults = {
         '/album-usg-trial.html': {
             activeNav: 'dokumen',
@@ -52,6 +52,14 @@
             copy: 'Pilih tanggal praktik, slot waktu, jenis konsultasi, lalu kirim permintaan booking ke staff klinik.',
             metaLabel: 'Alur',
             metaValue: '4 langkah'
+        },
+        '/jadwal-rs-trial.html': {
+            activeNav: 'jadwal',
+            kicker: 'Jadwal Rumah Sakit',
+            title: 'Jadwal praktik RS.',
+            copy: 'Lihat rumah sakit, hari praktik, dan jam praktik dokter dalam satu halaman ringkas.',
+            metaLabel: 'Mode',
+            metaValue: 'Informasi Jadwal'
         },
         '/tanya-dokter-trial.html': {
             activeNav: 'aplikasi',
