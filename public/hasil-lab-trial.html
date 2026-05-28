@@ -275,7 +275,7 @@
     <script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
     <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528y">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260528y">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529a">
     <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit hasil-lab-page" data-tool-shell-active="dokumen" data-tool-kicker="Hasil Lab" data-tool-title="Hasil laboratorium." data-tool-copy="Lihat hasil pemeriksaan laboratorium yang dikirim dokter, dengan preview dan unduhan saat file tersedia." data-tool-meta-label="Dokumen" data-tool-meta-value="Lab Result">
@@ -503,6 +503,7 @@
             currentLabItem = labResults[index];
 
             document.getElementById('preview-modal').classList.add('active');
+            document.body.classList.add('document-viewer-open');
             document.body.style.overflow = 'hidden';
 
             const date = new Date(currentLabItem.date);
@@ -518,18 +519,18 @@
                 previewBody.innerHTML = `<img src="${currentLabItem.url}" alt="${escapeHtml(currentLabItem.title || 'Lab Result')}">`;
             } else if (currentLabItem.fileType === 'pdf') {
                 previewBody.innerHTML = `
-                    <div style="text-align: center; color: rgba(255,255,255,0.7);">
-                        <i class="fa fa-file-pdf-o" style="font-size: 64px; color: #ef4444; margin-bottom: 15px;"></i>
+                    <div class="document-viewer-empty">
+                        <i class="fa fa-file-pdf-o"></i>
                         <p>File PDF tidak dapat ditampilkan langsung.</p>
-                        <p style="font-size: 12px;">Klik tombol Download untuk membuka file.</p>
+                        <p>Klik tombol Download untuk membuka file.</p>
                     </div>
                 `;
             } else {
                 previewBody.innerHTML = `
-                    <div style="text-align: center; color: rgba(255,255,255,0.7);">
-                        <i class="fa fa-file-o" style="font-size: 64px; margin-bottom: 15px;"></i>
+                    <div class="document-viewer-empty">
+                        <i class="fa fa-file-o"></i>
                         <p>Preview tidak tersedia.</p>
-                        <p style="font-size: 12px;">Klik tombol Download untuk membuka file.</p>
+                        <p>Klik tombol Download untuk membuka file.</p>
                     </div>
                 `;
             }
@@ -553,6 +554,7 @@
         // Close preview
         function closePreview() {
             document.getElementById('preview-modal').classList.remove('active');
+            document.body.classList.remove('document-viewer-open');
             document.body.style.overflow = '';
             currentLabItem = null;
         }

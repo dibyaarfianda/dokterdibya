@@ -40,7 +40,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html { background: var(--bg); scroll-behavior: smooth; overscroll-behavior: contain; }
+        html { background: var(--bg); scroll-behavior: auto; overscroll-behavior: auto; }
         body {
             min-height: 100vh;
             background:
@@ -942,7 +942,7 @@
         }
 
         body.home-scroll-braking {
-            overscroll-behavior: contain;
+            overscroll-behavior: auto;
         }
 
         body.home-later-revealed #primary-actions-section ~ .section:nth-of-type(3) { animation-delay: 0.08s; }
@@ -1207,39 +1207,38 @@
             <section class="section reveal" id="primary-actions-section">
                 <div class="section-head">
                     <div>
-                        <div class="section-kicker">Aksi Utama</div>
-                        <h2 class="section-title">Buka yang dibutuhkan</h2>
+                        <div class="section-kicker">The Portal</div>
+                        <h2 class="section-title">Menu Utama</h2>
                     </div>
-                    <div class="section-note">Ringkas seperti app</div>
                 </div>
                 <div class="action-grid">
                     <button class="tap-card soundable" onclick="openSheet('dokumen')">
                         <span class="icon doc-color"><i class="fa-solid fa-folder-open"></i></span>
-                        <span><h3>Dokumen</h3><p>USG, lab, resume</p></span>
+                        <span><h3>Dokumen</h3><p>Hasil USG, Laboratorium, Resume</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openSheet('aplikasi')">
                         <span class="icon app-color"><i class="fa-solid fa-heart-pulse"></i></span>
-                        <span><h3>Aplikasi</h3><p>Tracker & reminder</p></span>
+                        <span><h3>Aplikasi</h3><p>Fitur spesial</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openSheet('jadwal')">
                         <span class="icon schedule-color"><i class="fa-solid fa-calendar-days"></i></span>
-                        <span><h3>Jadwal</h3><p>Booking & RS</p></span>
+                        <span><h3>Jadwal</h3><p>Buat janji temu</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openSheet('edukasi')">
                         <span class="icon edu-color"><i class="fa-solid fa-book-open"></i></span>
-                        <span><h3>Edukasi</h3><p>Artikel & panduan</p></span>
+                        <span><h3>Ruang Baca</h3><p>Artikel dan cerita</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="go('/tanya-dokter-trial.html')">
                         <span class="icon doctor-color"><i class="fa-solid fa-comments"></i></span>
-                        <span><h3>Tanya Dokter</h3><p>Privat & aman</p></span>
+                        <span><h3>Tanya Dokter</h3><p>Privat dan terpantau</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="openMyCorner()">
+                        <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
+                        <span><h3 id="corner-card-title">Ruang Saya</h3><p>Kreatifitas dan berbagi</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openBugReportModal(event)">
                         <span class="icon report-color"><i class="fa-solid fa-bug"></i></span>
                         <span><h3>Lapor Bug/Error</h3><p>Pengembangan Portal</p></span>
-                    </button>
-                    <button class="tap-card soundable" onclick="openMyCorner()">
-                        <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
-                        <span><h3 id="corner-card-title">Ruang Saya</h3><p>Catatan pribadi</p></span>
                     </button>
                 </div>
             </section>
@@ -2296,7 +2295,7 @@
                 ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
                 ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
             ]},
-            edukasi: { title: 'Edukasi', items: [
+            edukasi: { title: 'Ruang Baca', items: [
                 ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
                 ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
                 ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
@@ -2375,14 +2374,7 @@
 
         function brakeHomeScrollAt(section, duration) {
             if (!section) return;
-            const now = Date.now();
-            if (homeScrollBrakeUntil > now) return;
-            homeScrollBrakeTarget = getHomeSectionStopY(section);
-            homeScrollBrakeUntil = now + duration;
-            document.body.classList.add('home-scroll-braking');
-            window.clearTimeout(homeScrollBrakeTimer);
-            window.scrollTo({ top: homeScrollBrakeTarget, behavior: 'smooth' });
-            homeScrollBrakeTimer = window.setTimeout(releaseHomeScrollBrake, duration);
+            releaseHomeScrollBrake();
         }
 
         function isHomeScrollBraking() {
@@ -2392,7 +2384,6 @@
         function preventHomeScrollDuringBrake(event) {
             if (!isHomeScrollBraking()) return;
             if (event.target && event.target.closest && event.target.closest('.bottom-sheet.active, .modal-card.active')) return;
-            event.preventDefault();
         }
 
         function getNextVisibleHomeSection(section) {
@@ -2528,7 +2519,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528ai', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260529a', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }

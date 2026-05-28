@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528ai'; // 2026-05-28ai - remove duplicate room title
+const CACHE_VERSION = '20260529a'; // 2026-05-29a - portal menu, scroll, and document viewer theme
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

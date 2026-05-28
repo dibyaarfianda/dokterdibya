@@ -375,6 +375,305 @@ body.legacy-tool-retrofit .pull-indicator {
     z-index: 2200 !important;
 }
 
+body.legacy-tool-retrofit.document-viewer-open {
+    overflow: hidden !important;
+    touch-action: none !important;
+}
+
+body.legacy-tool-retrofit.document-viewer-open #home-topbar,
+body.legacy-tool-retrofit.document-viewer-open #home-bottom-nav,
+body.legacy-tool-retrofit.document-viewer-open .topbar-blur-fade {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.legacy-tool-retrofit .preview-modal,
+body.legacy-tool-retrofit .lightbox-modal {
+    background:
+        radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 28%),
+        linear-gradient(180deg, #fbfbf8 0%, var(--bg, #f7f7f4) 58%, #ffffff 100%) !important;
+    color: var(--ink) !important;
+    z-index: 2600 !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+body.legacy-tool-retrofit .preview-header,
+body.legacy-tool-retrofit .lightbox-header {
+    flex: 0 0 auto !important;
+    min-height: 56px !important;
+    padding: 10px 16px !important;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+    background: rgba(251, 251, 248, 0.88) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    backdrop-filter: blur(18px) !important;
+    border-bottom: 1px solid var(--line) !important;
+    box-shadow: 0 1px 2px rgba(17, 17, 17, 0.04) !important;
+}
+
+body.legacy-tool-retrofit .preview-header h3,
+body.legacy-tool-retrofit .lightbox-header h3 {
+    margin: 0 !important;
+    color: var(--ink) !important;
+    font-family: var(--display) !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    letter-spacing: -0.02em !important;
+}
+
+body.legacy-tool-retrofit .preview-close,
+body.legacy-tool-retrofit .lightbox-close {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    color: var(--ink) !important;
+    box-shadow: var(--shadow-soft) !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+}
+
+body.legacy-tool-retrofit .preview-close:active,
+body.legacy-tool-retrofit .lightbox-close:active,
+body.legacy-tool-retrofit .lightbox-nav:active,
+body.legacy-tool-retrofit .preview-actions button:active,
+body.legacy-tool-retrofit .lightbox-actions button:active {
+    transform: scale(0.97) !important;
+}
+
+body.legacy-tool-retrofit .preview-body,
+body.legacy-tool-retrofit .lightbox-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    padding: 16px !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+}
+
+body.legacy-tool-retrofit .preview-body {
+    display: grid !important;
+    align-items: center !important;
+    justify-items: center !important;
+}
+
+body.legacy-tool-retrofit.dokumen-medis-page .preview-body {
+    align-items: start !important;
+}
+
+body.legacy-tool-retrofit .lightbox-body {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.legacy-tool-retrofit .preview-body img,
+body.legacy-tool-retrofit .lightbox-body img {
+    width: auto !important;
+    max-width: min(100%, 960px) !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 18px !important;
+    background: var(--surface-solid, #fff) !important;
+    box-shadow: 0 18px 45px rgba(17, 17, 17, 0.12) !important;
+}
+
+body.legacy-tool-retrofit .preview-body iframe {
+    width: min(100%, 960px) !important;
+    height: 100% !important;
+    min-height: 360px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 18px !important;
+    background: var(--surface-solid, #fff) !important;
+    box-shadow: 0 18px 45px rgba(17, 17, 17, 0.12) !important;
+}
+
+body.legacy-tool-retrofit .lightbox-nav {
+    width: 42px !important;
+    height: 42px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 15px !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    color: var(--ink) !important;
+    box-shadow: 0 10px 24px rgba(17, 17, 17, 0.11) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    backdrop-filter: blur(14px) !important;
+}
+
+body.legacy-tool-retrofit .lightbox-nav.prev {
+    left: max(12px, env(safe-area-inset-left, 0px) + 12px) !important;
+}
+
+body.legacy-tool-retrofit .lightbox-nav.next {
+    right: max(12px, env(safe-area-inset-right, 0px) + 12px) !important;
+}
+
+body.legacy-tool-retrofit .preview-footer,
+body.legacy-tool-retrofit .lightbox-footer {
+    flex: 0 0 auto !important;
+    padding: 12px 16px !important;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    background: rgba(251, 251, 248, 0.9) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    backdrop-filter: blur(18px) !important;
+    border-top: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+    text-align: left !important;
+}
+
+body.legacy-tool-retrofit .preview-date,
+body.legacy-tool-retrofit .lightbox-footer .date {
+    width: min(100%, 860px) !important;
+    margin: 0 auto 4px !important;
+    color: var(--ink) !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    font-family: var(--display) !important;
+    letter-spacing: -0.01em !important;
+}
+
+body.legacy-tool-retrofit .preview-desc,
+body.legacy-tool-retrofit .lightbox-footer .notes {
+    width: min(100%, 860px) !important;
+    margin: 0 auto 10px !important;
+    color: var(--muted) !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+}
+
+body.legacy-tool-retrofit .preview-desc:empty,
+body.legacy-tool-retrofit .lightbox-footer .notes:empty {
+    display: none !important;
+}
+
+body.legacy-tool-retrofit .preview-actions,
+body.legacy-tool-retrofit .lightbox-actions {
+    width: min(100%, 860px) !important;
+    max-width: 860px !important;
+    margin: 10px auto 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+}
+
+body.legacy-tool-retrofit .lightbox-actions:has(button:only-child),
+body.legacy-tool-retrofit .preview-actions:has(button:only-child) {
+    grid-template-columns: 1fr !important;
+}
+
+body.legacy-tool-retrofit .preview-actions.single-action,
+body.legacy-tool-retrofit .lightbox-actions.single-action {
+    width: min(100%, 540px) !important;
+    grid-template-columns: 1fr !important;
+}
+
+body.legacy-tool-retrofit .preview-actions button,
+body.legacy-tool-retrofit .lightbox-actions button {
+    min-height: 44px !important;
+    padding: 12px 14px !important;
+    border-radius: 16px !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    font-family: var(--font) !important;
+    letter-spacing: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    box-shadow: none !important;
+}
+
+body.legacy-tool-retrofit .preview-actions .btn-download,
+body.legacy-tool-retrofit .lightbox-actions .btn-download {
+    background: var(--ink) !important;
+    border: 1px solid var(--ink) !important;
+    color: #fff !important;
+}
+
+body.legacy-tool-retrofit .preview-actions .btn-share,
+body.legacy-tool-retrofit .lightbox-actions .btn-thumbnail {
+    background: rgba(255, 255, 255, 0.74) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--ink) !important;
+}
+
+body.legacy-tool-retrofit .lightbox-actions .btn-thumbnail.active {
+    background: var(--green-soft) !important;
+    border-color: rgba(92, 127, 114, 0.28) !important;
+    color: var(--green) !important;
+}
+
+body.legacy-tool-retrofit .document-viewer-empty,
+body.legacy-tool-retrofit .resume-loading {
+    width: min(100%, 420px) !important;
+    margin: auto !important;
+    padding: 28px 22px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    box-shadow: var(--shadow-soft) !important;
+    color: var(--muted) !important;
+    text-align: center !important;
+}
+
+body.legacy-tool-retrofit .document-viewer-empty i,
+body.legacy-tool-retrofit .resume-loading i {
+    display: inline-grid !important;
+    place-items: center !important;
+    width: 52px !important;
+    height: 52px !important;
+    margin: 0 auto 14px !important;
+    border-radius: 18px !important;
+    background: var(--surface-muted, #f0f0ec) !important;
+    color: var(--green) !important;
+    font-size: 22px !important;
+    opacity: 1 !important;
+}
+
+body.legacy-tool-retrofit .document-viewer-empty p,
+body.legacy-tool-retrofit .resume-loading p {
+    margin: 0 !important;
+    color: var(--muted) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+}
+
+body.legacy-tool-retrofit .document-viewer-empty p + p,
+body.legacy-tool-retrofit .resume-loading p + p {
+    margin-top: 5px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+body.legacy-tool-retrofit .resume-content {
+    width: min(100%, 920px) !important;
+    margin: 0 auto !important;
+    padding: clamp(18px, 3vw, 30px) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 22px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 18px 45px rgba(17, 17, 17, 0.08) !important;
+    color: var(--ink-soft) !important;
+    font-size: 14px !important;
+    line-height: 1.78 !important;
+}
+
+body.legacy-tool-retrofit #toast-container {
+    z-index: 2900 !important;
+}
+
 @media (max-width: 560px) {
     body.legacy-tool-retrofit .stats-row,
     body.legacy-tool-retrofit .vitamin-stats-grid {
@@ -390,5 +689,29 @@ body.legacy-tool-retrofit .pull-indicator {
     body.legacy-tool-retrofit .reading-room {
         padding-left: 14px !important;
         padding-right: 14px !important;
+    }
+
+    body.legacy-tool-retrofit .preview-body,
+    body.legacy-tool-retrofit .lightbox-body {
+        padding: 12px !important;
+    }
+
+    body.legacy-tool-retrofit .preview-actions,
+    body.legacy-tool-retrofit .lightbox-actions {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+
+    body.legacy-tool-retrofit .preview-actions button,
+    body.legacy-tool-retrofit .lightbox-actions button {
+        min-height: 42px !important;
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+
+    body.legacy-tool-retrofit .lightbox-nav {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 14px !important;
     }
 }
