@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528v'; // 2026-05-28v - standardize legacy patient trial tools
+const CACHE_VERSION = '20260528w'; // 2026-05-28w - fix legacy trial PWA mobile centering
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
