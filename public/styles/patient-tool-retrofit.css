@@ -50,9 +50,63 @@ body.legacy-tool-retrofit #home-topbar .topbar-inner {
     width: min(100vw, 860px) !important;
 }
 
+body.legacy-tool-retrofit #home-topbar.topbar {
+    position: sticky !important;
+    top: env(safe-area-inset-top, 0px) !important;
+    z-index: 30 !important;
+    display: block !important;
+    align-items: initial !important;
+    justify-content: initial !important;
+    gap: 0 !important;
+    width: 100vw !important;
+    margin: 0 0 clamp(22px, 4vh, 42px) !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+body.legacy-tool-retrofit #home-topbar #home-topbar-inner.topbar-inner {
+    width: min(100vw, 860px) !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    padding: 8px 13px 10px !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+    justify-content: initial !important;
+    gap: 11px !important;
+}
+
 body.legacy-tool-retrofit #home-bottom-nav {
     left: 50vw !important;
     width: min(460px, calc(100vw - 28px)) !important;
+}
+
+body.legacy-tool-retrofit #home-bottom-nav.bottom-nav {
+    position: fixed !important;
+    left: 50vw !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+    transform: translateX(-50%) !important;
+    width: min(460px, calc(100vw - 28px)) !important;
+    z-index: 40 !important;
+    margin: 0 !important;
+    padding: 6px !important;
+    border: 0 !important;
+    border-radius: 19px !important;
+    background: rgba(0, 0, 0, 0.1) !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+body.legacy-tool-retrofit #home-bottom-nav #home-bottom-inner.bottom-inner {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 3px !important;
 }
 
 body.legacy-tool-retrofit .bottom-sheet {
