@@ -2,11 +2,19 @@
 
 html[data-trial-nav="off"] {
     background: var(--bg, #f7f7f4) !important;
+    width: 100vw !important;
+    max-width: none !important;
+    overflow-x: hidden !important;
+    overflow-x: clip !important;
 }
 
 body.legacy-tool-retrofit {
     margin: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
     padding-bottom: calc(var(--nav-height, 74px) + env(safe-area-inset-bottom, 0px) + 20px) !important;
+    overflow-x: hidden !important;
+    overflow-x: clip !important;
 }
 
 body.legacy-tool-retrofit .safe-area-top,
@@ -31,11 +39,30 @@ body.legacy-tool-retrofit .page-body,
 body.legacy-tool-retrofit main.page-wrap,
 body.legacy-tool-retrofit main.reading-room,
 body.legacy-tool-retrofit .reading-room {
-    width: min(100%, 860px) !important;
-    max-width: 860px !important;
+    width: min(100vw, 860px) !important;
+    max-width: none !important;
     margin: 0 auto !important;
     padding: 0 16px 24px !important;
     position: relative !important;
+}
+
+body.legacy-tool-retrofit #home-topbar .topbar-inner {
+    width: min(100vw, 860px) !important;
+}
+
+body.legacy-tool-retrofit #home-bottom-nav {
+    left: 50vw !important;
+    width: min(460px, calc(100vw - 28px)) !important;
+}
+
+body.legacy-tool-retrofit .bottom-sheet {
+    left: 50vw !important;
+    width: min(420px, calc(100vw - 28px)) !important;
+}
+
+body.legacy-tool-retrofit .shell-modal {
+    left: 50vw !important;
+    width: min(430px, calc(100vw - 28px)) !important;
 }
 
 body.legacy-tool-retrofit .tool-retrofit-hero {
