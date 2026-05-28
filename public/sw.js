@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528z'; // 2026-05-28z - standardize RS schedule as information-only
+const CACHE_VERSION = '20260528aa'; // 2026-05-28aa - fix home portal sound toggle state
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
