@@ -1525,17 +1525,24 @@
             toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
         }
 
+        function getTapSoundPreference() {
+            return localStorage.getItem(TAP_SOUND_KEY) !== '0';
+        }
+
         function isTapSoundEnabled() {
-            return localStorage.getItem(TAP_SOUND_KEY) !== '0' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            return getTapSoundPreference();
         }
 
         function updateSoundUI() {
-            const enabled = isTapSoundEnabled();
+            const enabled = getTapSoundPreference();
             const label = document.getElementById('sound-toggle-label');
             const toggle = document.getElementById('sound-toggle');
             const sw = document.getElementById('corner-sound-switch');
             if (label) label.textContent = enabled ? 'Sound On' : 'Sound Off';
-            if (toggle) toggle.querySelector('i').className = enabled ? 'fa-solid fa-volume-low' : 'fa-solid fa-volume-xmark';
+            if (toggle) {
+                toggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                toggle.querySelector('i').className = enabled ? 'fa-solid fa-volume-low' : 'fa-solid fa-volume-xmark';
+            }
             if (sw) sw.classList.toggle('on', enabled);
         }
 
@@ -1563,7 +1570,7 @@
         }
 
         function toggleTapSound() {
-            const currently = isTapSoundEnabled();
+            const currently = getTapSoundPreference();
             localStorage.setItem(TAP_SOUND_KEY, currently ? '0' : '1');
             updateSoundUI();
             if (!currently) {
@@ -1575,7 +1582,8 @@
         }
 
         document.addEventListener('click', function(event) {
-            if (event.target.closest('.soundable')) playTapSound();
+            const soundTarget = event.target.closest('.soundable');
+            if (soundTarget && !soundTarget.closest('#sound-toggle')) playTapSound();
         }, true);
 
         function applyMyCorner() {
@@ -2231,7 +2239,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528s', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528aa', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
