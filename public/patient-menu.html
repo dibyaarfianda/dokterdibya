@@ -814,10 +814,35 @@
         .birth-popup-field input:focus, .birth-popup-field select:focus {
             border-color: #a855f7;
         }
+        .birth-date-picker {
+            display: grid;
+            grid-template-columns: minmax(74px, 0.78fr) minmax(112px, 1.22fr) minmax(92px, 1fr);
+            gap: 8px;
+        }
+        .birth-date-picker select {
+            min-width: 0;
+        }
+        .birth-date-hint {
+            margin: 6px 0 0 !important;
+            color: #aaa !important;
+            font-size: 11px !important;
+            line-height: 1.45 !important;
+        }
         .birth-popup-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
+        }
+        @media (max-width: 420px) {
+            .birth-date-picker {
+                grid-template-columns: 0.82fr 1.18fr 1fr;
+                gap: 6px;
+            }
+            .birth-date-picker select {
+                padding-left: 9px;
+                padding-right: 9px;
+                font-size: 13px;
+            }
         }
         .birth-popup-btn-row {
             display: flex;
@@ -2065,7 +2090,31 @@
                             </div>
                             <div class="birth-popup-field">
                                 <label>Tanggal Persalinan</label>
-                                <input type="date" id="popup-birth-date">
+                                <input type="hidden" id="popup-birth-date">
+                                <div class="birth-date-picker" aria-describedby="popup-birth-date-hint">
+                                    <select id="popup-birth-day" aria-label="Tanggal persalinan">
+                                        <option value="">Tanggal</option>
+                                    </select>
+                                    <select id="popup-birth-month" aria-label="Bulan persalinan">
+                                        <option value="">Bulan</option>
+                                        <option value="01">Januari</option>
+                                        <option value="02">Februari</option>
+                                        <option value="03">Maret</option>
+                                        <option value="04">April</option>
+                                        <option value="05">Mei</option>
+                                        <option value="06">Juni</option>
+                                        <option value="07">Juli</option>
+                                        <option value="08">Agustus</option>
+                                        <option value="09">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                    <select id="popup-birth-year" aria-label="Tahun persalinan">
+                                        <option value="">Tahun</option>
+                                    </select>
+                                </div>
+                                <p class="birth-date-hint" id="popup-birth-date-hint">Pilih tahun langsung dari kotak Tahun, tanpa membuka kalender.</p>
                             </div>
                         </div>
                         <div class="birth-popup-field">
@@ -3140,14 +3189,112 @@
         let _birthPopupMode = 'create'; // create | edit-extra
         let _currentBirthData = null;
 
+        function padBirthDatePart(value) {
+            return String(value).padStart(2, '0');
+        }
+
+        function ensureBirthPopupYearOption(yearValue) {
+            const yearSelect = document.getElementById('popup-birth-year');
+            if (!yearSelect || !yearValue) return;
+            const year = String(yearValue);
+            if (Array.from(yearSelect.options).some(option => option.value === year)) return;
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+
+        function populateBirthPopupDateSelectors() {
+            const daySelect = document.getElementById('popup-birth-day');
+            const yearSelect = document.getElementById('popup-birth-year');
+            if (!daySelect || !yearSelect) return;
+
+            if (daySelect.options.length <= 1) {
+                for (let day = 1; day <= 31; day++) {
+                    const option = document.createElement('option');
+                    option.value = padBirthDatePart(day);
+                    option.textContent = String(day);
+                    daySelect.appendChild(option);
+                }
+            }
+
+            if (yearSelect.options.length <= 1) {
+                const currentYear = new Date().getFullYear();
+                for (let year = currentYear; year >= currentYear - 20; year--) {
+                    const option = document.createElement('option');
+                    option.value = String(year);
+                    option.textContent = String(year);
+                    yearSelect.appendChild(option);
+                }
+            }
+        }
+
+        function updateBirthPopupDayOptions() {
+            const daySelect = document.getElementById('popup-birth-day');
+            const monthSelect = document.getElementById('popup-birth-month');
+            const yearSelect = document.getElementById('popup-birth-year');
+            if (!daySelect || !monthSelect || !yearSelect) return;
+
+            const selectedDay = daySelect.value;
+            const month = Number(monthSelect.value || 0);
+            const year = Number(yearSelect.value || new Date().getFullYear());
+            const maxDay = month ? new Date(year, month, 0).getDate() : 31;
+
+            Array.from(daySelect.options).forEach((option) => {
+                if (!option.value) return;
+                const isOutOfRange = Number(option.value) > maxDay;
+                option.hidden = isOutOfRange;
+                option.disabled = isOutOfRange;
+            });
+
+            if (selectedDay && Number(selectedDay) > maxDay) {
+                daySelect.value = '';
+            }
+        }
+
+        function syncBirthPopupDateFromParts() {
+            const hiddenDate = document.getElementById('popup-birth-date');
+            if (!hiddenDate) return;
+
+            updateBirthPopupDayOptions();
+            const day = document.getElementById('popup-birth-day')?.value || '';
+            const month = document.getElementById('popup-birth-month')?.value || '';
+            const year = document.getElementById('popup-birth-year')?.value || '';
+            hiddenDate.value = day && month && year ? `${year}-${month}-${day}` : '';
+        }
+
+        function syncBirthPopupDatePartsFromValue(value) {
+            populateBirthPopupDateSelectors();
+            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const daySelect = document.getElementById('popup-birth-day');
+            const monthSelect = document.getElementById('popup-birth-month');
+            const yearSelect = document.getElementById('popup-birth-year');
+            if (!daySelect || !monthSelect || !yearSelect) return;
+
+            if (match) ensureBirthPopupYearOption(match[1]);
+            yearSelect.value = match ? match[1] : '';
+            monthSelect.value = match ? match[2] : '';
+            updateBirthPopupDayOptions();
+            daySelect.value = match ? match[3] : '';
+        }
+
+        function initBirthPopupDatePicker() {
+            populateBirthPopupDateSelectors();
+            ['popup-birth-day', 'popup-birth-month', 'popup-birth-year'].forEach((id) => {
+                document.getElementById(id)?.addEventListener('change', syncBirthPopupDateFromParts);
+            });
+        }
+
         function setBirthPopupDefaults() {
             const today = new Date();
             const dd = String(today.getDate()).padStart(2, '0');
             const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const todayValue = today.getFullYear() + '-' + mm + '-' + dd;
 
             document.getElementById('popup-baby-name').value = '';
             document.getElementById('popup-gender').value = '';
-            document.getElementById('popup-birth-date').value = today.getFullYear() + '-' + mm + '-' + dd;
+            document.getElementById('popup-birth-date').value = todayValue;
+            syncBirthPopupDatePartsFromValue(todayValue);
             document.getElementById('popup-birth-weight').value = '';
             document.getElementById('popup-birth-time').value = '';
             document.getElementById('popup-birth-length').value = '';
@@ -3237,6 +3384,7 @@
             document.getElementById('popup-baby-name').value = _currentBirthData.baby_name || '';
             document.getElementById('popup-gender').value = (_currentBirthData.gender === 'male') ? 'Laki-laki' : ((_currentBirthData.gender === 'female') ? 'Perempuan' : '');
             document.getElementById('popup-birth-date').value = _currentBirthData.birth_date || '';
+            syncBirthPopupDatePartsFromValue(_currentBirthData.birth_date || '');
             document.getElementById('popup-birth-weight').value = (_currentBirthData.weight || _currentBirthData.birth_weight || '') || '';
             document.getElementById('popup-birth-time').value = _currentBirthData.birth_time || '';
             document.getElementById('popup-birth-length').value = (_currentBirthData.length || _currentBirthData.birth_length || '') || '';
@@ -3323,6 +3471,8 @@
         function skipBirthPopup() {
             document.getElementById('birth-input-popup').style.display = 'none';
         }
+
+        initBirthPopupDatePicker();
 
         async function dismissBirthCard() {
             const card = document.getElementById('birth-congrats-card');
