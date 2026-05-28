@@ -169,6 +169,15 @@
             background: #1a1a1a;
             color: #ffffff;
         }
+        .dob-picker {
+            display: grid;
+            grid-template-columns: minmax(78px, 0.8fr) minmax(116px, 1.2fr) minmax(96px, 1fr);
+            gap: 0.5rem;
+        }
+        .dob-picker select {
+            width: 100%;
+            min-width: 0;
+        }
         textarea { resize: vertical; min-height: 90px; }
         input:focus,
         select:focus,
@@ -340,6 +349,7 @@
             header h1 { font-size: 1.05rem; }
             .stepper { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .card { padding: 1rem; }
+            .dob-picker { grid-template-columns: 0.85fr 1.15fr 1fr; }
             .buttons { flex-direction: column; }
             .buttons button { width: 100%; }
             table { font-size: 0.85rem; }
@@ -395,8 +405,32 @@
                                     <input type="text" id="full_name" name="full_name" required>
                                 </div>
                                 <div class="field">
-                                    <label for="dob">Tanggal Lahir *</label>
-                                    <input type="date" id="dob" name="dob" required>
+                                    <label for="dob_day">Tanggal Lahir *</label>
+                                    <input type="hidden" id="dob" name="dob">
+                                    <div class="dob-picker" aria-describedby="dob_hint">
+                                        <select id="dob_day" required aria-label="Tanggal lahir">
+                                            <option value="">Tanggal</option>
+                                        </select>
+                                        <select id="dob_month" required aria-label="Bulan lahir">
+                                            <option value="">Bulan</option>
+                                            <option value="01">Januari</option>
+                                            <option value="02">Februari</option>
+                                            <option value="03">Maret</option>
+                                            <option value="04">April</option>
+                                            <option value="05">Mei</option>
+                                            <option value="06">Juni</option>
+                                            <option value="07">Juli</option>
+                                            <option value="08">Agustus</option>
+                                            <option value="09">September</option>
+                                            <option value="10">Oktober</option>
+                                            <option value="11">November</option>
+                                            <option value="12">Desember</option>
+                                        </select>
+                                        <select id="dob_year" required aria-label="Tahun lahir">
+                                            <option value="">Tahun</option>
+                                        </select>
+                                    </div>
+                                    <p class="field-hint" id="dob_hint">Pilih tahun langsung dari kotak Tahun, tanpa membuka kalender.</p>
                                 </div>
                                 <div class="field">
                                     <label for="age">Usia</label>
@@ -768,6 +802,7 @@
                         const dobInput = document.getElementById('dob');
                         if (dobInput) {
                             dobInput.value = birthDateStr;
+                            syncDobPartsFromValue(birthDateStr);
                         }
 
                         // Auto-calculate age
@@ -776,6 +811,8 @@
                             if (ageInput) {
                                 ageInput.value = profile.age;
                             }
+                        } else {
+                            updateAgeFromDob();
                         }
                     }
                 } else {
@@ -899,6 +936,9 @@
                 }
             }
 
+            syncDobPartsFromValue(document.getElementById('dob')?.value || '');
+            updateAgeFromDob();
+
             // Show/hide conditional sections based on restored values
             // Husband fields
             const maritalStatus = document.getElementById('marital_status');
@@ -1003,6 +1043,9 @@
                         }
                     }
 
+                    syncDobPartsFromValue(document.getElementById('dob')?.value || '');
+                    updateAgeFromDob();
+
                     // Restore step
                     if (data.currentStep !== undefined) {
                         currentStep = data.currentStep;
@@ -1094,7 +1137,7 @@
             for (let input of requiredInputs) {
                 if (!input.value.trim() && input.type !== 'checkbox') {
                     input.focus();
-                    showToast('Mohon isi semua field yang wajib diisi');
+                    showToast(input.closest('.dob-picker') ? 'Mohon pilih tanggal, bulan, dan tahun lahir' : 'Mohon isi semua field yang wajib diisi');
                     return false;
                 }
                 if (input.type === 'checkbox' && !input.checked) {
@@ -1291,9 +1334,97 @@
             }, 3000);
         }
 
-        // Auto-calculate age from DOB
-        document.getElementById('dob').addEventListener('change', function() {
-            const dob = new Date(this.value);
+        function padDatePart(value) {
+            return String(value).padStart(2, '0');
+        }
+
+        function populateDobSelectors() {
+            const daySelect = document.getElementById('dob_day');
+            const yearSelect = document.getElementById('dob_year');
+            if (!daySelect || !yearSelect) return;
+
+            if (daySelect.options.length <= 1) {
+                for (let day = 1; day <= 31; day++) {
+                    const option = document.createElement('option');
+                    option.value = padDatePart(day);
+                    option.textContent = String(day);
+                    daySelect.appendChild(option);
+                }
+            }
+
+            if (yearSelect.options.length <= 1) {
+                const currentYear = new Date().getFullYear();
+                for (let year = currentYear; year >= currentYear - 100; year--) {
+                    const option = document.createElement('option');
+                    option.value = String(year);
+                    option.textContent = String(year);
+                    yearSelect.appendChild(option);
+                }
+            }
+        }
+
+        function updateDobDayOptions() {
+            const daySelect = document.getElementById('dob_day');
+            const monthSelect = document.getElementById('dob_month');
+            const yearSelect = document.getElementById('dob_year');
+            if (!daySelect || !monthSelect || !yearSelect) return;
+
+            const selectedDay = daySelect.value;
+            const month = Number(monthSelect.value || 0);
+            const year = Number(yearSelect.value || new Date().getFullYear());
+            const maxDay = month ? new Date(year, month, 0).getDate() : 31;
+
+            Array.from(daySelect.options).forEach((option) => {
+                if (!option.value) return;
+                option.hidden = Number(option.value) > maxDay;
+            });
+
+            if (selectedDay && Number(selectedDay) > maxDay) {
+                daySelect.value = '';
+            }
+        }
+
+        function syncDobFromParts() {
+            const dobInput = document.getElementById('dob');
+            const day = document.getElementById('dob_day')?.value || '';
+            const month = document.getElementById('dob_month')?.value || '';
+            const year = document.getElementById('dob_year')?.value || '';
+            if (!dobInput) return;
+
+            updateDobDayOptions();
+            dobInput.value = day && month && year ? `${year}-${month}-${day}` : '';
+            dobInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        function syncDobPartsFromValue(value) {
+            populateDobSelectors();
+            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+            const daySelect = document.getElementById('dob_day');
+            const monthSelect = document.getElementById('dob_month');
+            const yearSelect = document.getElementById('dob_year');
+            if (!daySelect || !monthSelect || !yearSelect) return;
+
+            yearSelect.value = match ? match[1] : '';
+            monthSelect.value = match ? match[2] : '';
+            updateDobDayOptions();
+            daySelect.value = match ? match[3] : '';
+        }
+
+        function updateAgeFromDob() {
+            const dobInput = document.getElementById('dob');
+            const ageInput = document.getElementById('age');
+            if (!dobInput || !ageInput || !dobInput.value) {
+                if (ageInput) ageInput.value = '';
+                return;
+            }
+
+            const parts = dobInput.value.split('-').map(Number);
+            if (parts.length !== 3 || parts.some(Number.isNaN)) {
+                ageInput.value = '';
+                return;
+            }
+
+            const dob = new Date(parts[0], parts[1] - 1, parts[2]);
             const today = new Date();
             let age = today.getFullYear() - dob.getFullYear();
             const monthDiff = today.getMonth() - dob.getMonth();
@@ -1302,8 +1433,16 @@
                 age--;
             }
 
-            document.getElementById('age').value = age;
-        });
+            ageInput.value = age >= 0 ? String(age) : '';
+        }
+
+        function initDobPicker() {
+            populateDobSelectors();
+            ['dob_day', 'dob_month', 'dob_year'].forEach((id) => {
+                document.getElementById(id)?.addEventListener('change', syncDobFromParts);
+            });
+            document.getElementById('dob')?.addEventListener('change', updateAgeFromDob);
+        }
 
         // Show/hide insurance name field
         document.getElementById('payment_insurance').addEventListener('change', function() {
@@ -1335,6 +1474,7 @@
 
         // Initialize
         initStepper();
+        initDobPicker();
         initAutoSave();
         
         // Load existing data from server (if logged in), then fallback to draft
