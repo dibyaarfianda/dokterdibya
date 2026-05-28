@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260528room1">
     <style>
         :root {
             --bg: #f7f7f4;
@@ -2528,7 +2528,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528ag', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528ah', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -2603,6 +2603,6 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260528portal1"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260528room1"></script>
 </body>
 </html>

@@ -9,7 +9,9 @@
         loaded: false,
         loading: false,
         saving: false,
-        data: null
+        data: null,
+        mode: 'view',
+        pendingFocus: null
     };
 
     var WIDGET_ICONS = {
@@ -21,6 +23,24 @@
         'personal-note': 'fa-note-sticky',
         favorites: 'fa-thumbtack'
     };
+
+    var ROOM_ITEMS = {
+        'album-usg': { label: 'Album USG', copy: 'Frame USG', icon: 'fa-image', url: '/album-usg-trial.html', className: 'pmc-room-frame' },
+        'active-booking': { label: 'Jadwal', copy: 'Kalender klinik', icon: 'fa-calendar-check', url: '/booking-klinik-trial.html', className: 'pmc-room-calendar' },
+        'pregnancy-tracker': { label: 'Tracker', copy: 'Kartu kehamilan', icon: 'fa-chart-line', url: '/pregnancy-tracker-trial.html', className: 'pmc-room-tracker' },
+        documents: { label: 'Dokumen', copy: 'Map medis', icon: 'fa-folder-open', url: '/dokumen-medis-trial.html', className: 'pmc-room-documents' },
+        'vitamin-reminder': { label: 'Vitamin', copy: 'Kotak reminder', icon: 'fa-pills', url: '/jadwal-vitamin-trial.html', className: 'pmc-room-vitamin' },
+        'tanya-dokter': { label: 'Tanya Dokter', copy: 'Chat aman', icon: 'fa-comments', url: '/tanya-dokter-trial.html', className: 'pmc-room-chat' },
+        'personal-note': { label: 'Catatan', copy: 'Papan pribadi', icon: 'fa-note-sticky', action: 'note', className: 'pmc-room-note' },
+        favorites: { label: 'Favorit', copy: 'Shortcut', icon: 'fa-thumbtack', action: 'favorites', className: 'pmc-room-favorites' }
+    };
+
+    var ROOM_PRESETS = [
+        { id: 'calm', label: 'Calm', accent: '#5c7f72' },
+        { id: 'rose', label: 'Rose', accent: '#c56b7b' },
+        { id: 'sky', label: 'Sky', accent: '#4e7ea8' },
+        { id: 'night', label: 'Night', accent: '#4f5f8f' }
+    ];
 
     function getToken() {
         return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token') || '';
@@ -224,12 +244,75 @@
             '</div></article>';
     }
 
-    function renderPanel() {
-        ensureRoot();
-        var panel = document.getElementById('pmc-panel');
-        if (!panel) return;
-        var data = state.data || getFallbackData();
-        var theme = data.theme;
+    function getVisibleRoomItems() {
+        var ids = ['album-usg'];
+        getWidgets().forEach(function (widget) {
+            if (widget.visible === false) return;
+            if (ROOM_ITEMS[widget.id] && ids.indexOf(widget.id) === -1) ids.push(widget.id);
+        });
+        return ids.map(function (id) { return Object.assign({ id: id }, ROOM_ITEMS[id]); });
+    }
+
+    function renderHeader(theme) {
+        var isDecorating = state.mode === 'decorate';
+        return '<header class="pmc-header">' +
+            '<div><div class="pmc-kicker">' + (isDecorating ? 'Dekorasi Ruang' : 'Ruang Mobile') + '</div><h2 class="pmc-title">' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h2></div>' +
+            '<div class="pmc-header-actions">' +
+                '<button class="pmc-close" onclick="PatientMyCorner.close()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>' +
+            '</div>' +
+            '</header>';
+    }
+
+    function renderRoomObject(item) {
+        return '<button class="pmc-room-object ' + escapeHtml(item.className) + '" onclick="PatientMyCorner.openItem(\'' + escapeHtml(item.id) + '\')" aria-label="Buka ' + escapeHtml(item.label) + '">' +
+            '<span class="pmc-room-object-icon"><i class="fa-solid ' + escapeHtml(item.icon) + '"></i></span>' +
+            '<span class="pmc-room-object-text"><strong>' + escapeHtml(item.label) + '</strong><small>' + escapeHtml(item.copy) + '</small></span>' +
+            '</button>';
+    }
+
+    function renderFavoriteShortcut(item) {
+        var url = item.url || '#';
+        return '<button class="pmc-favorite-shortcut" onclick="PatientMyCorner.go(\'' + escapeHtml(url) + '\')">' +
+            '<i class="fa-solid ' + escapeHtml(item.icon || 'fa-star') + '"></i><span>' + escapeHtml(item.label || 'Favorit') + '</span>' +
+            '</button>';
+    }
+
+    function renderRoomView(data) {
+        var theme = data.theme || getFallbackData().theme;
+        var layout = data.layout || getFallbackData().layout;
+        var settings = data.public_settings || {};
+        var favorites = Array.isArray(layout.favorites) ? layout.favorites : [];
+        var visibleObjects = getVisibleRoomItems().length;
+        var publicText = settings.public_enabled ? 'Publik aktif' : 'Privat';
+        var updatedText = data.updated_at ? 'Tersimpan' : 'Default';
+        return '<div class="pmc-content pmc-content-room">' +
+            '<section class="pmc-room-hero">' +
+                '<div class="pmc-room-heading"><div class="pmc-kicker">Ruang Saya</div><h1>' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h1><p>' + escapeHtml(theme.note || DEFAULT_NOTE) + '</p></div>' +
+                '<button class="pmc-primary pmc-decorate-cta" onclick="PatientMyCorner.setMode(\'decorate\')"><i class="fa-solid fa-wand-magic-sparkles"></i> Dekorasi</button>' +
+            '</section>' +
+            '<section class="pmc-room-scene" aria-label="Ruang pasien pribadi">' +
+                '<div class="pmc-room-wall"></div><div class="pmc-room-window"><i class="fa-solid fa-sun"></i></div><div class="pmc-room-floor"></div>' +
+                getVisibleRoomItems().map(renderRoomObject).join('') +
+            '</section>' +
+            '<section class="pmc-room-status">' +
+                '<div><strong>' + visibleObjects + '</strong><span>Objek aktif</span></div>' +
+                '<div><strong>' + escapeHtml(publicText) + '</strong><span>Status ruang</span></div>' +
+                '<div><strong>' + escapeHtml(updatedText) + '</strong><span>Layout</span></div>' +
+            '</section>' +
+            '<div class="pmc-section-title">Favorit</div>' +
+            '<section class="pmc-favorite-row">' + favorites.slice(0, 4).map(renderFavoriteShortcut).join('') + '</section>' +
+        '</div>' +
+        '<footer class="pmc-footer pmc-footer-single"><button class="pmc-ghost" onclick="PatientMyCorner.close()"><i class="fa-solid fa-chevron-down"></i> Tutup</button><button class="pmc-primary" onclick="PatientMyCorner.setMode(\'decorate\')"><i class="fa-solid fa-wand-magic-sparkles"></i> Atur Ruang</button></footer>';
+    }
+
+    function renderPresetButton(preset, activePreset) {
+        return '<button class="pmc-preset-btn ' + (activePreset === preset.id ? 'is-active' : '') + '" onclick="PatientMyCorner.applyPreset(\'' + preset.id + '\')" style="--preset-color:' + escapeHtml(preset.accent) + '">' +
+            '<span></span>' + escapeHtml(preset.label) +
+            '</button>';
+    }
+
+    function renderDecorateView(data) {
+        var theme = data.theme || getFallbackData().theme;
         var settings = data.public_settings || {};
         var publicProfile = settings.public_profile || {};
         var shareUrl = getShareUrl();
@@ -237,16 +320,14 @@
         var publicEnabled = !!settings.public_enabled;
         var publicWidgets = Array.isArray(settings.public_widgets) ? settings.public_widgets : [];
 
-        panel.innerHTML = '<header class="pmc-header">' +
-            '<div><div class="pmc-kicker">Ruang Mobile</div><h2 class="pmc-title">' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h2></div>' +
-            '<button class="pmc-close" onclick="PatientMyCorner.close()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>' +
-            '</header>' +
-            '<div class="pmc-content">' +
-                '<section class="pmc-hero"><div class="pmc-hero-main"><h1 class="pmc-hero-name">' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h1><p class="pmc-hero-note">' + escapeHtml(theme.note || DEFAULT_NOTE) + '</p></div></section>' +
+        return '<div class="pmc-content">' +
+                '<section class="pmc-hero"><div class="pmc-hero-main"><h1 class="pmc-hero-name">Dekorasi</h1><p class="pmc-hero-note">Atur nama, warna, objek, dan versi publik dari ruang pasien.</p></div></section>' +
                 '<div class="pmc-section-title">Personalisasi</div>' +
                 '<section class="pmc-card">' +
                     '<div class="pmc-field"><label for="pmc-name">Nama ruang</label><input id="pmc-name" maxlength="32" value="' + escapeHtml(theme.corner_name || 'Ruang Saya') + '"></div>' +
                     '<div class="pmc-field"><label for="pmc-note">Catatan pribadi</label><textarea id="pmc-note" maxlength="500">' + escapeHtml(theme.note || DEFAULT_NOTE) + '</textarea></div>' +
+                    '<div class="pmc-section-title pmc-section-title-inner">Tema ruang</div>' +
+                    '<div class="pmc-preset-row">' + ROOM_PRESETS.map(function (preset) { return renderPresetButton(preset, theme.preset || 'calm'); }).join('') + '</div>' +
                     '<div class="pmc-field"><label for="pmc-accent">Accent color</label><input id="pmc-accent" type="color" value="' + escapeHtml(theme.accent || '#5c7f72') + '"></div>' +
                 '</section>' +
                 '<div class="pmc-section-title">Kunjungi Ruang</div>' +
@@ -264,10 +345,29 @@
                         '<div class="pmc-action-row"><button class="pmc-chip-btn" onclick="PatientMyCorner.copyShareLink()"><i class="fa-solid fa-copy"></i> Copy</button><button class="pmc-chip-btn" onclick="PatientMyCorner.previewPublic()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Preview</button><button class="pmc-chip-btn" onclick="PatientMyCorner.regenerateShareCode()"><i class="fa-solid fa-rotate"></i> Regenerate</button></div>' +
                     '</div>' +
                 '</section>' +
-                '<div class="pmc-section-title">Widget Stack</div>' +
+                '<div class="pmc-section-title">Objek Ruang</div>' +
                 '<section class="pmc-widget-list">' + widgets.map(function (widget, index) { return renderWidget(widget, index, widgets.length); }).join('') + '</section>' +
             '</div>' +
-            '<footer class="pmc-footer"><button class="pmc-ghost" onclick="PatientMyCorner.reset()"><i class="fa-solid fa-rotate-left"></i> Reset</button><button class="pmc-primary" onclick="PatientMyCorner.save()"><i class="fa-solid fa-check"></i> Simpan</button></footer>';
+            '<footer class="pmc-footer"><button class="pmc-ghost" onclick="PatientMyCorner.setMode(\'view\')"><i class="fa-solid fa-eye"></i> Lihat Ruang</button><button class="pmc-primary" onclick="PatientMyCorner.save()"><i class="fa-solid fa-check"></i> Simpan</button></footer>';
+    }
+
+    function focusPendingField() {
+        if (!state.pendingFocus) return;
+        var field = document.getElementById(state.pendingFocus);
+        state.pendingFocus = null;
+        if (field && typeof field.focus === 'function') {
+            setTimeout(function () { field.focus(); }, 40);
+        }
+    }
+
+    function renderPanel() {
+        ensureRoot();
+        var panel = document.getElementById('pmc-panel');
+        if (!panel) return;
+        var data = state.data || getFallbackData();
+        var theme = data.theme || getFallbackData().theme;
+        panel.innerHTML = renderHeader(theme) + (state.mode === 'decorate' ? renderDecorateView(data) : renderRoomView(data));
+        focusPendingField();
     }
 
     function syncInputsToState() {
@@ -292,6 +392,7 @@
 
     async function openMyCorner() {
         ensureRoot();
+        state.mode = 'view';
         if (!state.loaded) {
             await loadWorkdesk();
         }
@@ -317,6 +418,41 @@
     var api = {
         open: openMyCorner,
         close: closeMyCorner,
+        setMode: function (mode) {
+            if (state.mode === 'decorate') syncInputsToState();
+            state.mode = mode === 'decorate' ? 'decorate' : 'view';
+            renderPanel();
+        },
+        go: function (url) {
+            if (!url || url === '#') return;
+            window.location.href = url;
+        },
+        openItem: function (id) {
+            var item = ROOM_ITEMS[id];
+            if (!item) return;
+            if (item.url) {
+                window.location.href = item.url;
+                return;
+            }
+            if (item.action === 'note') {
+                state.mode = 'decorate';
+                state.pendingFocus = 'pmc-note';
+                renderPanel();
+                return;
+            }
+            if (item.action === 'favorites' && window.showToast) {
+                window.showToast('Favorit ada di bawah ruang');
+            }
+        },
+        applyPreset: function (presetId) {
+            syncInputsToState();
+            var preset = ROOM_PRESETS.find(function (item) { return item.id === presetId; }) || ROOM_PRESETS[0];
+            if (!state.data) state.data = getFallbackData();
+            state.data.theme.preset = preset.id;
+            state.data.theme.accent = preset.accent;
+            updateDashboard(state.data);
+            renderPanel();
+        },
         save: function () {
             syncInputsToState();
             return saveWorkdesk(true);
