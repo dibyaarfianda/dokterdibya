@@ -118,6 +118,7 @@ function initPages() {
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
+    pages.troubleshooting = grab('troubleshooting-page');
     pages.patientBlockList = grab('patient-block-list-page');
     pages.supportChat = grab('content-support-chat-page') || grab('content-support-chat');
     pages.staffPoints = grab('content-staff-points');
@@ -346,6 +347,124 @@ function openCommunityChatPopup() {
             // Ignore cross-window navigation edge cases and still focus popup.
         }
         popupWindow.focus();
+    }
+}
+
+function showTroubleshootingPage() {
+    hideAllPages();
+    pages.troubleshooting?.classList.remove('d-none');
+    setTitleAndActive('Troubleshooting', 'nav-troubleshooting', 'troubleshooting');
+    setTimeout(openTroubleshootingReportModal, 120);
+}
+
+function openTroubleshootingReportModal() {
+    const textarea = document.getElementById('troubleshooting-report-message');
+    if (textarea) textarea.value = '';
+    updateTroubleshootingReportCount();
+    document.body.classList.add('troubleshooting-modal-open');
+
+    const contextLabel = document.getElementById('troubleshooting-context-label');
+    if (contextLabel) {
+        contextLabel.textContent = `Konteks otomatis: ${window.__currentPage || document.title || 'staff panel'}`;
+    }
+
+    const jq = window.jQuery || window.$;
+    if (jq && jq.fn && jq.fn.modal) {
+        jq('#troubleshooting-report-modal')
+            .off('hidden.bs.modal.troubleshooting')
+            .on('hidden.bs.modal.troubleshooting', function() {
+                document.body.classList.remove('troubleshooting-modal-open');
+            })
+            .one('shown.bs.modal', function() {
+                const reportBox = document.getElementById('troubleshooting-report-message');
+                if (reportBox) reportBox.focus();
+            })
+            .modal('show');
+        return;
+    }
+
+    if (textarea) textarea.focus();
+}
+
+function updateTroubleshootingReportCount() {
+    const textarea = document.getElementById('troubleshooting-report-message');
+    const counter = document.getElementById('troubleshooting-report-count');
+    if (!textarea || !counter) return;
+    counter.textContent = String(textarea.value.length);
+}
+
+function setTroubleshootingSubmitting(isSubmitting) {
+    const button = document.getElementById('troubleshooting-submit-btn');
+    const textarea = document.getElementById('troubleshooting-report-message');
+    if (button) {
+        button.disabled = isSubmitting;
+        button.innerHTML = isSubmitting
+            ? '<i class="fas fa-spinner fa-spin mr-1"></i>Mengirim...'
+            : '<i class="fas fa-paper-plane mr-1"></i>Kirim Laporan';
+    }
+    if (textarea) textarea.disabled = isSubmitting;
+}
+
+async function submitTroubleshootingReport() {
+    const textarea = document.getElementById('troubleshooting-report-message');
+    const message = (textarea?.value || '').trim();
+    if (!message) {
+        showWarning('Tuliskan detail bug/error terlebih dahulu.');
+        if (textarea) textarea.focus();
+        return;
+    }
+
+    if (message.length > 3000) {
+        showWarning('Laporan maksimal 3000 karakter.');
+        return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+        showError('Sesi login tidak ditemukan. Silakan login ulang.');
+        return;
+    }
+
+    setTroubleshootingSubmitting(true);
+    try {
+        const response = await fetch('/api/staff-troubleshooting/reports', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                message,
+                page_url: window.location.href,
+                page_title: document.title || '',
+                asset_version: window.__assetVersion || '',
+                viewport: `${window.innerWidth || 0}x${window.innerHeight || 0}`,
+                user_agent: navigator.userAgent || ''
+            })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Gagal mengirim laporan');
+        }
+
+        const jq = window.jQuery || window.$;
+        if (jq && jq.fn && jq.fn.modal) {
+            jq('#troubleshooting-report-modal').modal('hide');
+        }
+
+        const lastResult = document.getElementById('troubleshooting-last-result');
+        if (lastResult) {
+            const reportId = result.report_id ? ` #${result.report_id}` : '';
+            lastResult.textContent = `Laporan${reportId} berhasil dikirim pada ${new Date().toLocaleString('id-ID')}.`;
+        }
+
+        showSuccess(result.message || 'Laporan bug/error berhasil dikirim.');
+    } catch (error) {
+        console.error('[Troubleshooting] submit error:', error);
+        showError(error.message || 'Gagal mengirim laporan bug/error.');
+    } finally {
+        setTroubleshootingSubmitting(false);
     }
 }
 
@@ -4695,6 +4814,7 @@ function restoreLastPage() {
             'nav-tanya-dokter':                    () => showTanyaDokterPage(),
             'nav-community-chat':                   () => showCommunityChatPage(),
             'nav-support-chat':                     () => showSupportChatPage(),
+            'nav-troubleshooting':                  () => showTroubleshootingPage(),
             'nav-penjualan-obat':                   () => showPenjualanObatPage(),
             'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
             'nav-medify-sync':                      () => showMedifySyncPage(),
@@ -5919,6 +6039,10 @@ export { initMain };
 window.showDashboardPage = showDashboardPage;
 window.showCommunityChatPage = showCommunityChatPage;
 window.openCommunityChatPopup = openCommunityChatPopup;
+window.showTroubleshootingPage = showTroubleshootingPage;
+window.openTroubleshootingReportModal = openTroubleshootingReportModal;
+window.updateTroubleshootingReportCount = updateTroubleshootingReportCount;
+window.submitTroubleshootingReport = submitTroubleshootingReport;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
 window.showTindakanPage = showTindakanPage;
