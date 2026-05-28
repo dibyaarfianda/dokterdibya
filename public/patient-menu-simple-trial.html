@@ -1306,10 +1306,13 @@
             return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
         }
 
+        const TRIAL_TESTER_IDS = ['P2025091', 'P001'];
+        const TRIAL_TESTER_NAMES = ['nanda ananda', 'feby kumalasari'];
+
         function isNandaTrialProfile(profile) {
             const patientId = String(profile?.id || profile?.patient_id || profile?.medicalRecordId || '').trim();
             const patientName = normalizePatientName(profile?.fullname || profile?.full_name || profile?.name || '');
-            return patientId === 'P2025091' || patientName === 'nanda ananda';
+            return TRIAL_TESTER_IDS.includes(patientId) || TRIAL_TESTER_NAMES.includes(patientName);
         }
 
         function redirectNonTrialPatient(profile) {
@@ -2239,7 +2242,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528aa', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528ad', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
