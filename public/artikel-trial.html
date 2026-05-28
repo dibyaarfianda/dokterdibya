@@ -397,6 +397,88 @@
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
     <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260529blur200">
     <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        body.artikel-page #articleModal .modal-content {
+            min-height: 100vh !important;
+            background: var(--bg-page, #ffffff) !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            color: var(--text-primary, #0a0a0a) !important;
+        }
+
+        body.artikel-page #articleModal .modal-header,
+        body.artikel-page #articleModal .modal-body {
+            width: min(760px, calc(100% - 32px)) !important;
+            max-width: 760px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        body.artikel-page #articleModal .modal-header {
+            padding: calc(20px + env(safe-area-inset-top, 0px)) 24px 20px !important;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5) !important;
+        }
+
+        body.artikel-page #articleModal .modal-body {
+            padding: 24px !important;
+        }
+
+        body.artikel-page #articleModal .modal-close {
+            margin-bottom: 18px !important;
+        }
+
+        body.artikel-page #articleModal .modal-category {
+            margin-bottom: 12px !important;
+        }
+
+        body.artikel-page #articleModal .modal-title {
+            margin: 0 !important;
+        }
+
+        body.artikel-page #articleModal .modal-meta {
+            margin-bottom: 24px !important;
+            padding-bottom: 18px !important;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5) !important;
+        }
+
+        body.artikel-page #articleModal .modal-text p {
+            margin: 0 0 16px !important;
+        }
+
+        body.artikel-page #articleModal .modal-text h1,
+        body.artikel-page #articleModal .modal-text h2,
+        body.artikel-page #articleModal .modal-text h3,
+        body.artikel-page #articleModal .modal-text h4,
+        body.artikel-page #articleModal .modal-text h5,
+        body.artikel-page #articleModal .modal-text h6 {
+            margin: 28px 0 12px !important;
+        }
+
+        body.artikel-page #articleModal .modal-text ul,
+        body.artikel-page #articleModal .modal-text ol {
+            margin: 0 0 16px 22px !important;
+            padding-left: 0 !important;
+        }
+
+        body.artikel-page #articleModal .modal-text li {
+            margin-bottom: 8px !important;
+        }
+
+        @media (max-width: 420px) {
+            body.artikel-page #articleModal .modal-header,
+            body.artikel-page #articleModal .modal-body {
+                width: calc(100% - 28px) !important;
+            }
+
+            body.artikel-page #articleModal .modal-header,
+            body.artikel-page #articleModal .modal-body {
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+            }
+        }
+    </style>
     <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
 <body class="trial-themed home-sections-locked patient-tool-shell legacy-tool-retrofit artikel-page" data-tool-shell-active="beranda" data-tool-kicker="Ruang Membaca" data-tool-title="Nadi pengetahuan." data-tool-copy="Kurasi artikel seputar kehamilan, program hamil, dan kesehatan kandungan dalam tampilan yang nyaman dibaca." data-tool-meta-label="Konten" data-tool-meta-value="Artikel">
