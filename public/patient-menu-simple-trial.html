@@ -470,6 +470,7 @@
         .schedule-color { color: var(--green); background: rgba(92,127,114,0.13) !important; }
         .edu-color { color: var(--amber); background: rgba(183,121,46,0.13) !important; }
         .doctor-color { color: var(--purple); background: rgba(115,87,168,0.12) !important; }
+        .report-color { color: #b91c1c; background: rgba(185,28,28,0.1) !important; }
         .corner-color { color: #111; background: rgba(17,17,17,0.07) !important; }
 
         .corner-panel { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
@@ -692,6 +693,25 @@
             font-size: 13px;
         }
         .field textarea { min-height: 104px; resize: vertical; }
+        .field-meta {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 10.5px;
+            line-height: 1.35;
+        }
+        .bug-report-note {
+            margin-top: 12px;
+            padding: 11px 12px;
+            border-radius: 16px;
+            background: rgba(185, 28, 28, 0.08);
+            color: #7f1d1d;
+            font-size: 11px;
+            line-height: 1.45;
+            font-weight: 700;
+        }
         .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
         .modal-actions button { flex: 1; justify-content: center; }
         .topbar-modal-body { display: grid; gap: 10px; }
@@ -896,6 +916,7 @@
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(4) { animation-delay: 660ms; }
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(5) { animation-delay: 740ms; }
         body.home-actions-revealed #primary-actions-section .tap-card:nth-child(6) { animation-delay: 820ms; }
+        body.home-actions-revealed #primary-actions-section .tap-card:nth-child(7) { animation-delay: 900ms; }
 
         @keyframes actionTitleIn {
             0% {
@@ -1212,6 +1233,10 @@
                         <span class="icon doctor-color"><i class="fa-solid fa-comments"></i></span>
                         <span><h3>Tanya Dokter</h3><p>Privat & aman</p></span>
                     </button>
+                    <button class="tap-card soundable" onclick="openBugReportModal(event)">
+                        <span class="icon report-color"><i class="fa-solid fa-bug"></i></span>
+                        <span><h3>Lapor Bug</h3><p>Bantu perbaiki portal</p></span>
+                    </button>
                     <button class="tap-card soundable" onclick="openMyCorner()">
                         <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
                         <span><h3 id="corner-card-title">Ruang Saya</h3><p>Catatan pribadi</p></span>
@@ -1291,6 +1316,30 @@
         <div class="topbar-modal-body" id="topbar-modal-body"></div>
     </section>
 
+    <section class="modal-card" id="bug-report-modal" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
+        <div class="modal-head">
+            <div>
+                <div class="section-kicker">Troubleshooting</div>
+                <h2 id="bug-report-title">Laporkan Bug/Error</h2>
+            </div>
+            <button class="close-btn soundable" onclick="closeBugReportModal(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p class="exit-modal-copy">Tuliskan kendala saat memakai portal, misalnya halaman, tombol yang ditekan, pesan error, atau hal yang tidak sesuai.</p>
+        <div class="field">
+            <label for="bug-report-message">Detail laporan</label>
+            <textarea id="bug-report-message" maxlength="1500" oninput="updateBugReportCount()" placeholder="Contoh: Saat membuka Album USG, tombol unduh tidak merespons setelah saya tekan."></textarea>
+            <div class="field-meta">
+                <span>Laporan masuk ke tim dokterDIBYA.</span>
+                <span><span id="bug-report-count">0</span>/1500</span>
+            </div>
+        </div>
+        <div class="bug-report-note"><i class="fa-solid fa-circle-info"></i> Sistem ikut menyertakan konteks halaman secara otomatis agar laporan lebih mudah diperiksa.</div>
+        <div class="modal-actions">
+            <button class="ghost-action soundable" onclick="closeBugReportModal(event)">Batal</button>
+            <button class="primary-action soundable" id="bug-report-submit-btn" onclick="submitBugReport(event)"><i class="fa-solid fa-paper-plane"></i> Kirim</button>
+        </div>
+    </section>
+
     <section class="modal-card" id="exit-app-modal" role="dialog" aria-modal="true" aria-labelledby="exit-app-title">
         <div class="modal-head">
             <div>
@@ -1323,6 +1372,8 @@
         const CORNER_NAME_KEY = 'patient_my_corner_name';
         const CORNER_NOTE_KEY = 'patient_my_corner_note';
         const TAP_SOUND_KEY = 'patient_tap_sound_enabled';
+        const BUG_REPORT_MAX_LENGTH = 1500;
+        const BUG_REPORT_API_MAX_LENGTH = 2000;
         let currentProfile = null;
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
@@ -1759,6 +1810,107 @@
             document.querySelectorAll('.modal-card').forEach(modal => modal.classList.remove('active'));
             document.body.style.overflow = '';
             if (exitWasActive) rearmHomeBackGuard();
+        }
+
+        function openBugReportModal(event) {
+            stopTopbarEvent(event);
+            const textarea = document.getElementById('bug-report-message');
+            if (textarea) textarea.value = '';
+            updateBugReportCount();
+            setBugReportSubmitting(false);
+            openModal('bug-report-modal');
+            setTimeout(function() {
+                if (textarea) textarea.focus();
+            }, 120);
+        }
+
+        function closeBugReportModal(event) {
+            stopTopbarEvent(event);
+            closeAllModals();
+        }
+
+        function updateBugReportCount() {
+            const textarea = document.getElementById('bug-report-message');
+            const counter = document.getElementById('bug-report-count');
+            if (!textarea || !counter) return;
+            counter.textContent = String(textarea.value.length);
+        }
+
+        function setBugReportSubmitting(isSubmitting) {
+            const textarea = document.getElementById('bug-report-message');
+            const button = document.getElementById('bug-report-submit-btn');
+            if (textarea) textarea.disabled = isSubmitting;
+            if (button) {
+                button.disabled = isSubmitting;
+                button.innerHTML = isSubmitting
+                    ? '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...'
+                    : '<i class="fa-solid fa-paper-plane"></i> Kirim';
+            }
+        }
+
+        function buildBugReportMessage(message) {
+            const profile = currentProfile || getStoredProfile();
+            const context = [
+                '',
+                '--- Konteks otomatis ---',
+                'Halaman: ' + window.location.href,
+                'Viewport: ' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0),
+                'Pasien: ' + (profile.fullname || profile.full_name || profile.name || '-'),
+                'Patient ID: ' + (profile.id || profile.patient_id || profile.medicalRecordId || '-'),
+                'User agent: ' + (navigator.userAgent || '-')
+            ].join('\n');
+            const combined = message + context;
+            if (combined.length <= BUG_REPORT_API_MAX_LENGTH) return combined;
+            return combined.slice(0, BUG_REPORT_API_MAX_LENGTH - 14) + '\n[terpotong]';
+        }
+
+        async function submitBugReport(event) {
+            stopTopbarEvent(event);
+            const textarea = document.getElementById('bug-report-message');
+            const message = (textarea && textarea.value ? textarea.value : '').trim();
+            if (!message) {
+                showToast('Tuliskan detail bug/error terlebih dahulu');
+                if (textarea) textarea.focus();
+                return;
+            }
+            if (message.length > BUG_REPORT_MAX_LENGTH) {
+                showToast('Laporan maksimal ' + BUG_REPORT_MAX_LENGTH + ' karakter');
+                return;
+            }
+            const token = getToken();
+            if (!token) {
+                showToast('Silakan login ulang untuk mengirim laporan');
+                setTimeout(function() { window.location.href = '/patient-login.html'; }, 1000);
+                return;
+            }
+
+            setBugReportSubmitting(true);
+            try {
+                const response = await fetch('/api/patient-feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    },
+                    body: JSON.stringify({
+                        category: 'bug',
+                        message: buildBugReportMessage(message),
+                        rating: null,
+                        is_anonymous: false
+                    })
+                });
+                const data = await response.json().catch(function() { return {}; });
+                if (!response.ok || !data.success) throw new Error(data.message || 'Gagal mengirim laporan');
+                if (textarea) textarea.value = '';
+                updateBugReportCount();
+                closeAllModals();
+                showToast(data.message || 'Laporan bug/error berhasil dikirim');
+            } catch (error) {
+                showToast(error.message || 'Koneksi bermasalah, coba lagi');
+            } finally {
+                setBugReportSubmitting(false);
+            }
         }
 
         function todayLabel() {
@@ -2376,7 +2528,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260528ae', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260528af', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -2414,6 +2566,10 @@
         window.cancelActiveBooking = cancelActiveBooking;
         window.closeCancelBookingModal = closeCancelBookingModal;
         window.submitCancelBooking = submitCancelBooking;
+        window.openBugReportModal = openBugReportModal;
+        window.closeBugReportModal = closeBugReportModal;
+        window.updateBugReportCount = updateBugReportCount;
+        window.submitBugReport = submitBugReport;
         window.cancelExitApp = cancelExitApp;
         window.confirmExitApp = confirmExitApp;
         window.submitAttendanceConfirmation = submitAttendanceConfirmation;

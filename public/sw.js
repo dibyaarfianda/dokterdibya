@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528ae'; // 2026-05-28ae - confirm exit on patient home back
+const CACHE_VERSION = '20260528af'; // 2026-05-28af - patient bug report popup on trial home
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

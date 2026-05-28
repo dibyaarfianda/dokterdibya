@@ -8,11 +8,18 @@ const { verifyPatientToken, verifyToken, requireSuperadmin } = require('../middl
 // Rate limit: max 10 feedback per patient per hari
 const DAILY_LIMIT = 10;
 
+function setNoCacheHeaders(res) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+}
+
 /**
  * POST /api/patient-feedback
  * Kirim feedback dari pasien. Bisa berulang kali, max 10/hari.
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyPatientToken, async (req, res) => {
+    setNoCacheHeaders(res);
     try {
         const { category = 'umum', message, rating = null, is_anonymous = false } = req.body;
 
@@ -31,7 +38,7 @@ router.post('/', verifyToken, async (req, res) => {
         }
 
         const userId = req.user.id || req.user.new_id;
-        const patientId = req.user.patient_id || null;
+        const patientId = req.user.patient_id || userId || null;
         const patientName = is_anonymous ? null : (req.user.name || req.user.display_name || null);
 
         // Cek daily limit
@@ -62,6 +69,7 @@ router.post('/', verifyToken, async (req, res) => {
  * Lihat semua feedback
  */
 router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
+    setNoCacheHeaders(res);
     try {
         const { category, limit = 50, offset = 0 } = req.query;
         let where = '1=1';
