@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" data-trial-nav-active="jadwal">
+<html lang="id" data-trial-nav="off" data-trial-nav-active="jadwal">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -607,8 +608,11 @@
 
     <script src="/scripts/patient-theme-trial.js?v=20260528home1"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528v">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260528v">
+    <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit antrian-page" data-tool-shell-active="jadwal" data-tool-kicker="Live Queue" data-tool-title="Antrian hari ini." data-tool-copy="Pantau status antrian klinik secara real time dan atur pengingat saat nomor Anda sudah mendekat." data-tool-meta-label="Refresh" data-tool-meta-value="Otomatis 30 detik">
 
     <!-- Top bar -->
     <div class="top-bar">
@@ -1521,6 +1525,8 @@
             if (el) el.textContent = `Auto-refresh dalam ${countdownSec} detik`;
         }
 
+        window.loadQueue = loadQueue;
+
         // ── Socket.IO real-time updates ──
         (function() {
             var sioScript = document.createElement('script');
@@ -1562,6 +1568,7 @@
         loadQueue(false);
     </script>
 
-    <script src="/scripts/trial-bottom-nav.js?v=20260528home1" defer></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260528v"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260528v"></script>
 </body>
 </html>

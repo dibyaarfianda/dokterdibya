@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260528s'; // 2026-05-28s - make topbar actions modal-only at source
+const CACHE_VERSION = '20260528v'; // 2026-05-28v - standardize legacy patient trial tools
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -20,11 +20,21 @@ const PRECACHE_FILES = [
   '/pregnancy-tracker-trial.html',
   '/fertility-calendar-trial.html',
   '/jadwal-vitamin-trial.html',
+  '/album-usg-trial.html',
+  '/dokumen-medis-trial.html',
+  '/hasil-lab-trial.html',
+  '/riwayat-kunjungan-trial.html',
+  '/antrian-trial.html',
+  '/booking-klinik-trial.html',
+  '/tanya-dokter-trial.html',
+  '/artikel-trial.html',
   '/my-corner-visit-trial.html',
   '/styles/patient-trial-theme.css',
   '/styles/patient-tool-shell.css',
+  '/styles/patient-tool-retrofit.css',
   '/styles/patient-my-corner.css',
   '/scripts/patient-tool-shell.js',
+  '/scripts/patient-tool-retrofit.js',
   '/scripts/patient-my-corner.js',
   '/scripts/patient-my-corner-visit.js',
   '/patient-login.html',

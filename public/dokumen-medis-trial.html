@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-trial-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -580,8 +580,11 @@
         .doc-card:nth-child(8) { animation-delay: 0.4s; }
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260528v">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260528v">
+    <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit dokumen-medis-page" data-tool-shell-active="dokumen" data-tool-kicker="Resume Medis" data-tool-title="Resume medis." data-tool-copy="Buka ringkasan kunjungan dan dokumen medis yang sudah dikirim dokter dalam satu ruang yang rapi." data-tool-meta-label="Dokumen" data-tool-meta-value="Resume Kunjungan">
     <!-- Safe Area Overlays -->
     <div class="safe-area-top"></div>
     <div class="safe-area-bottom"></div>
@@ -972,6 +975,7 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
-    <script src="/scripts/trial-bottom-nav.js?v=20260528home1" defer></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260528v"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260528v"></script>
 </body>
 </html>
