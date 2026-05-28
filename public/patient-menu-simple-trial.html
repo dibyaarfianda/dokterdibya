@@ -198,7 +198,7 @@
             gap: 10px;
             text-align: center;
         }
-        #content-wrapper { display: none; }
+        #content-wrapper { display: none; padding-top: 30px; }
 
         .hero-card {
             margin-top: 4px;
@@ -464,7 +464,7 @@
             background: var(--surface-muted);
         }
         .tap-card h3 { font-size: 13px; margin-bottom: 2px; }
-        .tap-card p { color: var(--muted); font-size: 10.5px; line-height: 1.35; }
+        .tap-card p { color: var(--muted); font-size: 10.5px; line-height: 1.35; font-weight: 500; }
         .doc-color { color: var(--blue); background: rgba(74,111,157,0.11) !important; }
         .app-color { color: var(--rose); background: rgba(179,95,123,0.12) !important; }
         .schedule-color { color: var(--green); background: rgba(92,127,114,0.13) !important; }
@@ -995,6 +995,12 @@
     </style>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
     <style>
+        body #primary-actions-section .tap-card p {
+            font-size: 10.25px !important;
+            line-height: 1.32 !important;
+            font-weight: 500 !important;
+        }
+
         body #home-brand-link {
             position: relative;
             z-index: 1;
@@ -1231,10 +1237,6 @@
                     <button class="tap-card soundable" onclick="go('/tanya-dokter-trial.html')">
                         <span class="icon doctor-color"><i class="fa-solid fa-comments"></i></span>
                         <span><h3>Tanya Dokter</h3><p>Privat dan terpantau</p></span>
-                    </button>
-                    <button class="tap-card soundable" onclick="openMyCorner()">
-                        <span class="icon corner-color"><i class="fa-solid fa-door-open"></i></span>
-                        <span><h3 id="corner-card-title">Ruang Saya</h3><p>Kreatifitas dan berbagi</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openBugReportModal(event)">
                         <span class="icon report-color"><i class="fa-solid fa-bug"></i></span>
@@ -2519,7 +2521,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260529a', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260529b', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
