@@ -62,7 +62,7 @@
             left: 0;
             right: 0;
             top: 0;
-            height: 220px;
+            height: 200px;
             z-index: 29;
             pointer-events: none;
         }
@@ -2635,7 +2635,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260529f', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260529g', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }

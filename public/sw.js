@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260529f'; // 2026-05-29f - fix kick counter top spacing override
+const CACHE_VERSION = '20260529g'; // 2026-05-29g - reduce header blur height to 200px
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
