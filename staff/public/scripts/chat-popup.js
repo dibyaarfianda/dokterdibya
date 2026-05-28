@@ -58,6 +58,34 @@
     document.body.classList.toggle('chat-keyboard-active', !!active);
   }
 
+  function scrollChatToLatest() {
+    var messagesEl = document.getElementById('chat-messages');
+    if (!messagesEl) return;
+
+    var applyScroll = function() {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (messagesEl.lastElementChild && typeof messagesEl.lastElementChild.scrollIntoView === 'function') {
+        try {
+          messagesEl.lastElementChild.scrollIntoView({ block: 'end', inline: 'nearest' });
+        } catch (error) {
+          messagesEl.lastElementChild.scrollIntoView(false);
+        }
+      }
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    };
+
+    applyScroll();
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(function() {
+        applyScroll();
+        window.requestAnimationFrame(applyScroll);
+      });
+    }
+    window.setTimeout(applyScroll, 80);
+    window.setTimeout(applyScroll, 220);
+    window.setTimeout(applyScroll, 520);
+  }
+
   function getReservedBottomPx() {
     return isChatKeyboardModeActive() ? '0px' : getNavBottomPx();
   }
@@ -695,6 +723,7 @@
                     if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
                 }
                 if (btn) btn.style.setProperty('display', 'none', 'important');
+                scrollChatToLatest();
             } else {
             setChatKeyboardMode(false);
                 chatBox.style.setProperty('display', 'none', 'important');
@@ -1013,12 +1042,14 @@
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
         markMessagesAsRead();
+        scrollChatToLatest();
         setTimeout(() => {
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          scrollChatToLatest();
           if (chatInput) {
             setChatKeyboardMode(true);
             chatInput.focus();
             queueChatLayoutSync();
+            scrollChatToLatest();
           }
         }, 100);
         checkClearButtonVisibility();
@@ -1147,6 +1178,7 @@
               const type = msg.user_id === user.id ? 'sent' : 'received';
               addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id);
                         });
+            scrollChatToLatest();
           }
         }
       } catch (error) {
@@ -1154,6 +1186,7 @@
                 messagesContainer.innerHTML = '<div class="text-center text-muted p-3">Gagal memuat riwayat chat</div>';
       } finally {
         isHistoryLoading = false;
+        scrollChatToLatest();
             }
         }
 
@@ -1212,7 +1245,11 @@
       </div>`;
 
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      if (!isHistoryLoading || isChatOpen) {
+        scrollChatToLatest();
+      } else {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
 
       // Badge ONLY for new real-time messages, NOT history
       // Skip ALL badge updates during history loading
