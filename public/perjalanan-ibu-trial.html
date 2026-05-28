@@ -20,7 +20,7 @@
     </script>
     <script src="/scripts/patient-theme-trial.js?v=20260529book1"></script>
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260529gap1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260529blur200">
 
     <style>
         body.journey-book-page .hero-title {
@@ -526,7 +526,7 @@
 
         function registerPatientServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('/sw.js?v=20260529f', { scope: '/' })
+            navigator.serviceWorker.register('/sw.js?v=20260529g', { scope: '/' })
                 .then(function(registration) { return registration.update().catch(function() {}); })
                 .catch(function() {});
         }
