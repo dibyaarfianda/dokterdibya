@@ -249,7 +249,7 @@ body.patient-tool-shell #content-wrapper {
 }
 
 body.patient-tool-shell .hero-card {
-    margin-top: 4px !important;
+    margin-top: 60px !important;
     border: 1px solid var(--line) !important;
     border-radius: 28px !important;
     background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86)) !important;
@@ -656,6 +656,46 @@ body.patient-tool-shell .shell-profile-avatar {
     color: var(--green) !important;
     font-weight: 900 !important;
     font-size: 16px !important;
+    overflow: hidden !important;
+    position: relative !important;
+}
+
+body.patient-tool-shell .shell-profile-avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+body.patient-tool-shell .shell-profile-avatar.has-photo .shell-profile-avatar-fallback { display: none !important; }
+
+body.patient-tool-shell .shell-profile-photo-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 7px !important;
+    margin-top: 9px !important;
+}
+
+body.patient-tool-shell .shell-profile-photo-btn {
+    min-height: 32px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--line) !important;
+    background: rgba(255,255,255,0.72) !important;
+    color: var(--ink) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    cursor: pointer;
+}
+
+body.patient-tool-shell .shell-profile-photo-btn.primary {
+    background: #111 !important;
+    color: #fff !important;
+    border-color: #111 !important;
 }
 
 body.patient-tool-shell .shell-profile-head span { display: block !important; color: var(--muted) !important; font-size: 10px !important; font-weight: 900 !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; margin-bottom: 3px !important; }

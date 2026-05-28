@@ -762,7 +762,27 @@
             background: linear-gradient(145deg, rgba(255,255,255,0.82), rgba(240,242,236,0.8));
             padding: 12px;
         }
-        .profile-avatar { width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; background: var(--green-soft); color: var(--green); font-weight: 900; font-size: 16px; }
+        .profile-avatar { width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; background: var(--green-soft); color: var(--green); font-weight: 900; font-size: 16px; overflow: hidden; position: relative; }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .profile-avatar.has-photo .profile-avatar-fallback { display: none; }
+        .profile-photo-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+        .profile-photo-btn {
+            min-height: 32px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.72);
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .profile-photo-btn.primary { background: #111; color: #fff; border-color: #111; }
+        .hidden-file-input { display: none; }
         .profile-head span { display: block; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
         .profile-head strong { display: block; color: var(--ink); font-family: var(--display); font-size: 19px; line-height: 1.1; letter-spacing: -0.035em; }
         .profile-head small { display: block; color: var(--muted); font-size: 11px; font-weight: 700; margin-top: 4px; }
@@ -1367,6 +1387,8 @@
         </div>
     </nav>
 
+    <input type="file" id="profile-photo-camera-input" class="hidden-file-input" accept="image/*">
+    <input type="file" id="profile-photo-input" class="hidden-file-input" accept="image/*">
     <div class="toast" id="toast"></div>
 
     <script>
@@ -1555,6 +1577,95 @@
             return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
+        function getProfilePhotoUrl(profile) {
+            profile = profile || {};
+            return profile.profile_picture || profile.photo_url || profile.photoUrl || profile.avatar_url || '';
+        }
+
+        function updateProfileAvatar(profile) {
+            profile = profile || {};
+            const img = document.getElementById('user-avatar-img');
+            const initials = document.getElementById('user-avatar-initials');
+            if (!img || !initials) return;
+            const name = profile.fullname || profile.full_name || profile.name || 'Pasien';
+            const photoUrl = getProfilePhotoUrl(profile);
+            if (photoUrl) {
+                img.src = photoUrl;
+                img.style.display = 'block';
+                initials.style.display = 'none';
+            } else {
+                img.removeAttribute('src');
+                img.style.display = 'none';
+                initials.textContent = getInitials(name);
+                initials.style.display = '';
+            }
+        }
+
+        function openProfilePhotoPicker(event, mode) {
+            stopTopbarEvent(event);
+            const input = document.getElementById(mode === 'camera' ? 'profile-photo-camera-input' : 'profile-photo-input');
+            if (!input) return;
+            if (mode === 'camera') input.setAttribute('capture', 'environment');
+            else input.removeAttribute('capture');
+            input.value = '';
+            input.click();
+        }
+
+        function bindProfilePhotoInputs() {
+            ['profile-photo-camera-input', 'profile-photo-input'].forEach(function(id) {
+                const input = document.getElementById(id);
+                if (!input || input.dataset.bound === '1') return;
+                input.dataset.bound = '1';
+                input.addEventListener('change', handleProfilePhotoUpload);
+            });
+        }
+
+        async function handleProfilePhotoUpload(event) {
+            const input = event && event.target;
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+            if (!file.type || !file.type.startsWith('image/')) {
+                showToast('Pilih file gambar untuk foto profil');
+                input.value = '';
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Ukuran foto maksimal 2MB');
+                input.value = '';
+                return;
+            }
+            const token = getToken();
+            if (!token) { logout(); return; }
+
+            const formData = new FormData();
+            formData.append('photo', file);
+            showToast('Mengunggah foto profil...');
+            try {
+                const response = await fetch('/api/patients/upload-photo', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                if (response.status === 401) { logout(); return; }
+                const data = await response.json().catch(function() { return {}; });
+                if (!response.ok || !data.success) throw new Error(data.message || 'Upload foto gagal');
+                const photoUrl = data.photo_url || data.profile_picture || data.url || '';
+                currentProfile = Object.assign({}, currentProfile || getStoredProfile(), {
+                    photo_url: photoUrl,
+                    profile_picture: photoUrl
+                });
+                try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
+                window.currentProfile = currentProfile;
+                updateProfileAvatar(currentProfile);
+                openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile));
+                showToast('Foto profil berhasil diperbarui');
+            } catch (error) {
+                showToast(error.message || 'Upload foto gagal');
+            } finally {
+                input.value = '';
+            }
+        }
+
         function renderProfileModal(profile) {
             profile = profile || {};
             const name = profile.fullname || profile.full_name || profile.name || 'Pasien SISIwanita';
@@ -1562,9 +1673,18 @@
             const email = profile.email || '-';
             const phone = profile.phone || profile.phone_number || profile.no_hp || '-';
             const birthDate = profile.birth_date || profile.date_of_birth || profile.dob || '';
+            const initials = escapeHtml(getInitials(name));
+            const photoUrl = getProfilePhotoUrl(profile);
+            const avatarClass = photoUrl ? 'profile-avatar has-photo' : 'profile-avatar';
+            const photoHtml = photoUrl ? '<img src="' + escapeHtml(photoUrl) + '" alt="Foto profil">' : '';
             return '<div class="profile-head">' +
-                '<div class="profile-avatar">' + escapeHtml(getInitials(name)) + '</div>' +
-                '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
+                '<div class="' + avatarClass + '">' + photoHtml + '<span class="profile-avatar-fallback">' + initials + '</span></div>' +
+                '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small>' +
+                    '<div class="profile-photo-actions">' +
+                        '<button type="button" class="profile-photo-btn primary soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
+                        '<button type="button" class="profile-photo-btn soundable" onclick="openProfilePhotoPicker(event, \'gallery\')"><i class="fa-solid fa-image"></i> Pilih foto</button>' +
+                    '</div>' +
+                '</div>' +
             '</div>' +
             '<div class="profile-grid">' +
                 '<div><span>No. Rekam Medis</span><strong>' + escapeHtml(medicalId) + '</strong></div>' +
@@ -1934,14 +2054,7 @@
             const firstName = (currentProfile.fullname || currentProfile.full_name || 'Pasien').split(' ')[0];
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
             document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.';
-            if (currentProfile.profile_picture || currentProfile.photo_url) {
-                const img = document.getElementById('user-avatar-img');
-                img.src = currentProfile.profile_picture || currentProfile.photo_url;
-                img.style.display = 'block';
-                document.getElementById('user-avatar-initials').style.display = 'none';
-            } else {
-                document.getElementById('user-avatar-initials').textContent = getInitials(currentProfile.fullname || currentProfile.full_name);
-            }
+            updateProfileAvatar(currentProfile);
             applyMyCorner();
             checkVipSubscription();
         }
@@ -2511,6 +2624,7 @@
 
         async function init() {
             resetScrollToTop();
+            bindProfilePhotoInputs();
             installHomeBackExitGuard();
             lockHomeSections();
             todayLabel();
@@ -2521,7 +2635,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260529c', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260529e', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -2554,6 +2668,8 @@
         window.closeTopbarModal = closeTopbarModal;
         window.openNotificationModal = openNotificationModal;
         window.openProfileModal = openProfileModal;
+        window.openProfilePhotoPicker = openProfilePhotoPicker;
+        window.handleProfilePhotoUpload = handleProfilePhotoUpload;
         window.markTopbarNotificationRead = markTopbarNotificationRead;
         window.markAllTopbarNotificationsRead = markAllTopbarNotificationsRead;
         window.cancelActiveBooking = cancelActiveBooking;

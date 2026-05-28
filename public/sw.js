@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260529c'; // 2026-05-29c - increase portal top spacing above blur
+const CACHE_VERSION = '20260529e'; // 2026-05-29e - align trial page top spacing with home
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -27,6 +27,7 @@ const PRECACHE_FILES = [
   '/antrian-trial.html',
   '/booking-klinik-trial.html',
   '/jadwal-rs-trial.html',
+  '/perjalanan-ibu-trial.html',
   '/tanya-dokter-trial.html',
   '/artikel-trial.html',
   '/my-corner-visit-trial.html',

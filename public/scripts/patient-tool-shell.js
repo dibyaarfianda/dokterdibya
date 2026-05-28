@@ -72,6 +72,22 @@
         return initials || 'SW';
     }
 
+    function getProfilePhotoUrl(profile) {
+        profile = profile || {};
+        return profile.profile_picture || profile.photo_url || profile.photoUrl || profile.avatar_url || '';
+    }
+
+    function showShellToast(message, duration) {
+        var container = document.getElementById('toast-container') || document.body;
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message || '';
+        container.appendChild(toast);
+        window.setTimeout(function () {
+            toast.remove();
+        }, duration || 2400);
+    }
+
     function go(url) {
         if (!url) return;
         window.location.href = url;
@@ -280,8 +296,84 @@
         if (!response.ok) return stored;
         var data = await response.json();
         var profile = data && (data.user || data.patient || data.profile) ? (data.user || data.patient || data.profile) : stored;
+        state.currentProfile = profile;
         try { localStorage.setItem('patient_user', JSON.stringify(profile)); } catch (error) {}
         return profile;
+    }
+
+    function ensureProfilePhotoInput(mode) {
+        var id = mode === 'camera' ? 'shell-profile-photo-camera-input' : 'shell-profile-photo-input';
+        var input = document.getElementById(id);
+        if (!input) {
+            input = document.createElement('input');
+            input.type = 'file';
+            input.id = id;
+            input.accept = 'image/*';
+            input.style.display = 'none';
+            if (mode === 'camera') input.setAttribute('capture', 'environment');
+            document.body.appendChild(input);
+        }
+        if (input.dataset.bound !== '1') {
+            input.dataset.bound = '1';
+            input.addEventListener('change', handleProfilePhotoUpload);
+        }
+        return input;
+    }
+
+    function openProfilePhotoPicker(event, mode) {
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+        var input = ensureProfilePhotoInput(mode || 'gallery');
+        input.value = '';
+        input.click();
+    }
+
+    async function handleProfilePhotoUpload(event) {
+        var input = event && event.target;
+        var file = input && input.files && input.files[0];
+        if (!file) return;
+        if (!file.type || file.type.indexOf('image/') !== 0) {
+            showShellToast('Pilih file gambar untuk foto profil');
+            input.value = '';
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            showShellToast('Ukuran foto maksimal 2MB');
+            input.value = '';
+            return;
+        }
+        var token = getToken();
+        if (isMockToken(token)) {
+            showShellToast('Login asli diperlukan untuk upload foto');
+            input.value = '';
+            return;
+        }
+        var formData = new FormData();
+        formData.append('photo', file);
+        showShellToast('Mengunggah foto profil...');
+        try {
+            var response = await fetch('/api/patients/upload-photo', {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token },
+                body: formData
+            });
+            var data = await response.json().catch(function () { return {}; });
+            if (!response.ok || !data.success) throw new Error(data.message || 'Upload foto gagal');
+            var photoUrl = data.photo_url || data.profile_picture || data.url || '';
+            var profile = Object.assign({}, state.currentProfile || getStoredPatient(), {
+                photo_url: photoUrl,
+                profile_picture: photoUrl
+            });
+            state.currentProfile = profile;
+            try { localStorage.setItem('patient_user', JSON.stringify(profile)); } catch (error) {}
+            updateAvatarInitials(profile);
+            openTopbarModal('Profil', 'Akun pasien', renderProfileModal(profile));
+            showShellToast('Foto profil berhasil diperbarui');
+        } catch (error) {
+            showShellToast(error.message || 'Upload foto gagal');
+        } finally {
+            input.value = '';
+        }
     }
 
     function renderProfileModal(profile) {
@@ -291,9 +383,17 @@
         var email = profile.email || '-';
         var phone = profile.phone || profile.phone_number || profile.no_hp || '-';
         var birthDate = profile.birth_date || profile.date_of_birth || profile.dob || '';
+        var photoUrl = getProfilePhotoUrl(profile);
+        var avatarClass = photoUrl ? 'shell-profile-avatar has-photo' : 'shell-profile-avatar';
+        var photoHtml = photoUrl ? '<img src="' + escapeHtml(photoUrl) + '" alt="Foto profil">' : '';
         return '<div class="shell-profile-head">' +
-            '<div class="shell-profile-avatar">' + escapeHtml(getInitials(name)) + '</div>' +
-            '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
+            '<div class="' + avatarClass + '">' + photoHtml + '<span class="shell-profile-avatar-fallback">' + escapeHtml(getInitials(name)) + '</span></div>' +
+            '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small>' +
+                '<div class="shell-profile-photo-actions">' +
+                    '<button type="button" class="shell-profile-photo-btn primary" data-shell-action="profile-photo-camera"><i class="fa-solid fa-camera"></i>Kamera</button>' +
+                    '<button type="button" class="shell-profile-photo-btn" data-shell-action="profile-photo-gallery"><i class="fa-solid fa-image"></i>Pilih foto</button>' +
+                '</div>' +
+            '</div>' +
             '</div>' +
             '<div class="shell-profile-grid">' +
                 '<div><span>No. Rekam Medis</span><strong>' + escapeHtml(medicalId) + '</strong></div>' +
@@ -362,6 +462,8 @@
         if (actionName === 'read-all-notifications') markAllNotificationsRead();
         if (actionName === 'close-modal') closeTopbarModal();
         if (actionName === 'logout') logout();
+        if (actionName === 'profile-photo-camera') openProfilePhotoPicker(event, 'camera');
+        if (actionName === 'profile-photo-gallery') openProfilePhotoPicker(event, 'gallery');
     });
 
     function closeSheet() {
@@ -405,8 +507,21 @@
     function updateAvatarInitials(profile) {
         var user = profile || getStoredPatient();
         var name = user.fullname || user.full_name || user.name || 'SISIwanita';
+        var photoUrl = getProfilePhotoUrl(user);
+        var img = document.getElementById('user-avatar-img');
         var initialsEl = document.getElementById('user-avatar-initials');
+        if (img && photoUrl) {
+            img.src = photoUrl;
+            img.style.display = 'block';
+            if (initialsEl) initialsEl.style.display = 'none';
+            return;
+        }
+        if (img) {
+            img.removeAttribute('src');
+            img.style.display = 'none';
+        }
         if (initialsEl) initialsEl.textContent = getInitials(name);
+        if (initialsEl) initialsEl.style.display = '';
     }
 
     function setActiveNav(activeNav) {
@@ -468,6 +583,7 @@
         openMyCorner: openMyCorner,
         openNotificationModal: openNotificationModal,
         openProfileModal: openProfileModal,
+        openProfilePhotoPicker: openProfilePhotoPicker,
         closeModal: closeTopbarModal,
         markNotificationRead: markNotificationRead,
         markAllNotificationsRead: markAllNotificationsRead,
@@ -486,5 +602,6 @@
     window.openMyCorner = openMyCorner;
     window.openNotificationModal = openNotificationModal;
     window.openProfileModal = openProfileModal;
+    window.openProfilePhotoPicker = openProfilePhotoPicker;
     window.scrollTopHome = scrollTopHome;
 })();
