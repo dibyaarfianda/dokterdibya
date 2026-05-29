@@ -1261,7 +1261,7 @@
 
         <!-- Loading -->
         <div class="loading" id="loading-state">
-            <i class="fa fa-spinner fa-spin"></i>
+            <i class="fa-solid fa-spinner fa-spin"></i>
             <span>Memuat...</span>
         </div>
 
@@ -1307,7 +1307,7 @@
                 </div>
             <div class="tracker-panel kick-chart-card">
                 <div id="kick-chart">
-                    <div class="loading"><i class="fa fa-spinner fa-spin"></i></div>
+                    <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i></div>
                 </div>
             </div>
             </section>
@@ -1605,7 +1605,7 @@
             if (data.alert) {
                 alertContainer.innerHTML = `
                     <div class="kick-alert">
-                        <i class="fa-regular fa-circle-exclamation"></i>
+                        <i class="fa-solid fa-circle-exclamation"></i>
                         <div>
                             <strong>Perhatian</strong>
                             <p>${data.alert_message || 'Gerakan bayi hari ini kurang dari 10 kali. Hubungi Dokter jika khawatir.'}</p>
@@ -1891,7 +1891,7 @@
             if (page < 1) return;
 
             const container = document.getElementById('history-modal-body');
-            container.innerHTML = '<div class="loading"><i class="fa fa-spinner fa-spin"></i><span>Memuat...</span></div>';
+            container.innerHTML = '<div class="loading"><i class="fa-solid fa-spinner fa-spin"></i><span>Memuat...</span></div>';
 
             try {
                 const result = await kickApiRequest(`/api/kick-counter/history?page=${page}&limit=10`);
@@ -1955,7 +1955,7 @@
                 console.error('Error loading history:', error);
                 container.innerHTML = `
                     <div class="empty-state">
-                        <i class="fa-regular fa-circle-exclamation"></i>
+                        <i class="fa-solid fa-circle-exclamation"></i>
                         <p>Gagal memuat riwayat</p>
                     </div>
                 `;
