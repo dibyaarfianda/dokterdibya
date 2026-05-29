@@ -535,11 +535,19 @@
     }
 
     function triggerIntro() {
+        removeHeroStatusChips();
         document.body.classList.remove('header-animated');
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 document.body.classList.add('header-animated');
             });
+        });
+    }
+
+    function removeHeroStatusChips() {
+        if (!document.body || !document.body.classList.contains('patient-tool-shell')) return;
+        Array.prototype.forEach.call(document.querySelectorAll('.hero-card > .status-chip'), function (chip) {
+            chip.remove();
         });
     }
 
@@ -562,6 +570,7 @@
         document.body.classList.add('patient-tool-shell');
 
         ready(function () {
+            removeHeroStatusChips();
             updateAvatarInitials(options.profile);
             bindTopbarModalActions();
             setActiveNav(state.activeNav);
@@ -591,6 +600,7 @@
         updateAvatarInitials: updateAvatarInitials,
         setActiveNav: setActiveNav,
         triggerIntro: triggerIntro,
+        removeHeroStatusChips: removeHeroStatusChips,
         showContent: showContent,
         menuData: defaultMenuData
     };
