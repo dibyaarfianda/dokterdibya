@@ -4383,9 +4383,6 @@
                         return;
                     }
 
-                    // Antrian ON → tampilkan banner
-                    banner.style.display = '';
-
                     if (doctorStatus) {
                         const arrived = Boolean(data && data.doctor_arrived);
                         doctorStatus.textContent = arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang';
@@ -4409,15 +4406,37 @@
             const banner = document.getElementById('live-queue-banner');
             if (!banner) return;
 
-            fetch('/api/sunday-clinic/queue/public')
-                .then(r => r.json())
-                .then(data => {
+            const token = getToken();
+            if (!token) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Cache-Control': 'no-cache'
+                }
+            })
+                .then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })))
+                .then(({ ok, status, data }) => {
+                    if (status === 401 || status === 403 || data.code === 'QUEUE_ACCESS_DENIED') {
+                        banner.style.display = 'none';
+                        return;
+                    }
+
+                    if (!ok) throw new Error(data.message || ('HTTP ' + status));
+
+                    banner.style.display = '';
                     if (data.success && Array.isArray(data.data)) {
                         _liveQueueData = data.data;
                         renderLiveQueueBanner(data.data);
                     }
                 })
-                .catch(err => console.error('[LiveQueue] Failed to load queue:', err));
+                .catch(err => {
+                    banner.style.display = 'none';
+                    console.error('[LiveQueue] Failed to load queue:', err);
+                });
         }
 
         function renderLiveQueueBanner(queueItems) {
