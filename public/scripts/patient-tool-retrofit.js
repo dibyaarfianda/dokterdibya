@@ -280,6 +280,9 @@
         injectTopbarBlur();
         injectTopbar();
         injectHero(config);
+        if (window.PatientToolShell && typeof window.PatientToolShell.removeHeroStatusChips === 'function') {
+            window.PatientToolShell.removeHeroStatusChips();
+        }
         injectBottomShell();
         watchLegacyInjectedHeaders();
 

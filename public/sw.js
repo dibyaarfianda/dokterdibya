@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260529k'; // 2026-05-29k - fix trial feature icons and reminder modal
+const CACHE_VERSION = '20260530a'; // 2026-05-30a - remove hero status chips from tool pages
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
