@@ -1602,6 +1602,19 @@
                 updateReminderLiveStatus();
         }
 
+        function showQueueAccessDenied(message) {
+            _queueData = [];
+            _queueDate = null;
+            const container = document.getElementById('queue-container');
+            container.innerHTML = `
+                <div class="state-card">
+                    <i class="fa-solid fa-lock" style="font-size:36px;color:#555;margin-bottom:12px;display:block;"></i>
+                    <p>${escHtml(message || 'Live queue hanya bisa dilihat oleh pasien yang sudah mendaftar antrian hari ini.')}<br><small style="color:#555">Silakan booking Klinik Minggu terlebih dahulu.</small></p>
+                </div>`;
+            populateReminderSessions();
+            updateReminderLiveStatus();
+        }
+
         function renderQueue(data, date) {
             _queueData = Array.isArray(data) ? data.slice() : [];
             _queueDate = date || null;
@@ -1696,8 +1709,17 @@
                 if (token) headers['Authorization'] = 'Bearer ' + token;
 
                 const res = await fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), { headers });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
                 const json = await res.json();
+
+                if (res.status === 401 || res.status === 403 || json.code === 'QUEUE_ACCESS_DENIED') {
+                    const accessMessage = res.status === 401
+                        ? 'Silakan login sebagai pasien untuk melihat live queue.'
+                        : (json.message || 'Live queue hanya dapat dilihat oleh pasien yang sudah mendaftar antrian hari ini.');
+                    showQueueAccessDenied(accessMessage);
+                    return;
+                }
+
+                if (!res.ok) throw new Error(json.message || ('HTTP ' + res.status));
 
                 if (json.success) {
                     await loadActiveBookingForQueueDate(json.date);

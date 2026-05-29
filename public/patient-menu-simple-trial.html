@@ -2262,6 +2262,13 @@
             const section = document.getElementById('live-queue-home-section');
             if (!section) return;
             try {
+                const token = getToken();
+                if (!token) {
+                    section.classList.remove('show');
+                    requestAnimationFrame(updateHomeActionGap);
+                    return;
+                }
+
                 const settingsResponse = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
                 const settings = await settingsResponse.json();
                 if (!settings.success || !settings.is_queue_visible) {
@@ -2270,13 +2277,25 @@
                     return;
                 }
 
-                document.getElementById('live-queue-doctor-status').textContent = settings.doctor_arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang';
-                section.classList.add('show');
-                requestAnimationFrame(updateHomeActionGap);
-
-                const queueResponse = await fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
+                const queueResponse = await fetch('/api/sunday-clinic/queue/public?_t=' + Date.now(), {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 const queue = await queueResponse.json();
-                if (queue.success) renderLiveQueueHome(queue.data);
+                if (queueResponse.status === 401 || queueResponse.status === 403 || queue.code === 'QUEUE_ACCESS_DENIED') {
+                    section.classList.remove('show');
+                    requestAnimationFrame(updateHomeActionGap);
+                    return;
+                }
+
+                if (queue.success) {
+                    document.getElementById('live-queue-doctor-status').textContent = settings.doctor_arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang';
+                    section.classList.add('show');
+                    requestAnimationFrame(updateHomeActionGap);
+                    renderLiveQueueHome(queue.data);
+                }
             } catch (error) {
                 section.classList.remove('show');
             }
@@ -2635,7 +2654,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260530a', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260530b', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }

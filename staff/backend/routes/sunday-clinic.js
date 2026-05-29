@@ -5,7 +5,7 @@ const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
 const { parseStructuredCPPTText, createSession } = require('../services/medifyHttpService');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
@@ -1139,11 +1139,41 @@ router.put('/records/:mrId/queue-status', verifyToken, async (req, res, next) =>
 /**
  * GET /api/sunday-clinic/queue/public
  * Returns today's appointment queue with masked patient names.
- * No authentication required - safe for patient portal display.
+ * Patient authentication required; only patients with today's queue booking may view it.
  */
-router.get('/queue/public', async (req, res, next) => {
+router.get('/queue/public', verifyPatientToken, async (req, res, next) => {
     try {
         const { dateStr: todayStr, startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
+        const patientId = req.user?.id;
+
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
+        const [[activeBooking]] = await db.query(
+            `SELECT id, appointment_date, session, slot_number, status
+             FROM sunday_appointments
+             WHERE patient_id = ?
+               AND appointment_date = ?
+                    AND status IN ('pending', 'pending_confirmation', 'confirmed', 'completed')
+             ORDER BY CASE status
+                WHEN 'confirmed' THEN 1
+                WHEN 'pending_confirmation' THEN 2
+                     WHEN 'pending' THEN 3
+                     WHEN 'completed' THEN 4
+                ELSE 5
+             END, session ASC, slot_number ASC
+             LIMIT 1`,
+            [patientId, todayStr]
+        );
+
+        if (!activeBooking) {
+            return res.status(403).json({
+                success: false,
+                code: 'QUEUE_ACCESS_DENIED',
+                message: 'Live queue hanya dapat dilihat oleh pasien yang sudah mendaftar antrian hari ini.'
+            });
+        }
 
         // Reuse existing staff queue cache if available (same data, just masked)
         if (queueTodayCache.key === todayStr && queueTodayCache.expiresAt > Date.now() && queueTodayCache.payload) {
@@ -1157,7 +1187,7 @@ router.get('/queue/public', async (req, res, next) => {
                 queue_status: computeQueueStatus(apt),
                 appointment_date: todayStr
             }));
-            return res.json({ success: true, date: todayStr, count: publicData.length, data: publicData });
+            return res.json({ success: true, date: todayStr, count: publicData.length, my_booking: activeBooking, data: publicData });
         }
 
         // Fetch fresh data when cache is empty
@@ -1186,7 +1216,7 @@ router.get('/queue/public', async (req, res, next) => {
                     ORDER BY scry.created_at DESC, scry.id DESC LIMIT 1
                 )
              WHERE sa.appointment_date = ?
-               AND sa.status IN ('pending_confirmation', 'confirmed', 'completed')
+               AND sa.status IN ('pending', 'pending_confirmation', 'confirmed', 'completed')
              ORDER BY sa.session ASC, sa.slot_number ASC`,
             [todayStart, tomorrowStart, todayStr]
         );
@@ -1202,7 +1232,7 @@ router.get('/queue/public', async (req, res, next) => {
             appointment_date: todayStr
         }));
 
-        res.json({ success: true, date: todayStr, count: publicData.length, data: publicData });
+        res.json({ success: true, date: todayStr, count: publicData.length, my_booking: activeBooking, data: publicData });
 
     } catch (error) {
         logger.error('Error fetching public queue:', error);
