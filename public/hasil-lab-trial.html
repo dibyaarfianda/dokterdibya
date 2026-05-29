@@ -246,12 +246,6 @@
             color: white;
         }
 
-        .btn-share {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-
         /* Empty placeholder message */
         .empty-info {
             background: rgba(16, 185, 129, 0.1);
@@ -395,7 +389,7 @@
 
         body.hasil-lab-page #preview-modal .preview-actions {
             display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            grid-template-columns: 1fr !important;
             gap: 12px !important;
             margin-top: 0 !important;
         }
@@ -413,12 +407,6 @@
             background: var(--text-primary, #0a0a0a) !important;
             border: 1px solid var(--text-primary, #0a0a0a) !important;
             color: #fff !important;
-        }
-
-        body.hasil-lab-page #preview-modal .preview-actions .btn-share {
-            background: transparent !important;
-            border: 1px solid var(--line-soft, #e5e5e5) !important;
-            color: var(--text-primary, #0a0a0a) !important;
         }
 
         @media (max-width: 420px) {
@@ -529,9 +517,6 @@
                 <button class="btn-download" onclick="downloadFile()">
                     <i class="fa fa-download"></i> Download
                 </button>
-                <button class="btn-share" onclick="shareFile()">
-                    <i class="fa fa-share-alt"></i> Bagikan
-                </button>
             </div>
         </div>
     </div>
@@ -550,7 +535,6 @@
         window.openLabPreview = openLabPreview;
         window.closePreview = closePreview;
         window.downloadFile = downloadFile;
-        window.shareFile = shareFile;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -739,36 +723,6 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }
-
-        // Share file
-        async function shareFile() {
-            if (!currentLabItem) return;
-
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: currentLabItem.title || 'Hasil Lab',
-                        text: `Hasil Lab - ${currentLabItem.title || ''}`,
-                        url: currentLabItem.url
-                    });
-                } catch (e) {
-                    if (e.name !== 'AbortError') {
-                        copyToClipboard(currentLabItem.url);
-                    }
-                }
-            } else {
-                copyToClipboard(currentLabItem.url);
-            }
-        }
-
-        // Copy to clipboard fallback
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Link berhasil disalin', 'success');
-            }).catch(() => {
-                showToast('Gagal menyalin link', 'error');
-            });
         }
 
         // Keyboard navigation

@@ -479,17 +479,6 @@
             background: var(--accent-hover);
         }
 
-        .btn-share {
-            background: transparent;
-            border: 1.8px dashed var(--line-soft);
-            color: var(--text-primary);
-        }
-
-        .btn-share:active {
-            border-color: var(--line-strong);
-            background: var(--accent-soft);
-        }
-
         /* ========== RESUME CONTENT (in preview) ========== */
         .resume-content {
             border: 1.8px dashed var(--line-soft);
@@ -636,9 +625,6 @@
                 <button class="btn-download" id="btn-download" onclick="downloadFile()">
                     <i class="fa-solid fa-download"></i> Download
                 </button>
-                <button class="btn-share" onclick="shareFile()">
-                    <i class="fa-solid fa-share-nodes"></i> Bagikan
-                </button>
             </div>
         </div>
     </div>
@@ -689,7 +675,6 @@
         window.viewDocument = viewDocument;
         window.closePreview = closePreview;
         window.downloadFile = downloadFile;
-        window.shareFile = shareFile;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -833,7 +818,9 @@
             const previewBody = document.getElementById('preview-body');
             const btnDownload = document.getElementById('btn-download');
             const previewActions = document.querySelector('#preview-modal .preview-actions');
-            if (previewActions) previewActions.classList.remove('single-action');
+            const previewFooter = document.querySelector('#preview-modal .preview-footer');
+            if (previewActions) previewActions.classList.add('single-action');
+            if (previewFooter) previewFooter.style.display = '';
 
             // Check document type
             if (currentDoc.document_type === 'resume_medis' && (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
@@ -845,7 +832,7 @@
                     </div>
                 `;
                 btnDownload.style.display = 'none';
-                if (previewActions) previewActions.classList.add('single-action');
+                if (previewFooter) previewFooter.style.display = 'none';
 
                 try {
                     const data = await apiRequest(`/api/patient-documents/${currentDoc.id}/content`);
@@ -876,7 +863,7 @@
             } else if (currentDoc.file_url) {
                 const fileType = getFileType(currentDoc.file_url);
                 btnDownload.style.display = 'flex';
-                if (previewActions) previewActions.classList.remove('single-action');
+                if (previewFooter) previewFooter.style.display = '';
 
                 if (fileType === 'image') {
                     previewBody.innerHTML = `<img src="${currentDoc.file_url}" alt="${escapeHtml(currentDoc.title || 'Document')}">`;
@@ -899,7 +886,7 @@
                 }
             } else {
                 btnDownload.style.display = 'none';
-                if (previewActions) previewActions.classList.add('single-action');
+                if (previewFooter) previewFooter.style.display = 'none';
                 previewBody.innerHTML = `
                     <div class="resume-loading">
                         <i class="fa-regular fa-file"></i>
@@ -943,35 +930,6 @@
             if (!doc || !doc.file_url) return;
 
             window.open(doc.file_url, '_blank');
-        }
-
-        // Share file
-        async function shareFile() {
-            if (!currentDoc || !currentDoc.file_url) return;
-
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: currentDoc.title || 'Dokumen',
-                        url: currentDoc.file_url
-                    });
-                } catch (e) {
-                    if (e.name !== 'AbortError') {
-                        copyToClipboard(currentDoc.file_url);
-                    }
-                }
-            } else {
-                copyToClipboard(currentDoc.file_url);
-            }
-        }
-
-        // Copy to clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Link berhasil disalin', 'success');
-            }).catch(() => {
-                showToast('Gagal menyalin link', 'error');
-            });
         }
 
         // Keyboard

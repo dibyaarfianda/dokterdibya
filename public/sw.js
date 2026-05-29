@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260529i'; // 2026-05-29i - align lab result viewer with article reader
+const CACHE_VERSION = '20260529j'; // 2026-05-29j - remove share actions from patient documents
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
