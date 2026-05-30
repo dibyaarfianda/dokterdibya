@@ -24,6 +24,174 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Scientific and personal document spaces */
+.knowledge-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px;
+  margin: 16px;
+  border-radius: 24px;
+  border: 1px solid var(--border, #dbeafe);
+  background: linear-gradient(135deg, #eff6ff, #ecfeff);
+}
+
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+
+.panel {
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  padding: 20px;
+}
+
+.section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.section-title span,
+.eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section-title h2 {
+  margin: 6px 0 0;
+}
+
+.secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 700;
+}
+
+.knowledge-hero.pribadi {
+  background: linear-gradient(135deg, #fff7ed, #fdf2f8);
+  border-color: #fed7aa;
+}
+
+.knowledge-hero h1 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
+.knowledge-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--text-secondary, #4b5563);
+}
+
+.knowledge-layout {
+  align-items: start;
+  padding: 0 16px 16px;
+}
+
+.knowledge-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.knowledge-form .field span {
+  font-weight: 700;
+  color: var(--text-primary, #374151);
+}
+
+.knowledge-form input,
+.knowledge-form textarea {
+  width: 100%;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #111827);
+}
+
+.knowledge-form textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.tag-cloud,
+.document-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-cloud span,
+.document-tags span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.document-list {
+  display: grid;
+  gap: 12px;
+}
+
+.document-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.document-card > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.document-card strong,
+.document-card small {
+  display: block;
+}
+
+.document-card small {
+  color: var(--text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+.document-card p {
+  margin: 0;
+  color: var(--text-secondary, #4b5563);
+}
+
 * {
   margin: 0;
   padding: 0;

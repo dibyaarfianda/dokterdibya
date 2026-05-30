@@ -1,6 +1,55 @@
 import { API_BASE } from '../utils/constants';
 import { enqueue, replayQueue, queueCount, syncState } from '../utils/offlineQueue';
 
+const DOCBOARD_SPACES_KEY = 'docboard_spaces';
+
+const defaultDocuments = [
+  {
+    id: 'ilmiah-001',
+    space: 'ilmiah',
+    title: 'Ringkasan guideline preeklampsia',
+    summary: 'Poin penting untuk skrining risiko, edukasi pasien, dan follow-up ANC.',
+    tags: ['guideline', 'obgyn', 'anc'],
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'ilmiah-002',
+    space: 'ilmiah',
+    title: 'Bahan presentasi USG trimester 2',
+    summary: 'Draft materi edukasi ilmiah untuk pasien dan tim klinik.',
+    tags: ['presentasi', 'usg'],
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'pribadi-001',
+    space: 'pribadi',
+    title: 'Ide konten edukasi minggu ini',
+    summary: 'Daftar topik singkat untuk edukasi pasien dan reminder kontrol.',
+    tags: ['ide', 'konten'],
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'pribadi-002',
+    space: 'pribadi',
+    title: 'Memo pengembangan praktik',
+    summary: 'Catatan pribadi tentang prioritas operasional dan perbaikan alur pasien.',
+    tags: ['memo', 'praktik'],
+    updatedAt: new Date(Date.now() - 172800000).toISOString(),
+  },
+];
+
+function loadDocuments() {
+  try {
+    return JSON.parse(localStorage.getItem(DOCBOARD_SPACES_KEY) || 'null') || defaultDocuments;
+  } catch {
+    return defaultDocuments;
+  }
+}
+
+function saveDocuments(documents) {
+  localStorage.setItem(DOCBOARD_SPACES_KEY, JSON.stringify(documents));
+}
+
 function getToken() {
   return localStorage.getItem('docboard_token');
 }
@@ -74,6 +123,32 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     syncOfflineQueue().catch(() => {});
   });
+}
+
+export function listSpaceDocuments(space) {
+  return loadDocuments()
+    .filter((document) => document.space === space)
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+}
+
+export function addSpaceDocument(space, data) {
+  const documents = loadDocuments();
+  const document = {
+    id: `${space}-${Date.now()}`,
+    space,
+    title: data.title,
+    summary: data.summary,
+    tags: data.tags,
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveDocuments([document, ...documents]);
+  syncState.value = 'Dokumen tersimpan';
+  setTimeout(() => {
+    syncState.value = navigator.onLine ? 'Online' : 'Offline';
+  }, 1800);
+
+  return document;
 }
 
 export const api = {
