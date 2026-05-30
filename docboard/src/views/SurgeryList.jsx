@@ -105,28 +105,42 @@ function SurgeryCard({ surgery: s, onClick }) {
   const status = SURGERY_STATUS[s.status] || SURGERY_STATUS.planned;
   const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : '--:--';
   const operationDisplayName = s.op_display_name || s.operation_type_other || s.op_name_id || s.op_name;
+  const locationName = loc?.name || s.location;
+  const diagnosis = s.diagnosis && s.diagnosis.trim() ? s.diagnosis.trim() : '';
 
   return (
-    <div class="surgery-card" onClick={onClick}>
-      <div class="surgery-card-left">
-        <span class="surgery-time">{timeStr}</span>
-        <span class="surgery-loc-dot" style={{ backgroundColor: loc?.color || '#94A3B8' }} />
+    <button class="surgery-row-card" type="button" onClick={onClick}>
+      <div class="surgery-row-time">
+        <span>{timeStr}</span>
+        <small>WIB</small>
       </div>
-      <div class="surgery-card-body">
-        <div class="surgery-card-name">{s.patient_name}</div>
-        <div class="surgery-card-meta">
-          <span class="surgery-op-badge">{operationDisplayName}</span>
-          <span class="surgery-loc-name">{loc?.shortName || s.location}</span>
+
+      <div class="surgery-row-main">
+        <div class="surgery-row-operation">{operationDisplayName || 'Operasi'}</div>
+        <div class="surgery-row-patient">{s.patient_name}</div>
+
+        <div class="surgery-row-meta">
+          <span class="surgery-row-chip hospital" style={{ color: loc?.color || '#64748B', backgroundColor: loc?.colorLight || '#F1F5F9' }}>
+            <span class="surgery-row-dot" style={{ backgroundColor: loc?.color || '#94A3B8' }} />
+            {locationName}
+          </span>
+          {s.mr_id && <span class="surgery-row-chip">MR {s.mr_id}</span>}
+          {s.patient_age && <span class="surgery-row-chip">{s.patient_age} th</span>}
         </div>
-        {s.diagnosis && (
-          <div class="surgery-card-diag">{s.diagnosis.length > 60 ? s.diagnosis.substring(0, 60) + '...' : s.diagnosis}</div>
+
+        {diagnosis && (
+          <div class="surgery-row-diagnosis">
+            {diagnosis.length > 96 ? diagnosis.substring(0, 96) + '...' : diagnosis}
+          </div>
         )}
       </div>
-      <div class="surgery-card-right">
+
+      <div class="surgery-row-right">
         <span class="status-badge" style={{ color: status.color, backgroundColor: status.bg }}>
           {status.label}
         </span>
+        <span class="surgery-row-chevron">›</span>
       </div>
-    </div>
+    </button>
   );
 }
