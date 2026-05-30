@@ -1267,6 +1267,387 @@
                 width: min(320px, calc(100vw - 20px));
             }
         }
+
+        /* SISIwanita Community theme: applied only for /community-chat.html?theme=newdesign */
+        body.community-newdesign {
+            --bg: #f6faf7;
+            --card: rgba(255, 255, 255, 0.9);
+            --line: rgba(72, 103, 92, 0.16);
+            --text: #16231f;
+            --muted: #62726c;
+            --accent: #5c7f72;
+            --accent-2: #223d34;
+            background-color: #f6faf7;
+            background-image: linear-gradient(180deg, #f8fbf9 0%, #edf6f1 52%, #f8faf8 100%);
+        }
+
+        body.community-newdesign.theme-dark {
+            --bg: #101915;
+            --card: rgba(18, 31, 27, 0.88);
+            --line: rgba(173, 205, 190, 0.18);
+            --text: #e9f3ee;
+            --muted: #b3c6bd;
+            --accent: #88baa4;
+            --accent-2: #4f8b73;
+            background-color: #101915;
+            background-image: linear-gradient(180deg, #15221d 0%, #0f1a17 100%);
+        }
+
+        body.community-newdesign .page,
+        body.community-newdesign .chat-wrapper,
+        body.community-newdesign .card {
+            background: transparent;
+        }
+
+        body.community-newdesign .topbar {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(72, 103, 92, 0.14);
+            background: rgba(250, 252, 250, 0.88);
+            -webkit-backdrop-filter: blur(18px);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 10px 28px rgba(38, 61, 53, 0.08);
+        }
+
+        body.community-newdesign.theme-dark .topbar {
+            background: rgba(15, 26, 22, 0.86);
+            border-bottom-color: rgba(173, 205, 190, 0.16);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+        }
+
+        body.community-newdesign .topbar-room {
+            display: grid;
+            grid-template-columns: 40px minmax(0, 1fr);
+            grid-template-rows: auto auto;
+            column-gap: 10px;
+            align-items: center;
+        }
+
+        body.community-newdesign .topbar-room::before {
+            content: "\f0c0";
+            grid-column: 1;
+            grid-row: 1 / span 2;
+            width: 40px;
+            height: 40px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: FontAwesome;
+            font-size: 17px;
+            color: #ffffff;
+            background: linear-gradient(145deg, #5c7f72, #243d35);
+            box-shadow: 0 10px 22px rgba(64, 99, 86, 0.22);
+        }
+
+        body.community-newdesign .topbar-room::after {
+            content: "SISIwanita Community";
+            grid-column: 2;
+            grid-row: 2;
+            min-width: 0;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        body.community-newdesign .topbar-room-title {
+            grid-column: 2;
+            grid-row: 1;
+            font-size: 18px;
+            line-height: 1.12;
+            color: var(--text);
+            letter-spacing: 0;
+        }
+
+        body.community-newdesign .status-chip {
+            border: 1px solid rgba(92, 127, 114, 0.22);
+            background: rgba(223, 238, 232, 0.8);
+            color: #385e50;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        body.community-newdesign.theme-dark .status-chip {
+            background: rgba(77, 123, 103, 0.25);
+            border-color: rgba(151, 190, 173, 0.24);
+            color: #cde6da;
+        }
+
+        body.community-newdesign .chat-menu-btn {
+            border-color: rgba(92, 127, 114, 0.18);
+            background: rgba(255, 255, 255, 0.82);
+            color: #334a42;
+            box-shadow: 0 8px 18px rgba(34, 61, 52, 0.1);
+        }
+
+        body.community-newdesign .chat-menu {
+            border-color: rgba(92, 127, 114, 0.18);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.96);
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 18px 38px rgba(34, 61, 52, 0.16);
+            padding: 8px;
+        }
+
+        body.community-newdesign .chat-menu-item {
+            border-radius: 12px;
+            background: transparent;
+            color: #243b35;
+        }
+
+        body.community-newdesign .chat-menu-item:hover {
+            background: rgba(92, 127, 114, 0.1);
+        }
+
+        body.community-newdesign.theme-dark .chat-menu {
+            background: rgba(18, 31, 27, 0.96);
+            border-color: rgba(173, 205, 190, 0.18);
+        }
+
+        body.community-newdesign.theme-dark .chat-menu-item {
+            color: #dceee6;
+        }
+
+        body.community-newdesign .chat-head {
+            margin: 10px 12px 0;
+            padding: 10px 12px;
+            border: 1px solid rgba(92, 127, 114, 0.16);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.68);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 24px rgba(42, 70, 60, 0.07);
+        }
+
+        body.community-newdesign.theme-dark .chat-head {
+            background: rgba(18, 31, 27, 0.64);
+            border-color: rgba(173, 205, 190, 0.16);
+        }
+
+        body.community-newdesign .active-room-desc {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        body.community-newdesign .active-room-color {
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.82);
+            box-shadow: 0 0 0 1px rgba(92, 127, 114, 0.18), 0 8px 16px rgba(34, 61, 52, 0.12);
+        }
+
+        body.community-newdesign .messages {
+            padding: 16px 16px calc(98px + var(--mobile-bottom-offset));
+            background-color: rgba(247, 250, 248, 0.26);
+        }
+
+        body.community-newdesign .date-divider {
+            border-radius: 999px;
+            border: 1px solid rgba(92, 127, 114, 0.14);
+            background: rgba(255, 255, 255, 0.72);
+            color: #536b62;
+            box-shadow: 0 8px 20px rgba(42, 70, 60, 0.08);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        body.community-newdesign .msg-avatar {
+            border: 2px solid rgba(255, 255, 255, 0.84);
+            background: linear-gradient(145deg, #dfeee8, #c8dfd5);
+            color: #486e5f;
+            box-shadow: 0 8px 16px rgba(45, 74, 64, 0.12);
+        }
+
+        body.community-newdesign .msg {
+            border-radius: 18px;
+            border-top-left-radius: 6px;
+            border-color: rgba(92, 127, 114, 0.16);
+            background: rgba(255, 255, 255, 0.88);
+            box-shadow: 0 12px 26px rgba(42, 70, 60, 0.08);
+        }
+
+        body.community-newdesign .msg.me {
+            border-top-left-radius: 18px;
+            border-top-right-radius: 6px;
+            border-color: rgba(92, 127, 114, 0.18);
+            background: linear-gradient(145deg, rgba(220, 238, 230, 0.98), rgba(201, 229, 218, 0.98));
+        }
+
+        body.community-newdesign .msg::before {
+            display: none;
+        }
+
+        body.community-newdesign .msg-head,
+        body.community-newdesign .msg-user {
+            color: #4f7b69;
+        }
+
+        body.community-newdesign.theme-dark .msg {
+            border-color: rgba(173, 205, 190, 0.16);
+            background: rgba(22, 38, 33, 0.88);
+        }
+
+        body.community-newdesign.theme-dark .msg.me {
+            background: linear-gradient(145deg, rgba(51, 91, 75, 0.96), rgba(33, 66, 55, 0.96));
+        }
+
+        .chat-empty-state {
+            justify-self: center;
+            width: min(330px, 100%);
+            margin: clamp(58px, 21vh, 180px) auto 0;
+            padding: 18px 16px;
+            border: 1px solid rgba(92, 127, 114, 0.16);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.66);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            box-shadow: 0 18px 38px rgba(42, 70, 60, 0.1);
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .chat-empty-icon {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            background: linear-gradient(145deg, #5c7f72, #233d34);
+            box-shadow: 0 12px 24px rgba(64, 99, 86, 0.2);
+        }
+
+        .chat-empty-title {
+            margin: 0 0 4px;
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .chat-empty-copy {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        body.community-newdesign.theme-dark .chat-empty-state {
+            border-color: rgba(173, 205, 190, 0.16);
+            background: rgba(18, 31, 27, 0.68);
+            box-shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+        }
+
+        body.community-newdesign .composer {
+            border-top: 1px solid rgba(92, 127, 114, 0.16);
+            background: rgba(250, 252, 250, 0.92);
+            -webkit-backdrop-filter: blur(18px);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 -14px 34px rgba(42, 70, 60, 0.1);
+        }
+
+        body.community-newdesign.theme-dark .composer {
+            background: rgba(15, 26, 22, 0.9);
+            border-top-color: rgba(173, 205, 190, 0.16);
+        }
+
+        body.community-newdesign #message-input {
+            border-color: rgba(92, 127, 114, 0.18);
+            background: rgba(255, 255, 255, 0.94);
+            color: var(--text);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        body.community-newdesign #message-input:focus {
+            border-color: rgba(92, 127, 114, 0.42);
+            box-shadow: 0 0 0 3px rgba(92, 127, 114, 0.12);
+        }
+
+        body.community-newdesign #emoji-toggle {
+            border-color: transparent;
+            background: rgba(92, 127, 114, 0.1);
+            color: #4c6e61;
+        }
+
+        body.community-newdesign #send-btn {
+            background: linear-gradient(145deg, #5c7f72, #233d34);
+            box-shadow: 0 10px 20px rgba(47, 82, 69, 0.25);
+        }
+
+        body.community-newdesign .quote-preview {
+            border-left-color: #5c7f72;
+            background: rgba(223, 238, 232, 0.82);
+        }
+
+        body.community-newdesign .emoji-panel,
+        body.community-newdesign .menu-modal-card,
+        body.community-newdesign .room-picker-current,
+        body.community-newdesign .room-picker-list {
+            border-color: rgba(92, 127, 114, 0.16);
+            border-radius: 18px;
+        }
+
+        body.community-newdesign .emoji-panel,
+        body.community-newdesign .menu-modal-card {
+            background: rgba(255, 255, 255, 0.96);
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 18px 38px rgba(42, 70, 60, 0.14);
+        }
+
+        body.community-newdesign .room-item {
+            background: rgba(255, 255, 255, 0.72);
+            border-bottom-color: rgba(92, 127, 114, 0.12);
+        }
+
+        body.community-newdesign .room-item.active {
+            background: rgba(223, 238, 232, 0.72);
+        }
+
+        @media (max-width: 1000px) {
+            body.community-newdesign .topbar {
+                padding: 10px 12px;
+            }
+
+            body.community-newdesign .topbar-room {
+                grid-template-columns: 36px minmax(0, 1fr);
+                column-gap: 9px;
+            }
+
+            body.community-newdesign .topbar-room::before {
+                width: 36px;
+                height: 36px;
+                border-radius: 14px;
+                font-size: 15px;
+            }
+
+            body.community-newdesign .topbar-room-title {
+                font-size: 17px;
+            }
+
+            body.community-newdesign .chat-head {
+                margin: 8px 10px 0;
+                border-radius: 14px;
+            }
+
+            body.community-newdesign .messages {
+                padding: 14px 12px calc(96px + var(--mobile-bottom-offset));
+            }
+
+            body.community-newdesign .composer {
+                padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+            }
+
+            body.community-newdesign .composer-spacer {
+                height: calc(82px + var(--mobile-bottom-offset));
+            }
+        }
     </style>
 </head>
 <body>
@@ -1440,6 +1821,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
     const useCompactModerator = isStaffEmbed || urlParams.get('moderator') === 'compact';
+    const useNewDesignTheme = urlParams.get('theme') === 'newdesign';
     const userAgent = navigator.userAgent || '';
     const isAndroidDevice = /Android/i.test(userAgent);
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1627,12 +2009,20 @@
 
     function composeMessageBackground() {
         const isDark = uiSettings.theme === 'dark';
-        const overlay = isDark
-            ? 'linear-gradient(180deg, rgba(21, 34, 51, 0.68) 0%, rgba(15, 27, 41, 0.9) 48%, rgba(12, 22, 33, 0.95) 100%)'
-            : 'linear-gradient(180deg, rgba(224, 242, 255, 0.6) 0%, rgba(248, 252, 255, 0.9) 34%, rgba(255, 255, 255, 1) 100%)';
-        const dots = isDark
-            ? 'radial-gradient(circle at 1px 1px, rgba(117, 169, 219, 0.09) 1px, transparent 0)'
-            : 'radial-gradient(circle at 1px 1px, rgba(32, 84, 129, 0.06) 1px, transparent 0)';
+        const overlay = useNewDesignTheme
+            ? (isDark
+                ? 'linear-gradient(180deg, rgba(20, 34, 29, 0.78) 0%, rgba(13, 24, 20, 0.94) 100%)'
+                : 'linear-gradient(180deg, rgba(248, 251, 249, 0.92) 0%, rgba(235, 246, 240, 0.84) 46%, rgba(248, 250, 248, 0.96) 100%)')
+            : (isDark
+                ? 'linear-gradient(180deg, rgba(21, 34, 51, 0.68) 0%, rgba(15, 27, 41, 0.9) 48%, rgba(12, 22, 33, 0.95) 100%)'
+                : 'linear-gradient(180deg, rgba(224, 242, 255, 0.6) 0%, rgba(248, 252, 255, 0.9) 34%, rgba(255, 255, 255, 1) 100%)');
+        const dots = useNewDesignTheme
+            ? (isDark
+                ? 'radial-gradient(circle at 1px 1px, rgba(173, 205, 190, 0.08) 1px, transparent 0)'
+                : 'radial-gradient(circle at 1px 1px, rgba(92, 127, 114, 0.08) 1px, transparent 0)')
+            : (isDark
+                ? 'radial-gradient(circle at 1px 1px, rgba(117, 169, 219, 0.09) 1px, transparent 0)'
+                : 'radial-gradient(circle at 1px 1px, rgba(32, 84, 129, 0.06) 1px, transparent 0)');
 
         if (uiSettings.wallpaperDataUrl) {
             const wallpaperTint = isDark
@@ -2032,6 +2422,7 @@
     }
 
     function applyEmbedMode() {
+        document.body.classList.toggle('community-newdesign', useNewDesignTheme);
         if (isStaffEmbed) {
             document.body.classList.add('embed-staff');
         }
@@ -2351,6 +2742,18 @@
         renderedMessageIds = new Set((messages || []).map((msg) => String(msg.id)));
         el.messages.innerHTML = '';
 
+        if (!messages || messages.length === 0) {
+            el.messages.innerHTML = `
+                <div class="chat-empty-state">
+                    <div class="chat-empty-icon"><i class="fa fa-comments"></i></div>
+                    <p class="chat-empty-title">Belum ada percakapan</p>
+                    <p class="chat-empty-copy">Mulai obrolan hangat di room ini.</p>
+                </div>
+            `;
+            el.messages.scrollTop = 0;
+            return;
+        }
+
         let currentDateKey = null;
         (messages || []).forEach((msg) => {
             const messageDateKey = getDateKey(msg.created_at);
@@ -2403,6 +2806,9 @@
         if (renderedMessageIds.has(messageId)) return;
 
         renderedMessageIds.add(messageId);
+
+    const emptyState = el.messages.querySelector('.chat-empty-state');
+    if (emptyState) emptyState.remove();
 
         const lastDateNode = el.messages.querySelector('.date-divider:last-of-type');
         const lastDateKey = lastDateNode ? lastDateNode.dataset.dateKey : null;
