@@ -148,7 +148,7 @@ class CommOperationSyncService {
     }
 
     normalizeItem(item, batch) {
-        const location = normalizeLocation(item.location || batch.facility);
+        const location = normalizeLocation(item.location || item.facility || batch.facility);
         const operationDate = normalizeDate(item.operation_date);
         const patientName = normalizeString(item.patient_name);
         const sourceKey = normalizeString(item.source_key);
@@ -164,7 +164,7 @@ class CommOperationSyncService {
             operationDate,
             operationTime: normalizeTime(item.operation_time),
             location,
-            status: normalizeStatus(item.raw_status),
+            status: normalizeStatus(item.raw_status || item.status),
             notes: normalizeNullableString(item.notes),
             sentFields: getSentFields(item)
         };
