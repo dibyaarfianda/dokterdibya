@@ -7,13 +7,13 @@
     <title>dokterDIBYA | Administrator</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v87">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v87">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v87">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v87">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v222">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v222">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v109">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v222">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,7 +21,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v87">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v222">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -37,7 +37,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v87"></script>
+    <script src="scripts/error-handler.js?v=v222"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -1437,7 +1437,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v109">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v222">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -1770,7 +1770,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v87'; // Mobile mode detection: standalone/webview + persistent storage fallback
+            const CACHE_VERSION = 'v222'; // Staff readiness refresh: sync shell, mobile CSS, and PWA assets
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -8055,8 +8055,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v87" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v87" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v222" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v222" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -8076,13 +8076,13 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v116"></script>
+<script defer src="scripts/rum.js?v=v222"></script>
 
 <!-- Core app modules -->
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v221';
+    window.__assetVersion = 'v222';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
@@ -12692,7 +12692,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v109"></script>
+ <script src="scripts/mobile-helper.js?v=v222"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -12704,10 +12704,10 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v117"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v111"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v222"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v222"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v221"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v222"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
