@@ -3722,3 +3722,139 @@ input { font-family: inherit; }
   color: #991B1B;
   border-bottom-color: #FCA5A5;
 }
+
+/* ==============================
+   Surgery operation review list
+   ============================== */
+.surgery-row-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  gap: 12px;
+  align-items: stretch;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  color: var(--text-primary);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.surgery-row-card:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-md);
+  border-color: #CBD5E1;
+}
+
+.surgery-row-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  border-radius: 14px;
+  background: #0F172A;
+  color: #FFFFFF;
+}
+
+.surgery-row-time span {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.surgery-row-time small {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.08em;
+}
+
+.surgery-row-main {
+  min-width: 0;
+}
+
+.surgery-row-operation {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.surgery-row-patient {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.surgery-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.surgery-row-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.surgery-row-chip.hospital {
+  max-width: 100%;
+}
+
+.surgery-row-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.surgery-row-diagnosis {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
+
+.surgery-row-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.surgery-row-chevron {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 390px) {
+  .surgery-row-card {
+    grid-template-columns: 52px 1fr;
+  }
+
+  .surgery-row-right {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 64px;
+    margin-top: -4px;
+  }
+}
