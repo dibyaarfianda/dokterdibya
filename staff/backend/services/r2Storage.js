@@ -14,6 +14,11 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
 const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'dokterdibya-medis';
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
+const resolveBucket = (bucketName) => {
+    const clean = String(bucketName || '').trim();
+    return clean || R2_BUCKET_NAME;
+};
+
 // Check if R2 is configured
 const isR2Configured = () => {
     return !!(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY);
@@ -150,16 +155,17 @@ const getSignedDownloadUrl = async (key, expiresIn = 3600) => {
  * Get file as buffer from R2 (for AI processing)
  * @param {string} key - File key in R2
  */
-const getFileBuffer = async (key) => {
+const getFileBuffer = async (key, bucketName = R2_BUCKET_NAME) => {
     if (!isR2Configured()) {
         throw new Error('R2 storage is not configured');
     }
 
     const client = getS3Client();
+    const bucket = resolveBucket(bucketName);
 
     try {
         const command = new GetObjectCommand({
-            Bucket: R2_BUCKET_NAME,
+            Bucket: bucket,
             Key: key,
         });
 
@@ -172,38 +178,39 @@ const getFileBuffer = async (key) => {
         }
         return Buffer.concat(chunks);
     } catch (error) {
-        logger.error('R2 get file error', { error: error.message, key });
+        logger.error('R2 get file error', { error: error.message, key, bucket });
         throw error;
     }
 };
 
-const uploadJson = async (key, data) => {
+const uploadJson = async (key, data, bucketName = R2_BUCKET_NAME) => {
     if (!isR2Configured()) {
         throw new Error('R2 storage is not configured');
     }
 
     const client = getS3Client();
+    const bucket = resolveBucket(bucketName);
 
     try {
         const body = Buffer.from(JSON.stringify(data, null, 2), 'utf8');
         await client.send(new PutObjectCommand({
-            Bucket: R2_BUCKET_NAME,
+            Bucket: bucket,
             Key: key,
             Body: body,
             ContentType: 'application/json; charset=utf-8',
             CacheControl: 'private, max-age=300',
         }));
 
-        logger.info('JSON uploaded to R2', { key, bytes: body.length });
-        return { success: true, key };
+        logger.info('JSON uploaded to R2', { key, bucket, bytes: body.length });
+        return { success: true, key, bucket };
     } catch (error) {
-        logger.error('R2 upload JSON error', { error: error.message, key });
+        logger.error('R2 upload JSON error', { error: error.message, key, bucket });
         throw error;
     }
 };
 
-const getJson = async (key) => {
-    const buffer = await getFileBuffer(key);
+const getJson = async (key, bucketName = R2_BUCKET_NAME) => {
+    const buffer = await getFileBuffer(key, bucketName);
     return JSON.parse(buffer.toString('utf8'));
 };
 
