@@ -129,7 +129,7 @@ export default function DayDetail({ date }) {
                   </div>
                 </div>
                 <div class={`day-surgery-status status-${s.status}`}>
-                  {s.status === 'scheduled' ? '📋' : s.status === 'completed' ? '✅' : s.status === 'in_progress' ? '🔵' : '⬚'}
+                  {s.status === 'scheduled' ? '📋' : (s.status === 'completed' || s.status === 'in_progress') ? '✅' : '⬚'}
                 </div>
               </div>
             );

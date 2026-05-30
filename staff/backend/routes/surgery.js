@@ -278,7 +278,7 @@ router.get('/export/pdf', async (req, res) => {
     const statusLabels = {
       planned: 'Rencana',
       confirmed: 'Konfirmasi',
-      in_progress: 'Berlangsung',
+      in_progress: 'Selesai',
       completed: 'Selesai',
       postponed: 'Ditunda'
     };
@@ -478,7 +478,7 @@ router.patch('/:id/post-op-notes', async (req, res) => {
     if (surgery.status !== 'in_progress' && surgery.status !== 'completed') {
       return res.status(400).json({
         success: false,
-        message: 'Catatan post-op hanya bisa ditambahkan saat operasi sedang berlangsung atau selesai'
+        message: 'Catatan post-op hanya bisa ditambahkan setelah operasi selesai'
       });
     }
 

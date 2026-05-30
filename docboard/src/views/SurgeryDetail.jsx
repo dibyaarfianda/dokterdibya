@@ -177,8 +177,7 @@ export default function SurgeryDetail({ id }) {
       {showActions && (
         <div class="actions-dropdown">
           {perms.canChangeStatus && s.status === 'planned' && <button onClick={() => updateStatus('confirmed')}>Konfirmasi</button>}
-          {perms.canChangeStatus && (s.status === 'planned' || s.status === 'confirmed') && <button onClick={() => updateStatus('in_progress')}>Mulai Operasi</button>}
-          {perms.canChangeStatus && s.status === 'in_progress' && <button onClick={() => updateStatus('completed')}>Selesai</button>}
+          {perms.canChangeStatus && s.status !== 'cancelled' && s.status !== 'completed' && <button onClick={() => updateStatus('completed')}>Selesai</button>}
           {perms.canChangeStatus && s.status !== 'cancelled' && s.status !== 'completed' && (
             <>
               <button onClick={() => updateStatus('postponed')}>Tunda</button>

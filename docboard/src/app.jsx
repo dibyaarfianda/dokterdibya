@@ -9,7 +9,6 @@ import SurgeryDetail from './views/SurgeryDetail';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Analytics from './views/Analytics';
-import ORBoard from './views/ORBoard';
 import SpaceSchedule from './views/SpaceSchedule';
 import CommandDashboard from './views/CommandDashboard';
 import Login from './views/Login';
@@ -69,7 +68,6 @@ export default function App() {
           <SurgeryForm path="/docboard/surgery/edit/:id" />
           <SurgeryDetail path="/docboard/surgery/:id" />
           <Notifications path="/docboard/notifications" />
-          <ORBoard path="/docboard/or-board" />
           <CommandDashboard path="/docboard/command" />
           <SpaceSchedule path="/docboard/scientific" space="ilmiah" />
           <SpaceSchedule path="/docboard/personal" space="pribadi" />
