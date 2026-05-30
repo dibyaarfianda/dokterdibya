@@ -2907,7 +2907,6 @@ input { font-family: inherit; }
 /* Monthly Chart */
 .monthly-chart {
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
 }
 .monthly-chart svg {
   min-width: 200px;
@@ -3642,6 +3641,7 @@ input { font-family: inherit; }
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
 }
 .checklist-item:last-child { border-bottom: none; }
