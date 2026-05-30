@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260530d'; // 2026-05-30d - polish Tanya Dokter and restore community chat trial access
+const CACHE_VERSION = '20260530e'; // 2026-05-30e - allow community chat room creation for logged-in users
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

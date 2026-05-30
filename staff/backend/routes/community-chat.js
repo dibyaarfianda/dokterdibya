@@ -37,8 +37,7 @@ async function isVipPatient(patientId) {
 }
 
 async function canCreateRoom(user) {
-    if (isStaffUser(user)) return true;
-    return isVipPatient(String(user.id));
+    return !!user?.id;
 }
 
 function normalizeText(text) {
@@ -448,6 +447,7 @@ router.get('/rooms', verifyToken, async (req, res) => {
         const userId = String(req.user.id);
         const userType = isPatientUser(req.user) ? 'patient' : 'staff';
         const canCreate = await canCreateRoom(req.user);
+        const isVip = isPatientUser(req.user) ? await isVipPatient(userId) : null;
         const accessClause = userType === 'patient'
             ? '(r.is_direct = 0 OR r.direct_patient_id = ?)'
             : '(r.is_direct = 0 OR r.direct_staff_id = ?)';
@@ -504,7 +504,7 @@ router.get('/rooms', verifyToken, async (req, res) => {
             rooms: rows.map((row) => mapRoom(row, userType, userId)),
             permissions: {
                 can_create_room: canCreate,
-                is_vip: isPatientUser(req.user) ? canCreate : null
+                is_vip: isVip
             }
         });
     } catch (error) {
@@ -519,7 +519,7 @@ router.post('/rooms', verifyToken, async (req, res) => {
         if (!allowedCreate) {
             return res.status(403).json({
                 success: false,
-                message: 'Fitur buat room hanya untuk user VIP'
+                message: 'Anda belum memiliki akses untuk membuat room'
             });
         }
 

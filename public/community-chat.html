@@ -1352,7 +1352,7 @@
             <button id="create-room-btn"><i class="fa fa-plus"></i> Buat Room</button>
         </div>
         <div id="room-create-note" class="room-create-note">
-            Fitur buat room khusus user VIP.
+            Masuk sebagai pasien atau staff untuk membuat room baru.
         </div>
     </div>
 </div>
@@ -1564,13 +1564,13 @@
         }
         if (el.menuCreateRoom) {
             el.menuCreateRoom.disabled = !allowed;
-            el.menuCreateRoom.title = allowed ? 'Buat room baru' : 'Fitur ini khusus user VIP';
+            el.menuCreateRoom.title = allowed ? 'Buat room baru' : 'Silakan login untuk membuat room';
         }
         if (el.createRoomBtn) {
             el.createRoomBtn.disabled = !allowed;
             el.createRoomBtn.style.opacity = allowed ? '1' : '0.6';
             el.createRoomBtn.style.cursor = allowed ? 'pointer' : 'not-allowed';
-            el.createRoomBtn.title = allowed ? 'Buat room baru' : 'Fitur ini khusus user VIP';
+            el.createRoomBtn.title = allowed ? 'Buat room baru' : 'Silakan login untuk membuat room';
         }
         if (el.roomName) el.roomName.disabled = !allowed;
         if (el.roomDesc) el.roomDesc.disabled = !allowed;
@@ -1766,7 +1766,7 @@
 
     function openCreateRoomModal() {
         if (!canCreateRoomPermission) {
-            showToast('Fitur buat room hanya untuk user VIP', 'warning');
+            showToast('Silakan login untuk membuat room', 'warning');
             return;
         }
         setModalOpen(el.createRoomModal, true);
@@ -2450,7 +2450,7 @@
 
     async function createRoom() {
         if (!canCreateRoomPermission) {
-            showToast('Fitur buat room hanya untuk user VIP', 'warning');
+            showToast('Silakan login untuk membuat room', 'warning');
             return;
         }
 
@@ -2464,14 +2464,18 @@
         }
 
         try {
-            await api('/rooms', {
+            const data = await api('/rooms', {
                 method: 'POST',
                 body: JSON.stringify({ name, description, color })
             });
             el.roomName.value = '';
             el.roomDesc.value = '';
             el.roomColor.value = '';
+            setModalOpen(el.createRoomModal, false);
             await loadRooms();
+            if (data.room && data.room.slug) {
+                await openRoom(data.room.slug);
+            }
             showToast('Room berhasil dibuat', 'success');
         } catch (error) {
             showToast(error.message, 'error');
