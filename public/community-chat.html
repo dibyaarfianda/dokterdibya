@@ -1935,7 +1935,6 @@
                 <button type="button" class="chat-menu-item" id="menu-members"><i class="fa fa-users"></i> Anggota Room</button>
                 <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
                 <button type="button" class="chat-menu-item" id="menu-direct-room" hidden><i class="fa fa-user-md"></i> Mulai Chat Pasien</button>
-                <button type="button" class="chat-menu-item" id="menu-surgery-from-community" hidden><i class="fa fa-procedures"></i> Buat Jadwal Operasi</button>
                 <button type="button" class="chat-menu-item danger" id="menu-archive-room" hidden><i class="fa fa-stop-circle"></i> Akhiri Percakapan</button>
                 <button type="button" class="chat-menu-item" id="menu-setting"><i class="fa fa-cog"></i> Setting</button>
                 <button type="button" class="chat-menu-item" id="menu-exit"><i class="fa fa-sign-out"></i> Keluar</button>
@@ -2071,75 +2070,6 @@
     </div>
 </div>
 
-<div class="menu-modal" id="create-surgery-modal">
-    <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="create-surgery-title">
-        <div class="menu-modal-head">
-            <h2 class="menu-modal-title" id="create-surgery-title">Buat Jadwal Operasi dari Chat</h2>
-            <button type="button" class="menu-modal-close" id="create-surgery-close" title="Tutup"><i class="fa fa-times"></i></button>
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-patient-name">Pasien</label>
-            <input id="create-surgery-patient-name" readonly>
-            <div class="setting-note" id="create-surgery-patient-note"></div>
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-diagnosis">Diagnosis</label>
-            <textarea id="create-surgery-diagnosis" rows="3" maxlength="500" placeholder="Masukkan diagnosis"></textarea>
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-operation-type">Jenis Operasi</label>
-            <select id="create-surgery-operation-type">
-                <option value="">Memuat daftar operasi...</option>
-            </select>
-            <input id="create-surgery-operation-other" placeholder="Jika jenis operasi lain, tulis di sini" style="margin-top:10px;">
-            <p class="setting-note">Pilih jenis operasi, atau isi jenis operasi lain bila tidak ada di daftar.</p>
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-location">Lokasi</label>
-            <select id="create-surgery-location">
-                <option value="klinik_private">Klinik Privat</option>
-                <option value="rsia_melinda">RSIA Melinda</option>
-                <option value="rsud_gambiran">RSUD Gambiran</option>
-                <option value="rs_bhayangkara">RS Bhayangkara</option>
-            </select>
-        </div>
-        <div class="setting-inline">
-            <div class="setting-group">
-                <label class="setting-label" for="create-surgery-date">Tanggal Operasi</label>
-                <input type="date" id="create-surgery-date">
-            </div>
-            <div class="setting-group">
-                <label class="setting-label" for="create-surgery-time">Waktu Operasi</label>
-                <input type="time" id="create-surgery-time">
-            </div>
-        </div>
-        <div class="setting-inline">
-            <div class="setting-group" style="margin-right:10px; flex:1;">
-                <label class="setting-label" for="create-surgery-duration">Durasi (menit)</label>
-                <input type="number" id="create-surgery-duration" placeholder="Contoh: 120" min="15" max="720" step="5">
-            </div>
-            <div class="setting-group" style="flex:1;">
-                <label class="setting-label" for="create-surgery-asa">ASA</label>
-                <input type="number" id="create-surgery-asa" placeholder="Contoh: 1 - 5" min="1" max="6">
-            </div>
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-anesthesia">Anestesi</label>
-            <input id="create-surgery-anesthesia" placeholder="Contoh: General - GA / Regional - SA">
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-npo">Catatan Puasa</label>
-            <input id="create-surgery-npo" placeholder="Contoh: Puasa 8 jam">
-        </div>
-        <div class="setting-group">
-            <label class="setting-label" for="create-surgery-notes">Catatan Khusus</label>
-            <textarea id="create-surgery-notes" rows="2" maxlength="500" placeholder="Misalnya alergi obat, kondisi khusus pasien"></textarea>
-        </div>
-        <div class="setting-note" id="create-surgery-modal-note"></div>
-        <button id="create-surgery-submit-btn"><i class="fa fa-save"></i> Simpan Jadwal Operasi</button>
-    </div>
-</div>
-
 <div class="menu-modal" id="room-picker-modal">
     <div class="menu-modal-card" role="dialog" aria-modal="true" aria-labelledby="room-picker-title">
         <div class="menu-modal-head">
@@ -2194,10 +2124,6 @@
     let renderedMessageIds = new Set();
     let quotedMessage = null;
     let stableAppHeight = 0;
-    let surgeryOperationTypes = [];
-    let createSurgerySource = null;
-    let canCreateSurgeryFromCommunity = false;
-    let createSurgeryIdempotency = '';
     let uiSettings = {
         theme: 'light',
         wallpaperDataUrl: '',
@@ -2218,21 +2144,18 @@
         menuRoomPicker: document.getElementById('menu-room-picker'),
         menuMembers: document.getElementById('menu-members'),
         menuCreateRoom: document.getElementById('menu-create-room'),
-        menuCreateSurgeryFromCommunity: document.getElementById('menu-surgery-from-community'),
         menuDirectRoom: document.getElementById('menu-direct-room'),
         menuArchiveRoom: document.getElementById('menu-archive-room'),
         menuSetting: document.getElementById('menu-setting'),
         menuExit: document.getElementById('menu-exit'),
         createRoomModal: document.getElementById('create-room-modal'),
         settingModal: document.getElementById('setting-modal'),
-        createSurgeryModal: document.getElementById('create-surgery-modal'),
         directRoomModal: document.getElementById('direct-room-modal'),
         roomPickerModal: document.getElementById('room-picker-modal'),
         membersModal: document.getElementById('members-modal'),
         createRoomClose: document.getElementById('create-room-close'),
         settingClose: document.getElementById('setting-close'),
         directRoomClose: document.getElementById('direct-room-close'),
-        createSurgeryClose: document.getElementById('create-surgery-close'),
         roomPickerClose: document.getElementById('room-picker-close'),
         membersClose: document.getElementById('members-close'),
         settingTheme: document.getElementById('setting-theme'),
@@ -2261,21 +2184,6 @@
         createRoomBtn: document.getElementById('create-room-btn'),
         roomCreatePanel: document.getElementById('room-create-panel'),
         roomCreateNote: document.getElementById('room-create-note'),
-        createSurgeryPatientName: document.getElementById('create-surgery-patient-name'),
-        createSurgeryPatientNote: document.getElementById('create-surgery-patient-note'),
-        createSurgeryDiagnosis: document.getElementById('create-surgery-diagnosis'),
-        createSurgeryOperationType: document.getElementById('create-surgery-operation-type'),
-        createSurgeryOperationOther: document.getElementById('create-surgery-operation-other'),
-        createSurgeryLocation: document.getElementById('create-surgery-location'),
-        createSurgeryDate: document.getElementById('create-surgery-date'),
-        createSurgeryTime: document.getElementById('create-surgery-time'),
-        createSurgeryDuration: document.getElementById('create-surgery-duration'),
-        createSurgeryAsa: document.getElementById('create-surgery-asa'),
-        createSurgeryAnesthesia: document.getElementById('create-surgery-anesthesia'),
-        createSurgeryNpo: document.getElementById('create-surgery-npo'),
-        createSurgeryNotes: document.getElementById('create-surgery-notes'),
-        createSurgerySubmit: document.getElementById('create-surgery-submit-btn'),
-        createSurgeryModalNote: document.getElementById('create-surgery-modal-note'),
         directPatientSearch: document.getElementById('direct-patient-search'),
         directPatientResults: document.getElementById('direct-patient-results'),
         directChatSelected: document.getElementById('direct-chat-selected'),
@@ -2353,13 +2261,6 @@
 
         if (el.menuDirectRoom) {
             el.menuDirectRoom.hidden = !isStaff;
-        }
-
-        if (el.menuCreateSurgeryFromCommunity) {
-            const activeIsDirect = !!(activeRoom && Number(activeRoom.is_direct) === 1);
-            canCreateSurgeryFromCommunity = !!(isStaff && canUseDoctorSurgeryMenu() && activeIsDirect);
-            el.menuCreateSurgeryFromCommunity.hidden = !canCreateSurgeryFromCommunity;
-            el.menuCreateSurgeryFromCommunity.disabled = !canCreateSurgeryFromCommunity;
         }
 
         const canArchive = !!(isStaff && activeRoom && activeRoom.can_archive);
@@ -2515,30 +2416,6 @@
         return 'Moderator';
     }
 
-    function getCurrentRoleName() {
-        return String(currentUser?.role || currentUser?.role_name || '').toLowerCase();
-    }
-
-    function canUseDoctorSurgeryMenu() {
-        return !!(isStaff && getCurrentRoleName() === 'dokter');
-    }
-
-    function getLocalDateValue(value) {
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) {
-            const fallback = new Date();
-            fallback.setHours(0, 0, 0, 0);
-            return `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, '0')}-${String(fallback.getDate()).padStart(2, '0')}`;
-        }
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-
-    function makeCommunitySurgeryIdempotency(roomSlug) {
-        const userId = String(currentUser?.id || '').slice(-8) || 'unknown';
-        const rand = Math.random().toString(36).slice(2, 10);
-        return `ccs-${roomSlug}-${userId}-${Date.now()}-${rand}`;
-    }
-
     function updateStatusChips() {
         const label = getUserStatusLabel();
         el.statusBadge.textContent = label;
@@ -2664,159 +2541,6 @@
         searchDirectPatients('').catch((error) => {
             el.directPatientResults.innerHTML = `<div class="patient-search-empty">${escapeHtml(error.message)}</div>`;
         });
-    }
-
-    function resetCreateSurgeryModal() {
-        if (!el.createSurgeryPatientName || !el.createSurgeryDiagnosis) return;
-        if (el.createSurgeryModalNote) el.createSurgeryModalNote.textContent = '';
-        if (el.createSurgeryOperationType) el.createSurgeryOperationType.innerHTML = '<option value="">Memuat daftar operasi...</option>';
-        if (el.createSurgeryOperationOther) el.createSurgeryOperationOther.value = '';
-        if (el.createSurgeryLocation) el.createSurgeryLocation.value = 'klinik_private';
-        if (el.createSurgeryDate) el.createSurgeryDate.value = getLocalDateValue(new Date());
-        if (el.createSurgeryTime) el.createSurgeryTime.value = '';
-        if (el.createSurgeryDuration) el.createSurgeryDuration.value = '';
-        if (el.createSurgeryAsa) el.createSurgeryAsa.value = '';
-        if (el.createSurgeryAnesthesia) el.createSurgeryAnesthesia.value = '';
-        if (el.createSurgeryNpo) el.createSurgeryNpo.value = '';
-        if (el.createSurgeryNotes) el.createSurgeryNotes.value = '';
-        createSurgeryIdempotency = '';
-    }
-
-    function renderCreateSurgeryOperationTypes(selectedTypeId = '') {
-        if (!el.createSurgeryOperationType) return;
-
-        const currentTypeId = String(selectedTypeId || '').trim();
-        const options = (surgeryOperationTypes || []).map((type) => {
-            const value = String(type.id || '').trim();
-            const label = type.name_id || type.name || type.code || '-';
-            const selected = value && value === currentTypeId ? ' selected' : '';
-            return `<option value="${escapeHtml(value)}"${selected}>${escapeHtml(label)}</option>`;
-        });
-
-        const html = options.length
-            ? `<option value="">Pilih jenis operasi</option>${options.join('')}`
-            : '<option value="">Tidak ada jenis operasi tersedia</option>';
-
-        el.createSurgeryOperationType.innerHTML = html;
-        el.createSurgeryOperationType.value = currentTypeId || '';
-    }
-
-    function openCreateSurgeryFromCommunityRoom() {
-        if (!canCreateSurgeryFromCommunity || !activeRoom) {
-            showToast('Pilih room direct pasien terlebih dahulu', 'warning');
-            return;
-        }
-
-        setModalOpen(el.createSurgeryModal, true);
-        resetCreateSurgeryModal();
-        setTimeout(() => {
-            if (el.createSurgeryDiagnosis) el.createSurgeryDiagnosis.focus();
-        }, 0);
-    }
-
-    async function loadCommunitySurgeryDraft() {
-        if (!activeRoom || !activeRoom.slug) return;
-        createSurgerySource = {
-            room: { slug: activeRoom.slug, name: activeRoom.name }
-        };
-
-        const data = await apiDocboard(`/surgery/from-community-room/${encodeURIComponent(activeRoom.slug)}/draft`);
-        const draft = data.draft || {};
-
-        createSurgerySource = draft;
-        surgeryOperationTypes = Array.isArray(draft.operation_types) ? draft.operation_types : [];
-
-        const defaults = draft.defaults || {};
-        const patient = draft.patient || {};
-
-        renderCreateSurgeryOperationTypes(String(defaults.operation_type_id || ''));
-
-        if (el.createSurgeryPatientName) {
-            el.createSurgeryPatientName.value = defaults.patient_name || patient.full_name || '';
-        }
-        if (el.createSurgeryPatientNote) {
-            const notes = [];
-            if (patient.id) notes.push(`MR: ${patient.id}`);
-            if (patient.age) notes.push(`Usia: ${patient.age} th`);
-            if (patient.phone) notes.push(`No. HP: ${patient.phone}`);
-            el.createSurgeryPatientNote.textContent = notes.join(' | ') || '';
-        }
-        if (el.createSurgeryDiagnosis) el.createSurgeryDiagnosis.value = defaults.diagnosis || '';
-        if (el.createSurgeryLocation) el.createSurgeryLocation.value = defaults.location || 'klinik_private';
-        if (el.createSurgeryDate) el.createSurgeryDate.value = defaults.surgery_date || getLocalDateValue(new Date());
-        if (el.createSurgeryTime) el.createSurgeryTime.value = defaults.surgery_time || '';
-        if (el.createSurgeryModalNote) {
-            el.createSurgeryModalNote.textContent = `Sumber: ${draft.room?.name || activeRoom.name}`;
-        }
-
-        createSurgeryIdempotency = makeCommunitySurgeryIdempotency(activeRoom.slug);
-    }
-
-    async function createSurgeryFromCommunityRoom() {
-        if (!canCreateSurgeryFromCommunity || !activeRoom || !activeRoom.slug) {
-            showToast('Tidak dapat membuat operasi dari room ini', 'warning');
-            return;
-        }
-
-        if (!createSurgerySource) {
-            showToast('Data draft operasi tidak lengkap', 'warning');
-            return;
-        }
-
-        const diagnosis = (el.createSurgeryDiagnosis.value || '').trim();
-        if (!diagnosis) {
-            showToast('Diagnosis wajib diisi', 'warning');
-            return;
-        }
-
-        const operationTypeId = el.createSurgeryOperationType.value;
-        const operationTypeOther = (el.createSurgeryOperationOther.value || '').trim();
-        if (!operationTypeId && !operationTypeOther) {
-            showToast('Jenis operasi wajib diisi', 'warning');
-            return;
-        }
-
-        const location = (el.createSurgeryLocation.value || '').trim();
-        if (!location) {
-            showToast('Lokasi operasi wajib diisi', 'warning');
-            return;
-        }
-
-        const surgeryDate = (el.createSurgeryDate.value || '').trim();
-        if (!surgeryDate) {
-            showToast('Tanggal operasi wajib diisi', 'warning');
-            return;
-        }
-
-        const payload = {
-            patient_name: (el.createSurgeryPatientName.value || '').trim(),
-            diagnosis,
-            operation_type_id: operationTypeId || null,
-            operation_type_other: operationTypeOther || null,
-            location,
-            surgery_date: surgeryDate,
-            surgery_time: (el.createSurgeryTime.value || '').trim() || null,
-            estimated_duration_min: (el.createSurgeryDuration.value || '').trim() ? Number(el.createSurgeryDuration.value) : null,
-            anesthesia_type: (el.createSurgeryAnesthesia.value || '').trim() || null,
-            asa_score: (el.createSurgeryAsa.value || '').trim() ? Number(el.createSurgeryAsa.value) : null,
-            npo_status: (el.createSurgeryNpo.value || '').trim() || null,
-            special_notes: (el.createSurgeryNotes.value || '').trim() || null,
-            idempotency_key: createSurgeryIdempotency || makeCommunitySurgeryIdempotency(activeRoom.slug),
-            patient_id: createSurgerySource.patient?.id || null,
-            patient_age: createSurgerySource.patient?.age ?? null
-        };
-
-        try {
-            await apiDocboard(`/surgery/from-community-room/${encodeURIComponent(activeRoom.slug)}`, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            setModalOpen(el.createSurgeryModal, false);
-            showToast('Jadwal operasi berhasil dibuat', 'success');
-            if (el.createSurgeryModalNote) el.createSurgeryModalNote.textContent = 'Operasi berhasil disimpan.';
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
     }
 
     async function createDirectRoom() {
@@ -3002,18 +2726,6 @@
             });
         }
 
-        if (el.menuCreateSurgeryFromCommunity) {
-            el.menuCreateSurgeryFromCommunity.addEventListener('click', async () => {
-                toggleChatMenu(false);
-                openCreateSurgeryFromCommunityRoom();
-                try {
-                    await loadCommunitySurgeryDraft();
-                } catch (error) {
-                    showToast(error.message, 'error');
-                }
-            });
-        }
-
         if (el.menuArchiveRoom) {
             el.menuArchiveRoom.addEventListener('click', () => {
                 toggleChatMenu(false);
@@ -3034,11 +2746,9 @@
         el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
         el.settingClose.addEventListener('click', () => setModalOpen(el.settingModal, false));
         el.directRoomClose.addEventListener('click', () => setModalOpen(el.directRoomModal, false));
-        el.createSurgeryClose.addEventListener('click', () => setModalOpen(el.createSurgeryModal, false));
         el.roomPickerClose.addEventListener('click', () => setModalOpen(el.roomPickerModal, false));
         el.membersClose.addEventListener('click', () => setModalOpen(el.membersModal, false));
         el.directRoomCreateBtn.addEventListener('click', createDirectRoom);
-        el.createSurgerySubmit.addEventListener('click', createSurgeryFromCommunityRoom);
 
         el.directPatientSearch.addEventListener('input', (event) => {
             clearTimeout(patientSearchTimer);
@@ -3098,7 +2808,7 @@
             showToast('Wallpaper dihapus', 'success');
         });
 
-        [el.createRoomModal, el.settingModal, el.directRoomModal, el.createSurgeryModal, el.roomPickerModal, el.membersModal].forEach((modal) => {
+        [el.createRoomModal, el.settingModal, el.directRoomModal, el.roomPickerModal, el.membersModal].forEach((modal) => {
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) setModalOpen(modal, false);
             });
@@ -3110,7 +2820,6 @@
                 setModalOpen(el.createRoomModal, false);
                 setModalOpen(el.settingModal, false);
                 setModalOpen(el.directRoomModal, false);
-                setModalOpen(el.createSurgeryModal, false);
                 setModalOpen(el.roomPickerModal, false);
                 setModalOpen(el.membersModal, false);
             }
@@ -3154,23 +2863,6 @@
 
     async function api(path, options = {}) {
         const response = await fetch(`${API_BASE}/api/community-chat${path}`, {
-            ...options,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                ...(options.headers || {})
-            }
-        });
-
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || data.success === false) {
-            throw new Error(data.message || 'Request gagal');
-        }
-        return data;
-    }
-
-    async function apiDocboard(path, options = {}) {
-        const response = await fetch(`${API_BASE}/api/docboard${path}`, {
             ...options,
             headers: {
                 'Authorization': `Bearer ${token}`,
