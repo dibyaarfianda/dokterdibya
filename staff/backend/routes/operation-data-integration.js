@@ -16,6 +16,16 @@ router.post('/index', async (req, res) => {
   }
 });
 
+router.post('/archive', async (req, res) => {
+  try {
+    const result = await operationData.archiveRecords(req.body?.records || req.body?.items || []);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Operation data archive error:', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 router.post('/backfill/start', async (req, res) => {
   try {
     const result = await operationData.createBackfillRun({

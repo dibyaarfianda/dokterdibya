@@ -148,6 +148,46 @@ class OperationDataService {
     return { received: items.length, saved, errors };
   }
 
+  async archiveRecords(records) {
+    if (!Array.isArray(records)) throw new Error('records must be an array');
+
+    const bucket = process.env.OPERATION_DATA_R2_BUCKET_NAME || r2Storage.R2_BUCKET_NAME;
+    const indexItems = [];
+    const archiveErrors = [];
+
+    for (const raw of records) {
+      const indexRaw = raw?.index_item || raw?.indexItem || raw?.index || raw?.operation || raw;
+      const payload = raw?.payload || raw?.detail || raw?.data || raw;
+
+      try {
+        const item = this.normalizeIndexItem(indexRaw || {});
+        await r2Storage.uploadJson(item.r2Key, payload, bucket);
+        indexItems.push({
+          ...indexRaw,
+          r2_key: item.r2Key,
+          r2_bucket: bucket,
+        });
+      } catch (error) {
+        archiveErrors.push({
+          source_key: indexRaw?.source_key || indexRaw?.sourceKey || null,
+          message: error.message,
+        });
+      }
+    }
+
+    const indexResult = indexItems.length > 0
+      ? await this.upsertIndex(indexItems)
+      : { received: 0, saved: 0, errors: [] };
+
+    return {
+      received: records.length,
+      archived: indexItems.length,
+      bucket,
+      index: indexResult,
+      errors: archiveErrors,
+    };
+  }
+
   async list(params = {}) {
     const page = Math.max(1, parseInt(params.page, 10) || 1);
     const limit = safeLimit(params.limit);
