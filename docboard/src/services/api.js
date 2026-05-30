@@ -437,8 +437,8 @@ export const api = {
   getOperationTypes() {
     return request('/surgery/operation-types');
   },
-  getUpcomingSurgeries(days = 7) {
-    return request(`/surgery/upcoming?days=${days}`);
+  getUpcomingSurgeries(days = 7, pastDays = 0) {
+    return request(`/surgery/upcoming?days=${days}&pastDays=${pastDays}`);
   },
   getExternalStaff() {
     return request('/surgery/external-staff');

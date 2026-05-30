@@ -14,7 +14,7 @@ export default function SurgeryList() {
   async function loadUpcoming() {
     setLoading(true);
     try {
-      const data = await api.getUpcomingSurgeries(14);
+      const data = await api.getUpcomingSurgeries(14, 7);
       setSurgeries(data.surgeries || []);
     } catch (err) {
       console.error('Failed to load surgeries:', err);
@@ -37,7 +37,10 @@ export default function SurgeryList() {
   return (
     <div class="view-surgery">
       <div class="view-header">
-        <h1>Jadwal Operasi</h1>
+        <div>
+          <h1>Jadwal Operasi</h1>
+          <p class="view-subtitle">7 hari terakhir sampai 14 hari ke depan</p>
+        </div>
         <div class="view-header-actions">
           <ExportButton />
           <button class="btn-icon-primary" onClick={() => route('/docboard/surgery/new')}>
