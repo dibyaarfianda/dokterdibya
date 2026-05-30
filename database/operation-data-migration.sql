@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS operation_data_index (
   diagnosis TEXT NULL,
   status VARCHAR(50) NULL,
   r2_key VARCHAR(500) NOT NULL,
+  r2_bucket VARCHAR(128) NULL,
   surgery_id BIGINT UNSIGNED NULL,
   fetched_at DATETIME NULL,
   last_synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

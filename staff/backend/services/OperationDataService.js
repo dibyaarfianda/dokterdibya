@@ -98,6 +98,7 @@ class OperationDataService {
       diagnosis: nullable(raw.diagnosis || raw.diagnosaAwal || raw.diagnosaAkhir),
       status: nullable(raw.status || raw.statusPasien),
       r2Key,
+      r2Bucket: nullable(raw.r2_bucket || raw.r2Bucket || raw.bucket_name || raw.bucketName || raw.bucket),
       surgeryId: raw.surgery_id || raw.surgeryId || null,
       fetchedAt: mysqlDateTime(raw.fetched_at || raw.fetchedAt),
     };
@@ -115,8 +116,8 @@ class OperationDataService {
           `INSERT INTO operation_data_index
              (facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
               operation_date, operation_time, operation_name, diagnosis, status,
-              r2_key, surgery_id, fetched_at, last_synced_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+              r2_key, r2_bucket, surgery_id, fetched_at, last_synced_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
            ON DUPLICATE KEY UPDATE
               case_id = VALUES(case_id),
               simrs_operasi_id = VALUES(simrs_operasi_id),
@@ -128,13 +129,14 @@ class OperationDataService {
               diagnosis = VALUES(diagnosis),
               status = VALUES(status),
               r2_key = VALUES(r2_key),
+              r2_bucket = VALUES(r2_bucket),
               surgery_id = VALUES(surgery_id),
               fetched_at = VALUES(fetched_at),
               last_synced_at = NOW()`,
           [
             item.facility, item.sourceKey, item.caseId, item.simrsOperasiId, item.mrId,
             item.patientName, item.operationDate, item.operationTime, item.operationName,
-            item.diagnosis, item.status, item.r2Key, item.surgeryId, item.fetchedAt,
+            item.diagnosis, item.status, item.r2Key, item.r2Bucket, item.surgeryId, item.fetchedAt,
           ]
         );
         saved++;
@@ -176,7 +178,7 @@ class OperationDataService {
     const [rows] = await db.query(
       `SELECT id, facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
               operation_date, operation_time, operation_name, diagnosis, status,
-              r2_key, fetched_at, last_synced_at, created_at, updated_at
+              r2_key, r2_bucket, fetched_at, last_synced_at, created_at, updated_at
          FROM operation_data_index
          ${clause}
          ORDER BY operation_date DESC, operation_time DESC, id DESC
@@ -197,7 +199,7 @@ class OperationDataService {
     );
     if (!rows.length) return null;
     const record = rows[0];
-    const payload = await r2Storage.getJson(record.r2_key);
+    const payload = await r2Storage.getJson(record.r2_key, record.r2_bucket || process.env.OPERATION_DATA_R2_BUCKET_NAME);
     return { record, payload };
   }
 
