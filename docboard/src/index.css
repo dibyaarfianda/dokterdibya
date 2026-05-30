@@ -228,6 +228,12 @@
   font-weight: 600;
 }
 
+.space-status-actions button.danger {
+  color: var(--red);
+  background: #FEF2F2;
+  border-color: #FECACA;
+}
+
 @media (max-width: 390px) {
   .space-form-row {
     grid-template-columns: 1fr;

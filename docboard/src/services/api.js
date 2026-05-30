@@ -208,6 +208,45 @@ export function updateSpaceScheduleStatus(space, id, status) {
   return listSpaceSchedules(space);
 }
 
+export function updateSpaceSchedule(space, id, data) {
+  const schedules = loadSpaceSchedules().map((schedule) => (
+    schedule.id === id
+      ? {
+          ...schedule,
+          agenda: data.agenda,
+          category: data.category,
+          schedule_date: data.schedule_date,
+          start_time: data.start_time,
+          end_time: data.end_time,
+          location: data.location,
+          participants: data.participants,
+          notes: data.notes,
+          updatedAt: new Date().toISOString(),
+        }
+      : schedule
+  ));
+
+  saveSpaceSchedules(schedules);
+  syncState.value = 'Jadwal diperbarui';
+  setTimeout(() => {
+    syncState.value = navigator.onLine ? 'Online' : 'Offline';
+  }, 1800);
+
+  return listSpaceSchedules(space);
+}
+
+export function deleteSpaceSchedule(space, id) {
+  const schedules = loadSpaceSchedules().filter((schedule) => schedule.id !== id);
+
+  saveSpaceSchedules(schedules);
+  syncState.value = 'Jadwal dihapus';
+  setTimeout(() => {
+    syncState.value = navigator.onLine ? 'Online' : 'Offline';
+  }, 1800);
+
+  return listSpaceSchedules(space);
+}
+
 export const api = {
   // Calendar
   getCalendar(year, month) {

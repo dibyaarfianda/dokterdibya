@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { route } from 'preact-router';
-import { addSpaceSchedule, listSpaceSchedules, updateSpaceScheduleStatus } from '../services/api';
+import {
+  addSpaceSchedule,
+  deleteSpaceSchedule,
+  listSpaceSchedules,
+  updateSpaceSchedule,
+  updateSpaceScheduleStatus,
+} from '../services/api';
 import { formatDateDisplay, getDayName, today } from '../utils/date';
 
 const spaces = {
@@ -48,6 +54,19 @@ function createEmptyForm(config) {
   };
 }
 
+function createFormFromSchedule(schedule, config) {
+  return {
+    agenda: schedule.agenda || '',
+    category: schedule.category || config.categories[0],
+    schedule_date: schedule.schedule_date || today(),
+    start_time: schedule.start_time || '',
+    end_time: schedule.end_time || '',
+    location: schedule.location || '',
+    participants: schedule.participants || '',
+    notes: schedule.notes || '',
+  };
+}
+
 function parseDateLocal(dateString) {
   if (!dateString || dateString === 'tanpa-tanggal') return null;
   const [year, month, day] = dateString.split('-').map(Number);
@@ -84,12 +103,14 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   const [form, setForm] = useState(() => createEmptyForm(config));
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     setSchedules(listSpaceSchedules(space));
     setForm(createEmptyForm(config));
     setShowForm(false);
     setExpandedId(null);
+    setEditingId(null);
   }, [space]);
 
   const stats = useMemo(() => {
@@ -117,7 +138,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const schedule = addSpaceSchedule(space, {
+    const payload = {
       agenda: form.agenda.trim(),
       category: form.category,
       schedule_date: form.schedule_date,
@@ -126,12 +147,55 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
       location: form.location.trim(),
       participants: form.participants.trim(),
       notes: form.notes.trim(),
-    });
+    };
+
+    if (editingId) {
+      setSchedules(updateSpaceSchedule(space, editingId, payload));
+      setForm(createEmptyForm(config));
+      setShowForm(false);
+      setExpandedId(editingId);
+      setEditingId(null);
+      return;
+    }
+
+    const schedule = addSpaceSchedule(space, payload);
 
     setSchedules((current) => sortSchedules([...current, schedule]));
     setForm(createEmptyForm(config));
     setShowForm(false);
     setExpandedId(schedule.id);
+  };
+
+  const openCreateForm = () => {
+    setForm(createEmptyForm(config));
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setForm(createEmptyForm(config));
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (event, item) => {
+    event.stopPropagation();
+    setForm(createFormFromSchedule(item, config));
+    setEditingId(item.id);
+    setShowForm(true);
+    setExpandedId(item.id);
+  };
+
+  const handleDelete = (event, item) => {
+    event.stopPropagation();
+    if (!window.confirm(`Hapus jadwal "${item.agenda}"?`)) return;
+    setSchedules(deleteSpaceSchedule(space, item.id));
+    if (editingId === item.id) {
+      setForm(createEmptyForm(config));
+      setShowForm(false);
+      setEditingId(null);
+    }
+    setExpandedId(null);
   };
 
   const handleStatus = (event, id, status) => {
@@ -150,7 +214,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
           <h1 class="page-title">{config.title}</h1>
           <div class="page-subtitle">{config.subtitle}</div>
         </div>
-        <button class="btn-icon-primary" onClick={() => setShowForm(true)} aria-label={config.action}>
+        <button class="btn-icon-primary" onClick={openCreateForm} aria-label={config.action}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
@@ -179,7 +243,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
       {showForm && (
         <form class="space-form-card" onSubmit={handleSubmit}>
-          <div class="form-section-title">{config.action}</div>
+          <div class="form-section-title">{editingId ? 'Edit agenda' : config.action}</div>
           <div class="form-group">
             <label>Agenda</label>
             <input value={form.agenda} onInput={handleChange('agenda')} placeholder={config.agendaPlaceholder} required />
@@ -225,8 +289,8 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
           </div>
 
           <div class="space-form-actions">
-            <button class="btn-secondary" type="button" onClick={() => setShowForm(false)}>Batal</button>
-            <button class="btn-primary" type="submit">Simpan</button>
+            <button class="btn-secondary" type="button" onClick={closeForm}>Batal</button>
+            <button class="btn-primary" type="submit">{editingId ? 'Update' : 'Simpan'}</button>
           </div>
         </form>
       )}
@@ -234,7 +298,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
       {schedules.length === 0 ? (
         <div class="empty-state">
           <p>Belum ada jadwal</p>
-          <button class="btn-primary" onClick={() => setShowForm(true)}>+ Tambah agenda</button>
+          <button class="btn-primary" onClick={openCreateForm}>+ Tambah agenda</button>
         </div>
       ) : (
         <div class="space-groups">
@@ -265,9 +329,11 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
                       {isExpanded && item.notes && <div class="space-agenda-notes">{item.notes}</div>}
                       {isExpanded && (
                         <div class="space-status-actions">
+                          <button type="button" onClick={(event) => handleEdit(event, item)}>Edit</button>
                           <button type="button" onClick={(event) => handleStatus(event, item.id, 'confirmed')}>Konfirmasi</button>
                           <button type="button" onClick={(event) => handleStatus(event, item.id, 'done')}>Selesai</button>
                           <button type="button" onClick={(event) => handleStatus(event, item.id, 'cancelled')}>Batal</button>
+                          <button type="button" class="danger" onClick={(event) => handleDelete(event, item)}>Hapus</button>
                         </div>
                       )}
                     </div>
@@ -284,7 +350,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
         </div>
       )}
 
-      <button class="fab" onClick={() => setShowForm(true)} aria-label={config.action}>
+      <button class="fab" onClick={openCreateForm} aria-label={config.action}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
