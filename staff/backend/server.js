@@ -564,6 +564,9 @@ app.use('/api/app-version', appVersionRoutes);
 const commIntegrationRoutes = require('./routes/comm-integration');
 app.use('/api/integration/comm', commIntegrationRoutes);
 
+const operationDataIntegrationRoutes = require('./routes/operation-data-integration');
+app.use('/api/integration/operation-data', operationDataIntegrationRoutes);
+
 // DocBoard routes (Doctor Scheduler PWA)
 const docboardRoutes = require('./routes/docboard');
 app.use('/api/docboard', docboardRoutes);

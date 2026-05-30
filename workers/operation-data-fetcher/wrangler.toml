@@ -1,0 +1,10 @@
+name = "operation-data-fetcher"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+
+[triggers]
+crons = ["0 19 * * *"]
+
+[[r2_buckets]]
+binding = "OPERATION_DATA_BUCKET"
+bucket_name = "dokterdibya-medis"

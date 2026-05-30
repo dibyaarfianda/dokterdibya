@@ -4,8 +4,7 @@ import { unreadCount } from '../stores/notifications';
 const tabs = [
   { path: '/docboard/', icon: 'calendar', label: 'Jadwal' },
   { path: '/docboard/surgery', icon: 'surgery', label: 'Operasi' },
-  { path: '/docboard/scientific', icon: 'scientificSchedule', label: 'Ilmiah' },
-  { path: '/docboard/personal', icon: 'personalSchedule', label: 'Pribadi' },
+  { path: '/docboard/data', icon: 'data', label: 'Data' },
   { path: '/docboard/notifications', icon: 'bell', label: 'Notif', badge: true },
   { path: '/docboard/settings', icon: 'menu', label: 'Lainnya' }
 ];
@@ -31,6 +30,13 @@ const icons = {
     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  data: (
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+      <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
     </svg>
   ),
   scientificSchedule: (
