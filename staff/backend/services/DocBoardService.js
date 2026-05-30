@@ -12,11 +12,170 @@ const LOCATION_NORMALIZE = {
   'rs_bhayangkara': 'rs_bhayangkara'
 };
 
+const SPACE_SCHEDULE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS docboard_space_schedules (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(64) NOT NULL,
+  space VARCHAR(20) NOT NULL,
+  agenda VARCHAR(255) NOT NULL,
+  category VARCHAR(80) NOT NULL,
+  schedule_date DATE NOT NULL,
+  start_time TIME NULL,
+  end_time TIME NULL,
+  location VARCHAR(255) NULL,
+  participants VARCHAR(255) NULL,
+  notes TEXT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_space_user_date (user_id, space, schedule_date, start_time),
+  INDEX idx_space_date (schedule_date, space),
+  INDEX idx_space_status (user_id, status)
+)`;
+
+function formatDateLocal(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatTimeValue(time) {
+  if (!time) return '';
+  if (typeof time === 'string') return time.substring(0, 5);
+  return String(time).substring(0, 5);
+}
+
+function normalizeSpace(space) {
+  return space === 'pribadi' ? 'pribadi' : 'ilmiah';
+}
+
 function normalizeLoc(loc) {
   return LOCATION_NORMALIZE[loc] || loc;
 }
 
 class DocBoardService {
+  constructor() {
+    this.spaceScheduleTableReady = false;
+  }
+
+  async ensureSpaceScheduleTable() {
+    if (this.spaceScheduleTableReady) return;
+    await pool.query(SPACE_SCHEDULE_TABLE_SQL);
+    this.spaceScheduleTableReady = true;
+  }
+
+  mapSpaceSchedule(row) {
+    return {
+      id: String(row.id),
+      space: row.space,
+      agenda: row.agenda,
+      category: row.category,
+      schedule_date: formatDateLocal(row.schedule_date),
+      start_time: formatTimeValue(row.start_time),
+      end_time: formatTimeValue(row.end_time),
+      location: row.location || '',
+      participants: row.participants || '',
+      notes: row.notes || '',
+      status: row.status || 'scheduled',
+      updatedAt: row.updated_at,
+      createdAt: row.created_at
+    };
+  }
+
+  async getSpaceSchedules(userId, filters = {}) {
+    await this.ensureSpaceScheduleTable();
+    const clauses = ['user_id = ?'];
+    const params = [String(userId || '')];
+
+    if (filters.space) {
+      clauses.push('space = ?');
+      params.push(normalizeSpace(filters.space));
+    }
+    if (filters.date) {
+      clauses.push('schedule_date = ?');
+      params.push(filters.date);
+    }
+    if (filters.start && filters.end) {
+      clauses.push('schedule_date BETWEEN ? AND ?');
+      params.push(filters.start, filters.end);
+    }
+
+    const [rows] = await pool.query(
+      `SELECT * FROM docboard_space_schedules
+       WHERE ${clauses.join(' AND ')}
+       ORDER BY schedule_date, COALESCE(start_time, '00:00:00'), id`,
+      params
+    );
+
+    return rows.map(row => this.mapSpaceSchedule(row));
+  }
+
+  async getSpaceScheduleCalendar(userId, year, month) {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDate = new Date(year, month, 0);
+    const endStr = `${year}-${String(month).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    const schedules = await this.getSpaceSchedules(userId, { start: startDate, end: endStr });
+    const days = {};
+
+    for (const schedule of schedules) {
+      if (schedule.status === 'cancelled') continue;
+      const date = schedule.schedule_date;
+      if (!days[date]) {
+        days[date] = { total: 0, spaces: { ilmiah: 0, pribadi: 0 } };
+      }
+      days[date].total += 1;
+      days[date].spaces[schedule.space] = (days[date].spaces[schedule.space] || 0) + 1;
+    }
+
+    return days;
+  }
+
+  async createSpaceSchedule(userId, data) {
+    await this.ensureSpaceScheduleTable();
+    const space = normalizeSpace(data.space);
+    const [result] = await pool.query(
+      `INSERT INTO docboard_space_schedules
+       (user_id, space, agenda, category, schedule_date, start_time, end_time, location, participants, notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        String(userId || ''), space, data.agenda, data.category, data.schedule_date,
+        data.start_time || null, data.end_time || null, data.location || null,
+        data.participants || null, data.notes || null, data.status || 'scheduled'
+      ]
+    );
+    const [rows] = await pool.query('SELECT * FROM docboard_space_schedules WHERE id = ?', [result.insertId]);
+    return this.mapSpaceSchedule(rows[0]);
+  }
+
+  async updateSpaceSchedule(userId, id, data) {
+    await this.ensureSpaceScheduleTable();
+    await pool.query(
+      `UPDATE docboard_space_schedules
+       SET agenda = ?, category = ?, schedule_date = ?, start_time = ?, end_time = ?, location = ?, participants = ?, notes = ?
+       WHERE id = ? AND user_id = ?`,
+      [
+        data.agenda, data.category, data.schedule_date, data.start_time || null,
+        data.end_time || null, data.location || null, data.participants || null,
+        data.notes || null, id, String(userId || '')
+      ]
+    );
+    const [rows] = await pool.query('SELECT * FROM docboard_space_schedules WHERE id = ? AND user_id = ?', [id, String(userId || '')]);
+    return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
+  }
+
+  async updateSpaceScheduleStatus(userId, id, status) {
+    await this.ensureSpaceScheduleTable();
+    await pool.query(
+      `UPDATE docboard_space_schedules SET status = ? WHERE id = ? AND user_id = ?`,
+      [status || 'scheduled', id, String(userId || '')]
+    );
+    const [rows] = await pool.query('SELECT * FROM docboard_space_schedules WHERE id = ? AND user_id = ?', [id, String(userId || '')]);
+    return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
+  }
+
+  async deleteSpaceSchedule(userId, id) {
+    await this.ensureSpaceScheduleTable();
+    await pool.query('DELETE FROM docboard_space_schedules WHERE id = ? AND user_id = ?', [id, String(userId || '')]);
+  }
 
   /**
    * Get calendar data for a month

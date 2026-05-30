@@ -336,8 +336,8 @@ input { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 8px 16px;
-  min-width: 64px;
+  padding: 8px 10px;
+  min-width: 56px;
   color: var(--text-tertiary);
   transition: color 0.2s;
 }
@@ -676,6 +676,25 @@ input { font-family: inherit; }
   color: #EF4444;
 }
 
+.calendar-space-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FEF3C7;
+  color: #B45309;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  height: 13px;
+}
+
+.calendar-cell.is-today .calendar-space-badge {
+  background: rgba(255,255,255,0.92);
+  color: #B45309;
+}
+
 .calendar-cell.is-today .calendar-patient-count {
   color: rgba(255,255,255,0.8);
 }
@@ -1006,6 +1025,18 @@ input { font-family: inherit; }
   margin-left: auto;
 }
 
+.week-day-space {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 2px 8px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
 .week-day-empty {
   font-size: 13px;
   color: var(--text-tertiary);
@@ -1135,6 +1166,22 @@ input { font-family: inherit; }
   transform: scale(0.98);
 }
 
+.day-space-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.day-space-card:active {
+  transform: scale(0.98);
+}
+
 .day-surgery-time {
   font-size: 13px;
   font-weight: 700;
@@ -1171,6 +1218,28 @@ input { font-family: inherit; }
 
 .day-surgery-loc {
   font-weight: 600;
+}
+
+.day-space-label {
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.day-space-label.pribadi {
+  color: #B45309;
+}
+
+.day-space-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--blue);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.day-space-dot.pribadi {
+  background: var(--amber);
 }
 
 .day-surgery-diag {

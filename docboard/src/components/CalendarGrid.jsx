@@ -3,9 +3,10 @@ import { LOCATIONS } from '../utils/constants';
 
 const DAY_HEADERS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
-export default function CalendarGrid({ year, month, events, surgeryEvents, onDayClick }) {
+export default function CalendarGrid({ year, month, events, surgeryEvents, spaceEvents, onDayClick }) {
   const days = getCalendarDays(year, month);
   const surgData = surgeryEvents || {};
+  const spaceData = spaceEvents || {};
 
   return (
     <div class="calendar-grid">
@@ -21,15 +22,18 @@ export default function CalendarGrid({ year, month, events, surgeryEvents, onDay
           const daySurg = surgData[day.date] || {};
           const surgLocs = daySurg.locations || [];
           const surgTotal = daySurg.total || 0;
+          const daySpace = spaceData[day.date] || {};
+          const spaceTotal = daySpace.total || 0;
           const todayClass = isToday(day.date) ? ' is-today' : '';
           const currentClass = day.isCurrentMonth ? '' : ' other-month';
           const hasEvents = locations.length > 0;
           const hasSurgery = surgLocs.length > 0;
+          const hasSpaceSchedule = spaceTotal > 0;
 
           return (
             <div
               key={day.date}
-              class={`calendar-cell${todayClass}${currentClass}${hasEvents || hasSurgery ? ' has-events' : ''}`}
+              class={`calendar-cell${todayClass}${currentClass}${hasEvents || hasSurgery || hasSpaceSchedule ? ' has-events' : ''}`}
               onClick={() => day.isCurrentMonth && onDayClick(day.date)}
             >
               <span class="calendar-day-number">{day.day}</span>
@@ -51,6 +55,11 @@ export default function CalendarGrid({ year, month, events, surgeryEvents, onDay
                     <path d="M7.2 14.4l-2.8 2.8c-1 1-1 2.6 0 3.6s2.6 1 3.6 0l2.8-2.8M16.8 9.6l2.8-2.8c1-1 1-2.6 0-3.6s-2.6-1-3.6 0l-2.8 2.8M8 16l8-8" />
                   </svg>
                   <span>{surgTotal}</span>
+                </div>
+              )}
+              {hasSpaceSchedule && (
+                <div class="calendar-space-badge" title={`${spaceTotal} agenda`}>
+                  <span>{spaceTotal}</span>
                 </div>
               )}
               {dayEvents.totalPatients > 0 && (

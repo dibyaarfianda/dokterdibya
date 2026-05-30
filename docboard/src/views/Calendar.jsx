@@ -4,8 +4,8 @@ import CalendarGrid from '../components/CalendarGrid';
 import WeeklyView from '../components/WeeklyView';
 import MorningBriefing from '../components/MorningBriefing';
 import { SkeletonCalendar } from '../components/SkeletonLoader';
-import { api } from '../services/api';
-import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData } from '../stores/schedule';
+import { api, getSpaceScheduleCalendar } from '../services/api';
+import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData, spaceScheduleCalendarData } from '../stores/schedule';
 import { getMonthName, today, getWeekStart } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
 
@@ -17,6 +17,7 @@ export default function Calendar() {
   // Load surgery calendar data alongside regular calendar
   useEffect(() => {
     loadSurgeryCalendar();
+    loadSpaceScheduleCalendar();
   }, [currentYear.value, currentMonth.value]);
 
   async function loadCalendar() {
@@ -37,6 +38,14 @@ export default function Calendar() {
       surgeryCalendarData.value = data.days || {};
     } catch (err) {
       console.error('Failed to load surgery calendar:', err);
+    }
+  }
+
+  async function loadSpaceScheduleCalendar() {
+    try {
+      spaceScheduleCalendarData.value = await getSpaceScheduleCalendar(currentYear.value, currentMonth.value + 1);
+    } catch (err) {
+      console.error('Failed to load space schedule calendar:', err);
     }
   }
 
@@ -161,6 +170,7 @@ export default function Calendar() {
               month={currentMonth.value}
               events={calendarData.value}
               surgeryEvents={surgeryCalendarData.value}
+              spaceEvents={spaceScheduleCalendarData.value}
               onDayClick={handleDayClick}
             />
           )}

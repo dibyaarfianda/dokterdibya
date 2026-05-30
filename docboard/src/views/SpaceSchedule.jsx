@@ -99,19 +99,33 @@ function sortSchedules(schedules) {
 
 export default function SpaceSchedule({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
-  const [schedules, setSchedules] = useState(() => listSpaceSchedules(space));
+  const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState(() => createEmptyForm(config));
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setSchedules(listSpaceSchedules(space));
+    let active = true;
+    setLoading(true);
+    listSpaceSchedules(space).then((items) => {
+      if (active) setSchedules(items);
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
     setForm(createEmptyForm(config));
     setShowForm(false);
     setExpandedId(null);
     setEditingId(null);
+    return () => { active = false; };
   }, [space]);
+
+  const reloadSchedules = async () => {
+    const items = await listSpaceSchedules(space);
+    setSchedules(items);
+    return items;
+  };
 
   const stats = useMemo(() => {
     const todayDate = today();
@@ -136,7 +150,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     setForm((current) => ({ ...current, [field]: event.currentTarget.value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const payload = {
       agenda: form.agenda.trim(),
@@ -150,17 +164,21 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     };
 
     if (editingId) {
-      setSchedules(updateSpaceSchedule(space, editingId, payload));
+      const updated = await updateSpaceSchedule(space, editingId, payload);
+      const items = await reloadSchedules();
       setForm(createEmptyForm(config));
       setShowForm(false);
-      setExpandedId(editingId);
+      setExpandedId(updated?.id || editingId);
       setEditingId(null);
+      if (!items.some((item) => item.id === editingId) && updated) {
+        setSchedules((current) => sortSchedules([...current, updated]));
+      }
       return;
     }
 
-    const schedule = addSpaceSchedule(space, payload);
+    const schedule = await addSpaceSchedule(space, payload);
 
-    setSchedules((current) => sortSchedules([...current, schedule]));
+    await reloadSchedules();
     setForm(createEmptyForm(config));
     setShowForm(false);
     setExpandedId(schedule.id);
@@ -186,10 +204,11 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     setExpandedId(item.id);
   };
 
-  const handleDelete = (event, item) => {
+  const handleDelete = async (event, item) => {
     event.stopPropagation();
     if (!window.confirm(`Hapus jadwal "${item.agenda}"?`)) return;
-    setSchedules(deleteSpaceSchedule(space, item.id));
+    await deleteSpaceSchedule(space, item.id);
+    await reloadSchedules();
     if (editingId === item.id) {
       setForm(createEmptyForm(config));
       setShowForm(false);
@@ -198,9 +217,10 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     setExpandedId(null);
   };
 
-  const handleStatus = (event, id, status) => {
+  const handleStatus = async (event, id, status) => {
     event.stopPropagation();
-    setSchedules(updateSpaceScheduleStatus(space, id, status));
+    await updateSpaceScheduleStatus(space, id, status);
+    await reloadSchedules();
   };
 
   const openSpace = (targetSpace) => {
@@ -294,7 +314,9 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
         </form>
       )}
 
-      {schedules.length === 0 ? (
+      {loading ? (
+        <div class="loading-state"><div class="spinner" /></div>
+      ) : schedules.length === 0 ? (
         <div class="empty-state">
           <p>Belum ada jadwal</p>
           <button class="btn-primary" onClick={openCreateForm}>+ Tambah agenda</button>

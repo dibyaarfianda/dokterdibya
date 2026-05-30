@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import LocationCard from '../components/LocationCard';
 import { SkeletonList } from '../components/SkeletonLoader';
-import { api } from '../services/api';
+import { api, listDaySpaceSchedules } from '../services/api';
 import { formatDateDisplay, getDayName, formatTime } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
 
@@ -12,10 +12,13 @@ export default function DayDetail({ date }) {
   const [error, setError] = useState(null);
   const [surgeries, setSurgeries] = useState([]);
   const [surgLoading, setSurgLoading] = useState(true);
+  const [spaceSchedules, setSpaceSchedules] = useState([]);
+  const [spaceLoading, setSpaceLoading] = useState(true);
 
   useEffect(() => {
     loadDay();
     loadSurgeries();
+    loadSpaceSchedules();
   }, [date]);
 
   async function loadDay() {
@@ -40,6 +43,17 @@ export default function DayDetail({ date }) {
       console.error('Failed to load surgeries:', err);
     } finally {
       setSurgLoading(false);
+    }
+  }
+
+  async function loadSpaceSchedules() {
+    setSpaceLoading(true);
+    try {
+      setSpaceSchedules(await listDaySpaceSchedules(date));
+    } catch (err) {
+      console.error('Failed to load space schedules:', err);
+    } finally {
+      setSpaceLoading(false);
     }
   }
 
@@ -134,6 +148,39 @@ export default function DayDetail({ date }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Ilmiah & Pribadi section */}
+      {spaceLoading ? (
+        <div class="day-surgery-section">
+          <div class="day-section-title">Agenda Ilmiah & Pribadi</div>
+          <SkeletonList count={1} />
+        </div>
+      ) : spaceSchedules.length > 0 && (
+        <div class="day-surgery-section">
+          <div class="day-section-title">
+            Agenda Ilmiah & Pribadi
+            <span class="day-section-count">{spaceSchedules.length}</span>
+          </div>
+          {spaceSchedules.map(item => (
+            <div
+              key={item.id}
+              class="day-space-card"
+              onClick={() => route(item.space === 'pribadi' ? '/docboard/personal' : '/docboard/scientific')}
+            >
+              <div class="day-surgery-time">{item.start_time || item.end_time || '--:--'}</div>
+              <div class="day-surgery-info">
+                <div class="day-surgery-patient">{item.agenda}</div>
+                <div class="day-surgery-op">{item.category}</div>
+                <div class="day-surgery-meta">
+                  <span class={`day-space-label ${item.space}`}>{item.space === 'pribadi' ? 'Pribadi' : 'Ilmiah'}</span>
+                  {item.location && <span class="day-surgery-diag">• {item.location}</span>}
+                </div>
+              </div>
+              <div class={`day-space-dot ${item.space}`} />
+            </div>
+          ))}
         </div>
       )}
     </div>
