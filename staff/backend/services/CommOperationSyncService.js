@@ -175,7 +175,7 @@ class CommOperationSyncService {
         if (!item.sourceKey) missing.push('source_key');
         if (!item.patientName) missing.push('patient_name');
         if (!item.operationDate) missing.push('operation_date');
-        if (!item.location) missing.push('location');
+        if (!item.location && !item.facility) missing.push('location');
         return missing;
     }
 
