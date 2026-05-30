@@ -2660,7 +2660,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260530g', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260530h', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }

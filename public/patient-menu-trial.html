@@ -5578,7 +5578,7 @@
 
             // Register service worker for push notifications and offline support
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260530h', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
