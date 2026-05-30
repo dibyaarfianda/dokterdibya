@@ -338,6 +338,166 @@
             white-space: nowrap;
         }
 
+        .members-modal-card {
+            width: min(720px, 100%);
+            max-height: min(720px, calc(var(--app-height) - 32px));
+            overflow: hidden;
+        }
+
+        .members-summary {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            color: #60717a;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .members-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid #d9e5df;
+            border-radius: 999px;
+            padding: 5px 9px;
+            background: #f7faf8;
+            color: #35584b;
+        }
+
+        .members-table-wrap {
+            border: 1px solid #dbe4ea;
+            border-radius: 14px;
+            overflow: auto;
+            max-height: min(430px, calc(var(--app-height) - 220px));
+            background: #ffffff;
+        }
+
+        .members-table {
+            width: 100%;
+            min-width: 620px;
+            border-collapse: collapse;
+            color: #16252d;
+        }
+
+        .members-table th,
+        .members-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eef2f4;
+            text-align: left;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        .members-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f8fbfd;
+            color: #60717a;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .members-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .member-identity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .member-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 14px;
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: linear-gradient(145deg, #e4f0ec, #cbded6);
+            color: #42695a;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .member-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .member-name {
+            font-weight: 800;
+            color: #172720;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 260px;
+        }
+
+        .member-sub {
+            margin-top: 2px;
+            color: #6d7f78;
+            font-size: 11px;
+        }
+
+        .member-type-badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 4px 8px;
+            background: #eef7f2;
+            color: #3d6657;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .member-type-badge.staff {
+            background: #eef4ff;
+            color: #315fa8;
+        }
+
+        .members-empty,
+        .members-loading {
+            border: 1px dashed #c9d7e1;
+            border-radius: 14px;
+            padding: 16px;
+            color: #60727f;
+            background: #f8fbfd;
+            font-size: 13px;
+        }
+
+        body.theme-dark .members-table-wrap,
+        body.theme-dark .members-table th,
+        body.theme-dark .members-pill,
+        body.theme-dark .members-empty,
+        body.theme-dark .members-loading {
+            background: #102133;
+            border-color: #304861;
+            color: #d4e4f2;
+        }
+
+        body.theme-dark .members-table,
+        body.theme-dark .member-name {
+            color: #e5eef7;
+        }
+
+        body.theme-dark .members-table td {
+            border-bottom-color: #253b50;
+        }
+
+        body.theme-dark .member-sub,
+        body.theme-dark .members-summary {
+            color: #a7bacb;
+        }
+
         .chat-wrapper {
             display: flex;
             flex-direction: column;
@@ -1610,6 +1770,56 @@
             background: rgba(223, 238, 232, 0.72);
         }
 
+        body.community-newdesign .members-table-wrap {
+            border-color: rgba(92, 127, 114, 0.16);
+            background: rgba(255, 255, 255, 0.78);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+        }
+
+        body.community-newdesign .members-table th {
+            background: rgba(247, 251, 248, 0.96);
+            color: #61776d;
+        }
+
+        body.community-newdesign .members-table td {
+            border-bottom-color: rgba(92, 127, 114, 0.12);
+        }
+
+        body.community-newdesign .members-pill {
+            border-color: rgba(92, 127, 114, 0.16);
+            background: rgba(223, 238, 232, 0.72);
+            color: #385e50;
+        }
+
+        body.community-newdesign .member-avatar {
+            background: linear-gradient(145deg, #e3f1eb, #c8dfd5);
+            box-shadow: 0 8px 16px rgba(45, 74, 64, 0.12);
+        }
+
+        body.community-newdesign .member-type-badge {
+            background: rgba(223, 238, 232, 0.78);
+            color: #3e6658;
+        }
+
+        body.community-newdesign .member-type-badge.staff {
+            background: rgba(223, 232, 245, 0.82);
+            color: #32557f;
+        }
+
+        body.community-newdesign.theme-dark .members-table-wrap,
+        body.community-newdesign.theme-dark .members-table th,
+        body.community-newdesign.theme-dark .members-pill,
+        body.community-newdesign.theme-dark .members-empty,
+        body.community-newdesign.theme-dark .members-loading {
+            background: rgba(18, 31, 27, 0.9);
+            border-color: rgba(173, 205, 190, 0.16);
+            color: #dceee6;
+        }
+
+        body.community-newdesign.theme-dark .members-table td {
+            border-bottom-color: rgba(173, 205, 190, 0.12);
+        }
+
         @media (max-width: 1000px) {
             body.community-newdesign .topbar {
                 padding: 10px 12px;
@@ -1647,6 +1857,66 @@
             body.community-newdesign .composer-spacer {
                 height: calc(82px + var(--mobile-bottom-offset));
             }
+
+            .members-modal-card {
+                max-height: min(640px, calc(var(--app-height) - 32px));
+            }
+
+            .members-table-wrap {
+                max-height: min(360px, calc(var(--app-height) - 220px));
+            }
+
+            .members-table {
+                min-width: 0;
+                table-layout: fixed;
+            }
+
+            .members-table th,
+            .members-table td {
+                padding: 9px 10px;
+            }
+
+            .members-table th:nth-child(1),
+            .members-table td:nth-child(1) {
+                width: 54%;
+            }
+
+            .members-table th:nth-child(2),
+            .members-table td:nth-child(2) {
+                width: 21%;
+            }
+
+            .members-table th:nth-child(3),
+            .members-table td:nth-child(3) {
+                width: 25%;
+                white-space: nowrap;
+            }
+
+            .members-table th:nth-child(4),
+            .members-table td:nth-child(4),
+            .members-table th:nth-child(5),
+            .members-table td:nth-child(5) {
+                display: none;
+            }
+
+            .member-avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 13px;
+            }
+
+            .member-name {
+                max-width: 128px;
+            }
+
+            .member-sub {
+                font-size: 10px;
+            }
+
+            .member-type-badge {
+                padding: 4px 7px;
+                font-size: 10px;
+            }
         }
     </style>
 </head>
@@ -1662,6 +1932,7 @@
             <button type="button" id="chat-menu-btn" class="chat-menu-btn" title="Menu"><i class="fa fa-ellipsis-v"></i></button>
             <div class="chat-menu" id="chat-menu">
                 <button type="button" class="chat-menu-item" id="menu-room-picker"><i class="fa fa-comments"></i> Pilih Room</button>
+                <button type="button" class="chat-menu-item" id="menu-members"><i class="fa fa-users"></i> Anggota Room</button>
                 <button type="button" class="chat-menu-item" id="menu-create-room"><i class="fa fa-plus"></i> Buat Room</button>
                 <button type="button" class="chat-menu-item" id="menu-direct-room" hidden><i class="fa fa-user-md"></i> Mulai Chat Pasien</button>
                 <button type="button" class="chat-menu-item danger" id="menu-archive-room" hidden><i class="fa fa-stop-circle"></i> Akhiri Percakapan</button>
@@ -1810,6 +2081,17 @@
     </div>
 </div>
 
+<div class="menu-modal" id="members-modal">
+    <div class="menu-modal-card members-modal-card" role="dialog" aria-modal="true" aria-labelledby="members-title">
+        <div class="menu-modal-head">
+            <h2 class="menu-modal-title" id="members-title">Anggota Room</h2>
+            <button type="button" class="menu-modal-close" id="members-close" title="Tutup"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="members-summary" id="members-summary"></div>
+        <div id="members-body"></div>
+    </div>
+</div>
+
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script type="module">
     import { showToast } from '/scripts/patient-utils.js';
@@ -1860,6 +2142,7 @@
         chatMenuBtn: document.getElementById('chat-menu-btn'),
         chatMenu: document.getElementById('chat-menu'),
         menuRoomPicker: document.getElementById('menu-room-picker'),
+        menuMembers: document.getElementById('menu-members'),
         menuCreateRoom: document.getElementById('menu-create-room'),
         menuDirectRoom: document.getElementById('menu-direct-room'),
         menuArchiveRoom: document.getElementById('menu-archive-room'),
@@ -1869,10 +2152,12 @@
         settingModal: document.getElementById('setting-modal'),
         directRoomModal: document.getElementById('direct-room-modal'),
         roomPickerModal: document.getElementById('room-picker-modal'),
+        membersModal: document.getElementById('members-modal'),
         createRoomClose: document.getElementById('create-room-close'),
         settingClose: document.getElementById('setting-close'),
         directRoomClose: document.getElementById('direct-room-close'),
         roomPickerClose: document.getElementById('room-picker-close'),
+        membersClose: document.getElementById('members-close'),
         settingTheme: document.getElementById('setting-theme'),
         settingWallpaper: document.getElementById('setting-wallpaper'),
         settingWallpaperClear: document.getElementById('setting-wallpaper-clear'),
@@ -1881,6 +2166,8 @@
         settingFontSizeValue: document.getElementById('setting-font-size-value'),
         roomPickerCurrent: document.getElementById('room-picker-current'),
         roomPickerList: document.getElementById('room-picker-list'),
+        membersSummary: document.getElementById('members-summary'),
+        membersBody: document.getElementById('members-body'),
         messages: document.getElementById('messages'),
         quotePreview: document.getElementById('quote-preview'),
         quotePreviewMeta: document.getElementById('quote-preview-meta'),
@@ -1967,6 +2254,11 @@
     }
 
     function syncDirectRoomActions() {
+        if (el.menuMembers) {
+            el.menuMembers.disabled = !activeRoom;
+            el.menuMembers.title = activeRoom ? 'Lihat anggota room' : 'Pilih room terlebih dahulu';
+        }
+
         if (el.menuDirectRoom) {
             el.menuDirectRoom.hidden = !isStaff;
         }
@@ -2284,6 +2576,117 @@
         }
     }
 
+    function formatMemberDate(value) {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '-';
+        if (window.matchMedia('(max-width: 1000px)').matches) {
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short'
+            });
+        }
+        return date.toLocaleString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function getMemberTypeLabel(userType) {
+        return userType === 'staff' ? 'Staff' : 'Pasien';
+    }
+
+    function renderRoomMembers(members, summary = {}) {
+        const list = Array.isArray(members) ? members : [];
+        const totalMembers = Number(summary.total_members ?? list.length) || 0;
+        const staffCount = Number(summary.staff_count ?? list.filter((member) => member.user_type === 'staff').length) || 0;
+        const patientCount = Number(summary.patient_count ?? list.filter((member) => member.user_type === 'patient').length) || 0;
+
+        el.membersSummary.innerHTML = `
+            <span class="members-pill"><i class="fa fa-users"></i> ${totalMembers} anggota</span>
+            <span class="members-pill"><i class="fa fa-heartbeat"></i> ${patientCount} pasien</span>
+            <span class="members-pill"><i class="fa fa-user-md"></i> ${staffCount} staff</span>
+        `;
+
+        if (!list.length) {
+            el.membersBody.innerHTML = '<div class="members-empty">Belum ada anggota yang tercatat di room ini.</div>';
+            return;
+        }
+
+        el.membersBody.innerHTML = `
+            <div class="members-table-wrap">
+                <table class="members-table">
+                    <thead>
+                        <tr>
+                            <th>Nama</th>
+                            <th>Tipe</th>
+                            <th>${window.matchMedia('(max-width: 1000px)').matches ? 'Masuk' : 'Bergabung'}</th>
+                            <th>Terakhir aktif</th>
+                            <th>Pesan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map((member) => {
+                            const displayName = member.display_name || 'User';
+                            const typeClass = member.user_type === 'staff' ? 'staff' : 'patient';
+                            const avatar = member.avatar_url
+                                ? `<img src="${escapeHtml(member.avatar_url)}" alt="${escapeHtml(displayName)}">`
+                                : escapeHtml(getInitials(displayName));
+                            return `
+                                <tr>
+                                    <td>
+                                        <div class="member-identity">
+                                            <div class="member-avatar">${avatar}</div>
+                                            <div>
+                                                <div class="member-name">${escapeHtml(displayName)}</div>
+                                                <div class="member-sub">${escapeHtml(member.user_id || '-')}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="member-type-badge ${typeClass}">${getMemberTypeLabel(member.user_type)}</span></td>
+                                    <td>${formatMemberDate(member.first_joined_at)}</td>
+                                    <td>${formatMemberDate(member.last_seen_at || member.last_message_at)}</td>
+                                    <td>${Number(member.message_count || 0)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    async function loadRoomMembers(showLoading = true) {
+        if (!activeRoom) return;
+
+        if (showLoading) {
+            el.membersSummary.innerHTML = '<span class="members-pill"><i class="fa fa-refresh"></i> Memuat anggota...</span>';
+            el.membersBody.innerHTML = '<div class="members-loading">Sedang mengambil daftar anggota room.</div>';
+        }
+
+        const data = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/members`);
+        if (data.room) {
+            activeRoom = data.room;
+            renderRooms();
+        }
+        renderRoomMembers(data.members || [], data.summary || {});
+    }
+
+    function openMembersModal() {
+        if (!activeRoom) {
+            showToast('Pilih room terlebih dahulu', 'warning');
+            return;
+        }
+
+        setModalOpen(el.membersModal, true);
+        loadRoomMembers(true).catch((error) => {
+            el.membersSummary.innerHTML = '';
+            el.membersBody.innerHTML = `<div class="members-empty">${escapeHtml(error.message)}</div>`;
+        });
+    }
+
     function initChatMenu() {
         el.chatMenuBtn.addEventListener('click', (event) => {
             event.stopPropagation();
@@ -2293,6 +2696,11 @@
         el.menuRoomPicker.addEventListener('click', () => {
             toggleChatMenu(false);
             openRoomPickerModal();
+        });
+
+        el.menuMembers.addEventListener('click', () => {
+            toggleChatMenu(false);
+            openMembersModal();
         });
 
         el.menuCreateRoom.addEventListener('click', () => {
@@ -2328,6 +2736,7 @@
         el.settingClose.addEventListener('click', () => setModalOpen(el.settingModal, false));
         el.directRoomClose.addEventListener('click', () => setModalOpen(el.directRoomModal, false));
         el.roomPickerClose.addEventListener('click', () => setModalOpen(el.roomPickerModal, false));
+        el.membersClose.addEventListener('click', () => setModalOpen(el.membersModal, false));
         el.directRoomCreateBtn.addEventListener('click', createDirectRoom);
 
         el.directPatientSearch.addEventListener('input', (event) => {
@@ -2388,7 +2797,7 @@
             showToast('Wallpaper dihapus', 'success');
         });
 
-        [el.createRoomModal, el.settingModal, el.directRoomModal, el.roomPickerModal].forEach((modal) => {
+        [el.createRoomModal, el.settingModal, el.directRoomModal, el.roomPickerModal, el.membersModal].forEach((modal) => {
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) setModalOpen(modal, false);
             });
@@ -2401,6 +2810,7 @@
                 setModalOpen(el.settingModal, false);
                 setModalOpen(el.directRoomModal, false);
                 setModalOpen(el.roomPickerModal, false);
+                setModalOpen(el.membersModal, false);
             }
         });
 
@@ -2471,6 +2881,8 @@
             const badge = room.is_direct
                 ? '<span class="room-badge">Chat Pasien</span>'
                 : '<span class="room-badge public">Publik</span>';
+            const memberCount = Number(room.member_count || 0);
+            const memberLabel = memberCount > 0 ? ` • ${memberCount} anggota` : '';
             return `
                 <div class="room-item ${active}" data-room="${room.slug}" style="border-left-color:${roomColor}">
                     <div class="room-avatar" style="background:${roomColor}">${getInitials(room.name)}</div>
@@ -2479,7 +2891,7 @@
                             <div class="room-name">${escapeHtml(room.name)} ${badge}</div>
                             <div class="room-time">${roomTime}</div>
                         </div>
-                        <div class="room-meta">${escapeHtml(room.description || 'Room komunitas')}</div>
+                        <div class="room-meta">${escapeHtml(room.description || 'Room komunitas')}${escapeHtml(memberLabel)}</div>
                     </div>
                 </div>
             `;
@@ -2807,8 +3219,8 @@
 
         renderedMessageIds.add(messageId);
 
-    const emptyState = el.messages.querySelector('.chat-empty-state');
-    if (emptyState) emptyState.remove();
+        const emptyState = el.messages.querySelector('.chat-empty-state');
+        if (emptyState) emptyState.remove();
 
         const lastDateNode = el.messages.querySelector('.date-divider:last-of-type');
         const lastDateKey = lastDateNode ? lastDateNode.dataset.dateKey : null;
@@ -2842,6 +3254,9 @@
             autoResizeMessageInput(true);
             clearQuotedMessage();
             appendMessage(payload.message);
+            if (el.membersModal.classList.contains('show')) {
+                loadRoomMembers(false).catch(() => {});
+            }
 
             if (socket) {
                 socket.emit('community:stop-typing', {
@@ -2976,6 +3391,12 @@
 
         socket.on('community:rooms:changed', async () => {
             await loadRooms(false);
+        });
+
+        socket.on('community:user:joined', (payload) => {
+            if (!activeRoom || payload.room !== activeRoom.slug) return;
+            if (!el.membersModal.classList.contains('show')) return;
+            loadRoomMembers(false).catch(() => {});
         });
     }
 

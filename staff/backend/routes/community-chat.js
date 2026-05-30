@@ -211,6 +211,43 @@ async function ensureSchema() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS community_chat_room_members (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                room_id INT NOT NULL,
+                user_id VARCHAR(64) NOT NULL,
+                user_type ENUM('patient', 'staff') NOT NULL,
+                display_name VARCHAR(255) NOT NULL,
+                avatar_url TEXT NULL,
+                first_joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_room_user (room_id, user_id, user_type),
+                INDEX idx_room_seen (room_id, last_seen_at),
+                CONSTRAINT fk_community_chat_room_members_room
+                    FOREIGN KEY (room_id) REFERENCES community_chat_rooms(id)
+                    ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
+        await db.query(`
+            INSERT INTO community_chat_room_members
+                (room_id, user_id, user_type, display_name, avatar_url, first_joined_at, last_seen_at)
+            SELECT
+                m.room_id,
+                m.sender_id,
+                m.sender_type,
+                COALESCE(NULLIF(MAX(m.sender_nickname), ''), MAX(m.sender_name), 'User') AS display_name,
+                MAX(m.sender_avatar) AS avatar_url,
+                MIN(m.created_at) AS first_joined_at,
+                MAX(m.created_at) AS last_seen_at
+            FROM community_chat_messages m
+            GROUP BY m.room_id, m.sender_id, m.sender_type
+            ON DUPLICATE KEY UPDATE
+                display_name = VALUES(display_name),
+                avatar_url = COALESCE(VALUES(avatar_url), avatar_url),
+                last_seen_at = GREATEST(last_seen_at, VALUES(last_seen_at))
+        `);
+
         await db.query(
             `INSERT INTO community_chat_rooms (slug, name, description, color, is_system)
              VALUES (?, ?, ?, ?, 1)
@@ -232,6 +269,7 @@ async function getRoomBySlug(slug) {
             r.is_direct, r.direct_patient_id, r.direct_staff_id,
                 p.full_name AS direct_patient_name,
                 u.name AS direct_staff_name,
+            (SELECT COUNT(*) FROM community_chat_room_members cm WHERE cm.room_id = r.id) AS member_count,
             r.created_at, r.updated_at
          FROM community_chat_rooms r
          LEFT JOIN patients p ON p.id = r.direct_patient_id
@@ -347,6 +385,31 @@ async function resolveUserIdentity(user) {
         bio: profile?.bio || '',
         avatarUrl: profile?.avatar_url || null,
         profileVisible: profile ? profile.profile_visible === 1 : true
+    };
+}
+
+async function touchRoomMember(room, user, identity = null) {
+    if (!room || !user?.id) return null;
+
+    const resolved = identity || await resolveUserIdentity(user);
+    const displayName = resolved.nickname || resolved.defaultName || 'User';
+
+    await db.query(
+        `INSERT INTO community_chat_room_members
+            (room_id, user_id, user_type, display_name, avatar_url)
+         VALUES (?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+            display_name = VALUES(display_name),
+            avatar_url = VALUES(avatar_url),
+            last_seen_at = CURRENT_TIMESTAMP`,
+        [room.id, resolved.userId, resolved.userType, displayName, resolved.avatarUrl]
+    );
+
+    return {
+        user_id: resolved.userId,
+        user_type: resolved.userType,
+        display_name: displayName,
+        avatar_url: resolved.avatarUrl
     };
 }
 
@@ -470,11 +533,11 @@ router.get('/rooms', verifyToken, async (req, res) => {
                 r.created_at,
                 r.updated_at,
                 MAX(m.created_at) AS last_message_at,
-                COUNT(DISTINCT room_mod.staff_user_id) AS member_count,
+                COUNT(DISTINCT room_member.id) AS member_count,
                 ? AS current_user_id
             FROM community_chat_rooms r
             LEFT JOIN community_chat_messages m ON m.room_id = r.id
-            LEFT JOIN community_chat_room_moderators room_mod ON room_mod.room_id = r.id
+            LEFT JOIN community_chat_room_members room_member ON room_member.room_id = r.id
             LEFT JOIN patients p ON p.id = r.direct_patient_id
             LEFT JOIN users u ON u.new_id = r.direct_staff_id
             WHERE r.is_archived = 0
@@ -549,6 +612,7 @@ router.post('/rooms', verifyToken, async (req, res) => {
         );
 
         const room = await getRoomBySlug(slug);
+    await touchRoomMember(room, req.user);
         emitRoomListChanged();
 
         res.json({ success: true, room });
@@ -622,6 +686,8 @@ router.post('/rooms/direct', verifyToken, async (req, res) => {
             );
         }
 
+        await touchRoomMember(room, req.user);
+
         const mappedRoom = mapRoom(room, 'staff', staffUserId);
         res.json({ success: true, room: mappedRoom });
     } catch (error) {
@@ -641,6 +707,9 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
             return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke room ini' });
         }
 
+        await touchRoomMember(room, req.user);
+        const roomForResponse = await getRoomBySlug(req.params.slug);
+
         const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
         const [rows] = await db.query(
             `SELECT id, room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message, created_at
@@ -653,12 +722,63 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
 
         res.json({
             success: true,
-            room: mapRoom(room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
+            room: mapRoom(roomForResponse || room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
             messages: rows.reverse()
         });
     } catch (error) {
         console.error('community messages error:', error);
         res.status(500).json({ success: false, message: 'Gagal memuat pesan' });
+    }
+});
+
+router.get('/rooms/:slug/members', verifyToken, async (req, res) => {
+    try {
+        const room = await getRoomBySlug(req.params.slug);
+        if (!room) {
+            return res.status(404).json({ success: false, message: 'Room tidak ditemukan' });
+        }
+
+        if (!canAccessRoom(room, req.user)) {
+            return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses ke room ini' });
+        }
+
+        await touchRoomMember(room, req.user);
+
+        const [rows] = await db.query(
+            `SELECT
+                member.user_id,
+                member.user_type,
+                member.display_name,
+                member.avatar_url,
+                member.first_joined_at,
+                member.last_seen_at,
+                COALESCE(stats.message_count, 0) AS message_count,
+                stats.last_message_at
+             FROM community_chat_room_members member
+             LEFT JOIN (
+                SELECT sender_id, sender_type, COUNT(*) AS message_count, MAX(created_at) AS last_message_at
+                FROM community_chat_messages
+                WHERE room_id = ?
+                GROUP BY sender_id, sender_type
+             ) stats ON stats.sender_id = member.user_id AND stats.sender_type = member.user_type
+             WHERE member.room_id = ?
+             ORDER BY COALESCE(stats.last_message_at, member.last_seen_at, member.first_joined_at) DESC, member.display_name ASC`,
+            [room.id, room.id]
+        );
+
+        res.json({
+            success: true,
+            room: mapRoom(await getRoomBySlug(req.params.slug) || room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
+            members: rows,
+            summary: {
+                total_members: rows.length,
+                staff_count: rows.filter((member) => member.user_type === 'staff').length,
+                patient_count: rows.filter((member) => member.user_type === 'patient').length
+            }
+        });
+    } catch (error) {
+        console.error('community members error:', error);
+        res.status(500).json({ success: false, message: 'Gagal memuat anggota room' });
     }
 });
 
@@ -681,6 +801,7 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
         const messageText = mapEmoticonToEmoji(rawMessage).slice(0, MAX_MESSAGE_LENGTH);
         const identity = await resolveUserIdentity(req.user);
         const senderName = identity.defaultName;
+        await touchRoomMember(room, req.user, identity);
 
         const [result] = await db.query(
             `INSERT INTO community_chat_messages
@@ -973,6 +1094,7 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
                 const roomSlug = normalizeText(payload?.room) || DEFAULT_LOBBY_SLUG;
                 if (!token) return;
 
+                await ensureSchema();
                 const user = jwt.verify(token, JWT_SECRET);
                 const room = await getRoomBySlug(roomSlug);
                 if (!room || !canAccessRoom(room, user)) return;
@@ -981,6 +1103,7 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
                 socket.data.communityRooms = socket.data.communityRooms || new Set();
                 socket.data.communityRooms.add(room.slug);
                 socket.join(roomKey);
+                await touchRoomMember(room, user);
                 socket.emit('community:joined', { room: room.slug });
 
                 socket.to(roomKey).emit('community:user:joined', {

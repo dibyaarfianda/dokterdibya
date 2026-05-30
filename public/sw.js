@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260530f'; // 2026-05-30f - polish community chat newdesign theme
+const CACHE_VERSION = '20260530g'; // 2026-05-30g - add community chat room members table
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
