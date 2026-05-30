@@ -143,9 +143,9 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Document Spaces */}
+      {/* Schedule Spaces */}
       <div class="settings-section">
-        <h3 class="settings-section-title">Ruang Dokumen</h3>
+        <h3 class="settings-section-title">Ruang Jadwal</h3>
         <div class="settings-card settings-card-link" onClick={() => route('/docboard/scientific')}>
           <div class="settings-link-row">
             <div class="settings-link-icon" style={{ background: '#EEF2FF', color: '#2563EB' }}>
@@ -157,7 +157,7 @@ export default function Settings() {
             </div>
             <div class="settings-link-info">
               <div class="settings-link-title">Ilmiah</div>
-              <div class="settings-link-desc">Jurnal, guideline, dan bahan edukasi</div>
+              <div class="settings-link-desc">Pertemuan staff Obgyn, seminar, dan diskusi kasus</div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
               <polyline points="9,18 15,12 9,6" />
@@ -173,7 +173,7 @@ export default function Settings() {
             </div>
             <div class="settings-link-info">
               <div class="settings-link-title">Pribadi</div>
-              <div class="settings-link-desc">Memo, ide, dan catatan personal</div>
+              <div class="settings-link-desc">Janji keluarga, agenda rumah, dan urusan pribadi</div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
               <polyline points="9,18 15,12 9,6" />
