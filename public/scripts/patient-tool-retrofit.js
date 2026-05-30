@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260529gap1';
+    var VERSION = '20260530d';
     var pageDefaults = {
         '/album-usg-trial.html': {
             activeNav: 'dokumen',
@@ -87,6 +87,7 @@
         ]},
         aplikasi: { title: 'Aplikasi', items: [
             ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter-trial.html'],
+            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?theme=newdesign'],
             ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
             ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],

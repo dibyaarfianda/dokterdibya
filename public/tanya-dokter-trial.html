@@ -564,6 +564,397 @@
     <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260524p">
     <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
     <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        /* Final Tanya Dokter polish: keep the consultation flow, elevate the patient-facing surface. */
+        body.tanya-dokter-page {
+            --tanya-green: #6f8f80;
+            --tanya-green-deep: #4f7464;
+            --tanya-mint: #edf6f1;
+            --tanya-warm: #fbfaf7;
+            --tanya-line: rgba(21, 31, 27, 0.1);
+            --tanya-line-strong: rgba(21, 31, 27, 0.18);
+            --tanya-shadow: 0 18px 46px rgba(22, 32, 27, 0.11);
+            --tanya-shadow-soft: 0 10px 28px rgba(22, 32, 27, 0.08);
+            background:
+                radial-gradient(circle at 12% 4%, rgba(111, 143, 128, 0.14), transparent 27%),
+                linear-gradient(180deg, rgba(250, 252, 248, 0.96) 0%, rgba(244, 248, 244, 0.96) 38%, #fff 100%) !important;
+        }
+
+        body.tanya-dokter-page .topbar-blur-fade {
+            height: 86px !important;
+        }
+
+        body.tanya-dokter-page .tool-retrofit-hero:not(#pmc-root *) {
+            border: 1px solid var(--tanya-line) !important;
+            border-radius: 28px !important;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(237, 246, 241, 0.88) 58%, rgba(255, 255, 255, 0.92)) !important;
+            box-shadow: var(--tanya-shadow) !important;
+            overflow: hidden !important;
+        }
+
+        body.tanya-dokter-page .tool-retrofit-hero:not(#pmc-root *)::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(111, 143, 128, 0.18), transparent 38%, rgba(17, 17, 17, 0.04));
+            pointer-events: none;
+        }
+
+        body.tanya-dokter-page .hero-title,
+        body.tanya-dokter-page .hero-copy,
+        body.tanya-dokter-page .today-row {
+            position: relative;
+            z-index: 1;
+        }
+
+        body.tanya-dokter-page .today-value i {
+            color: var(--tanya-green-deep) !important;
+        }
+
+        body.tanya-dokter-page .tanya-hero {
+            display: grid !important;
+            gap: 10px !important;
+            margin: 0 0 14px !important;
+            padding: 12px !important;
+            border: 1px solid var(--tanya-line) !important;
+            border-radius: 24px !important;
+            background: rgba(255, 255, 255, 0.72) !important;
+            box-shadow: var(--tanya-shadow-soft) !important;
+        }
+
+        body.tanya-dokter-page .tanya-hero > .section-title,
+        body.tanya-dokter-page .tanya-hero > .section-lead {
+            display: none !important;
+        }
+
+        body.tanya-dokter-page .tanya-hero > .section-kicker {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            margin: 0 !important;
+            color: var(--tanya-green-deep) !important;
+            font-size: 10px !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.14em !important;
+            text-transform: uppercase !important;
+        }
+
+        body.tanya-dokter-page .green-light {
+            width: 8px !important;
+            height: 8px !important;
+            border-radius: 50% !important;
+            background: var(--tanya-green) !important;
+            box-shadow: 0 0 0 5px rgba(111, 143, 128, 0.14) !important;
+        }
+
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tabs {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            width: 100% !important;
+            gap: 6px !important;
+            margin: 0 !important;
+            padding: 6px !important;
+            border: 1px solid var(--tanya-line) !important;
+            border-radius: 19px !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            box-shadow: none !important;
+        }
+
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tab,
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tab.active {
+            min-height: 42px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 14px !important;
+            padding: 8px 10px !important;
+            font-size: 12px !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+            border: 0 !important;
+        }
+
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tab {
+            background: transparent !important;
+            color: #69746e !important;
+        }
+
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tab.active {
+            background: linear-gradient(145deg, #111, #27312d) !important;
+            color: #fff !important;
+            box-shadow: 0 12px 24px rgba(17, 17, 17, 0.16) !important;
+        }
+
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tab[style*="display:none"],
+        body.legacy-tool-retrofit.tanya-dokter-page .tanya-tab[style*="display: none"] {
+            display: none !important;
+        }
+
+        body.tanya-dokter-page .content-section.active {
+            animation: tanyaFadeIn 0.38s ease both;
+        }
+
+        body.tanya-dokter-page .ask-card:not(#pmc-root *),
+        body.tanya-dokter-page .thread-card:not(#pmc-root *),
+        body.tanya-dokter-page .original-question:not(#pmc-root *) {
+            border: 1px solid var(--tanya-line) !important;
+            border-radius: 26px !important;
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 247, 0.9)) !important;
+            box-shadow: var(--tanya-shadow-soft) !important;
+            overflow: hidden !important;
+        }
+
+        body.tanya-dokter-page .ask-card:not(#pmc-root *) {
+            position: relative !important;
+            padding: 18px !important;
+        }
+
+        body.tanya-dokter-page .ask-card:not(#pmc-root *)::before,
+        body.tanya-dokter-page .thread-card:not(#pmc-root *)::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(111, 143, 128, 0.72), rgba(111, 143, 128, 0.08));
+            pointer-events: none;
+        }
+
+        body.tanya-dokter-page .trial-card-kicker:not(#pmc-root *) {
+            display: inline-flex !important;
+            align-items: center !important;
+            width: auto !important;
+            margin-bottom: 12px !important;
+            padding: 7px 10px !important;
+            border: 1px solid rgba(111, 143, 128, 0.18) !important;
+            border-radius: 999px !important;
+            background: var(--tanya-mint) !important;
+            color: var(--tanya-green-deep) !important;
+            font-size: 11px !important;
+            font-weight: 850 !important;
+            letter-spacing: 0.02em !important;
+            text-transform: none !important;
+        }
+
+        body.tanya-dokter-page .trial-card-title:not(#pmc-root *) {
+            color: #111 !important;
+            font-family: var(--display, var(--font-main)) !important;
+            font-size: 20px !important;
+            font-weight: 850 !important;
+            letter-spacing: -0.035em !important;
+            margin-bottom: 12px !important;
+        }
+
+        body.tanya-dokter-page .quota-chip:not(#pmc-root *) {
+            display: inline-flex !important;
+            width: auto !important;
+            max-width: 100% !important;
+            border: 1px solid rgba(111, 143, 128, 0.18) !important;
+            border-radius: 999px !important;
+            background: var(--tanya-mint) !important;
+            color: var(--tanya-green-deep) !important;
+            box-shadow: none !important;
+            padding: 8px 11px !important;
+            font-size: 11.5px !important;
+            line-height: 1.25 !important;
+        }
+
+        body.tanya-dokter-page .quota-chip i {
+            width: 18px !important;
+            height: 18px !important;
+            border-radius: 50% !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            background: rgba(111, 143, 128, 0.18) !important;
+            color: var(--tanya-green-deep) !important;
+            font-size: 10px !important;
+            flex: 0 0 auto !important;
+        }
+
+        body.tanya-dokter-page .trial-field label {
+            color: #3d4641 !important;
+            font-weight: 800 !important;
+            font-size: 12px !important;
+        }
+
+        body.tanya-dokter-page .trial-input:not(#pmc-root *),
+        body.tanya-dokter-page .trial-textarea:not(#pmc-root *),
+        body.tanya-dokter-page .reply-form textarea:not(#pmc-root *) {
+            min-height: 48px !important;
+            border: 1px solid var(--tanya-line) !important;
+            border-radius: 18px !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: #111 !important;
+            box-shadow: 0 8px 18px rgba(22, 32, 27, 0.05) !important;
+        }
+
+        body.tanya-dokter-page .trial-textarea:not(#pmc-root *) {
+            min-height: 142px !important;
+        }
+
+        body.tanya-dokter-page .trial-input:focus:not(#pmc-root *),
+        body.tanya-dokter-page .trial-textarea:focus:not(#pmc-root *),
+        body.tanya-dokter-page .reply-form textarea:focus:not(#pmc-root *) {
+            border-color: #111 !important;
+            box-shadow: 0 0 0 5px rgba(111, 143, 128, 0.13), 0 12px 28px rgba(22, 32, 27, 0.1) !important;
+        }
+
+        body.tanya-dokter-page .image-upload-btn:not(#pmc-root *) {
+            min-height: 48px !important;
+            border: 1px dashed rgba(111, 143, 128, 0.32) !important;
+            border-radius: 18px !important;
+            background: linear-gradient(180deg, #fff, var(--tanya-warm)) !important;
+            color: var(--tanya-green-deep) !important;
+            font-weight: 850 !important;
+        }
+
+        body.tanya-dokter-page .trial-button.full:not(#pmc-root *) {
+            min-height: 50px !important;
+            border-radius: 18px !important;
+            background: linear-gradient(145deg, #111, #27312d) !important;
+            box-shadow: 0 14px 28px rgba(17, 17, 17, 0.16) !important;
+            font-weight: 850 !important;
+        }
+
+        body.tanya-dokter-page .blocked-container:not(#pmc-root *) {
+            margin-top: 16px !important;
+            padding: 24px 18px !important;
+            border: 1px solid rgba(111, 143, 128, 0.16) !important;
+            border-radius: 22px !important;
+            background:
+                linear-gradient(180deg, rgba(237, 246, 241, 0.88), rgba(255, 255, 255, 0.72)) !important;
+        }
+
+        body.tanya-dokter-page .blocked-container i {
+            width: 56px !important;
+            height: 56px !important;
+            margin: 0 auto 14px !important;
+            border-radius: 50% !important;
+            display: grid !important;
+            place-items: center !important;
+            background: #fff !important;
+            color: var(--tanya-green-deep) !important;
+            box-shadow: 0 12px 28px rgba(22, 32, 27, 0.1) !important;
+            font-size: 26px !important;
+        }
+
+        body.tanya-dokter-page .blocked-container p {
+            max-width: 34ch !important;
+            margin: 0 auto !important;
+            color: #44504a !important;
+            font-size: 13px !important;
+            line-height: 1.55 !important;
+        }
+
+        body.tanya-dokter-page .threads-section {
+            margin-top: 18px !important;
+        }
+
+        body.tanya-dokter-page .threads-section h2 {
+            color: var(--tanya-green-deep) !important;
+            font-size: 11px !important;
+            font-weight: 900 !important;
+        }
+
+        body.tanya-dokter-page .thread-card:not(#pmc-root *) {
+            padding: 18px !important;
+            position: relative !important;
+        }
+
+        body.tanya-dokter-page .thread-header {
+            align-items: flex-start !important;
+        }
+
+        body.tanya-dokter-page .thread-chip:not(#pmc-root *) {
+            padding: 7px 10px !important;
+            border-radius: 999px !important;
+            background: rgba(111, 143, 128, 0.1) !important;
+            color: var(--tanya-green-deep) !important;
+            font-weight: 850 !important;
+        }
+
+        body.tanya-dokter-page .thread-chip.done:not(#pmc-root *) {
+            background: rgba(17, 17, 17, 0.06) !important;
+            color: #555 !important;
+        }
+
+        body.tanya-dokter-page .thread-question {
+            color: #111 !important;
+            font-family: var(--display, var(--font-main)) !important;
+            font-size: 16px !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.025em !important;
+            line-height: 1.38 !important;
+        }
+
+        body.tanya-dokter-page .thread-replies {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+            margin-top: 12px !important;
+            color: var(--tanya-green-deep) !important;
+            font-weight: 750 !important;
+        }
+
+        body.tanya-dokter-page .thread-modal {
+            background:
+                radial-gradient(circle at 12% 4%, rgba(111, 143, 128, 0.12), transparent 26%),
+                #f8faf7 !important;
+        }
+
+        body.tanya-dokter-page .thread-modal-header,
+        body.tanya-dokter-page .thread-modal-footer {
+            border-color: var(--tanya-line) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            backdrop-filter: blur(12px) !important;
+        }
+
+        body.tanya-dokter-page .thread-modal-close {
+            width: 38px !important;
+            height: 38px !important;
+            border-radius: 14px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            background: rgba(17, 17, 17, 0.06) !important;
+            color: #111 !important;
+        }
+
+        body.tanya-dokter-page .message-bubble:not(#pmc-root *) {
+            border-radius: 20px !important;
+            box-shadow: 0 8px 22px rgba(22, 32, 27, 0.08) !important;
+        }
+
+        body.tanya-dokter-page .message-bubble.patient:not(#pmc-root *) {
+            background: linear-gradient(145deg, #111, #27312d) !important;
+            border-color: #111 !important;
+            color: #fff !important;
+        }
+
+        body.tanya-dokter-page .message-bubble.patient .message-sender,
+        body.tanya-dokter-page .message-bubble.patient .message-text {
+            color: #fff !important;
+        }
+
+        body.tanya-dokter-page .message-bubble.doctor:not(#pmc-root *) {
+            background: linear-gradient(180deg, #fff, var(--tanya-mint)) !important;
+            border-color: rgba(111, 143, 128, 0.2) !important;
+        }
+
+        @keyframes tanyaFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 430px) {
+            body.tanya-dokter-page .tool-retrofit-hero:not(#pmc-root *) { border-radius: 24px !important; }
+            body.tanya-dokter-page .ask-card:not(#pmc-root *),
+            body.tanya-dokter-page .thread-card:not(#pmc-root *) { border-radius: 24px !important; }
+        }
+    </style>
     <script>window.__patientTrialHeaderInstalled = true;</script>
 </head>
 <body class="trial-themed home-sections-locked patient-tool-shell legacy-tool-retrofit tanya-dokter-page" data-tool-shell-active="aplikasi" data-tool-kicker="Tanya Dokter" data-tool-title="Konsultasi pribadi." data-tool-copy="Ajukan pertanyaan kepada dokter secara asinkron, lihat riwayat percakapan, dan balas saat thread masih terbuka." data-tool-meta-label="Mode" data-tool-meta-value="Asinkron">
@@ -1119,7 +1510,7 @@
     </script>
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
-    <script src="/scripts/patient-tool-shell.js?v=20260530a"></script>
-    <script src="/scripts/patient-tool-retrofit.js?v=20260530a"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>

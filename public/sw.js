@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260530c'; // 2026-05-30c - polish booking clinic trial wizard
+const CACHE_VERSION = '20260530d'; // 2026-05-30d - polish Tanya Dokter and restore community chat trial access
 const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -30,6 +30,7 @@ const PRECACHE_FILES = [
   '/perjalanan-ibu-trial.html',
   '/tanya-dokter-trial.html',
   '/artikel-trial.html',
+  '/community-chat.html',
   '/my-corner-visit-trial.html',
   '/styles/patient-trial-theme.css',
   '/styles/patient-tool-shell.css',
