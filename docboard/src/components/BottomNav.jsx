@@ -5,8 +5,8 @@ const tabs = [
   { path: '/docboard/', icon: 'calendar', label: 'Jadwal' },
   { path: '/docboard/surgery', icon: 'surgery', label: 'Operasi' },
   { path: '/docboard/or-board', icon: 'orboard', label: 'OR Board' },
-  { path: '/docboard/scientific', icon: 'book', label: 'Ilmiah' },
-  { path: '/docboard/personal', icon: 'personal', label: 'Pribadi' },
+  { path: '/docboard/scientific', icon: 'scientificSchedule', label: 'Ilmiah' },
+  { path: '/docboard/personal', icon: 'personalSchedule', label: 'Pribadi' },
   { path: '/docboard/notifications', icon: 'bell', label: 'Notif', badge: true },
   { path: '/docboard/settings', icon: 'menu', label: 'Lainnya' }
 ];
@@ -40,16 +40,18 @@ const icons = {
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
   ),
-  book: (
+  scientificSchedule: (
     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z" />
-      <path d="M8 7h8M8 11h6" />
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M8 2v4M16 2v4M3 10h18" />
+      <path d="M8 14h5M8 18h8" />
     </svg>
   ),
-  personal: (
+  personalSchedule: (
     <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-      <path d="M12 17.5 5.5 21l1.2-7.2L1.5 8.7l7.2-1L12 1l3.3 6.7 7.2 1-5.2 5.1 1.2 7.2z" />
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M8 2v4M16 2v4M3 10h18" />
+      <path d="M12 17.5c-1.8-1.2-3-2.2-3-3.5a1.7 1.7 0 0 1 3-1.1A1.7 1.7 0 0 1 15 14c0 1.3-1.2 2.3-3 3.5z" />
     </svg>
   ),
   menu: (
