@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
 const apiKeyAuth = require('../middleware/apiKeyAuth');
+const commOperationSync = require('../services/CommOperationSyncService');
 
 // All routes require API key authentication
 router.use(apiKeyAuth);
@@ -270,6 +271,33 @@ router.post('/assessments', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to save assessment'
+        });
+    }
+});
+
+/**
+ * POST /operation-sync
+ * Receive daily surgery operation snapshot from COMM.
+ *
+ * COMM is the collector/executor. DocBoard is the scheduling source of truth,
+ * so this endpoint upserts schedules from only the fields COMM actually sends.
+ */
+router.post('/operation-sync', async (req, res) => {
+    try {
+        const result = await commOperationSync.syncBatch(req.body || {});
+
+        res.status(202).json({
+            success: true,
+            message: 'Operation sync accepted',
+            ...result
+        });
+    } catch (error) {
+        logger.error('COMM integration - operation sync error:', error);
+
+        const isClientError = /items|operation_date|patient_name|location|source_key|invalid/i.test(error.message || '');
+        res.status(isClientError ? 400 : 500).json({
+            success: false,
+            message: isClientError ? error.message : 'Failed to sync operations'
         });
     }
 });
