@@ -1,53 +1,84 @@
 import { API_BASE } from '../utils/constants';
 import { enqueue, replayQueue, queueCount, syncState } from '../utils/offlineQueue';
 
-const DOCBOARD_SPACES_KEY = 'docboard_spaces';
+const DOCBOARD_SPACE_SCHEDULES_KEY = 'docboard_space_schedules';
 
-const defaultDocuments = [
+function formatDateOffset(offsetDays) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+const defaultSpaceSchedules = [
   {
     id: 'ilmiah-001',
     space: 'ilmiah',
-    title: 'Ringkasan guideline preeklampsia',
-    summary: 'Poin penting untuk skrining risiko, edukasi pasien, dan follow-up ANC.',
-    tags: ['guideline', 'obgyn', 'anc'],
+    agenda: 'Pertemuan dengan staff Obgyn',
+    category: 'Pertemuan Staff',
+    schedule_date: formatDateOffset(1),
+    start_time: '13:00',
+    end_time: '14:00',
+    location: 'Ruang rapat dokter',
+    participants: 'Staff Obgyn, bidan koordinator',
+    status: 'scheduled',
+    notes: 'Bahas agenda ilmiah, review kasus, dan rencana pembahasan klinik.',
     updatedAt: new Date().toISOString(),
   },
   {
     id: 'ilmiah-002',
     space: 'ilmiah',
-    title: 'Bahan presentasi USG trimester 2',
-    summary: 'Draft materi edukasi ilmiah untuk pasien dan tim klinik.',
-    tags: ['presentasi', 'usg'],
+    agenda: 'Diskusi kasus USG trimester 2',
+    category: 'Diskusi Kasus',
+    schedule_date: formatDateOffset(4),
+    start_time: '12:30',
+    end_time: '13:30',
+    location: 'Klinik private',
+    participants: 'Dokter dan asisten USG',
+    status: 'confirmed',
+    notes: 'Siapkan daftar kasus yang perlu direview bersama.',
     updatedAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
     id: 'pribadi-001',
     space: 'pribadi',
-    title: 'Ide konten edukasi minggu ini',
-    summary: 'Daftar topik singkat untuk edukasi pasien dan reminder kontrol.',
-    tags: ['ide', 'konten'],
+    agenda: 'Janji dengan istri',
+    category: 'Keluarga',
+    schedule_date: formatDateOffset(0),
+    start_time: '19:00',
+    end_time: '20:30',
+    location: 'Rumah',
+    participants: 'Istri',
+    status: 'scheduled',
+    notes: 'Blok waktu pribadi agar tidak tertimpa agenda klinik.',
     updatedAt: new Date().toISOString(),
   },
   {
     id: 'pribadi-002',
     space: 'pribadi',
-    title: 'Memo pengembangan praktik',
-    summary: 'Catatan pribadi tentang prioritas operasional dan perbaikan alur pasien.',
-    tags: ['memo', 'praktik'],
+    agenda: 'Agenda keluarga akhir pekan',
+    category: 'Keluarga',
+    schedule_date: formatDateOffset(3),
+    start_time: '09:00',
+    end_time: '11:00',
+    location: 'Rumah',
+    participants: 'Keluarga',
+    status: 'scheduled',
+    notes: 'Pastikan tidak berbenturan dengan jadwal operasi atau praktik.',
     updatedAt: new Date(Date.now() - 172800000).toISOString(),
   },
 ];
 
-function loadDocuments() {
+function loadSpaceSchedules() {
   try {
-    return JSON.parse(localStorage.getItem(DOCBOARD_SPACES_KEY) || 'null') || defaultDocuments;
+    const savedSchedules = JSON.parse(localStorage.getItem(DOCBOARD_SPACE_SCHEDULES_KEY) || 'null');
+    return Array.isArray(savedSchedules) ? savedSchedules : defaultSpaceSchedules;
   } catch {
-    return defaultDocuments;
+    return defaultSpaceSchedules;
   }
 }
 
-function saveDocuments(documents) {
-  localStorage.setItem(DOCBOARD_SPACES_KEY, JSON.stringify(documents));
+function saveSpaceSchedules(schedules) {
+  localStorage.setItem(DOCBOARD_SPACE_SCHEDULES_KEY, JSON.stringify(schedules));
 }
 
 function getToken() {
@@ -125,30 +156,56 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export function listSpaceDocuments(space) {
-  return loadDocuments()
-    .filter((document) => document.space === space)
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+export function listSpaceSchedules(space) {
+  return loadSpaceSchedules()
+    .filter((schedule) => schedule.space === space)
+    .sort((first, second) => {
+      const firstTime = `${first.schedule_date || '9999-12-31'}T${first.start_time || '00:00'}`;
+      const secondTime = `${second.schedule_date || '9999-12-31'}T${second.start_time || '00:00'}`;
+      return firstTime.localeCompare(secondTime);
+    });
 }
 
-export function addSpaceDocument(space, data) {
-  const documents = loadDocuments();
-  const document = {
+export function addSpaceSchedule(space, data) {
+  const schedules = loadSpaceSchedules();
+  const schedule = {
     id: `${space}-${Date.now()}`,
     space,
-    title: data.title,
-    summary: data.summary,
-    tags: data.tags,
+    agenda: data.agenda,
+    category: data.category,
+    schedule_date: data.schedule_date,
+    start_time: data.start_time,
+    end_time: data.end_time,
+    location: data.location,
+    participants: data.participants,
+    status: data.status || 'scheduled',
+    notes: data.notes,
     updatedAt: new Date().toISOString(),
   };
 
-  saveDocuments([document, ...documents]);
-  syncState.value = 'Dokumen tersimpan';
+  saveSpaceSchedules([schedule, ...schedules]);
+  syncState.value = 'Jadwal tersimpan';
   setTimeout(() => {
     syncState.value = navigator.onLine ? 'Online' : 'Offline';
   }, 1800);
 
-  return document;
+  return schedule;
+}
+
+export function updateSpaceScheduleStatus(space, id, status) {
+  const schedules = loadSpaceSchedules().map((schedule) => (
+    schedule.id === id
+      ? { ...schedule, status, updatedAt: new Date().toISOString() }
+      : schedule
+  ));
+
+  saveSpaceSchedules(schedules);
+  syncState.value = 'Status jadwal diperbarui';
+  setTimeout(() => {
+    syncState.value = navigator.onLine ? 'Online' : 'Offline';
+  }, 1800);
+
+  return listSpaceSchedules(space);
 }
 
 export const api = {

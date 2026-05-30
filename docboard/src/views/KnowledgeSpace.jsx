@@ -1,44 +1,113 @@
-import { useMemo, useState } from 'preact/hooks';
-import { addSpaceDocument, listSpaceDocuments } from '../services/api';
-import { formatDateDisplay } from '../utils/date';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { addSpaceSchedule, listSpaceSchedules, updateSpaceScheduleStatus } from '../services/api';
+import { formatDateDisplay, getDayName, today } from '../utils/date';
 
 const spaces = {
   ilmiah: {
-    eyebrow: 'Ruang ilmiah',
-    title: 'Library referensi ilmiah',
-    description: 'Simpan jurnal, guideline, ringkasan artikel, bahan seminar, dan draft edukasi ilmiah dalam ruang yang terpisah dari jadwal operasi.',
-    action: 'Tambah referensi',
-    titlePlaceholder: 'Judul jurnal, guideline, atau materi',
-    summaryPlaceholder: 'Ringkasan poin penting...',
-    tagPlaceholder: 'guideline, obgyn, usg',
+    eyebrow: 'Jadwal ilmiah',
+    title: 'Agenda Ilmiah',
+    description: 'Untuk pertemuan staff Obgyn, journal club, diskusi kasus, seminar, audit klinik, dan agenda ilmiah lainnya.',
+    action: 'Tambah jadwal ilmiah',
+    switchLabel: 'Buka Pribadi',
+    switchPath: '/docboard/personal',
+    categoryLabel: 'Jenis kegiatan',
+    participantLabel: 'Peserta',
+    agendaPlaceholder: 'Pertemuan dengan staff Obgyn',
+    locationPlaceholder: 'Ruang rapat, klinik, Zoom',
+    participantPlaceholder: 'Staff Obgyn, dokter, bidan, tim terkait',
+    categories: ['Pertemuan Staff', 'Journal Club', 'Diskusi Kasus', 'Webinar', 'Simposium', 'Audit Klinik', 'Riset'],
   },
   pribadi: {
-    eyebrow: 'Ruang pribadi',
-    title: 'Catatan pribadi dokter',
-    description: 'Kumpulkan memo, ide konten, catatan pengembangan praktik, dan draft pribadi yang tidak otomatis dibagikan ke tim.',
-    action: 'Tambah catatan',
-    titlePlaceholder: 'Judul catatan pribadi',
-    summaryPlaceholder: 'Isi memo singkat...',
-    tagPlaceholder: 'ide, memo, konten',
+    eyebrow: 'Jadwal pribadi',
+    title: 'Agenda Pribadi',
+    description: 'Untuk janji keluarga, agenda rumah, urusan pribadi, pengingat penting, dan blok waktu di luar jadwal klinik.',
+    action: 'Tambah jadwal pribadi',
+    switchLabel: 'Buka Ilmiah',
+    switchPath: '/docboard/scientific',
+    categoryLabel: 'Jenis agenda',
+    participantLabel: 'Dengan',
+    agendaPlaceholder: 'Janji dengan istri',
+    locationPlaceholder: 'Rumah, restoran, lokasi janji',
+    participantPlaceholder: 'Istri, keluarga, atau nama terkait',
+    categories: ['Keluarga', 'Janji Pribadi', 'Urusan Rumah', 'Pengingat', 'Istirahat', 'Lainnya'],
   },
 };
 
-function normalizeTags(value) {
-  return value
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+const statusLabels = {
+  scheduled: 'Terjadwal',
+  confirmed: 'Terkonfirmasi',
+  done: 'Selesai',
+  cancelled: 'Batal',
+};
+
+function createEmptyForm(config) {
+  return {
+    agenda: '',
+    category: config.categories[0],
+    schedule_date: today(),
+    start_time: '',
+    end_time: '',
+    location: '',
+    participants: '',
+    notes: '',
+  };
+}
+
+function parseDateLocal(dateString) {
+  if (!dateString || dateString === 'tanpa-tanggal') return null;
+  const [year, month, day] = dateString.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function formatScheduleDate(dateString) {
+  const date = parseDateLocal(dateString);
+  if (!date) return 'Tanpa tanggal';
+  return `${getDayName(date, true)}, ${formatDateDisplay(date)}`;
+}
+
+function formatTimeRange(item) {
+  if (!item.start_time && !item.end_time) return 'Jam belum diisi';
+  if (item.start_time && item.end_time) return `${item.start_time} - ${item.end_time}`;
+  return item.start_time || item.end_time;
+}
+
+function sortSchedules(schedules) {
+  return [...schedules].sort((first, second) => {
+    const firstTime = `${first.schedule_date || '9999-12-31'}T${first.start_time || '00:00'}`;
+    const secondTime = `${second.schedule_date || '9999-12-31'}T${second.start_time || '00:00'}`;
+    return firstTime.localeCompare(secondTime);
+  });
 }
 
 export default function KnowledgeSpace({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
-  const [documents, setDocuments] = useState(() => listSpaceDocuments(space));
-  const [form, setForm] = useState({ title: '', summary: '', tags: '' });
+  const [schedules, setSchedules] = useState(() => listSpaceSchedules(space));
+  const [form, setForm] = useState(() => createEmptyForm(config));
 
-  const featuredTags = useMemo(() => {
-    const tags = documents.flatMap((document) => document.tags || []);
-    return [...new Set(tags)].slice(0, 6);
-  }, [documents]);
+  useEffect(() => {
+    setSchedules(listSpaceSchedules(space));
+    setForm(createEmptyForm(config));
+  }, [space]);
+
+  const stats = useMemo(() => {
+    const todayDate = today();
+    return {
+      today: schedules.filter((item) => item.schedule_date === todayDate && item.status !== 'cancelled').length,
+      active: schedules.filter((item) => item.status !== 'done' && item.status !== 'cancelled').length,
+      done: schedules.filter((item) => item.status === 'done').length,
+    };
+  }, [schedules]);
+
+  const groupedSchedules = useMemo(() => {
+    const groups = new Map();
+    schedules.forEach((item) => {
+      const dateKey = item.schedule_date || 'tanpa-tanggal';
+      const items = groups.get(dateKey) || [];
+      groups.set(dateKey, [...items, item]);
+    });
+    return [...groups.entries()].map(([date, items]) => ({ date, items }));
+  }, [schedules]);
 
   const handleChange = (field) => (event) => {
     setForm((current) => ({ ...current, [field]: event.currentTarget.value }));
@@ -46,93 +115,182 @@ export default function KnowledgeSpace({ space = 'ilmiah' }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const document = addSpaceDocument(space, {
-      title: form.title.trim(),
-      summary: form.summary.trim(),
-      tags: normalizeTags(form.tags),
+    const schedule = addSpaceSchedule(space, {
+      agenda: form.agenda.trim(),
+      category: form.category,
+      schedule_date: form.schedule_date,
+      start_time: form.start_time,
+      end_time: form.end_time,
+      location: form.location.trim(),
+      participants: form.participants.trim(),
+      notes: form.notes.trim(),
     });
-    setDocuments((current) => [document, ...current]);
-    setForm({ title: '', summary: '', tags: '' });
+
+    setSchedules((current) => sortSchedules([...current, schedule]));
+    setForm(createEmptyForm(config));
+  };
+
+  const handleStatus = (id, status) => {
+    setSchedules(updateSpaceScheduleStatus(space, id, status));
   };
 
   return (
-    <div className="page stack">
-      <section className={`hero-card knowledge-hero ${space}`}>
+    <div class="page space-schedule-page stack">
+      <section class={`space-schedule-hero ${space}`}>
         <div>
-          <span className="eyebrow">{config.eyebrow}</span>
+          <span class="eyebrow">{config.eyebrow}</span>
           <h1>{config.title}</h1>
           <p>{config.description}</p>
         </div>
-        <a href={space === 'ilmiah' ? '/docboard/personal' : '/docboard/scientific'} className="secondary-action">
-          Buka {space === 'ilmiah' ? 'Pribadi' : 'Ilmiah'}
+        <a href={config.switchPath} class="secondary-action">
+          {config.switchLabel}
         </a>
       </section>
 
-      <section className="split-layout knowledge-layout">
-        <form className="panel stack knowledge-form" onSubmit={handleSubmit}>
-          <div className="section-title">
+      <section class="space-schedule-stats">
+        <div class="space-stat">
+          <span>Hari ini</span>
+          <strong>{stats.today}</strong>
+        </div>
+        <div class="space-stat">
+          <span>Aktif</span>
+          <strong>{stats.active}</strong>
+        </div>
+        <div class="space-stat">
+          <span>Selesai</span>
+          <strong>{stats.done}</strong>
+        </div>
+      </section>
+
+      <section class="space-schedule-layout">
+        <form class="panel stack space-schedule-form" onSubmit={handleSubmit}>
+          <div class="section-title">
             <div>
               <span>{config.action}</span>
-              <h2>Simpan cepat</h2>
+              <h2>Penjadwalan</h2>
             </div>
           </div>
-          <label className="field">
-            <span>Judul</span>
+
+          <label class="field">
+            <span>Agenda</span>
             <input
-              value={form.title}
-              onInput={handleChange('title')}
-              placeholder={config.titlePlaceholder}
+              value={form.agenda}
+              onInput={handleChange('agenda')}
+              placeholder={config.agendaPlaceholder}
               required
             />
           </label>
-          <label className="field">
-            <span>Ringkasan</span>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Tanggal</span>
+              <input
+                type="date"
+                value={form.schedule_date}
+                onInput={handleChange('schedule_date')}
+                required
+              />
+            </label>
+            <label class="field">
+              <span>{config.categoryLabel}</span>
+              <select value={form.category} onInput={handleChange('category')}>
+                {config.categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Mulai</span>
+              <input type="time" value={form.start_time} onInput={handleChange('start_time')} />
+            </label>
+            <label class="field">
+              <span>Selesai</span>
+              <input type="time" value={form.end_time} onInput={handleChange('end_time')} />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Lokasi</span>
+            <input
+              value={form.location}
+              onInput={handleChange('location')}
+              placeholder={config.locationPlaceholder}
+            />
+          </label>
+
+          <label class="field">
+            <span>{config.participantLabel}</span>
+            <input
+              value={form.participants}
+              onInput={handleChange('participants')}
+              placeholder={config.participantPlaceholder}
+            />
+          </label>
+
+          <label class="field">
+            <span>Catatan jadwal</span>
             <textarea
-              value={form.summary}
-              onInput={handleChange('summary')}
-              placeholder={config.summaryPlaceholder}
-              required
+              value={form.notes}
+              onInput={handleChange('notes')}
+              placeholder="Keterangan singkat jadwal"
             />
           </label>
-          <label className="field">
-            <span>Tag</span>
-            <input
-              value={form.tags}
-              onInput={handleChange('tags')}
-              placeholder={config.tagPlaceholder}
-            />
-          </label>
-          <div className="form-actions">
-            <button className="btn-primary" type="submit">{config.action}</button>
+
+          <div class="form-actions">
+            <button class="btn-primary" type="submit">{config.action}</button>
           </div>
         </form>
 
-        <div className="panel stack">
-          <div className="section-title">
+        <div class="panel space-schedule-list stack">
+          <div class="section-title">
             <div>
-              <span>Koleksi</span>
-              <h2>{documents.length} dokumen</h2>
+              <span>Agenda</span>
+              <h2>{schedules.length} jadwal</h2>
             </div>
           </div>
-          {featuredTags.length > 0 && (
-            <div className="tag-cloud">
-              {featuredTags.map((tag) => <span key={tag}>{tag}</span>)}
+
+          {schedules.length === 0 && (
+            <div class="empty-state">
+              <p>Belum ada jadwal.</p>
             </div>
           )}
-          <div className="document-list">
-            {documents.map((document) => (
-              <article className="document-card" key={document.id}>
-                <div>
-                  <strong>{document.title}</strong>
-                  <small>{formatDateDisplay(document.updatedAt)}</small>
-                </div>
-                <p>{document.summary}</p>
-                <div className="document-tags">
-                  {(document.tags || []).map((tag) => <span key={tag}>{tag}</span>)}
-                </div>
-              </article>
-            ))}
-          </div>
+
+          {groupedSchedules.map((group) => (
+            <section class="space-day-group" key={group.date}>
+              <div class="space-day-title">{formatScheduleDate(group.date)}</div>
+              <div class="space-day-list">
+                {group.items.map((item) => (
+                  <article class={`space-schedule-item status-${item.status}`} key={item.id}>
+                    <div class="space-schedule-time">
+                      <strong>{formatTimeRange(item)}</strong>
+                      <span>{item.category}</span>
+                    </div>
+                    <div class="space-schedule-body">
+                      <div class="space-schedule-row">
+                        <h3>{item.agenda}</h3>
+                        <span class={`space-status status-${item.status}`}>
+                          {statusLabels[item.status] || item.status}
+                        </span>
+                      </div>
+                      <div class="space-schedule-meta">
+                        {item.location && <span>{item.location}</span>}
+                        {item.participants && <span>{item.participants}</span>}
+                      </div>
+                      {item.notes && <p>{item.notes}</p>}
+                      <div class="space-status-actions">
+                        <button type="button" onClick={() => handleStatus(item.id, 'confirmed')}>Konfirmasi</button>
+                        <button type="button" onClick={() => handleStatus(item.id, 'done')}>Selesai</button>
+                        <button type="button" onClick={() => handleStatus(item.id, 'cancelled')}>Batal</button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       </section>
     </div>
