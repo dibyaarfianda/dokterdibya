@@ -470,6 +470,7 @@
         .schedule-color { color: var(--green); background: rgba(92,127,114,0.13) !important; }
         .edu-color { color: var(--amber); background: rgba(183,121,46,0.13) !important; }
         .doctor-color { color: var(--purple); background: rgba(115,87,168,0.12) !important; }
+        .community-color { color: var(--green); background: rgba(92,127,114,0.13) !important; }
         .report-color { color: #b91c1c; background: rgba(185,28,28,0.1) !important; }
         .corner-color { color: #111; background: rgba(17,17,17,0.07) !important; }
 
@@ -1257,6 +1258,10 @@
                     <button class="tap-card soundable" onclick="go('/tanya-dokter-trial.html')">
                         <span class="icon doctor-color"><i class="fa-solid fa-comments"></i></span>
                         <span><h3>Tanya Dokter</h3><p>Privat dan terpantau</p></span>
+                    </button>
+                    <button class="tap-card soundable" onclick="go('/community-chat.html?theme=newdesign')">
+                        <span class="icon community-color"><i class="fa-solid fa-users"></i></span>
+                        <span><h3>Chat Komunitas</h3><p>Ruang ngobrol pasien</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openBugReportModal(event)">
                         <span class="icon report-color"><i class="fa-solid fa-bug"></i></span>
@@ -2418,6 +2423,7 @@
                 ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
             ]},
             aplikasi: { title: 'Aplikasi', items: [
+                ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?theme=newdesign'],
                 ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
                 ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
                 ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
@@ -2654,7 +2660,7 @@
             if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
 
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260530c', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260530d', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
