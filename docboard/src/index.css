@@ -436,14 +436,14 @@ input { font-family: inherit; }
   aspect-ratio: 1 / 1;
   height: auto;
   object-fit: contain;
-  border-radius: 10px;
+  border-radius: 6px;
   flex: 0 0 auto;
 }
 
 @media (max-width: 480px) {
   .login-logo-image {
     width: 60px;
-    border-radius: 10px;
+    border-radius: 6px;
   }
 }
 
