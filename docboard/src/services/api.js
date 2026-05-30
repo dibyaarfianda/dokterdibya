@@ -403,11 +403,6 @@ export const api = {
     return request(`/surgery/${surgeryId}/checklist`, { method: 'PUT', body: JSON.stringify({ items }) });
   },
 
-  // OR Board
-  getORBoard(date) {
-    return request(`/surgery/or-board${date ? '?date=' + date : ''}`);
-  },
-
   // Outcomes
   getOutcome(surgeryId) {
     return request(`/surgery/${surgeryId}/outcome`);

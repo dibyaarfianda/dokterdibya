@@ -374,8 +374,9 @@ class SurgeryService {
   }
 
   async updateStatus(id, status, reason, userId) {
+    const normalizedStatus = status === 'in_progress' ? 'completed' : status;
     const fields = ['status = ?'];
-    const values = [status];
+    const values = [normalizedStatus];
 
     if (reason) {
       fields.push('cancellation_reason = ?');
@@ -388,10 +389,10 @@ class SurgeryService {
       values
     );
 
-    logger.info(`Surgery #${id} status → ${status}`);
+    logger.info(`Surgery #${id} status → ${normalizedStatus}`);
 
     // Audit log
-    const changes = { status };
+    const changes = { status: normalizedStatus };
     if (reason) changes.reason = reason;
     await this.logAudit(id, 'status_changed', userId, changes);
 

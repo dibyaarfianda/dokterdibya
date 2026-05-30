@@ -200,7 +200,7 @@ async function sendStatusChangeNotification(surgery, newStatus) {
   const statusLabels = {
     planned: 'Rencana',
     confirmed: 'Dikonfirmasi',
-    in_progress: 'Berlangsung',
+    in_progress: 'Selesai',
     completed: 'Selesai',
     cancelled: 'Dibatalkan',
     postponed: 'Ditunda'

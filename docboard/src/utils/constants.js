@@ -50,7 +50,7 @@ export const VISIT_STATUS = {
 export const SURGERY_STATUS = {
   planned: { label: 'Rencana', color: '#F59E0B', bg: '#FEF3C7' },
   confirmed: { label: 'Konfirmasi', color: '#3B82F6', bg: '#DBEAFE' },
-  in_progress: { label: 'Berlangsung', color: '#8B5CF6', bg: '#EDE9FE' },
+  in_progress: { label: 'Selesai', color: '#22C55E', bg: '#DCFCE7' },
   completed: { label: 'Selesai', color: '#22C55E', bg: '#DCFCE7' },
   cancelled: { label: 'Batal', color: '#EF4444', bg: '#FEE2E2' },
   postponed: { label: 'Ditunda', color: '#94A3B8', bg: '#F1F5F9' }
@@ -68,37 +68,37 @@ export const ROLE_PERMISSIONS = {
   dokter: {
     canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: true,
     canChangeStatus: true, canEditClinical: true, canEditAnesthesia: true,
-    canEditOutcome: true, canViewORBoard: true, canEditChecklist: true
+    canEditOutcome: true, canEditChecklist: true
   },
   admin: {
     canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
     canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+    canEditOutcome: false, canEditChecklist: true
   },
   managerial: {
     canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
     canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+    canEditOutcome: false, canEditChecklist: true
   },
   front_office: {
     canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
     canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+    canEditOutcome: false, canEditChecklist: true
   },
   user: {
     canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
     canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+    canEditOutcome: false, canEditChecklist: true
   },
   bidan: {
     canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
     canChangeStatus: false, canEditClinical: false, canEditAnesthesia: true,
-    canEditOutcome: false, canViewORBoard: true, canEditChecklist: true
+    canEditOutcome: false, canEditChecklist: true
   },
   docboard_viewer: {
     canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
     canChangeStatus: false, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canViewORBoard: true, canEditChecklist: false
+    canEditOutcome: false, canEditChecklist: false
   }
 };
 

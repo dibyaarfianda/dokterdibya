@@ -185,7 +185,7 @@ export default function MorningBriefing() {
                     <span class={`briefing-surgery-status status-${s.status}`}>
                       {s.status === 'planned' ? 'Rencana' :
                        s.status === 'confirmed' ? 'OK' :
-                       s.status === 'in_progress' ? 'Berjalan' :
+                       s.status === 'in_progress' ? 'Selesai' :
                        s.status === 'completed' ? 'Selesai' : s.status}
                     </span>
                   </div>
