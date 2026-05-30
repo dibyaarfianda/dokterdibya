@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
 const jwt = require('jsonwebtoken');
+const db = require('../db');
 const surgeryService = require('../services/SurgeryService');
 const docboardPush = require('../services/DocBoardPushService');
 const whatsapp = require('../services/whatsappService');
@@ -9,6 +10,208 @@ const { requireRoles } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
+
+function formatDateLocal(value) {
+  const d = new Date(value);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function safeParseJson(rawValue) {
+  if (rawValue == null) return {};
+  if (typeof rawValue === 'object') return rawValue;
+  try {
+    return JSON.parse(rawValue);
+  } catch (_) {
+    return {};
+  }
+}
+
+function toIntOrNull(value) {
+  const valueNum = Number(value);
+  return Number.isFinite(valueNum) && Number.isInteger(valueNum) ? valueNum : null;
+}
+
+function toNumberOrNull(value) {
+  const valueNum = Number(value);
+  return Number.isFinite(valueNum) ? valueNum : null;
+}
+
+async function getCommunityDirectRoomContext(roomSlug, staffUserId) {
+  const [rows] = await db.query(
+    `SELECT r.id, r.slug, r.name, r.is_direct,
+            r.direct_patient_id, r.direct_staff_id,
+            p.id AS patient_id,
+            p.full_name AS patient_name,
+            p.phone AS patient_phone,
+            p.whatsapp AS patient_whatsapp,
+            p.birth_date AS patient_birth_date
+       FROM community_chat_rooms r
+       LEFT JOIN patients p ON p.id = r.direct_patient_id
+      WHERE r.slug = ?
+        AND r.is_archived = 0
+        AND r.is_direct = 1
+      LIMIT 1`,
+    [String(roomSlug || '').trim()]
+  );
+
+  const room = rows[0];
+  if (!room) return null;
+  if (String(room.direct_staff_id || '') !== String(staffUserId || '')) return null;
+  return room;
+}
+
+async function getLatestMedicalSummaryForPatient(patientId) {
+  if (!patientId) return { diagnosis: '' };
+
+  const [rows] = await db.query(
+    `SELECT record_type, record_data
+       FROM medical_records
+      WHERE patient_id = ?
+        AND record_type IN ('diagnosis', 'complete')
+      ORDER BY created_at DESC
+      LIMIT 5`,
+    [patientId]
+  );
+
+  let diagnosis = '';
+  for (const row of rows) {
+    const data = safeParseJson(row.record_data);
+    const candidate =
+      (typeof data.diagnosis === 'string' && data.diagnosis.trim()) ||
+      (typeof data.primary_diagnosis === 'string' && data.primary_diagnosis.trim()) ||
+      (Array.isArray(data.diagnoses) && data.diagnoses[0] && (data.diagnoses[0].text || data.diagnoses[0].name)) ||
+      (typeof data.primary_diagnosa === 'string' && data.primary_diagnosa.trim()) ||
+      '';
+
+    if (candidate) {
+      diagnosis = String(candidate).trim();
+      break;
+    }
+  }
+
+  return { diagnosis };
+}
+
+function calculateAgeFromBirthDate(rawDate) {
+  if (!rawDate) return null;
+  const birthDate = new Date(rawDate);
+  if (Number.isNaN(birthDate.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  if (today.getMonth() < birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return age;
+}
+
+async function maybeReuseExistingSurgeryFromSourceKey(idempotencyKey, sourceType = 'community_direct_room') {
+  if (!idempotencyKey) return null;
+
+  const [rows] = await db.query(
+    `SELECT surgery_id
+       FROM surgery_source_links
+      WHERE source_type = ?
+        AND idempotency_key = ?
+      LIMIT 1`,
+    [sourceType, idempotencyKey]
+  );
+
+  if (!rows.length) return null;
+  return rows[0].surgery_id;
+}
+
+async function upsertSurgerySourceLink({
+  surgeryId,
+  sourceRef,
+  idempotencyKey,
+  createdBy,
+  sourcePayload,
+  sourceType = 'community_direct_room'
+}) {
+  if (!surgeryId || !sourceRef) return;
+
+  const payloadValue = sourcePayload ? JSON.stringify(sourcePayload) : null;
+
+  try {
+    await db.query(
+      `INSERT INTO surgery_source_links
+         (surgery_id, source_type, source_ref, source_payload, idempotency_key, created_by)
+       VALUES
+         (?, ?, ?, ?, ?, ?)`,
+      [
+        surgeryId,
+        sourceType,
+        String(sourceRef),
+        payloadValue,
+        idempotencyKey || null,
+        createdBy || null
+      ]
+    );
+  } catch (error) {
+    if (error.code === 'ER_NO_SUCH_TABLE') {
+      logger.warn('Surgery source link table missing, skip source tracking', { error: error.message });
+      return;
+    }
+
+    if (error.code !== 'ER_DUP_ENTRY') {
+      throw error;
+    }
+  }
+}
+
+async function loadSurgeryByIdOrIdempotency(id, idempotencyKey) {
+  if (!id && !idempotencyKey) return null;
+
+  let rows = [];
+
+  if (id) {
+    [rows] = await db.query('SELECT * FROM surgery_schedules WHERE id = ? LIMIT 1', [id]);
+    if (rows.length) return rows[0];
+  }
+
+  if (idempotencyKey) {
+    [rows] = await db.query(
+      'SELECT * FROM surgery_schedules WHERE idempotency_key = ? ORDER BY id DESC LIMIT 1',
+      [idempotencyKey]
+    );
+    if (rows.length) return rows[0];
+  }
+
+  return null;
+}
+
+function buildCommunityDraftPayload(roomContext, summary, operationTypes = []) {
+  const patientName = roomContext.patient_name || `Pasien ${roomContext.direct_patient_id || ''}`.trim() || 'Pasien';
+  const patientAge = calculateAgeFromBirthDate(roomContext.patient_birth_date);
+  const today = formatDateLocal(new Date());
+  const preferredType = operationTypes[0]?.id ? String(operationTypes[0].id) : '';
+
+  return {
+    room: {
+      slug: roomContext.slug,
+      name: roomContext.name || `Chat ${patientName}`
+    },
+    patient: {
+      id: roomContext.patient_id || null,
+      full_name: patientName,
+      age: patientAge,
+      phone: roomContext.patient_phone || roomContext.patient_whatsapp || ''
+    },
+    defaults: {
+      patient_name: patientName,
+      patient_age: patientAge,
+      diagnosis: summary.diagnosis || '',
+      operation_type_id: preferredType,
+      location: 'klinik_private',
+      surgery_date: today,
+      surgery_time: '08:00'
+    },
+    operation_types: operationTypes
+  };
+}
 
 /**
  * GET /lookup-rm/:mrId
@@ -95,6 +298,153 @@ router.get('/day/:date', async (req, res) => {
     res.json({ success: true, surgeries });
   } catch (error) {
     logger.error('Surgery day error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /from-community-room/:roomSlug/draft
+ * Build prefilled draft payload for scheduling from a direct patient room
+ */
+router.get('/from-community-room/:roomSlug/draft', requireRoles('dokter'), async (req, res) => {
+  try {
+    const room = await getCommunityDirectRoomContext(req.params.roomSlug, req.user?.id);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Direct room tidak ditemukan atau akses ditolak'
+      });
+    }
+
+    const operationTypes = await surgeryService.getOperationTypes();
+    const summary = await getLatestMedicalSummaryForPatient(room.patient_id);
+
+    res.json({
+      success: true,
+      draft: buildCommunityDraftPayload(room, summary, operationTypes)
+    });
+  } catch (error) {
+    logger.error('Surgery community draft error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /from-community-room/:roomSlug
+ * Create surgery schedule from community direct room context
+ */
+router.post('/from-community-room/:roomSlug', requireRoles('dokter'), async (req, res) => {
+  try {
+    const room = await getCommunityDirectRoomContext(req.params.roomSlug, req.user?.id);
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        message: 'Direct room tidak ditemukan atau akses ditolak'
+      });
+    }
+
+    const {
+      patient_name,
+      patient_age,
+      diagnosis,
+      operation_type_id,
+      operation_type_other,
+      location,
+      surgery_date,
+      surgery_time,
+      estimated_duration_min,
+      anesthesia_type,
+      asa_score,
+      npo_status,
+      special_notes,
+      idempotency_key
+    } = req.body || {};
+
+    const operationTypeId = toIntOrNull(operation_type_id);
+    const parsedPatientAge = toIntOrNull(patient_age);
+    const parsedDuration = toIntOrNull(estimated_duration_min);
+    const parsedAsa = toIntOrNull(asa_score);
+
+    if (!location || !surgery_date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Data wajib: diagnosis, jenis operasi, lokasi, dan tanggal operasi'
+      });
+    }
+
+    if (!diagnosis || !String(diagnosis).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Diagnosis wajib diisi'
+      });
+    }
+
+    if (!operationTypeId && !operation_type_other) {
+      return res.status(400).json({
+        success: false,
+        message: 'Jenis operasi wajib diisi'
+      });
+    }
+
+    const existingFromIdempotency = await maybeReuseExistingSurgeryFromSourceKey(idempotency_key);
+    if (existingFromIdempotency) {
+      const existingSurgery = await loadSurgeryByIdOrIdempotency(existingFromIdempotency, idempotency_key);
+      if (existingSurgery) {
+        return res.json({
+          success: true,
+          surgery: existingSurgery,
+          from_cache: true
+        });
+      }
+    }
+
+    const normalizedPatientId = room.patient_id || req.body?.patient_id || null;
+    const resolvedPatientName = (patient_name || room.patient_name || `Pasien ${room.direct_patient_id || ''}`).trim();
+
+    const surgery = await surgeryService.createSurgery(
+      {
+        patient_name: resolvedPatientName,
+        patient_age: parsedPatientAge,
+        patient_id: normalizedPatientId,
+        mr_id: req.body?.mr_id || null,
+        diagnosis: String(diagnosis).trim(),
+        lab_results: null,
+        radiology_results: null,
+        usg_results: null,
+        operation_type_id: operationTypeId,
+        operation_type_other: operation_type_other || null,
+        location: String(location).trim(),
+        surgery_date: String(surgery_date).trim(),
+        surgery_time: surgery_time || null,
+        estimated_duration_min: parsedDuration,
+        anesthesia_type: anesthesia_type || null,
+        asa_score: parsedAsa,
+        npo_status: npo_status || null,
+        team_members: [],
+        special_notes: special_notes || null,
+        idempotency_key: idempotency_key || null
+      },
+      req.user?.id
+    );
+
+    const resolvedSurgery = await loadSurgeryByIdOrIdempotency(surgery?.id, idempotency_key);
+    await upsertSurgerySourceLink({
+      surgeryId: resolvedSurgery?.id,
+      sourceRef: room.slug,
+      idempotencyKey: idempotency_key || null,
+      createdBy: req.user?.id,
+      sourcePayload: {
+        source_room_slug: room.slug,
+        source_room_name: room.name,
+        direct_patient_id: room.direct_patient_id,
+        direct_staff_id: room.direct_staff_id,
+        source_type: 'community_direct_room'
+      }
+    });
+
+    res.json({ success: true, surgery: resolvedSurgery });
+  } catch (error) {
+    logger.error('Surgery create from community room error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
