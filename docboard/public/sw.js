@@ -1,4 +1,4 @@
-const CACHE_RESET_VERSION = 'docboard-cache-reset-20260530';
+const CACHE_RESET_VERSION = 'docboard-cache-reset-20260531';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
