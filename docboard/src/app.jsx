@@ -10,7 +10,7 @@ import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Analytics from './views/Analytics';
 import ORBoard from './views/ORBoard';
-import KnowledgeSpace from './views/KnowledgeSpace';
+import SpaceSchedule from './views/SpaceSchedule';
 import CommandDashboard from './views/CommandDashboard';
 import Login from './views/Login';
 import { initAuth, isLoggedIn, isLoading } from './stores/auth';
@@ -71,8 +71,8 @@ export default function App() {
           <Notifications path="/docboard/notifications" />
           <ORBoard path="/docboard/or-board" />
           <CommandDashboard path="/docboard/command" />
-          <KnowledgeSpace path="/docboard/scientific" space="ilmiah" />
-          <KnowledgeSpace path="/docboard/personal" space="pribadi" />
+          <SpaceSchedule path="/docboard/scientific" space="ilmiah" />
+          <SpaceSchedule path="/docboard/personal" space="pribadi" />
           <Analytics path="/docboard/analytics" />
           <Settings path="/docboard/settings" />
           <Calendar default />
