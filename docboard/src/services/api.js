@@ -156,7 +156,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export function listSpaceSchedules(space) {
+function localListSpaceSchedules(space) {
   return loadSpaceSchedules()
     .filter((schedule) => schedule.space === space)
     .sort((first, second) => {
@@ -166,7 +166,7 @@ export function listSpaceSchedules(space) {
     });
 }
 
-export function addSpaceSchedule(space, data) {
+function localAddSpaceSchedule(space, data) {
   const schedules = loadSpaceSchedules();
   const schedule = {
     id: `${space}-${Date.now()}`,
@@ -192,7 +192,7 @@ export function addSpaceSchedule(space, data) {
   return schedule;
 }
 
-export function updateSpaceScheduleStatus(space, id, status) {
+function localUpdateSpaceScheduleStatus(space, id, status) {
   const schedules = loadSpaceSchedules().map((schedule) => (
     schedule.id === id
       ? { ...schedule, status, updatedAt: new Date().toISOString() }
@@ -205,10 +205,10 @@ export function updateSpaceScheduleStatus(space, id, status) {
     syncState.value = navigator.onLine ? 'Online' : 'Offline';
   }, 1800);
 
-  return listSpaceSchedules(space);
+  return localListSpaceSchedules(space);
 }
 
-export function updateSpaceSchedule(space, id, data) {
+function localUpdateSpaceSchedule(space, id, data) {
   const schedules = loadSpaceSchedules().map((schedule) => (
     schedule.id === id
       ? {
@@ -232,10 +232,10 @@ export function updateSpaceSchedule(space, id, data) {
     syncState.value = navigator.onLine ? 'Online' : 'Offline';
   }, 1800);
 
-  return listSpaceSchedules(space);
+  return localListSpaceSchedules(space);
 }
 
-export function deleteSpaceSchedule(space, id) {
+function localDeleteSpaceSchedule(space, id) {
   const schedules = loadSpaceSchedules().filter((schedule) => schedule.id !== id);
 
   saveSpaceSchedules(schedules);
@@ -244,7 +244,100 @@ export function deleteSpaceSchedule(space, id) {
     syncState.value = navigator.onLine ? 'Online' : 'Offline';
   }, 1800);
 
-  return listSpaceSchedules(space);
+  return localListSpaceSchedules(space);
+}
+
+export async function listSpaceSchedules(space, filters = {}) {
+  const params = new URLSearchParams({ space, ...filters });
+  try {
+    const data = await request(`/space-schedules?${params.toString()}`);
+    return data.schedules || [];
+  } catch (err) {
+    console.warn('Using local DocBoard space schedules fallback:', err.message);
+    return localListSpaceSchedules(space);
+  }
+}
+
+export async function listDaySpaceSchedules(date) {
+  try {
+    const data = await request(`/space-schedules?date=${encodeURIComponent(date)}`);
+    return data.schedules || [];
+  } catch (err) {
+    console.warn('Using local DocBoard day space schedules fallback:', err.message);
+    return loadSpaceSchedules().filter((schedule) => schedule.schedule_date === date);
+  }
+}
+
+export async function getSpaceScheduleCalendar(year, month) {
+  try {
+    const data = await request(`/space-schedules/calendar/${year}/${month}`);
+    return data.days || {};
+  } catch (err) {
+    console.warn('Using local DocBoard space calendar fallback:', err.message);
+    const days = {};
+    loadSpaceSchedules().forEach((schedule) => {
+      if (schedule.status === 'cancelled') return;
+      const date = schedule.schedule_date;
+      if (!days[date]) days[date] = { total: 0, spaces: { ilmiah: 0, pribadi: 0 } };
+      days[date].total += 1;
+      days[date].spaces[schedule.space] = (days[date].spaces[schedule.space] || 0) + 1;
+    });
+    return days;
+  }
+}
+
+export async function addSpaceSchedule(space, data) {
+  try {
+    const result = await mutate('/space-schedules', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, space })
+    });
+    if (result.schedule) return result.schedule;
+  } catch (err) {
+    console.warn('Saving DocBoard space schedule locally:', err.message);
+  }
+  return localAddSpaceSchedule(space, data);
+}
+
+export async function updateSpaceSchedule(space, id, data) {
+  try {
+    const result = await mutate(`/space-schedules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    if (result.schedule) return result.schedule;
+  } catch (err) {
+    console.warn('Updating DocBoard space schedule locally:', err.message);
+  }
+  return localUpdateSpaceSchedule(space, id, data).find((schedule) => schedule.id === id) || null;
+}
+
+export async function updateSpaceScheduleStatus(space, id, status) {
+  try {
+    const result = await mutate(`/space-schedules/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+    if (result.schedule) return result.schedule;
+  } catch (err) {
+    console.warn('Updating DocBoard space schedule status locally:', err.message);
+  }
+  return localUpdateSpaceScheduleStatus(space, id, status).find((schedule) => schedule.id === id) || null;
+}
+
+export async function deleteSpaceSchedule(space, id) {
+  try {
+    await mutate(`/space-schedules/${id}`, { method: 'DELETE' });
+    syncState.value = 'Jadwal dihapus';
+    setTimeout(() => {
+      syncState.value = navigator.onLine ? 'Online' : 'Offline';
+    }, 1800);
+    return true;
+  } catch (err) {
+    console.warn('Deleting DocBoard space schedule locally:', err.message);
+  }
+  localDeleteSpaceSchedule(space, id);
+  return true;
 }
 
 export const api = {

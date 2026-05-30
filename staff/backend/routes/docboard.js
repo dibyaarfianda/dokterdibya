@@ -22,6 +22,99 @@ router.use(verifyStaffToken);
 router.use('/surgery', surgeryRoutes);
 
 /**
+ * GET /api/docboard/space-schedules/calendar/:year/:month
+ * Personal/scientific schedule counts for the main calendar.
+ */
+router.get('/space-schedules/calendar/:year/:month', async (req, res) => {
+  try {
+    const { year, month } = req.params;
+    const days = await docboardService.getSpaceScheduleCalendar(req.user?.id, parseInt(year), parseInt(month));
+    res.json({ success: true, days });
+  } catch (error) {
+    logger.error('DocBoard space schedule calendar error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * GET /api/docboard/space-schedules
+ * Query params: space, date, start, end
+ */
+router.get('/space-schedules', async (req, res) => {
+  try {
+    const schedules = await docboardService.getSpaceSchedules(req.user?.id, req.query || {});
+    res.json({ success: true, schedules });
+  } catch (error) {
+    logger.error('DocBoard space schedule list error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * POST /api/docboard/space-schedules
+ */
+router.post('/space-schedules', async (req, res) => {
+  try {
+    const { space, agenda, category, schedule_date } = req.body || {};
+    if (!space || !agenda || !category || !schedule_date) {
+      return res.status(400).json({ success: false, message: 'space, agenda, category, dan schedule_date diperlukan' });
+    }
+    const schedule = await docboardService.createSpaceSchedule(req.user?.id, req.body);
+    res.json({ success: true, schedule });
+  } catch (error) {
+    logger.error('DocBoard space schedule create error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /api/docboard/space-schedules/:id
+ */
+router.put('/space-schedules/:id', async (req, res) => {
+  try {
+    const { agenda, category, schedule_date } = req.body || {};
+    if (!agenda || !category || !schedule_date) {
+      return res.status(400).json({ success: false, message: 'agenda, category, dan schedule_date diperlukan' });
+    }
+    const schedule = await docboardService.updateSpaceSchedule(req.user?.id, req.params.id, req.body);
+    if (!schedule) return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan' });
+    res.json({ success: true, schedule });
+  } catch (error) {
+    logger.error('DocBoard space schedule update error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PATCH /api/docboard/space-schedules/:id/status
+ */
+router.patch('/space-schedules/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    if (!status) return res.status(400).json({ success: false, message: 'Status diperlukan' });
+    const schedule = await docboardService.updateSpaceScheduleStatus(req.user?.id, req.params.id, status);
+    if (!schedule) return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan' });
+    res.json({ success: true, schedule });
+  } catch (error) {
+    logger.error('DocBoard space schedule status error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * DELETE /api/docboard/space-schedules/:id
+ */
+router.delete('/space-schedules/:id', async (req, res) => {
+  try {
+    await docboardService.deleteSpaceSchedule(req.user?.id, req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('DocBoard space schedule delete error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/**
  * GET /api/docboard/calendar/:year/:month
  * Calendar grid data for a month
  */

@@ -1,7 +1,7 @@
 import { route } from 'preact-router';
 import { getWeekDays, getWeekLabel, getWeekStart, isToday, formatDateLocal } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
-import { currentWeekStart, calendarData, surgeryCalendarData } from '../stores/schedule';
+import { currentWeekStart, calendarData, surgeryCalendarData, spaceScheduleCalendarData } from '../stores/schedule';
 
 export default function WeeklyView() {
   // Initialize week start if not set
@@ -59,6 +59,8 @@ export default function WeeklyView() {
           const totalPatients = dayEvents.totalPatients || 0;
           const surgeryDay = surgeryCalendarData.value[day.date];
           const surgeryCount = surgeryDay?.count || 0;
+          const spaceDay = spaceScheduleCalendarData.value[day.date];
+          const spaceCount = spaceDay?.total || 0;
           const todayActive = isToday(day.date);
 
           return (
@@ -102,8 +104,14 @@ export default function WeeklyView() {
                   </div>
                 )}
 
+                {spaceCount > 0 && (
+                  <div class="week-day-space">
+                    <span>{spaceCount} agenda</span>
+                  </div>
+                )}
+
                 {/* Empty state */}
-                {totalPatients === 0 && surgeryCount === 0 && (
+                {totalPatients === 0 && surgeryCount === 0 && spaceCount === 0 && (
                   <span class="week-day-empty">-</span>
                 )}
               </div>

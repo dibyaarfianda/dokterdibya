@@ -31,6 +31,9 @@ export const surgeryCalendarData = signal({});
 export const upcomingSurgeries = signal([]);
 export const operationTypes = signal([]);
 
+// Scientific/personal schedules
+export const spaceScheduleCalendarData = signal({});
+
 // AI Briefing
 export const briefingData = signal(null);
 export const briefingLoading = signal(false);
