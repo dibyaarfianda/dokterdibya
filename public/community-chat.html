@@ -2446,6 +2446,16 @@
         setModalOpen(el.roomPickerModal, true);
     }
 
+    function syncRoomListEntry(room) {
+        if (!room || !room.slug) return;
+        const index = rooms.findIndex((entry) => entry.slug === room.slug);
+        if (index === -1) {
+            rooms = [room, ...rooms];
+            return;
+        }
+        rooms[index] = { ...rooms[index], ...room };
+    }
+
     function openCreateRoomModal() {
         if (!canCreateRoomPermission) {
             showToast('Silakan login untuk membuat room', 'warning');
@@ -2669,6 +2679,7 @@
         const data = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/members`);
         if (data.room) {
             activeRoom = data.room;
+            syncRoomListEntry(data.room);
             renderRooms();
         }
         renderRoomMembers(data.members || [], data.summary || {});
@@ -3191,6 +3202,7 @@
     async function openRoom(slug) {
         const data = await api(`/rooms/${encodeURIComponent(slug)}/messages?limit=120`);
         activeRoom = data.room;
+        syncRoomListEntry(data.room);
         clearQuotedMessage();
 
         el.activeRoomName.textContent = data.room.name;
