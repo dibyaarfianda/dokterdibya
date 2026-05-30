@@ -2,18 +2,15 @@
 import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { promises as fs } from "fs";
 
 const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function generate() {
   const sharp = require("sharp");
-  const svg = `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-    <rect width="512" height="512" rx="96" fill="#0F172A"/>
-    <rect x="128" y="149" width="75" height="213" rx="16" fill="#3B82F6"/>
-    <rect x="128" y="149" width="256" height="75" rx="16" fill="#3B82F6"/>
-    <circle cx="331" cy="309" r="75" stroke="#3B82F6" stroke-width="30" fill="none"/>
-  </svg>`;
+  const svgPath = join(__dirname, "../public/icons/docboardlogo.svg");
+  const svg = await fs.readFile(svgPath, "utf-8");
 
   const buf = Buffer.from(svg);
   const outDir = join(__dirname, "../public/icons");
