@@ -10,7 +10,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/docboard/icons/favicon.svg",
+      "src": "/docboard/icons/docboardlogo.svg",
       "sizes": "any",
       "type": "image/svg+xml"
     },

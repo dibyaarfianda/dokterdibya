@@ -26,12 +26,11 @@ export default function Login() {
       <div class="login-card">
         <div class="login-header">
           <div class="login-logo">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="#0F172A" />
-              <path d="M14 16h6v16h-6z" fill="#3B82F6" />
-              <path d="M14 16h20v6H14z" fill="#3B82F6" />
-              <circle cx="30" cy="28" r="6" stroke="#3B82F6" stroke-width="3" fill="none" />
-            </svg>
+            <img
+              src="/docboard/icons/docboardlogo.svg"
+              alt="DocBoard logo"
+              class="login-logo-image"
+            />
           </div>
           <h1>DocBoard</h1>
           <p class="login-subtitle">Doctor Scheduler</p>

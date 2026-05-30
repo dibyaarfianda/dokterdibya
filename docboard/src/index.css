@@ -427,6 +427,24 @@ input { font-family: inherit; }
 
 .login-logo {
   margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-logo-image {
+  width: clamp(56px, 12vw, 72px);
+  aspect-ratio: 1 / 1;
+  height: auto;
+  object-fit: contain;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 480px) {
+  .login-logo-image {
+    width: 60px;
+    border-radius: 50%;
+  }
 }
 
 .login-header h1 {
