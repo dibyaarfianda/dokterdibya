@@ -404,9 +404,11 @@ class SurgeryService {
     logger.info(`Surgery #${id} deleted`);
   }
 
-  async getUpcoming(days = 7) {
+  async getUpcoming(days = 7, pastDays = 0) {
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const start = new Date(now);
+    start.setDate(start.getDate() - Math.max(0, pastDays));
+    const todayStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
 
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + days);

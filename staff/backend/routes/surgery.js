@@ -78,7 +78,8 @@ router.get('/calendar/:year/:month', async (req, res) => {
 router.get('/upcoming', async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
-    const surgeries = await surgeryService.getUpcoming(days);
+    const pastDays = parseInt(req.query.pastDays) || 0;
+    const surgeries = await surgeryService.getUpcoming(days, pastDays);
     res.json({ success: true, surgeries });
   } catch (error) {
     logger.error('Surgery upcoming error:', error);
