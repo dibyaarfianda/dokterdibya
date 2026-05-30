@@ -8,6 +8,83 @@ const router = express.Router();
 const aiService = require('../services/aiService');
 const { verifyToken } = require('../middleware/auth');
 
+const DAILY_GREETING_FAST_TIMEOUT_MS = 900;
+const FALLBACK_DAILY_GREETINGS = [
+    'Selamat bekerja, semoga harimu menyenangkan!',
+    'Semangat menjalani hari ini. Satu langkah kecil bisa sangat berarti untuk pasien.',
+    'Terima kasih atas dedikasimu hari ini. Semoga semua pelayanan berjalan lancar.',
+    'Semoga hari kerja ini ringan, rapi, dan penuh kebaikan untuk pasien.',
+    'Selamat bertugas. Fokus pelan-pelan, satu pasien satu perhatian.'
+];
+
+function formatLocalDateKey(date = new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function getNextLocalMidnightIso() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    return tomorrow.toISOString();
+}
+
+function getFallbackDailyGreeting(userId) {
+    const seed = String(userId || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return FALLBACK_DAILY_GREETINGS[seed % FALLBACK_DAILY_GREETINGS.length];
+}
+
+function getGreetingCache() {
+    if (!global.greetingCache) global.greetingCache = new Map();
+    if (!global.greetingPending) global.greetingPending = new Map();
+    return { cache: global.greetingCache, pending: global.greetingPending };
+}
+
+function cleanupGreetingCache(cache, today) {
+    for (const key of cache.keys()) {
+        if (!key.includes(today)) cache.delete(key);
+    }
+}
+
+function startDailyGreetingGeneration(cacheKey, payload, cachedUntil) {
+    const { cache, pending } = getGreetingCache();
+    if (pending.has(cacheKey)) return pending.get(cacheKey);
+
+    const promise = aiService.generateDailyGreeting(payload)
+        .then((result) => {
+            if (!result || !result.success || !result.data?.greeting) return null;
+
+            const greetingData = {
+                greeting: result.data.greeting,
+                day: result.data.day,
+                time: result.data.time,
+                isWeekend: result.data.isWeekend,
+                cachedUntil,
+                generatedAt: new Date().toISOString()
+            };
+
+            cache.set(cacheKey, greetingData);
+
+            return {
+                success: true,
+                data: {
+                    ...greetingData,
+                    cached: false
+                },
+                tokensUsed: result.tokensUsed
+            };
+        })
+        .catch((error) => {
+            console.error('AI Daily Greeting background generation failed:', error.message);
+            return null;
+        })
+        .finally(() => {
+            pending.delete(cacheKey);
+        });
+
+    pending.set(cacheKey, promise);
+    return promise;
+}
+
 /**
  * POST /api/ai/demo/detect-category
  * PUBLIC DEMO - Smart triage without auth (for testing only)
@@ -336,24 +413,16 @@ router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
         const roleName = req.user.role_display_name || req.user.role || 'Staff';
 
         // Check cache first (stored in memory with date key)
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = formatLocalDateKey();
         const cacheKey = `greeting_${userId}_${today}`;
-
-        // Simple in-memory cache (consider Redis for production scaling)
-        if (!global.greetingCache) {
-            global.greetingCache = new Map();
-        }
+        const { cache } = getGreetingCache();
 
         // Clean old cache entries (older than today)
-        for (const [key, value] of global.greetingCache.entries()) {
-            if (!key.includes(today)) {
-                global.greetingCache.delete(key);
-            }
-        }
+        cleanupGreetingCache(cache, today);
 
         // Return cached greeting if exists
-        if (global.greetingCache.has(cacheKey)) {
-            const cached = global.greetingCache.get(cacheKey);
+        if (cache.has(cacheKey)) {
+            const cached = cache.get(cacheKey);
             return res.json({
                 success: true,
                 data: {
@@ -363,42 +432,34 @@ router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
             });
         }
 
-        // Generate new greeting
-        const result = await aiService.generateDailyGreeting({
+        const cachedUntil = getNextLocalMidnightIso();
+        const generation = startDailyGreetingGeneration(cacheKey, {
             userId,
             userName,
             roleName
-        });
+        }, cachedUntil);
 
-        if (result.success) {
-            // Calculate midnight for cache expiry
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
+        const fastResult = await Promise.race([
+            generation,
+            new Promise((resolve) => setTimeout(() => resolve(null), DAILY_GREETING_FAST_TIMEOUT_MS))
+        ]);
 
-            const greetingData = {
-                greeting: result.data.greeting,
-                day: result.data.day,
-                time: result.data.time,
-                isWeekend: result.data.isWeekend,
-                cachedUntil: tomorrow.toISOString(),
-                generatedAt: new Date().toISOString()
-            };
-
-            // Cache for today
-            global.greetingCache.set(cacheKey, greetingData);
-
-            return res.json({
-                success: true,
-                data: {
-                    ...greetingData,
-                    cached: false
-                },
-                tokensUsed: result.tokensUsed
-            });
+        if (fastResult) {
+            return res.json(fastResult);
         }
 
-        res.json(result);
+        const now = new Date();
+        return res.json({
+            success: true,
+            data: {
+                greeting: getFallbackDailyGreeting(userId),
+                day: now.toLocaleDateString('id-ID', { weekday: 'long' }),
+                time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                cachedUntil,
+                fallback: true,
+                pending: true
+            }
+        });
 
     } catch (error) {
         console.error('AI Daily Greeting API Error:', error);
