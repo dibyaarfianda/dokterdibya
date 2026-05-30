@@ -12,9 +12,9 @@ let queueReminderSchemaReady = false;
 
 function getDefaultQueueReminderSettings() {
     return {
-        enabled: false,
+        enabled: true,
         threshold_ahead: 2,
-        background_push_enabled: false,
+        background_push_enabled: true,
         last_notified_signature: null,
         last_notified_at: null
     };
@@ -28,9 +28,9 @@ async function ensureQueueReminderSchema() {
     await db.query(`
         CREATE TABLE IF NOT EXISTS patient_queue_reminder_settings (
             patient_id VARCHAR(32) NOT NULL PRIMARY KEY,
-            enabled TINYINT(1) NOT NULL DEFAULT 0,
+            enabled TINYINT(1) NOT NULL DEFAULT 1,
             threshold_ahead INT NOT NULL DEFAULT 2,
-            background_push_enabled TINYINT(1) NOT NULL DEFAULT 0,
+            background_push_enabled TINYINT(1) NOT NULL DEFAULT 1,
             last_notified_signature VARCHAR(160) NULL,
             last_notified_at DATETIME NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -56,7 +56,19 @@ async function getQueueReminderSettings(patientId) {
 
     const row = rows[0];
     if (!row) {
-        return getDefaultQueueReminderSettings();
+        const defaults = getDefaultQueueReminderSettings();
+        await db.query(
+            `INSERT IGNORE INTO patient_queue_reminder_settings
+                (patient_id, enabled, threshold_ahead, background_push_enabled)
+             VALUES (?, ?, ?, ?)`,
+            [
+                patientId,
+                defaults.enabled ? 1 : 0,
+                defaults.threshold_ahead,
+                defaults.background_push_enabled ? 1 : 0
+            ]
+        );
+        return defaults;
     }
 
     return {
