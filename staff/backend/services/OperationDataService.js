@@ -36,9 +36,19 @@ function normalizeDate(value) {
   }
   const raw = trim(value);
   const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  if (iso) {
+    const year = parseInt(iso[1], 10);
+    const fullYear = year < 100 ? 2000 + year : year;
+    return `${fullYear}-${iso[2]}-${iso[3]}`;
+  }
   const local = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
   if (local) return `${local[3]}-${String(local[2]).padStart(2, '0')}-${String(local[1]).padStart(2, '0')}`;
+  const localShortYear = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2})(?:\D|$)/);
+  if (localShortYear) {
+    const year = parseInt(localShortYear[3], 10);
+    const fullYear = year >= 70 ? 1900 + year : 2000 + year;
+    return `${fullYear}-${String(localShortYear[2]).padStart(2, '0')}-${String(localShortYear[1]).padStart(2, '0')}`;
+  }
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return null;
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
