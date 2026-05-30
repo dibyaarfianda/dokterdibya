@@ -5,6 +5,7 @@ const { requireRoles } = require('../middleware/auth');
 const docboardService = require('../services/DocBoardService');
 const docboardPush = require('../services/DocBoardPushService');
 const surgeryRoutes = require('./surgery');
+const operationDataRoutes = require('./operation-data');
 const logger = require('../utils/logger');
 
 // Allow token from query string for PDF downloads (window.open can't set headers)
@@ -20,6 +21,7 @@ router.use(verifyStaffToken);
 
 // Mount surgery sub-routes
 router.use('/surgery', surgeryRoutes);
+router.use('/operation-data', operationDataRoutes);
 
 /**
  * GET /api/docboard/space-schedules/calendar/:year/:month

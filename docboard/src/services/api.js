@@ -466,6 +466,15 @@ export const api = {
     return request(`/surgery/analytics${qs ? '?' + qs : ''}`);
   },
 
+  getOperationData(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/operation-data${qs ? '?' + qs : ''}`);
+  },
+
+  getOperationDataDetail(id) {
+    return request(`/operation-data/${id}`);
+  },
+
   // PDF Export - returns URL string (not a fetch, used with window.open)
   getExportPDFUrl(startDate, endDate) {
     const token = getToken();

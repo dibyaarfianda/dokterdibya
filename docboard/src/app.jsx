@@ -6,6 +6,8 @@ import DayDetail from './views/DayDetail';
 import SurgeryList from './views/SurgeryList';
 import SurgeryForm from './views/SurgeryForm';
 import SurgeryDetail from './views/SurgeryDetail';
+import OperationDataList from './views/OperationDataList';
+import OperationDataDetail from './views/OperationDataDetail';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Analytics from './views/Analytics';
@@ -67,6 +69,8 @@ export default function App() {
           <SurgeryForm path="/docboard/surgery/new" />
           <SurgeryForm path="/docboard/surgery/edit/:id" />
           <SurgeryDetail path="/docboard/surgery/:id" />
+          <OperationDataList path="/docboard/data" />
+          <OperationDataDetail path="/docboard/data/:id" />
           <Notifications path="/docboard/notifications" />
           <CommandDashboard path="/docboard/command" />
           <SpaceSchedule path="/docboard/scientific" space="ilmiah" />

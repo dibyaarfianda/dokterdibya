@@ -3724,6 +3724,214 @@ input { font-family: inherit; }
 }
 
 /* ==============================
+   Operation Data Archive
+   ============================== */
+.view-operation-data,
+.view-operation-detail {
+  padding-bottom: 80px;
+}
+
+.operation-data-filters {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+}
+
+.operation-data-filters input,
+.operation-data-filters select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 10px 11px;
+  outline: none;
+}
+
+.operation-data-filters input:focus,
+.operation-data-filters select:focus {
+  border-color: var(--blue);
+}
+
+.operation-data-filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.operation-data-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 2px 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.operation-data-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.operation-data-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 72px 1fr 18px;
+  gap: 11px;
+  align-items: center;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+}
+
+.operation-data-row:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-md);
+}
+
+.operation-data-date {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  min-height: 68px;
+  border-radius: 12px;
+  background: #0F172A;
+  color: white;
+  text-align: center;
+  padding: 8px 5px;
+}
+
+.operation-data-date strong {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.operation-data-date span {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.operation-data-main {
+  min-width: 0;
+}
+
+.operation-data-title {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.operation-data-patient {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 7px;
+}
+
+.operation-data-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.operation-data-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 21px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.operation-data-diagnosis {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.operation-data-chevron {
+  color: var(--text-tertiary);
+  font-size: 26px;
+}
+
+.operation-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.operation-detail-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.operation-detail-field {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 9px;
+}
+
+.operation-detail-field:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.operation-detail-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.operation-detail-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.operation-detail-value.pre {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 390px) {
+  .operation-data-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .operation-data-row {
+    grid-template-columns: 62px 1fr 14px;
+    gap: 9px;
+    padding: 10px;
+  }
+}
+
+/* ==============================
    Surgery operation review list
    ============================== */
 .surgery-row-card {

@@ -177,12 +177,44 @@ const getFileBuffer = async (key) => {
     }
 };
 
+const uploadJson = async (key, data) => {
+    if (!isR2Configured()) {
+        throw new Error('R2 storage is not configured');
+    }
+
+    const client = getS3Client();
+
+    try {
+        const body = Buffer.from(JSON.stringify(data, null, 2), 'utf8');
+        await client.send(new PutObjectCommand({
+            Bucket: R2_BUCKET_NAME,
+            Key: key,
+            Body: body,
+            ContentType: 'application/json; charset=utf-8',
+            CacheControl: 'private, max-age=300',
+        }));
+
+        logger.info('JSON uploaded to R2', { key, bytes: body.length });
+        return { success: true, key };
+    } catch (error) {
+        logger.error('R2 upload JSON error', { error: error.message, key });
+        throw error;
+    }
+};
+
+const getJson = async (key) => {
+    const buffer = await getFileBuffer(key);
+    return JSON.parse(buffer.toString('utf8'));
+};
+
 module.exports = {
     isR2Configured,
     uploadFile,
+    uploadJson,
     deleteFile,
     getSignedDownloadUrl,
     getFileBuffer,
+    getJson,
     R2_BUCKET_NAME,
     R2_PUBLIC_URL,
 };
