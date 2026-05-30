@@ -29,13 +29,12 @@
   padding-bottom: 80px;
 }
 
-.space-page-header {
-  align-items: center;
-  margin-bottom: 12px;
+.space-view-header {
+  margin-bottom: 0;
 }
 
 .space-toggle {
-  margin-bottom: 12px;
+  margin: 0 16px 12px;
 }
 
 .space-summary-card {
@@ -45,7 +44,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin: 0 16px 16px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -76,7 +75,7 @@
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow-sm);
-  margin-bottom: 16px;
+  margin: 0 16px 16px;
 }
 
 .space-form-card textarea,
@@ -117,6 +116,7 @@
 .space-groups {
   display: flex;
   flex-direction: column;
+  padding: 0 16px;
 }
 
 .space-agenda-card {

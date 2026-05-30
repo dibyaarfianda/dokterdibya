@@ -209,16 +209,15 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   return (
     <div class="view-space-schedule">
-      <div class="page-header space-page-header">
-        <div>
-          <h1 class="page-title">{config.title}</h1>
-          <div class="page-subtitle">{config.subtitle}</div>
+      <div class="view-header space-view-header">
+        <h1>{config.title}</h1>
+        <div class="view-header-actions">
+          <button class="btn-icon-primary" onClick={openCreateForm} aria-label={config.action}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
         </div>
-        <button class="btn-icon-primary" onClick={openCreateForm} aria-label={config.action}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
       </div>
 
       <div class="view-toggle space-toggle" role="tablist" aria-label="Pilih ruang jadwal">
