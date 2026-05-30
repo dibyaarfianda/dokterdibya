@@ -526,7 +526,7 @@
 
         function registerPatientServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('/sw.js?v=20260530e', { scope: '/' })
+            navigator.serviceWorker.register('/sw.js?v=20260530f', { scope: '/' })
                 .then(function(registration) { return registration.update().catch(function() {}); })
                 .catch(function() {});
         }
