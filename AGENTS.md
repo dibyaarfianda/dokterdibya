@@ -1982,3 +1982,76 @@ User confirmed the Sunday Clinic chat issue was resolved after the chat popup wa
 
 **Lesson:**
 - For Sunday Clinic chat, fix both load-path duplication and message identity. Scroll bugs in Android/WebView can be layout-timing bugs, so scroll after the panel is visible, after viewport recalculation, and after keyboard/layout transitions, not only immediately after message history loads.
+
+### 53. Session Log - 31 May 2026
+
+**Staff Panel <-> Sunday Clinic Team Chat Sync Fix (User Confirmed "good job")**
+
+User reported that chat messages between Staff Panel and Sunday Clinic were still inconsistent:
+1. Messages from the same logged-in doctor account appeared as if they were from another person.
+2. Messages sent from Staff Panel sometimes did not appear in Sunday Clinic.
+
+**Root causes:**
+1. Production was still serving old assets:
+    - Live `sunday-clinic.html` still had `PAGE_VERSION = '20260531chat4'`.
+    - Live script tag still used `chat-popup.js?v=v224`.
+    - Local fixes were committed/pushed, but VPS `git pull` was blocked by local dirty changes.
+2. Same-account multi-tab messages were skipped:
+    - Staff Panel and Sunday Clinic can both be logged in as `dr. Dibya`.
+    - The realtime handler treated socket broadcasts from the same account as local echo and skipped them.
+    - This is correct only for the sending tab's immediate echo, but wrong for another tab/page using the same account.
+3. Realtime events can still be missed, so the popup needs a history polling fallback.
+
+**What worked:**
+1. Update `staff/public/scripts/chat-popup.js` ownership detection:
+    - Collect possible current user IDs from `window.auth.currentUser`, `window.currentStaffIdentity`, `window.currentStaffUser`, `window.__realtimeSyncState.currentUser`, and JWT payload.
+    - Also collect current user names and normalize them, so `dr. Dibya` and `dr Dibya` match.
+    - If `user_id` mismatch happens but `user_name` matches the current staff name, render as `sent`.
+2. Add local echo suppression that only suppresses the sender tab's optimistic echo:
+    - Track `pendingSentMessages`.
+    - Suppress matching socket echo for about 30 seconds.
+    - Do not skip other same-account socket broadcasts once they are not a local pending echo.
+3. Change `handleRealtimeChatMessage(data)`:
+    - After `consumePendingSentEcho(data)`, always render the socket message.
+    - Use `isOwnChatMessage(data) ? 'sent' : 'received'` to choose side.
+    - This allows Staff Panel -> Sunday Clinic messages from the same account to appear on the right side.
+4. Add polling fallback:
+    - `startChatHistoryPolling()`
+    - `pollChatHistoryForNewMessages()`
+    - Poll `/api/chat/messages?limit=100&_t=${Date.now()}` every 3 seconds.
+    - Append only messages whose database ID is not already in `renderedMessageIds`.
+5. Bump cache/version strings:
+    - Sunday Clinic `PAGE_VERSION` -> `20260531chat8`
+    - `window.__sundayClinicChatVersion` -> `v229`
+    - `window.__chatPopupVersion` -> `v229`
+    - Static script tags -> `chat-popup.js?v=v229`
+    - `global-chat-loader.js` fallback -> `v229`
+6. Deploy static files directly to VPS when `git pull` is blocked:
+    - Backup production files first under `/root/chat-popup-backup-<timestamp>/`.
+    - Copy local `chat-popup.js` and `global-chat-loader.js` to `/var/www/dokterdibya/staff/public/scripts/`.
+    - Patch only chat cache markers in production HTML.
+    - Run `/var/www/dokterdibya/fix-permissions.sh`.
+
+**Verification pattern that mattered:**
+1. Run syntax checks:
+    - `node --check staff/public/scripts/chat-popup.js`
+    - `node --check staff/public/scripts/global-chat-loader.js`
+2. Confirm production file markers on VPS:
+    - `PAGE_VERSION = '20260531chat8'`
+    - `window.__sundayClinicChatVersion = 'v229'`
+    - `chat-popup.js?v=v229`
+    - `Adding realtime message`
+    - `pollChatHistoryForNewMessages`
+3. Confirm live HTTP serves the updated files:
+    - `https://dokterdibya.com/staff/public/sunday-clinic.html`
+    - `https://dokterdibya.com/staff/public/scripts/chat-popup.js?v=v229`
+4. Query production DB to confirm messages are in one thread:
+    - `SELECT id,user_id,user_name,message,timestamp FROM chat_messages ORDER BY id DESC LIMIT 20;`
+    - Example successful same-account rows used `UDZAQUCQWZ / dr. Dibya` for messages from both Staff Panel and Sunday Clinic.
+5. User visually confirmed two-way sync:
+    - Staff Panel message appears in Sunday Clinic.
+    - Sunday Clinic message appears in Staff Panel.
+    - Same-account messages render on the right side.
+
+**Lesson:**
+- For Team Chat, same-account multi-tab/page behavior is different from local socket echo. Suppress only the sender tab's pending echo, then render same-account broadcasts in other tabs as `sent`. Always verify production assets over HTTP, because pushed code is not enough if the VPS worktree is dirty and `git pull` aborts.
