@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off" data-portal-nav-active="jadwal">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Antrian Hari Ini - Dokter Dibya</title>
+    <title>Antrian Hari Ini - SISIwanita</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -166,6 +167,7 @@
             min-width: 0;
             font-size: 12px;
             color: #cfcfcf;
+        }
         .reminder-card {
             background: rgba(40, 167, 233, 0.07);
             border: 1px solid rgba(40, 167, 233, 0.2);
@@ -416,15 +418,10 @@
             width: 100%;
             justify-content: center;
         }
-        }
         .legend-swatch {
             width: 12px;
             height: 12px;
             border-radius: 999px;
-            .reminder-grid,
-            .reminder-choices {
-                grid-template-columns: 1fr;
-            }
             flex-shrink: 0;
             border: 1px solid rgba(255,255,255,0.12);
         }
@@ -435,7 +432,9 @@
         .legend-swatch-lunas { background: #6b7280; }
 
         @media (max-width: 420px) {
-            .legend-grid {
+            .legend-grid,
+            .reminder-grid,
+            .reminder-choices {
                 grid-template-columns: 1fr;
             }
         }
@@ -604,8 +603,218 @@
         }
         .nav-home i { font-size: 20px; }
     </style>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        body.antrian-page #reminder-modal.reminder-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 2800 !important;
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: max(14px, env(safe-area-inset-top, 0px)) 14px max(14px, env(safe-area-inset-bottom, 0px)) !important;
+            background: rgba(17, 17, 17, 0.54) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            backdrop-filter: blur(10px) !important;
+        }
+
+        body.antrian-page #reminder-modal.reminder-modal.show {
+            display: flex !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-card {
+            width: min(520px, calc(100vw - 28px)) !important;
+            max-width: calc(100vw - 28px) !important;
+            max-height: min(82dvh, 640px) !important;
+            margin: 0 !important;
+            padding: 18px !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            border: 1px solid rgba(17, 17, 17, 0.1) !important;
+            border-radius: 24px !important;
+            background: rgba(255, 255, 255, 0.97) !important;
+            color: var(--ink, #111111) !important;
+            box-shadow: 0 24px 70px rgba(17, 17, 17, 0.22) !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-header {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 42px !important;
+            grid-template-areas:
+                "title close"
+                "status status" !important;
+            align-items: center !important;
+            gap: 10px !important;
+            margin: 0 0 14px !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-title {
+            grid-area: title !important;
+            min-width: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            color: var(--ink, #111111) !important;
+            font-family: var(--display, 'Plus Jakarta Sans', sans-serif) !important;
+            font-size: 16px !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.02em !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-title i {
+            color: var(--green, #5c7f72) !important;
+        }
+
+        body.antrian-page #reminder-modal #close-reminder-settings.reminder-modal-close {
+            grid-area: close !important;
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            border: 1px solid var(--line, rgba(17, 17, 17, 0.09)) !important;
+            border-radius: 999px !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: var(--ink, #111111) !important;
+            box-shadow: none !important;
+            font-size: 24px !important;
+            font-weight: 500 !important;
+            line-height: 1 !important;
+            cursor: pointer !important;
+            -webkit-appearance: none !important;
+            appearance: none !important;
+        }
+
+        body.antrian-page #reminder-modal #close-reminder-settings.reminder-modal-close:active {
+            background: var(--surface-muted, #f0f0ec) !important;
+            transform: scale(0.97) !important;
+        }
+
+        body.antrian-page #reminder-modal #reminder-save-state.reminder-status-pill {
+            grid-area: status !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+            padding: 7px 11px !important;
+            border: 1px solid rgba(92, 127, 114, 0.22) !important;
+            border-radius: 999px !important;
+            background: rgba(92, 127, 114, 0.1) !important;
+            color: var(--green, #5c7f72) !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            line-height: 1.2 !important;
+            white-space: normal !important;
+        }
+
+        body.antrian-page #reminder-modal #reminder-save-state.reminder-status-pill.is-error {
+            border-color: rgba(185, 28, 28, 0.22) !important;
+            background: rgba(185, 28, 28, 0.08) !important;
+            color: #b91c1c !important;
+        }
+
+        body.antrian-page #reminder-modal #reminder-save-state.reminder-status-pill.is-local {
+            border-color: rgba(245, 158, 11, 0.26) !important;
+            background: rgba(245, 158, 11, 0.1) !important;
+            color: #9a5b00 !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-note,
+        body.antrian-page #reminder-modal .reminder-helper,
+        body.antrian-page #reminder-modal .upload-box,
+        body.antrian-page #reminder-modal .reminder-choice {
+            border: 1px solid var(--line, rgba(17, 17, 17, 0.09)) !important;
+            border-radius: 18px !important;
+            background: rgba(255, 255, 255, 0.72) !important;
+            color: var(--muted, #717171) !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-helper strong {
+            color: var(--ink, #111111) !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-toggle,
+        body.antrian-page #reminder-modal .reminder-field label,
+        body.antrian-page #reminder-modal .upload-meta,
+        body.antrian-page #reminder-modal .push-status-text {
+            color: var(--muted, #717171) !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-field select,
+        body.antrian-page #reminder-modal .reminder-field input[type="number"],
+        body.antrian-page #reminder-modal .reminder-field input[type="file"] {
+            min-height: 42px !important;
+            width: 100% !important;
+            padding: 9px 12px !important;
+            border: 1px solid var(--line-strong, rgba(17, 17, 17, 0.16)) !important;
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: var(--ink, #111111) !important;
+            font-family: var(--font, 'Inter', sans-serif) !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-grid,
+        body.antrian-page #reminder-modal .reminder-choices {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+        }
+
+        body.antrian-page #reminder-modal .reminder-choices {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+
+        body.antrian-page #reminder-modal .upload-actions {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+
+        body.antrian-page #reminder-modal .mini-btn {
+            min-height: 40px !important;
+            padding: 9px 12px !important;
+            border: 1px solid var(--line, rgba(17, 17, 17, 0.09)) !important;
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: var(--ink, #111111) !important;
+            font-family: var(--font, 'Inter', sans-serif) !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+        }
+
+        body.antrian-page #reminder-modal .mini-btn.primary {
+            background: var(--ink, #111111) !important;
+            border-color: var(--ink, #111111) !important;
+            color: #fff !important;
+        }
+
+        body.antrian-page #reminder-modal .mini-btn.warn {
+            color: #9a5b00 !important;
+        }
+
+        @media (max-width: 420px) {
+            body.antrian-page #reminder-modal .reminder-card {
+                padding: 16px !important;
+                border-radius: 22px !important;
+            }
+
+            body.antrian-page #reminder-modal .reminder-grid,
+            body.antrian-page #reminder-modal .reminder-choices {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+    <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit antrian-page" data-tool-shell-active="jadwal" data-tool-kicker="Live Queue" data-tool-title="Antrian hari ini." data-tool-copy="Pantau status antrian klinik secara real time dan atur pengingat saat nomor Anda sudah mendekat." data-tool-meta-label="Refresh" data-tool-meta-value="Otomatis 30 detik">
 
     <!-- Top bar -->
     <div class="top-bar">
@@ -650,7 +859,7 @@
             <div class="reminder-header">
                 <div class="reminder-title"><i class="fa fa-bell"></i> Pengingat Antrian Saya</div>
                 <button class="reminder-modal-close" id="close-reminder-settings" type="button" aria-label="Tutup">&times;</button>
-                <span class="reminder-status-pill" id="reminder-save-state">Tersimpan di perangkat ini</span>
+                <span class="reminder-status-pill is-local" id="reminder-save-state"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i><span>Tersimpan di perangkat ini</span></span>
             </div>
             <div class="reminder-note">
                 Pasien bisa atur sendiri kapan reminder muncul, misalnya saat tinggal 2 antrian di depan. Popup dan nada custom tetap berlaku di perangkat ini, sementara push background bisa disinkronkan ke akun pasien yang sedang login.
@@ -722,7 +931,7 @@
 
         <div id="queue-container">
             <div class="state-card loading">
-                <i class="fa fa-circle-o-notch"></i>
+                <i class="fa-solid fa-circle-notch"></i>
                 <p>Memuat data antrian...</p>
             </div>
         </div>
@@ -839,7 +1048,18 @@
         function setReminderSaveState(message) {
             const els = getReminderFormElements();
             if (els.saveState) {
-                els.saveState.textContent = message;
+                const text = message || 'Status penyimpanan belum diketahui';
+                const lowerText = text.toLowerCase();
+                const stateClass = lowerText.includes('gagal')
+                    ? 'is-error'
+                    : (lowerText.includes('lokal') ? 'is-local' : 'is-synced');
+                const iconClass = stateClass === 'is-error'
+                    ? 'fa-solid fa-triangle-exclamation'
+                    : (stateClass === 'is-local' ? 'fa-solid fa-mobile-screen-button' : 'fa-solid fa-circle-check');
+
+                els.saveState.classList.remove('is-synced', 'is-local', 'is-error');
+                els.saveState.classList.add(stateClass);
+                els.saveState.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span>${escHtml(text)}</span>`;
             }
         }
 
@@ -913,7 +1133,7 @@
                 }
 
                 const payload = await response.json();
-                if (payload.success && payload.settings) {
+                if (payload.success & payload.settings) {
                     _reminderSettings.enabled = !!payload.settings.enabled;
                     _reminderSettings.threshold = Number(payload.settings.threshold_ahead) || _reminderSettings.threshold;
                     _reminderSettings.backgroundPushEnabled = !!payload.settings.background_push_enabled;
@@ -956,7 +1176,7 @@
                 }
 
                 const payload = await response.json();
-                if (payload.success && payload.settings) {
+                if (payload.success & payload.settings) {
                     _reminderSettings.enabled = !!payload.settings.enabled;
                     _reminderSettings.threshold = Number(payload.settings.threshold_ahead) || _reminderSettings.threshold;
                     _reminderSettings.backgroundPushEnabled = !!payload.settings.background_push_enabled;
@@ -987,7 +1207,7 @@
                 options.push(`<option value="${escHtml(key)}">${escHtml(label)}</option>`);
             });
             sessionSelect.innerHTML = options.join('');
-            sessionSelect.value = currentValue && seen.has(currentValue) ? currentValue : '';
+            sessionSelect.value = currentValue & seen.has(currentValue) ? currentValue : '';
         }
 
         async function loadActiveBookingForQueueDate(date) {
@@ -1013,7 +1233,7 @@
 
                 const payload = await response.json();
                 const sameDateBooking = (payload.bookings || []).find(function(booking) {
-                    return booking.appointment_date === date && String(booking.status).toLowerCase() === 'confirmed';
+                    return booking.appointment_date === date & String(booking.status).toLowerCase() === 'confirmed';
                 }) || (payload.bookings || []).find(function(booking) {
                     return booking.appointment_date === date;
                 }) || null;
@@ -1037,7 +1257,7 @@
         }
 
         function getReminderTarget() {
-            if (_reminderSettings.source === 'auto' && _activeBooking) {
+            if (_reminderSettings.source === 'auto' & _activeBooking) {
                 return {
                     session: Number(_activeBooking.session),
                     slot: Number(_activeBooking.slot_number),
@@ -1087,7 +1307,7 @@
             }
 
             const targetApt = _queueData.find(function(apt) {
-                return Number(apt.session) === target.session && Number(apt.slot_number) === target.slot;
+                return Number(apt.session) === target.session & Number(apt.slot_number) === target.slot;
             });
 
             if (!targetApt) {
@@ -1097,8 +1317,8 @@
 
             const aheadCount = _queueData.filter(function(apt) {
                 return Number(apt.session) === target.session
-                    && Number(apt.slot_number) < target.slot
-                    && !isQueueFinished(apt.queue_status || 'menunggu');
+                    & Number(apt.slot_number) < target.slot
+                    & !isQueueFinished(apt.queue_status || 'menunggu');
             }).length;
 
             const currentStatus = STATUS_LABELS[targetApt.queue_status] || targetApt.queue_status;
@@ -1133,7 +1353,7 @@
             }
 
             const result = await Notification.requestPermission();
-            if (result === 'granted' && typeof window.ensurePatientPushSubscription === 'function') {
+            if (result === 'granted' & typeof window.ensurePatientPushSubscription === 'function') {
                 window.ensurePatientPushSubscription();
             }
             refreshPushStatusIndicator();
@@ -1191,7 +1411,7 @@
             }
 
             const targetApt = _queueData.find(function(apt) {
-                return Number(apt.session) === target.session && Number(apt.slot_number) === target.slot;
+                return Number(apt.session) === target.session & Number(apt.slot_number) === target.slot;
             });
 
             if (!targetApt) {
@@ -1205,8 +1425,8 @@
 
             const aheadCount = _queueData.filter(function(apt) {
                 return Number(apt.session) === target.session
-                    && Number(apt.slot_number) < target.slot
-                    && !isQueueFinished(apt.queue_status || 'menunggu');
+                    & Number(apt.slot_number) < target.slot
+                    & !isQueueFinished(apt.queue_status || 'menunggu');
             }).length;
 
             if (aheadCount > Number(_reminderSettings.threshold || 0)) {
@@ -1224,7 +1444,7 @@
                 showReminderPopup(message);
             }
 
-            if (_reminderSettings.browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
+            if (_reminderSettings.browserEnabled & 'Notification' in window & Notification.permission === 'granted') {
                 try {
                     new Notification('Pengingat Antrian', {
                         body: message,
@@ -1275,13 +1495,13 @@
             ].forEach(function(el) {
                 if (!el) return;
                 el.addEventListener('change', handleReminderSettingChange);
-                if (el.tagName === 'INPUT' && el.type === 'number') {
+                if (el.tagName === 'INPUT' & el.type === 'number') {
                     el.addEventListener('input', handleReminderSettingChange);
                 }
             });
 
             els.soundFile.addEventListener('change', function(event) {
-                const file = event.target.files && event.target.files[0];
+                const file = event.target.files & event.target.files[0];
                 if (!file) return;
                 if (file.size > 500 * 1024) {
                     alert('Ukuran file suara maksimal 500 KB agar bisa disimpan di perangkat ini.');
@@ -1386,7 +1606,7 @@
             const container = document.getElementById('queue-container');
             container.innerHTML = `
                 <div class="state-card">
-                    <i class="fa fa-lock" style="font-size:36px;color:#555;margin-bottom:12px;display:block;"></i>
+                    <i class="fa-solid fa-lock" style="font-size:36px;color:#555;margin-bottom:12px;display:block;"></i>
                     <p>${escHtml(message || 'Live queue hanya bisa dilihat oleh pasien yang sudah mendaftar antrian hari ini.')}<br><small style="color:#555">Silakan booking Klinik Minggu terlebih dahulu.</small></p>
                 </div>`;
             populateReminderSessions();
@@ -1402,7 +1622,7 @@
             if (!data || data.length === 0) {
                 container.innerHTML = `
                     <div class="state-card">
-                        <i class="fa fa-calendar-times-o"></i>
+                        <i class="fa-solid fa-calendar-xmark"></i>
                         <p>Tidak ada antrian hari ini.<br>Klinik mungkin sedang tidak buka.</p>
                     </div>`;
                 populateReminderSessions();
@@ -1421,7 +1641,7 @@
             let html = '';
             for (const key of Object.keys(sessions).sort((a, b) => a - b)) {
                 const sess = sessions[key];
-                html += `<div class="session-label"><i class="fa fa-clock-o"></i> Sesi ${sess.label}</div>`;
+                html += `<div class="session-label"><i class="fa-regular fa-clock"></i> Sesi ${sess.label}</div>`;
                 for (const apt of sess.items) {
                     const st = apt.queue_status || 'menunggu';
                     const badgeClass = `badge-${st}`;
@@ -1431,7 +1651,7 @@
                             <div class="slot-num">${apt.slot_number}</div>
                             <div class="queue-info">
                                 <div class="queue-name">${escHtml(apt.masked_name)}</div>
-                                <div class="queue-time"><i class="fa fa-clock-o" style="font-size:10px;margin-right:3px;"></i>${apt.slot_time || '-'}</div>
+                                <div class="queue-time"><i class="fa-regular fa-clock" style="font-size:10px;margin-right:3px;"></i>${apt.slot_time || '-'}</div>
                             </div>
                             <span class="queue-status-badge ${badgeClass}">${STATUS_LABELS[st] || st}</span>
                         </div>`;
@@ -1509,7 +1729,7 @@
                 const container = document.getElementById('queue-container');
                 container.innerHTML = `
                     <div class="state-card">
-                        <i class="fa fa-exclamation-circle"></i>
+                        <i class="fa-solid fa-circle-exclamation"></i>
                         <p>Gagal memuat data antrian.<br><small style="color:#555">${escHtml(e.message)}</small></p>
                     </div>`;
             }
@@ -1540,6 +1760,8 @@
             if (el) el.textContent = `Auto-refresh dalam ${countdownSec} detik`;
         }
 
+        window.loadQueue = loadQueue;
+
         // ── Socket.IO real-time updates ──
         (function() {
             var sioScript = document.createElement('script');
@@ -1558,7 +1780,7 @@
                         loadQueue(false);
                     });
                     socket.on('queue:settings_changed', function(data) {
-                        if (data && data.is_queue_visible === false) {
+                        if (data & data.is_queue_visible === false) {
                             showQueueHidden();
                         } else {
                             loadQueue(false);
@@ -1580,5 +1802,8 @@
         refreshPushStatusIndicator();
         loadQueue(false);
     </script>
+
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>

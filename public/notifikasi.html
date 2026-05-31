@@ -4,66 +4,280 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a1a">
-    <title>Notifikasi - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Notifikasi - SISIwanita</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Shared Styles -->
-    <link rel="stylesheet" href="/styles/patient-portal.css">
+    <!-- Portal theme sticky navigation -->
+<style>
+        /* ========== CSS VARIABLES (Monochrome Design System) ========== */
+        :root {
+            --bg-page: #ffffff;
+            --bg-secondary: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-elevated: #ebebeb;
+            --text-primary: #111111;
+            --text-body: #2b2b2b;
+            --text-secondary: #606060;
+            --text-muted: #686868;
+            --accent: #111111;
+            --accent-hover: #2a2a2a;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --line-soft: rgba(0, 0, 0, 0.1);
+            --line-strong: rgba(0, 0, 0, 0.18);
+            --font-main: 'Inter', Arial, sans-serif;
+        }
 
-    <style>
-        /* Notification Card */
+        /* ========== RESET ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            background: var(--bg-page);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-page);
+            min-height: 100vh;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: #e8e8e8;
+            color: #141414;
+        }
+
+        /* ========== SAFE AREA BARS ========== */
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        /* ========== TOPBAR ========== */
+        .topbar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-bottom: 1.5px dashed var(--line-soft);
+        }
+
+        .topbar.scrolled {
+            border-bottom-color: var(--line-strong);
+        }
+
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-soft);
+            background: transparent;
+            color: var(--text-primary);
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .back-btn:hover {
+            border-color: var(--line-strong);
+        }
+
+        .back-btn:active {
+            transform: scale(0.92);
+        }
+
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .topbar-action {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px 12px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 20px;
+            background: transparent;
+            transition: border-color 0.2s, color 0.2s;
+            white-space: nowrap;
+        }
+
+        .topbar-action:hover {
+            border-color: var(--line-strong);
+            color: var(--text-primary);
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 80px 16px 40px;
+            padding-top: calc(80px + env(safe-area-inset-top, 0px));
+            min-height: 100vh;
+        }
+
+        /* ========== FILTER TABS ========== */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .filter-tab {
+            padding: 7px 16px;
+            border-radius: 20px;
+            border: 1.8px dashed var(--line-soft);
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-main);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+            border-style: solid;
+        }
+
+        .filter-tab:hover:not(.active) {
+            border-color: var(--line-strong);
+            color: var(--text-primary);
+        }
+
+        .filter-count {
+            font-weight: 600;
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        /* ========== DATE GROUP ========== */
+        .date-group {
+            margin-bottom: 8px;
+        }
+
+        .date-header {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            padding: 12px 0 8px;
+            border-bottom: 1.5px dashed var(--line-soft);
+            margin-bottom: 12px;
+        }
+
+        /* ========== NOTIFICATION CARD ========== */
         .notif-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1.8px dashed var(--line-soft);
             border-radius: 12px;
             margin-bottom: 10px;
             overflow: hidden;
-            transition: all 0.2s;
             cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            background: transparent;
         }
 
         .notif-card:hover {
-            border-color: #28a7e9;
+            border-color: var(--line-strong);
+        }
+
+        .notif-card:active {
+            background: var(--accent-soft);
         }
 
         .notif-card.unread {
-            background: rgba(40, 167, 233, 0.1);
-            border-color: rgba(40, 167, 233, 0.3);
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
         }
 
         .notif-card-inner {
             display: flex;
             gap: 12px;
-            padding: 15px;
+            padding: 14px 16px;
+            align-items: flex-start;
         }
 
+        /* ========== NOTIFICATION ICON ========== */
         .notif-icon {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
+            display: grid;
+            place-items: center;
+            font-size: 15px;
             flex-shrink: 0;
+            border: 1.8px dashed var(--line-soft);
+            background: transparent;
+            color: var(--text-secondary);
         }
 
-        .notif-icon.info { background: rgba(40, 167, 233, 0.2); color: #28a7e9; }
-        .notif-icon.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .notif-icon.warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .notif-icon.reply { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
-        .notif-icon.booking { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-        .notif-icon.document { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .notif-card.unread .notif-icon {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #ffffff;
+            border-style: solid;
+        }
 
+        /* ========== NOTIFICATION CONTENT ========== */
         .notif-content {
             flex: 1;
             min-width: 0;
@@ -72,14 +286,15 @@
         .notif-title {
             font-size: 14px;
             font-weight: 600;
-            color: white;
-            margin-bottom: 3px;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+            line-height: 1.35;
         }
 
         .notif-message {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.4;
+            color: var(--text-secondary);
+            line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -88,94 +303,134 @@
 
         .notif-time {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
             margin-top: 6px;
             display: flex;
             align-items: center;
             gap: 5px;
         }
 
+        .notif-time i {
+            font-size: 10px;
+        }
+
+        /* ========== UNREAD DOT ========== */
         .unread-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #28a7e9;
+            background: var(--accent);
             flex-shrink: 0;
+            margin-top: 6px;
         }
 
-        /* Filter Tabs */
-        .filter-tabs {
+        /* ========== LOADING STATE ========== */
+        .loading-state {
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .loading-state i {
+            font-size: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-state .empty-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-soft);
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+            color: var(--text-muted);
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* ========== TOAST ========== */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-            margin-bottom: 20px;
+            align-items: center;
+            pointer-events: none;
         }
 
-        .filter-tab {
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.7);
+        .toast {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #ffffff;
             font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
+            font-weight: 500;
+            font-family: var(--font-main);
+            pointer-events: auto;
+            animation: toastIn 0.3s ease;
         }
 
-        .filter-tab.active {
-            background: linear-gradient(135deg, #28a7e9, #0066FF);
-            border-color: #28a7e9;
-            color: white;
+        .toast.error {
+            background: #dc2626;
         }
 
-        .filter-tab:hover:not(.active) {
-            background: rgba(40, 167, 233, 0.2);
-        }
-
-        /* Header Actions */
-        .header-action {
-            font-size: 13px;
-            color: #28a7e9;
-            cursor: pointer;
-            padding: 8px;
-        }
-
-        /* Date Group */
-        .date-group {
-            margin-bottom: 5px;
-        }
-
-        .date-header {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 10px;
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
 </head>
 <body>
     <!-- Safe Area Overlays -->
-    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#000000;z-index:9999;"></div>
-    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#000000;z-index:9999;"></div>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <!-- Topbar -->
+    <header class="topbar" id="topbar">
+        <div class="topbar-inner">
+            <button class="back-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali">
+                <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <h1 class="page-title">Notifikasi</h1>
+            <h1 class="topbar-title">Notifikasi</h1>
+            <button class="topbar-action" onclick="markAllRead()">Tandai Dibaca</button>
         </div>
-        <div class="nav-right">
-            <span class="header-action" onclick="markAllRead()">Tandai Semua Dibaca</span>
-        </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
-    <main class="content">
+    <main class="main-content">
         <!-- Loading State -->
-        <div class="loading" id="loading-state">
-            <i class="fa fa-spinner fa-spin"></i>
+        <div class="loading-state" id="loading-state">
+            <i class="fa-solid fa-spinner"></i>
             <span>Memuat notifikasi...</span>
         </div>
 
@@ -183,41 +438,35 @@
         <div id="content-wrapper" style="display: none;">
             <!-- Filter Tabs -->
             <div class="filter-tabs">
-                <div class="filter-tab active" data-filter="all" onclick="filterNotif('all')">
-                    Semua <span id="count-all"></span>
-                </div>
-                <div class="filter-tab" data-filter="unread" onclick="filterNotif('unread')">
-                    Belum Dibaca <span id="count-unread"></span>
-                </div>
+                <button class="filter-tab active" data-filter="all" onclick="filterNotif('all')">
+                    Semua <span class="filter-count" id="count-all"></span>
+                </button>
+                <button class="filter-tab" data-filter="unread" onclick="filterNotif('unread')">
+                    Belum Dibaca <span class="filter-count" id="count-unread"></span>
+                </button>
             </div>
 
             <!-- Notifications List -->
-            <div id="notif-list">
-                <!-- Notifications will be populated -->
-            </div>
+            <div id="notif-list"></div>
         </div>
     </main>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item active">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <script type="module">
+        // ===== Portal theme switch =====
+        (function() {
+            var p = new URLSearchParams(window.location.search);
+            var t = p.get('theme');
+            if (t === 'off' || t === 'old' || t === 'default') {
+                try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
+                window.location.replace('/notifikasi.html');
+                return;
+            }
+            try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch(e) {}
+        })();
+
         import { getToken, checkAuth, apiRequest, showToast, formatRelativeTime, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
 
         // State
@@ -228,6 +477,14 @@
         window.filterNotif = filterNotif;
         window.markAllRead = markAllRead;
         window.openNotification = openNotification;
+
+        // Topbar scroll effect
+        window.addEventListener('scroll', function() {
+            var topbar = document.getElementById('topbar');
+            if (topbar) {
+                topbar.classList.toggle('scrolled', window.scrollY > 10);
+            }
+        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -244,7 +501,7 @@
             try {
                 const data = await apiRequest('/api/patient-notifications');
 
-                if (data && data.success && data.notifications) {
+                if (data & data.success & data.notifications) {
                     allNotifications = data.notifications;
 
                     // Update counts
@@ -285,7 +542,9 @@
             if (notifications.length === 0) {
                 list.innerHTML = `
                     <div class="empty-state">
-                        <i class="fa fa-bell-slash-o"></i>
+                        <div class="empty-icon">
+                            <i class="fa-regular fa-bell-slash"></i>
+                        </div>
                         <p>${currentFilter === 'unread' ? 'Tidak ada notifikasi yang belum dibaca' : 'Belum ada notifikasi'}</p>
                     </div>
                 `;
@@ -329,47 +588,47 @@
             }
         }
 
+        // Get notification icon (Font Awesome 6)
+        function getNotifIcon(type) {
+            const iconMap = {
+                'question_reply': 'fa-solid fa-reply',
+                'thread_closed': 'fa-solid fa-circle-check',
+                'booking_confirmed': 'fa-regular fa-calendar-check',
+                'booking_cancelled': 'fa-regular fa-calendar-xmark',
+                'appointment': 'fa-regular fa-calendar',
+                'new_document': 'fa-regular fa-file-lines',
+                'document': 'fa-regular fa-file-lines',
+                'new_usg': 'fa-regular fa-image',
+                'new_lab': 'fa-solid fa-flask',
+                'announcement': 'fa-solid fa-bullhorn',
+                'reminder': 'fa-solid fa-bell'
+            };
+            return iconMap[type] || 'fa-solid fa-bell';
+        }
+
         // Render single notification card
         function renderNotifCard(notif) {
             const isUnread = !notif.read_at;
-            const iconInfo = getNotifIcon(notif.type);
+            const iconClass = getNotifIcon(notif.type);
             const timeStr = formatRelativeTime(notif.created_at);
 
             return `
                 <div class="notif-card ${isUnread ? 'unread' : ''}" onclick="openNotification('${notif.id}', '${notif.type}', '${escapeHtml(JSON.stringify(notif.data || {}))}')">
                     <div class="notif-card-inner">
-                        <div class="notif-icon ${iconInfo.class}">
-                            <i class="fa ${iconInfo.icon}"></i>
+                        <div class="notif-icon">
+                            <i class="${iconClass}"></i>
                         </div>
                         <div class="notif-content">
                             <div class="notif-title">${escapeHtml(notif.title)}</div>
                             <div class="notif-message">${escapeHtml(notif.message)}</div>
                             <div class="notif-time">
-                                <i class="fa fa-clock-o"></i> ${timeStr}
+                                <i class="fa-regular fa-clock"></i> ${timeStr}
                             </div>
                         </div>
                         ${isUnread ? '<div class="unread-dot"></div>' : ''}
                     </div>
                 </div>
             `;
-        }
-
-        // Get notification icon
-        function getNotifIcon(type) {
-            const iconMap = {
-                'question_reply': { icon: 'fa-reply', class: 'reply' },
-                'thread_closed': { icon: 'fa-check-circle', class: 'success' },
-                'booking_confirmed': { icon: 'fa-calendar-check-o', class: 'booking' },
-                'booking_cancelled': { icon: 'fa-calendar-times-o', class: 'warning' },
-                'appointment': { icon: 'fa-calendar', class: 'booking' },
-                'new_document': { icon: 'fa-file-o', class: 'document' },
-                'document': { icon: 'fa-file-o', class: 'document' },
-                'new_usg': { icon: 'fa-picture-o', class: 'document' },
-                'new_lab': { icon: 'fa-flask', class: 'document' },
-                'announcement': { icon: 'fa-bullhorn', class: 'info' },
-                'reminder': { icon: 'fa-bell', class: 'warning' }
-            };
-            return iconMap[type] || { icon: 'fa-bell', class: 'info' };
         }
 
         // Open notification
@@ -462,7 +721,8 @@
             }
         }
     </script>
-<script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/scripts/portal-bottom-nav.js?v=20260528home1" defer></script>
 </body>
 </html>

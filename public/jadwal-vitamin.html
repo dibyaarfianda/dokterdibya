@@ -1,615 +1,658 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Jadwal Vitamin - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Jadwal Vitamin - SISIwanita</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch (error) {}
+        window.__patientPortalHeaderInstalled = true;
+    </script>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #000000;
-            min-height: 100vh;
-            color: #ffffff;
-            padding-bottom: 80px;
+        body.vitamin-schedule-page .hero-title {
+            white-space: nowrap;
         }
 
-        /* Navbar */
-        .nav-bar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
+        body.vitamin-schedule-page .vitamin-source {
+            display: inline-flex;
             align-items: center;
-            padding: 15px 20px;
-            padding-top: max(15px, env(safe-area-inset-top));
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 7px;
         }
 
-        .nav-left {
-            display: flex;
-            align-items: center;
+        body.vitamin-schedule-page .vitamin-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
         }
 
-        .back-btn {
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .page-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #10b981;
-        }
-
-        /* Main Content */
-        .content {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Add Button */
-        .add-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            border-radius: 14px;
-            color: #fff;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
-
-        .add-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-        }
-
-        /* Section Title */
-        .section-title {
-            font-size: 12px;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            margin-top: 25px;
-        }
-
-        .section-title:first-of-type {
-            margin-top: 0;
-        }
-
-        /* Medication Card */
-        .med-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 14px;
+        body.vitamin-schedule-page .action-card {
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: rgba(255,255,255,0.82);
+            box-shadow: 0 16px 40px rgba(17,17,17,0.05);
             padding: 15px;
-            margin-bottom: 12px;
-            transition: all 0.3s;
-        }
-
-        .med-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .med-card.doctor {
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .med-header {
+            min-height: 118px;
             display: flex;
+            flex-direction: column;
+            align-items: flex-start;
             justify-content: space-between;
+            color: var(--ink);
+            font-family: var(--font);
+            text-align: left;
+            cursor: pointer;
+        }
+
+        body.vitamin-schedule-page .action-card i {
+            width: 36px;
+            height: 36px;
+            border-radius: 13px;
+            display: grid;
+            place-items: center;
+            background: var(--green-soft);
+            color: var(--green);
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        body.vitamin-schedule-page .action-card strong {
+            display: block;
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 17px;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 4px;
+        }
+
+        body.vitamin-schedule-page .action-card span {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        body.vitamin-schedule-page .vitamin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        body.vitamin-schedule-page .vitamin-stat {
+            min-height: 108px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body.vitamin-schedule-page .vitamin-stat::after {
+            content: '';
+            position: absolute;
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            right: -42px;
+            top: -42px;
+            background: var(--green-soft);
+            pointer-events: none;
+        }
+
+        body.vitamin-schedule-page .stat-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,0.68);
+            border: 1px solid var(--line);
+            color: var(--green);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        body.vitamin-schedule-page .stat-label,
+        body.vitamin-schedule-page .panel-kicker {
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+        }
+
+        body.vitamin-schedule-page .stat-value {
+            font-family: var(--display);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+            font-size: clamp(18px, 5vw, 24px);
+            line-height: 1.08;
+            margin-top: 7px;
+            position: relative;
+            z-index: 1;
+        }
+
+        body.vitamin-schedule-page .vitamin-list,
+        body.vitamin-schedule-page .prescription-list-wrap {
+            display: grid;
+            gap: 10px;
+        }
+
+        body.vitamin-schedule-page .vitamin-card,
+        body.vitamin-schedule-page .prescription-card {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255,255,255,0.72);
+            padding: 13px;
+        }
+
+        body.vitamin-schedule-page .vitamin-card-main {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
             align-items: flex-start;
         }
 
-        .med-info {
-            flex: 1;
-        }
-
-        .med-name {
-            display: flex;
+        body.vitamin-schedule-page .vitamin-kicker,
+        body.vitamin-schedule-page .prescription-kicker {
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            color: #fff;
+            gap: 6px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.62);
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 5px 9px;
             margin-bottom: 8px;
         }
 
-        .med-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #10b981, #059669);
+        body.vitamin-schedule-page .vitamin-title,
+        body.vitamin-schedule-page .prescription-title {
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 18px;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            font-weight: 800;
+            margin-bottom: 5px;
         }
 
-        .med-icon i {
-            color: #fff;
-            font-size: 14px;
-        }
-
-        .med-icon.doctor {
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-        }
-
-        .med-qty {
+        body.vitamin-schedule-page .vitamin-desc,
+        body.vitamin-schedule-page .prescription-meta {
+            color: var(--muted);
             font-size: 12px;
-            font-weight: 500;
-            color: #10b981;
-            background: rgba(16, 185, 129, 0.15);
-            padding: 2px 8px;
-            border-radius: 8px;
+            line-height: 1.45;
         }
 
-        .med-schedule {
-            font-size: 13px;
-            color: #888;
-            margin-left: 42px;
-        }
-
-        .med-schedule i {
-            margin-right: 6px;
-        }
-
-        .med-reminder {
-            color: #28a7e9;
-            margin-left: 10px;
-        }
-
-        .med-reminder.off {
-            color: #888;
-        }
-
-        .med-actions {
+        body.vitamin-schedule-page .time-stack {
             display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 6px;
+            max-width: 190px;
         }
 
-        .action-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
+        body.vitamin-schedule-page .time-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            background: rgba(92,127,114,0.1);
+            border: 1px solid rgba(92,127,114,0.18);
+            color: #36584e;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 6px 9px;
+            white-space: nowrap;
+        }
+
+        body.vitamin-schedule-page .status-line {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 9px;
+        }
+
+        body.vitamin-schedule-page .status-line .mini-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--line-strong);
+        }
+
+        body.vitamin-schedule-page .status-line.is-due {
+            color: var(--green);
+        }
+
+        body.vitamin-schedule-page .status-line.is-due .mini-dot {
+            background: var(--green);
+            box-shadow: 0 0 0 4px rgba(92,127,114,0.14);
+        }
+
+        body.vitamin-schedule-page .vitamin-actions-row {
             display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            border-top: 1px dashed var(--line);
+            padding-top: 11px;
+            margin-top: 12px;
+        }
+
+        body.vitamin-schedule-page .mini-btn,
+        body.vitamin-schedule-page .btn-secondary,
+        body.vitamin-schedule-page .btn-danger {
+            min-height: 36px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.68);
+            color: var(--ink);
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            gap: 7px;
+            padding: 8px 12px;
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
         }
 
-        .action-btn.reminder {
-            background: linear-gradient(135deg, #28a7e9, #0066ff);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(40, 167, 233, 0.3);
+        body.vitamin-schedule-page .mini-btn.danger,
+        body.vitamin-schedule-page .btn-danger {
+            color: #dc2626;
+            border-color: rgba(220,38,38,0.24);
+            background: rgba(220,38,38,0.08);
         }
 
-        .action-btn.reminder.off {
-            background: rgba(255, 255, 255, 0.1);
-            color: #888;
-            box-shadow: none;
+        body.vitamin-schedule-page .prescription-lines {
+            list-style: none;
+            padding: 0;
+            margin: 9px 0 0;
+            display: grid;
+            gap: 7px;
         }
 
-        .action-btn.delete {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
+        body.vitamin-schedule-page .prescription-lines li {
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: rgba(255,255,255,0.52);
+            color: var(--ink-soft);
+            font-size: 12px;
+            line-height: 1.45;
+            padding: 9px 10px;
         }
 
-        .action-btn.delete:hover {
-            background: rgba(239, 68, 68, 0.25);
+        body.vitamin-schedule-page .empty-state {
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 24px 12px;
         }
 
-        /* Prescription Card */
-        .prescription-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            padding: 15px;
+        body.vitamin-schedule-page .empty-state i {
+            display: block;
+            font-size: 28px;
+            opacity: 0.42;
+            margin-bottom: 9px;
+        }
+
+        body.vitamin-schedule-page .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        body.vitamin-schedule-page .portal-field {
             margin-bottom: 12px;
         }
 
-        .prescription-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 10px;
-        }
-
-        .prescription-header .doc-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            background: linear-gradient(135deg, #6b7280, #4b5563);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .prescription-header .doc-icon i {
-            color: #fff;
-            font-size: 10px;
-        }
-
-        .prescription-list {
-            list-style: none;
-        }
-
-        .prescription-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 14px;
-            color: #ccc;
-        }
-
-        .prescription-list li:last-child {
-            border-bottom: none;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .empty-state i {
-            font-size: 50px;
-            margin-bottom: 15px;
-            color: #10b981;
-            opacity: 0.5;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 0;
-            padding-bottom: max(10px, env(safe-area-inset-bottom));
-            background: rgba(26, 26, 46, 0.98);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 100;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 12px;
-            padding: 8px 20px;
-            transition: color 0.3s;
-        }
-
-        .nav-item.active,
-        .nav-item:hover {
-            color: #10b981;
-        }
-
-        .nav-item i {
-            font-size: 20px;
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-            z-index: 9999;
-            animation: slideDown 0.3s ease;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .toast.success { background: #10b981; }
-        .toast.error { background: #ef4444; }
-        .toast.info { background: #28a7e9; }
-
-        @keyframes slideDown {
-            from { opacity: 0; transform: translate(-50%, -20px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: rgba(26, 26, 46, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 400px;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            font-size: 18px;
-            color: #10b981;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
+        body.vitamin-schedule-page .portal-field label {
             display: block;
-            font-size: 13px;
-            color: #10b981;
-            margin-bottom: 8px;
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+            margin-bottom: 6px;
         }
 
-        .form-group input,
-        .form-group select {
+        body.vitamin-schedule-page .portal-input,
+        body.vitamin-schedule-page .portal-select {
             width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 14px;
-            font-family: inherit;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.78);
+            color: var(--ink);
+            padding: 11px 12px;
+            font: inherit;
+            font-size: 13px;
+            outline: none;
         }
 
-        .form-group select option {
-            background: #1a1a2e;
-            color: #fff;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
-
-        .reminder-toggle {
+        body.vitamin-schedule-page .reminder-toggle {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 15px;
-            background: rgba(40, 167, 233, 0.1);
-            border-radius: 12px;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: rgba(255,255,255,0.68);
+            color: var(--ink);
+            padding: 11px 12px;
+            margin: 2px 0 14px;
             cursor: pointer;
         }
 
-        .reminder-toggle input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            accent-color: #28a7e9;
+        body.vitamin-schedule-page .reminder-toggle input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--green);
+            flex: 0 0 auto;
         }
 
-        .reminder-toggle label {
-            color: #ccc;
+        body.vitamin-schedule-page .reminder-toggle i {
+            color: var(--green);
+        }
+
+        body.vitamin-schedule-page .reminder-toggle span {
+            color: var(--ink-soft);
             font-size: 13px;
-            cursor: pointer;
+            font-weight: 700;
         }
 
-        .reminder-toggle i {
-            color: #28a7e9;
-        }
-
-        .time-inputs {
-            display: flex;
-            flex-wrap: wrap;
+        body.vitamin-schedule-page .time-inputs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
-            margin-top: 15px;
         }
 
-        .time-inputs input {
-            flex: 1;
-            min-width: 100px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 10px;
+        body.vitamin-schedule-page .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            background: rgba(17,17,17,0.34);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
             padding: 20px;
-            border-top: 1px solid rgba(16, 185, 129, 0.2);
         }
 
-        .modal-footer button {
-            flex: 1;
-            padding: 14px;
+        body.vitamin-schedule-page .modal-overlay.show {
+            display: flex;
+        }
+
+        body.vitamin-schedule-page .modal-card {
+            width: min(460px, 100%);
+            max-height: min(720px, calc(100vh - 42px));
+            overflow-y: auto;
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: rgba(255,255,255,0.96);
+            box-shadow: var(--shadow);
+        }
+
+        body.vitamin-schedule-page .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--line);
+            padding: 17px 18px 14px;
+        }
+
+        body.vitamin-schedule-page .modal-header h3 {
+            font-family: var(--display);
+            color: var(--ink);
+            font-size: 19px;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin: 0;
+        }
+
+        body.vitamin-schedule-page .modal-close {
+            width: 34px;
+            height: 34px;
             border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.7);
+            color: var(--ink);
             cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
         }
 
-        .btn-cancel {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #fff;
+        body.vitamin-schedule-page .modal-body {
+            padding: 18px;
         }
 
-        .btn-save {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            color: #fff;
+        body.vitamin-schedule-page .modal-footer {
+            display: flex;
+            gap: 9px;
+            border-top: 1px solid var(--line);
+            padding: 14px 18px 18px;
         }
 
-        /* Responsive */
-        @media (max-width: 400px) {
-            .content { padding: 15px; }
-            .med-card { padding: 12px; }
+        body.vitamin-schedule-page .modal-footer .portal-button,
+        body.vitamin-schedule-page .modal-footer .btn-secondary {
+            flex: 1;
+        }
+
+        @media (max-width: 760px) {
+            body.vitamin-schedule-page .vitamin-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 560px) {
+            body.vitamin-schedule-page .hero-title {
+                font-size: clamp(28px, 7.8vw, 40px) !important;
+            }
+
+            body.vitamin-schedule-page .vitamin-actions,
+            body.vitamin-schedule-page .form-grid,
+            body.vitamin-schedule-page .time-inputs {
+                grid-template-columns: 1fr;
+            }
+
+            body.vitamin-schedule-page .vitamin-card-main {
+                grid-template-columns: 1fr;
+            }
+
+            body.vitamin-schedule-page .time-stack {
+                justify-content: flex-start;
+                max-width: none;
+            }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
 </head>
-<body>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <h1 class="page-title"><i class="fa fa-medkit"></i> Jadwal Vitamin</h1>
+<body class="home-sections-locked patient-tool-shell vitamin-schedule-page" data-tool-shell-active="aplikasi">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
+
+    <main class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </button>
+                    <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
+                        <img id="user-avatar-img" alt="">
+                        <span id="user-avatar-initials">--</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-card reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Jadwal Vitamin</span></div>
+            <h1 class="hero-title">Pengingat vitamin.</h1>
+            <p class="hero-copy">Atur vitamin, suplemen, dan obat harian agar rutinitas minum obat terasa ringan dan terjaga.</p>
+            <div class="today-row">
+                <div>
+                    <div class="today-label">Status</div>
+                    <div class="today-value vitamin-source" id="vitamin-status"><i class="fa-solid fa-pills"></i> Memuat jadwal</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="openAddModal()">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Tambah</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="loading" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Memuat jadwal...</span>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="content">
-        <!-- Add Button -->
-        <button class="add-btn" onclick="openAddModal()">
-            <i class="fa fa-plus-circle"></i> Tambah Obat/Vitamin
-        </button>
+        <div id="content-wrapper">
+            <section class="section reveal vitamin-actions-section">
+                <div class="vitamin-actions">
+                    <button class="action-card soundable" type="button" onclick="openAddModal()">
+                        <i class="fa-solid fa-plus"></i>
+                        <span><strong>Tambah Vitamin</strong>Atur nama, dosis, frekuensi, dan jam minum.</span>
+                    </button>
+                    <button class="action-card soundable" type="button" onclick="testNotification()">
+                        <i class="fa-solid fa-bell"></i>
+                        <span><strong>Uji Notifikasi</strong>Cek izin dan jalur pengingat perangkat.</span>
+                    </button>
+                </div>
+            </section>
 
-        <!-- Test Notification Button (for debugging - can be hidden later) -->
-        <button class="add-btn" onclick="testNotification()" style="background: linear-gradient(135deg, #28a7e9, #0066ff); margin-bottom: 20px;">
-            <i class="fa fa-bell"></i> Test Notifikasi
-        </button>
+            <section class="section reveal vitamin-stats-section">
+                <div class="vitamin-stats-grid">
+                    <div class="tool-panel vitamin-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-capsules"></i></div>
+                            <div class="stat-label">Vitamin Saya</div>
+                            <div class="stat-value" id="stat-total-meds">0</div>
+                        </div>
+                    </div>
+                    <div class="tool-panel vitamin-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-bell"></i></div>
+                            <div class="stat-label">Reminder Aktif</div>
+                            <div class="stat-value" id="stat-active-reminders">0</div>
+                        </div>
+                    </div>
+                    <div class="tool-panel vitamin-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+                            <div class="stat-label">Jadwal Terdekat</div>
+                            <div class="stat-value" id="stat-next-time">--</div>
+                        </div>
+                    </div>
+                    <div class="tool-panel vitamin-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-file-prescription"></i></div>
+                            <div class="stat-label">Resep Dokter</div>
+                            <div class="stat-value" id="stat-prescriptions">0</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-        <!-- My Medications -->
-        <div id="my-meds-section" style="display: none;">
-            <h3 class="section-title">Obat Saya</h3>
-            <div id="my-meds-container"></div>
-        </div>
+            <section class="section reveal vitamin-info-section">
+                <div class="status-panel">
+                    <div class="status-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <div class="status-body">
+                        <h3>Pengingat perangkat</h3>
+                        <p>Jadwal vitamin buatan Anda tersimpan di perangkat ini. Resep dokter tetap dibaca dari data kunjungan terbaru saat akun pasien aktif.</p>
+                    </div>
+                </div>
+            </section>
 
-        <!-- Doctor Prescriptions -->
-        <div id="prescriptions-section" style="display: none;">
-            <h3 class="section-title">Resep dari Dokter</h3>
-            <div id="prescriptions-container"></div>
-        </div>
+            <section class="section reveal" id="my-meds-section" hidden>
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Jadwal Pribadi</div>
+                        <h2 class="section-title">Vitamin saya</h2>
+                    </div>
+                    <div class="section-note" id="my-meds-count">0 jadwal</div>
+                </div>
+                <div class="vitamin-list" id="my-meds-container"></div>
+            </section>
 
-        <!-- Empty State -->
-        <div id="empty-state" class="empty-state" style="display: none;">
-            <i class="fa fa-medkit"></i>
-            <p>Belum ada jadwal vitamin atau obat</p>
+            <section class="section reveal" id="prescriptions-section" hidden>
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Dari Dokter</div>
+                        <h2 class="section-title">Resep kunjungan</h2>
+                    </div>
+                    <div class="section-note" id="prescriptions-count">0 resep</div>
+                </div>
+                <div class="prescription-list-wrap" id="prescriptions-container"></div>
+            </section>
+
+            <section class="section reveal" id="empty-state" hidden>
+                <div class="tool-panel empty-state">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                    <p>Belum ada jadwal vitamin. Tambahkan vitamin atau suplemen harian untuk mulai menerima pengingat.</p>
+                    <button class="portal-button soundable" type="button" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> Tambah Vitamin</button>
+                </div>
+            </section>
         </div>
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
-
-    <!-- Add Modal -->
-    <div class="modal-overlay" id="addModal">
-        <div class="modal-content">
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="add-modal-title">
             <div class="modal-header">
-                <h3><i class="fa fa-plus-circle"></i> Tambah Obat</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <h3 id="add-modal-title">Tambah Vitamin</h3>
+                <button class="modal-close" type="button" onclick="closeModal()" aria-label="Tutup">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label>Nama Obat *</label>
-                    <input type="text" id="med-name" placeholder="Contoh: Asam Folat">
+                <div class="portal-field">
+                    <label for="med-name">Nama Vitamin / Obat</label>
+                    <input type="text" class="portal-input" id="med-name" placeholder="Contoh: Asam Folat">
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jumlah</label>
-                        <input type="number" id="med-qty" min="1" value="1">
+                <div class="form-grid">
+                    <div class="portal-field">
+                        <label for="med-qty">Jumlah</label>
+                        <input type="number" class="portal-input" id="med-qty" min="1" value="1">
                     </div>
-                    <div class="form-group">
-                        <label>Satuan</label>
-                        <select id="med-unit">
+                    <div class="portal-field">
+                        <label for="med-unit">Satuan</label>
+                        <select class="portal-select" id="med-unit">
                             <option value="tablet">Tablet</option>
                             <option value="kapsul">Kapsul</option>
                             <option value="strip">Strip</option>
@@ -618,68 +661,139 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Frekuensi</label>
-                    <select id="med-freq" onchange="updateTimeInputs()">
+                <div class="portal-field">
+                    <label for="med-freq">Frekuensi</label>
+                    <select class="portal-select" id="med-freq" onchange="updateTimeInputs()">
                         <option value="1">1x sehari</option>
                         <option value="2">2x sehari</option>
                         <option value="3">3x sehari</option>
                         <option value="4">4x sehari</option>
                     </select>
                 </div>
-                <div class="reminder-toggle">
+                <label class="reminder-toggle" for="med-reminder">
                     <input type="checkbox" id="med-reminder" checked>
-                    <i class="fa fa-bell"></i>
-                    <label for="med-reminder">Ingatkan saya minum obat</label>
-                </div>
-                <div class="time-inputs" id="time-inputs">
-                    <div class="form-group">
-                        <label>Waktu 1</label>
-                        <input type="time" id="time-1" value="08:00">
-                    </div>
-                </div>
+                    <i class="fa-solid fa-bell"></i>
+                    <span>Ingatkan saya minum vitamin</span>
+                </label>
+                <div class="time-inputs" id="time-inputs"></div>
             </div>
             <div class="modal-footer">
-                <button class="btn-cancel" onclick="closeModal()">Batal</button>
-                <button class="btn-save" onclick="saveMedication()">
-                    <i class="fa fa-check"></i> Simpan
-                </button>
+                <button class="btn-secondary" type="button" onclick="closeModal()">Batal</button>
+                <button class="portal-button" id="save-medication-button" type="button" onclick="saveMedication()"><i class="fa-solid fa-check"></i> <span id="save-medication-label">Simpan</span></button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
+
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu.html')" aria-label="Beranda">
+                <i class="fa-solid fa-house"></i><span>Beranda</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen">
+                <i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span>
+            </button>
+            <button class="nav-item active soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
+                <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal">
+                <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang">
+                <i class="fa-solid fa-door-open"></i><span>Ruang</span>
+            </button>
+        </div>
+    </nav>
+
     <div id="toast-container"></div>
 
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
     <script type="module">
-        import { getToken, checkAuth, showToast } from '/scripts/patient-utils.js';
         import {
             requestNotificationPermission,
-            isNotificationPermitted,
             scheduleVitaminReminder,
             cancelVitaminReminder,
             rescheduleAllReminders,
             showTestNotification,
             startWebNotificationChecker,
-            setupNotificationChannel,
-            isCapacitor
+            setupNotificationChannel
         } from '/scripts/vitamin-notifications.js';
 
-        // Check auth
-        if (!checkAuth()) {
-            // Redirect handled by checkAuth
+        const TOKEN_KEY = 'vps_auth_token';
+        const STORAGE_KEY = 'custom_medications';
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMockMode = urlParams.has('mockApi') || urlParams.has('mockVitamin');
+        let mockMeds = [];
+        let mockPrescriptions = [];
+        let prescriptionsData = [];
+        let editingMedicationIndex = null;
+
+        if (isMockMode & !getToken()) {
+            localStorage.setItem(TOKEN_KEY, 'mock-vitamin-token');
+            localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
         }
 
-        const token = getToken();
-        const STORAGE_KEY = 'custom_medications';
+        window.PatientToolShell?.init({ activeNav: 'aplikasi' });
 
-        // ========== DEFINE FUNCTIONS FIRST ==========
+        if (checkAuth()) {
+            initVitaminPage();
+        }
+
+        async function initVitaminPage() {
+            window.PatientToolShell?.updateAvatarInitials();
+            updateTimeInputs();
+            if (isMockMode) seedMockData();
+            await initNotifications();
+            await loadMedications();
+            window.PatientToolShell?.showContent({ loadingId: 'loading-state', contentId: 'content-wrapper' });
+        }
+
+        function getToken() {
+            return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+        }
+
+        function checkAuth() {
+            if (isMockMode || getToken()) return true;
+            window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+            return false;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const icon = type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'triangle-exclamation' : type === 'info' ? 'circle-info' : 'check-circle';
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fa-solid fa-${icon}"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value == null ? '' : String(value);
+            return div.innerHTML;
+        }
 
         function getMedications() {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            if (isMockMode) return mockMeds.slice();
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            } catch (error) {
+                return [];
+            }
         }
 
         function saveMedications(meds) {
+            if (isMockMode) {
+                mockMeds = meds.slice();
+                return;
+            }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(meds));
         }
 
@@ -690,220 +804,300 @@
                 3: ['08:00', '14:00', '20:00'],
                 4: ['06:00', '12:00', '18:00', '22:00']
             };
-            const times = customTimes || defaultTimes[frequency] || ['08:00'];
-            return times.join(', ');
+            return customTimes & customTimes.length ? customTimes : (defaultTimes[Number(frequency)] || ['08:00']);
         }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function categoryFromTime(time) {
+            if (!time) return 'Harian';
+            const hour = Number.parseInt(String(time).split(':')[0], 10) || 0;
+            if (hour < 11) return 'Pagi';
+            if (hour < 16) return 'Siang';
+            if (hour < 19) return 'Sore';
+            return 'Malam';
         }
 
-        function updateTimeInputs() {
+        function isDueNow(times) {
+            if (!times || !times.length) return false;
+            const now = new Date();
+            const currentMinute = now.getHours() * 60 + now.getMinutes();
+            return times.some(time => {
+                const [hour, minute] = String(time).split(':').map(Number);
+                const targetMinute = hour * 60 + minute;
+                return Math.abs(currentMinute - targetMinute) <= 30;
+            });
+        }
+
+        function getNextReminder(meds) {
+            const now = new Date();
+            const currentMinute = now.getHours() * 60 + now.getMinutes();
+            let best = null;
+            meds.filter(med => med.reminder).forEach(med => {
+                getReminderTimes(med.frequency, med.reminderTimes).forEach(time => {
+                    const [hour, minute] = String(time).split(':').map(Number);
+                    const targetMinute = hour * 60 + minute;
+                    const distance = targetMinute >= currentMinute ? targetMinute - currentMinute : targetMinute + 1440 - currentMinute;
+                    if (!best || distance < best.distance) best = { time, distance };
+                });
+            });
+            return best ? best.time : '--';
+        }
+
+        function updateTimeInputs(preferredTimes = null) {
             const freqEl = document.getElementById('med-freq');
-            if (!freqEl) return;
-            const freq = parseInt(freqEl.value);
             const container = document.getElementById('time-inputs');
-            if (!container) return;
-            const defaultTimes = {
-                1: ['08:00'],
-                2: ['08:00', '20:00'],
-                3: ['08:00', '14:00', '20:00'],
-                4: ['06:00', '12:00', '18:00', '22:00']
-            };
-            const times = defaultTimes[freq] || ['08:00'];
-
-            container.innerHTML = times.map((time, i) => `
-                <div class="form-group">
-                    <label>Waktu ${i + 1}</label>
-                    <input type="time" id="time-${i + 1}" value="${time}">
+            if (!freqEl || !container) return;
+            const times = getReminderTimes(Number(freqEl.value));
+            container.innerHTML = times.map((time, index) => `
+                <div class="portal-field">
+                    <label for="time-${index + 1}">Waktu ${index + 1}</label>
+                    <input type="time" class="portal-input" id="time-${index + 1}" value="${preferredTimes?.[index] || time}">
                 </div>
             `).join('');
         }
 
         function openAddModal() {
-            document.getElementById('addModal').classList.add('active');
+            const modal = document.getElementById('add-modal');
+            if (!modal) return;
+            editingMedicationIndex = null;
+            document.getElementById('add-modal-title').textContent = 'Tambah Vitamin';
+            document.getElementById('save-medication-label').textContent = 'Simpan';
             document.getElementById('med-name').value = '';
             document.getElementById('med-qty').value = '1';
             document.getElementById('med-unit').value = 'tablet';
             document.getElementById('med-freq').value = '1';
             document.getElementById('med-reminder').checked = true;
             updateTimeInputs();
+            modal.classList.add('show');
+            setTimeout(() => document.getElementById('med-name')?.focus(), 80);
+        }
+
+        function openEditModal(index) {
+            const meds = getMedications();
+            const med = meds[index];
+            const modal = document.getElementById('add-modal');
+            if (!med || !modal) return;
+
+            editingMedicationIndex = index;
+            document.getElementById('add-modal-title').textContent = 'Edit Vitamin';
+            document.getElementById('save-medication-label').textContent = 'Update';
+            document.getElementById('med-name').value = med.name || '';
+            document.getElementById('med-qty').value = med.quantity || 1;
+            setSelectValue(document.getElementById('med-unit'), med.unit || 'tablet');
+            setSelectValue(document.getElementById('med-freq'), String(med.frequency || 1));
+            document.getElementById('med-reminder').checked = Boolean(med.reminder);
+            updateTimeInputs(med.reminderTimes || []);
+            modal.classList.add('show');
+            setTimeout(() => document.getElementById('med-name')?.focus(), 80);
+        }
+
+        function setSelectValue(select, value) {
+            if (!select) return;
+            const stringValue = String(value || '');
+            const hasOption = Array.from(select.options).some(option => option.value === stringValue);
+            select.value = hasOption ? stringValue : select.options[0]?.value || '';
         }
 
         function closeModal() {
-            document.getElementById('addModal').classList.remove('active');
+            document.getElementById('add-modal')?.classList.remove('show');
+            editingMedicationIndex = null;
+        }
+
+        async function scheduleReminderForMedication(medication) {
+            if (isMockMode) {
+                return medication.reminderTimes.map((time, index) => Date.now() + index + time.length);
+            }
+            const granted = await requestNotificationPermission();
+            if (!granted) return [];
+            return scheduleVitaminReminder(medication);
         }
 
         async function saveMedication() {
             const name = document.getElementById('med-name').value.trim();
-            const quantity = parseInt(document.getElementById('med-qty').value) || 1;
+            const quantity = Number.parseInt(document.getElementById('med-qty').value, 10) || 1;
             const unit = document.getElementById('med-unit').value;
-            const frequency = parseInt(document.getElementById('med-freq').value);
+            const frequency = Number.parseInt(document.getElementById('med-freq').value, 10) || 1;
             const reminder = document.getElementById('med-reminder').checked;
 
             if (!name) {
-                showToast('Masukkan nama obat', 'error');
+                showToast('Masukkan nama vitamin', 'error');
                 return;
             }
 
-            // Get reminder times
-            const times = [];
-            for (let i = 1; i <= frequency; i++) {
-                const input = document.getElementById(`time-${i}`);
-                if (input) times.push(input.value);
+            const reminderTimes = [];
+            for (let index = 1; index <= frequency; index++) {
+                const input = document.getElementById(`time-${index}`);
+                if (input & input.value) reminderTimes.push(input.value);
             }
 
-            const newMed = {
+            const meds = getMedications();
+            const existingMedication = Number.isInteger(editingMedicationIndex) ? meds[editingMedicationIndex] : null;
+            const newMedication = {
+                ...(existingMedication || {}),
                 name,
                 quantity,
                 unit,
                 frequency,
                 reminder,
-                reminderTimes: times,
+                reminderTimes,
                 notificationIds: [],
-                createdAt: new Date().toISOString()
+                createdAt: existingMedication?.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
 
-            // Schedule notifications if reminder is enabled
-            if (reminder) {
-                newMed.notificationIds = await scheduleVitaminReminder(newMed);
+            if (existingMedication) {
+                await cancelStoredReminders(existingMedication);
             }
 
-            const meds = getMedications();
-            meds.push(newMed);
-            saveMedications(meds);
+            if (reminder) {
+                newMedication.notificationIds = await scheduleReminderForMedication(newMedication);
+            }
 
+            if (existingMedication) {
+                meds[editingMedicationIndex] = newMedication;
+            } else {
+                meds.push(newMedication);
+            }
+            saveMedications(meds);
             closeModal();
-            showToast('Obat berhasil ditambahkan' + (reminder ? ' dengan pengingat' : ''), 'success');
-            loadMedications();
+            renderAll(meds, prescriptionsData);
+
+            if (reminder & newMedication.notificationIds.length === 0 & !isMockMode) {
+                showToast(existingMedication ? 'Vitamin diperbarui. Izin notifikasi belum aktif di perangkat ini.' : 'Vitamin tersimpan. Izin notifikasi belum aktif di perangkat ini.', 'warning');
+            } else {
+                showToast(existingMedication ? 'Vitamin berhasil diperbarui' : reminder ? 'Vitamin tersimpan dengan pengingat' : 'Vitamin berhasil ditambahkan');
+            }
         }
 
         async function toggleReminder(index) {
             const meds = getMedications();
-            if (meds[index]) {
-                const wasEnabled = meds[index].reminder;
-                meds[index].reminder = !wasEnabled;
+            const med = meds[index];
+            if (!med) return;
 
-                if (meds[index].reminder) {
-                    // Enable - schedule notifications
-                    meds[index].notificationIds = await scheduleVitaminReminder(meds[index]);
-                    showToast('Pengingat diaktifkan', 'success');
-                } else {
-                    // Disable - cancel notifications
-                    if (meds[index].notificationIds && meds[index].notificationIds.length > 0) {
-                        await cancelVitaminReminder(meds[index].notificationIds);
-                    }
-                    meds[index].notificationIds = [];
-                    showToast('Pengingat dimatikan', 'info');
-                }
-
-                saveMedications(meds);
-                renderMyMedications(meds);
+            med.reminder = !med.reminder;
+            if (med.reminder) {
+                med.notificationIds = await scheduleReminderForMedication(med);
+                showToast(med.notificationIds.length || isMockMode ? 'Pengingat diaktifkan' : 'Izin notifikasi belum aktif', med.notificationIds.length || isMockMode ? 'success' : 'warning');
+            } else {
+                await cancelStoredReminders(med);
+                med.notificationIds = [];
+                showToast('Pengingat dimatikan', 'info');
             }
+
+            saveMedications(meds);
+            renderAll(meds, prescriptionsData);
         }
 
         async function deleteMedication(index) {
-            if (!confirm('Hapus obat ini dari daftar?')) return;
-
             const meds = getMedications();
             const med = meds[index];
-
-            // Cancel any scheduled notifications
-            if (med && med.notificationIds && med.notificationIds.length > 0) {
-                await cancelVitaminReminder(med.notificationIds);
-            }
-
+            if (!med) return;
+            if (!window.confirm('Hapus vitamin ini dari daftar?')) return;
+            await cancelStoredReminders(med);
             meds.splice(index, 1);
             saveMedications(meds);
-            showToast('Obat berhasil dihapus', 'success');
-            loadMedications();
+            renderAll(meds, prescriptionsData);
+            showToast('Vitamin berhasil dihapus');
         }
 
-        // Export to window for onclick handlers
-        window.openAddModal = openAddModal;
-        window.closeModal = closeModal;
-        window.updateTimeInputs = updateTimeInputs;
-        window.saveMedication = saveMedication;
-        window.toggleReminder = toggleReminder;
-        window.deleteMedication = deleteMedication;
-
-        // ========== RENDER FUNCTIONS ==========
+        async function cancelStoredReminders(med) {
+            if (isMockMode) return;
+            if (med?.notificationIds?.length) await cancelVitaminReminder(med.notificationIds);
+        }
 
         async function loadMedications() {
-            const myMeds = getMedications();
-            renderMyMedications(myMeds);
+            const meds = getMedications();
+            prescriptionsData = isMockMode ? getMockPrescriptions() : await fetchPrescriptions();
+            renderAll(meds, prescriptionsData);
+        }
 
-            // Load doctor prescriptions
+        async function fetchPrescriptions() {
             try {
-                const response = await fetch('/api/patients/medications', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data && result.data.length > 0) {
-                        renderPrescriptions(result.data);
+                const response = await fetch('/api/patients/medications?_t=' + Date.now(), {
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Cache-Control': 'no-cache'
                     }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+                    return [];
                 }
+                const result = await response.json();
+                return result.success ? (result.data || []) : [];
             } catch (error) {
                 console.error('Error loading prescriptions:', error);
+                showToast('Resep dokter belum bisa dimuat', 'warning');
+                return [];
             }
+        }
 
-            // Show empty state if nothing
-            const emptyState = document.getElementById('empty-state');
-            const mySection = document.getElementById('my-meds-section');
-            const presSection = document.getElementById('prescriptions-section');
+        function renderAll(meds, prescriptions) {
+            renderMyMedications(meds);
+            renderPrescriptions(prescriptions);
+            updateSummary(meds, prescriptions);
+            updateEmptyState(meds, prescriptions);
+        }
 
-            if (mySection.style.display === 'none' && presSection.style.display === 'none') {
-                emptyState.style.display = 'block';
+        function updateSummary(meds, prescriptions) {
+            const activeCount = meds.filter(med => med.reminder).length;
+            const nextTime = getNextReminder(meds);
+            document.getElementById('stat-total-meds').textContent = String(meds.length);
+            document.getElementById('stat-active-reminders').textContent = String(activeCount);
+            document.getElementById('stat-next-time').textContent = nextTime;
+            document.getElementById('stat-prescriptions').textContent = String(prescriptions.length);
+            document.getElementById('my-meds-count').textContent = `${meds.length} jadwal`;
+            document.getElementById('prescriptions-count').textContent = `${prescriptions.length} resep`;
+            const status = document.getElementById('vitamin-status');
+            if (!status) return;
+            if (!meds.length & !prescriptions.length) {
+                status.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Mulai tambah jadwal';
+            } else if (nextTime !== '--') {
+                status.innerHTML = `<i class="fa-solid fa-clock"></i> Jadwal terdekat ${escapeHtml(nextTime)}`;
             } else {
-                emptyState.style.display = 'none';
+                status.innerHTML = '<i class="fa-solid fa-pills"></i> Jadwal tersimpan';
             }
+        }
+
+        function updateEmptyState(meds, prescriptions) {
+            document.getElementById('empty-state').hidden = meds.length > 0 || prescriptions.length > 0;
         }
 
         function renderMyMedications(meds) {
             const section = document.getElementById('my-meds-section');
             const container = document.getElementById('my-meds-container');
-
-            if (!meds || meds.length === 0) {
-                section.style.display = 'none';
+            if (!section || !container) return;
+            section.hidden = !meds.length;
+            if (!meds.length) {
+                container.innerHTML = '';
                 return;
             }
-
-            section.style.display = 'block';
             container.innerHTML = meds.map((med, index) => {
-                const freqText = med.frequency === 1 ? '1x/hari' : `${med.frequency}x/hari`;
-                const reminderTimes = getReminderTimes(med.frequency, med.reminderTimes);
-                const qtyText = med.quantity ? `${med.quantity} ${med.unit || 'tablet'}` : '';
-
+                const times = getReminderTimes(med.frequency, med.reminderTimes);
+                const category = categoryFromTime(times[0]);
+                const due = med.reminder & isDueNow(times);
+                const qtyText = med.quantity ? `${Number(med.quantity)} ${med.unit || 'tablet'}` : '';
+                const timeChips = times.map(time => `<span class="time-chip"><i class="fa-solid fa-clock"></i>${escapeHtml(time)}</span>`).join('');
                 return `
-                    <div class="med-card">
-                        <div class="med-header">
-                            <div class="med-info">
-                                <div class="med-name">
-                                    <div class="med-icon"><i class="fa fa-pills"></i></div>
-                                    ${escapeHtml(med.name)}
-                                    ${qtyText ? `<span class="med-qty">${qtyText}</span>` : ''}
-                                </div>
-                                <div class="med-schedule">
-                                    <i class="fa fa-clock-o"></i>${freqText}
-                                    ${med.reminder
-                                        ? `<span class="med-reminder"><i class="fa fa-bell"></i> ${reminderTimes}</span>`
-                                        : `<span class="med-reminder off"><i class="fa fa-bell-slash"></i> Tidak aktif</span>`
-                                    }
-                                </div>
+                    <div class="vitamin-card">
+                        <div class="vitamin-card-main">
+                            <div>
+                                <div class="vitamin-kicker"><i class="fa-solid fa-sun"></i>${escapeHtml(category)}</div>
+                                <div class="vitamin-title">${escapeHtml(med.name)}</div>
+                                <div class="vitamin-desc">${qtyText ? escapeHtml(qtyText) + ' · ' : ''}${Number(med.frequency) || 1}x sehari${med.reminder ? '' : ' · pengingat mati'}</div>
+                                <div class="status-line ${due ? 'is-due' : ''}"><span class="mini-dot"></span>${due ? 'Waktunya minum' : med.reminder ? 'Terjadwal' : 'Pengingat mati'}</div>
                             </div>
-                            <div class="med-actions">
-                                <button class="action-btn reminder ${med.reminder ? '' : 'off'}" onclick="toggleReminder(${index})" title="${med.reminder ? 'Matikan pengingat' : 'Aktifkan pengingat'}">
-                                    <i class="fa fa-bell${med.reminder ? '' : '-slash'}"></i>
-                                </button>
-                                <button class="action-btn delete" onclick="deleteMedication(${index})" title="Hapus">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
+                            <div class="time-stack">${timeChips}</div>
+                        </div>
+                        <div class="vitamin-actions-row">
+                            <button class="mini-btn" type="button" onclick="openEditModal(${index})">
+                                <i class="fa-solid fa-pen"></i>Edit
+                            </button>
+                            <button class="mini-btn" type="button" onclick="toggleReminder(${index})">
+                                <i class="fa-solid fa-bell${med.reminder ? '' : '-slash'}"></i>${med.reminder ? 'Matikan' : 'Aktifkan'}
+                            </button>
+                            <button class="mini-btn danger" type="button" onclick="deleteMedication(${index})">
+                                <i class="fa-solid fa-trash"></i>Hapus
+                            </button>
                         </div>
                     </div>
                 `;
@@ -913,85 +1107,104 @@
         function renderPrescriptions(prescriptions) {
             const section = document.getElementById('prescriptions-section');
             const container = document.getElementById('prescriptions-container');
-
-            if (!prescriptions || prescriptions.length === 0) {
-                section.style.display = 'none';
+            if (!section || !container) return;
+            section.hidden = !prescriptions.length;
+            if (!prescriptions.length) {
+                container.innerHTML = '';
                 return;
             }
-
-            section.style.display = 'block';
-            container.innerHTML = prescriptions.map(pres => {
-                const visitDate = new Date(pres.visit_date).toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                });
-                const medLines = (pres.terapi || '').split('\n').filter(line => line.trim());
-
+            container.innerHTML = prescriptions.map(prescription => {
+                const visitDate = formatDisplayDate(prescription.visit_date || prescription.visit_datetime);
+                const lines = String(prescription.terapi || '').split('\n').map(line => line.trim()).filter(Boolean);
                 return `
                     <div class="prescription-card">
-                        <div class="prescription-header">
-                            <div class="doc-icon"><i class="fa fa-stethoscope"></i></div>
-                            Kunjungan ${visitDate}
-                        </div>
-                        <ul class="prescription-list">
-                            ${medLines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                        <div class="prescription-kicker"><i class="fa-solid fa-stethoscope"></i>Kunjungan</div>
+                        <div class="prescription-title">${escapeHtml(visitDate)}</div>
+                        <div class="prescription-meta">Terapi dari catatan dokter</div>
+                        <ul class="prescription-lines">
+                            ${lines.length ? lines.map(line => `<li>${escapeHtml(line)}</li>`).join('') : '<li>Catatan terapi belum tersedia.</li>'}
                         </ul>
                     </div>
                 `;
             }).join('');
         }
 
-        // ========== NOTIFICATION INITIALIZATION ==========
+        function formatDisplayDate(value) {
+            if (!value) return 'Tanggal kunjungan';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return String(value);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
         async function initNotifications() {
-            // Setup notification channel for Android
+            if (isMockMode) return;
             await setupNotificationChannel();
-
-            // Request notification permission
-            const hasPermission = await requestNotificationPermission();
-            if (!hasPermission) {
-                console.warn('Notification permission not granted');
-                // Disable reminder toggle if no permission
-                const reminderToggle = document.getElementById('med-reminder');
-                if (reminderToggle) {
-                    reminderToggle.addEventListener('change', async function() {
-                        if (this.checked) {
-                            const granted = await requestNotificationPermission();
-                            if (!granted) {
-                                this.checked = false;
-                                showToast('Buka Pengaturan HP > Aplikasi > dokterDIBYA untuk aktifkan notifikasi', 'error');
-                            }
-                        }
-                    });
-                }
-            }
-
-            // Start web notification checker (for browsers)
             startWebNotificationChecker();
-
-            // Reschedule all existing reminders (in case app was closed)
             let meds = getMedications();
             meds = await rescheduleAllReminders(meds);
             saveMedications(meds);
         }
 
-        // Test notification function (for debugging)
         async function testNotification() {
-            await showTestNotification('Test Pengingat Obat', 'Ini adalah test notifikasi vitamin');
+            if (isMockMode) {
+                showToast('Mode review: jalur notifikasi siap diuji');
+                return;
+            }
+            try {
+                await showTestNotification('Uji Pengingat Vitamin', 'Ini adalah notifikasi percobaan dari SISIwanita.');
+                showToast('Permintaan uji notifikasi dikirim', 'info');
+            } catch (error) {
+                console.error('Test notification failed:', error);
+                showToast('Uji notifikasi gagal dijalankan', 'error');
+            }
         }
+
+        function seedMockData() {
+            mockMeds = [
+                {
+                    name: 'Asam Folat',
+                    quantity: 1,
+                    unit: 'tablet',
+                    frequency: 1,
+                    reminder: true,
+                    reminderTimes: ['08:00'],
+                    notificationIds: [701],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    name: 'Kalsium + Vitamin D',
+                    quantity: 1,
+                    unit: 'tablet',
+                    frequency: 2,
+                    reminder: true,
+                    reminderTimes: ['09:00', '20:00'],
+                    notificationIds: [702, 703],
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            mockPrescriptions = [
+                {
+                    id: 1,
+                    visit_date: '2026-05-21',
+                    terapi: 'Asam folat 400 mcg 1x1\nKalsium 500 mg 1x1 malam\nVitamin D 1000 IU 1x1'
+                }
+            ];
+        }
+
+        function getMockPrescriptions() {
+            return mockPrescriptions.slice();
+        }
+
+        window.openAddModal = openAddModal;
+        window.closeModal = closeModal;
+        window.updateTimeInputs = updateTimeInputs;
+        window.openEditModal = openEditModal;
+        window.saveMedication = saveMedication;
+        window.toggleReminder = toggleReminder;
+        window.deleteMedication = deleteMedication;
         window.testNotification = testNotification;
-
-        // ========== INITIALIZATION ==========
-        // Initialize time inputs (now safe - function is defined above)
-        updateTimeInputs();
-
-        // Initialize notifications
-        initNotifications();
-
-        // Load data
-        loadMedications();
     </script>
-<script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/js/patient-tracker.js?v=20260424"></script>
+    <script src="/js/push-subscribe.js?v=20260424"></script>
 </body>
 </html>

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off" data-portal-nav-active="dokumen">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a1a1a">
-    <title>Hasil Lab - dokterDIBYA</title>
+    <title>Hasil Lab - SISIwanita</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
@@ -14,6 +14,7 @@
 
     <!-- Fonts & Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Shared Styles -->
@@ -265,9 +266,175 @@
             margin-right: 8px;
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        body.hasil-lab-page #preview-modal.preview-modal {
+            background: rgba(255, 255, 255, 0.98) !important;
+            color: var(--text-primary, #0a0a0a) !important;
+            height: 100dvh !important;
+            overflow: hidden !important;
+            padding: 0 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-header,
+        body.hasil-lab-page #preview-modal .preview-body,
+        body.hasil-lab-page #preview-modal .preview-footer {
+            width: min(760px, calc(100% - 32px)) !important;
+            max-width: 760px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-header {
+            padding: calc(20px + env(safe-area-inset-top, 0px)) 24px 20px !important;
+            background: transparent !important;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5) !important;
+            box-shadow: none !important;
+            min-height: 0 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-header h3 {
+            color: var(--text-primary, #0a0a0a) !important;
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif) !important;
+            font-size: 20px !important;
+            font-weight: 700 !important;
+            line-height: 1.2 !important;
+            letter-spacing: -0.01em !important;
+            margin: 0 16px 0 0 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-close {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            min-height: 40px !important;
+            padding: 0 !important;
+            border: 1px solid var(--line-soft, #e5e5e5) !important;
+            border-radius: 999px !important;
+            background: transparent !important;
+            color: var(--text-primary, #0a0a0a) !important;
+            box-shadow: none !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-body {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            padding: 24px !important;
+            background: transparent !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: center !important;
+            overflow: auto !important;
+            overscroll-behavior: contain !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-body img,
+        body.hasil-lab-page #preview-modal .preview-body iframe {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            object-fit: contain !important;
+            border: 1px solid var(--line-soft, #e5e5e5) !important;
+            border-radius: 12px !important;
+            background: #fff !important;
+            box-shadow: 0 18px 45px rgba(17, 17, 17, 0.12) !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-body iframe {
+            min-height: 70vh !important;
+        }
+
+        body.hasil-lab-page #preview-modal .document-viewer-empty {
+            margin: auto !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-footer {
+            flex: 0 0 auto !important;
+            padding: 20px 24px calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+            background: transparent !important;
+            border-top: 1px solid var(--line-soft, #e5e5e5) !important;
+            box-shadow: none !important;
+            color: var(--text-primary, #0a0a0a) !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-date,
+        body.hasil-lab-page #preview-modal .preview-desc,
+        body.hasil-lab-page #preview-modal .preview-actions {
+            width: 100% !important;
+            max-width: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-date {
+            margin-bottom: 8px !important;
+            color: var(--text-primary, #0a0a0a) !important;
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif) !important;
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            line-height: 1.3 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-desc {
+            margin-bottom: 16px !important;
+            color: var(--text-muted, #6b6b6b) !important;
+            font-size: 13px !important;
+            line-height: 1.5 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            margin-top: 0 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-actions button {
+            min-height: 56px !important;
+            border-radius: 16px !important;
+            font-family: var(--font-main, 'Inter', sans-serif) !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0 !important;
+        }
+
+        body.hasil-lab-page #preview-modal .preview-actions .btn-download {
+            background: var(--text-primary, #0a0a0a) !important;
+            border: 1px solid var(--text-primary, #0a0a0a) !important;
+            color: #fff !important;
+        }
+
+        @media (max-width: 420px) {
+            body.hasil-lab-page #preview-modal .preview-header,
+            body.hasil-lab-page #preview-modal .preview-body,
+            body.hasil-lab-page #preview-modal .preview-footer {
+                width: calc(100% - 28px) !important;
+            }
+
+            body.hasil-lab-page #preview-modal .preview-header,
+            body.hasil-lab-page #preview-modal .preview-body,
+            body.hasil-lab-page #preview-modal .preview-footer {
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+            }
+
+            body.hasil-lab-page #preview-modal .preview-actions {
+                gap: 10px !important;
+            }
+
+            body.hasil-lab-page #preview-modal .preview-actions button {
+                min-height: 52px !important;
+                font-size: 13px !important;
+            }
+        }
+    </style>
+    <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit hasil-lab-page" data-tool-shell-active="dokumen" data-tool-kicker="Hasil Lab" data-tool-title="Hasil laboratorium." data-tool-copy="Lihat hasil pemeriksaan laboratorium yang dikirim dokter, dengan preview dan unduhan saat file tersedia." data-tool-meta-label="Dokumen" data-tool-meta-value="Lab Result">
     <!-- Safe Area Overlays -->
     <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
     <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
@@ -321,11 +488,11 @@
             <i class="fa fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="/notifikasi.html" class="nav-item">
+        <a href="#" class="nav-item" onclick="openNotificationModal(event); return false;">
             <i class="fa fa-bell"></i>
             <span>Notifikasi</span>
         </a>
-        <a href="/profil.html" class="nav-item">
+        <a href="#" class="nav-item" onclick="openProfileModal(event); return false;">
             <i class="fa fa-user"></i>
             <span>Profil</span>
         </a>
@@ -392,7 +559,7 @@
             try {
                 const data = await apiRequest('/api/patient-documents/my-documents?type=lab_result');
 
-                if (data && data.success && data.documents) {
+                if (data & data.success & data.documents) {
                     labResults = data.documents.map(doc => ({
                         id: doc.id,
                         url: doc.file_url,
@@ -488,6 +655,7 @@
             currentLabItem = labResults[index];
 
             document.getElementById('preview-modal').classList.add('active');
+            document.body.classList.add('document-viewer-open');
             document.body.style.overflow = 'hidden';
 
             const date = new Date(currentLabItem.date);
@@ -503,18 +671,18 @@
                 previewBody.innerHTML = `<img src="${currentLabItem.url}" alt="${escapeHtml(currentLabItem.title || 'Lab Result')}">`;
             } else if (currentLabItem.fileType === 'pdf') {
                 previewBody.innerHTML = `
-                    <div style="text-align: center; color: rgba(255,255,255,0.7);">
-                        <i class="fa fa-file-pdf-o" style="font-size: 64px; color: #ef4444; margin-bottom: 15px;"></i>
+                    <div class="document-viewer-empty">
+                        <i class="fa fa-file-pdf-o"></i>
                         <p>File PDF tidak dapat ditampilkan langsung.</p>
-                        <p style="font-size: 12px;">Klik tombol Download untuk membuka file.</p>
+                        <p>Klik tombol Download untuk membuka file.</p>
                     </div>
                 `;
             } else {
                 previewBody.innerHTML = `
-                    <div style="text-align: center; color: rgba(255,255,255,0.7);">
-                        <i class="fa fa-file-o" style="font-size: 64px; margin-bottom: 15px;"></i>
+                    <div class="document-viewer-empty">
+                        <i class="fa fa-file-o"></i>
                         <p>Preview tidak tersedia.</p>
-                        <p style="font-size: 12px;">Klik tombol Download untuk membuka file.</p>
+                        <p>Klik tombol Download untuk membuka file.</p>
                     </div>
                 `;
             }
@@ -538,6 +706,7 @@
         // Close preview
         function closePreview() {
             document.getElementById('preview-modal').classList.remove('active');
+            document.body.classList.remove('document-viewer-open');
             document.body.style.overflow = '';
             currentLabItem = null;
         }
@@ -563,5 +732,8 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
+
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>

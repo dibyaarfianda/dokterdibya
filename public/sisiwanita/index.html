@@ -30,7 +30,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Keep trial-landing visuals identical to patient-menu-trial without global trial-theme overrides. -->
+    <!-- Keep portal landing visuals identical to patient-menu without global portal-theme overrides. -->
 
     <style>
         /* ========== CSS VARIABLES (Anvil-Inspired Design System) ========== */
@@ -4580,15 +4580,15 @@
                         <span class="vip-badge" id="vip-badge">VIP</span>
                     </div>
                     <div class="dropdown-menu-custom" id="user-dropdown">
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a href="/patient-login.html?autoGoogle=1&">
                             <i class="fa-solid fa-pen-to-square"></i>
                             <span>Edit Profil</span>
                         </a>
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a href="/patient-login.html?autoGoogle=1&">
                             <i class="fa-solid fa-gear"></i>
                             <span>Setting</span>
                         </a>
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a href="/patient-login.html?autoGoogle=1&">
                             <i class="fa-solid fa-comment-dots"></i>
                             <span>Saran & Masukan</span>
                         </a>
@@ -4654,7 +4654,7 @@
                         .then(function(r) { return r.json(); })
                         .then(function(d) {
                             var el = document.getElementById('hero-copy');
-                            el.textContent = (d.success && d.data && d.data.quote) ? d.data.quote : fallback;
+                            el.textContent = (d.success & d.data & d.data.quote) ? d.data.quote : fallback;
                         })
                         .catch(function() {
                             document.getElementById('hero-copy').textContent = fallback;
@@ -4824,14 +4824,14 @@
                 <div id="tanya-dokter-content" class="tanya-dokter-body" style="display: none;">
                     <p>Punya pertanyaan seputar kehamilan atau kesehatan kandungan? Tanyakan langsung secara privat kepada dr. Dibya.</p>
                     <div class="tanya-actions">
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off" class="tanya-action-btn">
+                        <a href="/patient-login.html?autoGoogle=1&" class="tanya-action-btn">
                             <i class="fa-solid fa-pen-to-square"></i>
                             <div>
                                 <div class="label">Ajukan Pertanyaan</div>
                                 <div class="sublabel">Tulis pertanyaan baru</div>
                             </div>
                         </a>
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off" class="tanya-action-btn">
+                        <a href="/patient-login.html?autoGoogle=1&" class="tanya-action-btn">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <div>
                                 <div class="label">Riwayat Tanya Jawab</div>
@@ -4864,7 +4864,7 @@
                         <div class="doc-text-col">
                             <h2 class="doc-heading">Kisah Anda dari Waktu ke Waktu, Dalam Visual.</h2>
                             <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda — mudah dibuka kapan saja.</p>
-                            <a class="doc-cta-link" href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                            <a class="doc-cta-link" href="/patient-login.html?autoGoogle=1&">
                                 <span class="doc-cta-track">
                                     <span class="dot dot-left"></span>
                                     <span class="text">Lihat Album USG</span>
@@ -4950,7 +4950,7 @@
                     </a>
 
                     <!-- Estimasi Biaya — tester only, hidden by default -->
-                    <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off" class="proces-row" id="menu-estimasi-biaya" style="display:none;">
+                    <a href="/patient-login.html?autoGoogle=1&" class="proces-row" id="menu-estimasi-biaya" style="display:none;">
                         <span class="proces-step"><i class="fa-solid fa-calculator" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ESTIMASI BIAYA</h3>
                         <p class="proces-desc">Perkiraan biaya obat dan suplemen per trimester berdasarkan konfigurasi dokter. Harga bersifat indikatif sesuai kebijakan klinik.</p>
@@ -4980,7 +4980,7 @@
                     <div class="cta-content">
                         <h2 class="cta-heading">Booking Klinik Minggu</h2>
                         <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
-                        <a class="doc-cta-link" href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a class="doc-cta-link" href="/patient-login.html?autoGoogle=1&">
                             <span class="doc-cta-track">
                                 <span class="dot dot-left"></span>
                                 <span class="text">Booking Sekarang</span>
@@ -5093,7 +5093,7 @@
                 </div>
 
                 <div class="footer-subscribe">
-                    <form class="footer-subscribe-form" onsubmit="window.location.href='https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off'; return false;">
+                    <form class="footer-subscribe-form" onsubmit="window.location.href='/patient-login.html?autoGoogle=1&'; return false;">
                         <button class="footer-subscribe-button" type="submit">Daftar Member dengan Google</button>
                     </form>
                     <p class="footer-policy">
@@ -5207,7 +5207,7 @@
         (function setupMobilePwaViewport() {
             function isStandalonePwaMode() {
                 return window.navigator.standalone === true ||
-                    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+                    (window.matchMedia & window.matchMedia('(display-mode: standalone)').matches);
             }
 
             var isStandalonePwa = isStandalonePwaMode();
@@ -5215,11 +5215,11 @@
                 document.documentElement.classList.add('standalone-pwa');
             }
 
-            window.__trialReducePwaScrollWork = isStandalonePwa &&
+            window.__portalReducePwaScrollWork = isStandalonePwa &
                 (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
             function getViewportHeight() {
-                if (!isStandalonePwa && window.visualViewport && window.visualViewport.height) {
+                if (!isStandalonePwa & window.visualViewport & window.visualViewport.height) {
                     return window.visualViewport.height;
                 }
                 return window.innerHeight || document.documentElement.clientHeight || 0;
@@ -5244,7 +5244,7 @@
             }
         })();
 
-        var SISIWANITA_LOGIN_URL = 'https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off';
+        var SISIWANITA_LOGIN_URL = '/patient-login.html?autoGoogle=1&';
 
         function isStandalonePortalHref(href) {
             if (!href) return false;
@@ -5261,7 +5261,7 @@
         }
 
         document.addEventListener('click', function(event) {
-            var link = event.target.closest && event.target.closest('a[href]');
+            var link = event.target.closest & event.target.closest('a[href]');
             if (!link) return;
 
             var href = link.getAttribute('href') || '';
@@ -5274,8 +5274,8 @@
         // ==================== LANDING THEME STATE ====================
         (function() {
             try {
-                sessionStorage.removeItem('patient_portal_theme_mode');
-                sessionStorage.setItem('trial_preview_mode', '1');
+                sessionStorage.removeItem('patient_portal_mode');
+                sessionStorage.setItem('portal_preview_mode', '1');
             } catch(e) {}
         })();
 
@@ -5286,13 +5286,13 @@
                    localStorage.getItem('patient_token');
         }
 
-        function isTrialPreviewMode() {
+        function isPortalPreviewMode() {
             try {
-                if (sessionStorage.getItem('trial_preview_mode') === '1') return true;
+                if (sessionStorage.getItem('portal_preview_mode') === '1') return true;
             } catch (e) {}
 
             var params = new URLSearchParams(window.location.search);
-            var previewParam = params.get('preview') || params.get('trial_preview') || params.get('skipLogin');
+            var previewParam = params.get('preview') || params.get('portal_preview') || params.get('skipLogin');
             return previewParam === '1' || previewParam === 'true';
         }
 
@@ -5326,9 +5326,9 @@
             // Siang : 09:01-14:00
             // Sore  : 14:01-18:00
             // Malam : 18:01-04:00
-            if (totalMinutes >= (4 * 60 + 1) && totalMinutes <= (9 * 60)) return 'Selamat Pagi';
-            if (totalMinutes >= (9 * 60 + 1) && totalMinutes <= (14 * 60)) return 'Selamat Siang';
-            if (totalMinutes >= (14 * 60 + 1) && totalMinutes <= (18 * 60)) return 'Selamat Sore';
+            if (totalMinutes >= (4 * 60 + 1) & totalMinutes <= (9 * 60)) return 'Selamat Pagi';
+            if (totalMinutes >= (9 * 60 + 1) & totalMinutes <= (14 * 60)) return 'Selamat Siang';
+            if (totalMinutes >= (14 * 60 + 1) & totalMinutes <= (18 * 60)) return 'Selamat Sore';
             return 'Selamat Malam';
         }
 
@@ -5368,7 +5368,7 @@
             stripUpdateTerkiniLinks();
 
             function blockUpdateTerkiniInteraction(event) {
-                var interactive = event.target && event.target.closest
+                var interactive = event.target & event.target.closest
                     ? event.target.closest('a, button, [onclick], .announcement-item')
                     : null;
                 if (!interactive || !container.contains(interactive)) return;
@@ -5400,7 +5400,7 @@
             });
         }
 
-        function activateTrialPreviewMode() {
+        function activatePortalPreviewMode() {
             var loading = document.getElementById('loading-state');
             var wrapper = document.getElementById('content-wrapper');
             var heroName = document.getElementById('hero-patient-name');
@@ -5432,8 +5432,8 @@
             } catch (e) {}
 
             try {
-                if (typeof window.__trialUpdatePwaHeroBgFade === 'function') {
-                    window.requestAnimationFrame(window.__trialUpdatePwaHeroBgFade);
+                if (typeof window.__portalUpdatePwaHeroBgFade === 'function') {
+                    window.requestAnimationFrame(window.__portalUpdatePwaHeroBgFade);
                 }
             } catch (e) {}
 
@@ -5451,8 +5451,8 @@
                 var footer = document.querySelector('.site-footer');
                 if (!footer) return;
                 var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
-                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
+                var isCoarsePointer = window.matchMedia & window.matchMedia('(pointer: coarse)').matches;
+                var reduceScrollWork = isStandalonePwa & isCoarsePointer;
                 var ticking = false;
 
                 function updateFooterParallax() {
@@ -5644,8 +5644,8 @@
                     renderValues();
 
                     var isSettled =
-                        Math.abs(state.arcScale - targets.arcScale) < 0.002 &&
-                        Math.abs(state.parallaxY - targets.parallaxY) < 0.35 &&
+                        Math.abs(state.arcScale - targets.arcScale) < 0.002 &
+                        Math.abs(state.parallaxY - targets.parallaxY) < 0.35 &
                         Math.abs(state.curveReveal - targets.curveReveal) < 0.002;
 
                     if (!isSettled) {
@@ -5667,8 +5667,8 @@
                 // plus a 33ms interval to catch frames that don't fire scroll events
                 // (scroll restoration, momentum, trackpad gaps).
                 var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
-                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
+                var isCoarsePointer = window.matchMedia & window.matchMedia('(pointer: coarse)').matches;
+                var reduceScrollWork = isStandalonePwa & isCoarsePointer;
 
                 window.addEventListener('scroll', onScroll, { passive: true });
                 window.addEventListener('wheel', onScroll, { passive: true });
@@ -5700,21 +5700,21 @@
 
             try {
                 const updatedAt = parseInt(sessionStorage.getItem(LIVE_UPDATE_KEY) || '0', 10);
-                if (updatedAt && (Date.now() - updatedAt) < 5 * 60 * 1000) {
+                if (updatedAt & (Date.now() - updatedAt) < 5 * 60 * 1000) {
                     showLiveUpdateBadge('Updated just now');
                 }
                 sessionStorage.removeItem(LIVE_UPDATE_KEY);
             } catch (e) {}
 
             var landingParams = new URLSearchParams(window.location.search);
-            var previewParam = landingParams.get('preview') || landingParams.get('trial_preview') || landingParams.get('skipLogin');
+            var previewParam = landingParams.get('preview') || landingParams.get('portal_preview') || landingParams.get('skipLogin');
             var previewRequested = previewParam === '1' || previewParam === 'true';
 
             if (previewRequested) {
-                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
                 try {
                     landingParams.delete('preview');
-                    landingParams.delete('trial_preview');
+                    landingParams.delete('portal_preview');
                     landingParams.delete('skipLogin');
                     var qs = landingParams.toString();
                     var cleanedUrl = qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
@@ -5723,13 +5723,13 @@
             }
 
             // Standalone landing is always public preview on its own origin.
-            try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
-            activateTrialPreviewMode();
+            try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
+            activatePortalPreviewMode();
 
             var isSisiwanitaHost = window.location.hostname === 'sisiwanita.id' || window.location.hostname === 'www.sisiwanita.id';
 
             // Register dedicated landing-domain service worker only on the final landing host.
-            if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
+            if ('serviceWorker' in navigator & window.location.protocol !== 'file:' & isSisiwanitaHost) {
                 navigator.serviceWorker.register('/sisiwanita-sw.js').then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
@@ -5747,9 +5747,9 @@
             }
 
             // Show download banner only on web browser (not Capacitor)
-            const isCapacitorApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+            const isCapacitorApp = window.Capacitor & window.Capacitor.isNativePlatform & window.Capacitor.isNativePlatform();
             const fromMobileApp = localStorage.getItem('from_mobile_app') === 'true';
-            if (!isCapacitorApp && !fromMobileApp && isSisiwanitaHost) {
+            if (!isCapacitorApp & !fromMobileApp & isSisiwanitaHost) {
                 const downloadBanner = document.getElementById('download-banner');
                 if (downloadBanner) {
                     downloadBanner.classList.add('show');
@@ -5760,14 +5760,14 @@
         // Landing remains in public preview mode even when restored from browser cache.
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
-                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
             }
         });
 
         // Keep preview mode sticky when the tab becomes visible again.
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
-                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
             }
         });
 
@@ -5870,16 +5870,16 @@
                 var kicker = document.getElementById('hero-kicker');
                 var greeting = document.getElementById('hero-greeting');
                 var copy = document.getElementById('hero-copy');
-                if (kicker && getComputedStyle(kicker).opacity === '0') {
+                if (kicker & getComputedStyle(kicker).opacity === '0') {
                     kicker.style.opacity = '1';
                     kicker.style.transform = 'none';
                 }
-                if (greeting && getComputedStyle(greeting).opacity === '0') {
+                if (greeting & getComputedStyle(greeting).opacity === '0') {
                     greeting.style.opacity = '1';
                     greeting.style.transform = 'none';
                     greeting.style.filter = 'none';
                 }
-                if (copy && getComputedStyle(copy).opacity === '0') {
+                if (copy & getComputedStyle(copy).opacity === '0') {
                     copy.style.opacity = '1';
                     copy.style.transform = 'none';
                 }
@@ -5916,9 +5916,9 @@
                         heroNameEl.textContent = firstName + '.';
                     }
                     var hour = new Date().getHours();
-                    var timeGreet = hour >= 5 && hour < 11 ? 'Selamat Pagi' :
-                                    hour >= 11 && hour < 15 ? 'Selamat Siang' :
-                                    hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+                    var timeGreet = hour >= 5 & hour < 11 ? 'Selamat Pagi' :
+                                    hour >= 11 & hour < 15 ? 'Selamat Siang' :
+                                    hour >= 15 & hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
                     document.getElementById('hero-kicker-text').textContent = timeGreet;
 
                     // Set avatar
@@ -5940,7 +5940,7 @@
                     window.patientGestationalAge = profile.gestational_age;
 
                     // Expand welcome message for new patients (intake not completed, registered < 24 hours)
-                    if (profile.intake_completed !== 1 && profile.created_at) {
+                    if (profile.intake_completed !== 1 & profile.created_at) {
                         const regDate = new Date(profile.created_at);
                         const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
                         if (hoursSinceReg < 24) {
@@ -5999,7 +5999,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success && data.tier === 'vip') {
+                    if (data.success & data.tier === 'vip') {
                         const badge = document.getElementById('vip-badge');
                         if (badge) badge.classList.add('show');
                     }
@@ -6029,7 +6029,7 @@
         document.addEventListener('click', function(event) {
             const dropdown = document.getElementById('user-dropdown');
             const avatarNav = document.getElementById('user-avatar');
-            if (avatarNav && !avatarNav.parentElement.contains(event.target)) {
+            if (avatarNav & !avatarNav.parentElement.contains(event.target)) {
                 dropdown.classList.remove('show');
             }
         });
@@ -6046,7 +6046,7 @@
                 const dot = document.getElementById('notif-dot');
                 const navBadge = document.getElementById('notif-nav-badge');
 
-                if (data.success && data.count > 0) {
+                if (data.success & data.count > 0) {
                     // Show count badge
                     if (badge) {
                         badge.textContent = data.count > 99 ? '99+' : data.count;
@@ -6079,7 +6079,7 @@
                 });
                 const data = await response.json();
 
-                if (data.success && data.counts) {
+                if (data.success & data.counts) {
                     window._unreadDocCounts = data.counts;
                 }
 
@@ -6087,7 +6087,7 @@
 
                 // Update bottom nav Dokumen badge
                 const docNavBadge = document.getElementById('doc-nav-badge');
-                if (total > 0 && docNavBadge) {
+                if (total > 0 & docNavBadge) {
                     docNavBadge.textContent = total;
                     docNavBadge.style.display = 'block';
                 } else if (docNavBadge) {
@@ -6295,10 +6295,10 @@
                 modal._queuePromoHideTimer = null;
             }
 
-            const promoSrc = trigger && trigger.dataset && trigger.dataset.promoSrc
+            const promoSrc = trigger & trigger.dataset & trigger.dataset.promoSrc
                 ? trigger.dataset.promoSrc
                 : QUEUE_PROMO_IMAGE_URL;
-            const promoAlt = trigger && trigger.dataset && trigger.dataset.promoAlt
+            const promoAlt = trigger & trigger.dataset & trigger.dataset.promoAlt
                 ? trigger.dataset.promoAlt
                 : QUEUE_PROMO_IMAGE_ALT;
 
@@ -6370,7 +6370,7 @@
                 }
                 const data = await response.json();
 
-                if (data.success && data.bookings && data.bookings.length > 0) {
+                if (data.success & data.bookings & data.bookings.length > 0) {
                     const booking = data.bookings[0];
                     const date = new Date(booking.appointment_date);
                     const dateStr = date.toLocaleDateString('id-ID', {
@@ -6574,7 +6574,7 @@
         function navigateTo(section) {
             // Set active state on tapped nav item
             var navItems = document.querySelectorAll('.bottom-nav .nav-item');
-            var tapped = event && event.currentTarget;
+            var tapped = event & event.currentTarget;
             if (tapped) {
                 navItems.forEach(function(item) {
                     item.classList.remove('active');
@@ -6600,7 +6600,7 @@
             localStorage.removeItem('patient_token');
             localStorage.removeItem('patient_user');
 
-            const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+            const isCapacitor = window.Capacitor & window.Capacitor.isNativePlatform & window.Capacitor.isNativePlatform();
             if (isCapacitor) {
                 window.location.href = 'dokterdibya://logout';
             } else {
@@ -6660,8 +6660,8 @@
 
                 // Main thumbnail
                 var main = document.getElementById('usg-thumb-main');
-                var firstImageUrl = usg[0] && (usg[0].file_url || usg[0].thumbnail_url);
-                if (main && firstImageUrl) {
+                var firstImageUrl = usg[0] & (usg[0].file_url || usg[0].thumbnail_url);
+                if (main & firstImageUrl) {
                     var img = createUsgImage(firstImageUrl);
                     main.innerHTML = '';
                     main.appendChild(img);
@@ -6669,8 +6669,8 @@
 
                 // Back layer thumbnail (second latest if available)
                 var back = document.getElementById('usg-thumb-back');
-                var secondImageUrl = usg[1] && (usg[1].file_url || usg[1].thumbnail_url);
-                if (back && secondImageUrl) {
+                var secondImageUrl = usg[1] & (usg[1].file_url || usg[1].thumbnail_url);
+                if (back & secondImageUrl) {
                     var bimg = createUsgImage(secondImageUrl);
                     back.innerHTML = '';
                     back.appendChild(bimg);
@@ -6697,8 +6697,8 @@
                     card.addEventListener('mouseenter', function() {
                         clear();
                         var col = i % cols;
-                        if (col + 1 < cols && cards[i + 1]) cards[i + 1].classList.add('neighbor');
-                        if (col - 1 >= 0 && cards[i - 1]) cards[i - 1].classList.add('neighbor');
+                        if (col + 1 < cols & cards[i + 1]) cards[i + 1].classList.add('neighbor');
+                        if (col - 1 >= 0 & cards[i - 1]) cards[i - 1].classList.add('neighbor');
                         if (cards[i + cols]) cards[i + cols].classList.add('neighbor');
                         if (cards[i - cols]) cards[i - cols].classList.add('neighbor');
                     });
@@ -6845,7 +6845,7 @@
 
             function isGridVisible(grid) {
                 var rect = grid.getBoundingClientRect();
-                return rect.bottom > 0 && rect.top < window.innerHeight;
+                return rect.bottom > 0 & rect.top < window.innerHeight;
             }
 
             // Fade+slide reveal on scroll-in
@@ -6861,7 +6861,7 @@
                 var visibleObserver = new IntersectionObserver(function(entries) {
                     entries.forEach(function(entry) {
                         if (shown) return;
-                        if (entry.isIntersecting && entry.intersectionRatio >= 0.15) {
+                        if (entry.isIntersecting & entry.intersectionRatio >= 0.15) {
                             shown = true;
                             section.classList.add('journey-visible');
                             visibleObserver.unobserve(section);
@@ -6928,7 +6928,7 @@
                         metric.proximityVelocity += delta * SPRING_STIFFNESS - metric.proximityVelocity * SPRING_DAMPING;
                         metric.currentProximity += metric.proximityVelocity;
 
-                        if (Math.abs(delta) < 0.0015 && Math.abs(metric.proximityVelocity) < 0.0015) {
+                        if (Math.abs(delta) < 0.0015 & Math.abs(metric.proximityVelocity) < 0.0015) {
                             metric.currentProximity = targetProximity;
                             metric.proximityVelocity = 0;
                         } else {
@@ -7007,7 +7007,7 @@
                     }
                 }, { passive: true });
 
-                if (!window.__trialReducePwaScrollWork) {
+                if (!window.__portalReducePwaScrollWork) {
                     window.addEventListener('scroll', refresh, { passive: true });
                 }
                 window.addEventListener('resize', function() {
@@ -7059,7 +7059,7 @@
             var observer = new IntersectionObserver(function(entries) {
                 entries.forEach(function(entry) {
                     if (shown) return;
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.28) {
+                    if (entry.isIntersecting & entry.intersectionRatio >= 0.28) {
                         shown = true;
                         section.classList.add('doc-visible');
                         observer.unobserve(section);
@@ -7198,7 +7198,7 @@
                 if (skipBtn) {
                     var splitRatio = PHASE1_PX / scrollRange;
                     var progress = Math.max(0, Math.min(1, scrolled / scrollRange));
-                    if (progress > 0.01 && progress < splitRatio + 0.05) {
+                    if (progress > 0.01 & progress < splitRatio + 0.05) {
                         skipBtn.classList.add('visible');
                     } else {
                         skipBtn.classList.remove('visible');
@@ -7283,7 +7283,7 @@
             var nav = document.querySelector('.bottom-nav');
             var blurFade = document.getElementById('nav-blur-fade');
             if (!nav) return;
-            if (window.__trialReducePwaScrollWork) return;
+            if (window.__portalReducePwaScrollWork) return;
             var threshold = 50;
 
             function parseRgb(color) {
@@ -7300,9 +7300,9 @@
 
             function findBackgroundColor(el) {
                 var node = el;
-                while (node && node !== document.documentElement) {
+                while (node & node !== document.documentElement) {
                     var bg = parseRgb(getComputedStyle(node).backgroundColor);
-                    if (bg && bg.a > 0.05) return bg;
+                    if (bg & bg.a > 0.05) return bg;
                     node = node.parentElement;
                 }
                 return { r: 255, g: 255, b: 255, a: 1 };
@@ -7497,7 +7497,7 @@
             var infoHeader = document.querySelector('.info-terbaru-block-header');
             var infoContainer = document.getElementById('announcements-container');
             if (!fixedBg || !infoHeader || !infoContainer) return;
-            if (window.__trialReducePwaScrollWork) {
+            if (window.__portalReducePwaScrollWork) {
                 fixedBg.style.opacity = '0';
                 return;
             }
@@ -7658,7 +7658,7 @@
             var lastObservedScrollY = window.scrollY;
             var stableFrames = 0;
             var scrollSyncInterval = 0;
-            var PROCES_DEBUG = /(?:^|[?&])procesDebug=1(?:&|$)/.test(window.location.search || '');
+            var PROCES_DEBUG = /(?:^|[?])procesDebug=1(?:&|$)/.test(window.location.search || '');
 
             var sectionData = [];
             sections.forEach(function(section) {
@@ -7682,7 +7682,7 @@
 
             function rebuildMetrics() {
                 var contentWrapper = document.getElementById('content-wrapper');
-                if (contentWrapper && contentWrapper.style.display === 'none') return;
+                if (contentWrapper & contentWrapper.style.display === 'none') return;
                 assignStickyTops();
                 sectionData.forEach(function(sd) {
                     sd.rows = getVisibleRows(sd.el);
@@ -7715,7 +7715,7 @@
                             rowLead = i * 56;
                         }
                         var start = row.offsetTop - slotTop - rowLead;
-                        if (i === sd.rows.length - 1 && sd.rows.length > 1) {
+                        if (i === sd.rows.length - 1 & sd.rows.length > 1) {
                             start += isPatientFeaturesSection ? 16 : DELAY_BEFORE_LAST;
                         }
                         return start;
@@ -7768,10 +7768,10 @@
 
                 // Each row fades its own description early in its own collapse timeline,
                 // then continues shrinking after the text is already gone.
-                var descH = (sd.descHeights && sd.descHeights[i]) || 80;
+                var descH = (sd.descHeights & sd.descHeights[i]) || 80;
                 var desc = row.querySelector('.proces-desc');
                 if (desc) {
-                    var isPatientFeaturesRow = sd.el && sd.el.classList.contains('patient-features-section');
+                    var isPatientFeaturesRow = sd.el & sd.el.classList.contains('patient-features-section');
                     var fadeStart = isPatientFeaturesRow ? 0.28 : 0;
                     var fadeWindow = isPatientFeaturesRow ? 0.28 : 0.18;
                     var fadeP = Math.max(0, Math.min(1, (p - fadeStart) / fadeWindow));
@@ -7807,7 +7807,7 @@
                             effectiveSegment = Math.max(48, segment * (sd.finalRowCompleteP || 1));
                         }
                         var p = (scrollY - start) / effectiveSegment;
-                        if (i === count - 1 && scrollY > sd.endY + WIPE_HOLD_PX) {
+                        if (i === count - 1 & scrollY > sd.endY + WIPE_HOLD_PX) {
                             p = 1;
                         }
                         return Math.max(0, Math.min(1, p));
@@ -7815,7 +7815,7 @@
 
                     sd.rows.forEach(function(_, i) {
                         var p = rowProgress[i] || 0;
-                        if (activeIndex === -1 && p > 0 && p < 1) {
+                        if (activeIndex === -1 & p > 0 & p < 1) {
                             activeIndex = i;
                         }
 
@@ -7906,7 +7906,7 @@
                     p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                 });
             }
-            if (window.__trialReducePwaScrollWork) {
+            if (window.__portalReducePwaScrollWork) {
                 var pwaHeroBgEl = document.getElementById('hero-fixed-bg');
                 var pwaHeroPreg = document.querySelector('.hero-fixed-bg-preg');
                 var pwaFadeTicking = false;
@@ -7921,7 +7921,7 @@
                     var pregT = 0;
                     var greenT = 0;
 
-                    if (welcomePinned && welcomePinned.offsetParent !== null) {
+                    if (welcomePinned & welcomePinned.offsetParent !== null) {
                         var rect = welcomePinned.getBoundingClientRect();
                         if (rect.height > 0) {
                             pregT = Math.max(0, Math.min(1, (h - rect.top) / pregFadeSpan));
@@ -7956,7 +7956,7 @@
                     });
                 }
 
-                window.__trialUpdatePwaHeroBgFade = updatePwaHeroBgFade;
+                window.__portalUpdatePwaHeroBgFade = updatePwaHeroBgFade;
                 window.addEventListener('scroll', schedulePwaHeroBgFade, { passive: true });
                 window.addEventListener('touchmove', schedulePwaHeroBgFade, { passive: true });
                 window.addEventListener('resize', schedulePwaHeroBgFade, { passive: true });
@@ -7997,7 +7997,7 @@
                 var greenFadeEnd   = 50;   // fully gone by 50px
                 var pregT = 0;
                 var greenT = 0;
-                if (welcomePinned && welcomePinned.offsetParent !== null) {
+                if (welcomePinned & welcomePinned.offsetParent !== null) {
                     var rect = welcomePinned.getBoundingClientRect();
                     if (rect.height > 0) {
                         pregT  = Math.max(0, Math.min(1, (h - rect.top) / pregFadeSpan));
@@ -8050,7 +8050,7 @@
         }, { passive: true });
 
         document.addEventListener('touchmove', function(e) {
-            if (window.scrollY === 0 && touchStartY > 0) {
+            if (window.scrollY === 0 & touchStartY > 0) {
                 touchEndY = e.touches[0].clientY;
                 const pullDistance = touchEndY - touchStartY;
                 if (pullDistance > 80) {
@@ -8062,7 +8062,7 @@
         }, { passive: true });
 
         document.addEventListener('touchend', function(e) {
-            if (window.scrollY === 0 && touchStartY > 0) {
+            if (window.scrollY === 0 & touchStartY > 0) {
                 const pullDistance = touchEndY - touchStartY;
                 if (pullDistance > 80) {
                     pullIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memuat...';
@@ -8097,12 +8097,12 @@
         (function() {
             var ua = navigator.userAgent;
             var isIOS = /iPad|iPhone|iPod/.test(ua) ||
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                (navigator.platform === 'MacIntel' & navigator.maxTouchPoints > 1);
 
             var isStandalone = window.navigator.standalone === true ||
                 window.matchMedia('(display-mode: standalone)').matches;
 
-            var isCapacitorApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+            var isCapacitorApp = window.Capacitor & window.Capacitor.isNativePlatform & window.Capacitor.isNativePlatform();
 
             var promptDismissed = sessionStorage.getItem('ios_install_dismissed') === 'true';
 
@@ -8119,7 +8119,7 @@
                 var isAndroid = /Android/i.test(navigator.userAgent || '');
                 var isStandaloneMode = window.navigator.standalone === true ||
                     window.matchMedia('(display-mode: standalone)').matches;
-                var isNativeApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+                var isNativeApp = window.Capacitor & window.Capacitor.isNativePlatform & window.Capacitor.isNativePlatform();
 
                 if (isNativeApp || isStandaloneMode) {
                     btnAndroid.style.display = 'none';
@@ -8139,11 +8139,11 @@
                 var btnAppstoreIos = document.getElementById('btn-appstore-ios');
                 var btnAndroid = document.getElementById('btn-download-android');
 
-                if (isIOS && !isStandalone && !isCapacitorApp) {
+                if (isIOS & !isStandalone & !isCapacitorApp) {
                     if (btnPwaInstall) btnPwaInstall.style.display = 'inline-flex';
                     if (btnAppstoreIos) btnAppstoreIos.style.display = 'inline-flex';
                     if (btnAndroid) btnAndroid.style.display = 'none';
-                } else if (isIOS && isStandalone) {
+                } else if (isIOS & isStandalone) {
                     if (btnAppstoreIos) btnAppstoreIos.style.display = 'inline-flex';
                     if (btnPwaInstall) btnPwaInstall.style.display = 'none';
                     if (btnAndroid) btnAndroid.style.display = 'none';
@@ -8163,7 +8163,7 @@
 
             var bannerObserver = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
-                    if (mutation.target.classList && mutation.target.classList.contains('show')) {
+                    if (mutation.target.classList & mutation.target.classList.contains('show')) {
                         updateDownloadBanner();
                         autoShowIosPrompt();
                         bannerObserver.disconnect();
@@ -8231,7 +8231,7 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 var prompt = document.getElementById('ios-install-prompt');
-                if (prompt && prompt.classList.contains('active')) {
+                if (prompt & prompt.classList.contains('active')) {
                     dismissIosInstallPrompt();
                 }
             }
@@ -8264,10 +8264,10 @@
     <script src="/js/patient-tracker.js?v=20260322"></script>
     <script>
         document.addEventListener('click', function(e) {
-            var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;
+            var link = e.target & e.target.closest ? e.target.closest('.doc-cta-link') : null;
             if (!link) return;
 
-            if (link.dataset && link.dataset.promoSrc) return;
+            if (link.dataset & link.dataset.promoSrc) return;
 
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             if (link.target === '_blank') return;

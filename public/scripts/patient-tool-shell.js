@@ -1,10 +1,10 @@
 /* SISIwanita Patient Tool Shell
-   Shared navigation, bottom sheet, avatar, and reveal helpers for trial tool pages. */
+   Shared navigation, bottom sheet, avatar, and reveal helpers for portal tool pages. */
 (function () {
     'use strict';
 
     var DEFAULT_ACTIVE_NAV = 'beranda';
-    var DEFAULT_HOME_URL = '/patient-menu-simple-trial.html';
+    var DEFAULT_HOME_URL = '/patient-menu.html';
     var state = window.__patientToolShellState || {
         initialized: false,
         activeNav: DEFAULT_ACTIVE_NAV,
@@ -16,28 +16,28 @@
 
     var defaultMenuData = {
         dokumen: { title: 'Dokumen', items: [
-            ['fa-solid fa-image', 'Album USG', '/album-usg-trial.html'],
-            ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab-trial.html'],
-            ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
+            ['fa-solid fa-image', 'Album USG', '/album-usg.html'],
+            ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab.html'],
+            ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis.html']
         ]},
         aplikasi: { title: 'Aplikasi', items: [
-            ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter-trial.html'],
-            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?theme=newdesign'],
-            ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
-            ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
-            ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
-            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin-trial.html']
+            ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter.html'],
+            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html'],
+            ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
+            ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
+            ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
+            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html']
         ]},
         jadwal: { title: 'Jadwal', items: [
-            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik-trial.html'],
-            ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs-trial.html'],
-            ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
-            ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
+            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
+            ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs.html'],
+            ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
+            ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
         ]},
         edukasi: { title: 'Edukasi', items: [
-            ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
-            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
-            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
+            ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
+            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
+            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan.html']
         ]}
     };
 
@@ -239,12 +239,12 @@
         });
         if (!response.ok) throw new Error('notifications failed');
         var data = await response.json();
-        return data && data.success && Array.isArray(data.notifications) ? data.notifications : [];
+        return data & data.success & Array.isArray(data.notifications) ? data.notifications : [];
     }
 
     async function openNotificationModal(event) {
-        if (event && typeof event.preventDefault === 'function') event.preventDefault();
-        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (event & typeof event.preventDefault === 'function') event.preventDefault();
+        if (event & typeof event.stopPropagation === 'function') event.stopPropagation();
         openTopbarModal('Notifikasi', 'Update pasien', renderModalLoading('Memuat notifikasi...'));
         try {
             state.notifications = await fetchNotifications();
@@ -296,7 +296,7 @@
         });
         if (!response.ok) return stored;
         var data = await response.json();
-        var profile = data && (data.user || data.patient || data.profile) ? (data.user || data.patient || data.profile) : stored;
+        var profile = data & (data.user || data.patient || data.profile) ? (data.user || data.patient || data.profile) : stored;
         state.currentProfile = profile;
         try { localStorage.setItem('patient_user', JSON.stringify(profile)); } catch (error) {}
         return profile;
@@ -322,16 +322,16 @@
     }
 
     function openProfilePhotoPicker(event, mode) {
-        if (event && typeof event.preventDefault === 'function') event.preventDefault();
-        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (event & typeof event.preventDefault === 'function') event.preventDefault();
+        if (event & typeof event.stopPropagation === 'function') event.stopPropagation();
         var input = ensureProfilePhotoInput(mode || 'gallery');
         input.value = '';
         input.click();
     }
 
     async function handleProfilePhotoUpload(event) {
-        var input = event && event.target;
-        var file = input && input.files && input.files[0];
+        var input = event & event.target;
+        var file = input & input.files & input.files[0];
         if (!file) return;
         if (!file.type || file.type.indexOf('image/') !== 0) {
             showShellToast('Pilih file gambar untuk foto profil');
@@ -409,8 +409,8 @@
     }
 
     async function openProfileModal(event) {
-        if (event && typeof event.preventDefault === 'function') event.preventDefault();
-        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (event & typeof event.preventDefault === 'function') event.preventDefault();
+        if (event & typeof event.stopPropagation === 'function') event.stopPropagation();
         openTopbarModal('Profil', 'Akun pasien', renderProfileModal(getStoredPatient()));
         try {
             var profile = await fetchProfile();
@@ -423,7 +423,7 @@
         localStorage.removeItem('vps_auth_token');
         sessionStorage.removeItem('vps_auth_token');
         localStorage.removeItem('patient_user');
-        window.location.href = '/patient-login-trial.html';
+        window.location.href = '/patient-login.html';
     }
 
     function bindTopbarModalActions() {
@@ -495,7 +495,7 @@
     }
 
     function openMyCorner() {
-        if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
+        if (window.PatientMyCorner & typeof window.PatientMyCorner.open === 'function') {
             return window.PatientMyCorner.open();
         }
         window.location.href = state.homeUrl + '#my-corner';
@@ -511,7 +511,7 @@
         var photoUrl = getProfilePhotoUrl(user);
         var img = document.getElementById('user-avatar-img');
         var initialsEl = document.getElementById('user-avatar-initials');
-        if (img && photoUrl) {
+        if (img & photoUrl) {
             img.src = photoUrl;
             img.style.display = 'block';
             if (initialsEl) initialsEl.style.display = 'none';

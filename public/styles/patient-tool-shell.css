@@ -1,5 +1,5 @@
 /* SISIwanita Patient Tool Shell
-   Shared header, content rhythm, bottom nav, sheet, and intro motion for trial tool pages. */
+   Shared header, content rhythm, bottom nav, sheet, and intro motion for portal tool pages. */
 
 :root {
     --bg: #f7f7f4;
@@ -208,8 +208,8 @@ body.patient-tool-shell .avatar:active,
 body.patient-tool-shell .tap-card:active,
 body.patient-tool-shell .primary-action:active,
 body.patient-tool-shell .ghost-action:active,
-body.patient-tool-shell .trial-button:active,
-body.patient-tool-shell .trial-button-ghost:active {
+body.patient-tool-shell .portal-button:active,
+body.patient-tool-shell .portal-button-ghost:active {
     transform: scale(0.97);
 }
 
@@ -366,8 +366,8 @@ body.patient-tool-shell .status-body { flex: 1; min-width: 0; }
 body.patient-tool-shell .status-body h3 { font-size: 14px !important; margin-bottom: 3px !important; color: var(--ink) !important; }
 body.patient-tool-shell .status-body p { color: var(--muted) !important; font-size: 12px !important; line-height: 1.45 !important; margin: 0 !important; }
 
-body.patient-tool-shell .trial-button,
-body.patient-tool-shell .trial-button-ghost,
+body.patient-tool-shell .portal-button,
+body.patient-tool-shell .portal-button-ghost,
 body.patient-tool-shell .primary-action,
 body.patient-tool-shell .ghost-action {
     border-radius: 14px !important;
@@ -385,9 +385,9 @@ body.patient-tool-shell .ghost-action {
     cursor: pointer;
 }
 
-body.patient-tool-shell .trial-button,
+body.patient-tool-shell .portal-button,
 body.patient-tool-shell .primary-action { background: var(--ink) !important; color: #fff !important; border: 1px solid var(--ink) !important; }
-body.patient-tool-shell .trial-button-ghost,
+body.patient-tool-shell .portal-button-ghost,
 body.patient-tool-shell .ghost-action { background: rgba(255,255,255,0.75) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
 
 body.patient-tool-shell #home-bottom-nav {
