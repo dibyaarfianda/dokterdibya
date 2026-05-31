@@ -1231,15 +1231,9 @@
               return;
             }
 
-            if (!isOwnChatMessage(data)) {
-              console.log('[ChatPopup] Adding received message');
-              addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id, data.id);
-            } else {
-              console.log('[ChatPopup] Skipping own message');
-              if (data && data.id) {
-                renderedMessageIds.add(String(data.id));
-              }
-            }
+            var messageType = isOwnChatMessage(data) ? 'sent' : 'received';
+            console.log('[ChatPopup] Adding realtime message:', messageType);
+            addMessage(data.message, messageType, data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id, data.id);
           }
 
           function bindRealtimeSocket(socket) {
