@@ -40,6 +40,7 @@ async function loadActiveStaff() {
 router.get('/today', verifyToken, verifyStaffToken, async (req, res) => {
     try {
         const today = todayLocalDate();
+        const currentStaffId = String((req.user && (req.user.id || req.user.new_id || '')) || '').trim();
 
         // Patient count for today's Sunday clinic
         const [pc] = await db.query(
@@ -69,7 +70,9 @@ router.get('/today', verifyToken, verifyStaffToken, async (req, res) => {
             [today]
         );
         const started_staff_ids = dutyToday.map(r => r.staff_id);
-        const started = started_staff_ids.length > 0;
+        const started = currentStaffId
+            ? started_staff_ids.map(String).includes(currentStaffId)
+            : false;
 
         return res.json({
             success: true,
