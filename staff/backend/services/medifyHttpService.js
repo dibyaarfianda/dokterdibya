@@ -668,6 +668,122 @@ class MedifyHttpSession {
         });
     }
 
+    /**
+     * Fetch pending consult invitations from SIMRSG/Medify.
+     * These are the rows behind the "Terima Konsul" button.
+     */
+    async getConsultInvitations() {
+        if (!this.isLoggedIn) throw new Error('Not authenticated - call login() first');
+
+        const invitationsUrl = this._buildUrl('/undangan/kasus');
+        const response = await this.request(invitationsUrl, {
+            headers: {
+                'Referer': this.config.historyUrl
+            }
+        });
+
+        if (response.status !== 200) {
+            throw new Error(`Failed to fetch consult invitations (${response.status})`);
+        }
+
+        const pageToken = this._extractCsrfToken(response.body);
+        return this._parseConsultInvitations(response.body, pageToken);
+    }
+
+    /**
+     * Accept a single consult invitation. SIMRSG uses the logged-in account
+     * as the accepting collaborator/DPJP for this endpoint.
+     */
+    async acceptConsultInvitation(invitation) {
+        if (!this.isLoggedIn) throw new Error('Not authenticated - call login() first');
+
+        const id = typeof invitation === 'object' ? invitation.id : invitation;
+        const token = typeof invitation === 'object'
+            ? (invitation.csrfToken || this.csrfToken)
+            : this.csrfToken;
+
+        if (!id) {
+            throw new Error('Consult invitation id is required');
+        }
+
+        if (!token) {
+            throw new Error('CSRF token is required to accept consult invitation');
+        }
+
+        const acceptUrl = this._buildUrl('/api/kasus/kolaborator/terima-undangan');
+        const body = `_token=${encodeURIComponent(token)}&id=${encodeURIComponent(id)}`;
+
+        const response = await this.request(acceptUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Referer': this._buildUrl('/undangan/kasus'),
+                'Origin': this._getOrigin()
+            },
+            body
+        });
+
+        const redirectedToLogin = /\/login/i.test(response.headers?.location || '')
+            || /name=["']email["']|login-form|Login/i.test(response.body || '');
+
+        if (redirectedToLogin) {
+            throw new Error('SIMRSG session expired while accepting consult invitation');
+        }
+
+        if (response.status < 200 || response.status >= 400) {
+            throw new Error(`Failed to accept consult invitation ${id} (${response.status})`);
+        }
+
+        return {
+            success: true,
+            id: String(id),
+            status: response.status
+        };
+    }
+
+    async acceptPendingConsultInvitations(options = {}) {
+        const invitations = await this.getConsultInvitations();
+        const limit = Number.isFinite(options.limit) && options.limit > 0
+            ? options.limit
+            : invitations.length;
+        const selected = invitations.slice(0, limit);
+
+        if (options.dryRun) {
+            return {
+                source: this.source,
+                dryRun: true,
+                pending: invitations.length,
+                accepted: 0,
+                failed: 0,
+                invitations: selected
+            };
+        }
+
+        const accepted = [];
+        const failed = [];
+
+        for (const invitation of selected) {
+            try {
+                const result = await this.acceptConsultInvitation(invitation);
+                accepted.push({ ...invitation, ...result });
+                await delay(options.delayMs || 750);
+            } catch (error) {
+                failed.push({ ...invitation, error: error.message });
+            }
+        }
+
+        return {
+            source: this.source,
+            dryRun: false,
+            pending: invitations.length,
+            accepted: accepted.length,
+            failed: failed.length,
+            invitations: selected,
+            acceptedInvitations: accepted,
+            failedInvitations: failed
+        };
+    }
+
     _buildPolyclinicUrl(options = {}) {
         const baseUrl = new URL(this.config.historyUrl);
         const queueUrl = new URL('/rawatjalan/poliklinik', `${baseUrl.protocol}//${baseUrl.host}`);
@@ -678,6 +794,55 @@ class MedifyHttpSession {
         queueUrl.searchParams.set('by_dokter', options.byDokter || '0');
 
         return queueUrl.toString();
+    }
+
+    _getOrigin() {
+        const baseUrl = new URL(this.config.historyUrl);
+        return `${baseUrl.protocol}//${baseUrl.host}`;
+    }
+
+    _buildUrl(pathname) {
+        return new URL(pathname, this._getOrigin()).toString();
+    }
+
+    _parseConsultInvitations(html, pageToken = '') {
+        const invitations = [];
+        const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+        let rowMatch;
+
+        while ((rowMatch = rowRegex.exec(html)) !== null) {
+            const rowHtml = rowMatch[1];
+
+            if (!/btn-terima-undangan|form-undangan-kasus/i.test(rowHtml)) {
+                continue;
+            }
+
+            const idMatch = rowHtml.match(/<input[^>]+name=["']id["'][^>]+value=["']([^"']+)["']/i)
+                || rowHtml.match(/data-id=["']([^"']+)["']/i);
+            const tokenMatch = rowHtml.match(/<input[^>]+name=["']_token["'][^>]+value=["']([^"']+)["']/i);
+
+            if (!idMatch) {
+                continue;
+            }
+
+            const text = this._htmlToText(rowHtml);
+            const boldMatches = Array.from(rowHtml.matchAll(/<b[^>]*>([\s\S]*?)<\/b>/gi))
+                .map(match => this._stripHtml(match[1]).trim())
+                .filter(Boolean);
+            const medicalRecordMatch = text.match(/RM\s*:\s*([^\n]+)/i);
+            const invitedByMatch = text.match(/\n\s*([^\n]+)\s*\n\s*\d{1,2}\s+[A-Za-z]+\s+\d{4}/i);
+
+            invitations.push({
+                id: String(idMatch[1]).trim(),
+                csrfToken: tokenMatch ? tokenMatch[1] : pageToken,
+                patientName: boldMatches[0] || '',
+                medicalRecordNo: medicalRecordMatch ? medicalRecordMatch[1].trim() : '',
+                invitedBy: boldMatches[1] || (invitedByMatch ? invitedByMatch[1].trim() : ''),
+                rowText: text
+            });
+        }
+
+        return invitations;
     }
 
     _parsePolyclinicQueue(html, meta = {}) {
