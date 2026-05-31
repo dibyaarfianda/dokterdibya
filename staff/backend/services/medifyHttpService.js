@@ -724,7 +724,7 @@ class MedifyHttpSession {
         });
 
         const redirectedToLogin = /\/login/i.test(response.headers?.location || '')
-            || /name=["']email["']|login-form|Login/i.test(response.body || '');
+            || /<form[^>]+(?:login|auth)|name=["']email["'][\s\S]*name=["']password["']|login-form/i.test(response.body || '');
 
         if (redirectedToLogin) {
             throw new Error('SIMRSG session expired while accepting consult invitation');
