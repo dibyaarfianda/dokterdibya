@@ -1770,7 +1770,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v224'; // Staff dashboard live queue: refresh shell, dashboard modules, and PWA assets
+            const CACHE_VERSION = 'v225'; // Staff dashboard live queue: load utility as browser-safe JS module
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {

@@ -1,7 +1,7 @@
 // Uses VPS API for data loading
 
 import { getIdToken } from './vps-auth-v2.js';
-import { renderLiveQueueHtml } from './live-queue-dashboard-utils.mjs';
+import { renderLiveQueueHtml } from './live-queue-dashboard-utils.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
