@@ -1,7 +1,7 @@
 /* ==========================================================================
-    Patient Portal — Shared Trial Theme
-    Consumed by all trial pages so the portal speaks one visual language.
-    Reference: public/patient-menu-simple-trial.html
+    Patient Portal — Shared Portal Theme
+    Consumed by all portal pages so the portal speaks one visual language.
+    Reference: public/patient-menu.html
    ========================================================================== */
 
 /* Fonts — pages should also include this <link> themselves for preload hints,
@@ -53,16 +53,16 @@
 }
 
 /* ========== RESET + BASE ========== */
-.trial-themed *,
-.trial-themed *::before,
-.trial-themed *::after {
+.portal-themed *,
+.portal-themed *::before,
+.portal-themed *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
 
-body.trial-themed {
+body.portal-themed {
     font-family: var(--font-main);
     background: var(--bg-page);
     color: var(--text-primary);
@@ -89,33 +89,33 @@ body {
     overflow-x: hidden;
 }
 
-body.trial-themed ::selection {
+body.portal-themed ::selection {
     background: #0a0a0a;
     color: #ffffff;
 }
 
-body.trial-themed a {
+body.portal-themed a {
     color: inherit;
     text-decoration: none;
 }
 
-body.trial-themed h1,
-body.trial-themed h2,
-body.trial-themed h3,
-body.trial-themed h4 {
+body.portal-themed h1,
+body.portal-themed h2,
+body.portal-themed h3,
+body.portal-themed h4 {
     font-family: var(--font-display);
     font-weight: 800;
     letter-spacing: -0.03em;
     color: var(--text-primary);
 }
 
-body.trial-themed p {
+body.portal-themed p {
     color: var(--text-body);
     line-height: 1.7;
 }
 
 /* ========== TOPBAR (static monochrome, no hero coupling) ========== */
-.topbar-trial {
+.topbar-portal {
     position: fixed;
     top: env(safe-area-inset-top, 0px);
     left: 0;
@@ -127,7 +127,7 @@ body.trial-themed p {
     border-bottom: 1px solid var(--line-soft);
     color: var(--text-primary);
 }
-.topbar-trial-inner {
+.topbar-portal-inner {
     max-width: 1280px;
     margin: 0 auto;
     padding: 12px clamp(18px, 4vw, 48px);
@@ -136,20 +136,20 @@ body.trial-themed p {
     align-items: center;
     gap: 12px;
 }
-.topbar-trial .brand {
+.topbar-portal .brand {
     display: flex;
     align-items: center;
     gap: 12px;
 }
-.topbar-trial .brand-title {
+.topbar-portal .brand-title {
     font-size: 19px;
     line-height: 1.1;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--text-primary);
 }
-.topbar-trial .brand-title span { color: var(--text-primary); }
-.topbar-trial .brand-sub {
+.topbar-portal .brand-title span { color: var(--text-primary); }
+.topbar-portal .brand-sub {
     margin-top: 2px;
     font-size: 9px;
     font-weight: 600;
@@ -157,13 +157,13 @@ body.trial-themed p {
     letter-spacing: 0.2em;
     color: var(--text-muted);
 }
-.topbar-trial .top-actions {
+.topbar-portal .top-actions {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-.topbar-trial .circle-btn,
-.topbar-trial .avatar {
+.topbar-portal .circle-btn,
+.topbar-portal .avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -176,11 +176,11 @@ body.trial-themed p {
     cursor: pointer;
     transition: transform 0.2s ease, background 0.2s ease;
 }
-.topbar-trial .circle-btn:hover,
-.topbar-trial .avatar:hover { background: var(--bg-elevated); }
-.topbar-trial .circle-btn:active,
-.topbar-trial .avatar:active { transform: scale(0.94); }
-.topbar-trial .back-link {
+.topbar-portal .circle-btn:hover,
+.topbar-portal .avatar:hover { background: var(--bg-elevated); }
+.topbar-portal .circle-btn:active,
+.topbar-portal .avatar:active { transform: scale(0.94); }
+.topbar-portal .back-link {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -194,10 +194,10 @@ body.trial-themed p {
     cursor: pointer;
     transition: background 0.2s ease;
 }
-.topbar-trial .back-link:hover { background: var(--bg-elevated); }
+.topbar-portal .back-link:hover { background: var(--bg-elevated); }
 
 /* Spacer so content clears fixed topbar */
-.topbar-trial-spacer {
+.topbar-portal-spacer {
     height: calc(env(safe-area-inset-top, 0px) + 64px);
 }
 
@@ -243,8 +243,8 @@ body.trial-themed p {
 }
 .grain-overlay.grain-subtle { opacity: 0.15; }
 
-/* ========== TRIAL CARDS ========== */
-.trial-card {
+/* ========== Portal cardS ========== */
+.portal-card {
     position: relative;
     background: var(--bg-surface);
     border: 1px solid var(--line-soft);
@@ -254,15 +254,15 @@ body.trial-themed p {
     transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
     overflow: hidden;
 }
-.trial-card:hover {
+.portal-card:hover {
     box-shadow: var(--shadow-hard);
     border-color: var(--line-strong);
 }
-.trial-card.card-sage {
+.portal-card.card-sage {
     background: #eef2f0;
     border-color: transparent;
 }
-.trial-card-kicker {
+.portal-card-kicker {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 999px;
@@ -274,7 +274,7 @@ body.trial-themed p {
     text-transform: uppercase;
     margin-bottom: 12px;
 }
-.trial-card-title {
+.portal-card-title {
     margin: 0 0 8px;
     font-family: var(--font-display);
     font-size: 20px;
@@ -282,30 +282,30 @@ body.trial-themed p {
     color: var(--text-primary);
     letter-spacing: -0.01em;
 }
-.trial-card-desc {
+.portal-card-desc {
     margin: 0;
     font-size: 14px;
     line-height: 1.65;
     color: var(--text-muted);
 }
 
-/* ========== TRIAL FORMS ========== */
-.trial-field {
+/* ========== PORTAL FORMS ========== */
+.portal-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin-bottom: 16px;
 }
-.trial-label {
+.portal-label {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--text-muted);
 }
-.trial-input,
-.trial-textarea,
-.trial-select {
+.portal-input,
+.portal-textarea,
+.portal-select {
     width: 100%;
     min-height: 48px;
     border: 1px solid var(--line-strong);
@@ -317,23 +317,23 @@ body.trial-themed p {
     font-size: 14px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
-.trial-textarea {
+.portal-textarea {
     min-height: 120px;
     padding: 12px 16px;
     line-height: 1.6;
     resize: vertical;
 }
-.trial-input:focus,
-.trial-textarea:focus,
-.trial-select:focus {
+.portal-input:focus,
+.portal-textarea:focus,
+.portal-select:focus {
     outline: none;
     border-color: var(--text-primary);
     box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06);
 }
-.trial-input::placeholder,
-.trial-textarea::placeholder { color: var(--text-muted); }
+.portal-input::placeholder,
+.portal-textarea::placeholder { color: var(--text-muted); }
 
-.trial-button {
+.portal-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -350,14 +350,14 @@ body.trial-themed p {
     cursor: pointer;
     transition: background 0.2s ease, transform 0.1s ease;
 }
-.trial-button:hover { background: var(--accent-hover); }
-.trial-button:active { transform: scale(0.98); }
-.trial-button.trial-button-ghost {
+.portal-button:hover { background: var(--accent-hover); }
+.portal-button:active { transform: scale(0.98); }
+.portal-button.portal-button-ghost {
     background: transparent;
     color: var(--text-primary);
     border: 1px solid var(--line-strong);
 }
-.trial-button.trial-button-ghost:hover { background: var(--bg-elevated); }
+.portal-button.portal-button-ghost:hover { background: var(--bg-elevated); }
 
 /* ========== CLEARPATH CTA BUTTON (sliding dots) ========== */
 .doc-cta-link {
@@ -630,9 +630,9 @@ body.trial-themed p {
 
 /* ========== REDUCED MOTION ========== */
 @media (prefers-reduced-motion: reduce) {
-    body.trial-themed *,
-    body.trial-themed *::before,
-    body.trial-themed *::after {
+    body.portal-themed *,
+    body.portal-themed *::before,
+    body.portal-themed *::after {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
     }
@@ -641,7 +641,7 @@ body.trial-themed p {
 
 /* ===========================================================================
    Mobile-First Portal Harmonization
-   Loaded last on *-trial.html pages. These overrides mirror the home portal
+   Loaded last on *.html pages. These overrides mirror the home portal
    dashboard without touching the My Corner editor internals.
    ========================================================================== */
 
@@ -666,7 +666,7 @@ body :where(button, a, input, textarea, select):not(#pmc-root *) {
     font-family: inherit !important;
 }
 
-body :where(h1, h2, h3, h4, .brand-title, .topbar-title, .section-title, .trial-card-title, .page-title, .hero-title, .hero-greeting, .visit-title, .corner-name, .tracker-panel .big):not(#pmc-root *) {
+body :where(h1, h2, h3, h4, .brand-title, .topbar-title, .section-title, .portal-card-title, .page-title, .hero-title, .hero-greeting, .visit-title, .corner-name, .tracker-panel .big):not(#pmc-root *) {
     font-family: var(--font-display) !important;
     font-weight: 800 !important;
     letter-spacing: -0.035em !important;
@@ -709,13 +709,13 @@ body :where(.section-title):not(#pmc-root *) {
     letter-spacing: -0.03em !important;
 }
 
-body :where(.trial-card-title, .card-title, .status-body h3, .tracker-panel h3, .announcement-panel h3, .tap-card h3):not(#pmc-root *) {
+body :where(.portal-card-title, .card-title, .status-body h3, .tracker-panel h3, .announcement-panel h3, .tap-card h3):not(#pmc-root *) {
     font-size: 13px !important;
     line-height: 1.22 !important;
     letter-spacing: -0.01em !important;
 }
 
-body :where(p, .subtitle, .description, .step-desc, .empty-text, .card-desc, .trial-card-desc, .hero-copy, .corner-desc, .tracker-panel p, .announcement-panel p, .tap-card p):not(#pmc-root *) {
+body :where(p, .subtitle, .description, .step-desc, .empty-text, .card-desc, .portal-card-desc, .hero-copy, .corner-desc, .tracker-panel p, .announcement-panel p, .tap-card p):not(#pmc-root *) {
     color: var(--text-body) !important;
     font-size: 12px !important;
     line-height: 1.45 !important;
@@ -749,7 +749,7 @@ body :where(.section-kicker, .quick-card-kicker):not(#pmc-root *) {
     text-transform: uppercase !important;
 }
 
-body :where(.status-chip, .trial-card-kicker, .visit-label, .quota-chip, .badge-chip, .pill, .tag, .chip):not(#pmc-root *) {
+body :where(.status-chip, .portal-card-kicker, .visit-label, .quota-chip, .badge-chip, .pill, .tag, .chip):not(#pmc-root *) {
     display: inline-flex !important;
     align-items: center !important;
     gap: 8px !important;
@@ -774,7 +774,7 @@ body :where(.topbar):not(#pmc-root *) {
     color: var(--text-primary) !important;
 }
 
-body :where(.top-bar, .app-header, .header, .navbar, .mini-topbar, .topbar-trial):not(#pmc-root *) {
+body :where(.top-bar, .app-header, .header, .navbar, .mini-topbar, .topbar-portal):not(#pmc-root *) {
     background: rgba(255, 255, 255, 0.78) !important;
     border: 1px solid rgba(17, 17, 17, 0.08) !important;
     border-radius: 0 0 18px 18px !important;
@@ -784,7 +784,7 @@ body :where(.top-bar, .app-header, .header, .navbar, .mini-topbar, .topbar-trial
     color: var(--text-primary) !important;
 }
 
-body :where(.topbar-trial-inner, .nav-container, .topbar-inner, .header-inner):not(#pmc-root *) {
+body :where(.topbar-portal-inner, .nav-container, .topbar-inner, .header-inner):not(#pmc-root *) {
     width: min(100%, 860px) !important;
     margin-left: auto !important;
     margin-right: auto !important;
@@ -806,7 +806,7 @@ body :where(.hero-card, .page-hero, .hero-section, .profile-header, .welcome-car
     overflow: hidden !important;
 }
 
-body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card, .schedule-card, .appointment-card, .menu-card, .dash-card, .status-card):not(#pmc-root *) {
+body :where(.card, .portal-card, .stat-box, .date-card, .time-card, .slot-card, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card, .schedule-card, .appointment-card, .menu-card, .dash-card, .status-card):not(#pmc-root *) {
     background: rgba(255, 255, 255, 0.82) !important;
     border: 1px solid var(--line-soft) !important;
     border-radius: 18px !important;
@@ -814,19 +814,19 @@ body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .
     color: var(--text-primary) !important;
 }
 
-body :where(.trial-card, .form-card, .result-card, .profile-header, .status-panel, .corner-panel, .tracker-panel, .announcement-panel):not(#pmc-root *) {
+body :where(.portal-card, .form-card, .result-card, .profile-header, .status-panel, .corner-panel, .tracker-panel, .announcement-panel):not(#pmc-root *) {
     padding: 14px !important;
 }
 
-body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .trial-card, .schedule-card, .appointment-card):not(#pmc-root *) {
+body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .portal-card, .schedule-card, .appointment-card):not(#pmc-root *) {
     transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease !important;
 }
 
-body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .trial-card, .schedule-card, .appointment-card):active:not(#pmc-root *) {
+body :where(.tap-card, .date-card, .time-card, .slot-card, .menu-card, .article-card, .document-card, .notification-card, .portal-card, .schedule-card, .appointment-card):active:not(#pmc-root *) {
     transform: scale(0.97) !important;
 }
 
-body :where(.tap-card:hover, .date-card:hover, .time-card:hover, .slot-card:hover, .menu-card:hover, .article-card:hover, .document-card:hover, .notification-card:hover, .trial-card:hover):not(#pmc-root *) {
+body :where(.tap-card:hover, .date-card:hover, .time-card:hover, .slot-card:hover, .menu-card:hover, .article-card:hover, .document-card:hover, .notification-card:hover, .portal-card:hover):not(#pmc-root *) {
     border-color: var(--line-strong) !important;
     box-shadow: 0 12px 26px rgba(17, 17, 17, 0.08) !important;
 }
@@ -836,7 +836,7 @@ body :where(.icon, .card-icon, .doc-card-icon, .status-icon):not(#pmc-root *) {
     background: var(--surface-muted) !important;
 }
 
-body :where(button, .btn, .button, .trial-button, .primary-btn, .primary-action, .submit-btn, .action-btn, .btn-submit, .book-btn, .btn-confirm, .save-btn, .download-btn, .footer-subscribe-button):not(#pmc-root *) {
+body :where(button, .btn, .button, .portal-button, .primary-btn, .primary-action, .submit-btn, .action-btn, .btn-submit, .book-btn, .btn-confirm, .save-btn, .download-btn, .footer-subscribe-button):not(#pmc-root *) {
     border-radius: 14px !important;
     font-family: var(--font-main) !important;
     font-size: 12px !important;
@@ -846,18 +846,18 @@ body :where(button, .btn, .button, .trial-button, .primary-btn, .primary-action,
     -webkit-tap-highlight-color: transparent;
 }
 
-body :where(.trial-button, .primary-btn, .primary-action, .submit-btn, .btn-submit, .btn-primary, .book-btn, .btn-confirm, .save-btn, button[type="submit"]):not(#pmc-root *) {
+body :where(.portal-button, .primary-btn, .primary-action, .submit-btn, .btn-submit, .btn-primary, .book-btn, .btn-confirm, .save-btn, button[type="submit"]):not(#pmc-root *) {
     background: var(--text-primary) !important;
     color: #ffffff !important;
     border: 1px solid var(--text-primary) !important;
     box-shadow: none !important;
 }
 
-body :where(.trial-button, .primary-btn, .primary-action, .submit-btn, .btn-submit, .btn-primary, .book-btn, .btn-confirm, .save-btn, button[type="submit"]):active:not(#pmc-root *) {
+body :where(.portal-button, .primary-btn, .primary-action, .submit-btn, .btn-submit, .btn-primary, .book-btn, .btn-confirm, .save-btn, button[type="submit"]):active:not(#pmc-root *) {
     transform: scale(0.97) !important;
 }
 
-body :where(.ghost-action, .secondary-btn, .btn-secondary, .trial-button-ghost, .back-btn, .topbar-back, .visit-back, .icon-btn, .circle-btn, .avatar, .btn-cancel, .cancel-btn, .btn-google):not(#pmc-root *) {
+body :where(.ghost-action, .secondary-btn, .btn-secondary, .portal-button-ghost, .back-btn, .topbar-back, .visit-back, .icon-btn, .circle-btn, .avatar, .btn-cancel, .cancel-btn, .btn-google):not(#pmc-root *) {
     background: rgba(255, 255, 255, 0.86) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--line-strong) !important;
@@ -875,7 +875,7 @@ body :where(.star-btn):not(#pmc-root *) {
     color: var(--amber) !important;
 }
 
-body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-select):not(#pmc-root *) {
+body :where(input, textarea, select, .portal-input, .portal-textarea, .portal-select):not(#pmc-root *) {
     border-radius: 14px !important;
     border: 1px solid var(--line-strong) !important;
     background: #fbfbf8 !important;
@@ -885,13 +885,13 @@ body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-selec
     box-shadow: none !important;
 }
 
-body :where(input, textarea, select, .trial-input, .trial-textarea, .trial-select):focus:not(#pmc-root *) {
+body :where(input, textarea, select, .portal-input, .portal-textarea, .portal-select):focus:not(#pmc-root *) {
     border-color: var(--accent) !important;
     box-shadow: 0 0 0 3px rgba(92, 127, 114, 0.14) !important;
     outline: none !important;
 }
 
-body :where(label, .trial-label, .field label):not(#pmc-root *) {
+body :where(label, .portal-label, .field label):not(#pmc-root *) {
     color: var(--text-muted) !important;
     font-size: 11px !important;
     font-weight: 800 !important;
@@ -963,7 +963,7 @@ body :where(.toast, .alert-success, .success-message):not(#pmc-root *) {
         border-radius: 24px !important;
     }
 
-    body :where(.card, .trial-card, .stat-box, .date-card, .time-card, .slot-card, .profile-header, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card, .schedule-card, .appointment-card, .menu-card, .dash-card, .status-card):not(#pmc-root *) {
+    body :where(.card, .portal-card, .stat-box, .date-card, .time-card, .slot-card, .profile-header, .form-card, .result-card, .document-card, .notification-card, .article-card, .question-card, .visit-card, .tracker-card, .calendar-card, .medication-card, .lab-card, .record-card, .feedback-card, .settings-card, .empty-state, .status-panel, .corner-panel, .tracker-panel, .announcement-panel, .tap-card, .schedule-card, .appointment-card, .menu-card, .dash-card, .status-card):not(#pmc-root *) {
         border-radius: 18px !important;
     }
 }
@@ -971,18 +971,18 @@ body :where(.toast, .alert-success, .success-message):not(#pmc-root *) {
 /* ===========================================================================
    Final Shell Normalization
    Force consistent header rhythm, cleaner paragraph measure, and remove older
-   landing-style footers from all trial pages.
+   landing-style footers from all portal pages.
    ========================================================================== */
 
-body :where(.site-footer, footer.site-footer, .page-footer, .trial-footer, .footer-card-frame, .site-footer-inner, .site-footer-bottom):not(#pmc-root *) {
+body :where(.site-footer, footer.site-footer, .page-footer, .portal-footer, .footer-card-frame, .site-footer-inner, .site-footer-bottom):not(#pmc-root *) {
     display: none !important;
 }
 
-body.trial-header-normalized :where(.trial-legacy-header):not(#pmc-root *) {
+body.portal-header-normalized :where(.portal-legacy-header):not(#pmc-root *) {
     display: none !important;
 }
 
-body :where(.trial-unified-header):not(#pmc-root *) {
+body :where(.portal-unified-header):not(#pmc-root *) {
     position: sticky !important;
     top: env(safe-area-inset-top, 0px) !important;
     z-index: 34 !important;
@@ -994,13 +994,13 @@ body :where(.trial-unified-header):not(#pmc-root *) {
     margin-bottom: 14px !important;
 }
 
-body :where(.trial-unified-brand):not(#pmc-root *) {
+body :where(.portal-unified-brand):not(#pmc-root *) {
     display: block !important;
     min-width: 0 !important;
     flex: 1 1 auto !important;
 }
 
-body :where(.trial-unified-back):not(#pmc-root *) {
+body :where(.portal-unified-back):not(#pmc-root *) {
     border-radius: 14px !important;
     border: 1px solid var(--line-strong) !important;
     background: rgba(255, 255, 255, 0.86) !important;
@@ -1016,7 +1016,7 @@ body :where(.trial-unified-back):not(#pmc-root *) {
     box-shadow: var(--shadow-soft) !important;
 }
 
-body :where(.visit-topbar, .mini-topbar, .topbar, .topbar-trial):not(#pmc-root *) {
+body :where(.visit-topbar, .mini-topbar, .topbar, .topbar-portal):not(#pmc-root *) {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -1025,13 +1025,13 @@ body :where(.visit-topbar, .mini-topbar, .topbar, .topbar-trial):not(#pmc-root *
     margin-bottom: 14px !important;
 }
 
-body :where(.mini-topbar, .visit-topbar, .topbar-trial):not(#pmc-root *) {
+body :where(.mini-topbar, .visit-topbar, .topbar-portal):not(#pmc-root *) {
     position: sticky !important;
     top: env(safe-area-inset-top, 0px) !important;
     z-index: 30 !important;
 }
 
-body :where(.topbar-inner, .topbar-trial-inner):not(#pmc-root *) {
+body :where(.topbar-inner, .topbar-portal-inner):not(#pmc-root *) {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -1069,12 +1069,12 @@ body :where(.page-header .icon-wrap):not(#pmc-root *) {
     margin-bottom: 2px !important;
 }
 
-body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .trial-card-desc, .section-note, .brand-sub):not(#pmc-root *) {
+body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .portal-card-desc, .section-note, .brand-sub):not(#pmc-root *) {
     max-width: 34ch !important;
     text-wrap: pretty;
 }
 
-body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .trial-card-desc):not(#pmc-root *) {
+body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .portal-card-desc):not(#pmc-root *) {
     margin: 0 !important;
     font-size: 12px !important;
     line-height: 1.55 !important;
@@ -1112,7 +1112,7 @@ body :where(.login-foot, .char-count, small, .field small):not(#pmc-root *) {
 }
 
 @media (max-width: 640px) {
-    body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .trial-card-desc, .brand-sub):not(#pmc-root *) {
+    body :where(.page-header p, .step-desc, .login-subtitle, .visit-intro, .portal-card-desc, .brand-sub):not(#pmc-root *) {
         max-width: none !important;
     }
 }

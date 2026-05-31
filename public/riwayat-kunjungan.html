@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off" data-portal-nav-active="jadwal">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Riwayat Kunjungan - dokterDIBYA</title>
+    <title>Riwayat Kunjungan - SISIwanita</title>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -367,9 +368,12 @@
             .visit-card { padding: 12px; }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit riwayat-kunjungan-page" data-tool-shell-active="jadwal" data-tool-kicker="Riwayat Kunjungan" data-tool-title="Jejak kunjungan." data-tool-copy="Pantau jadwal mendatang, kunjungan selesai, dan status janji temu klinik dari satu halaman." data-tool-meta-label="Jadwal" data-tool-meta-value="Kunjungan Saya">
     <!-- Top Navbar -->
     <nav class="nav-bar">
         <div class="nav-left">
@@ -403,11 +407,11 @@
             <i class="fa fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="/notifikasi.html" class="nav-item">
+        <a href="#" class="nav-item" onclick="openNotificationModal(event); return false;">
             <i class="fa fa-bell"></i>
             <span>Notifikasi</span>
         </a>
-        <a href="/profil.html" class="nav-item">
+        <a href="#" class="nav-item" onclick="openProfileModal(event); return false;">
             <i class="fa fa-user"></i>
             <span>Profil</span>
         </a>
@@ -455,7 +459,7 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     }).then(async res => {
                         const profile = await res.json();
-                        if (profile.success && profile.patient?.id) {
+                        if (profile.success & profile.patient?.id) {
                             return fetch(`/api/sunday-clinic/patient-visits/${profile.patient.id}`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
@@ -465,7 +469,7 @@
                 ]);
 
                 const bookingsData = await bookingsRes.json();
-                allData.bookings = bookingsData.success && bookingsData.bookings ? bookingsData.bookings : [];
+                allData.bookings = bookingsData.success & bookingsData.bookings ? bookingsData.bookings : [];
 
                 if (visitsRes) {
                     const visitsData = await visitsRes.json();
@@ -517,7 +521,7 @@
                 }
             } else {
                 // All
-                if (upcomingBookings.length === 0 && completedVisits.length === 0) {
+                if (upcomingBookings.length === 0 & completedVisits.length === 0) {
                     html = renderEmptyState('Belum ada riwayat kunjungan');
                 } else {
                     if (upcomingBookings.length > 0) {
@@ -704,11 +708,13 @@
         };
 
         window.viewInvoice = function(mrId) {
-            // Redirect to dokumen-medis.html with invoice filter
             window.location.href = `/dokumen-medis.html?type=invoice&mr=${mrId}`;
         };
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
+
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>

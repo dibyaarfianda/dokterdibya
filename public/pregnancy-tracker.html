@@ -1,830 +1,736 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Pregnancy Tracker - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Monitoring Kehamilan - SISIwanita</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
+    <script>
+        try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch (error) {}
+        window.__patientPortalHeaderInstalled = true;
+    </script>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #000000;
-            min-height: 100vh;
-            color: #ffffff;
-            padding-bottom: 80px;
+        body.pregnancy-tracker-page .hero-title {
+            white-space: nowrap;
         }
 
-        /* Navbar */
-        .nav-bar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
+        body.pregnancy-tracker-page .pregnancy-source {
+            display: inline-flex;
             align-items: center;
-            padding: 15px 20px;
-            padding-top: max(15px, env(safe-area-inset-top));
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+            gap: 7px;
         }
 
-        .nav-left {
-            display: flex;
+        body.pregnancy-tracker-page .pregnancy-ring-card {
+            display: grid;
+            grid-template-columns: minmax(210px, 280px) 1fr;
+            gap: 22px;
             align-items: center;
-            gap: 10px;
-        }
-
-        .back-btn {
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .page-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #a855f7;
-        }
-
-        /* Main Content */
-        .content {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Week Counter Hero */
-        .week-hero {
-            text-align: center;
-            padding: 30px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 20px;
-            margin-bottom: 20px;
-        }
-
-        .baby-emoji {
-            font-size: 80px;
-            line-height: 1;
-            margin-bottom: 15px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .baby-size {
-            font-size: 14px;
-            color: #ccc;
-            margin-bottom: 20px;
-        }
-
-        .baby-size strong {
-            color: #a855f7;
-            font-size: 18px;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .baby-size .length {
-            font-size: 12px;
-            color: #888;
-            margin-top: 5px;
-        }
-
-        .week-counter {
-            font-size: 56px;
-            font-weight: 700;
-            color: #fff;
-            line-height: 1;
-        }
-
-        .week-counter .label {
-            font-size: 24px;
-            color: #a855f7;
-        }
-
-        .week-counter .days {
-            font-size: 20px;
-            color: #888;
-        }
-
-        .trimester-info {
-            color: #888;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        /* Progress Bar */
-        .progress-section {
-            margin: 25px 0;
-        }
-
-        .progress-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-
-        .progress-bar-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            height: 12px;
+            background: rgba(255,255,255,0.86) !important;
             overflow: hidden;
         }
 
-        .progress-fill {
-            background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
+        body.pregnancy-tracker-page .ring-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 260px;
+            margin: 0 auto;
+        }
+
+        body.pregnancy-tracker-page .ring-svg {
+            width: 100%;
             height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s;
+            transform: rotate(-90deg);
         }
 
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
+        body.pregnancy-tracker-page .ring-track {
+            fill: none;
+            stroke: var(--line);
+            stroke-width: 10;
         }
 
-        .stat-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 15px;
-            padding: 18px;
+        body.pregnancy-tracker-page .ring-progress {
+            fill: none;
+            stroke: var(--green);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        body.pregnancy-tracker-page .ring-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
         }
 
-        .stat-card.hpl {
-            background: rgba(168, 85, 247, 0.15);
-            border-color: rgba(168, 85, 247, 0.3);
-        }
-
-        .stat-card.countdown {
-            background: rgba(236, 72, 153, 0.15);
-            border-color: rgba(236, 72, 153, 0.3);
-        }
-
-        .stat-label {
-            font-size: 11px;
+        body.pregnancy-tracker-page .week-kicker {
+            font-size: 10px;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            font-weight: 800;
+            color: var(--muted);
+        }
+
+        body.pregnancy-tracker-page .week-big {
+            font-family: var(--display);
+            font-size: clamp(68px, 19vw, 104px);
+            line-height: 0.95;
+            letter-spacing: -0.06em;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 3px 0 5px;
+        }
+
+        body.pregnancy-tracker-page .week-sub {
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        body.pregnancy-tracker-page .ring-info .info-kicker {
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: var(--green);
             margin-bottom: 8px;
         }
 
-        .stat-card.hpl .stat-label { color: #a855f7; }
-        .stat-card.countdown .stat-label { color: #ec4899; }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: 600;
-            color: #fff;
+        body.pregnancy-tracker-page .ring-info h3 {
+            font-family: var(--display);
+            font-size: clamp(23px, 6vw, 34px);
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+            margin-bottom: 9px;
         }
 
-        /* Tip Card */
-        .tip-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-left: 4px solid #a855f7;
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 20px;
-        }
-
-        .tip-title {
-            color: #a855f7;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            display: flex;
+        body.pregnancy-tracker-page .info-len {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .tip-content {
-            color: #e0e0e0;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        /* Development Card */
-        .dev-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 20px;
-        }
-
-        .dev-title {
-            color: #ec4899;
-            font-size: 14px;
-            font-weight: 600;
+            gap: 7px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.66);
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 7px 10px;
             margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
-        .dev-list {
+        body.pregnancy-tracker-page .dev-list {
             list-style: none;
+            display: grid;
+            gap: 8px;
+            margin: 0;
+            padding: 0;
         }
 
-        .dev-list li {
-            color: #ccc;
-            font-size: 13px;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        body.pregnancy-tracker-page .dev-list li {
             display: flex;
-            align-items: center;
+            gap: 9px;
+            align-items: flex-start;
+            color: var(--ink-soft);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        body.pregnancy-tracker-page .dev-list i {
+            color: var(--green);
+            font-size: 12px;
+            margin-top: 3px;
+            flex: 0 0 auto;
+        }
+
+        body.pregnancy-tracker-page .pregnancy-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 10px;
         }
 
-        .dev-list li:last-child {
-            border-bottom: none;
-        }
-
-        .dev-list li i {
-            color: #a855f7;
-            width: 20px;
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .birth-self-card {
-            background: rgba(236, 72, 153, 0.12);
-            border: 1px solid rgba(236, 72, 153, 0.35);
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 18px;
-        }
-
-        .birth-self-card h4 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            color: #f472b6;
+        body.pregnancy-tracker-page .stat-tile {
+            min-height: 116px;
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        .birth-self-card p {
-            margin: 0 0 12px 0;
-            color: #ddd;
-            font-size: 13px;
-            line-height: 1.5;
+        body.pregnancy-tracker-page .stat-kicker,
+        body.pregnancy-tracker-page .panel-kicker {
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
         }
 
-        .birth-self-btn {
-            width: 100%;
-            border: none;
-            border-radius: 10px;
-            padding: 11px 14px;
-            background: linear-gradient(135deg, #ec4899, #f97316);
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
+        body.pregnancy-tracker-page .stat-value {
+            font-family: var(--display);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+            font-size: clamp(21px, 6vw, 30px);
+            line-height: 1.05;
+            margin: 8px 0 5px;
         }
 
-        .birth-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-            padding: 16px;
+        body.pregnancy-tracker-page .stat-sub {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.35;
         }
 
-        .birth-modal-box {
-            width: 100%;
-            max-width: 440px;
-            background: #111;
-            border: 1px solid rgba(236, 72, 153, 0.3);
-            border-radius: 14px;
-            padding: 16px;
+        body.pregnancy-tracker-page .info-block h3,
+        body.pregnancy-tracker-page .hpht-card h3 {
+            font-family: var(--display);
+            font-size: 19px;
+            letter-spacing: -0.03em;
+            line-height: 1.12;
+            color: var(--ink);
+            margin: 5px 0 8px;
         }
 
-        .birth-modal-box h3 {
-            margin: 0 0 6px 0;
-            font-size: 17px;
-            color: #f472b6;
-        }
-
-        .birth-modal-box p {
-            margin: 0 0 14px 0;
-            color: #ccc;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .birth-field {
-            margin-bottom: 10px;
-        }
-
-        .birth-field label {
-            display: block;
-            color: #ddd;
+        body.pregnancy-tracker-page .info-block p,
+        body.pregnancy-tracker-page .hpht-card p {
+            color: var(--muted);
             font-size: 12px;
-            margin-bottom: 5px;
+            line-height: 1.5;
+            margin: 0;
         }
 
-        .birth-field input,
-        .birth-field select {
+        body.pregnancy-tracker-page .cta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 14px;
+        }
+
+        body.pregnancy-tracker-page .hpht-form-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-top: 14px;
+        }
+
+        body.pregnancy-tracker-page .portal-field label {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        body.pregnancy-tracker-page .portal-input {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.06);
-            color: #fff;
-            font-size: 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.74);
+            color: var(--ink);
+            padding: 11px 12px;
+            font: inherit;
+            font-size: 13px;
             outline: none;
         }
 
-        .birth-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .birth-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 12px;
-        }
-
-        .birth-actions button {
-            border: none;
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .birth-actions .submit {
-            background: linear-gradient(135deg, #ec4899, #f97316);
-            color: #fff;
-        }
-
-        .birth-actions .cancel {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ddd;
-        }
-
-        .action-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 18px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            text-decoration: none;
-            color: #fff;
-            transition: all 0.3s;
-        }
-
-        .action-btn:hover {
-            background: rgba(168, 85, 247, 0.2);
-            border-color: #a855f7;
-        }
-
-        .action-btn i {
-            font-size: 24px;
-            color: #a855f7;
-        }
-
-        .action-btn span {
-            font-size: 12px;
-            color: #ccc;
-        }
-
-        /* Empty State */
-        .empty-state {
+        body.pregnancy-tracker-page .empty-state {
             text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .empty-state i {
-            font-size: 60px;
-            margin-bottom: 20px;
-            color: #a855f7;
-            opacity: 0.5;
-        }
-
-        .empty-state p {
-            font-size: 15px;
-            margin-bottom: 20px;
-        }
-
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 80px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .loading i {
-            margin-right: 8px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 0;
-            padding-bottom: max(10px, env(safe-area-inset-bottom));
-            background: rgba(26, 26, 46, 0.98);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(168, 85, 247, 0.2);
-            z-index: 100;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
+            padding: 22px 14px;
+            color: var(--muted);
             font-size: 12px;
-            padding: 8px 20px;
-            transition: color 0.3s;
         }
 
-        .nav-item.active,
-        .nav-item:hover {
-            color: #a855f7;
+        body.pregnancy-tracker-page .empty-state i {
+            display: block;
+            font-size: 30px;
+            opacity: 0.42;
+            margin-bottom: 9px;
         }
 
-        .nav-item i {
-            font-size: 20px;
+        @media (max-width: 720px) {
+            body.pregnancy-tracker-page .pregnancy-ring-card {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            body.pregnancy-tracker-page .ring-info {
+                text-align: center;
+            }
+
+            body.pregnancy-tracker-page .dev-list li {
+                text-align: left;
+            }
         }
 
-        /* Responsive */
-        @media (max-width: 400px) {
-            .content { padding: 15px; }
-            .week-counter { font-size: 48px; }
-            .baby-emoji { font-size: 60px; }
+        @media (max-width: 520px) {
+            body.pregnancy-tracker-page .hero-title {
+                font-size: clamp(27px, 7.4vw, 38px) !important;
+            }
+
+            body.pregnancy-tracker-page .pregnancy-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            body.pregnancy-tracker-page .hpht-form-row {
+                grid-template-columns: 1fr;
+            }
+
+            body.pregnancy-tracker-page .cta-row .primary-action,
+            body.pregnancy-tracker-page .cta-row .ghost-action {
+                flex: 1 1 100%;
+            }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
 </head>
-<body>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <h1 class="page-title"><i class="fa fa-heartbeat"></i> Pregnancy Tracker</h1>
-        </div>
-    </nav>
+<body class="home-sections-locked patient-tool-shell pregnancy-tracker-page" data-tool-shell-active="aplikasi">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
 
-    <!-- Main Content -->
-    <main class="content" id="main-content">
-        <div class="loading">
-            <i class="fa fa-spinner fa-spin"></i> Memuat data...
+    <main class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </button>
+                    <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
+                        <img id="user-avatar-img" alt="">
+                        <span id="user-avatar-initials">--</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-card reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Monitoring Kehamilan</span></div>
+            <h1 class="hero-title">Monitoring kehamilan.</h1>
+            <p class="hero-copy">Ikuti usia kehamilan, HPL, ukuran janin, dan hal penting minggu ini dari satu ruang yang rapi.</p>
+            <div class="today-row">
+                <div>
+                    <div class="today-label">Sumber</div>
+                    <div class="today-value pregnancy-source" id="tracker-source"><i class="fa-solid fa-wave-square"></i> Memuat data</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="go('/album-usg.html')">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Album USG</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="loading" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Memuat data kehamilan...</span>
+        </div>
+
+        <div id="content-wrapper">
+            <div id="tracker-content"></div>
         </div>
     </main>
 
-    <div class="birth-modal" id="birth-self-modal">
-        <div class="birth-modal-box">
-            <h3>Konfirmasi Kelahiran</h3>
-            <p>Isi data bayi untuk membuat kartu ucapan kelahiran.</p>
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
 
-            <div class="birth-field">
-                <label>Nama Bayi</label>
-                <input type="text" id="birth-self-baby-name" placeholder="Nama si kecil">
-            </div>
-
-            <div class="birth-row">
-                <div class="birth-field">
-                    <label>Jenis Kelamin</label>
-                    <select id="birth-self-gender">
-                        <option value="">-- Pilih --</option>
-                        <option value="Laki-laki">Laki-laki</option>
-                        <option value="Perempuan">Perempuan</option>
-                    </select>
-                </div>
-                <div class="birth-field">
-                    <label>Tanggal Persalinan</label>
-                    <input type="date" id="birth-self-date">
-                </div>
-            </div>
-
-            <div class="birth-field">
-                <label>Berat Badan</label>
-                <input type="text" id="birth-self-weight" placeholder="3.1 kg">
-            </div>
-
-            <div class="birth-actions">
-                <button class="cancel" id="birth-self-cancel">Batal</button>
-                <button class="submit" id="birth-self-submit">Simpan</button>
-            </div>
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu.html')" aria-label="Beranda">
+                <i class="fa-solid fa-house"></i><span>Beranda</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen">
+                <i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span>
+            </button>
+            <button class="nav-item active soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
+                <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal">
+                <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang">
+                <i class="fa-solid fa-door-open"></i><span>Ruang</span>
+            </button>
         </div>
-    </div>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
     </nav>
 
-    <script type="module">
-        import { getToken, checkAuth, formatDate } from '/scripts/patient-utils.js';
+    <div id="toast-container"></div>
 
-        // Check auth
-        if (!checkAuth()) {
-            // Redirect handled by checkAuth
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, escapeHtml } from '/scripts/patient-utils.js';
+
+        const HPHT_KEY = 'patient_pregnancy_tracker_hpht_preview';
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMockTrackerMode = urlParams.has('mockApi') || urlParams.has('mockTracker');
+        const isMockEmptyMode = urlParams.has('mockEmpty');
+
+        if (isMockTrackerMode & !getToken()) {
+            localStorage.setItem('vps_auth_token', 'mock-pregnancy-token');
+            localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
         }
 
-        const token = getToken();
-        let trackerData = null;
+        window.PatientToolShell?.init({ activeNav: 'aplikasi' });
 
-        const birthSelfModal = document.getElementById('birth-self-modal');
-        const birthSelfCancel = document.getElementById('birth-self-cancel');
-        const birthSelfSubmit = document.getElementById('birth-self-submit');
+        if (checkAuth()) {
+            initPregnancyTracker();
+        }
 
-        birthSelfCancel.addEventListener('click', closeBirthSelfModal);
-        birthSelfModal.addEventListener('click', (e) => {
-            if (e.target === birthSelfModal) closeBirthSelfModal();
-        });
-        birthSelfSubmit.addEventListener('click', submitBirthSelfReport);
-
-        // Load pregnancy data
-        loadPregnancyData();
+        async function initPregnancyTracker() {
+            window.PatientToolShell?.updateAvatarInitials();
+            await loadPregnancyData();
+            window.PatientToolShell?.showContent({ loadingId: 'loading-state', contentId: 'content-wrapper' });
+        }
 
         async function loadPregnancyData() {
-            const container = document.getElementById('main-content');
+            const container = document.getElementById('tracker-content');
+            if (!container) return;
 
             try {
-                const response = await fetch('/api/patients/pregnancy-tracker', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                const result = await response.json();
-
-                if (!result.success || !result.data) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fa fa-child"></i>
-                            <p>Data kehamilan belum tersedia</p>
-                            <p style="font-size: 13px; color: #888;">Hubungi dokter Anda untuk mengaktifkan fitur ini</p>
-                        </div>
-                    `;
+                const result = await pregnancyApiRequest();
+                if (result & result.success & result.data) {
+                    renderPregnancyTracker(normalizeTrackerData(result.data));
                     return;
                 }
 
-                const data = result.data;
-                trackerData = data;
-                renderPregnancyTracker(data);
+                const localHpht = localStorage.getItem(HPHT_KEY);
+                if (localHpht) {
+                    renderPregnancyTracker(createTrackerDataFromHpht(localHpht, 'local'));
+                    showToast('Menampilkan pratinjau HPHT dari perangkat ini', 'info', 2200);
+                    return;
+                }
 
+                renderEmpty(container, result?.message || 'Belum ada data USG dengan HPL.');
             } catch (error) {
-                console.error('Error:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa fa-exclamation-triangle"></i>
-                        <p>Gagal memuat data</p>
-                    </div>
-                `;
+                console.error('Pregnancy tracker error:', error);
+                const localHpht = localStorage.getItem(HPHT_KEY);
+                if (localHpht) {
+                    renderPregnancyTracker(createTrackerDataFromHpht(localHpht, 'local'));
+                    showToast('Koneksi bermasalah, memakai pratinjau lokal', 'warning', 2600);
+                    return;
+                }
+                renderError(container);
             }
+        }
+
+        async function pregnancyApiRequest() {
+            if (isMockTrackerMode) {
+                await new Promise(resolve => setTimeout(resolve, 140));
+                if (isMockEmptyMode & !localStorage.getItem(HPHT_KEY)) {
+                    return { success: true, data: null, message: 'Belum ada data USG dengan HPL' };
+                }
+                const hpht = localStorage.getItem(HPHT_KEY) || getMockHpht();
+                return { success: true, data: createTrackerDataFromHpht(hpht, 'mock') };
+            }
+            return apiRequest('/api/patients/pregnancy-tracker?_t=' + Date.now());
+        }
+
+        function renderEmpty(container, message) {
+            setTrackerSource('Belum aktif');
+            container.innerHTML = `
+                <section class="section reveal">
+                    <div class="status-panel">
+                        <div class="status-icon"><i class="fa-solid fa-circle-info"></i></div>
+                        <div class="status-body">
+                            <h3>Data kehamilan belum tersedia</h3>
+                            <p>${escapeHtml(message || 'Tracker akan aktif setelah HPL tersedia dari data USG.')}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section reveal">
+                    <div class="tool-panel hpht-card">
+                        <div class="panel-kicker">Pratinjau Lokal</div>
+                        <h3>Hitung dari HPHT</h3>
+                        <p>Gunakan tanggal Hari Pertama Haid Terakhir untuk melihat pratinjau usia kehamilan di perangkat ini. Data resmi tetap mengikuti catatan USG dokter.</p>
+                        <form class="hpht-form-row" id="hpht-form">
+                            <div class="portal-field">
+                                <label for="hphtInput">Tanggal HPHT</label>
+                                <input type="date" id="hphtInput" class="portal-input" required>
+                            </div>
+                            <button type="submit" class="portal-button" id="hphtSubmit"><i class="fa-solid fa-calculator"></i> Hitung</button>
+                        </form>
+                    </div>
+                </section>
+            `;
+            bindHphtForm();
+        }
+
+        function renderError(container) {
+            setTrackerSource('Tidak tersambung');
+            container.innerHTML = `
+                <section class="section reveal">
+                    <div class="tool-panel empty-state">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p>Gagal memuat data kehamilan. Periksa koneksi Anda lalu coba lagi.</p>
+                        <button type="button" class="portal-button" onclick="loadPregnancyData()"><i class="fa fa-refresh"></i> Coba Lagi</button>
+                    </div>
+                </section>
+            `;
         }
 
         function renderPregnancyTracker(data) {
-            const container = document.getElementById('main-content');
-            const showBirthSelfCard = data.daysUntilEdd <= 30;
+            const container = document.getElementById('tracker-content');
+            const weeks = Number(data.weeksPregnant || 0);
+            const totalWeeks = 40;
+            const progressPercent = clamp(Number(data.progressPercent || Math.round((weeks / totalWeeks) * 100)), 0, 100);
+            const radius = 92;
+            const circumference = 2 * Math.PI * radius;
+            const dashOffset = circumference - (progressPercent / 100) * circumference;
+            const sourceLabel = data.source === 'local'
+                ? 'Pratinjau HPHT'
+                : data.source === 'mock'
+                    ? 'Mock data'
+                    : 'USG terakhir';
+            const babySize = data.babySize || getBabySize(weeks);
+            const developments = Array.isArray(data.developments) & data.developments.length
+                ? data.developments
+                : getDevelopments(weeks);
+
+            setTrackerSource(sourceLabel);
 
             container.innerHTML = `
-                <!-- Week Counter Hero -->
-                <div class="week-hero">
-                    <div class="baby-emoji">${data.babySize.emoji}</div>
-                    <div class="baby-size">
-                        Ukuran bayi seperti
-                        <strong>${data.babySize.size}</strong>
-                        <div class="length">~${data.babySize.length}</div>
-                    </div>
-                    <div class="week-counter">
-                        ${data.weeksPregnant}<span class="label"> minggu</span>
-                        <span class="days">${data.daysExtra} hari</span>
-                    </div>
-                    <div class="trimester-info">
-                        Trimester ${data.trimester} • Progress ${data.progressPercent}%
-                    </div>
-
-                    <!-- Progress Bar -->
-                    <div class="progress-section">
-                        <div class="progress-labels">
-                            <span>0 minggu</span>
-                            <span>40 minggu</span>
+                ${data.source === 'local' ? `
+                    <section class="section reveal">
+                        <div class="status-panel">
+                            <div class="status-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+                            <div class="status-body">
+                                <h3>Pratinjau di perangkat ini</h3>
+                                <p>Hitungan ini berasal dari HPHT yang Anda isi. Data resmi pasien tetap mengikuti catatan USG dokter.</p>
+                            </div>
                         </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-fill" style="width: ${data.progressPercent}%;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card hpl">
-                        <div class="stat-label">HPL (USG)</div>
-                        <div class="stat-value">${data.eddFormatted}</div>
-                    </div>
-                    <div class="stat-card countdown">
-                        <div class="stat-label">Countdown</div>
-                        <div class="stat-value">
-                            <i class="fa fa-clock-o"></i> ${data.daysUntilEdd} hari
-                        </div>
-                    </div>
-                </div>
-
-                ${showBirthSelfCard ? `
-                    <div class="birth-self-card">
-                        <h4><i class="fa fa-baby"></i> Sudah Melahirkan?</h4>
-                        <p>Jika persalinan sudah terjadi, konfirmasi di sini untuk membuat kartu ucapan kelahiran Anda.</p>
-                        <button class="birth-self-btn" id="pregnancy-birth-self-btn">Saya Sudah Melahirkan</button>
-                    </div>
+                    </section>
                 ` : ''}
 
-                <!-- Weekly Tip -->
-                <div class="tip-card">
-                    <div class="tip-title">
-                        <i class="fa fa-lightbulb-o"></i> Tips Minggu Ini
-                    </div>
-                    <div class="tip-content">
-                        ${data.tip}
-                    </div>
-                </div>
-
-                <!-- Baby Development -->
-                ${data.developments ? `
-                    <div class="dev-card">
-                        <div class="dev-title">
-                            <i class="fa fa-child"></i> Perkembangan Bayi Minggu ${data.weeksPregnant}
+                <section class="section reveal">
+                    <div class="tool-panel pregnancy-ring-card">
+                        <div class="ring-wrap">
+                            <svg class="ring-svg" viewBox="0 0 200 200" aria-hidden="true">
+                                <circle class="ring-track" cx="100" cy="100" r="${radius}"></circle>
+                                <circle class="ring-progress" cx="100" cy="100" r="${radius}" stroke-dasharray="${circumference.toFixed(2)}" stroke-dashoffset="${dashOffset.toFixed(2)}"></circle>
+                            </svg>
+                            <div class="ring-center">
+                                <div class="week-kicker">Minggu</div>
+                                <div class="week-big">${weeks}</div>
+                                <div class="week-sub">${Number(data.daysExtra || 0)} hari · ${progressPercent}%</div>
+                            </div>
                         </div>
-                        <ul class="dev-list">
-                            ${data.developments.map(dev => `
-                                <li><i class="fa fa-check-circle"></i> ${dev}</li>
-                            `).join('')}
-                        </ul>
+                        <div class="ring-info">
+                            <div class="info-kicker">Trimester ${escapeHtml(data.trimester || '-')}</div>
+                            <h3>Ukuran seperti ${escapeHtml(babySize.size || '-')}</h3>
+                            <div class="info-len"><i class="fa-solid fa-ruler"></i> ${babySize.length ? '~' + escapeHtml(babySize.length) : 'Estimasi ukuran'}</div>
+                            <ul class="dev-list">
+                                ${developments.slice(0, 4).map(dev => `<li><i class="fa fa-check-circle"></i><span>${escapeHtml(dev)}</span></li>`).join('')}
+                            </ul>
+                        </div>
                     </div>
-                ` : ''}
+                </section>
 
-                <!-- Quick Actions -->
-                <div class="quick-actions">
-                    <a href="/kick-counter.html" class="action-btn">
-                        <i class="fa fa-hand-o-up"></i>
-                        <span>Kick Counter</span>
-                    </a>
-                    <a href="/album-usg.html" class="action-btn">
-                        <i class="fa fa-picture-o"></i>
-                        <span>Album USG</span>
-                    </a>
-                    <a href="/jadwal-vitamin.html" class="action-btn">
-                        <i class="fa fa-medkit"></i>
-                        <span>Jadwal Vitamin</span>
-                    </a>
-                    <a href="/tanya-dokter.html" class="action-btn">
-                        <i class="fa fa-comments"></i>
-                        <span>Tanya Dokter</span>
-                    </a>
-                </div>
+                <section class="section reveal">
+                    <div class="pregnancy-stats-grid">
+                        <div class="tool-panel stat-tile">
+                            <div>
+                                <div class="stat-kicker">Taksiran Persalinan</div>
+                                <div class="stat-value">${escapeHtml(data.eddFormatted || '-')}</div>
+                            </div>
+                            <div class="stat-sub">HPL berdasarkan ${data.source === 'local' ? 'HPHT' : 'USG'}</div>
+                        </div>
+                        <div class="tool-panel stat-tile">
+                            <div>
+                                <div class="stat-kicker">Sisa Hari</div>
+                                <div class="stat-value">${data.daysUntilEdd != null ? Number(data.daysUntilEdd) : '-'}</div>
+                            </div>
+                            <div class="stat-sub">menuju persalinan</div>
+                        </div>
+                        <div class="tool-panel stat-tile">
+                            <div>
+                                <div class="stat-kicker">Progress</div>
+                                <div class="stat-value">${progressPercent}%</div>
+                            </div>
+                            <div class="stat-sub">dari 40 minggu</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section reveal">
+                    <div class="tool-panel info-block">
+                        <div class="panel-kicker">Tips Minggu Ini</div>
+                        <h3>Untuk minggu ke-${weeks || '-'}</h3>
+                        <p>${escapeHtml(data.tip || getTip(weeks))}</p>
+                        <div class="cta-row">
+                            <button type="button" class="primary-action soundable" onclick="go('/kick-counter.html')"><i class="fa-solid fa-hand"></i> Gerakan Bayi</button>
+                            <button type="button" class="ghost-action soundable" onclick="go('/tanya-dokter.html')"><i class="fa-solid fa-comments"></i> Tanya Dokter</button>
+                        </div>
+                    </div>
+                </section>
             `;
-
-            const birthSelfBtn = document.getElementById('pregnancy-birth-self-btn');
-            if (birthSelfBtn) {
-                birthSelfBtn.addEventListener('click', openBirthSelfModal);
-            }
         }
 
-        function openBirthSelfModal() {
-            const dateInput = document.getElementById('birth-self-date');
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const defaultDate = `${today.getFullYear()}-${mm}-${dd}`;
-
-            document.getElementById('birth-self-baby-name').value = '';
-            document.getElementById('birth-self-gender').value = '';
-            document.getElementById('birth-self-weight').value = '';
-            dateInput.value = defaultDate;
-
-            // If EDD already passed, default to EDD date for convenience
-            if (trackerData && trackerData.daysUntilEdd === 0 && trackerData.edd) {
-                dateInput.value = trackerData.edd;
-            }
-
-            birthSelfModal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeBirthSelfModal() {
-            birthSelfModal.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-
-        async function submitBirthSelfReport() {
-            const payload = {
-                baby_name: document.getElementById('birth-self-baby-name').value.trim(),
-                gender: document.getElementById('birth-self-gender').value,
-                birth_date: document.getElementById('birth-self-date').value,
-                birth_weight: document.getElementById('birth-self-weight').value.trim()
-            };
-
-            if (!payload.baby_name || !payload.gender || !payload.birth_date || !payload.birth_weight) {
-                alert('Mohon lengkapi nama bayi, tanggal persalinan, jenis kelamin, dan berat badan.');
-                return;
-            }
-
-            try {
-                birthSelfSubmit.disabled = true;
-                birthSelfSubmit.textContent = 'Menyimpan...';
-
-                const response = await fetch('/api/patient/birth-self-report', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-                if (!result.success) {
-                    alert(result.message || 'Gagal menyimpan data kelahiran');
+        function bindHphtForm() {
+            const form = document.getElementById('hpht-form');
+            const input = document.getElementById('hphtInput');
+            if (!form || !input) return;
+            input.value = localStorage.getItem(HPHT_KEY) || '';
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const hpht = input.value;
+                if (!hpht || !isValidLocalDate(hpht)) {
+                    showToast('Tanggal HPHT belum valid', 'warning');
                     return;
                 }
-
-                closeBirthSelfModal();
-                alert('Data kelahiran tersimpan. Kartu ucapan sudah dibuat dan dapat dilihat di Beranda.');
-                window.location.href = '/patient-menu.html';
-            } catch (error) {
-                console.error('Birth self report error:', error);
-                alert('Terjadi kesalahan saat menyimpan data kelahiran.');
-            } finally {
-                birthSelfSubmit.disabled = false;
-                birthSelfSubmit.textContent = 'Simpan';
-            }
+                localStorage.setItem(HPHT_KEY, hpht);
+                renderPregnancyTracker(createTrackerDataFromHpht(hpht, 'local'));
+                showToast('Pratinjau kehamilan dihitung', 'success');
+            });
         }
+
+        function normalizeTrackerData(data) {
+            return {
+                ...data,
+                source: data.source || 'server',
+                babySize: data.babySize || getBabySize(data.weeksPregnant || 0),
+                developments: data.developments || getDevelopments(data.weeksPregnant || 0),
+                tip: data.tip || getTip(data.weeksPregnant || 0)
+            };
+        }
+
+        function createTrackerDataFromHpht(hpht, source) {
+            const hphtDate = parseLocalDate(hpht);
+            const today = startOfLocalDay(new Date());
+            const edd = addDays(hphtDate, 280);
+            const daysPregnant = Math.max(0, Math.floor((today.getTime() - hphtDate.getTime()) / 86400000));
+            const weeksPregnant = Math.floor(daysPregnant / 7);
+            const daysExtra = daysPregnant % 7;
+            const daysUntilEdd = Math.max(0, Math.floor((edd.getTime() - today.getTime()) / 86400000));
+            const trimester = weeksPregnant >= 28 ? 3 : weeksPregnant >= 14 ? 2 : 1;
+            const progressPercent = Math.min(100, Math.round((weeksPregnant / 40) * 100));
+            return {
+                source,
+                hpht,
+                edd: formatLocalDate(edd),
+                eddFormatted: edd.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+                weeksPregnant,
+                daysExtra,
+                daysUntilEdd,
+                trimester,
+                progressPercent,
+                babySize: getBabySize(weeksPregnant),
+                developments: getDevelopments(weeksPregnant),
+                tip: getTip(weeksPregnant)
+            };
+        }
+
+        function getBabySize(weeks) {
+            const sizes = {
+                4: { size: 'Biji Poppy', length: '0.1 cm' },
+                8: { size: 'Raspberry', length: '1.6 cm' },
+                12: { size: 'Jeruk Nipis', length: '5.4 cm' },
+                16: { size: 'Alpukat', length: '11.6 cm' },
+                20: { size: 'Pisang', length: '16.4 cm' },
+                24: { size: 'Jagung Besar', length: '30 cm' },
+                28: { size: 'Terong Besar', length: '37.6 cm' },
+                32: { size: 'Nangka', length: '42.4 cm' },
+                36: { size: 'Pepaya', length: '47.4 cm' },
+                40: { size: 'Semangka', length: '51.2 cm' }
+            };
+            const key = Object.keys(sizes).map(Number).filter(week => week <= Number(weeks || 0)).pop() || 4;
+            return sizes[key];
+        }
+
+        function getDevelopments(weeks) {
+            if (weeks >= 36) return ['Bayi mematangkan paru-paru dan refleks menyusu.', 'Posisi kepala biasanya semakin turun.', 'Gerakan tetap perlu dipantau setiap hari.', 'Persiapan persalinan mulai masuk fase akhir.'];
+            if (weeks >= 28) return ['Trimester ketiga dimulai dengan pertumbuhan berat badan cepat.', 'Bayi semakin peka pada cahaya dan suara.', 'Pola tidur dan gerak mulai lebih terasa.', 'Kontrol rutin membantu memantau posisi dan cairan ketuban.'];
+            if (weeks >= 20) return ['Gerakan bayi biasanya semakin jelas terasa.', 'Pendengaran bayi berkembang dan mulai mengenali suara.', 'Organ utama terus matang minggu demi minggu.', 'USG membantu memantau pertumbuhan dan HPL.'];
+            if (weeks >= 14) return ['Trimester kedua biasanya mulai terasa lebih nyaman.', 'Wajah, tangan, dan kaki bayi semakin proporsional.', 'Tulang dan otot berkembang aktif.', 'Nutrisi dan hidrasi tetap penting dijaga.'];
+            return ['Organ awal sedang terbentuk.', 'Asam folat dan istirahat cukup sangat penting.', 'Kontrol awal membantu memastikan lokasi dan usia kehamilan.', 'Keluhan ringan tetap perlu dicatat bila mengganggu.'];
+        }
+
+        function getTip(weeks) {
+            if (weeks >= 36) return 'Siapkan tas persalinan dan tetap pantau gerakan bayi. Hubungi klinik jika kontraksi teratur atau cairan ketuban keluar.';
+            if (weeks >= 28) return 'Mulai perhatikan pola gerakan harian bayi. Gunakan fitur Gerakan Bayi bila gerakan terasa berbeda dari biasanya.';
+            if (weeks >= 20) return 'Jadwalkan kontrol sesuai anjuran dokter dan catat pertanyaan yang muncul sebelum kunjungan.';
+            if (weeks >= 14) return 'Jaga aktivitas ringan, asupan protein, dan hidrasi. Dengarkan tubuh jika mulai mudah lelah.';
+            return 'Istirahat cukup, konsumsi vitamin sesuai anjuran, dan segera konsultasi bila ada nyeri hebat atau perdarahan.';
+        }
+
+        function getMockHpht() {
+            const date = startOfLocalDay(new Date());
+            date.setDate(date.getDate() - 24 * 7 - 3);
+            return formatLocalDate(date);
+        }
+
+        function setTrackerSource(text) {
+            const source = document.getElementById('tracker-source');
+            if (source) source.innerHTML = `<i class="fa-solid fa-wave-square"></i> ${escapeHtml(text)}`;
+        }
+
+        function parseLocalDate(value) {
+            const parts = String(value || '').split('-').map(Number);
+            return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+        }
+
+        function isValidLocalDate(value) {
+            const date = parseLocalDate(value);
+            return value & !Number.isNaN(date.getTime()) & date <= startOfLocalDay(new Date());
+        }
+
+        function startOfLocalDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function addDays(date, days) {
+            const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            next.setDate(next.getDate() + days);
+            return next;
+        }
+
+        function formatLocalDate(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
+        }
+
+        window.loadPregnancyData = loadPregnancyData;
     </script>
-<script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/js/patient-tracker.js?v=20260424"></script>
+    <script src="/js/push-subscribe.js?v=20260424"></script>
 </body>
 </html>

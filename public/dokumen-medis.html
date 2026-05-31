@@ -1,91 +1,219 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a1a">
-    <title>Rekam Medis Saya - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Resume Medis - SISIwanita</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Shared Styles -->
-    <link rel="stylesheet" href="/styles/patient-portal.css">
+    <!-- Portal theme router -->
+<style>
+        /* ========== CSS VARIABLES (Monochrome Design System) ========== */
+        :root {
+            --bg-page: #ffffff;
+            --bg-secondary: #ffffff;
+            --bg-surface: #ffffff;
+            --text-primary: #111111;
+            --text-body: #2b2b2b;
+            --text-secondary: #606060;
+            --text-muted: #686868;
+            --accent: #111111;
+            --accent-hover: #2a2a2a;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --line-soft: rgba(0, 0, 0, 0.1);
+            --line-strong: rgba(0, 0, 0, 0.18);
+            --font-main: 'Inter', Arial, sans-serif;
+        }
 
-    <style>
-        /* Filter Tabs */
-        .filter-tabs {
+        /* ========== RESET ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            background: var(--bg-page);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-page);
+            min-height: 100vh;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: #e8e8e8;
+            color: #141414;
+        }
+
+        /* ========== SAFE AREA ========== */
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        /* ========== TOPBAR ========== */
+        .topbar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-bottom: 1.5px dashed var(--line-soft);
+            transition: border-color 0.3s ease;
+        }
+
+        .topbar.scrolled {
+            border-bottom-color: var(--line-strong);
+        }
+
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 14px 16px;
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 5px;
+            align-items: center;
+            gap: 14px;
         }
 
-        .filter-tab {
-            flex-shrink: 0;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 13px;
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-soft);
+            background: transparent;
+            display: grid;
+            place-items: center;
             cursor: pointer;
-            transition: all 0.2s;
+            color: var(--text-primary);
+            font-size: 14px;
+            flex-shrink: 0;
+            transition: border-color 0.2s, background 0.2s;
         }
 
-        .filter-tab.active {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            border-color: #3b82f6;
-            color: white;
+        .back-btn:active {
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
         }
 
-        .filter-tab:hover:not(.active) {
-            background: rgba(59, 130, 246, 0.2);
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
         }
 
-        /* Document Card */
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 16px;
+            padding-top: calc(70px + env(safe-area-inset-top, 0px));
+            padding-bottom: 40px;
+            min-height: 100vh;
+        }
+
+        /* ========== STATS ROW ========== */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            flex: 1;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 14px 16px;
+            text-align: center;
+            background: transparent;
+        }
+
+        .stat-box .value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-box .label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ========== DOCUMENT CARDS ========== */
         .doc-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
             margin-bottom: 12px;
-            overflow: hidden;
-            transition: all 0.2s;
+            background: transparent;
+            transition: border-color 0.2s;
         }
 
-        .doc-card:hover {
-            border-color: #3b82f6;
-            transform: translateY(-2px);
+        .doc-card:active {
+            border-color: var(--line-strong);
         }
 
         .doc-card-inner {
             display: flex;
-            gap: 12px;
-            padding: 15px;
+            gap: 14px;
+            padding: 16px;
+            align-items: flex-start;
         }
 
         .doc-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
             flex-shrink: 0;
+            border: 1.8px dashed var(--line-soft);
+            color: var(--text-primary);
+            background: var(--accent-soft);
         }
-
-        .doc-icon.resume { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
-        .doc-icon.other { background: linear-gradient(135deg, #6b7280, #4b5563); }
 
         .doc-info {
             flex: 1;
@@ -96,113 +224,143 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 3px;
+            gap: 8px;
+            margin-bottom: 4px;
         }
 
         .doc-title {
             font-size: 14px;
             font-weight: 600;
-            color: white;
+            color: var(--text-primary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            line-height: 1.3;
         }
 
         .doc-location {
             font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            flex-shrink: 0;
-            margin-left: 8px;
-        }
-
-        .doc-location.klinik { background: rgba(40, 167, 233, 0.2); color: #28a7e9; }
-        .doc-location.melinda { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-        .doc-location.gambiran { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .doc-location.bhayangkara { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-
-        .doc-date {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .new-badge {
-            background: #28e97f;
-            color: #000;
-            font-size: 10px;
             font-weight: 600;
             padding: 2px 8px;
             border-radius: 10px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border: 1.5px dashed var(--line-soft);
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        .new-badge {
+            display: inline-block;
+            background: var(--text-primary);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 8px;
             margin-left: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            vertical-align: middle;
+        }
+
+        .doc-date {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .doc-date i {
+            font-size: 11px;
+            opacity: 0.6;
         }
 
         .doc-actions {
             display: flex;
             gap: 8px;
-            margin-top: 10px;
+            margin-top: 12px;
         }
 
         .doc-btn {
             flex: 1;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 9px 12px;
+            border-radius: 10px;
             font-size: 12px;
+            font-weight: 600;
+            font-family: var(--font-main);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
         .doc-btn.view-btn {
-            background: rgba(59, 130, 246, 0.2);
-            border: 1px solid rgba(59, 130, 246, 0.5);
-            color: #3b82f6;
+            background: var(--text-primary);
+            border: none;
+            color: #fff;
+        }
+
+        .doc-btn.view-btn:active {
+            background: var(--accent-hover);
         }
 
         .doc-btn.download-btn {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.5);
-            color: #10b981;
+            background: transparent;
+            border: 1.8px dashed var(--line-soft);
+            color: var(--text-primary);
         }
 
-        .doc-btn:hover {
-            transform: translateY(-1px);
+        .doc-btn.download-btn:active {
+            border-color: var(--line-strong);
+            background: var(--accent-soft);
         }
 
-        /* Stats */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+        /* ========== LOADING STATE ========== */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            gap: 12px;
         }
 
-        .stat-box {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
+        .loading-state i {
+            font-size: 28px;
+            opacity: 0.4;
+        }
+
+        .loading-state span {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
             text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
         }
 
-        .stat-box .value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #3b82f6;
+        .empty-state i {
+            font-size: 40px;
+            opacity: 0.25;
+            margin-bottom: 12px;
+            display: block;
         }
 
-        .stat-box .label {
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 2px;
+        .empty-state p {
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        /* Preview Modal */
+        /* ========== PREVIEW MODAL ========== */
         .preview-modal {
             display: none;
             position: fixed;
@@ -210,7 +368,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(255, 255, 255, 0.98);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
             z-index: 9999;
             flex-direction: column;
         }
@@ -223,38 +383,53 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            padding-top: calc(15px + env(safe-area-inset-top, 0px));
-            background: rgba(26, 26, 46, 0.95);
+            padding: 14px 16px;
+            padding-top: calc(14px + env(safe-area-inset-top, 0px));
+            border-bottom: 1.5px dashed var(--line-soft);
+            background: rgba(255, 255, 255, 0.95);
         }
 
         .preview-header h3 {
-            font-size: 14px;
-            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
             flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-right: 15px;
+            margin-right: 12px;
         }
 
         .preview-close {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-soft);
+            background: transparent;
+            display: grid;
+            place-items: center;
             cursor: pointer;
+            color: var(--text-primary);
+            font-size: 16px;
+            flex-shrink: 0;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .preview-close:active {
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
         }
 
         .preview-body {
             flex: 1;
             overflow: auto;
-            padding: 20px;
+            padding: 20px 16px;
         }
 
         .preview-body img {
             max-width: 100%;
-            border-radius: 8px;
+            border-radius: 10px;
+            border: 1.8px dashed var(--line-soft);
         }
 
         .preview-body iframe {
@@ -264,87 +439,158 @@
         }
 
         .preview-footer {
-            padding: 15px 20px;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-            background: rgba(26, 26, 46, 0.95);
+            padding: 14px 16px;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+            border-top: 1.5px dashed var(--line-soft);
+            background: rgba(255, 255, 255, 0.95);
         }
 
         .preview-actions {
             display: flex;
             gap: 10px;
+            max-width: 760px;
+            margin: 0 auto;
         }
 
         .preview-actions button {
             flex: 1;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 13px;
+            border-radius: 12px;
             font-size: 13px;
             font-weight: 600;
+            font-family: var(--font-main);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.15s;
         }
 
         .btn-download {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            background: var(--text-primary);
             border: none;
-            color: white;
+            color: #fff;
         }
 
-        /* Resume Medis Content */
+        .btn-download:active {
+            background: var(--accent-hover);
+        }
+
+        /* ========== RESUME CONTENT (in preview) ========== */
         .resume-content {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
             padding: 20px;
-            color: white;
+            color: var(--text-body);
             line-height: 1.8;
-        }
-
-        .resume-content h4 {
-            color: #8b5cf6;
-            margin-bottom: 10px;
             font-size: 14px;
         }
 
+        .resume-content h4 {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
         .resume-content p {
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             font-size: 14px;
         }
 
         .resume-loading {
             text-align: center;
-            padding: 40px;
-            color: rgba(255, 255, 255, 0.6);
+            padding: 50px 20px;
+            color: var(--text-muted);
         }
 
         .resume-loading i {
-            font-size: 32px;
-            margin-bottom: 15px;
+            font-size: 30px;
+            margin-bottom: 14px;
+            opacity: 0.35;
+            display: block;
         }
+
+        .resume-loading p {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* ========== TOAST ========== */
+        #toast-container {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .toast {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font-main);
+            background: var(--text-primary);
+            color: #fff;
+            border: none;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========== SCROLL FADE-IN ========== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .doc-card {
+            animation: fadeInUp 0.35s ease both;
+        }
+
+        .doc-card:nth-child(1) { animation-delay: 0.05s; }
+        .doc-card:nth-child(2) { animation-delay: 0.1s; }
+        .doc-card:nth-child(3) { animation-delay: 0.15s; }
+        .doc-card:nth-child(4) { animation-delay: 0.2s; }
+        .doc-card:nth-child(5) { animation-delay: 0.25s; }
+        .doc-card:nth-child(6) { animation-delay: 0.3s; }
+        .doc-card:nth-child(7) { animation-delay: 0.35s; }
+        .doc-card:nth-child(8) { animation-delay: 0.4s; }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit dokumen-medis-page" data-tool-shell-active="dokumen" data-tool-kicker="Resume Medis" data-tool-title="Resume medis." data-tool-copy="Buka ringkasan kunjungan dan dokumen medis yang sudah dikirim dokter dalam satu ruang yang rapi." data-tool-meta-label="Dokumen" data-tool-meta-value="Resume Kunjungan">
     <!-- Safe Area Overlays -->
-    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
-    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <!-- Topbar -->
+    <header class="topbar" id="topbar">
+        <div class="topbar-inner">
+            <button class="back-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali">
+                <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <h1 class="page-title">Resume Medis Saya</h1>
+            <span class="topbar-title">Resume Medis</span>
         </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
-    <main class="content">
+    <div class="main-content">
         <!-- Loading State -->
-        <div class="loading" id="loading-state">
-            <i class="fa fa-spinner fa-spin"></i>
+        <div class="loading-state" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
             <span>Memuat dokumen...</span>
         </div>
 
@@ -359,43 +605,23 @@
             </div>
 
             <!-- Documents List -->
-            <div id="doc-list">
-                <!-- Documents will be populated -->
-            </div>
+            <div id="doc-list"></div>
         </div>
-    </main>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
+    </div>
 
     <!-- Preview Modal -->
     <div class="preview-modal" id="preview-modal">
         <div class="preview-header">
             <h3 id="preview-title">Dokumen</h3>
-            <button class="preview-close" onclick="closePreview()">
-                <i class="fa fa-times"></i>
+            <button class="preview-close" onclick="closePreview()" aria-label="Tutup">
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-        <div class="preview-body" id="preview-body">
-            <!-- Content will be loaded -->
-        </div>
+        <div class="preview-body" id="preview-body"></div>
         <div class="preview-footer">
             <div class="preview-actions">
                 <button class="btn-download" id="btn-download" onclick="downloadFile()">
-                    <i class="fa fa-download"></i> Download
+                    <i class="fa-solid fa-download"></i> Download
                 </button>
             </div>
         </div>
@@ -403,6 +629,35 @@
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
+
+    <script>
+    /* ===== Portal theme switch ===== */
+    (function() {
+        var p = new URLSearchParams(window.location.search);
+        var t = p.get('theme');
+        if (t === 'off' || t === 'old' || t === 'default') {
+            try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
+            window.location.replace('/dokumen-medis.html');
+            return;
+        }
+        try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch(e) {}
+    })();
+
+    /* ===== Topbar scroll behavior ===== */
+    (function() {
+        var topbar = document.getElementById('topbar');
+        var lastY = 0;
+        window.addEventListener('scroll', function() {
+            var y = window.scrollY;
+            if (y > 20) {
+                topbar.classList.add('scrolled');
+            } else {
+                topbar.classList.remove('scrolled');
+            }
+            lastY = y;
+        }, { passive: true });
+    })();
+    </script>
 
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
@@ -443,7 +698,7 @@
             try {
                 const data = await apiRequest('/api/patient-documents/my-documents');
 
-                if (data && data.success && data.documents) {
+                if (data & data.success & data.documents) {
                     // Filter to only show resume_medis
                     allDocuments = data.documents.filter(doc =>
                         doc.document_type === 'resume_medis'
@@ -494,55 +749,50 @@
             if (filteredDocuments.length === 0) {
                 list.innerHTML = `
                     <div class="empty-state">
-                        <i class="fa fa-folder-open-o"></i>
+                        <i class="fa-regular fa-folder-open"></i>
                         <p>Belum ada dokumen</p>
                     </div>
                 `;
                 return;
             }
 
-            const typeIcons = {
-                'resume_medis': { icon: 'fa-file-text-o', class: 'resume', label: 'Resume Medis' }
-            };
-
             const locationMap = {
-                'klinik_private': { name: 'Klinik Privat', class: 'klinik' },
-                'rsia_melinda': { name: 'RSIA Melinda', class: 'melinda' },
-                'rsud_gambiran': { name: 'RSUD Gambiran', class: 'gambiran' },
-                'rs_bhayangkara': { name: 'RS Bhayangkara', class: 'bhayangkara' }
+                'klinik_private': { name: 'Klinik Privat' },
+                'rsia_melinda': { name: 'RSIA Melinda' },
+                'rsud_gambiran': { name: 'RSUD Gambiran' },
+                'rs_bhayangkara': { name: 'RS Bhayangkara' }
             };
 
             list.innerHTML = filteredDocuments.map((doc, index) => {
                 const date = new Date(doc.published_at || doc.created_at);
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !doc.first_viewed_at;
-                const typeInfo = typeIcons[doc.document_type] || { icon: 'fa-file-o', class: 'other', label: 'Dokumen' };
-                const location = locationMap[doc.visit_location] || { name: '', class: '' };
+                const location = locationMap[doc.visit_location] || { name: '' };
 
                 return `
                     <div class="doc-card">
                         <div class="doc-card-inner">
-                            <div class="doc-icon ${typeInfo.class}">
-                                <i class="fa ${typeInfo.icon}"></i>
+                            <div class="doc-icon">
+                                <i class="fa-regular fa-file-lines"></i>
                             </div>
                             <div class="doc-info">
                                 <div class="doc-header">
                                     <span class="doc-title">
-                                        ${escapeHtml(doc.title || typeInfo.label)}
+                                        ${escapeHtml(doc.title || 'Resume Medis')}
                                         ${isNew ? '<span class="new-badge">BARU</span>' : ''}
                                     </span>
-                                    ${location.name ? `<span class="doc-location ${location.class}">${location.name}</span>` : ''}
+                                    ${location.name ? `<span class="doc-location">${location.name}</span>` : ''}
                                 </div>
                                 <div class="doc-date">
-                                    <i class="fa fa-calendar"></i> ${dateStr}
+                                    <i class="fa-regular fa-calendar"></i> ${dateStr}
                                 </div>
                                 <div class="doc-actions">
                                     <button class="doc-btn view-btn" onclick="viewDocument(${index})">
-                                        <i class="fa fa-eye"></i> Lihat
+                                        <i class="fa-regular fa-eye"></i> Lihat
                                     </button>
                                     ${doc.file_url ? `
                                         <button class="doc-btn download-btn" onclick="downloadFile(${index})">
-                                            <i class="fa fa-download"></i> Unduh
+                                            <i class="fa-solid fa-download"></i> Unduh
                                         </button>
                                     ` : ''}
                                 </div>
@@ -558,21 +808,24 @@
             currentDoc = filteredDocuments[index];
 
             document.getElementById('preview-modal').classList.add('active');
+            document.body.classList.add('document-viewer-open');
             document.body.style.overflow = 'hidden';
 
             document.getElementById('preview-title').textContent = currentDoc.title || 'Dokumen';
 
             const previewBody = document.getElementById('preview-body');
             const btnDownload = document.getElementById('btn-download');
+            const previewActions = document.querySelector('#preview-modal .preview-actions');
             const previewFooter = document.querySelector('#preview-modal .preview-footer');
+            if (previewActions) previewActions.classList.add('single-action');
             if (previewFooter) previewFooter.style.display = '';
 
             // Check document type
-            if (currentDoc.document_type === 'resume_medis' && (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
+            if (currentDoc.document_type === 'resume_medis' & (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
                 // Load resume medis content from API
                 previewBody.innerHTML = `
                     <div class="resume-loading">
-                        <i class="fa fa-spinner fa-spin"></i>
+                        <i class="fa-solid fa-spinner fa-spin"></i>
                         <p>Memuat resume medis...</p>
                     </div>
                 `;
@@ -582,7 +835,7 @@
                 try {
                     const data = await apiRequest(`/api/patient-documents/${currentDoc.id}/content`);
 
-                    if (data && data.success && data.document) {
+                    if (data & data.success & data.document) {
                         const content = data.document.content || '';
                         previewBody.innerHTML = `
                             <div class="resume-content">
@@ -592,7 +845,7 @@
                     } else {
                         previewBody.innerHTML = `
                             <div class="resume-loading">
-                                <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
+                                <i class="fa-solid fa-triangle-exclamation" style="color: #999;"></i>
                                 <p>Gagal memuat resume medis</p>
                             </div>
                         `;
@@ -600,7 +853,7 @@
                 } catch (e) {
                     previewBody.innerHTML = `
                         <div class="resume-loading">
-                            <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
+                            <i class="fa-solid fa-triangle-exclamation" style="color: #999;"></i>
                             <p>Gagal memuat resume medis</p>
                         </div>
                     `;
@@ -615,17 +868,17 @@
                 } else if (fileType === 'pdf') {
                     previewBody.innerHTML = `
                         <div class="resume-loading">
-                            <i class="fa fa-file-pdf-o" style="color: #ef4444;"></i>
+                            <i class="fa-regular fa-file-pdf" style="color: #999;"></i>
                             <p>File PDF</p>
-                            <p style="font-size: 12px; margin-top: 5px;">Klik Download untuk membuka</p>
+                            <p style="font-size: 12px; margin-top: 5px; color: var(--text-muted);">Klik Download untuk membuka</p>
                         </div>
                     `;
                 } else {
                     previewBody.innerHTML = `
                         <div class="resume-loading">
-                            <i class="fa fa-file-o"></i>
+                            <i class="fa-regular fa-file"></i>
                             <p>Preview tidak tersedia</p>
-                            <p style="font-size: 12px; margin-top: 5px;">Klik Download untuk membuka</p>
+                            <p style="font-size: 12px; margin-top: 5px; color: var(--text-muted);">Klik Download untuk membuka</p>
                         </div>
                     `;
                 }
@@ -634,7 +887,7 @@
                 if (previewFooter) previewFooter.style.display = 'none';
                 previewBody.innerHTML = `
                     <div class="resume-loading">
-                        <i class="fa fa-file-o"></i>
+                        <i class="fa-regular fa-file"></i>
                         <p>Dokumen tidak tersedia</p>
                     </div>
                 `;
@@ -664,6 +917,7 @@
         // Close preview
         function closePreview() {
             document.getElementById('preview-modal').classList.remove('active');
+            document.body.classList.remove('document-viewer-open');
             document.body.style.overflow = '';
             currentDoc = null;
         }
@@ -684,5 +938,7 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>

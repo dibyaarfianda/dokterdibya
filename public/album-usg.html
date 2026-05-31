@@ -1,26 +1,193 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <title>Album USG - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Album USG - SISIwanita</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Shared Styles -->
-    <link rel="stylesheet" href="/styles/patient-portal.css">
+    <!-- Portal theme sticky navigation -->
+<style>
+        /* ========== CSS VARIABLES (Monochrome Design System) ========== */
+        :root {
+            --bg-page: #ffffff;
+            --bg-secondary: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-elevated: #ebebeb;
+            --text-primary: #111111;
+            --text-body: #2b2b2b;
+            --text-secondary: #606060;
+            --text-muted: #686868;
+            --accent: #111111;
+            --accent-hover: #2a2a2a;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --line-soft: rgba(0, 0, 0, 0.1);
+            --line-strong: rgba(0, 0, 0, 0.18);
+            --font-main: 'Inter', Arial, sans-serif;
+        }
 
-    <style>
-        /* USG Gallery Styles */
+        /* ========== RESET ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            background: var(--bg-page);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg-page);
+            min-height: 100vh;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: #e8e8e8;
+            color: #141414;
+        }
+
+        /* ========== SAFE AREA ========== */
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        /* ========== TOPBAR ========== */
+        .topbar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-bottom: 1.5px dashed var(--line-soft);
+        }
+
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-strong);
+            background: transparent;
+            color: var(--text-primary);
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-soft);
+        }
+
+        .back-btn:active {
+            transform: scale(0.92);
+        }
+
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .topbar-count {
+            margin-left: auto;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 80px 16px 40px;
+            padding-top: calc(80px + env(safe-area-inset-top, 0px));
+            min-height: 100vh;
+        }
+
+        /* ========== STATS ROW ========== */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            flex: 1;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            background: transparent;
+        }
+
+        .stat-box .value {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .stat-box .label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        /* ========== USG GALLERY ========== */
         .usg-gallery {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -38,14 +205,19 @@
             border-radius: 12px;
             overflow: hidden;
             aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.05);
+            border: 1.8px dashed var(--line-soft);
+            background: var(--bg-page);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: border-color 0.2s, transform 0.2s;
         }
 
         .usg-item:hover {
+            border-color: var(--line-strong);
             transform: scale(1.02);
-            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.3);
+        }
+
+        .usg-item:active {
+            transform: scale(0.98);
         }
 
         .usg-item img {
@@ -59,112 +231,85 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            padding: 30px 10px 10px;
-            color: white;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+            padding: 28px 10px 10px;
+            color: #fff;
             font-size: 11px;
+            font-weight: 500;
         }
 
         .usg-item .new-badge {
             position: absolute;
             top: 8px;
             right: 8px;
-            background: #28e97f;
-            color: #000;
-            font-size: 10px;
-            font-weight: 600;
+            background: var(--text-primary);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
             padding: 3px 8px;
-            border-radius: 10px;
+            border-radius: 20px;
             z-index: 3;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .usg-item .thumbnail-badge {
             position: absolute;
             top: 8px;
             left: 8px;
-            background: #ffd700;
-            color: #000;
-            font-size: 10px;
-            font-weight: 600;
+            background: var(--text-primary);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
             padding: 3px 8px;
-            border-radius: 10px;
+            border-radius: 20px;
             z-index: 3;
         }
 
-        .usg-item .type-badge {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: rgba(40, 167, 233, 0.9);
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 10px;
-            z-index: 2;
-        }
-
-        /* Filter Tabs */
-        .filter-tabs {
+        /* ========== LOADING STATE ========== */
+        .loading-state {
             display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            overflow-x: auto;
-            padding-bottom: 5px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+            gap: 12px;
         }
 
-        .filter-tab {
-            flex-shrink: 0;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .filter-tab.active {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            border-color: #3b82f6;
-            color: white;
-        }
-
-        .filter-tab:hover:not(.active) {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.5);
-        }
-
-        /* Stats */
-        .stats-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .stat-box {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .stat-box .value {
+        .loading-state i {
             font-size: 24px;
-            font-weight: 700;
-            color: #3b82f6;
         }
 
-        .stat-box .label {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 3px;
+        .loading-state span {
+            font-size: 13px;
+            font-weight: 500;
         }
 
-        /* Lightbox Modal */
+        /* ========== EMPTY STATE ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            gap: 12px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+        }
+
+        .empty-state i {
+            font-size: 36px;
+            color: var(--line-strong);
+        }
+
+        .empty-state p {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* ========== LIGHTBOX MODAL ========== */
         .lightbox-modal {
             display: none;
             position: fixed;
@@ -172,7 +317,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #000000;
+            background: #ffffff;
             z-index: 9999;
             flex-direction: column;
             padding-top: env(safe-area-inset-top, 0px);
@@ -187,24 +332,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            padding-top: calc(15px + env(safe-area-inset-top, 0px));
-            background: #000000;
+            padding: 14px 16px;
+            padding-top: calc(14px + env(safe-area-inset-top, 0px));
+            border-bottom: 1.5px dashed var(--line-soft);
         }
 
         .lightbox-header h3 {
-            font-size: 14px;
-            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
         }
 
         .lightbox-close {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            font-size: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-strong);
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 16px;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            transition: background 0.2s;
+        }
+
+        .lightbox-close:hover {
+            background: var(--accent-soft);
         }
 
         .lightbox-body {
@@ -214,6 +368,8 @@
             justify-content: center;
             padding: 20px;
             overflow: auto;
+            position: relative;
+            background: #fafafa;
         }
 
         .lightbox-body img {
@@ -221,58 +377,73 @@
             max-height: 100%;
             object-fit: contain;
             border-radius: 8px;
+            border: 1.8px dashed var(--line-soft);
         }
 
         .lightbox-footer {
-            padding: 15px 20px;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-            background: #000000;
+            padding: 16px 20px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+            border-top: 1.5px dashed var(--line-soft);
             text-align: center;
         }
 
         .lightbox-footer .date {
             font-size: 14px;
-            color: white;
-            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
         }
 
         .lightbox-footer .notes {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-muted);
         }
 
         .lightbox-actions {
             display: flex;
             gap: 10px;
             justify-content: center;
-            margin-top: 15px;
+            margin-top: 14px;
         }
 
         .lightbox-actions button {
             padding: 10px 20px;
             border-radius: 8px;
             font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-family: var(--font-main);
+            transition: background 0.2s, border-color 0.2s;
         }
 
         .lightbox-actions .btn-thumbnail {
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid #ffd700;
-            color: #ffd700;
+            background: transparent;
+            border: 1.8px dashed var(--line-strong);
+            color: var(--text-primary);
+        }
+
+        .lightbox-actions .btn-thumbnail:hover {
+            background: var(--accent-soft);
         }
 
         .lightbox-actions .btn-thumbnail.active {
-            background: #ffd700;
-            color: #000;
+            background: var(--text-primary);
+            border-color: var(--text-primary);
+            border-style: solid;
+            color: #fff;
         }
 
         .lightbox-actions .btn-download {
-            background: rgba(40, 167, 233, 0.2);
-            border: 1px solid #28a7e9;
-            color: #28a7e9;
+            background: var(--text-primary);
+            border: 1.8px solid var(--text-primary);
+            color: #fff;
+        }
+
+        .lightbox-actions .btn-download:hover {
+            background: var(--accent-hover);
         }
 
         /* Navigation Arrows */
@@ -280,51 +451,91 @@
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            font-size: 24px;
-            padding: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-strong);
+            background: rgba(255, 255, 255, 0.9);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            color: var(--text-primary);
+            font-size: 16px;
             cursor: pointer;
             z-index: 10;
+            display: grid;
+            place-items: center;
+            transition: background 0.2s;
         }
 
         .lightbox-nav:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: var(--accent-soft);
         }
 
         .lightbox-nav.prev {
-            left: 10px;
+            left: 12px;
         }
 
         .lightbox-nav.next {
-            right: 10px;
+            right: 12px;
+        }
+
+        /* ========== TOAST ========== */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--text-primary);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            pointer-events: auto;
+            animation: toastIn 0.3s ease;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
-<body>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit album-usg-page" data-tool-shell-active="dokumen" data-tool-kicker="Album USG" data-tool-title="Album USG." data-tool-copy="Galeri privat untuk foto USG dari kunjungan Anda, termasuk penanda foto baru dan pilihan thumbnail." data-tool-meta-label="Status" data-tool-meta-value="Galeri USG">
     <!-- Safe Area Overlays -->
-    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#000000;z-index:9999;"></div>
-    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#000000;z-index:9999;"></div>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-inner">
+            <button class="back-btn" onclick="window.location.href='/patient-menu.html'">
+                <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <h1 class="page-title">Album USG</h1>
+            <span class="topbar-title">Album USG</span>
+            <span class="topbar-count" id="total-count">0 foto</span>
         </div>
-        <div class="nav-right">
-            <span id="total-count" style="font-size: 12px; color: rgba(255,255,255,0.6);">0 foto</span>
-        </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
-    <main class="content">
+    <main class="main-content">
         <!-- Loading State -->
-        <div class="loading" id="loading-state">
-            <i class="fa fa-spinner fa-spin"></i>
+        <div class="loading-state" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
             <span>Memuat album...</span>
         </div>
 
@@ -342,8 +553,6 @@
                 </div>
             </div>
 
-
-
             <!-- Gallery -->
             <div class="usg-gallery" id="usg-gallery">
                 <!-- USG items will be populated -->
@@ -351,37 +560,21 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
-
     <!-- Lightbox Modal -->
     <div class="lightbox-modal" id="lightbox-modal">
         <div class="lightbox-header">
             <h3 id="lightbox-title">USG</h3>
             <button class="lightbox-close" onclick="closeLightbox()">
-                <i class="fa fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <div class="lightbox-body">
             <button class="lightbox-nav prev" onclick="navigateLightbox(-1)">
-                <i class="fa fa-chevron-left"></i>
+                <i class="fa-solid fa-chevron-left"></i>
             </button>
             <img id="lightbox-img" src="" alt="USG">
             <button class="lightbox-nav next" onclick="navigateLightbox(1)">
-                <i class="fa fa-chevron-right"></i>
+                <i class="fa-solid fa-chevron-right"></i>
             </button>
         </div>
         <div class="lightbox-footer">
@@ -389,10 +582,10 @@
             <div class="notes" id="lightbox-notes"></div>
             <div class="lightbox-actions">
                 <button class="btn-thumbnail" id="btn-thumbnail" onclick="setAsThumbnail()">
-                    <i class="fa fa-star-o"></i> Set Thumbnail
+                    <i class="fa-regular fa-star"></i> Set Thumbnail
                 </button>
                 <button class="btn-download" onclick="downloadImage()">
-                    <i class="fa fa-download"></i> Download
+                    <i class="fa-solid fa-download"></i> Download
                 </button>
             </div>
         </div>
@@ -403,6 +596,19 @@
 
     <!-- Socket.IO for real-time USG updates from staff -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // Portal theme switch
+        (function() {
+            var p = new URLSearchParams(window.location.search);
+            var t = p.get('theme');
+            if (t === 'off' || t === 'old' || t === 'default') {
+                try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
+                window.location.replace('/album-usg.html');
+                return;
+            }
+            try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch(e) {}
+        })();
+    </script>
     <script>
         (function() {
             var socketUrl = location.hostname === 'localhost'
@@ -456,7 +662,7 @@
 
                 window.allImages = [];
 
-                if (response && response.success && response.documents) {
+                if (response & response.success & response.documents) {
                     window.allImages = response.documents;
                 } else if (!response.success) {
                     // API returned error response
@@ -497,7 +703,7 @@
                 gallery.innerHTML = `
                     <div style="grid-column: 1 / -1;">
                         <div class="empty-state">
-                            <i class="fa fa-image"></i>
+                            <i class="fa-regular fa-image"></i>
                             <p>Belum ada foto USG</p>
                         </div>
                     </div>
@@ -514,7 +720,7 @@
                 const date = new Date(img.published_at || img.created_at);
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !img.first_viewed_at;
-                const isThumbnail = window.customThumbnailId && parseInt(window.customThumbnailId) === img.id;
+                const isThumbnail = window.customThumbnailId & parseInt(window.customThumbnailId) === img.id;
 
                 // Use detectedType for badge, fallback to original type
                 const effectiveType = img.detectedType || img.type;
@@ -522,11 +728,11 @@
 
                 return `
                     <div class="usg-item" onclick="openLightbox(${index})">
-                        ${isNew ? '<span class="new-badge">BARU</span>' : ''}
-                        ${isThumbnail ? '<span class="thumbnail-badge"><i class="fa fa-star"></i></span>' : ''}
+                        ${isNew ? '<span class="new-badge">Baru</span>' : ''}
+                        ${isThumbnail ? '<span class="thumbnail-badge"><i class="fa-solid fa-star"></i></span>' : ''}
 
                         <img src="${img.file_url}" alt="USG ${dateStr}" loading="lazy"
-                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EError%3C/text%3E%3C/svg%3E'">
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23f0f0f0%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2714%27 fill=%27%23999%27 text-anchor=%27middle%27 dy=%27.3em%27 font-family=%27Inter%27%3EError%3C/text%3E%3C/svg%3E'">
                         <div class="overlay">
                             ${dateStr}
                             ${img.title ? '<br>' + escapeHtml(img.title) : ''}
@@ -542,6 +748,7 @@
             const img = window.filteredImages[index];
 
             document.getElementById('lightbox-modal').classList.add('active');
+            document.body.classList.add('document-viewer-open', 'album-lightbox-open');
             document.body.style.overflow = 'hidden';
 
             updateLightboxContent(img);
@@ -572,20 +779,21 @@
             document.getElementById('lightbox-title').textContent = img.title || 'USG';
 
             // Update thumbnail button
-            const isThumbnail = window.customThumbnailId && parseInt(window.customThumbnailId) === img.id;
+            const isThumbnail = window.customThumbnailId & parseInt(window.customThumbnailId) === img.id;
             const btnThumbnail = document.getElementById('btn-thumbnail');
             if (isThumbnail) {
                 btnThumbnail.classList.add('active');
-                btnThumbnail.innerHTML = '<i class="fa fa-star"></i> Thumbnail';
+                btnThumbnail.innerHTML = '<i class="fa-solid fa-star"></i> Thumbnail';
             } else {
                 btnThumbnail.classList.remove('active');
-                btnThumbnail.innerHTML = '<i class="fa fa-star-o"></i> Set Thumbnail';
+                btnThumbnail.innerHTML = '<i class="fa-regular fa-star"></i> Set Thumbnail';
             }
         }
 
         // Close lightbox
         function closeLightbox() {
             document.getElementById('lightbox-modal').classList.remove('active');
+            document.body.classList.remove('document-viewer-open', 'album-lightbox-open');
             document.body.style.overflow = '';
         }
 
@@ -611,7 +819,7 @@
             // Update button
             const btnThumbnail = document.getElementById('btn-thumbnail');
             btnThumbnail.classList.add('active');
-            btnThumbnail.innerHTML = '<i class="fa fa-star"></i> Thumbnail';
+            btnThumbnail.innerHTML = '<i class="fa-solid fa-star"></i> Thumbnail';
 
             showToast('Berhasil diset sebagai thumbnail', 'success');
 
@@ -651,5 +859,7 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
+<script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+<script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>

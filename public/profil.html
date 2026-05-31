@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- Version: 2026013001 - No welcome/birth cards here, only in patient-menu.html -->
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -8,51 +7,215 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a1a">
-    <title>Profil - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Profil - SISIwanita</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
 
     <!-- Fonts & Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Shared Styles -->
-    <link rel="stylesheet" href="/styles/patient-portal.css">
+    <!-- Portal theme sticky navigation -->
+<style>
+        /* ========== CSS VARIABLES (Monochrome Design System) ========== */
+        :root {
+            --bg-page: #ffffff;
+            --bg-secondary: #ffffff;
+            --bg-surface: #ffffff;
+            --bg-elevated: #ebebeb;
+            --text-primary: #111111;
+            --text-body: #2b2b2b;
+            --text-secondary: #606060;
+            --text-muted: #686868;
+            --accent: #111111;
+            --accent-hover: #2a2a2a;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --success-soft: rgba(0, 0, 0, 0.08);
+            --line-soft: rgba(0, 0, 0, 0.1);
+            --line-strong: rgba(0, 0, 0, 0.18);
+            --font-main: 'Inter', Arial, sans-serif;
+            --shadow-soft: none;
+            --shadow-hard: none;
+        }
 
-    <style>
-        /* Profile Header */
+        /* ========== RESET ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            background: var(--bg-page);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: transparent;
+            min-height: 100%;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        ::selection {
+            background: #e8e8e8;
+            color: #141414;
+        }
+
+        /* ========== GRID BACKGROUND ========== */
+        .grid-bg {
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            height: 600px;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(to right, #f2f2f2 1px, transparent 1px),
+                linear-gradient(to bottom, #f2f2f2 1px, transparent 1px);
+            background-size: 16px 16px;
+            -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25) 55%, transparent 85%);
+            mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25) 55%, transparent 85%);
+        }
+
+        /* ========== SAFE AREA BARS ========== */
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 9999;
+        }
+
+        /* ========== APP WRAPPER ========== */
+        .app-wrapper {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 100%;
+            background: var(--bg-page);
+        }
+
+        /* ========== TOPBAR ========== */
+        .topbar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0px);
+            left: 0;
+            right: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-bottom: 1.5px dashed rgba(0, 0, 0, 0.12);
+        }
+
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .topbar-back {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.8px dashed var(--line-strong);
+            background: transparent;
+            color: var(--text-primary);
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .topbar-back:hover {
+            background: var(--accent-soft);
+        }
+
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 80px 16px 100px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========== LOADING ========== */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* ========== PROFILE HEADER ========== */
         .profile-header {
             text-align: center;
-            padding: 30px 20px;
-            background: linear-gradient(135deg, rgba(40, 167, 233, 0.15), rgba(0, 102, 255, 0.15));
-            border-radius: 20px;
+            padding: 28px 20px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 16px;
             margin-bottom: 20px;
-            position: relative;
+            background: var(--bg-surface);
         }
 
         .avatar-container {
             position: relative;
             display: inline-block;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .avatar-large {
-            width: 100px;
-            height: 100px;
+            width: 88px;
+            height: 88px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #28a7e9, #0066FF);
+            background: var(--bg-elevated);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
-            font-weight: 600;
-            color: white;
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text-primary);
             overflow: hidden;
-            border: 3px solid rgba(40, 167, 233, 0.5);
+            border: 1.8px dashed var(--line-strong);
         }
 
         .avatar-large img {
@@ -65,24 +228,29 @@
             position: absolute;
             bottom: 0;
             right: 0;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            background: #28a7e9;
-            border: 2px solid #1a1a2e;
-            color: white;
-            font-size: 14px;
+            background: var(--accent);
+            border: 2px solid var(--bg-page);
+            color: #ffffff;
+            font-size: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .edit-avatar-btn:hover {
+            transform: scale(1.1);
         }
 
         .profile-name {
-            font-size: 22px;
-            font-weight: 600;
-            color: white;
-            margin-bottom: 5px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -91,12 +259,12 @@
 
         .vip-badge {
             display: none;
-            background: linear-gradient(135deg, #ffd700, #daa520);
-            color: #1a1a1f;
-            font-size: 10px;
+            background: var(--accent);
+            color: #ffffff;
+            font-size: 9px;
             font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 10px;
+            padding: 2px 7px;
+            border-radius: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -107,164 +275,25 @@
 
         .profile-id {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .tester-badge-section {
-            display: none;
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(236, 72, 153, 0.12));
-            border: 1px solid rgba(168, 85, 247, 0.35);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
-
-        .tester-badge-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #f5d0fe;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .tester-badge-subtitle {
-            color: rgba(255, 255, 255, 0.72);
-            font-size: 12px;
-            margin-bottom: 12px;
-        }
-
-        .tester-badge-hero {
-            width: 100%;
-            border-radius: 14px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(0, 0, 0, 0.2);
-            margin-bottom: 10px;
-        }
-
-        .tester-badge-hero img {
-            width: 100%;
-            max-height: 300px;
-            object-fit: cover;
-            display: block;
-        }
-
-        .tester-badge-thumbs {
-            display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 8px;
-        }
-
-        .tester-badge-thumb {
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 8px;
-            padding: 0;
-            overflow: hidden;
-            background: transparent;
-            cursor: pointer;
-        }
-
-        .tester-badge-thumb.active {
-            border-color: rgba(236, 72, 153, 0.8);
-            box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.3);
-        }
-
-        .tester-badge-thumb img {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-            display: block;
-        }
-
-        /* Menu Items */
-        .menu-section {
-            margin-bottom: 20px;
-        }
-
-        .menu-section-title {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 10px 0;
-            margin-bottom: 5px;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .menu-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(40, 167, 233, 0.5);
-        }
-
-        .menu-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        .menu-icon.blue { background: rgba(40, 167, 233, 0.2); color: #28a7e9; }
-        .menu-icon.purple { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
-        .menu-icon.green { background: rgba(16, 185, 129, 0.2); color: #10b981; }
-        .menu-icon.orange { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .menu-icon.pink { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-        .menu-icon.red { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        .menu-icon.gray { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
-
-        .menu-info {
-            flex: 1;
-        }
-
-        .menu-title {
-            font-size: 14px;
+            color: var(--text-muted);
             font-weight: 500;
-            color: white;
         }
 
-        .menu-subtitle {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 2px;
-        }
-
-        .menu-arrow {
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 14px;
-        }
-
-        /* Info Cards */
+        /* ========== INFO CARD ========== */
         .info-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 4px 16px;
+            margin-bottom: 20px;
+            background: var(--bg-surface);
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            align-items: center;
+            padding: 13px 0;
+            border-bottom: 1px solid var(--line-soft);
         }
 
         .info-row:last-child {
@@ -273,48 +302,176 @@
 
         .info-label {
             font-size: 13px;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
         .info-value {
             font-size: 13px;
-            color: white;
-            font-weight: 500;
+            color: var(--text-primary);
+            font-weight: 600;
             text-align: right;
         }
 
-        /* Logout Button */
+        /* ========== MENU SECTIONS ========== */
+        .menu-section {
+            margin-bottom: 20px;
+        }
+
+        .menu-section-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 600;
+            padding: 10px 0;
+            margin-bottom: 4px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .menu-item:hover {
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
+        }
+
+        .menu-item:active {
+            transform: scale(0.98);
+        }
+
+        .menu-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            background: var(--accent-soft);
+            color: var(--text-primary);
+        }
+
+        .menu-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .menu-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .menu-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .menu-arrow {
+            color: var(--text-muted);
+            font-size: 12px;
+            opacity: 0.5;
+        }
+
+        /* ========== LOGOUT BUTTON ========== */
         .logout-btn {
             width: 100%;
-            padding: 15px;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            color: #ef4444;
-            font-size: 15px;
+            padding: 14px;
+            background: transparent;
+            border: 1.8px dashed rgba(0, 0, 0, 0.2);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            transition: all 0.2s;
+            transition: background 0.2s, border-color 0.2s;
             margin-top: 20px;
         }
 
         .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.25);
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
         }
 
-        /* Version Footer */
+        /* ========== VERSION FOOTER ========== */
         .version-footer {
             text-align: center;
-            padding: 30px 0;
-            color: rgba(255, 255, 255, 0.3);
+            padding: 28px 0;
+            color: var(--text-muted);
             font-size: 11px;
+            letter-spacing: 0.03em;
         }
 
-        /* Edit Modal */
+        /* ========== BOTTOM NAV ========== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            border-top: 1.5px dashed rgba(0, 0, 0, 0.12);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .bottom-nav-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            transition: color 0.2s;
+            padding: 4px 12px;
+        }
+
+        .nav-item i {
+            font-size: 18px;
+        }
+
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+        }
+
+        /* ========== EDIT MODAL ========== */
         .edit-modal {
             display: none;
             position: fixed;
@@ -322,7 +479,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #000000;
+            background: var(--bg-page);
             z-index: 9999;
             flex-direction: column;
             padding-top: env(safe-area-inset-top, 0px);
@@ -339,26 +496,38 @@
             align-items: center;
             padding: 15px 20px;
             padding-top: calc(15px + env(safe-area-inset-top, 0px));
-            background: #000000;
+            border-bottom: 1.5px dashed var(--line-soft);
         }
 
         .edit-modal-header h3 {
             font-size: 16px;
-            color: white;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
-        .edit-modal-close {
+        .edit-modal-close,
+        .close-btn {
             background: none;
             border: none;
-            color: white;
-            font-size: 24px;
+            color: var(--text-muted);
+            font-size: 22px;
             cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .edit-modal-close:hover,
+        .close-btn:hover {
+            color: var(--text-primary);
         }
 
         .edit-modal-body {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
+            max-width: 760px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         .form-group {
@@ -367,242 +536,340 @@
 
         .form-group label {
             display: block;
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 8px;
         }
 
         .form-control {
             width: 100%;
             padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            color: white;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+            color: var(--text-primary);
             font-size: 14px;
+            font-family: var(--font-main);
+            transition: border-color 0.2s;
         }
 
         .form-control:focus {
             outline: none;
-            border-color: #28a7e9;
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .edit-modal-footer {
             padding: 15px 20px;
             padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-            background: #000000;
+            border-top: 1.5px dashed var(--line-soft);
         }
 
         .save-btn {
             width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             padding: 14px;
-            background: linear-gradient(135deg, #28a7e9, #0066FF);
+            background: var(--accent);
             border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 15px;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 14px;
             font-weight: 600;
+            font-family: var(--font-main);
             cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .save-btn:hover {
+            background: var(--accent-hover);
         }
 
         .save-btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
+
+        /* ========== NOTIFICATION SETTINGS MODAL OVERRIDES ========== */
+        .notif-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 13px 16px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+        }
+
+        .notif-option span {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .notif-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent);
+        }
+
+        .notif-divider {
+            border-top: 1px dashed var(--line-soft);
+            margin: 10px 0;
+        }
+
+        .sound-section {
+            padding: 13px 16px;
+            background: var(--bg-surface);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+        }
+
+        .sound-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sound-header span {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .sound-test-btn {
+            background: var(--accent-soft);
+            border: none;
+            color: var(--text-primary);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: var(--font-main);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sound-test-btn:hover {
+            background: var(--line-soft);
+        }
+
+        .sound-select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: var(--font-main);
+        }
+
+        .sound-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            border-style: solid;
+        }
+
+        /* ========== TOAST ========== */
+        #toast-container {
+            position: fixed;
+            top: calc(20px + env(safe-area-inset-top, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--accent);
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-main);
+            pointer-events: auto;
+            animation: toastIn 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .toast.error {
+            background: #333333;
+        }
+
+        .toast.info {
+            background: #555555;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
 </head>
 <body>
     <!-- Safe Area Overlays -->
-    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
-    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <h1 class="page-title">Profil</h1>
-        </div>
-    </nav>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
 
-    <!-- Main Content -->
-    <main class="content">
-        <!-- Loading State -->
-        <div class="loading" id="loading-state">
-            <i class="fa fa-spinner fa-spin"></i>
-            <span>Memuat profil...</span>
-        </div>
+    <!-- Grid Background -->
+    <div class="grid-bg"></div>
 
-        <!-- Content (hidden until loaded) -->
-        <div id="content-wrapper" style="display: none;">
-            <!-- Profile Header -->
-            <div class="profile-header">
-                <div class="avatar-container">
-                    <div class="avatar-large" id="avatar">
-                        <span id="avatar-initials">--</span>
-                        <img id="avatar-img" src="" style="display: none;">
-                    </div>
-                    <button class="edit-avatar-btn" onclick="editAvatar()">
-                        <i class="fa fa-camera"></i>
-                    </button>
-                </div>
-                <div class="profile-name" id="profile-name">
-                    <span id="profile-name-text">-</span>
-                    <span class="vip-badge" id="vip-badge">VIP</span>
-                </div>
-                <div class="profile-id" id="profile-id">ID: -</div>
+    <div class="app-wrapper">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-inner">
+                <button class="topbar-back" onclick="window.location.href='/patient-menu.html'">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span class="topbar-title">Profil</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading State -->
+            <div class="loading" id="loading-state">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span>Memuat profil...</span>
             </div>
 
-            <div class="tester-badge-section" id="tester-badge-section">
-                <div class="tester-badge-title"><i class="fa fa-trophy"></i> Badge Showcase</div>
-                <div class="tester-badge-subtitle">Preview badge khusus akun tester.</div>
-                <div class="tester-badge-hero">
-                    <img id="tester-badge-hero-image" src="/images/badges/1.jpg" alt="Badge preview">
+            <!-- Content (hidden until loaded) -->
+            <div id="content-wrapper" style="display: none;">
+                <!-- Profile Header -->
+                <div class="profile-header">
+                    <div class="avatar-container">
+                        <div class="avatar-large" id="avatar">
+                            <span id="avatar-initials">--</span>
+                            <img id="avatar-img" src="" style="display: none;">
+                        </div>
+                        <button class="edit-avatar-btn" onclick="editAvatar()">
+                            <i class="fa-solid fa-camera"></i>
+                        </button>
+                    </div>
+                    <div class="profile-name" id="profile-name">
+                        <span id="profile-name-text">-</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </div>
+                    <div class="profile-id" id="profile-id">ID: -</div>
                 </div>
-                <div class="tester-badge-thumbs" id="tester-badge-thumbs"></div>
-            </div>
 
-            <!-- Basic Info -->
-            <div class="info-card">
-                <div class="info-row">
-                    <span class="info-label">Email</span>
-                    <span class="info-value" id="info-email">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">No. HP</span>
-                    <span class="info-value" id="info-phone">-</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Tanggal Lahir</span>
-                    <span class="info-value" id="info-birthdate">-</span>
-                </div>
-            </div>
-
-            <!-- Menu Sections -->
-            <div class="menu-section">
-                <div class="menu-section-title">Akun</div>
-
-                <a class="menu-item" onclick="openEditModal()">
-                    <div class="menu-icon blue"><i class="fa fa-edit"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Edit Profil</div>
-                        <div class="menu-subtitle">Ubah nama, email, nomor HP</div>
+                <!-- Basic Info -->
+                <div class="info-card">
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="info-email">-</span>
                     </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-
-                <a class="menu-item" href="/patient-intake.html">
-                    <div class="menu-icon purple"><i class="fa fa-file-text"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Identitas Pribadi</div>
-                        <div class="menu-subtitle">Data lengkap identitas</div>
+                    <div class="info-row">
+                        <span class="info-label">No. HP</span>
+                        <span class="info-value" id="info-phone">-</span>
                     </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-
-                <a class="menu-item" onclick="changePassword()">
-                    <div class="menu-icon orange"><i class="fa fa-lock"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Ubah Password</div>
-                        <div class="menu-subtitle">Ganti password akun</div>
-                    </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-            </div>
-
-            <div class="menu-section" id="settings">
-                <div class="menu-section-title">Pengaturan</div>
-
-                <a class="menu-item" onclick="toggleNotifications()">
-                    <div class="menu-icon green"><i class="fa fa-bell"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Notifikasi</div>
-                        <div class="menu-subtitle" id="notif-status">Aktif</div>
-                    </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-
-                <a class="menu-item" onclick="showBirthCardsSettings()">
-                    <div class="menu-icon" style="background: linear-gradient(135deg, #a855f7, #ec4899);"><i class="fa fa-baby"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Kartu Ucapan Kelahiran</div>
-                        <div class="menu-subtitle" id="birth-cards-status">Tampilkan / sembunyikan</div>
-                    </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-            </div>
-
-            <!-- Birth Cards Settings Modal -->
-            <div id="birth-cards-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:9999; overflow-y:auto; padding:20px;">
-                <div style="background:#1a1a2e; border:1px solid rgba(168,85,247,0.4); border-radius:20px; padding:24px; max-width:420px; margin:40px auto;">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-                        <h3 style="color:#a855f7; font-size:18px; margin:0;">Kartu Ucapan Kelahiran</h3>
-                        <button onclick="document.getElementById('birth-cards-modal').style.display='none'" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer;">&times;</button>
-                    </div>
-                    <p style="color:#bbb; font-size:13px; margin-bottom:16px;">Tampilkan atau sembunyikan kartu ucapan kelahiran di halaman utama.</p>
-                    <div id="birth-cards-list" style="display:flex; flex-direction:column; gap:12px;">
-                        <div style="color:#888; text-align:center; padding:20px;">Memuat...</div>
+                    <div class="info-row">
+                        <span class="info-label">Tanggal Lahir</span>
+                        <span class="info-value" id="info-birthdate">-</span>
                     </div>
                 </div>
+
+                <!-- Menu Sections -->
+                <div class="menu-section">
+                    <div class="menu-section-title">Akun</div>
+
+                    <a class="menu-item" onclick="openEditModal()">
+                        <div class="menu-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Edit Profil</div>
+                            <div class="menu-subtitle">Ubah nama, email, nomor HP</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+
+                    <a class="menu-item" href="/patient-intake.html">
+                        <div class="menu-icon"><i class="fa-solid fa-file-lines"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Identitas Pribadi</div>
+                            <div class="menu-subtitle">Data lengkap identitas</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+
+                    <a class="menu-item" onclick="changePassword()">
+                        <div class="menu-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Ubah Password</div>
+                            <div class="menu-subtitle">Ganti password akun</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="menu-section" id="settings">
+                    <div class="menu-section-title">Pengaturan</div>
+
+                    <a class="menu-item" onclick="toggleNotifications()">
+                        <div class="menu-icon"><i class="fa-solid fa-bell"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Notifikasi</div>
+                            <div class="menu-subtitle" id="notif-status">Aktif</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="menu-section">
+                    <div class="menu-section-title">Lainnya</div>
+
+                    <a class="menu-item" href="/bantuan.html">
+                        <div class="menu-icon"><i class="fa-solid fa-circle-question"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Bantuan</div>
+                            <div class="menu-subtitle">FAQ & Hubungi kami</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+
+                    <a class="menu-item" onclick="showAbout()">
+                        <div class="menu-icon"><i class="fa-solid fa-circle-info"></i></div>
+                        <div class="menu-info">
+                            <div class="menu-title">Tentang Aplikasi</div>
+                            <div class="menu-subtitle">Versi & Info</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right menu-arrow"></i>
+                    </a>
+                </div>
+
+                <!-- Logout Button -->
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Keluar
+                </button>
+
+                <!-- Version -->
+                <div class="version-footer">
+                    SISIwanita Patient Portal v2.0
+                </div>
             </div>
+        </main>
 
-            <div class="menu-section">
-                <div class="menu-section-title">Lainnya</div>
+    </div>
 
-                <a class="menu-item" href="/bantuan.html">
-                    <div class="menu-icon gray"><i class="fa fa-question-circle"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Bantuan</div>
-                        <div class="menu-subtitle">FAQ & Hubungi kami</div>
-                    </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-
-                <a class="menu-item" onclick="showAbout()">
-                    <div class="menu-icon gray"><i class="fa fa-info-circle"></i></div>
-                    <div class="menu-info">
-                        <div class="menu-title">Tentang Aplikasi</div>
-                        <div class="menu-subtitle">Versi & Info</div>
-                    </div>
-                    <i class="fa fa-chevron-right menu-arrow"></i>
-                </a>
-            </div>
-
-            <!-- Logout Button -->
-            <button class="logout-btn" onclick="logout()">
-                <i class="fa fa-sign-out"></i> Keluar
-            </button>
-
-            <!-- Version -->
-            <div class="version-footer">
-                dokterDIBYA Patient Portal v2.0
-            </div>
-        </div>
-    </main>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item active">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
-
-    <!-- Edit Modal -->
+    <!-- Edit Profile Modal -->
     <div class="edit-modal" id="edit-modal">
         <div class="edit-modal-header">
             <h3>Edit Profil</h3>
             <button class="edit-modal-close" onclick="closeEditModal()">
-                <i class="fa fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <div class="edit-modal-body">
@@ -623,7 +890,7 @@
         </div>
         <div class="edit-modal-footer">
             <button class="save-btn" onclick="saveProfile(event)">
-                <i class="fa fa-check"></i> Simpan Perubahan
+                <i class="fa-solid fa-check"></i> Simpan Perubahan
             </button>
         </div>
     </div>
@@ -636,7 +903,7 @@
         <div class="edit-modal-header">
             <h3>Ubah Password</h3>
             <button class="close-btn" onclick="closePasswordModal()">
-                <i class="fa fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <div class="edit-modal-body">
@@ -657,7 +924,7 @@
         </div>
         <div class="edit-modal-footer">
             <button class="save-btn" onclick="submitPasswordChange(event)">
-                <i class="fa fa-check"></i> Simpan Password
+                <i class="fa-solid fa-check"></i> Simpan Password
             </button>
         </div>
     </div>
@@ -667,40 +934,38 @@
         <div class="edit-modal-header">
             <h3>Pengaturan Notifikasi</h3>
             <button class="close-btn" onclick="closeNotifModal()">
-                <i class="fa fa-times"></i>
+                <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         <div class="edit-modal-body">
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <span style="color: #e0e0e0;">Jadwal Kontrol</span>
-                    <input type="checkbox" id="notif-jadwal" style="width: 20px; height: 20px; accent-color: #28a7e9;">
-                </label>
-                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <span style="color: #e0e0e0;">Pengumuman</span>
-                    <input type="checkbox" id="notif-pengumuman" style="width: 20px; height: 20px; accent-color: #28a7e9;">
-                </label>
-                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <span style="color: #e0e0e0;">Pesan Dokter</span>
-                    <input type="checkbox" id="notif-pesan" style="width: 20px; height: 20px; accent-color: #28a7e9;">
-                </label>
-                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <span style="color: #e0e0e0;">Jadwal Minum Obat</span>
-                    <input type="checkbox" id="notif-obat" style="width: 20px; height: 20px; accent-color: #28a7e9;">
-                </label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="notif-option">
+                    <span>Jadwal Kontrol</span>
+                    <input type="checkbox" id="notif-jadwal">
+                </div>
+                <div class="notif-option">
+                    <span>Pengumuman</span>
+                    <input type="checkbox" id="notif-pengumuman">
+                </div>
+                <div class="notif-option">
+                    <span>Pesan Dokter</span>
+                    <input type="checkbox" id="notif-pesan">
+                </div>
+                <div class="notif-option">
+                    <span>Jadwal Minum Obat</span>
+                    <input type="checkbox" id="notif-obat">
+                </div>
 
-                <!-- Divider -->
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0;"></div>
+                <div class="notif-divider"></div>
 
-                <!-- Sound Selection -->
-                <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="color: #e0e0e0;">Suara Notifikasi</span>
-                        <button type="button" onclick="playNotifSound()" style="background: rgba(40,167,233,0.2); border: none; color: #28a7e9; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;">
-                            <i class="fa fa-volume-up"></i> Test
+                <div class="sound-section">
+                    <div class="sound-header">
+                        <span>Suara Notifikasi</span>
+                        <button type="button" onclick="playNotifSound()" class="sound-test-btn">
+                            <i class="fa-solid fa-volume-high"></i> Test
                         </button>
                     </div>
-                    <select id="notif-sound" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 14px;">
+                    <select id="notif-sound" class="sound-select">
                         <option value="default">Default</option>
                         <option value="chime">Chime</option>
                         <option value="bell">Bell</option>
@@ -712,7 +977,7 @@
         </div>
         <div class="edit-modal-footer">
             <button class="save-btn" onclick="saveNotifSettings()">
-                <i class="fa fa-check"></i> Simpan
+                <i class="fa-solid fa-check"></i> Simpan
             </button>
         </div>
     </div>
@@ -720,13 +985,25 @@
     <!-- Hidden file input for avatar -->
     <input type="file" id="avatar-input" accept="image/*" style="display: none;">
 
+    <script>
+        // Portal theme switch — redirect to old page if theme is off
+        (function() {
+            var p = new URLSearchParams(window.location.search);
+            var t = p.get('theme');
+            if (t === 'off' || t === 'old' || t === 'default') {
+                try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
+                window.location.replace('/profil.html');
+                return;
+            }
+            try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch(e) {}
+        })();
+    </script>
+
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, logout as utilLogout, escapeHtml } from '/scripts/patient-utils.js';
 
         // State
         let profileData = null;
-        const TESTER_BADGE_ACCOUNT_NAME = 'nanda ananda';
-        const TESTER_BADGE_IMAGES = Array.from({ length: 11 }, (_, index) => `/images/badges/${index + 1}.jpg`);
 
         // Make functions globally available
         window.openEditModal = openEditModal;
@@ -742,8 +1019,6 @@
         window.playNotifSound = playNotifSound;
         window.showAbout = showAbout;
         window.logout = logout;
-        window.showBirthCardsSettings = showBirthCardsSettings;
-        window.toggleBirthCard = toggleBirthCard;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -772,11 +1047,11 @@
                 console.log('[PROFIL] API response:', data);
 
                 // Handle response - API returns { user: {...} } without success field
-                if (data && data.user) {
+                if (data & data.user) {
                     profileData = data.user;
                     console.log('[PROFIL] Profile loaded:', profileData.fullname || profileData.full_name);
                     renderProfile();
-                } else if (data && data.success === false) {
+                } else if (data & data.success === false) {
                     console.error('[PROFIL] API error:', data.message);
                     showToast(data.message || 'Gagal memuat profil', 'error');
                 } else {
@@ -822,51 +1097,6 @@
 
             // Check VIP subscription for badge
             checkVipSubscription();
-
-            // Tester-only badge preview (strictly for Nanda Ananda)
-            renderTesterBadgeSection();
-        }
-
-        function normalizeName(value) {
-            return (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
-        }
-
-        function isTesterBadgeAccount() {
-            const name = profileData?.fullname || profileData?.full_name || '';
-            return normalizeName(name) === TESTER_BADGE_ACCOUNT_NAME;
-        }
-
-        function renderTesterBadgeSection() {
-            const section = document.getElementById('tester-badge-section');
-            const heroImage = document.getElementById('tester-badge-hero-image');
-            const thumbsContainer = document.getElementById('tester-badge-thumbs');
-            if (!section || !heroImage || !thumbsContainer) return;
-
-            if (!isTesterBadgeAccount()) {
-                section.style.display = 'none';
-                thumbsContainer.innerHTML = '';
-                return;
-            }
-
-            section.style.display = 'block';
-            heroImage.src = TESTER_BADGE_IMAGES[0];
-
-            thumbsContainer.innerHTML = TESTER_BADGE_IMAGES.map((imagePath, index) => `
-                <button type="button" class="tester-badge-thumb${index === 0 ? ' active' : ''}" data-badge-index="${index}" aria-label="Pilih badge ${index + 1}">
-                    <img src="${imagePath}" alt="Badge ${index + 1}">
-                </button>
-            `).join('');
-
-            thumbsContainer.querySelectorAll('.tester-badge-thumb').forEach((thumb) => {
-                thumb.addEventListener('click', function() {
-                    const badgeIndex = Number(this.getAttribute('data-badge-index'));
-                    if (Number.isNaN(badgeIndex) || !TESTER_BADGE_IMAGES[badgeIndex]) return;
-
-                    heroImage.src = TESTER_BADGE_IMAGES[badgeIndex];
-                    thumbsContainer.querySelectorAll('.tester-badge-thumb').forEach((item) => item.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
         }
 
         // Check if patient has VIP subscription
@@ -884,7 +1114,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success && data.tier === 'vip') {
+                    if (data.success & data.tier === 'vip') {
                         const badge = document.getElementById('vip-badge');
                         if (badge) badge.classList.add('show');
                     }
@@ -937,7 +1167,7 @@
                     body: JSON.stringify({ fullname: name, email, phone })
                 });
 
-                if (data && data.success) {
+                if (data & data.success) {
                     showToast('Profil berhasil diperbarui', 'success');
                     closeEditModal();
                     await loadProfile();
@@ -993,7 +1223,7 @@
         // Change password
         function changePassword() {
             // Check if user has password (Google-only users may not have one)
-            if (profileData && !profileData.has_password) {
+            if (profileData & !profileData.has_password) {
                 showToast('Akun ini menggunakan Google Sign-In. Fitur ubah password tidak tersedia.', 'info');
                 return;
             }
@@ -1039,7 +1269,7 @@
                     })
                 });
 
-                if (data && data.success) {
+                if (data & data.success) {
                     showToast('Password berhasil diubah', 'success');
                     closePasswordModal();
                 } else {
@@ -1128,71 +1358,7 @@
 
         // Show about
         function showAbout() {
-            alert('dokterDIBYA Patient Portal\nVersi 2.0\n\nPortal Privat Kandungan Anda');
-        }
-
-        async function showBirthCardsSettings() {
-            document.getElementById('birth-cards-modal').style.display = 'block';
-            const list = document.getElementById('birth-cards-list');
-            list.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Memuat...</div>';
-            const token = getToken();
-            try {
-                const resp = await fetch('/api/patient/birth-all?_t=' + Date.now(), {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const result = await resp.json();
-                const births = result.births || result.data || [];
-                if (!result.success || births.length === 0) {
-                    list.innerHTML = '<div style="color:#888; text-align:center; padding:20px;">Belum ada data kelahiran</div>';
-                    return;
-                }
-                list.innerHTML = births.map((b, i) => `
-                    <div style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">
-                        <div>
-                            <div style="color:#e5e7eb; font-weight:500;">Anak ${b.child_number || (i+1)}${b.baby_name ? ' - ' + b.baby_name : ''}</div>
-                            <div style="color:#888; font-size:12px; margin-top:2px;">${b.birth_date ? new Date(b.birth_date).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : 'Tanggal belum diisi'}</div>
-                        </div>
-                        <button onclick="toggleBirthCard(${b.id}, ${b.patient_dismissed ? 0 : 1}, this)"
-                            style="padding:8px 14px; border-radius:10px; border:none; cursor:pointer; font-size:13px; font-weight:500; transition:background 0.2s;
-                            background:${b.patient_dismissed ? 'rgba(168,85,247,0.2)' : 'rgba(80,80,80,0.3)'};
-                            color:${b.patient_dismissed ? '#a855f7' : '#aaa'};">
-                            ${b.patient_dismissed ? 'Tampilkan' : 'Sembunyikan'}
-                        </button>
-                    </div>
-                `).join('');
-            } catch (e) {
-                list.innerHTML = '<div style="color:#f87171; text-align:center; padding:20px;">Gagal memuat data</div>';
-            }
-        }
-
-        async function toggleBirthCard(entryId, shouldDismiss, btn) {
-            const token = getToken();
-            const endpoint = shouldDismiss ? '/api/patient/birth-dismiss/' : '/api/patient/birth-show/';
-            try {
-                btn.disabled = true;
-                const resp = await fetch(endpoint + entryId, {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    if (shouldDismiss) {
-                        btn.textContent = 'Tampilkan';
-                        btn.style.background = 'rgba(168,85,247,0.2)';
-                        btn.style.color = '#a855f7';
-                        btn.setAttribute('onclick', `toggleBirthCard(${entryId}, 0, this)`);
-                    } else {
-                        btn.textContent = 'Sembunyikan';
-                        btn.style.background = 'rgba(80,80,80,0.3)';
-                        btn.style.color = '#aaa';
-                        btn.setAttribute('onclick', `toggleBirthCard(${entryId}, 1, this)`);
-                    }
-                }
-                btn.disabled = false;
-            } catch (e) {
-                btn.disabled = false;
-                console.error('toggleBirthCard error:', e);
-            }
+            alert('SISIwanita Patient Portal\nVersi 2.0\n\nPortal Privat Kandungan Anda');
         }
 
         // Logout
@@ -1203,7 +1369,7 @@
                 localStorage.removeItem('patient_token');
                 localStorage.removeItem('patient_user');
 
-                const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+                const isCapacitor = window.Capacitor & window.Capacitor.isNativePlatform & window.Capacitor.isNativePlatform();
                 if (isCapacitor) {
                     window.location.href = 'dokterdibya://logout';
                 } else {
@@ -1214,12 +1380,13 @@
 
         // Keyboard
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && document.getElementById('edit-modal').classList.contains('active')) {
+            if (e.key === 'Escape' & document.getElementById('edit-modal').classList.contains('active')) {
                 closeEditModal();
             }
         });
     </script>
-<script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/scripts/portal-bottom-nav.js?v=20260528home1" defer></script>
 </body>
 </html>

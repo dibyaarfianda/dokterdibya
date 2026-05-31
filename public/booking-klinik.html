@@ -1,101 +1,121 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Booking Klinik - dokterDIBYA</title>
+    <title>Booking Klinik - SISIwanita</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+    <!-- Portal theme sticky navigation -->
+<style>
+        /* ========== CSS VARIABLES (Monochrome Design System) ========== */
+        :root {
+            --bg-page: #ffffff;
+            --text-primary: #111111;
+            --text-secondary: #606060;
+            --text-muted: #686868;
+            --line-soft: rgba(0, 0, 0, 0.1);
+            --line-strong: rgba(0, 0, 0, 0.18);
+            --accent: #111111;
+            --accent-soft: rgba(0, 0, 0, 0.08);
+            --font-main: 'Inter', Arial, sans-serif;
+        }
+
+        /* ========== RESET ========== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            background: var(--bg-page);
+        }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background: #000000;
+            font-family: var(--font-main);
+            background: var(--bg-page);
             min-height: 100vh;
-            color: #ffffff;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            padding-top: 64px;
+            padding-bottom: 30px;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
 
-        .safe-area-top {
+        ::selection {
+            background: #e8e8e8;
+            color: #141414;
+        }
+
+        /* ========== TOPBAR ========== */
+        .topbar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: env(safe-area-inset-top, 0px);
-            background: #000000;
-            z-index: 9999;
-        }
-
-        .safe-area-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-bottom, 0px);
-            background: #000000;
-            z-index: 9999;
-        }
-
-        /* Navbar */
-        .nav-bar {
-            position: sticky;
-            top: 0;
             z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            padding-top: max(15px, env(safe-area-inset-top));
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1.8px dashed var(--line-soft);
+            padding: 0 16px;
+            padding-top: env(safe-area-inset-top, 0px);
         }
 
-        .nav-left {
+        .topbar-inner {
+            max-width: 760px;
+            margin: 0 auto;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            height: 56px;
         }
 
         .back-btn {
             background: none;
             border: none;
-            color: #ffffff;
+            color: var(--text-primary);
             font-size: 18px;
             cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
             transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--accent-soft);
         }
 
-        .page-title {
-            font-size: 18px;
+        .topbar-title {
+            font-size: 17px;
             font-weight: 600;
-            color: #28a7e9;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
         }
 
-        /* Main Content */
+        /* ========== CONTENT ========== */
         .content {
-            padding: 20px;
-            max-width: 600px;
+            padding: 20px 16px;
+            max-width: 760px;
             margin: 0 auto;
         }
 
-        /* Step Indicator */
+        /* ========== STEP INDICATOR ========== */
         .step-indicator {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 25px;
+            margin-bottom: 28px;
             position: relative;
         }
 
@@ -105,8 +125,8 @@
             top: 18px;
             left: 10%;
             right: 10%;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.2);
+            height: 1.8px;
+            border-top: 1.8px dashed var(--line-soft);
             z-index: 0;
         }
 
@@ -121,41 +141,48 @@
             width: 36px;
             height: 36px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.5);
+            background: var(--bg-page);
+            color: var(--text-muted);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
             font-size: 14px;
-            margin-bottom: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 6px;
+            border: 1.8px dashed var(--line-soft);
             transition: all 0.3s;
         }
 
         .step.active .step-circle {
-            background: #28a7e9;
+            background: var(--accent);
             color: #fff;
-            border-color: #28a7e9;
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .step.completed .step-circle {
-            background: #10b981;
+            background: var(--accent);
             color: #fff;
-            border-color: #10b981;
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .step-label {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .step.active .step-label {
-            color: #28a7e9;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
-        /* Booking Steps */
+        .step.active .step-label {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .step.completed .step-label {
+            color: var(--text-secondary);
+        }
+
+        /* ========== BOOKING STEPS ========== */
         .booking-step {
             display: none;
         }
@@ -166,18 +193,19 @@
 
         .step-title {
             font-size: 18px;
-            font-weight: 600;
-            color: #28a7e9;
-            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.3px;
         }
 
         .step-desc {
             font-size: 13px;
-            color: #888;
+            color: var(--text-muted);
             margin-bottom: 20px;
         }
 
-        /* Date Grid */
+        /* ========== DATE GRID ========== */
         .date-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -185,91 +213,105 @@
         }
 
         .date-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
             padding: 20px 15px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .date-card:hover {
-            background: rgba(40, 167, 233, 0.1);
-            border-color: rgba(40, 167, 233, 0.3);
+            border-color: var(--line-strong);
+            background: var(--accent-soft);
         }
 
         .date-card.selected {
-            background: rgba(40, 167, 233, 0.2);
-            border-color: #28a7e9;
+            background: var(--accent);
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .date-card .day {
             font-size: 12px;
-            color: #888;
-            margin-bottom: 5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .date-card.selected .day {
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .date-card .date {
             font-size: 18px;
-            font-weight: 600;
-            color: #fff;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
-        /* Session Cards */
+        .date-card.selected .date {
+            color: #ffffff;
+        }
+
+        /* ========== SESSION CARDS ========== */
         .session-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+            transition: all 0.2s;
         }
 
         .session-card.selected {
-            border-color: #28a7e9;
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .session-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .session-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #28a7e9;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
         }
 
         .session-time {
             font-size: 12px;
-            color: #888;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
         .session-badge {
             font-size: 11px;
             padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: 500;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: -0.2px;
         }
 
         .badge-available {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
+            background: var(--accent-soft);
+            color: var(--text-secondary);
         }
 
         .badge-limited {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
+            background: rgba(0, 0, 0, 0.06);
+            color: var(--text-muted);
         }
 
         .badge-full {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
+            background: rgba(0, 0, 0, 0.06);
+            color: #999;
         }
 
+        /* ========== SLOT GRID ========== */
         .slot-grid {
             display: flex;
             flex-wrap: wrap;
@@ -278,97 +320,116 @@
 
         .slot-btn {
             padding: 8px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            color: #fff;
+            border: 1.8px dashed var(--line-soft);
+            background: var(--bg-page);
+            border-radius: 10px;
+            color: var(--text-primary);
             font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            font-family: var(--font-main);
         }
 
         .slot-btn:hover:not(.disabled) {
-            background: rgba(40, 167, 233, 0.2);
-            border-color: #28a7e9;
+            background: var(--accent-soft);
+            border-color: var(--line-strong);
         }
 
         .slot-btn.selected {
-            background: #28a7e9;
-            border-color: #28a7e9;
+            background: var(--accent);
+            border-color: var(--accent);
+            border-style: solid;
+            color: #ffffff;
         }
 
         .slot-btn.disabled {
-            opacity: 0.4;
+            opacity: 0.35;
             cursor: not-allowed;
             text-decoration: line-through;
         }
 
-        /* Category Options */
+        /* ========== CATEGORY GRID ========== */
         .category-grid {
             display: grid;
             gap: 12px;
         }
 
         .category-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 15px;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 16px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 14px;
         }
 
         .category-card:hover {
-            background: rgba(40, 167, 233, 0.1);
+            background: var(--accent-soft);
         }
 
         .category-card.selected {
-            background: rgba(40, 167, 233, 0.2);
-            border-color: #28a7e9;
+            background: var(--accent);
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .category-icon {
-            width: 45px;
-            height: 45px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
         .category-icon.obstetri {
-            background: rgba(233, 30, 99, 0.2);
-            color: #e91e63;
+            background: var(--accent-soft);
+            color: var(--text-primary);
         }
 
         .category-icon.promil {
-            background: rgba(156, 39, 176, 0.2);
-            color: #9c27b0;
+            background: var(--accent-soft);
+            color: var(--text-primary);
         }
 
         .category-icon.gyn {
-            background: rgba(33, 150, 243, 0.2);
-            color: #2196f3;
+            background: var(--accent-soft);
+            color: var(--text-primary);
+        }
+
+        .category-card.selected .category-icon {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
         }
 
         .category-info h4 {
             font-size: 14px;
             font-weight: 600;
-            color: #fff;
-            margin-bottom: 4px;
+            color: var(--text-primary);
+            margin-bottom: 3px;
         }
 
         .category-info p {
             font-size: 12px;
-            color: #888;
+            color: var(--text-muted);
             margin: 0;
         }
 
-        /* Form Group */
+        .category-card.selected .category-info h4 {
+            color: #ffffff;
+        }
+
+        .category-card.selected .category-info p {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* ========== FORM GROUP ========== */
         .form-group {
             margin-top: 20px;
         }
@@ -376,41 +437,48 @@
         .form-group label {
             display: block;
             font-size: 13px;
-            color: #28a7e9;
+            color: var(--text-primary);
+            font-weight: 600;
             margin-bottom: 8px;
         }
 
         .form-group textarea {
             width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #fff;
+            padding: 12px 14px;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+            color: var(--text-primary);
             font-size: 14px;
-            font-family: inherit;
+            font-family: var(--font-main);
             resize: vertical;
             min-height: 100px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group textarea::placeholder {
+            color: var(--text-muted);
         }
 
         .form-group textarea:focus {
             outline: none;
-            border-color: #28a7e9;
+            border-color: var(--accent);
+            border-style: solid;
         }
 
         .form-group small {
             display: block;
-            color: #888;
+            color: var(--text-muted);
             font-size: 11px;
-            margin-top: 5px;
+            margin-top: 6px;
         }
 
-        /* Summary Card */
+        /* ========== SUMMARY CARD ========== */
         .summary-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 18px;
             margin-bottom: 20px;
         }
 
@@ -418,7 +486,7 @@
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px dashed var(--line-soft);
         }
 
         .summary-row:last-child {
@@ -426,42 +494,44 @@
         }
 
         .summary-label {
-            color: #888;
+            color: var(--text-muted);
             font-size: 13px;
         }
 
         .summary-value {
-            color: #fff;
+            color: var(--text-primary);
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             text-align: right;
+            max-width: 60%;
         }
 
         .info-box {
-            background: rgba(40, 167, 233, 0.15);
-            border: 1px solid rgba(40, 167, 233, 0.3);
-            border-radius: 8px;
-            padding: 12px 15px;
+            background: var(--accent-soft);
+            border: 1.8px dashed var(--line-soft);
+            border-radius: 12px;
+            padding: 14px 16px;
             font-size: 13px;
-            color: #ccc;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
 
         .info-box i {
-            color: #28a7e9;
+            color: var(--text-primary);
             margin-right: 8px;
         }
 
-        /* Navigation Buttons */
+        /* ========== NAVIGATION BUTTONS ========== */
         .nav-buttons {
             display: flex;
             gap: 12px;
-            margin-top: 25px;
+            margin-top: 28px;
         }
 
         .nav-buttons button {
             flex: 1;
             padding: 14px;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -470,62 +540,82 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
+            font-family: var(--font-main);
         }
 
         .btn-back {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
+            background: var(--bg-page);
+            border: 1.8px dashed var(--line-soft);
+            color: var(--text-primary);
+        }
+
+        .btn-back:hover {
+            background: var(--accent-soft);
         }
 
         .btn-next {
-            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            background: var(--accent);
             border: none;
-            color: #fff;
+            color: #ffffff;
+            border-radius: 12px;
+        }
+
+        .btn-next:hover {
+            background: #2a2a2a;
         }
 
         .btn-next:disabled {
-            opacity: 0.5;
+            opacity: 0.35;
             cursor: not-allowed;
         }
 
         .btn-submit {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: var(--accent);
             border: none;
-            color: #fff;
+            color: #ffffff;
+            border-radius: 12px;
         }
 
-        /* Alert */
+        .btn-submit:hover {
+            background: #2a2a2a;
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========== ALERT ========== */
         .alert {
-            padding: 15px;
-            border-radius: 10px;
+            padding: 14px 16px;
+            border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1.8px dashed var(--line-soft);
         }
 
         .alert-success {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #6ee7b7;
+            background: var(--accent-soft);
+            color: var(--text-primary);
         }
 
         .alert-warning {
-            background: rgba(245, 158, 11, 0.2);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            color: #fcd34d;
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--text-primary);
         }
 
         .alert-danger {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
+            background: rgba(0, 0, 0, 0.04);
+            border-color: var(--line-strong);
+            color: var(--text-primary);
         }
 
-        /* Loading */
+        /* ========== LOADING ========== */
         .loading {
             text-align: center;
             padding: 40px;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--text-muted);
         }
 
         .loading i {
@@ -537,97 +627,378 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Empty State */
+        /* ========== EMPTY STATE ========== */
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
         }
 
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 0;
-            padding-bottom: max(10px, env(safe-area-inset-bottom));
-            background: rgba(26, 26, 46, 0.98);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 100;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 12px;
-            padding: 8px 20px;
-            transition: color 0.3s;
-        }
-
-        .nav-item.active,
-        .nav-item:hover {
-            color: #28a7e9;
-        }
-
-        .nav-item i {
-            font-size: 20px;
-        }
-
-        /* Toast */
+        /* ========== TOAST ========== */
         .toast {
             position: fixed;
             top: 80px;
             left: 50%;
             transform: translateX(-50%);
             padding: 12px 24px;
-            border-radius: 8px;
+            border-radius: 12px;
             color: #fff;
             font-size: 14px;
             z-index: 9999;
             animation: slideDown 0.3s ease;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            font-family: var(--font-main);
         }
 
-        .toast.success { background: #10b981; }
-        .toast.error { background: #ef4444; }
-        .toast.info { background: #28a7e9; }
+        .toast.success { background: var(--accent); }
+        .toast.error { background: #333; }
+        .toast.info { background: var(--accent); }
 
         @keyframes slideDown {
             from { opacity: 0; transform: translate(-50%, -20px); }
             to { opacity: 1; transform: translate(-50%, 0); }
         }
 
-        /* Responsive */
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 400px) {
-            .content { padding: 15px; }
+            .content { padding: 16px 12px; }
             .date-grid { grid-template-columns: 1fr 1fr; }
             .step-label { font-size: 10px; }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        /* Final booking polish: keep the old booking logic, upgrade the patient-facing wizard surface. */
+        body.booking-klinik-page {
+            --booking-green: #6f8f80;
+            --booking-green-deep: #4f7464;
+            --booking-soft: #eef5f1;
+            --booking-warm: #fbfaf7;
+            --booking-line: rgba(21, 31, 27, 0.1);
+            --booking-line-strong: rgba(21, 31, 27, 0.18);
+            --booking-shadow: 0 18px 46px rgba(22, 32, 27, 0.11);
+            --booking-shadow-soft: 0 10px 26px rgba(22, 32, 27, 0.08);
+            background:
+                linear-gradient(180deg, rgba(242, 247, 243, 0.9) 0%, rgba(255, 255, 255, 0.96) 34%, rgba(250, 249, 246, 1) 100%) !important;
+        }
+
+        body.booking-klinik-page .tool-retrofit-hero:not(#pmc-root *) {
+            border: 1px solid var(--booking-line) !important;
+            border-radius: 28px !important;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(237, 245, 240, 0.86) 58%, rgba(255, 255, 255, 0.9)) !important;
+            box-shadow: var(--booking-shadow) !important;
+            overflow: hidden !important;
+        }
+
+        body.booking-klinik-page .tool-retrofit-hero:not(#pmc-root *)::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(111, 143, 128, 0.16), transparent 36%, rgba(17, 17, 17, 0.04));
+            pointer-events: none;
+        }
+
+        body.booking-klinik-page .hero-title,
+        body.booking-klinik-page .hero-copy,
+        body.booking-klinik-page .today-row {
+            position: relative;
+            z-index: 1;
+        }
+
+        body.booking-klinik-page .today-value i {
+            color: var(--booking-green-deep) !important;
+        }
+
+        body.booking-klinik-page .topbar-blur-fade {
+            height: 86px !important;
+        }
+
+        body.legacy-tool-retrofit.booking-klinik-page .step-indicator {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            border: 1px solid var(--booking-line) !important;
+            border-radius: 24px !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            box-shadow: var(--booking-shadow-soft) !important;
+            padding: 10px 8px 12px !important;
+            margin: 0 0 18px !important;
+            overflow: hidden !important;
+        }
+
+        body.legacy-tool-retrofit.booking-klinik-page .step-indicator::before {
+            left: 14% !important;
+            right: 14% !important;
+            top: 28px !important;
+            border-top: 1px solid rgba(111, 143, 128, 0.22) !important;
+            z-index: 0 !important;
+        }
+
+        body.legacy-tool-retrofit.booking-klinik-page .step,
+        body.legacy-tool-retrofit.booking-klinik-page .step.active,
+        body.legacy-tool-retrofit.booking-klinik-page .step.completed {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            color: var(--muted) !important;
+            box-shadow: none !important;
+        }
+
+        body.booking-klinik-page .step-circle {
+            width: 38px !important;
+            height: 38px !important;
+            margin: 0 0 7px !important;
+            border: 1px solid rgba(111, 143, 128, 0.2) !important;
+            border-radius: 50% !important;
+            background: #fff !important;
+            color: #6f7773 !important;
+            box-shadow: 0 7px 18px rgba(17, 17, 17, 0.06) !important;
+        }
+
+        body.booking-klinik-page .step.active .step-circle {
+            background: #111 !important;
+            border-color: #111 !important;
+            color: #fff !important;
+            box-shadow: 0 0 0 7px rgba(111, 143, 128, 0.18), 0 12px 24px rgba(17, 17, 17, 0.16) !important;
+        }
+
+        body.booking-klinik-page .step.completed .step-circle {
+            background: var(--booking-green) !important;
+            border-color: var(--booking-green) !important;
+            color: #fff !important;
+            font-size: 0 !important;
+        }
+
+        body.booking-klinik-page .step.completed .step-circle::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            font-size: 13px;
+        }
+
+        body.booking-klinik-page .step-label {
+            color: #737b77 !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            line-height: 1.15 !important;
+        }
+
+        body.booking-klinik-page .step.active .step-label {
+            color: #111 !important;
+        }
+
+        body.booking-klinik-page .booking-step {
+            border: 1px solid var(--booking-line) !important;
+            border-radius: 28px !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            box-shadow: var(--booking-shadow-soft) !important;
+            padding: 18px !important;
+        }
+
+        body.booking-klinik-page .step-title {
+            font-family: var(--display, var(--font-main)) !important;
+            font-size: 22px !important;
+            letter-spacing: -0.03em !important;
+            margin-bottom: 4px !important;
+        }
+
+        body.booking-klinik-page .step-desc {
+            color: #66726c !important;
+            font-size: 13px !important;
+            margin-bottom: 16px !important;
+        }
+
+        body.booking-klinik-page .date-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+        }
+
+        body.booking-klinik-page .date-grid .date-card:not(#pmc-root *) {
+            min-height: 106px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            text-align: left !important;
+            border: 1px solid var(--booking-line) !important;
+            border-radius: 22px !important;
+            background: linear-gradient(180deg, #fff, var(--booking-warm)) !important;
+            box-shadow: 0 12px 28px rgba(22, 32, 27, 0.08) !important;
+            padding: 16px !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        body.booking-klinik-page .date-grid .date-card:not(#pmc-root *)::after {
+            content: '\f073';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 14px;
+            top: 14px;
+            color: rgba(111, 143, 128, 0.22);
+            font-size: 16px;
+        }
+
+        body.booking-klinik-page .date-grid .date-card:hover:not(#pmc-root *) {
+            border-color: var(--booking-line-strong) !important;
+            background: linear-gradient(180deg, #fff, var(--booking-soft)) !important;
+        }
+
+        body.booking-klinik-page .date-grid .date-card.selected:not(#pmc-root *) {
+            border-color: #111 !important;
+            background: linear-gradient(145deg, #111, #27312d) !important;
+            color: #fff !important;
+            box-shadow: 0 18px 34px rgba(17, 17, 17, 0.18) !important;
+        }
+
+        body.booking-klinik-page .date-grid .date-card.selected:not(#pmc-root *)::after {
+            content: '\f00c';
+            color: rgba(255, 255, 255, 0.62);
+        }
+
+        body.booking-klinik-page .date-grid .date-card:not(#pmc-root *) .day {
+            margin: 0 !important;
+            color: #6f7773 !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.04em !important;
+            text-transform: uppercase !important;
+        }
+
+        body.booking-klinik-page .date-grid .date-card:not(#pmc-root *) .date {
+            color: #111 !important;
+            font-size: clamp(19px, 4.7vw, 24px) !important;
+            line-height: 1.05 !important;
+            letter-spacing: -0.04em !important;
+        }
+
+        body.booking-klinik-page .date-grid .date-card.selected:not(#pmc-root *) .day,
+        body.booking-klinik-page .date-grid .date-card.selected:not(#pmc-root *) .date {
+            color: #fff !important;
+        }
+
+        body.booking-klinik-page .session-card:not(#pmc-root *),
+        body.booking-klinik-page .category-card:not(#pmc-root *),
+        body.booking-klinik-page .summary-card:not(#pmc-root *),
+        body.booking-klinik-page .info-box:not(#pmc-root *),
+        body.booking-klinik-page .alert:not(#pmc-root *),
+        body.booking-klinik-page .form-group textarea:not(#pmc-root *) {
+            border: 1px solid var(--booking-line) !important;
+            border-radius: 22px !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 10px 24px rgba(22, 32, 27, 0.07) !important;
+        }
+
+        body.booking-klinik-page .session-card.selected:not(#pmc-root *),
+        body.booking-klinik-page .category-card.selected:not(#pmc-root *),
+        body.booking-klinik-page .form-group textarea:focus {
+            border-color: #111 !important;
+            border-style: solid !important;
+            box-shadow: 0 0 0 5px rgba(111, 143, 128, 0.13), 0 12px 28px rgba(22, 32, 27, 0.1) !important;
+        }
+
+        body.booking-klinik-page .category-card.selected:not(#pmc-root *) {
+            background: linear-gradient(145deg, #111, #27312d) !important;
+        }
+
+        body.booking-klinik-page .category-icon,
+        body.booking-klinik-page .category-icon.obstetri,
+        body.booking-klinik-page .category-icon.promil,
+        body.booking-klinik-page .category-icon.gyn {
+            background: var(--booking-soft) !important;
+            color: var(--booking-green-deep) !important;
+            border-radius: 16px !important;
+        }
+
+        body.booking-klinik-page .slot-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+        }
+
+        body.booking-klinik-page .slot-btn {
+            min-height: 42px !important;
+            border: 1px solid var(--booking-line) !important;
+            border-radius: 14px !important;
+            background: #fff !important;
+            box-shadow: 0 8px 18px rgba(22, 32, 27, 0.06) !important;
+            padding: 9px 8px !important;
+        }
+
+        body.booking-klinik-page .slot-btn.selected {
+            background: #111 !important;
+            border-color: #111 !important;
+            color: #fff !important;
+        }
+
+        body.booking-klinik-page .session-badge {
+            border-radius: 999px !important;
+            background: var(--booking-soft) !important;
+            color: var(--booking-green-deep) !important;
+            white-space: nowrap !important;
+        }
+
+        body.booking-klinik-page .nav-buttons {
+            position: static !important;
+            bottom: auto !important;
+            z-index: 18 !important;
+            border: 1px solid rgba(255, 255, 255, 0.64) !important;
+            border-radius: 24px !important;
+            background: rgba(255, 255, 255, 0.76) !important;
+            box-shadow: 0 18px 42px rgba(17, 17, 17, 0.14) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            backdrop-filter: blur(12px) !important;
+            padding: 8px !important;
+            margin-top: 18px !important;
+            margin-bottom: 4px !important;
+        }
+
+        body.booking-klinik-page .nav-buttons button {
+            min-height: 48px !important;
+            border-radius: 17px !important;
+            font-weight: 800 !important;
+        }
+
+        body.booking-klinik-page .btn-next,
+        body.booking-klinik-page .btn-submit {
+            background: linear-gradient(145deg, #111, #29342f) !important;
+            box-shadow: 0 12px 24px rgba(17, 17, 17, 0.16) !important;
+        }
+
+        body.booking-klinik-page .btn-next:disabled {
+            background: #d7d9d6 !important;
+            color: rgba(17, 17, 17, 0.56) !important;
+            opacity: 1 !important;
+            box-shadow: none !important;
+        }
+
+        @media (max-width: 430px) {
+            body.booking-klinik-page .booking-step { padding: 15px !important; }
+            body.booking-klinik-page .date-grid .date-card:not(#pmc-root *) { min-height: 98px !important; padding: 14px !important; }
+            body.booking-klinik-page .slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
+    </style>
+    <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
-<body>
-    <div class="safe-area-top"></div>
-    <div class="safe-area-bottom"></div>
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
+<body class="home-sections-locked patient-tool-shell legacy-tool-retrofit booking-klinik-page" data-tool-shell-active="jadwal" data-tool-kicker="Booking Klinik" data-tool-title="Atur janji klinik." data-tool-copy="Pilih tanggal praktik, slot waktu, jenis konsultasi, lalu kirim permintaan booking ke staff klinik." data-tool-meta-label="Alur" data-tool-meta-value="4 langkah">
+    <!-- Top Bar -->
+    <header class="topbar">
+        <div class="topbar-inner">
+            <button class="back-btn" onclick="window.location.href='/patient-menu.html'">
+                <i class="fa-solid fa-arrow-left"></i>
             </button>
-            <h1 class="page-title"><i class="fa fa-calendar-check-o"></i> Booking Klinik</h1>
+            <span class="topbar-title">Booking Klinik</span>
         </div>
-    </nav>
+    </header>
 
     <!-- Main Content -->
     <main class="content">
@@ -659,7 +1030,7 @@
             <h2 class="step-title">Pilih Tanggal</h2>
             <p class="step-desc">Pilih hari praktik yang tersedia untuk booking</p>
             <div id="date-loading" class="loading">
-                <i class="fa fa-spinner fa-spin"></i> Memuat tanggal...
+                <i class="fa-solid fa-spinner fa-spin"></i> Memuat tanggal...
             </div>
             <div id="date-grid" class="date-grid" style="display: none;"></div>
         </div>
@@ -669,7 +1040,7 @@
             <h2 class="step-title">Pilih Waktu</h2>
             <p class="step-desc">Pilih sesi dan slot waktu yang tersedia</p>
             <div id="session-loading" class="loading">
-                <i class="fa fa-spinner fa-spin"></i> Memuat slot...
+                <i class="fa-solid fa-spinner fa-spin"></i> Memuat slot...
             </div>
             <div id="session-container" style="display: none;"></div>
         </div>
@@ -681,21 +1052,21 @@
 
             <div class="category-grid" id="category-grid">
                 <div class="category-card selected" data-value="obstetri">
-                    <div class="category-icon obstetri"><i class="fa fa-child"></i></div>
+                    <div class="category-icon obstetri"><i class="fa-solid fa-baby"></i></div>
                     <div class="category-info">
                         <h4>Kehamilan (Obstetri)</h4>
                         <p>Prenatal care, USG, persalinan</p>
                     </div>
                 </div>
                 <div class="category-card" data-value="gyn_repro">
-                    <div class="category-icon promil"><i class="fa fa-heart"></i></div>
+                    <div class="category-icon promil"><i class="fa-solid fa-heart"></i></div>
                     <div class="category-info">
                         <h4>Program Hamil (Promil)</h4>
                         <p>Induksi ovulasi, PCOS, keguguran berulang</p>
                     </div>
                 </div>
                 <div class="category-card" data-value="gyn_special">
-                    <div class="category-icon gyn"><i class="fa fa-stethoscope"></i></div>
+                    <div class="category-icon gyn"><i class="fa-solid fa-stethoscope"></i></div>
                     <div class="category-info">
                         <h4>Ginekologi Umum</h4>
                         <p>Myom, kista, keputihan, haid tidak teratur</p>
@@ -704,7 +1075,7 @@
             </div>
 
             <div class="form-group">
-                <label>Keluhan / Tujuan Konsultasi <span style="color: #ef4444;">*</span></label>
+                <label>Keluhan / Tujuan Konsultasi <span style="color: #999;">*</span></label>
                 <textarea id="chief-complaint" placeholder="Contoh: Kontrol kehamilan rutin, konsultasi masalah haid, dll..." required></textarea>
                 <small>Minimal 10 karakter - membantu dokter mempersiapkan konsultasi</small>
             </div>
@@ -739,7 +1110,7 @@
             </div>
 
             <div class="info-box">
-                <i class="fa fa-info-circle"></i>
+                <i class="fa-solid fa-circle-info"></i>
                 Setelah konfirmasi, staff klinik akan mengkonfirmasi janji temu Anda. Mohon datang 10 menit lebih awal.
             </div>
         </div>
@@ -747,37 +1118,33 @@
         <!-- Navigation Buttons -->
         <div class="nav-buttons">
             <button class="btn-back" id="btn-back" style="display: none;">
-                <i class="fa fa-arrow-left"></i> Kembali
+                <i class="fa-solid fa-arrow-left"></i> Kembali
             </button>
             <button class="btn-next" id="btn-next" disabled>
-                Lanjut <i class="fa fa-arrow-right"></i>
+                Lanjut <i class="fa-solid fa-arrow-right"></i>
             </button>
             <button class="btn-submit" id="btn-submit" style="display: none;">
-                <i class="fa fa-check"></i> Konfirmasi Booking
+                <i class="fa-solid fa-check"></i> Konfirmasi Booking
             </button>
         </div>
     </main>
-
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <script type="module">
+        // Portal theme switch
+        (function() {
+            var p = new URLSearchParams(window.location.search);
+            var t = p.get('theme');
+            if (t === 'off' || t === 'old' || t === 'default') {
+                try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
+                window.location.replace('/booking-klinik.html');
+                return;
+            }
+            try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch(e) {}
+        })();
+
         import { getToken, checkAuth, showToast } from '/scripts/patient-utils.js';
 
         // Check auth
@@ -998,10 +1365,10 @@
                     isValid = bookingData.date !== null;
                     break;
                 case 2:
-                    isValid = bookingData.session !== null && bookingData.slot !== null;
+                    isValid = bookingData.session !== null & bookingData.slot !== null;
                     break;
                 case 3:
-                    isValid = bookingData.chiefComplaint && bookingData.chiefComplaint.length >= 10;
+                    isValid = bookingData.chiefComplaint & bookingData.chiefComplaint.length >= 10;
                     break;
                 case 4:
                     isValid = true;
@@ -1069,7 +1436,7 @@
         async function submitBooking() {
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
 
             try {
                 const response = await fetch(`${API_BASE}/book`, {
@@ -1092,7 +1459,7 @@
                 if (handle401(response)) return;
                 if (!response.ok) {
                     if (response.status === 409) {
-                        showAlert(`<strong><i class="fa fa-exclamation-triangle"></i> Slot Sudah Terisi</strong><br>${data.message}`, 'warning');
+                        showAlert(`<strong><i class="fa-solid fa-triangle-exclamation"></i> Slot Sudah Terisi</strong><br>${data.message}`, 'warning');
 
                         bookingData.session = null;
                         bookingData.sessionLabel = null;
@@ -1104,7 +1471,7 @@
                         await loadSlots();
 
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fa fa-check"></i> Konfirmasi Booking';
+                        btn.innerHTML = '<i class="fa-solid fa-check"></i> Konfirmasi Booking';
                         return;
                     }
                     throw new Error(data.message || 'Gagal membuat janji temu');
@@ -1112,11 +1479,11 @@
 
                 // Success
                 showAlert(`
-                    <strong><i class="fa fa-check-circle"></i> Booking Berhasil!</strong><br>
+                    <strong><i class="fa-solid fa-circle-check"></i> Booking Berhasil!</strong><br>
                     Tanggal: ${data.details.date}<br>
                     Waktu: ${data.details.time}<br><br>
                     Status: <strong>Menunggu Konfirmasi</strong><br>
-                    Anda akan dialihkan ke menu...
+                    Anda akan dialihkan ke portal...
                 `, 'success');
 
                 setTimeout(() => {
@@ -1127,11 +1494,13 @@
                 console.error('Error:', error);
                 showAlert(error.message, 'danger');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-check"></i> Konfirmasi Booking';
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Konfirmasi Booking';
             }
         }
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
 </body>
 </html>
