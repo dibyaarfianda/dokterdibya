@@ -505,6 +505,49 @@
     return ids;
   }
 
+  function normalizeChatNameForMatch(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .replace(/\./g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function collectCurrentChatUserNames(localUser) {
+    const names = new Set();
+    const addName = (value) => {
+      const normalized = normalizeChatNameForMatch(value);
+      if (normalized) names.add(normalized);
+    };
+
+    const realtimeState = window.__realtimeSyncState || {};
+    const candidates = [
+      localUser,
+      window.auth && window.auth.currentUser,
+      window.currentStaffIdentity,
+      window.currentStaffUser,
+      realtimeState.currentUser
+    ];
+
+    candidates.forEach((candidate) => {
+      if (!candidate || typeof candidate !== 'object') return;
+      addName(candidate.name);
+      addName(candidate.displayName);
+      addName(candidate.fullName);
+      addName(candidate.email);
+    });
+
+    const payload = normalizeUserFromTokenPayload(getStoredChatToken());
+    if (payload) {
+      addName(payload.name);
+      addName(payload.displayName);
+      addName(payload.fullName);
+      addName(payload.email);
+    }
+
+    return names;
+  }
+
   function normalizeChatTextForMatch(value) {
     return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
   }
@@ -1083,11 +1126,21 @@
 
           function isOwnChatMessage(data) {
             var messageUserId = normalizeChatUserId(data && data.user_id);
+            var messageUserName = normalizeChatNameForMatch(data && data.user_name);
+            var currentUserNames = collectCurrentChatUserNames(user);
+
+            if (messageUserName && currentUserNames.has(messageUserName)) {
+              return true;
+            }
+
             if (!messageUserId) return false;
 
             var currentUserIds = collectCurrentChatUserIds(user);
             if (!currentUserIds.size) {
-              console.warn('[ChatPopup] Cannot classify chat message ownership: no current user id available', data);
+              console.warn('[ChatPopup] Cannot classify chat message ownership: no current user id available', {
+                data: data,
+                currentUserNames: Array.from(currentUserNames)
+              });
               return false;
             }
 
@@ -1095,7 +1148,9 @@
             if (!isOwn) {
               console.log('[ChatPopup] Message is not mine', {
                 messageUserId: messageUserId,
-                currentUserIds: Array.from(currentUserIds)
+                messageUserName: messageUserName,
+                currentUserIds: Array.from(currentUserIds),
+                currentUserNames: Array.from(currentUserNames)
               });
             }
             return isOwn;
