@@ -98,6 +98,8 @@
     window.setTimeout(scrollChatToLatest, 320);
     window.setTimeout(scrollChatToLatest, 700);
     window.setTimeout(scrollChatToLatest, 1200);
+    window.setTimeout(scrollChatToLatest, 2200);
+    window.setTimeout(scrollChatToLatest, 4200);
   }
 
   function getReservedBottomPx() {
@@ -238,6 +240,7 @@
     var cont = document.getElementById('chat-popup-container');
     if (!cont || !cont.classList.contains('chat-is-open') || window.innerWidth > 991) return;
     applyMobileFullScreen(cont);
+    scheduleChatScrollToLatest();
   }
 
   function queueChatLayoutSync() {
