@@ -6,6 +6,12 @@
 (function () {
   'use strict';
 
+  if (window.__chatPopupModuleLoaded) {
+    console.log('[ChatPopup] Module already loaded, skipping duplicate initialization');
+    return;
+  }
+  window.__chatPopupModuleLoaded = true;
+
   // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
   function getNavBottomPx() {
     var nav = document.getElementById('mobile-action-bar');
@@ -84,6 +90,14 @@
     window.setTimeout(applyScroll, 80);
     window.setTimeout(applyScroll, 220);
     window.setTimeout(applyScroll, 520);
+  }
+
+  function scheduleChatScrollToLatest() {
+    scrollChatToLatest();
+    window.setTimeout(scrollChatToLatest, 120);
+    window.setTimeout(scrollChatToLatest, 320);
+    window.setTimeout(scrollChatToLatest, 700);
+    window.setTimeout(scrollChatToLatest, 1200);
   }
 
   function getReservedBottomPx() {
@@ -723,7 +737,7 @@
                     if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
                 }
                 if (btn) btn.style.setProperty('display', 'none', 'important');
-                scrollChatToLatest();
+                scheduleChatScrollToLatest();
             } else {
             setChatKeyboardMode(false);
                 chatBox.style.setProperty('display', 'none', 'important');
@@ -890,6 +904,7 @@
   let isChatOpen = isChatOpenBasic;
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
+  const renderedMessageIds = new Set();
   const userPhotoCache = new Map();
   const userRoleCache = new Map(); // Cache role_id for badge colors
 
@@ -902,6 +917,20 @@
     lastReadTimestamp = new Date().toISOString();
     localStorage.setItem(LAST_READ_KEY, lastReadTimestamp);
   }
+
+          function normalizeChatUserId(value) {
+            return String(value == null ? '' : value).trim();
+          }
+
+          function getCurrentChatUserId() {
+            return normalizeChatUserId(user && (user.id || user.uid));
+          }
+
+          function isOwnChatMessage(data) {
+            var messageUserId = normalizeChatUserId(data && data.user_id);
+            var currentUserId = getCurrentChatUserId();
+            return !!messageUserId && !!currentUserId && messageUserId === currentUserId;
+          }
   
         // Show clear button only for superadmin
         function checkClearButtonVisibility() {
@@ -967,11 +996,19 @@
           function handleRealtimeChatMessage(data) {
             console.log('[ChatPopup] 📨 Received chat:message:', data);
             console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
-            if (data.user_id !== user.id && data.user_id !== user.uid) {
+            if (data && data.id && renderedMessageIds.has(String(data.id))) {
+              console.log('[ChatPopup] Skipping duplicate message id:', data.id);
+              return;
+            }
+
+            if (!isOwnChatMessage(data)) {
               console.log('[ChatPopup] Adding received message');
-              addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id);
+              addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id, data.id);
             } else {
               console.log('[ChatPopup] Skipping own message');
+              if (data && data.id) {
+                renderedMessageIds.add(String(data.id));
+              }
             }
           }
 
@@ -1042,14 +1079,14 @@
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
         markMessagesAsRead();
-        scrollChatToLatest();
+        scheduleChatScrollToLatest();
         setTimeout(() => {
-          scrollChatToLatest();
+          scheduleChatScrollToLatest();
           if (chatInput) {
             setChatKeyboardMode(true);
             chatInput.focus();
             queueChatLayoutSync();
-            scrollChatToLatest();
+            scheduleChatScrollToLatest();
           }
         }, 100);
         checkClearButtonVisibility();
@@ -1100,7 +1137,7 @@
       const userRoleId = curUser.role_id || null;
 
       // Show immediately
-      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id, userRoleId);
+      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id || curUser.uid, userRoleId);
       if (sendAudio && typeof sendAudio.play === 'function') {
         try {
           sendAudio.currentTime = 0;
@@ -1132,6 +1169,9 @@
         if (response.ok) {
             const result = await response.json();
             console.log('[ChatPopup] Message sent successfully:', result);
+            if (result && result.data && result.data.id) {
+              renderedMessageIds.add(String(result.data.id));
+            }
         } else {
             const error = await response.json().catch(() => ({}));
             console.error('[ChatPopup] Failed to send chat message:', response.status, error);
@@ -1175,10 +1215,10 @@
                         messagesContainer.innerHTML = '';
                         resetChatState(); // Reset block tracking
             result.data.forEach(msg => {
-              const type = msg.user_id === user.id ? 'sent' : 'received';
-              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id);
+              const type = isOwnChatMessage(msg) ? 'sent' : 'received';
+              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id, msg.id);
                         });
-            scrollChatToLatest();
+            scheduleChatScrollToLatest();
           }
         }
       } catch (error) {
@@ -1186,12 +1226,19 @@
                 messagesContainer.innerHTML = '<div class="text-center text-muted p-3">Gagal memuat riwayat chat</div>';
       } finally {
         isHistoryLoading = false;
-        scrollChatToLatest();
+        scheduleChatScrollToLatest();
             }
         }
 
     // Add message with avatar support
-    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null) {
+    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null, messageId = null) {
+      if (messageId && renderedMessageIds.has(String(messageId))) {
+        return;
+      }
+      if (messageId) {
+        renderedMessageIds.add(String(messageId));
+      }
+
       const time = timestamp
         ? new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
         : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
@@ -1246,7 +1293,7 @@
 
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
       if (!isHistoryLoading || isChatOpen) {
-        scrollChatToLatest();
+        scheduleChatScrollToLatest();
       } else {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
@@ -1275,6 +1322,7 @@
     // Reset last sender when loading history
     function resetChatState() {
       lastSender = null;
+      renderedMessageIds.clear();
     }
 
     // Escape HTML
