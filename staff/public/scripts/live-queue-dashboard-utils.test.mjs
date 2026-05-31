@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   renderLiveQueueHtml,
   summarizeQueue,
-} from './live-queue-dashboard-utils.mjs';
+} from './live-queue-dashboard-utils.js';
 
 test('summarizeQueue counts waiting, in progress, and completed patients', () => {
   const summary = summarizeQueue([
