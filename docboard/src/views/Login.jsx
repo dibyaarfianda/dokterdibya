@@ -32,8 +32,7 @@ export default function Login() {
               class="login-logo-image"
             />
           </div>
-          <h1>DocBoard</h1>
-          <p class="login-subtitle">Doctor Scheduler</p>
+          <p class="login-subtitle">Database and Scheduler</p>
         </div>
 
         <form onSubmit={handleSubmit}>
