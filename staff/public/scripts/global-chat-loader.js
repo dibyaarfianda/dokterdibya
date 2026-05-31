@@ -34,7 +34,7 @@
         window.__chatPopupScriptRequested = true;
 
         const script = document.createElement('script');
-        const version = window.__chatPopupVersion || window.__sundayClinicChatVersion || window.__assetVersion || 'v227';
+        const version = window.__chatPopupVersion || window.__sundayClinicChatVersion || window.__assetVersion || 'v228';
         script.src = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
         script.onload = function() {
             console.log('[GlobalChat] chat-popup.js loaded dynamically');

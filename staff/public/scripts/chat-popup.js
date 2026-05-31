@@ -1039,6 +1039,8 @@
         let boundSocket = null;
         let socketWaitTimer = null;
         let socketWaitAttempts = 0;
+        let historyPollTimer = null;
+        let historyPollInFlight = false;
 
         function clearSocketWaitTimer() {
           if (socketWaitTimer) {
@@ -1290,6 +1292,7 @@
 
         // Load chat history
         await loadChatHistory();
+        startChatHistoryPolling();
 
     // Toggle function - exposed globally for WebView onclick compatibility
     function handleToggleChat() {
@@ -1459,6 +1462,52 @@
         scheduleChatScrollToLatest();
             }
         }
+
+    async function pollChatHistoryForNewMessages() {
+      if (historyPollInFlight || isHistoryLoading) return;
+      historyPollInFlight = true;
+
+      try {
+        const token = await getChatToken();
+        if (!token) return;
+
+        const response = await fetch(`${API_ORIGIN}/api/chat/messages?limit=100&_t=${Date.now()}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache'
+          }
+        });
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+        if (!result.success || !Array.isArray(result.data)) return;
+
+        result.data.forEach((msg) => {
+          if (!msg || !msg.id || renderedMessageIds.has(String(msg.id))) {
+            return;
+          }
+
+          const type = isOwnChatMessage(msg) ? 'sent' : 'received';
+          addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id, msg.id);
+        });
+      } catch (error) {
+        console.warn('[ChatPopup] Chat history polling failed:', error?.message || error);
+      } finally {
+        historyPollInFlight = false;
+      }
+    }
+
+    function startChatHistoryPolling() {
+      if (historyPollTimer) return;
+      historyPollTimer = setInterval(pollChatHistoryForNewMessages, 3000);
+      window.addEventListener('beforeunload', function() {
+        if (historyPollTimer) {
+          clearInterval(historyPollTimer);
+          historyPollTimer = null;
+        }
+      }, { once: true });
+    }
 
     // Add message with avatar support
     function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null, messageId = null) {
