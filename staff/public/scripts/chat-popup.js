@@ -364,6 +364,25 @@
     : window.location.origin.replace(/\/$/, '');
 
   async function getChatToken() {
+    const fallbackToken = async () => {
+      return localStorage.getItem('vps_auth_token') ||
+             sessionStorage.getItem('vps_auth_token') ||
+             localStorage.getItem('token') ||
+             sessionStorage.getItem('token') ||
+             localStorage.getItem('idToken') ||
+             sessionStorage.getItem('idToken') ||
+             null;
+    };
+
+    try {
+      if (window.getAuthToken && typeof window.getAuthToken === 'function') {
+        const token = await window.getAuthToken();
+        if (token) return token;
+      }
+    } catch (error) {
+      console.warn('[ChatPopup] getAuthToken failed:', error?.message || error);
+    }
+
     try {
       if (window.getIdToken && typeof window.getIdToken === 'function') {
         const token = await window.getIdToken();
@@ -382,13 +401,44 @@
       console.warn('[ChatPopup] getToken failed:', error?.message || error);
     }
 
-    return localStorage.getItem('vps_auth_token') ||
-           sessionStorage.getItem('vps_auth_token') ||
-           localStorage.getItem('token') ||
-           sessionStorage.getItem('token') ||
-           localStorage.getItem('idToken') ||
-           sessionStorage.getItem('idToken') ||
-           null;
+    return fallbackToken();
+  }
+
+  function normalizeUserFromTokenPayload(token) {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      const payload = parts[1]
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(Math.ceil(parts[1].length / 4) * 4, '=');
+      return JSON.parse(atob(payload));
+    } catch (error) {
+      console.warn('[ChatPopup] Failed to parse auth token payload:', error?.message || error);
+      return null;
+    }
+  }
+
+  async function resolveAuthUser() {
+    if (window.auth && window.auth.currentUser) return window.auth.currentUser;
+    if (window.currentStaffIdentity && (window.currentStaffIdentity.id || window.currentStaffIdentity.uid)) {
+      return window.currentStaffIdentity;
+    }
+
+    const token = await getChatToken();
+    if (!token) return null;
+
+    const payload = normalizeUserFromTokenPayload(token);
+    if (!payload) return null;
+
+    return {
+      id: payload.id || payload.user_id || payload.uid || payload.sub || null,
+      uid: payload.uid || payload.id || payload.user_id || payload.sub || null,
+      name: payload.name || payload.fullName || payload.email || 'Unknown',
+      role: payload.role || payload.user_role || '',
+      email: payload.email || null
+    };
   }
 
   // ---------- HTML ----------
@@ -788,36 +838,49 @@
         }
 
         // Now wait for auth to enable full features
-        let user = window.auth?.currentUser;
+        let user = await resolveAuthUser();
         console.log('[ChatPopup] Initial user:', user);
 
         // If auth not ready, wait for it
         if (!user) {
-            console.log('[ChatPopup] User not ready, waiting...');
-            await new Promise((resolve) => {
-                const checkAuth = setInterval(() => {
-                    if (window.auth?.currentUser) {
-                        console.log('[ChatPopup] Auth ready!');
-                        clearInterval(checkAuth);
-                        resolve();
-                    }
-                }, 100);
+            console.log('[ChatPopup] User not ready, waiting for auth event...');
 
-                // Timeout after 10 seconds
-                setTimeout(() => {
-                    console.warn('[ChatPopup] Auth wait timeout');
-                    clearInterval(checkAuth);
+            const waitForAuth = () => new Promise((resolve) => {
+                const finalize = (candidate) => {
+                    if (candidate && (candidate.id || candidate.uid)) {
+                        user = candidate;
+                    }
+                    clearInterval(authPoll);
+                    clearTimeout(authTimeout);
                     resolve();
-                }, 10000);
+                };
+
+                const authPoll = setInterval(() => {
+                    resolveAuthUser().then((candidate) => {
+                        if (candidate && (candidate.id || candidate.uid)) {
+                            console.log('[ChatPopup] Auth ready:', candidate);
+                            finalize(candidate);
+                        }
+                    }).catch(() => {});
+                }, 250);
+
+                const authTimeout = setTimeout(async () => {
+                    const fallbackUser = await resolveAuthUser().catch(() => null);
+                    if (fallbackUser) {
+                        console.log('[ChatPopup] Auth fallback available after timeout', fallbackUser);
+                    } else {
+                        console.log('[ChatPopup] Auth wait timeout, continuing with limited mode');
+                    }
+                    finalize(fallbackUser);
+                }, 120000);
             });
 
-            user = window.auth?.currentUser;
-            console.log('[ChatPopup] User after wait:', user);
+            await waitForAuth();
         }
 
-        // Check if user exists. Role fallback is enough for chat features.
+        user = user || (window.auth && (window.auth.currentUser || window.currentStaffIdentity));
         if (!user) {
-            console.warn('[ChatPopup] Chat features limited: User not authenticated', user);
+            console.warn('[ChatPopup] Chat features limited: User not authenticated');
             // Chat toggle still works, but no real-time features
             return;
         }
@@ -1350,7 +1413,7 @@
                 }
                 
                 try {
-                    const token = localStorage.getItem('vps_auth_token');
+                    const token = await getChatToken();
                     const response = await fetch('/api/admin/clear-chat-logs', {
                         method: 'DELETE',
                         headers: {
