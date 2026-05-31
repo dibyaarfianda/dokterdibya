@@ -1770,7 +1770,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v223'; // Briefing per-staff fix: force fresh shell, JS, and PWA assets
+            const CACHE_VERSION = 'v224'; // Staff dashboard live queue: refresh shell, dashboard modules, and PWA assets
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -2321,6 +2321,25 @@
 
                         <!-- RIGHT COLUMN -->
                         <div class="col-lg-6">
+                            <!-- Antrian Live Hari Ini -->
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-list-ol mr-2"></i>Antrian Live Hari Ini</h3>
+                                    <div class="card-tools d-flex align-items-center">
+                                        <span class="badge badge-light mr-2" id="dashboard-live-queue-count">0</span>
+                                        <button type="button" class="btn btn-tool" onclick="window.refreshDashboardLiveQueue && window.refreshDashboardLiveQueue()" title="Refresh antrian">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        <a class="btn btn-tool" href="/staff/public/sunday-clinic.html" title="Buka Sunday Clinic">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body" id="dashboard-live-queue-list" style="max-height: 360px; overflow-y: auto;">
+                                    <p class="text-muted mb-0">Memuat antrian live...</p>
+                                </div>
+                            </div>
+
                             <!-- Appointment Minggu Depan -->
                             <div class="card card-primary">
                                 <div class="card-header">
