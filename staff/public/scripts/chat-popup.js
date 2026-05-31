@@ -404,6 +404,21 @@
     return fallbackToken();
   }
 
+  function getStoredChatToken() {
+    try {
+      return localStorage.getItem('vps_auth_token') ||
+             sessionStorage.getItem('vps_auth_token') ||
+             localStorage.getItem('token') ||
+             sessionStorage.getItem('token') ||
+             localStorage.getItem('idToken') ||
+             sessionStorage.getItem('idToken') ||
+             null;
+    } catch (error) {
+      console.warn('[ChatPopup] Failed to read stored auth token:', error?.message || error);
+      return null;
+    }
+  }
+
   function normalizeUserFromTokenPayload(token) {
     if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
@@ -439,6 +454,42 @@
       role: payload.role || payload.user_role || '',
       email: payload.email || null
     };
+  }
+
+  function collectCurrentChatUserIds(localUser) {
+    const ids = new Set();
+    const addId = (value) => {
+      const normalized = String(value == null ? '' : value).trim();
+      if (normalized) ids.add(normalized);
+    };
+
+    const realtimeState = window.__realtimeSyncState || {};
+    const candidates = [
+      localUser,
+      window.auth && window.auth.currentUser,
+      window.currentStaffIdentity,
+      window.currentStaffUser,
+      realtimeState.currentUser
+    ];
+
+    candidates.forEach((candidate) => {
+      if (!candidate || typeof candidate !== 'object') return;
+      addId(candidate.id);
+      addId(candidate.uid);
+      addId(candidate.user_id);
+      addId(candidate.new_id);
+    });
+
+    const payload = normalizeUserFromTokenPayload(getStoredChatToken());
+    if (payload) {
+      addId(payload.id);
+      addId(payload.uid);
+      addId(payload.user_id);
+      addId(payload.new_id);
+      addId(payload.sub);
+    }
+
+    return ids;
   }
 
   // ---------- HTML ----------
@@ -988,14 +1039,24 @@
             return String(value == null ? '' : value).trim();
           }
 
-          function getCurrentChatUserId() {
-            return normalizeChatUserId(user && (user.id || user.uid));
-          }
-
           function isOwnChatMessage(data) {
             var messageUserId = normalizeChatUserId(data && data.user_id);
-            var currentUserId = getCurrentChatUserId();
-            return !!messageUserId && !!currentUserId && messageUserId === currentUserId;
+            if (!messageUserId) return false;
+
+            var currentUserIds = collectCurrentChatUserIds(user);
+            if (!currentUserIds.size) {
+              console.warn('[ChatPopup] Cannot classify chat message ownership: no current user id available', data);
+              return false;
+            }
+
+            var isOwn = currentUserIds.has(messageUserId);
+            if (!isOwn) {
+              console.log('[ChatPopup] Message is not mine', {
+                messageUserId: messageUserId,
+                currentUserIds: Array.from(currentUserIds)
+              });
+            }
+            return isOwn;
           }
   
         // Show clear button only for superadmin
@@ -1196,8 +1257,9 @@
     async function sendMessage() {
       const message = chatInput.value.trim();
       if (!message) return;
-      const curUser = window.auth?.currentUser;
+      const curUser = await resolveAuthUser();
       if (!curUser) { console.error('User not authenticated'); return; }
+      user = curUser;
 
       const userPhoto = curUser.photo_url || curUser.photoURL || null;
       const userRoleId = curUser.role_id || null;
