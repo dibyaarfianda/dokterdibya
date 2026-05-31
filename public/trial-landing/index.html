@@ -5752,29 +5752,10 @@
                         registration.update().catch(function() {});
                     }, 60000);
 
-                    // If a new worker is installed, ask it to activate immediately.
-                    registration.addEventListener('updatefound', function() {
-                        var newWorker = registration.installing;
-                        if (!newWorker) return;
-                        newWorker.addEventListener('statechange', function() {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            }
-                        });
-                    });
-
-                    // Soft auto-reload once controller changes (no hard reload needed).
-                    var reloadedBySw = false;
-                    navigator.serviceWorker.addEventListener('controllerchange', function() {
-                        if (reloadedBySw) return;
-                        reloadedBySw = true;
-
-                        try {
-                            sessionStorage.setItem(LIVE_UPDATE_KEY, String(Date.now()));
-                        } catch (e) {}
-
-                        window.location.reload();
-                    });
+                    // Keep updates quiet on landing. Auto-activating and reloading
+                    // during first open makes the page visibly blink when a new
+                    // service worker is available. The fresh worker will take over
+                    // naturally on the next navigation.
                 }).catch(function() {});
             }
 
