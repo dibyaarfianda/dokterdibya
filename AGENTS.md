@@ -1932,3 +1932,53 @@ User confirmed with "luar biasa" after `public/fertility-calendar-trial.html` wa
 
 **Lesson:**
 - For SISIwanita tool pages, keep the visual shell and the domain logic separate: adopt the shared Patient Tool Shell first, then rewire only the page-specific panels and existing API behavior. Always include `?mockApi=1` browser smoke so visual parity and app behavior can be verified together before deploy.
+
+### 52. Session Log - 31 May 2026
+
+**Sunday Clinic Team Chat Scroll + Duplicate Echo Fix (User Confirmed "sudah beres")**
+
+User confirmed the Sunday Clinic chat issue was resolved after the chat popup was updated and deployed.
+
+**Problems fixed:**
+1. Opening chat showed the oldest/top messages instead of jumping to the latest message.
+2. A sent message appeared twice for the sender: once as the optimistic outgoing bubble and again when the realtime socket broadcast returned.
+
+**What worked:**
+1. In `staff/public/scripts/chat-popup.js`, add a module-level singleton guard:
+    - `window.__chatPopupModuleLoaded`
+    - This prevents duplicate initialization when `chat-popup.js` is loaded through both the static script tag and `global-chat-loader.js`.
+2. Normalize chat user IDs before comparing:
+    - Convert both current user id and `data.user_id` to trimmed strings.
+    - Use `isOwnChatMessage(data)` instead of strict `data.user_id !== user.id` checks.
+3. Dedupe rendered messages by database message ID:
+    - Track `renderedMessageIds`.
+    - Skip realtime messages whose ID has already rendered.
+    - Add the returned `result.data.id` after successful send.
+4. Make scroll-to-latest resilient to WebView/mobile layout timing:
+    - Use `scheduleChatScrollToLatest()`.
+    - Re-run scroll after layout/keyboard changes up to `4200ms`.
+    - Call scroll again from `syncOpenChatLayout()` after mobile viewport recalculation.
+5. Bump Sunday Clinic cache/version strings:
+    - `PAGE_VERSION` -> `20260531chat4`
+    - `SC_CACHE_VERSION` -> `v20260531chat4`
+    - `global-chat-loader.js?v=v114`
+    - `chat-popup.js?v=v224`
+    - `window.__sundayClinicChatVersion = 'v224'`
+6. Update `staff/public/scripts/global-chat-loader.js` so dynamic fallback loading uses:
+    - `window.__assetVersion || window.__sundayClinicChatVersion || 'v224'`
+
+**Verification pattern that mattered:**
+1. Run `node --check` on:
+    - `staff/public/scripts/chat-popup.js`
+    - `staff/public/scripts/global-chat-loader.js`
+2. Verify live VPS file markers:
+    - `20260531chat4`
+    - `chat-popup.js?v=v224`
+    - `window.__sundayClinicChatVersion = 'v224'`
+3. Deploy static files directly to VPS:
+    - `/var/www/dokterdibya/staff/public/scripts/chat-popup.js`
+    - `/var/www/dokterdibya/staff/public/scripts/global-chat-loader.js`
+    - `/var/www/dokterdibya/staff/public/sunday-clinic.html`
+
+**Lesson:**
+- For Sunday Clinic chat, fix both load-path duplication and message identity. Scroll bugs in Android/WebView can be layout-timing bugs, so scroll after the panel is visible, after viewport recalculation, and after keyboard/layout transitions, not only immediately after message history loads.
