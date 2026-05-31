@@ -436,9 +436,22 @@
   }
 
   async function resolveAuthUser() {
-    if (window.auth && window.auth.currentUser) return window.auth.currentUser;
-    if (window.currentStaffIdentity && (window.currentStaffIdentity.id || window.currentStaffIdentity.uid)) {
+    const hasUserId = (candidate) => !!(candidate && (candidate.id || candidate.uid || candidate.user_id || candidate.new_id));
+
+    if (hasUserId(window.auth && window.auth.currentUser)) {
+      return window.auth.currentUser;
+    }
+
+    if (hasUserId(window.currentStaffIdentity)) {
       return window.currentStaffIdentity;
+    }
+
+    if (hasUserId(window.currentStaffUser)) {
+      return window.currentStaffUser;
+    }
+
+    if (window.__realtimeSyncState && hasUserId(window.__realtimeSyncState.currentUser)) {
+      return window.__realtimeSyncState.currentUser;
     }
 
     const token = await getChatToken();
@@ -490,6 +503,10 @@
     }
 
     return ids;
+  }
+
+  function normalizeChatTextForMatch(value) {
+    return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
   }
 
   // ---------- HTML ----------
@@ -1022,6 +1039,7 @@
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
   const renderedMessageIds = new Set();
+  const pendingSentMessages = new Map();
   const userPhotoCache = new Map();
   const userRoleCache = new Map(); // Cache role_id for badge colors
 
@@ -1037,6 +1055,30 @@
 
           function normalizeChatUserId(value) {
             return String(value == null ? '' : value).trim();
+          }
+
+          function rememberPendingSentMessage(text) {
+            var key = normalizeChatTextForMatch(text);
+            if (!key) return;
+            pendingSentMessages.set(key, Date.now());
+          }
+
+          function consumePendingSentEcho(data) {
+            var key = normalizeChatTextForMatch(data && data.message);
+            if (!key || !pendingSentMessages.has(key)) return false;
+
+            var sentAt = pendingSentMessages.get(key);
+            if (Date.now() - sentAt > 30000) {
+              pendingSentMessages.delete(key);
+              return false;
+            }
+
+            pendingSentMessages.delete(key);
+            if (data && data.id) {
+              renderedMessageIds.add(String(data.id));
+            }
+            console.log('[ChatPopup] Skipping socket echo for recently sent local message:', data);
+            return true;
           }
 
           function isOwnChatMessage(data) {
@@ -1125,6 +1167,10 @@
             console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
             if (data && data.id && renderedMessageIds.has(String(data.id))) {
               console.log('[ChatPopup] Skipping duplicate message id:', data.id);
+              return;
+            }
+
+            if (consumePendingSentEcho(data)) {
               return;
             }
 
@@ -1265,6 +1311,7 @@
       const userRoleId = curUser.role_id || null;
 
       // Show immediately
+      rememberPendingSentMessage(message);
       addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id || curUser.uid, userRoleId);
       if (sendAudio && typeof sendAudio.play === 'function') {
         try {
