@@ -14,43 +14,7 @@
     <meta property="og:url" content="https://sisiwanita.id/">
     <title>SISIwanita</title>
     <script>
-        (function enforceSisiwanitaVersion() {
-            var PAGE_VERSION = '20260529blur200';
-            try {
-                if (window.location.protocol === 'file:') return;
-                var url = new URL(window.location.href);
-                var path = url.pathname || '/';
-                var isLandingPath = path === '/' || path === '/index.html' || path === '/sisiwanita/index.html';
-                var allowWorkerReset = url.hostname === 'sisiwanita.id' || url.hostname === 'www.sisiwanita.id';
-                if (isLandingPath && url.searchParams.get('_v') !== PAGE_VERSION) {
-                    url.searchParams.set('_v', PAGE_VERSION);
-                    function navigateFresh(targetUrl) {
-                        var html = '<!doctype html><meta charset="utf-8"><script>location.replace(' + JSON.stringify(targetUrl) + ')<\/script>';
-                        var blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-                        window.location.replace(blobUrl);
-                    }
-                    if (allowWorkerReset && navigator.serviceWorker && navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.getRegistrations()
-                            .then(function(registrations) {
-                                return Promise.all(registrations.map(function(registration) {
-                                    return registration.unregister();
-                                }));
-                            })
-                            .then(function() {
-                                if (window.caches && caches.keys) {
-                                    return caches.keys().then(function(names) {
-                                        return Promise.all(names.map(function(name) { return caches.delete(name); }));
-                                    });
-                                }
-                            })
-                            .catch(function() {})
-                            .then(function() { navigateFresh(url.toString()); });
-                        return;
-                    }
-                    window.location.replace(url.toString());
-                }
-            } catch (e) {}
-        })();
+        window.SISIWANITA_PAGE_VERSION = '20260529blur200';
     </script>
 
     <!-- PWA Manifest -->
