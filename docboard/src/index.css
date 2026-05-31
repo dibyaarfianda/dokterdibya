@@ -432,7 +432,7 @@ input { font-family: inherit; }
 }
 
 .login-logo-image {
-  width: clamp(56px, 12vw, 72px);
+  width: clamp(84px, 18vw, 108px);
   aspect-ratio: 1 / 1;
   height: auto;
   object-fit: contain;
@@ -442,7 +442,7 @@ input { font-family: inherit; }
 
 @media (max-width: 480px) {
   .login-logo-image {
-    width: 60px;
+    width: 90px;
     border-radius: 6px;
   }
 }

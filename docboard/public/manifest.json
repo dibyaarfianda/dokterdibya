@@ -1,13 +1,19 @@
 {
-  "name": "DocBoard - Doctor Scheduler",
+  "id": "/docboard/?app=docboard-20260531-3",
+  "name": "DocBoard - Database and Scheduler",
   "short_name": "DocBoard",
-  "description": "Unified doctor schedule across all locations",
-  "start_url": "/docboard/",
+  "description": "Database and scheduler for doctor workflows",
+  "start_url": "/docboard/?source=pwa-20260531-3",
   "scope": "/docboard/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#F8FAFC",
   "theme_color": "#0F172A",
   "orientation": "portrait",
+  "lang": "id",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "categories": ["medical", "productivity", "utilities"],
   "icons": [
     {
       "src": "/docboard/icons/docboardlogo.svg",
@@ -15,15 +21,34 @@
       "type": "image/svg+xml"
     },
     {
-      "src": "/docboard/icons/icon-192.png",
+      "src": "/docboard/icons/docboard-icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/docboard/icons/icon-512.png",
+      "src": "/docboard/icons/docboard-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/docboard/icons/docboard-apple-touch-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/docboard/icons/docboard-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/docboard/icons/docboard-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
