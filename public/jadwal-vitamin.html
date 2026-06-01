@@ -733,7 +733,7 @@
         let prescriptionsData = [];
         let editingMedicationIndex = null;
 
-        if (isMockMode & !getToken()) {
+            if (isMockMode && !getToken()) {
             localStorage.setItem(TOKEN_KEY, 'mock-vitamin-token');
             localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
         }
@@ -804,7 +804,7 @@
                 3: ['08:00', '14:00', '20:00'],
                 4: ['06:00', '12:00', '18:00', '22:00']
             };
-            return customTimes & customTimes.length ? customTimes : (defaultTimes[Number(frequency)] || ['08:00']);
+            return customTimes && customTimes.length ? customTimes : (defaultTimes[Number(frequency)] || ['08:00']);
         }
 
         function categoryFromTime(time) {
@@ -926,7 +926,7 @@
             const reminderTimes = [];
             for (let index = 1; index <= frequency; index++) {
                 const input = document.getElementById(`time-${index}`);
-                if (input & input.value) reminderTimes.push(input.value);
+                if (input && input.value) reminderTimes.push(input.value);
             }
 
             const meds = getMedications();
@@ -961,7 +961,7 @@
             closeModal();
             renderAll(meds, prescriptionsData);
 
-            if (reminder & newMedication.notificationIds.length === 0 & !isMockMode) {
+            if (reminder && newMedication.notificationIds.length === 0 && !isMockMode) {
                 showToast(existingMedication ? 'Vitamin diperbarui. Izin notifikasi belum aktif di perangkat ini.' : 'Vitamin tersimpan. Izin notifikasi belum aktif di perangkat ini.', 'warning');
             } else {
                 showToast(existingMedication ? 'Vitamin berhasil diperbarui' : reminder ? 'Vitamin tersimpan dengan pengingat' : 'Vitamin berhasil ditambahkan');
@@ -1049,7 +1049,7 @@
             document.getElementById('prescriptions-count').textContent = `${prescriptions.length} resep`;
             const status = document.getElementById('vitamin-status');
             if (!status) return;
-            if (!meds.length & !prescriptions.length) {
+            if (!meds.length && !prescriptions.length) {
                 status.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Mulai tambah jadwal';
             } else if (nextTime !== '--') {
                 status.innerHTML = `<i class="fa-solid fa-clock"></i> Jadwal terdekat ${escapeHtml(nextTime)}`;
@@ -1074,7 +1074,7 @@
             container.innerHTML = meds.map((med, index) => {
                 const times = getReminderTimes(med.frequency, med.reminderTimes);
                 const category = categoryFromTime(times[0]);
-                const due = med.reminder & isDueNow(times);
+                const due = med.reminder && isDueNow(times);
                 const qtyText = med.quantity ? `${Number(med.quantity)} ${med.unit || 'tablet'}` : '';
                 const timeChips = times.map(time => `<span class="time-chip"><i class="fa-solid fa-clock"></i>${escapeHtml(time)}</span>`).join('');
                 return `

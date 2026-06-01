@@ -559,7 +559,7 @@
         function filterArticles(category, ev) {
             currentFilter = category;
             document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            if (ev & ev.target) ev.target.classList.add('active');
+            if (ev && ev.target) ev.target.classList.add('active');
             loadArticles();
         }
 

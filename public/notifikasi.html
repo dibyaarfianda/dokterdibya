@@ -501,7 +501,7 @@
             try {
                 const data = await apiRequest('/api/patient-notifications');
 
-                if (data & data.success & data.notifications) {
+                if (data && data.success && data.notifications) {
                     allNotifications = data.notifications;
 
                     // Update counts

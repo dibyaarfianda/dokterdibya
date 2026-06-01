@@ -1393,7 +1393,7 @@
             sessions: []
         };
 
-        if (isMockKickMode & !getToken()) {
+            if (isMockKickMode && !getToken()) {
             localStorage.setItem('vps_auth_token', 'mock-kick-token');
         }
 
@@ -1431,7 +1431,7 @@
                 };
             }
 
-            if (url.startsWith('/api/kick-counter/session') & method === 'POST') {
+                if (url.startsWith('/api/kick-counter/session') && method === 'POST') {
                 mockKickState.session = {
                     id: Date.now(),
                     start_time: new Date().toISOString(),
@@ -1522,7 +1522,7 @@
             try {
                 const result = await kickApiRequest('/api/kick-counter/today');
 
-                if (result & result.success) {
+                if (result && result.success) {
                     activeSession = result.sessions?.find(s => s.status === 'active') || null;
 
                     renderKickCounter(result);
@@ -1685,7 +1685,7 @@
             try {
                 const result = await kickApiRequest('/api/kick-counter/session', { method: 'POST' });
 
-                if (result & result.success) {
+                if (result && result.success) {
                     activeSession = result.session;
                     elapsedSeconds = 0;
                     loadKickCounter();
@@ -1718,7 +1718,7 @@
                     body: JSON.stringify({ session_id: activeSession.id })
                 });
 
-                if (result & result.success) {
+                if (result && result.success) {
                     const newCount = result.session.kick_count;
                     const el = document.getElementById('kickCount');
                     if (el) el.textContent = newCount;
@@ -1733,7 +1733,7 @@
 
                     // Update goal indicator when reached
                     const goalEl = document.getElementById('goal-indicator');
-                    if (goalEl & newCount >= GOAL_KICKS & !goalEl.classList.contains('reached')) {
+                    if (goalEl && newCount >= GOAL_KICKS && !goalEl.classList.contains('reached')) {
                         goalEl.classList.add('reached');
                         goalEl.innerHTML = `<span class="green-light"></span> Target tercapai — 10 tendangan dalam 2 jam`;
                         showToast('Target tercapai', 'success');
@@ -1750,7 +1750,7 @@
             try {
                 const result = await kickApiRequest(`/api/kick-counter/session/${activeSession.id}/end`, { method: 'PUT' });
 
-                if (result & result.success) {
+                if (result && result.success) {
                     stopKickTimer();
                     activeSession = null;
                     loadKickCounter();
@@ -1794,7 +1794,7 @@
         async function loadKickStats() {
             try {
                 const result = await kickApiRequest('/api/kick-counter/stats');
-                if (result & result.success) {
+                if (result && result.success) {
                     const rawWeek = Array.isArray(result.stats)
                         ? result.stats
                         : (result.stats?.week || []);
@@ -1825,7 +1825,7 @@
                 const height = maxKicks > 0 ? (day.kicks / maxKicks) * 100 : 0;
                 const dayDate = new Date(day.date);
                 const dayName = dayDate.toLocaleDateString('id-ID', { weekday: 'short' });
-                const isLow = day.kicks > 0 & day.kicks < 10;
+                const isLow = day.kicks > 0 && day.kicks < 10;
                 const isToday = day.date === today;
 
                 barsHtml += `
@@ -1847,7 +1847,7 @@
             try {
                 const result = await kickApiRequest('/api/kick-counter/history?limit=5');
 
-                if (result & result.success & result.sessions & result.sessions.length > 0) {
+                if (result && result.success && result.sessions && result.sessions.length > 0) {
                     container.innerHTML = result.sessions.map(session => {
                         const startTime = new Date(session.start_time);
                         const timeStr = startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -1894,7 +1894,7 @@
             try {
                 const result = await kickApiRequest(`/api/kick-counter/history?page=${page}&limit=10`);
 
-                if (result & result.success) {
+                if (result && result.success) {
                     if (!result.sessions || result.sessions.length === 0) {
                         container.innerHTML = `
                             <div class="empty-state">

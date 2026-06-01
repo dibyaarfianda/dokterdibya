@@ -698,7 +698,7 @@
             try {
                 const data = await apiRequest('/api/patient-documents/my-documents');
 
-                if (data & data.success & data.documents) {
+                if (data && data.success && data.documents) {
                     // Filter to only show resume_medis
                     allDocuments = data.documents.filter(doc =>
                         doc.document_type === 'resume_medis'
@@ -821,7 +821,7 @@
             if (previewFooter) previewFooter.style.display = '';
 
             // Check document type
-            if (currentDoc.document_type === 'resume_medis' & (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
+                if (currentDoc.document_type === 'resume_medis' && (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
                 // Load resume medis content from API
                 previewBody.innerHTML = `
                     <div class="resume-loading">
@@ -835,7 +835,7 @@
                 try {
                     const data = await apiRequest(`/api/patient-documents/${currentDoc.id}/content`);
 
-                    if (data & data.success & data.document) {
+                    if (data && data.success && data.document) {
                         const content = data.document.content || '';
                         previewBody.innerHTML = `
                             <div class="resume-content">
