@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601l'; // 2026-06-01l - remove hero date label/value from main portal
+const CACHE_VERSION = '20260601m'; // 2026-06-01m - unify registration + intake header/theme styles
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -40,6 +40,7 @@ const PRECACHE_FILES = [
   '/scripts/patient-my-corner.js',
   '/scripts/patient-my-corner-visit.js',
   '/patient-login.html',
+  '/patient-intake.html',
   '/offline.html',
   '/images/dibya-logo.png',
   '/images/pwa-icons/swlogo-pwa-192x192.png',
