@@ -59,8 +59,8 @@
             padding: 1rem 1.25rem;
             padding-top: calc(env(safe-area-inset-top, 0px) + 2.5rem);
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
             position: sticky;
@@ -106,8 +106,8 @@
         }
         .card {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border-radius: 1rem;
             padding: 1.25rem;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -291,8 +291,8 @@
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             border-radius: 0.75rem;
@@ -564,6 +564,37 @@
             font-size: 1.28rem;
             margin-bottom: 0.5rem;
         }
+        body.portal-themed.intake-page .step-title-pregnancy {
+            color: #f472b6;
+        }
+        body.portal-themed.intake-page .field-offset-sm,
+        body.portal-themed.intake-page .checkbox-offset-top {
+            margin-top: 0.5rem;
+        }
+        body.portal-themed.intake-page .field-offset-md,
+        body.portal-themed.intake-page .obstetric-section {
+            margin-top: 1rem;
+        }
+        body.portal-themed.intake-page .field-offset-lg {
+            margin-top: 0.75rem;
+        }
+        body.portal-themed.intake-page .checkbox-offset-bottom {
+            margin-bottom: 0.5rem;
+        }
+        body.portal-themed.intake-page .phone-format-hint {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            display: block;
+        }
+        body.portal-themed.intake-page .payment-options {
+            margin-top: 0.5rem;
+        }
+        body.portal-themed.intake-page .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem 1rem;
+        }
         body.portal-themed.intake-page label {
             color: var(--text-primary, #111111);
             font-size: 0.92rem;
@@ -818,7 +849,7 @@
                                 <div class="field">
                                     <label for="height">Tinggi Badan (cm)</label>
                                     <input type="number" id="height" name="height" min="120" max="210" step="1" placeholder="Contoh: 160">
-                                    <label class="checkbox-item" style="margin-top:0.5rem;">
+                                    <label class="checkbox-item checkbox-offset-top">
                                         <input type="checkbox" id="height_unknown" name="height_unknown" value="true">
                                         <span>Tidak tahu / belum mengukur</span>
                                     </label>
@@ -833,7 +864,7 @@
                                 <div class="field">
                                     <label for="phone">Telepon/HP *</label>
                                     <input type="tel" id="phone" name="phone" required pattern="628[0-9]{9,12}" placeholder="628xxxxxxxxxx" title="Nomor harus dimulai dengan 628 (contoh: 628123456789)">
-                                    <small style="color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 628xxxxxxxxxx (untuk integrasi WhatsApp API)</small>
+                                    <small class="phone-format-hint">Format: 628xxxxxxxxxx (untuk integrasi WhatsApp API)</small>
                                 </div>
                                 <div class="field">
                                     <label for="emergency_contact">Kontak Darurat</label>
@@ -877,9 +908,9 @@
                             </div>
 
                             <!-- Obstetric Section - Only for married with children -->
-                            <div id="obstetric-section" style="display: none; margin-top: 1rem;">
+                            <div id="obstetric-section" class="obstetric-section" hidden>
                                 <div class="divider"></div>
-                                <h2 class="step-title" style="color: #f472b6;">🤰 Data Riwayat Kehamilan</h2>
+                                <h2 class="step-title step-title-pregnancy">🤰 Data Riwayat Kehamilan</h2>
                                 <p class="step-description">Data ini penting untuk menentukan risiko kehamilan Anda.</p>
                                 <div class="field-grid two">
                                     <div class="field">
@@ -917,7 +948,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="field-grid two" style="margin-top: 1rem;">
+                            <div class="field-grid two field-offset-md">
                                 <div class="field">
                                     <label for="occupation">Pekerjaan Anda</label>
                                     <input type="text" id="occupation" name="occupation">
@@ -936,21 +967,21 @@
                                 </div>
                                 <div class="field">
                                     <label for="payment_method">Pembiayaan yang Dimiliki (bisa lebih dari satu)</label>
-                                    <div style="margin-top: 0.5rem;">
-                                        <label class="checkbox-item" style="margin-bottom: 0.5rem;">
+                                    <div class="payment-options">
+                                        <label class="checkbox-item checkbox-offset-bottom">
                                             <input type="checkbox" id="payment_self" name="payment_method" value="self">
                                             <span>Biaya Sendiri</span>
                                         </label>
-                                        <label class="checkbox-item" style="margin-bottom: 0.5rem;">
+                                        <label class="checkbox-item checkbox-offset-bottom">
                                             <input type="checkbox" id="payment_bpjs" name="payment_method" value="bpjs">
                                             <span>BPJS</span>
                                         </label>
-                                        <label class="checkbox-item" style="margin-bottom: 0.5rem;">
+                                        <label class="checkbox-item checkbox-offset-bottom">
                                             <input type="checkbox" id="payment_insurance" name="payment_method" value="insurance">
                                             <span>Asuransi</span>
                                         </label>
                                     </div>
-                                    <input type="text" id="insurance_name" name="insurance_name" placeholder="Nama Asuransi (jika centang Asuransi)" style="margin-top: 0.5rem; display: none;">
+                                    <input type="text" id="insurance_name" name="insurance_name" class="field-offset-sm" placeholder="Nama Asuransi (jika centang Asuransi)" hidden>
                                 </div>
                             </div>
                         </div>
@@ -958,7 +989,7 @@
                         <div class="alert">
                             Dengan melanjutkan Anda menyetujui bahwa data ini akan digunakan untuk keperluan pelayanan kesehatan di Dibya Klinik.
                         </div>
-                        <div class="field" style="margin-top:0.5rem;">
+                        <div class="field field-offset-sm">
                             <label class="checkbox-item">
                                 <input type="checkbox" id="consent" name="consent" required>
                                 <span>Saya mengisi data dengan jujur dan memberikan izin untuk digunakan dalam konsultasi.</span>
@@ -1038,7 +1069,7 @@
                         <div class="divider"></div>
                         <div>
                             <h2 class="step-title">Kondisi Medis Sebelumnya</h2>
-                            <div class="checkbox-list checkbox-grid" data-collection="past-conditions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem 1rem;">
+                            <div class="checkbox-list checkbox-grid" data-collection="past-conditions">
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="hipertensi"> Hipertensi</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="diabetes"> Diabetes</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="heart"> Sakit jantung</label>
@@ -1051,7 +1082,7 @@
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="surgery"> Operasi sebelumnya</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="blood"> Kelainan darah</label>
                             </div>
-                            <div class="field" style="margin-top:0.75rem;">
+                            <div class="field field-offset-lg">
                                 <label for="past_conditions_detail">Rincian tambahan</label>
                                 <textarea id="past_conditions_detail" name="past_conditions_detail" placeholder="Tulis nama penyakit atau operasi dan tahun"></textarea>
                             </div>
@@ -1059,7 +1090,7 @@
                         <div class="divider"></div>
                         <div>
                             <h2 class="step-title">Riwayat Penyakit Keluarga</h2>
-                            <div class="checkbox-list checkbox-grid" data-collection="family-history" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem 1rem;">
+                            <div class="checkbox-list checkbox-grid" data-collection="family-history">
                                 <label class="checkbox-item"><input type="checkbox" name="family_history" value="hipertensi"> Hipertensi</label>
                                 <label class="checkbox-item"><input type="checkbox" name="family_history" value="diabetes"> Diabetes</label>
                                 <label class="checkbox-item"><input type="checkbox" name="family_history" value="heart"> Sakit jantung</label>
@@ -1072,7 +1103,7 @@
                                 <label class="checkbox-item"><input type="checkbox" name="family_history" value="blood"> Kelainan darah</label>
                                 <label class="checkbox-item"><input type="checkbox" name="family_history" value="genetic"> Kelainan genetik</label>
                             </div>
-                            <div class="field" style="margin-top:0.75rem;">
+                            <div class="field field-offset-lg">
                                 <label for="family_history_detail">Rincian riwayat keluarga</label>
                                 <textarea id="family_history_detail" name="family_history_detail" placeholder="Tulis hubungan keluarga (ayah, ibu, kakek, nenek, dll) dan kondisi medis"></textarea>
                             </div>
@@ -1086,7 +1117,7 @@
                                 <label for="patient_signature">Tanda tangan digital (ketik nama lengkap) *</label>
                                 <input type="text" id="patient_signature" name="patient_signature" required>
                             </div>
-                            <div class="field" style="margin-top:0.5rem;">
+                            <div class="field field-offset-sm">
                                 <label class="checkbox-item">
                                     <input type="checkbox" id="final_ack" name="final_ack" required>
                                     <span>Saya menyatakan bahwa informasi di atas benar dan bersedia data ini diverifikasi oleh tim dokterDIBYA.</span>
@@ -1099,7 +1130,7 @@
                     <div class="buttons">
                         <button type="button" class="btn-secondary" id="btn-prev">Kembali</button>
                         <button type="button" class="btn-primary" id="btn-next">Lanjut</button>
-                        <button type="submit" class="btn-primary" id="btn-submit" style="display:none;">Kirim Data</button>
+                        <button type="submit" class="btn-primary" id="btn-submit" hidden>Kirim Data</button>
                     </div>
                 </form>
                 <div class="summary" id="status-message" hidden>Data tersimpan sementara di perangkat Anda.</div>
@@ -1330,13 +1361,17 @@
             // Obstetric section
             const hasChildren = document.getElementById('has_children');
             if (hasChildren && hasChildren.value === 'ya') {
-                document.getElementById('obstetric-section').style.display = 'block';
+                const obstetricSection = document.getElementById('obstetric-section');
+                obstetricSection.hidden = false;
+                obstetricSection.style.display = 'block';
             }
 
             // Insurance name field
             const paymentInsurance = document.getElementById('payment_insurance');
             if (paymentInsurance && paymentInsurance.checked) {
-                document.getElementById('insurance_name').style.display = 'block';
+                const insuranceNameField = document.getElementById('insurance_name');
+                insuranceNameField.hidden = false;
+                insuranceNameField.style.display = 'block';
             }
 
             console.log('[Intake] Data restored from server');
@@ -1502,6 +1537,7 @@
             // Update buttons
             btnPrev.style.display = n === 0 ? 'none' : 'flex';
             btnNext.style.display = n === totalSteps - 1 ? 'none' : 'flex';
+            btnSubmit.hidden = n !== totalSteps - 1;
             btnSubmit.style.display = n === totalSteps - 1 ? 'flex' : 'none';
 
             // Scroll to top
@@ -1826,6 +1862,7 @@
         // Show/hide insurance name field
         document.getElementById('payment_insurance').addEventListener('change', function() {
             const insuranceNameField = document.getElementById('insurance_name');
+            insuranceNameField.hidden = !this.checked;
             insuranceNameField.style.display = this.checked ? 'block' : 'none';
         });
 
@@ -1839,7 +1876,9 @@
 
             // Hide obstetric section if not married
             if (!showFields) {
-                document.getElementById('obstetric-section').style.display = 'none';
+                const obstetricSection = document.getElementById('obstetric-section');
+                obstetricSection.hidden = true;
+                obstetricSection.style.display = 'none';
                 document.getElementById('has_children').value = '';
             }
         });
@@ -1848,6 +1887,7 @@
         document.getElementById('has_children').addEventListener('change', function() {
             const obstetricSection = document.getElementById('obstetric-section');
             const showSection = this.value === 'ya';
+            obstetricSection.hidden = !showSection;
             obstetricSection.style.display = showSection ? 'block' : 'none';
         });
 
