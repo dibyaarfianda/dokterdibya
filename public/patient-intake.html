@@ -6,25 +6,27 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Identitas Pribadi</title>
+    <title>Form Intake - SISIwanita</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
     <style>
         :root {
-            color-scheme: dark;
-            --primary: #0066FF;
-            --primary-dark: #0052CC;
+            color-scheme: light;
+            --primary: #111111;
+            --primary-dark: #5c7f72;
             --success: #10b981;
             --danger: #ef4444;
-            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+            --bg-gradient: radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%), linear-gradient(180deg, #fbfbf8 0%, #f7f7f4 52%, #ffffff 100%);
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-main, 'Inter', sans-serif);
             background: var(--bg-gradient);
-            color: #ffffff;
+            color: var(--text-primary, #111111);
             position: relative;
         }
         .bg-animation {
@@ -356,6 +358,308 @@
             td input, td select, td textarea { font-size: 0.8rem; }
             th, td { padding: 0.45rem; }
         }
+
+        /* SISIwanita intake harmonization */
+        body.portal-themed.intake-page {
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--text-primary, #111111);
+        }
+        body.portal-themed.intake-page .topbar-blur-fade {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 200px;
+            z-index: 29;
+            pointer-events: none;
+        }
+        body.portal-themed.intake-page .topbar-blur-fade div[class^="topbar-blur-"] {
+            opacity: 1;
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        body.portal-themed.intake-page .topbar-blur-1 { z-index: 1; -webkit-backdrop-filter: blur(0.15625px); backdrop-filter: blur(0.15625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
+        body.portal-themed.intake-page .topbar-blur-2 { z-index: 2; -webkit-backdrop-filter: blur(0.3125px); backdrop-filter: blur(0.3125px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); }
+        body.portal-themed.intake-page .topbar-blur-3 { z-index: 3; -webkit-backdrop-filter: blur(0.625px); backdrop-filter: blur(0.625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); }
+        body.portal-themed.intake-page .topbar-blur-4 { z-index: 4; -webkit-backdrop-filter: blur(1.25px); backdrop-filter: blur(1.25px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); }
+        body.portal-themed.intake-page .topbar-blur-5 { z-index: 5; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); }
+        body.portal-themed.intake-page .topbar-blur-6 { z-index: 6; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
+        body.portal-themed.intake-page .topbar-blur-7 { z-index: 7; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
+        body.portal-themed.intake-page .topbar-blur-8 { z-index: 8; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
+
+        body.portal-themed.intake-page header.topbar {
+            position: sticky;
+            top: env(safe-area-inset-top, 0px);
+            z-index: 30;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+        }
+        body.portal-themed.intake-page .topbar-inner {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 8px 13px 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 11px;
+        }
+        body.portal-themed.intake-page .brand-link {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 1px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+        body.portal-themed.intake-page .brand-title {
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+            font-size: 16px;
+            line-height: 1.02;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: #7EA89F;
+        }
+        body.portal-themed.intake-page .brand-sub {
+            margin-top: 3px;
+            font-size: 7.2px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #7EA89F;
+        }
+        body.portal-themed.intake-page .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        body.portal-themed.intake-page .icon-btn {
+            border: 1px solid var(--line-soft, rgba(17, 17, 17, 0.09));
+            background: rgba(255,255,255,0.82);
+            box-shadow: var(--shadow-soft, 0 1px 2px rgba(17, 17, 17, 0.05));
+            width: 32px;
+            height: 32px;
+            border-radius: 11px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary, #111111);
+            cursor: pointer;
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        }
+        body.portal-themed.intake-page .icon-btn:active { transform: scale(0.97); }
+
+        body.portal-themed.intake-page .intake-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+        body.portal-themed.intake-page main {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 22px 16px 110px;
+        }
+        body.portal-themed.intake-page .intake-intro {
+            margin: 8px 0 18px;
+            animation: intakeEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        body.portal-themed.intake-page .intake-intro h1 {
+            margin: 0 0 6px;
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+            font-size: clamp(30px, 5vw, 40px);
+            line-height: 1.06;
+            letter-spacing: -0.03em;
+            color: var(--text-primary, #111111);
+        }
+        body.portal-themed.intake-page .intake-intro p {
+            margin: 0;
+            color: var(--text-muted, #717171);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        body.portal-themed.intake-page .stepper {
+            margin-top: 14px;
+            gap: 8px;
+        }
+        body.portal-themed.intake-page .stepper span {
+            font-size: 11px;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            border-radius: 12px;
+            border: 1px solid var(--line-strong, rgba(17,17,17,0.16));
+            background: var(--bg-surface, rgba(255,255,255,0.88));
+            color: var(--text-muted, #717171);
+            font-weight: 700;
+            padding: 10px 8px;
+        }
+        body.portal-themed.intake-page .stepper span.active {
+            background: #111111;
+            border-color: #111111;
+            color: #ffffff;
+        }
+        body.portal-themed.intake-page .card {
+            background: var(--bg-surface, rgba(255,255,255,0.88));
+            border: 1px solid var(--line-soft, rgba(17,17,17,0.09));
+            border-radius: 18px;
+            box-shadow: var(--shadow-soft, 0 1px 2px rgba(17, 17, 17, 0.05));
+            padding: clamp(16px, 2vw, 24px);
+            max-width: 100%;
+            margin: 0;
+            animation: intakeEnter 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        body.portal-themed.intake-page .intake-step.active {
+            animation: intakeStepIn 260ms ease both;
+        }
+        body.portal-themed.intake-page .step-title {
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+            color: var(--text-primary, #111111);
+            font-size: 1.28rem;
+            margin-bottom: 0.5rem;
+        }
+        body.portal-themed.intake-page label {
+            color: var(--text-primary, #111111);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+        body.portal-themed.intake-page input[type="text"],
+        body.portal-themed.intake-page input[type="date"],
+        body.portal-themed.intake-page input[type="number"],
+        body.portal-themed.intake-page input[type="tel"],
+        body.portal-themed.intake-page select,
+        body.portal-themed.intake-page textarea {
+            min-height: 48px;
+            border-radius: 12px;
+            border: 1px solid var(--line-strong, rgba(17, 17, 17, 0.16));
+            background: var(--bg-surface, rgba(255,255,255,0.88));
+            color: var(--text-primary, #111111);
+            font-size: 14px;
+            padding: 0 14px;
+            font-family: var(--font-main, 'Inter', sans-serif);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        body.portal-themed.intake-page textarea {
+            min-height: 120px;
+            padding: 12px 14px;
+            line-height: 1.6;
+        }
+        body.portal-themed.intake-page input::placeholder,
+        body.portal-themed.intake-page textarea::placeholder {
+            color: var(--text-muted, #717171);
+        }
+        body.portal-themed.intake-page input:focus,
+        body.portal-themed.intake-page select:focus,
+        body.portal-themed.intake-page textarea:focus {
+            outline: none;
+            border-color: var(--text-primary, #111111);
+            box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06);
+            background: #ffffff;
+        }
+        body.portal-themed.intake-page select option {
+            background: #ffffff;
+            color: #111111;
+        }
+        body.portal-themed.intake-page .checkbox-item,
+        body.portal-themed.intake-page .checkbox-item span {
+            color: var(--text-body, #3f3f3f);
+        }
+        body.portal-themed.intake-page .step-description,
+        body.portal-themed.intake-page .field-hint,
+        body.portal-themed.intake-page .table-note,
+        body.portal-themed.intake-page small {
+            color: var(--text-muted, #717171) !important;
+        }
+        body.portal-themed.intake-page .divider {
+            background: var(--line-soft, rgba(17,17,17,0.09));
+        }
+        body.portal-themed.intake-page table {
+            border-color: var(--line-soft, rgba(17,17,17,0.09));
+            border-radius: 12px;
+            background: #ffffff;
+        }
+        body.portal-themed.intake-page thead {
+            background: #f4f4f1;
+        }
+        body.portal-themed.intake-page th,
+        body.portal-themed.intake-page td {
+            border-color: var(--line-soft, rgba(17,17,17,0.09));
+            color: var(--text-primary, #111111);
+        }
+        body.portal-themed.intake-page .alert {
+            border-radius: 12px;
+            border: 1px solid rgba(92, 127, 114, 0.3);
+            background: rgba(92, 127, 114, 0.11);
+            color: var(--text-body, #3f3f3f);
+        }
+        body.portal-themed.intake-page .summary {
+            background: rgba(92, 127, 114, 0.12);
+            border-radius: 12px;
+            border: 1px solid rgba(92, 127, 114, 0.3);
+            color: var(--text-body, #3f3f3f);
+        }
+        body.portal-themed.intake-page .buttons button {
+            min-height: 48px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        body.portal-themed.intake-page .btn-primary {
+            background: #111111;
+            color: #ffffff;
+        }
+        body.portal-themed.intake-page .btn-primary:hover {
+            background: #4f6f63;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 28px rgba(17, 17, 17, 0.16);
+        }
+        body.portal-themed.intake-page .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--line-strong, rgba(17,17,17,0.16));
+            color: var(--text-primary, #111111);
+        }
+        body.portal-themed.intake-page .btn-secondary:hover {
+            background: #ffffff;
+        }
+        body.portal-themed.intake-page .toast {
+            background: rgba(255,255,255,0.92);
+            border: 1px solid var(--line-soft, rgba(17,17,17,0.09));
+            box-shadow: var(--shadow, 0 14px 38px rgba(17,17,17,0.08));
+            color: var(--text-primary, #111111);
+            border-radius: 12px;
+        }
+        body.portal-themed.intake-page footer {
+            color: var(--text-muted, #717171);
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        }
+        body.portal-themed.intake-page .bubble {
+            background: rgba(92, 127, 114, 0.1);
+            filter: blur(1px);
+            animation-duration: 14s;
+        }
+        @keyframes intakeEnter {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes intakeStepIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            body.portal-themed.intake-page main { padding: 16px 12px 104px; }
+            body.portal-themed.intake-page .intake-intro h1 { font-size: 1.95rem; }
+            body.portal-themed.intake-page .card { padding: 14px; }
+            body.portal-themed.intake-page .stepper span { font-size: 10px; letter-spacing: 0.05em; }
+        }
     </style>
 
     <!-- Cache Clear Script -->
@@ -385,15 +689,40 @@
     </script>
     <script src="/scripts/patient-theme.js"></script>
 </head>
-<body>
+<body class="portal-themed intake-page">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
     <div class="bg-animation" id="bgAnimation"></div>
     <div class="intake-shell">
-        <header>
-            <h1 id="form-title">Formulir Identitas dan Sosial</h1>
-            <p id="form-description">Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
-            <div class="stepper" id="stepper"></div>
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Form Intake</div>
+                    </a>
+                </div>
+                <div class="top-actions">
+                    <button type="button" class="icon-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+            </div>
         </header>
         <main>
+            <section class="intake-intro" aria-labelledby="form-title">
+                <h1 id="form-title">Formulir Identitas dan Sosial</h1>
+                <p id="form-description">Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
+                <div class="stepper" id="stepper"></div>
+            </section>
             <div class="card">
                 <form id="intake-form" novalidate>
                     <section class="intake-step active" data-step-title="Identitas & Sosial">
@@ -467,7 +796,7 @@
                             <h2 class="step-title">Informasi Keluarga & Sosial</h2>
                             <div class="field-grid two">
                                 <div class="field">
-                                    <label>Status Pernikahan</label>
+                                    <label for="marital_status">Status Pernikahan</label>
                                     <select name="marital_status" id="marital_status">
                                         <option value="">Pilih status</option>
                                         <option value="single">Single</option>
@@ -488,7 +817,7 @@
                                     <input type="text" id="husband_job" name="husband_job">
                                 </div>
                                 <div class="field husband-field">
-                                    <label>Apakah punya anak?</label>
+                                    <label for="has_children">Apakah punya anak?</label>
                                     <select name="has_children" id="has_children">
                                         <option value="">Pilih</option>
                                         <option value="ya">Ya</option>
@@ -529,7 +858,7 @@
                                         <input type="number" id="miscarriage_count" name="miscarriage_count" min="0" max="10" placeholder="0 jika tidak pernah">
                                     </div>
                                     <div class="field">
-                                        <label>Pernah hamil di luar kandungan (ektopik)?</label>
+                                        <label for="had_ectopic">Pernah hamil di luar kandungan (ektopik)?</label>
                                         <select name="had_ectopic" id="had_ectopic">
                                             <option value="">Pilih</option>
                                             <option value="tidak">Tidak pernah</option>
