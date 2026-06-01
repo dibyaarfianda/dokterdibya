@@ -874,6 +874,18 @@
             background: rgba(255,255,255,0.62);
             border-radius: 14px;
         }
+        .announcement-mini-btn {
+            width: 100%;
+            border: 1px solid var(--line);
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+        .announcement-mini-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--line-strong);
+            box-shadow: 0 8px 18px rgba(17,17,17,0.08);
+        }
         .announcement-dot {
             width: 9px;
             height: 9px;
@@ -2124,6 +2136,8 @@
         const BUG_REPORT_MAX_LENGTH = 1500;
         const BUG_REPORT_API_MAX_LENGTH = 2000;
         let currentProfile = null;
+        let homeInfoItems = [];
+        let homeAnnouncementDetailsById = {};
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
@@ -3474,6 +3488,82 @@
             return 'normal';
         }
 
+        function normalizeInfoLink(link) {
+            const value = String(link || '').trim();
+            if (!value) return '';
+            if (value.startsWith('/')) return value;
+            if (/^https?:\/\//i.test(value)) return value;
+            return '';
+        }
+
+        async function getAnnouncementFullMessage(item) {
+            if (!item || !item.id) {
+                return String(item?.message || '').trim();
+            }
+
+            const cacheKey = String(item.id);
+            if (homeAnnouncementDetailsById[cacheKey]) {
+                return homeAnnouncementDetailsById[cacheKey];
+            }
+
+            try {
+                const response = await fetch('/api/announcements/active?_t=' + Date.now(), {
+                    headers: { 'Cache-Control': 'no-cache' },
+                    cache: 'no-store'
+                });
+                const result = await response.json().catch(function() { return {}; });
+                const list = result.success && Array.isArray(result.data) ? result.data : [];
+                const found = list.find(function(entry) {
+                    return String(entry.id) === cacheKey;
+                });
+                const fullMessage = String(found?.message || item.message || '').trim();
+                homeAnnouncementDetailsById[cacheKey] = fullMessage;
+                return fullMessage;
+            } catch (error) {
+                return String(item.message || '').trim();
+            }
+        }
+
+        async function openHomeInfoDetail(index, event) {
+            stopTopbarEvent(event);
+            const item = homeInfoItems[index];
+            if (!item) return;
+
+            let detailMessage = String(item.message || '').trim();
+            if (String(item.source || '').toLowerCase() === 'announcement') {
+                detailMessage = await getAnnouncementFullMessage(item);
+            }
+
+            if (String(item.source || '').toLowerCase() === 'notification' && item.id) {
+                try {
+                    await fetch('/api/patient-notifications/' + encodeURIComponent(item.id) + '/read', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + getToken() }
+                    });
+                } catch (error) {}
+            }
+
+            const title = cleanPreviewText(item.title, 'Info Terbaru');
+            const sourceLabel = String(item.source || '').toLowerCase() === 'announcement' ? 'Pengumuman Klinik' : 'Notifikasi Pasien';
+            const meta = sourceLabel + ' • ' + formatInfoTime(item.created_at);
+            const safeMessage = escapeHtml(detailMessage || 'Detail belum tersedia.').replace(/\n/g, '<br>');
+            const safeLink = normalizeInfoLink(item.link);
+            const linkHtml = safeLink
+                ? '<div class="shell-modal-actions" style="margin-top:10px;"><a class="shell-modal-link" href="' + escapeHtml(safeLink) + '"><i class="fa-solid fa-arrow-up-right-from-square"></i>Buka Halaman</a></div>'
+                : '';
+
+            const bodyHtml =
+                '<div class="settings-panel">' +
+                    '<div class="section-kicker" style="margin-bottom:6px;">' + escapeHtml(meta) + '</div>' +
+                    '<div class="announcement-mini-title" style="font-size:15px;line-height:1.35;margin-bottom:8px;">' + escapeHtml(title) + '</div>' +
+                    '<div class="announcement-mini-copy" style="-webkit-line-clamp:unset;display:block;font-size:12px;line-height:1.58;color:var(--ink);">' + safeMessage + '</div>' +
+                    linkHtml +
+                '</div>';
+
+            openTopbarModal('Info Terbaru', sourceLabel, bodyHtml);
+            loadNotificationCount();
+        }
+
         function renderHomeAnnouncements(items, unreadCount) {
             const preview = document.getElementById('announcement-preview');
             const list = document.getElementById('announcement-list');
@@ -3482,6 +3572,7 @@
             if (!preview || !list || !pill || !action) return;
 
             const safeItems = Array.isArray(items) ? items.filter(Boolean).slice(0, 2) : [];
+            homeInfoItems = safeItems;
             const count = Number(unreadCount || 0);
             if (count > 0) {
                 pill.textContent = count > 99 ? '99+' : String(count);
@@ -3499,19 +3590,19 @@
 
             const first = safeItems[0];
             preview.textContent = truncatePreviewText(first.message || first.title, 86);
-            list.innerHTML = safeItems.map(function(item) {
+            list.innerHTML = safeItems.map(function(item, index) {
                 const tone = getInfoTone(item);
                 const title = cleanPreviewText(item.title, item.source === 'announcement' ? 'Pengumuman Klinik' : 'Notifikasi');
                 const message = truncatePreviewText(item.message, 104);
                 const meta = item.source === 'announcement' ? 'Pengumuman' : 'Notifikasi';
-                return '<div class="announcement-mini is-' + tone + '">' +
+                return '<button type="button" class="announcement-mini announcement-mini-btn soundable is-' + tone + '" onclick="openHomeInfoDetail(' + index + ', event)">' +
                     '<span class="announcement-dot"></span>' +
                     '<div>' +
                         '<div class="announcement-mini-title">' + escapeHtml(title) + '</div>' +
                         '<div class="announcement-mini-copy">' + escapeHtml(message || 'Buka notifikasi untuk melihat detail.') + '</div>' +
                         '<div class="announcement-mini-meta">' + escapeHtml(meta) + ' - ' + escapeHtml(formatInfoTime(item.created_at)) + '</div>' +
                     '</div>' +
-                '</div>';
+                '</button>';
             }).join('');
             action.innerHTML = '<i class="fa-solid fa-bell"></i> Lihat Semua Info';
         }
@@ -4154,6 +4245,7 @@
         window.confirmExitApp = confirmExitApp;
         window.submitAttendanceConfirmation = submitAttendanceConfirmation;
         window.closeAttendanceConfirmationPopup = closeAttendanceConfirmationPopup;
+        window.openHomeInfoDetail = openHomeInfoDetail;
         window.scrollTopHome = scrollTopHome;
         window.showToast = showToast;
 
