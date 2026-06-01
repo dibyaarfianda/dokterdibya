@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601x'; // 2026-06-01x - scale home photo crop by frame size
+const CACHE_VERSION = '20260601y'; // 2026-06-01y - enlarge home photo frame and remove min zoom
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
