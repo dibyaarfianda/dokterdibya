@@ -349,6 +349,7 @@ async function resolveUserIdentity(user) {
     const userType = isPatientUser(user) ? 'patient' : 'staff';
 
     let defaultName = user.name || user.full_name || user.email || 'User';
+    let portalNickname = null;
 
     if (userType === 'patient') {
         const [rows] = await db.query(
@@ -358,6 +359,7 @@ async function resolveUserIdentity(user) {
         if (rows.length > 0) {
             defaultName = rows[0].full_name || defaultName;
         }
+        portalNickname = await getPatientPortalNickname(userId);
     } else {
         const [rows] = await db.query(
             'SELECT name FROM users WHERE new_id = ? LIMIT 1',
@@ -377,15 +379,32 @@ async function resolveUserIdentity(user) {
     );
 
     const profile = profiles[0] || null;
+    const effectiveNickname = profile?.nickname || portalNickname || null;
     return {
         userId,
         userType,
         defaultName,
-        nickname: profile?.nickname || null,
+        nickname: effectiveNickname,
         bio: profile?.bio || '',
         avatarUrl: profile?.avatar_url || null,
         profileVisible: profile ? profile.profile_visible === 1 : true
     };
+}
+
+async function getPatientPortalNickname(patientId) {
+    try {
+        const [rows] = await db.query(
+            `SELECT nickname
+             FROM patient_portal_settings
+             WHERE patient_id = ?
+             LIMIT 1`,
+            [patientId]
+        );
+        return rows[0]?.nickname || null;
+    } catch (error) {
+        if (error && error.code === 'ER_NO_SUCH_TABLE') return null;
+        throw error;
+    }
 }
 
 async function touchRoomMember(room, user, identity = null) {
@@ -415,12 +434,14 @@ async function touchRoomMember(room, user, identity = null) {
 
 async function getReadableProfile(userId, userType) {
     let defaultName = 'User';
+    let portalNickname = null;
 
     if (userType === 'patient') {
         const [rows] = await db.query('SELECT full_name FROM patients WHERE id = ? LIMIT 1', [userId]);
         if (rows.length > 0) {
             defaultName = rows[0].full_name || defaultName;
         }
+        portalNickname = await getPatientPortalNickname(userId);
     } else {
         const [rows] = await db.query(
             `SELECT u.name, r.display_name AS role_display_name
@@ -444,11 +465,13 @@ async function getReadableProfile(userId, userType) {
     const profile = profiles[0] || null;
     if (profile && profile.profile_visible === 0) return null;
 
+    const effectiveNickname = profile?.nickname || portalNickname || null;
+
     return {
         user_id: userId,
         user_type: userType,
-        display_name: profile?.nickname || defaultName,
-        nickname: profile?.nickname || null,
+        display_name: effectiveNickname || defaultName,
+        nickname: effectiveNickname,
         bio: profile?.bio || '',
         avatar_url: profile?.avatar_url || null,
         updated_at: profile?.updated_at || null

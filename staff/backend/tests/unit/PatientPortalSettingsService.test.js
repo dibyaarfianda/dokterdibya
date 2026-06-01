@@ -37,6 +37,7 @@ describe('PatientPortalSettingsService', () => {
 
     it('trims nickname and upserts settings', async () => {
         db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
+        db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
         db.query.mockResolvedValueOnce([[{
             nickname: 'Bunda',
             notification_sound: 'soft'
@@ -51,6 +52,10 @@ describe('PatientPortalSettingsService', () => {
             'P2026001',
             'Bunda',
             'soft'
+        ]);
+        expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO community_chat_profiles'), [
+            'P2026001',
+            'Bunda'
         ]);
         expect(settings).toEqual({
             nickname: 'Bunda',
