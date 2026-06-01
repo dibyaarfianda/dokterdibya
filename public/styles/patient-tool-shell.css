@@ -851,7 +851,28 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
     body.patient-tool-shell.vitamin-schedule-page .hero-card .today-row,
     body.patient-tool-shell.vitamin-schedule-page .brand,
     body.patient-tool-shell.vitamin-schedule-page #home-notif-btn,
-    body.patient-tool-shell.vitamin-schedule-page #user-avatar {
+    body.patient-tool-shell.vitamin-schedule-page #user-avatar,
+    body.patient-tool-shell.booking-klinik-page *,
+    body.patient-tool-shell.booking-klinik-page *::before,
+    body.patient-tool-shell.booking-klinik-page *::after,
+    body.patient-tool-shell.jadwal-rs-page *,
+    body.patient-tool-shell.jadwal-rs-page *::before,
+    body.patient-tool-shell.jadwal-rs-page *::after,
+    body.patient-tool-shell.riwayat-kunjungan-page *,
+    body.patient-tool-shell.riwayat-kunjungan-page *::before,
+    body.patient-tool-shell.riwayat-kunjungan-page *::after,
+    body.patient-tool-shell.antrian-page *,
+    body.patient-tool-shell.antrian-page *::before,
+    body.patient-tool-shell.antrian-page *::after,
+    body.patient-tool-shell.album-usg-page *,
+    body.patient-tool-shell.album-usg-page *::before,
+    body.patient-tool-shell.album-usg-page *::after,
+    body.patient-tool-shell.dokumen-medis-page *,
+    body.patient-tool-shell.dokumen-medis-page *::before,
+    body.patient-tool-shell.dokumen-medis-page *::after,
+    body.patient-tool-shell.hasil-lab-page *,
+    body.patient-tool-shell.hasil-lab-page *::before,
+    body.patient-tool-shell.hasil-lab-page *::after {
         animation-duration: 1.05s !important;
         transition-duration: 1.05s !important;
     }

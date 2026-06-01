@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601q'; // 2026-06-01q - whitelist jadwal vitamin motion
+const CACHE_VERSION = '20260601r'; // 2026-06-01r - whitelist booking, jadwal, history, queue, docs, and lab motion
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
