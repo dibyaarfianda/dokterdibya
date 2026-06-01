@@ -24,6 +24,7 @@ const {
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
 const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
+const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
 
 function resolveStaffIdentity(name, photoUrl) {
     const normalizedName = String(name || '')
@@ -157,7 +158,7 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
         throw new AppError(ERROR_MESSAGES.MISSING_CREDENTIALS, HTTP_STATUS.BAD_REQUEST);
     }
 
-    if (await isPatientRequestIpBlocked(req)) {
+    if (PATIENT_AUTH_BLOCKLIST_ENABLED && await isPatientRequestIpBlocked(req)) {
         logger.warn('Patient login blocked by IP blocklist', { email, ip: req.ip });
         throw new AppError(BLOCKED_PATIENT_MESSAGE, HTTP_STATUS.FORBIDDEN);
     }
@@ -194,7 +195,7 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
         throw new AppError('Akses ditolak. Silakan gunakan halaman login staff.', HTTP_STATUS.FORBIDDEN);
     }
 
-    if (isPatientIdentityBlocked({ name: user.name })) {
+    if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name: user.name })) {
         rememberBlockedPatientRequestIp(req);
         logger.warn(`Patient login blocked by name blocklist: ${user.email}`);
         throw new AppError(BLOCKED_PATIENT_MESSAGE, HTTP_STATUS.FORBIDDEN);

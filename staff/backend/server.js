@@ -220,12 +220,24 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/support-chat',       // Support chat (bot + staff escalation)
 ];
 
+const PATIENT_AUTH_BOOTSTRAP_ROUTES = [
+    '/api/auth/patient-login',
+    '/api/registration-codes',
+    '/api/patients/register',
+    '/api/patients/login',
+    '/api/patients/auth/google',
+    '/api/patients/google-auth-code',
+];
+
+const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
+
 app.use('/api', async (req, res, next) => {
     const fullPath = req.originalUrl || req.url;
+    const isPatientAuthBootstrapRoute = PATIENT_AUTH_BOOTSTRAP_ROUTES.some(route => fullPath.startsWith(route));
     const isPatientFacingRoute = fullPath.startsWith('/api/auth/patient-login')
         || PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
 
-    if (isPatientFacingRoute && await isPatientRequestIpBlocked(req)) {
+    if (PATIENT_AUTH_BLOCKLIST_ENABLED && !isPatientAuthBootstrapRoute && isPatientFacingRoute && await isPatientRequestIpBlocked(req)) {
         logger.warn('Patient API request blocked by IP blocklist', {
             path: fullPath,
             ip: req.ip
@@ -250,7 +262,7 @@ app.use('/api', async (req, res, next) => {
 
         // Check if this is a patient token
         if (payload.user_type === 'patient' || payload.role === 'patient') {
-            if (isPatientIdentityBlocked(payload)) {
+            if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked(payload)) {
                 rememberBlockedPatientRequestIp(req);
                 logger.warn('Blocked patient token rejected', {
                     userId: payload.id,
