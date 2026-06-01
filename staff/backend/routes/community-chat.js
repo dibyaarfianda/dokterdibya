@@ -735,10 +735,26 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
 
         const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
         const [rows] = await db.query(
-            `SELECT id, room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message, created_at
-             FROM community_chat_messages
-             WHERE room_id = ?
-             ORDER BY created_at DESC
+            `SELECT
+                m.id,
+                m.room_id,
+                m.sender_id,
+                m.sender_type,
+                m.sender_name,
+                CASE
+                    WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.nickname, ''), NULLIF(pps.nickname, ''), NULLIF(m.sender_nickname, ''))
+                    ELSE m.sender_nickname
+                END AS sender_nickname,
+                m.sender_avatar,
+                m.message,
+                m.created_at
+             FROM community_chat_messages m
+             LEFT JOIN community_chat_profiles cp
+                ON cp.user_id = m.sender_id AND cp.user_type = m.sender_type
+             LEFT JOIN patient_portal_settings pps
+                ON pps.patient_id = m.sender_id AND m.sender_type = 'patient'
+             WHERE m.room_id = ?
+             ORDER BY m.created_at DESC
              LIMIT ?`,
             [room.id, limit]
         );
@@ -842,8 +858,26 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
         );
 
         const [rows] = await db.query(
-            `SELECT id, room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message, created_at
-             FROM community_chat_messages WHERE id = ? LIMIT 1`,
+            `SELECT
+                m.id,
+                m.room_id,
+                m.sender_id,
+                m.sender_type,
+                m.sender_name,
+                CASE
+                    WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.nickname, ''), NULLIF(pps.nickname, ''), NULLIF(m.sender_nickname, ''))
+                    ELSE m.sender_nickname
+                END AS sender_nickname,
+                m.sender_avatar,
+                m.message,
+                m.created_at
+             FROM community_chat_messages m
+             LEFT JOIN community_chat_profiles cp
+                ON cp.user_id = m.sender_id AND cp.user_type = m.sender_type
+             LEFT JOIN patient_portal_settings pps
+                ON pps.patient_id = m.sender_id AND m.sender_type = 'patient'
+             WHERE m.id = ?
+             LIMIT 1`,
             [result.insertId]
         );
 
