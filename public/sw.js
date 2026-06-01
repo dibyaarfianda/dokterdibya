@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602h'; // 2026-06-02h - align complete-profile with SISIwanita theme
+const CACHE_VERSION = '20260602i'; // 2026-06-02i - uniform complete-profile header with auth shell
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

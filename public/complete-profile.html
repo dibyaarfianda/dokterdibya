@@ -36,7 +36,7 @@
             --danger: #d14343;
         }
 
-        body {
+        body.portal-themed {
             font-family: var(--body-font);
             background:
                 radial-gradient(circle at 9% 6%, rgba(126, 168, 159, 0.16), transparent 28%),
@@ -49,6 +49,40 @@
             padding-bottom: var(--safe-bottom);
         }
 
+        .app {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 0 16px;
+            position: relative;
+            z-index: 31;
+        }
+
+        body.portal-themed.auth-theme-unified .topbar-blur-fade {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 200px;
+            z-index: 29;
+            pointer-events: none;
+        }
+
+        body.portal-themed.auth-theme-unified .topbar-blur-fade div[class^="topbar-blur-"] {
+            opacity: 1;
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        body.portal-themed.auth-theme-unified .topbar-blur-1 { z-index: 1; -webkit-backdrop-filter: blur(0.15625px); backdrop-filter: blur(0.15625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-2 { z-index: 2; -webkit-backdrop-filter: blur(0.3125px); backdrop-filter: blur(0.3125px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-3 { z-index: 3; -webkit-backdrop-filter: blur(0.625px); backdrop-filter: blur(0.625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-4 { z-index: 4; -webkit-backdrop-filter: blur(1.25px); backdrop-filter: blur(1.25px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-5 { z-index: 5; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-6 { z-index: 6; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-7 { z-index: 7; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
+        body.portal-themed.auth-theme-unified .topbar-blur-8 { z-index: 8; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
+
         .page-grain {
             position: fixed;
             inset: 0;
@@ -59,46 +93,102 @@
             z-index: 0;
         }
 
-        .mini-topbar {
-            position: relative;
-            z-index: 1;
+        body.portal-themed.auth-theme-unified header.topbar {
+            position: sticky;
+            top: env(safe-area-inset-top, 0px);
+            z-index: 30;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        body.portal-themed.auth-theme-unified .topbar-inner {
             width: min(100%, 860px);
             margin: 0 auto;
-            padding: 14px 16px 0;
-            display: flex;
+            padding: 8px 13px 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
             align-items: center;
-            justify-content: space-between;
+            gap: 11px;
         }
 
-        .brand-link {
-            text-decoration: none;
+        body.portal-themed.auth-theme-unified .brand-link {
             display: inline-flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            text-decoration: none;
         }
 
-        .brand-title {
+        body.portal-themed.auth-theme-unified .brand-title {
             font-family: var(--display);
             font-size: 16px;
             line-height: 1.02;
             font-weight: 800;
             letter-spacing: -0.04em;
-            color: #7ea89f;
-            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14);
+            color: #7EA89F;
         }
 
-        .brand-sub {
+        body.portal-themed.auth-theme-unified .brand-sub {
             margin-top: 3px;
             font-size: 7.2px;
             line-height: 1.2;
             font-weight: 700;
             letter-spacing: 0.24em;
             text-transform: uppercase;
-            color: #7ea89f;
-            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.18), 0 1px 2px rgba(26, 45, 38, 0.12);
+            color: #7EA89F;
         }
 
-        .back-btn {
+        body #home-brand-link {
+            position: relative;
+            z-index: 1;
+            text-decoration: none !important;
+            color: inherit !important;
+        }
+
+        body #home-brand-title {
+            font-family: var(--display) !important;
+            font-size: 16px !important;
+            line-height: 1.02 !important;
+            font-weight: 800 !important;
+            letter-spacing: -0.04em !important;
+            color: #7EA89F !important;
+            text-decoration: none !important;
+            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.22), 0 1px 2px rgba(26, 45, 38, 0.16) !important;
+        }
+
+        body #home-brand-title span {
+            color: #7EA89F !important;
+            font-weight: 700 !important;
+        }
+
+        body #home-brand-sub {
+            margin-top: 3px !important;
+            max-width: none !important;
+            font-size: 7.2px !important;
+            line-height: 1.2 !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.24em !important;
+            text-transform: uppercase !important;
+            color: #7EA89F !important;
+            text-decoration: none !important;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14) !important;
+        }
+
+        body.portal-themed.auth-theme-unified .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        body.portal-themed.auth-theme-unified .icon-btn {
             border: 1px solid var(--line-soft);
             background: rgba(255, 255, 255, 0.82);
             box-shadow: 0 12px 24px rgba(43, 66, 57, 0.11);
@@ -109,14 +199,14 @@
             align-items: center;
             justify-content: center;
             color: var(--text-primary);
-            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.18s ease;
             font-size: 21px;
             line-height: 1;
-            transition: transform 0.18s ease;
         }
 
-        .back-btn:active {
-            transform: scale(0.96);
+        body.portal-themed.auth-theme-unified .icon-btn:active {
+            transform: scale(0.97);
         }
 
         .profile-shell {
@@ -289,10 +379,6 @@
         }
 
         @media (max-width: 480px) {
-            .mini-topbar {
-                padding-top: 12px;
-            }
-
             .profile-shell {
                 align-items: flex-start;
                 padding-top: 18px;
@@ -310,16 +396,36 @@
     </style>
     <script src="/scripts/patient-theme.js"></script>
 </head>
-<body>
+<body class="portal-themed auth-theme-unified">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
     <div class="page-grain" aria-hidden="true"></div>
 
-    <header class="mini-topbar">
-        <a class="brand-link" href="/patient-menu.html" aria-label="SISIwanita">
-            <div class="brand-title"><span>SISI</span>wanita</div>
-            <div class="brand-sub">PORTAL WANITA SEHAT</div>
-        </a>
-        <a class="back-btn" href="/patient-login.html?mode=login" aria-label="Kembali">&larr;</a>
-    </header>
+    <div class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Wanita Sehat</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button type="button" class="icon-btn" id="home-back-btn" onclick="window.location.href='/patient-login.html?mode=login'" aria-label="Kembali ke login">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+    </div>
 
     <main class="profile-shell">
         <section class="profile-card">
