@@ -887,6 +887,12 @@ router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
 
 // POST /api/auth/register - Patient registration with email verification
 router.post('/api/auth/register', asyncHandler(async (req, res) => {
+    return res.status(410).json({
+        success: false,
+        google_only: true,
+        message: 'Pendaftaran lewat email sudah ditutup. Silakan daftar dengan Google.'
+    });
+
     const { email } = req.body;
 
     if (!email || !email.includes('@')) {
@@ -1164,6 +1170,12 @@ async function isRegistrationCodeRequired() {
 
 // POST /api/auth/set-password - Set password after verification (with profile data)
 router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
+    return res.status(410).json({
+        success: false,
+        google_only: true,
+        message: 'Pendaftaran lewat email sudah ditutup. Silakan daftar dengan Google.'
+    });
+
     const { email, password, verified_token, fullname, phone, birth_date, age, registration_code } = req.body;
 
     if (!email || !password || !verified_token) {

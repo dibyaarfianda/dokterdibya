@@ -158,52 +158,10 @@ async function handleGoogleSignIn(response) {
 
 // Sign Up with Email
 async function signUpWithEmail(fullname, email, phone, password) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fullname,
-                email,
-                phone,
-                password
-            })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            throw new Error(data.message || 'Registrasi gagal');
-        }
-
-        // Clear old data first to prevent cache issues when switching accounts
-        localStorage.removeItem('patient_token');
-        localStorage.removeItem('vps_auth_token');
-        sessionStorage.removeItem('vps_auth_token');
-        localStorage.removeItem('patient_user');
-        localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
-
-        // Store JWT token
-        localStorage.setItem('patient_token', data.token);
-        localStorage.setItem('vps_auth_token', data.token); // Also set vps_auth_token for consistency
-        localStorage.setItem('patient_user', JSON.stringify(data.user));
-        localStorage.setItem('auth_provider', 'email'); // Set auth_provider to email
-
-        // Show success message
-        showMessage('Registrasi berhasil! Silakan cek email Anda untuk verifikasi.', 'success');
-        
-        // Redirect to email verification page
-        setTimeout(() => {
-            window.location.href = '/verify-email.html';
-        }, 1500);
-        
-    } catch (error) {
-        console.error('Registration error:', error);
-        showMessage(error.message, 'error');
-        throw error;
-    }
+    showMessage('Pendaftaran lewat email sudah ditutup. Silakan daftar dengan Google.', 'info');
+    setTimeout(() => {
+        window.location.href = '/patient-login.html?mode=register';
+    }, 800);
 }
 
 // Sign In with Email

@@ -514,7 +514,7 @@
         </div>
 
         <!-- REGISTER PAGE -->
-        <div class="page" id="page-register">
+        <div class="page" id="page-register" hidden aria-hidden="true">
             <button class="back-btn" onclick="showPage('page-login')">
                 <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
             </button>
@@ -1584,56 +1584,14 @@
             setLoading('btn-login', false);
         });
 
-        // REGISTER
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            document.getElementById('register-error').classList.remove('show');
-
-            const name = document.getElementById('register-name').value.trim();
-            const email = document.getElementById('register-email').value.trim();
-            const phone = document.getElementById('register-phone').value.trim();
-            const password = document.getElementById('register-password').value;
-
-            // Validate phone format
-            if (!phone.match(/^628[0-9]{9,12}$/)) {
-                showError('register-error', 'Format nomor HP harus 628xxxxxxxxxx');
-                return;
-            }
-
-            setLoading('btn-register', true);
-
-            try {
-                const res = await fetch(`${API_BASE}/api/patients/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fullname: name,
-                        email,
-                        phone,
-                        password
-                    })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    // Auto login after register - redirect to intake form
-                    localStorage.setItem('vps_auth_token', data.token);
-                    if (data.user) {
-                        localStorage.setItem('patient_user', JSON.stringify(data.user));
-                    }
-                    localStorage.setItem('from_mobile_app', 'true');
-                    // New registrations always need intake form
-                    window.location.href = getPostLoginUrl(data, data.token);
-                } else {
-                    showError('register-error', data.message || 'Gagal mendaftar. Silakan coba lagi.');
-                }
-            } catch (err) {
-                showError('register-error', 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
-            }
-
-            setLoading('btn-register', false);
-        });
+        // EMAIL REGISTRATION DISABLED - Google-only registration via registration code page
+        const legacyRegisterForm = document.getElementById('register-form');
+        if (legacyRegisterForm) {
+            legacyRegisterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showPage('page-regcode');
+            });
+        }
 
         // FORGOT PASSWORD
         document.getElementById('forgot-form').addEventListener('submit', async (e) => {

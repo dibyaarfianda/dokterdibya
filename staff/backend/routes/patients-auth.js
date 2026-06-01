@@ -200,6 +200,12 @@ async function validateAndConsumeCode(code, patientId) {
 
 // Register with email
 async function handlePatientRegister(req, res) {
+    return res.status(410).json({
+        success: false,
+        google_only: true,
+        message: 'Pendaftaran lewat email sudah ditutup. Silakan daftar dengan Google.'
+    });
+
     try {
         const { fullname, email, phone, password, registration_code } = req.body;
 

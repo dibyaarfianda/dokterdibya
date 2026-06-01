@@ -2,8 +2,12 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Daftar - Dibya Klinik</title>
+    <script>
+        window.location.replace('/patient-login.html?mode=register');
+    </script>
+    <meta http-equiv="refresh" content="0; url=/patient-login.html?mode=register">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -66,8 +70,8 @@
             border-radius: 20px;
             padding: 40px 35px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             animation: slideUp 0.6s ease-out;
         }
@@ -374,8 +378,6 @@
     </div>
 
     <script type="module">
-        import { apiService } from './scripts/api-service.js';
-
         // Create animated bubbles
         function createBubbles() {
             const bg = document.getElementById('bgAnimation');
@@ -485,33 +487,8 @@
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
 
-            try {
-                const response = await apiService.post('/auth/register', { email });
-
-                if (response.success) {
-                    // Clear draft after successful registration
-                    localStorage.removeItem('register_draft_email');
-
-                    // Store email temporarily
-                    sessionStorage.setItem('registration_email', email);
-                    sessionStorage.setItem('verification_token', response.data.verification_token);
-
-                    // Redirect to verification page
-                    window.location.href = 'verify-email.html';
-                } else {
-                    emailInput.classList.add('error');
-                    emailError.textContent = response.message || 'Email sudah terdaftar';
-                    emailError.classList.add('show');
-                }
-            } catch (error) {
-                console.error('Registration error:', error);
-                emailInput.classList.add('error');
-                emailError.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
-                emailError.classList.add('show');
-            } finally {
-                submitBtn.classList.remove('loading');
-                submitBtn.disabled = false;
-            }
+            localStorage.removeItem('register_draft_email');
+            window.location.href = '/patient-login.html?mode=register';
         });
 
         // Initialize
