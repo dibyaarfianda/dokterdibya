@@ -613,7 +613,7 @@
         (function() {
             var socketUrl = location.hostname === 'localhost'
                 ? 'http://localhost:3000'
-                : 'https://dokterdibya.com';
+                : location.origin;
             var socket = io(socketUrl, { transports: ['polling'] });
 
             socket.on('usg:patient_updated', function(data) {
