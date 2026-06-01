@@ -2803,6 +2803,24 @@
             if (exitWasActive) rearmHomeBackGuard();
         }
 
+        function handleShellModalAction(event) {
+            const button = event && event.target && event.target.closest ? event.target.closest('[data-shell-action]') : null;
+            if (!button) return;
+            const action = String(button.getAttribute('data-shell-action') || '').trim();
+            if (!action) return;
+            stopTopbarEvent(event);
+            if (action === 'close-modal') {
+                closeAllModals();
+                return;
+            }
+            if (action === 'logout') {
+                closeAllModals();
+                logout();
+            }
+        }
+
+        document.addEventListener('click', handleShellModalAction, true);
+
         function openBugReportModal(event) {
             stopTopbarEvent(event);
             const textarea = document.getElementById('bug-report-message');
