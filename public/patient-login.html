@@ -44,6 +44,14 @@
             position: relative;
         }
 
+        .app {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 0 16px;
+            position: relative;
+            z-index: 2;
+        }
+
         body.portal-themed.auth-theme-unified .topbar-blur-fade {
             position: fixed;
             left: 0;
@@ -395,7 +403,7 @@
     </style>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
 </head>
-<body class="portal-themed auth-theme-unified portal-header-normalized">
+<body class="portal-themed auth-theme-unified">
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
         <div class="topbar-blur-2"></div>
@@ -415,15 +423,23 @@
         <p>Memproses login...</p>
     </div>
 
-    <header class="portal-unified-header">
-        <a class="portal-unified-brand" href="/patient-menu.html" aria-label="Beranda SISIwanita">
-            <div class="brand-title">SISI<span>wanita</span></div>
-            <div class="brand-sub">Portal Privat Kandungan Anda</div>
-        </a>
-        <button type="button" class="portal-unified-back" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
-            <i class="fa-solid fa-arrow-left"></i><span>Portal</span>
-        </button>
-    </header>
+    <div class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button type="button" class="icon-btn" id="home-back-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+    </div>
 
     <!-- Centered login -->
     <main class="login-shell">
@@ -638,7 +654,7 @@
 
                 if (id === 'page-register') {
                     page.querySelectorAll('input, button, textarea').forEach(function(el) {
-                        if (el.classList.contains('portal-unified-back')) return;
+                        if (el.classList.contains('portal-unified-back') || el.classList.contains('icon-btn') || el.id === 'home-back-btn') return;
                         el.disabled = true;
                     });
                     page.classList.add('auth-locked');
@@ -650,7 +666,7 @@
                         'toggle-eye-login': true
                     };
                     page.querySelectorAll('input, button, textarea').forEach(function(el) {
-                        if (el.classList.contains('portal-unified-back')) return;
+                        if (el.classList.contains('portal-unified-back') || el.classList.contains('icon-btn') || el.id === 'home-back-btn') return;
                         if (keepEnabledIds[el.id]) {
                             el.disabled = false;
                             return;
