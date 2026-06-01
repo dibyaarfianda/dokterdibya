@@ -2042,6 +2042,56 @@
             showToast('Foto profil disimpan');
         }
 
+        async function handleProfilePhotoUpload(event) {
+            const input = event && event.target;
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+            if (!file.type || !file.type.startsWith('image/')) {
+                showToast('Pilih file gambar untuk foto profil');
+                input.value = '';
+                return;
+            }
+            try {
+                const photoUrl = await fileToDataUrl(file);
+                profilePhotoDraft = normalizePhotoAdjustState(Object.assign({}, profilePhotoDraft || getProfilePhotoAdjustState(), { photoUrl }));
+                openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile || getStoredProfile()));
+                showToast('Foto profil siap diatur');
+            } catch (error) {
+                showToast(error.message || 'Upload foto profil gagal');
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
+        function renderProfileModal(profile) {
+            profile = profile || {};
+            const name = profile.fullname || profile.full_name || profile.name || 'Pasien SISIwanita';
+            const medicalId = profile.medical_record_id || profile.medicalRecordId || profile.mr_id || profile.id || '-';
+            const email = profile.email || '-';
+            const phone = profile.phone || profile.phone_number || profile.no_hp || '-';
+            const birthDate = profile.birth_date || profile.date_of_birth || profile.dob || '';
+            const previewState = normalizePhotoAdjustState(profilePhotoDraft || getProfilePhotoAdjustState() || { photoUrl: getProfilePhotoUrl(profile) });
+            if (!previewState.photoUrl) previewState.photoUrl = getProfilePhotoUrl(profile);
+            const avatarHtml = previewState.photoUrl
+                ? '<img src="' + escapeHtml(previewState.photoUrl) + '" alt="Foto profil">'
+                : '<span class="shell-profile-avatar-fallback">' + escapeHtml(getInitials(name)) + '</span>';
+            return '<div class="shell-profile-head">' +
+                '<div class="shell-profile-avatar has-photo">' + avatarHtml + '</div>' +
+                '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
+            '</div>' +
+            renderProfilePhotoEditor(previewState) +
+            '<div class="shell-profile-grid">' +
+                '<div><span>No. Rekam Medis</span><strong>' + escapeHtml(medicalId) + '</strong></div>' +
+                '<div><span>Email</span><strong>' + escapeHtml(email) + '</strong></div>' +
+                '<div><span>Telepon</span><strong>' + escapeHtml(phone) + '</strong></div>' +
+                '<div><span>Tanggal Lahir</span><strong>' + escapeHtml(formatDateLong(birthDate)) + '</strong></div>' +
+            '</div>' +
+            '<div class="shell-modal-actions">' +
+                '<button type="button" class="shell-modal-link" data-shell-action="close-modal"><i class="fa-solid fa-check"></i>Tutup</button>' +
+                '<button type="button" class="shell-modal-link danger" data-shell-action="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i>Keluar</button>' +
+            '</div>';
+        }
+
         async function fetchProfileForModal() {
             try {
                 const response = await fetch('/api/patients/profile?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });

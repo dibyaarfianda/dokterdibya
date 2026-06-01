@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601s'; // 2026-06-01s - add adjustable home and profile photo UI
+const CACHE_VERSION = '20260601t'; // 2026-06-01t - restore patient modal profile handler
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
