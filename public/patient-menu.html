@@ -266,10 +266,7 @@
             object-fit: cover;
             display: block;
             transform-origin: center center;
-            transform: translate(
-                calc(var(--home-photo-x, 0px) * var(--home-photo-frame-scale, 1)),
-                calc(var(--home-photo-y, 0px) * var(--home-photo-frame-scale, 1))
-            ) scale(var(--home-photo-zoom, 1));
+            transform: translate(var(--home-photo-x, 0%), var(--home-photo-y, 0%)) scale(var(--home-photo-zoom, 1));
         }
         .home-hero-photo.has-photo .home-hero-photo-fallback { display: none; }
         .home-hero-photo-fallback {
@@ -886,10 +883,10 @@
             object-fit: cover;
             display: block;
             transform-origin: center center;
-            transform: translate(
-                calc(var(--home-photo-x, 0px) * var(--home-photo-frame-scale, 1)),
-                calc(var(--home-photo-y, 0px) * var(--home-photo-frame-scale, 1))
-            ) scale(var(--home-photo-zoom, 1));
+            transform: translate(var(--home-photo-x, 0%), var(--home-photo-y, 0%)) scale(var(--home-photo-zoom, 1));
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
         .profile-photo-preview-empty {
             position: absolute;
@@ -1761,7 +1758,6 @@
             offsetX: 0,
             offsetY: 0
         };
-        const HOME_PHOTO_PREVIEW_BASE_SIZE = 190;
         let homePhotoDraft = null;
         let homePhotoGesture = null;
 
@@ -1795,12 +1791,9 @@
             const button = document.getElementById('home-hero-photo');
             const img = document.getElementById('home-hero-photo-img');
             if (!button || !img) return current;
-            const buttonWidth = button.getBoundingClientRect().width || button.clientWidth || 0;
-            const frameScale = buttonWidth > 0 ? (buttonWidth / HOME_PHOTO_PREVIEW_BASE_SIZE) : 1;
-            button.style.setProperty('--home-photo-frame-scale', String(frameScale));
             button.style.setProperty('--home-photo-zoom', current.zoom);
-            button.style.setProperty('--home-photo-x', current.offsetX + 'px');
-            button.style.setProperty('--home-photo-y', current.offsetY + 'px');
+            button.style.setProperty('--home-photo-x', current.offsetX + '%');
+            button.style.setProperty('--home-photo-y', current.offsetY + '%');
             if (current.photoUrl) {
                 img.src = current.photoUrl;
                 button.classList.add('has-photo');
@@ -1816,7 +1809,7 @@
             const previewPhoto = state.photoUrl ? '<img id="home-photo-preview-img" src="' + escapeHtml(state.photoUrl) + '" alt="Pratinjau foto beranda">' : '';
             const emptyState = state.photoUrl ? '' : '<div class="home-photo-preview-empty"><i class="fa-solid fa-image"></i><span>Belum ada foto beranda</span></div>';
             return '<div class="profile-photo-setup">' +
-                '<div class="home-photo-preview" id="home-photo-preview" data-gesture-target="home-photo" style="--home-photo-frame-scale:1;--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + 'px;--home-photo-y:' + state.offsetY + 'px;">' +
+                '<div class="home-photo-preview" id="home-photo-preview" data-gesture-target="home-photo" style="--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + '%;--home-photo-y:' + state.offsetY + '%;">' +
                     previewPhoto +
                     emptyState +
                 '</div>' +
@@ -1891,10 +1884,9 @@
             const preview = document.getElementById('home-photo-preview');
             if (!preview) return;
             homePhotoDraft = normalizeHomePhotoState(homePhotoDraft || getHomePhotoState());
-            preview.style.setProperty('--home-photo-frame-scale', '1');
             preview.style.setProperty('--home-photo-zoom', homePhotoDraft.zoom);
-            preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + 'px');
-            preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + 'px');
+            preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + '%');
+            preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + '%');
             const previewImg = document.getElementById('home-photo-preview-img');
             if (previewImg && homePhotoDraft.photoUrl) previewImg.src = homePhotoDraft.photoUrl;
         }
@@ -1908,15 +1900,20 @@
             let pinchStart = null;
 
             const clampZoom = function(value) {
-                return Math.min(2.2, Math.max(1.5, value));
+                return Math.min(2.2, Math.max(1, value));
+            };
+
+            const percentFromPx = function(px, size) {
+                if (!size) return 0;
+                return (px / size) * 100;
             };
 
             const updateFromGesture = function() {
                 if (!homePhotoDraft) homePhotoDraft = getHomePhotoState();
                 homePhotoDraft = normalizeHomePhotoState(homePhotoDraft);
                 preview.style.setProperty('--home-photo-zoom', homePhotoDraft.zoom);
-                preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + 'px');
-                preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + 'px');
+                preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + '%');
+                preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + '%');
             };
 
             preview.addEventListener('pointerdown', function(event) {
@@ -1950,9 +1947,10 @@
                 if (!pointers.has(event.pointerId)) return;
                 pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
                 if (pointers.size === 1 && dragStart) {
+                    const rect = preview.getBoundingClientRect();
                     homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
-                        offsetX: dragStart.offsetX + (event.clientX - dragStart.x),
-                        offsetY: dragStart.offsetY + (event.clientY - dragStart.y)
+                        offsetX: dragStart.offsetX + percentFromPx(event.clientX - dragStart.x, rect.width),
+                        offsetY: dragStart.offsetY + percentFromPx(event.clientY - dragStart.y, rect.height)
                     }));
                     updateFromGesture();
                 } else if (pointers.size === 2 && pinchStart) {
@@ -1960,10 +1958,11 @@
                     const distance = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y) || 1;
                     const centerX = (points[0].x + points[1].x) / 2;
                     const centerY = (points[0].y + points[1].y) / 2;
+                    const rect = preview.getBoundingClientRect();
                     homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
                         zoom: clampZoom(pinchStart.zoom * (distance / pinchStart.distance)),
-                        offsetX: pinchStart.offsetX + (centerX - pinchStart.centerX),
-                        offsetY: pinchStart.offsetY + (centerY - pinchStart.centerY)
+                        offsetX: pinchStart.offsetX + percentFromPx(centerX - pinchStart.centerX, rect.width),
+                        offsetY: pinchStart.offsetY + percentFromPx(centerY - pinchStart.centerY, rect.height)
                     }));
                     updateFromGesture();
                 }
