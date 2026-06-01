@@ -501,11 +501,13 @@ async function touchRoomMember(room, user, identity = null) {
 async function getReadableProfile(userId, userType) {
     let defaultName = 'User';
     let portalNickname = null;
+    let fallbackAvatarUrl = null;
 
     if (userType === 'patient') {
-        const [rows] = await db.query('SELECT full_name FROM patients WHERE id = ? LIMIT 1', [userId]);
+        const [rows] = await db.query('SELECT full_name, photo_url FROM patients WHERE id = ? LIMIT 1', [userId]);
         if (rows.length > 0) {
             defaultName = rows[0].full_name || defaultName;
+            fallbackAvatarUrl = rows[0].photo_url || null;
         }
         portalNickname = await getPatientPortalNickname(userId);
     } else {
@@ -539,7 +541,7 @@ async function getReadableProfile(userId, userType) {
         display_name: effectiveNickname || defaultName,
         nickname: effectiveNickname,
         bio: profile?.bio || '',
-        avatar_url: profile?.avatar_url || null,
+        avatar_url: profile?.avatar_url || fallbackAvatarUrl || null,
         updated_at: profile?.updated_at || null
     };
 }

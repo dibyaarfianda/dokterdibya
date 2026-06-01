@@ -3,41 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Community Profile - dokterDIBYA</title>
+    <title>Community Profile - SISIwanita</title>
     <style>
+        :root {
+            --bg: #f7f7f4;
+            --surface: rgba(255, 255, 255, 0.9);
+            --line: rgba(17, 17, 17, 0.1);
+            --ink: #161d1a;
+            --muted: #62726c;
+            --green: #5c7f72;
+            --green-soft: rgba(92, 127, 114, 0.13);
+            --shadow: 0 18px 42px rgba(17, 17, 17, 0.1);
+        }
+
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: radial-gradient(circle at top, #14284b, #070b14 45%);
-            color: #eef4ff;
+            font-family: "Segoe UI", "Inter", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.14), transparent 28%),
+                linear-gradient(180deg, #fbfbf8 0%, #f2f5f2 54%, #ffffff 100%);
+            color: var(--ink);
             min-height: 100vh;
             display: grid;
             place-items: center;
-            padding: 16px;
+            padding: 18px;
         }
 
         .card {
             width: min(560px, 100%);
-            background: rgba(18, 27, 48, 0.95);
-            border: 1px solid rgba(255,255,255,0.14);
-            border-radius: 18px;
-            box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            box-shadow: var(--shadow);
             overflow: hidden;
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
         }
 
         .head {
-            padding: 16px 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding: 13px 14px;
+            border-bottom: 1px solid var(--line);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.72);
         }
 
-        .back-link {
-            color: #d6e7ff;
+        .head-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .back-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            border: 1px solid rgba(92, 127, 114, 0.22);
+            background: rgba(255, 255, 255, 0.86);
+            color: #2f4f45;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none;
             font-size: 14px;
+            box-shadow: 0 8px 16px rgba(34, 61, 52, 0.12);
+        }
+
+        .brand-link {
+            display: inline-flex;
+            flex-direction: column;
+            text-decoration: none;
+            min-width: 0;
+        }
+
+        .brand-title {
+            font-size: 16px;
+            line-height: 1.03;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: #7EA89F;
+            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.2);
+            white-space: nowrap;
+        }
+
+        .brand-title span {
+            color: #7EA89F;
+            font-weight: 700;
+        }
+
+        .brand-sub {
+            margin-top: 2px;
+            font-size: 6.8px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #7EA89F;
         }
 
         .body {
@@ -56,22 +120,25 @@
             width: 78px;
             height: 78px;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2);
-            background: linear-gradient(135deg, #3b82f6, #22d3ee);
+            border: 2px solid rgba(255,255,255,0.84);
+            background: linear-gradient(145deg, #dfeee8, #c8dfd5);
             object-fit: cover;
             display: none;
+            box-shadow: 0 10px 20px rgba(45, 74, 64, 0.14);
         }
 
         .avatar-fallback {
             width: 78px;
             height: 78px;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2);
-            background: linear-gradient(135deg, #3b82f6, #22d3ee);
+            border: 2px solid rgba(255,255,255,0.84);
+            background: linear-gradient(145deg, #dfeee8, #c8dfd5);
             display: grid;
             place-items: center;
             font-size: 28px;
             font-weight: bold;
+            color: #486e5f;
+            box-shadow: 0 10px 20px rgba(45, 74, 64, 0.14);
         }
 
         .name {
@@ -86,36 +153,63 @@
             font-weight: bold;
             padding: 4px 10px;
             border-radius: 999px;
-            background: rgba(59,130,246,0.18);
-            border: 1px solid rgba(59,130,246,0.45);
-            color: #d6e7ff;
+            background: rgba(223, 238, 232, 0.74);
+            border: 1px solid rgba(92, 127, 114, 0.24);
+            color: #385e50;
         }
 
         .label {
-            color: #9fb0d9;
+            color: var(--muted);
             font-size: 13px;
             margin-bottom: 6px;
         }
 
         .box {
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 12px;
-            background: rgba(8, 14, 27, 0.6);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.74);
             padding: 12px;
             line-height: 1.5;
+            color: var(--ink);
         }
 
         .status {
-            color: #bcd0f7;
+            color: var(--muted);
             font-size: 14px;
             min-height: 20px;
+            text-align: right;
+        }
+
+        @media (max-width: 720px) {
+            .body {
+                padding: 16px;
+                gap: 14px;
+            }
+
+            .profile-top {
+                align-items: flex-start;
+            }
+
+            .name {
+                font-size: 22px;
+            }
+
+            .status {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 <body>
 <div class="card">
     <div class="head">
-        <a class="back-link" href="/community-chat.html">← Kembali ke Community Chat</a>
+        <div class="head-left">
+            <a class="back-btn" href="/community-chat.html" aria-label="Kembali ke Community Chat">&#8592;</a>
+            <a class="brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                <span class="brand-title">SISI<span>wanita</span></span>
+                <span class="brand-sub">Portal Wanita Sehat</span>
+            </a>
+        </div>
         <span id="status" class="status"></span>
     </div>
 
@@ -167,6 +261,29 @@
         return String(name || 'U').trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase() || 'U';
     }
 
+    function applyAvatar(url, displayName) {
+        avatarFallback.textContent = initials(displayName || 'U');
+
+        if (!url) {
+            avatar.style.display = 'none';
+            avatar.removeAttribute('src');
+            avatarFallback.style.display = 'grid';
+            return;
+        }
+
+        avatar.onload = () => {
+            avatar.style.display = 'block';
+            avatarFallback.style.display = 'none';
+        };
+
+        avatar.onerror = () => {
+            avatar.style.display = 'none';
+            avatarFallback.style.display = 'grid';
+        };
+
+        avatar.src = url;
+    }
+
     async function loadProfile() {
         const params = new URLSearchParams(window.location.search);
         const userType = params.get('userType') || 'patient';
@@ -204,13 +321,7 @@
         typeEl.textContent = profile.user_type === 'staff' ? 'Staff' : 'Patient';
         bioEl.textContent = profile.bio || 'Belum ada bio.';
         nicknameEl.textContent = profile.nickname || 'Belum diset.';
-        avatarFallback.textContent = initials(profile.display_name || 'U');
-
-        if (profile.avatar_url) {
-            avatar.src = profile.avatar_url;
-            avatar.style.display = 'block';
-            avatarFallback.style.display = 'none';
-        }
+        applyAvatar(profile.avatar_url, profile.display_name || 'U');
 
         statusEl.textContent = 'Profile publik';
     }
