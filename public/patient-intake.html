@@ -405,7 +405,7 @@
             margin: 0;
         }
         body.portal-themed.intake-page .topbar-inner {
-            width: min(100%, 860px);
+            width: min(calc(100% - 32px), 828px);
             margin: 0 auto;
             padding: 8px 13px 10px;
             display: grid;
@@ -505,10 +505,10 @@
         body.portal-themed.intake-page main {
             width: min(100%, 860px);
             margin: 0 auto;
-            padding: 22px 16px 110px;
+            padding: clamp(22px, 4vh, 42px) 16px 110px;
         }
         body.portal-themed.intake-page .intake-intro {
-            margin: 8px 0 18px;
+            margin: 0 0 18px;
             animation: intakeEnter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         body.portal-themed.intake-page .intake-intro h1 {
@@ -699,7 +699,14 @@
         }
 
         @media (max-width: 640px) {
-            body.portal-themed.intake-page main { padding: 16px 12px 104px; }
+            body.portal-themed.intake-page .topbar-inner {
+                width: calc(100% - 32px);
+                padding-left: 13px;
+                padding-right: 13px;
+            }
+            body.portal-themed.intake-page main {
+                padding: 22px 16px 104px;
+            }
             body.portal-themed.intake-page .intake-intro h1 { font-size: 1.95rem; }
             body.portal-themed.intake-page .card { padding: 14px; }
             body.portal-themed.intake-page .stepper span { font-size: 10px; letter-spacing: 0.05em; }
