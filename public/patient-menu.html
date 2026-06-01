@@ -2029,7 +2029,7 @@
                             <span class="announcement-count-pill" id="announcement-count-pill">0</span>
                         </div>
                         <div class="announcement-list" id="announcement-list" aria-live="polite"></div>
-                        <button class="ghost-action soundable" id="announcement-action" onclick="openNotificationModal(event)"><i class="fa-solid fa-bell"></i> Lihat Info</button>
+                        <button class="ghost-action soundable" id="announcement-action" onclick="go('/info-terbaru.html')"><i class="fa-solid fa-newspaper"></i> Lihat Info</button>
                     </div>
                 </div>
             </section>
@@ -3584,7 +3584,7 @@
             if (safeItems.length === 0) {
                 preview.textContent = 'Belum ada kabar baru. Semua informasi klinik akan muncul di sini saat tersedia.';
                 list.innerHTML = '<div class="announcement-mini"><span class="announcement-dot"></span><div><div class="announcement-mini-title">Semua tenang hari ini</div><div class="announcement-mini-copy">Tidak ada pengumuman aktif atau notifikasi baru untuk saat ini.</div></div></div>';
-                action.innerHTML = '<i class="fa-solid fa-bell"></i> Buka Notifikasi';
+                action.innerHTML = '<i class="fa-solid fa-newspaper"></i> Buka Info Terbaru';
                 return;
             }
 
@@ -3604,7 +3604,7 @@
                     '</div>' +
                 '</button>';
             }).join('');
-            action.innerHTML = '<i class="fa-solid fa-bell"></i> Lihat Semua Info';
+            action.innerHTML = '<i class="fa-solid fa-newspaper"></i> Lihat Semua Info';
         }
 
         async function loadHomeAnnouncements() {
