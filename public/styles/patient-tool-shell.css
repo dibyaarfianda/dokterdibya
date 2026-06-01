@@ -744,6 +744,22 @@ body.patient-tool-shell .reveal:nth-child(3) {
     animation-delay: var(--reveal-delay, 80ms);
 }
 
+body.patient-tool-shell .reveal:nth-child(4) {
+    animation-delay: var(--reveal-delay, 120ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(5) {
+    animation-delay: var(--reveal-delay, 160ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(6) {
+    animation-delay: var(--reveal-delay, 200ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(7) {
+    animation-delay: var(--reveal-delay, 240ms);
+}
+
 body:not(.header-animated).patient-tool-shell .brand,
 body:not(.header-animated).patient-tool-shell #home-notif-btn,
 body:not(.header-animated).patient-tool-shell #user-avatar,
