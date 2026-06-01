@@ -152,6 +152,12 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
 
 // POST /api/auth/patient-login - Patient login endpoint
 router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
+    return res.status(410).json({
+        success: false,
+        google_only: true,
+        message: 'Login lewat email sudah ditutup. Silakan masuk dengan Google.'
+    });
+
     const { email, password } = req.body;
 
     if (!email || !password) {

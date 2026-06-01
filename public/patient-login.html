@@ -494,58 +494,16 @@
                 </span>
                 Masuk
             </h1>
-            <p class="login-subtitle">Pendaftaran portal <span class="serif">SisiWanita</span> hanya berlaku</p>
+            <p class="login-subtitle">Masuk ke portal <span class="serif">SisiWanita</span> dengan akun Google Anda</p>
             <!-- Error message -->
             <div class="error-message" id="login-error">
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                 <span id="login-error-text">Login gagal</span>
             </div>
 
-            <form id="login-form" novalidate>
-                <!-- Email / Phone -->
-                <div class="portal-field">
-                    <label class="portal-label" for="login-email">Email atau Nomor HP</label>
-                    <input
-                        type="text"
-                        id="login-email"
-                        name="email"
-                        class="portal-input"
-                        placeholder="nama@email.com"
-                        autocomplete="username"
-                        required
-                    >
-                </div>
-
-                <!-- Password -->
-                <div class="portal-field">
-                    <div class="field-row-head">
-                        <label class="portal-label" for="login-password">Kata Sandi</label>
-                        <a href="/patient-forgot-password.html" class="forgot-link">Lupa sandi?</a>
-                    </div>
-                    <div class="pw-wrapper">
-                        <input
-                            type="password"
-                            id="login-password"
-                            name="password"
-                            class="portal-input"
-                            placeholder="Minimal 6 karakter"
-                            autocomplete="current-password"
-                            required
-                            minlength="6"
-                        >
-                        <button type="button" class="toggle-pw" onclick="togglePassword('login-password')" aria-label="Tampilkan sandi">
-                            <svg id="toggle-eye-login" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <button type="submit" class="portal-button login-submit-action" id="btn-login-submit">
-                    <span>Masuk</span>
-                </button>
-            </form>
-
-            <!-- Divider -->
-            <div class="login-divider"><span>atau</span></div>
+            <div class="maintenance-note">
+                Login pasien hanya tersedia melalui Google.
+            </div>
 
             <!-- Google Sign-In -->
             <button type="button" class="btn-google" id="btn-google" onclick="loginWithGoogle()">
@@ -701,19 +659,9 @@
                     });
                     page.classList.add('auth-locked');
                 } else {
-                    var keepEnabledIds = {
-                        'login-email': true,
-                        'login-password': true,
-                        'btn-login-submit': true,
-                        'toggle-eye-login': true
-                    };
                     page.querySelectorAll('input, button, textarea').forEach(function(el) {
                         if (el.classList.contains('portal-unified-back') || el.classList.contains('icon-btn') || el.id === 'home-back-btn') return;
-                        if (keepEnabledIds[el.id]) {
-                            el.disabled = false;
-                            return;
-                        }
-                        el.disabled = true;
+                        el.disabled = false;
                     });
                 }
             });
@@ -949,73 +897,10 @@
             googleCodeClient.requestCode();
         }
 
-        // ==================== EMAIL/PHONE + PASSWORD LOGIN ====================
-        document.getElementById('login-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            var emailOrPhone = document.getElementById('login-email').value.trim();
-            var password = document.getElementById('login-password').value;
-
-            if (AUTH_MAINTENANCE_LOCK && !isAllowedMaintenanceTester(emailOrPhone)) {
-                showError('login-error', AUTH_TESTER_MAINTENANCE_MESSAGE);
-                return;
-            }
-
-            clearError('login-error');
-
-            if (!emailOrPhone) {
-                showError('login-error', 'Email atau nomor HP harus diisi');
-                return;
-            }
-            if (!password || password.length < 6) {
-                showError('login-error', 'Kata sandi minimal 6 karakter');
-                return;
-            }
-
-            var btn = document.getElementById('btn-login-submit');
-            btn.disabled = true;
-            btn.innerHTML = '<div class="btn-spinner"></div>';
-
-            var overlay = document.getElementById('loading-overlay');
-            overlay.classList.remove('hidden');
-
-            try {
-                var res = await fetch('/api/auth/patient-login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: emailOrPhone,
-                        password: password
-                    })
-                });
-
-                var data = await res.json();
-
-                if (res.ok && (data.token || (data.data && data.data.token))) {
-                    var token = data.token || (data.data && data.data.token);
-                    var user = data.user || (data.data && data.data.user);
-                    localStorage.setItem('vps_auth_token', token);
-                    if (user) {
-                        localStorage.setItem('patient_user', JSON.stringify(user));
-                    }
-                    localStorage.setItem('auth_provider', 'email');
-                    window.location.href = getPostLoginUrl(data);
-                } else {
-                    overlay.classList.add('hidden');
-                    showError('login-error', data.message || 'Email/HP atau kata sandi salah');
-                }
-            } catch (err) {
-                console.error('[Login] Error:', err);
-                overlay.classList.add('hidden');
-                showError('login-error', 'Tidak dapat terhubung ke server');
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = '<span>Masuk</span>';
-        });
-
         // ==================== TOGGLE PASSWORD ====================
         function togglePassword(inputId) {
             var input = document.getElementById(inputId);
+            if (!input) return;
             var eyeIcon = document.getElementById('toggle-eye-login');
             if (input.type === 'password') {
                 input.type = 'text';
