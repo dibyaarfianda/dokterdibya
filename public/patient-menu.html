@@ -410,13 +410,10 @@
         }
         .today-row {
             margin-top: 18px;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 12px;
-            align-items: end;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
         }
-        .today-label { color: var(--muted); font-size: 11px; margin-bottom: 3px; }
-        .today-value { font-weight: 800; font-size: 14px; }
         .sound-toggle {
             border: 1px solid var(--line);
             background: rgba(255,255,255,0.72);
@@ -1687,10 +1684,6 @@
                 <h1 class="hero-title" id="hero-title">Ruang Anda.</h1>
                 <p class="hero-copy" id="hero-copy">Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.</p>
                 <div class="today-row">
-                    <div>
-                        <div class="today-label">Hari ini</div>
-                        <div class="today-value" id="today-value">-</div>
-                    </div>
                     <button class="sound-toggle soundable" id="sound-toggle" onclick="toggleTapSound()">
                         <i class="fa-solid fa-volume-low"></i>
                         <span id="sound-toggle-label">Sound On</span>
@@ -2992,7 +2985,10 @@
         }
 
         function todayLabel() {
-            document.getElementById('today-value').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            const todayValue = document.getElementById('today-value');
+            if (todayValue) {
+                todayValue.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            }
             const hour = new Date().getHours();
             const greeting = hour >= 5 && hour < 11 ? 'Selamat Pagi' : hour >= 11 && hour < 15 ? 'Selamat Siang' : hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
             document.getElementById('time-greeting').textContent = greeting;

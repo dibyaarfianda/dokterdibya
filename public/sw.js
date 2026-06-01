@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601k'; // 2026-06-01k - auto start main menu animation after hero animation
+const CACHE_VERSION = '20260601l'; // 2026-06-01l - remove hero date label/value from main portal
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
