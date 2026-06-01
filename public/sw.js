@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601b'; // 2026-06-01b - lock patient login for maintenance
+const CACHE_VERSION = '20260601c'; // 2026-06-01c - allow tester Nanda Ananda login during maintenance
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

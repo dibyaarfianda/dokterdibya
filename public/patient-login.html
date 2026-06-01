@@ -467,6 +467,8 @@
     <script>
         const AUTH_MAINTENANCE_LOCK = true;
         const AUTH_MAINTENANCE_MESSAGE = 'Login sedang dalam perbaikan. Silakan coba beberapa saat lagi.';
+        const AUTH_TESTER_MAINTENANCE_MESSAGE = 'Akses login saat ini hanya dibuka untuk tester Nanda Ananda.';
+        const AUTH_TESTER_ALLOWLIST = ['nanda ananda', 'p2025091'];
 
         // ==================== MOBILE APP CONTEXT ====================
         const urlParams = new URLSearchParams(window.location.search);
@@ -514,7 +516,9 @@
 
                 var note = document.createElement('div');
                 note.className = 'maintenance-note';
-                note.textContent = AUTH_MAINTENANCE_MESSAGE;
+                note.textContent = id === 'page-login'
+                    ? (AUTH_MAINTENANCE_MESSAGE + ' ' + AUTH_TESTER_MAINTENANCE_MESSAGE)
+                    : AUTH_MAINTENANCE_MESSAGE;
 
                 var title = page.querySelector('.login-subtitle') || page.querySelector('.login-heading');
                 if (title && title.parentNode) {
@@ -523,11 +527,45 @@
                     page.insertBefore(note, page.firstChild);
                 }
 
-                page.querySelectorAll('input, button, textarea').forEach(function(el) {
-                    if (el.classList.contains('portal-unified-back')) return;
-                    el.disabled = true;
-                });
-                page.classList.add('auth-locked');
+                if (id === 'page-register') {
+                    page.querySelectorAll('input, button, textarea').forEach(function(el) {
+                        if (el.classList.contains('portal-unified-back')) return;
+                        el.disabled = true;
+                    });
+                    page.classList.add('auth-locked');
+                } else {
+                    var keepEnabledIds = {
+                        'login-email': true,
+                        'login-password': true,
+                        'btn-login-submit': true,
+                        'toggle-eye-login': true
+                    };
+                    page.querySelectorAll('input, button, textarea').forEach(function(el) {
+                        if (el.classList.contains('portal-unified-back')) return;
+                        if (keepEnabledIds[el.id]) {
+                            el.disabled = false;
+                            return;
+                        }
+                        el.disabled = true;
+                    });
+                }
+            });
+        }
+
+        function normalizeAuthIdentifier(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function isAllowedMaintenanceTester(identifier) {
+            var normalized = normalizeAuthIdentifier(identifier);
+            if (!normalized) return false;
+
+            return AUTH_TESTER_ALLOWLIST.some(function(key) {
+                var target = normalizeAuthIdentifier(key);
+                return normalized === target || normalized.indexOf(target) !== -1;
             });
         }
 
@@ -747,14 +785,15 @@
         // ==================== EMAIL/PHONE + PASSWORD LOGIN ====================
         document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            if (AUTH_MAINTENANCE_LOCK) {
-                showError('login-error', AUTH_MAINTENANCE_MESSAGE);
-                return;
-            }
-            clearError('login-error');
-
             var emailOrPhone = document.getElementById('login-email').value.trim();
             var password = document.getElementById('login-password').value;
+
+            if (AUTH_MAINTENANCE_LOCK && !isAllowedMaintenanceTester(emailOrPhone)) {
+                showError('login-error', AUTH_TESTER_MAINTENANCE_MESSAGE);
+                return;
+            }
+
+            clearError('login-error');
 
             if (!emailOrPhone) {
                 showError('login-error', 'Email atau nomor HP harus diisi');
