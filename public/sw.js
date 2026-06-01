@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602k'; // 2026-06-02k - patient intake uses age only (no DOB input)
+const CACHE_VERSION = '20260602l'; // 2026-06-02l - intake height can be unknown via checkbox
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

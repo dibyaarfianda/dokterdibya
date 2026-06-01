@@ -1476,9 +1476,13 @@
                 note.className = 'field-note';
 
                 if (type === 'number') {
-                    note.textContent = isRequired
-                        ? 'Kolom wajib diisi. Jika tidak ada data, isi 0.'
-                        : 'Jika tidak ada data, isi 0.';
+                    if (input.id === 'height') {
+                        note.textContent = 'Isi tinggi badan. Jika tidak tahu, centang "Tidak tahu / belum mengukur".';
+                    } else {
+                        note.textContent = isRequired
+                            ? 'Kolom wajib diisi. Jika tidak ada data, isi 0.'
+                            : 'Jika tidak ada data, isi 0.';
+                    }
                 } else if (input.tagName === 'SELECT') {
                     note.textContent = isRequired
                         ? 'Kolom wajib dipilih sebelum kirim data.'
@@ -1565,6 +1569,18 @@
                     field.focus();
                     showToast('Semua kolom wajib diisi. Mohon pilih opsi pada dropdown.');
                     return false;
+                }
+
+                if (field.id === 'height') {
+                    const heightUnknown = document.getElementById('height_unknown');
+                    if (!value && heightUnknown?.checked) {
+                        continue;
+                    }
+                    if (!value) {
+                        field.focus();
+                        showToast('Isi Tinggi Badan atau centang "Tidak tahu / belum mengukur".');
+                        return false;
+                    }
                 }
 
                 if (type === 'number' && !value) {
@@ -1806,6 +1822,26 @@
             insuranceNameField.style.display = this.checked ? 'block' : 'none';
         });
 
+        function initHeightUnknownToggle() {
+            const heightInput = document.getElementById('height');
+            const heightUnknown = document.getElementById('height_unknown');
+            if (!heightInput || !heightUnknown) return;
+
+            const syncHeightState = () => {
+                if (heightUnknown.checked) {
+                    heightInput.value = '';
+                    heightInput.disabled = true;
+                    heightInput.placeholder = 'Centang tidak tahu dipilih';
+                } else {
+                    heightInput.disabled = false;
+                    heightInput.placeholder = 'Contoh: 160';
+                }
+            };
+
+            heightUnknown.addEventListener('change', syncHeightState);
+            syncHeightState();
+        }
+
         // Show/hide husband fields based on marital status
         document.getElementById('marital_status').addEventListener('change', function() {
             const husbandFields = document.querySelectorAll('.husband-field');
@@ -1835,6 +1871,7 @@
         initStepper();
         initAutoSave();
         addFieldCompletionHints();
+        initHeightUnknownToggle();
         
         // Load existing data from server (if logged in), then fallback to draft
         (async function init() {
