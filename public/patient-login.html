@@ -395,7 +395,7 @@
     </style>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
 </head>
-<body class="portal-themed auth-theme-unified">
+<body class="portal-themed auth-theme-unified portal-header-normalized">
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
         <div class="topbar-blur-2"></div>
@@ -415,20 +415,14 @@
         <p>Memproses login...</p>
     </div>
 
-    <header class="topbar" id="home-topbar">
-        <div class="topbar-inner" id="home-topbar-inner">
-            <div class="brand">
-                <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
-                    <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
-                    <div class="brand-sub" id="home-brand-sub">Akses Pasien</div>
-                </a>
-            </div>
-            <div class="top-actions">
-                <button type="button" class="icon-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
-                    <i class="fa-solid fa-arrow-left"></i>
-                </button>
-            </div>
-        </div>
+    <header class="portal-unified-header">
+        <a class="portal-unified-brand" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+            <div class="brand-title">SISI<span>wanita</span></div>
+            <div class="brand-sub">Portal Privat Kandungan Anda</div>
+        </a>
+        <button type="button" class="portal-unified-back" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
+            <i class="fa-solid fa-arrow-left"></i><span>Portal</span>
+        </button>
     </header>
 
     <!-- Centered login -->

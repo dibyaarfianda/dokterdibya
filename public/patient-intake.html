@@ -689,7 +689,7 @@
     </script>
     <script src="/scripts/patient-theme.js"></script>
 </head>
-<body class="portal-themed intake-page">
+<body class="portal-themed intake-page portal-header-normalized">
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
         <div class="topbar-blur-2"></div>
@@ -702,20 +702,14 @@
     </div>
     <div class="bg-animation" id="bgAnimation"></div>
     <div class="intake-shell">
-        <header class="topbar" id="home-topbar">
-            <div class="topbar-inner" id="home-topbar-inner">
-                <div class="brand">
-                    <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
-                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
-                        <div class="brand-sub" id="home-brand-sub">Form Intake</div>
-                    </a>
-                </div>
-                <div class="top-actions">
-                    <button type="button" class="icon-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                </div>
-            </div>
+        <header class="portal-unified-header">
+            <a class="portal-unified-brand" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                <div class="brand-title">SISI<span>wanita</span></div>
+                <div class="brand-sub">Portal Privat Kandungan Anda</div>
+            </a>
+            <button type="button" class="portal-unified-back" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
+                <i class="fa-solid fa-arrow-left"></i><span>Portal</span>
+            </button>
         </header>
         <main>
             <section class="intake-intro" aria-labelledby="form-title">
