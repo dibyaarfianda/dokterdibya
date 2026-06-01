@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602m'; // 2026-06-02m - add dedicated Info Terbaru page route from home action
+const CACHE_VERSION = '20260602n'; // 2026-06-02n - align Info Terbaru listing with legacy announcements data flow
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
