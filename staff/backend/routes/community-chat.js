@@ -9,6 +9,22 @@ const DEFAULT_LOBBY_SLUG = 'lobby';
 const DEFAULT_ROOM_COLOR = '#2563eb';
 const MAX_ROOM_NAME = 80;
 const MAX_MESSAGE_LENGTH = 2000;
+const COMMUNITY_NICKNAME_MIN_LENGTH = 3;
+const COMMUNITY_NICKNAME_MAX_LENGTH = 40;
+const FORBIDDEN_NICKNAME_WORDS = [
+    'kontol', 'memek', 'ngentot', 'anjing', 'bangsat', 'bajingan', 'tolol',
+    'goblok', 'asu', 'jancok', 'perek', 'pelacur', 'fuck', 'fucker',
+    'bitch', 'motherfucker', 'shit', 'dick', 'pussy', 'cunt'
+];
+const FORBIDDEN_DOCTOR_NICKNAME_MARKERS = [
+    'drdibyaarfianda',
+    'dokterdibyaarfianda',
+    'dibyaarfianda',
+    'drdibya',
+    'dokterdibya',
+    'dibya',
+    'arfianda'
+];
 
 let ioRef = null;
 let initPromise = null;
@@ -42,6 +58,54 @@ async function canCreateRoom(user) {
 
 function normalizeText(text) {
     return String(text || '').trim();
+}
+
+function normalizeNicknameForMatch(value = '') {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+}
+
+function validateCommunityNickname(value = '') {
+    const nickname = normalizeText(value);
+    if (!nickname) {
+        return { valid: false, message: 'Nickname wajib diisi.' };
+    }
+
+    if (nickname.length < COMMUNITY_NICKNAME_MIN_LENGTH) {
+        return { valid: false, message: `Nickname minimal ${COMMUNITY_NICKNAME_MIN_LENGTH} karakter.` };
+    }
+
+    if (nickname.length > COMMUNITY_NICKNAME_MAX_LENGTH) {
+        return { valid: false, message: `Nickname maksimal ${COMMUNITY_NICKNAME_MAX_LENGTH} karakter.` };
+    }
+
+    const compact = normalizeNicknameForMatch(nickname);
+    if (!compact) {
+        return { valid: false, message: 'Nickname tidak valid.' };
+    }
+
+    if (FORBIDDEN_DOCTOR_NICKNAME_MARKERS.some((marker) => compact.includes(marker))) {
+        return { valid: false, message: 'Nickname tidak boleh menyerupai nama Dr. Dibya Arfianda.' };
+    }
+
+    if (FORBIDDEN_NICKNAME_WORDS.some((word) => compact.includes(normalizeNicknameForMatch(word)))) {
+        return { valid: false, message: 'Nickname mengandung kata yang tidak diperbolehkan.' };
+    }
+
+    return { valid: true, nickname };
+}
+
+function pickAllowedNickname(...candidates) {
+    for (const rawCandidate of candidates) {
+        const candidate = normalizeText(rawCandidate);
+        if (!candidate) continue;
+        const validation = validateCommunityNickname(candidate);
+        if (validation.valid) return validation.nickname;
+    }
+    return null;
 }
 
 function toSlug(value) {
@@ -381,7 +445,7 @@ async function resolveUserIdentity(user) {
     );
 
     const profile = profiles[0] || null;
-    const effectiveNickname = profile?.nickname || portalNickname || null;
+    const effectiveNickname = pickAllowedNickname(profile?.nickname, portalNickname);
     return {
         userId,
         userType,
@@ -467,7 +531,7 @@ async function getReadableProfile(userId, userType) {
     const profile = profiles[0] || null;
     if (profile && profile.profile_visible === 0) return null;
 
-    const effectiveNickname = profile?.nickname || portalNickname || null;
+    const effectiveNickname = pickAllowedNickname(profile?.nickname, portalNickname);
 
     return {
         user_id: userId,
@@ -961,11 +1025,16 @@ router.put('/me/profile', verifyToken, async (req, res) => {
         const bio = normalizeText(req.body.bio);
         const profileVisible = req.body.profile_visible === false ? 0 : 1;
 
-        if (nickname || bio) {
-            return res.status(403).json({
-                success: false,
-                message: 'Nickname dan bio tidak dapat diubah.'
-            });
+        let safeNickname = null;
+        if (nickname) {
+            const nicknameValidation = validateCommunityNickname(nickname);
+            if (!nicknameValidation.valid) {
+                return res.status(400).json({
+                    success: false,
+                    message: nicknameValidation.message
+                });
+            }
+            safeNickname = nicknameValidation.nickname;
         }
 
         await db.query(
@@ -976,7 +1045,7 @@ router.put('/me/profile', verifyToken, async (req, res) => {
                 bio = VALUES(bio),
                 profile_visible = VALUES(profile_visible),
                 updated_at = CURRENT_TIMESTAMP`,
-            [userId, userType, null, null, profileVisible]
+            [userId, userType, safeNickname, bio || null, profileVisible]
         );
 
         const profile = await resolveUserIdentity(req.user);
