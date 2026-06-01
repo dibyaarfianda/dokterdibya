@@ -1,107 +1,34 @@
-# SISIwanita Domain Launch
+﻿# Go-Live SISIwanita Patient Portal
 
-This runbook wires `https://sisiwanita.id` as a landing-only host.
+## Target architecture
+- `https://sisiwanita.id/` remains the public landing page.
+- Patient portal live pages live on `sisiwanita.id` with final non-trial URLs, for example `/patient-login.html`, `/patient-menu.html`, `/album-usg.html`, `/dokumen-medis.html`, `/booking-klinik.html`, and `/fertility-calendar.html`.
+- Staff panel, Sunday Clinic staff, and staff-only pages remain on `dokterdibya.com`.
+- Patient API calls use same-origin `/api/...` on `sisiwanita.id`, proxied to the same backend/database.
+- Patient auth tokens are stored under the `sisiwanita.id` browser origin, separate from `dokterdibya.com`.
 
-## Architecture
+## Nginx requirements
+Use `deployment/sisiwanita.id.nginx.conf.example` as the SISIwanita server block reference.
 
-- Apex domain: `https://sisiwanita.id`
-- `https://www.sisiwanita.id` redirects to apex
-- Public landing HTML: `public/sisiwanita/index.html`
-- Standalone PWA files:
-  - `public/sisiwanita.webmanifest`
-  - `public/sisiwanita-sw.js`
-- Auth and patient portal stay on `https://dokterdibya.com`
-- All patient feature links on the landing redirect to:
-  - `https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off`
+Required behavior:
+- Serve `/` from `public/sisiwanita/index.html`.
+- Serve live patient pages from `public/*.html`.
+- Proxy `/api/` and `/socket.io/` to the Dokter Dibya backend.
+- Block `/staff/` and staff/admin pages from the SISIwanita domain.
+- Keep patient HTML no-cache so new portal versions are picked up immediately.
 
-## Files Added For This Host
+## Google OAuth requirement
+Add these in Google Cloud Console for the patient OAuth client:
+- Authorized JavaScript origin: `https://sisiwanita.id`
+- Authorized redirect URI if used by the current Google flow: `https://sisiwanita.id/patient-login.html`
 
-- `deployment/sisiwanita.id.nginx.conf.example`
-- `public/sisiwanita/index.html`
-- `public/sisiwanita.webmanifest`
-- `public/sisiwanita-sw.js`
+## Legacy behavior
+Old patient trial URLs should no longer be linked from the live SISIwanita portal. If a legacy redirect is installed on `dokterdibya.com`, redirect patient-facing pages to the matching final URL on `https://sisiwanita.id/` while leaving staff and Sunday Clinic staff paths untouched.
 
-## VPS Steps
-
-1. Pull the latest code:
-
-```bash
-cd /var/www/dokterdibya
-git pull origin main
-```
-
-2. Install the nginx template:
-
-```bash
-cp deployment/sisiwanita.id.nginx.conf.example /etc/nginx/sites-available/sisiwanita.id
-ln -sf /etc/nginx/sites-available/sisiwanita.id /etc/nginx/sites-enabled/sisiwanita.id
-```
-
-3. Issue the TLS certificate after DNS points to the VPS:
-
-```bash
-certbot certonly --webroot \
-  -w /var/www/dokterdibya/public \
-  -d sisiwanita.id \
-  -d www.sisiwanita.id \
-  --non-interactive \
-  --agree-tos \
-  -m admin@dokterdibya.com \
-  --keep-until-expiring
-```
-
-4. Fill in the TLS certificate paths inside the nginx file:
-
-```nginx
-ssl_certificate /etc/letsencrypt/live/sisiwanita.id/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/sisiwanita.id/privkey.pem;
-```
-
-5. Test nginx and reload:
-
-```bash
-nginx -t
-systemctl reload nginx
-```
-
-## Behavior The Config Enforces
-
-- `/`, `/index.html`, and `/sisiwanita/index.html` all serve the same landing file.
-- `/sisiwanita.webmanifest` and `/sisiwanita-sw.js` are always fresh.
-- `/images/`, `/scripts/`, `/js/`, and `/offline.html` stay available because the landing still depends on them.
-- Other `*.html` routes on this host return `404`, so the host stays landing-only.
-
-## Verification
-
-Run these after reload:
-
-```bash
-curl -I https://sisiwanita.id/
-curl -I https://sisiwanita.id/index.html
-curl -I https://sisiwanita.id/sisiwanita.webmanifest
-curl -I https://sisiwanita.id/sisiwanita-sw.js
-curl -I https://www.sisiwanita.id/
-```
-
-Expected results:
-
-- `https://www.sisiwanita.id/` -> `301` to `https://sisiwanita.id/`
-- `https://sisiwanita.id/` -> `200`
-- `https://sisiwanita.id/sisiwanita.webmanifest` -> `200`
-- `https://sisiwanita.id/sisiwanita-sw.js` -> `200` with `Service-Worker-Allowed: /`
-
-## Browser Checks
-
-1. Open `https://sisiwanita.id/`
-2. Confirm the page stays on the SISIwanita landing
-3. Click the main CTA and confirm it opens:
-   - `https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off`
-4. Install the PWA and confirm the app opens back to the landing root
-5. Open DevTools Application tab and confirm:
-   - manifest name is `SISIwanita`
-   - service worker script is `/sisiwanita-sw.js`
-
-## Notes
-
-- The landing now blocks leftover local trial-page links by rerouting them to the old-domain Google login.
-- If the landing HTML changes again, keep `public/sisiwanita-sw.js` cache version in sync so the PWA refresh path stays predictable.
+## Verification checklist
+- Search live SISIwanita files for `trial` and confirm none remain except historical docs/backups if intentionally kept.
+- Open `https://sisiwanita.id/` and use the CTA/login flow.
+- Confirm portal URLs no longer contain `-trial.html`.
+- Confirm `/api/...` calls work same-origin on `sisiwanita.id`.
+- Confirm staff panel and Sunday Clinic staff still work on `dokterdibya.com`.
+- Confirm PWA cache name is `sisiwanita-patient-portal-*`.

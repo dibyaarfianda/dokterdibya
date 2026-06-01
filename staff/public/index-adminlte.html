@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
@@ -1770,7 +1770,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v222'; // Staff readiness refresh: sync shell, mobile CSS, and PWA assets
+            const CACHE_VERSION = 'v225'; // Staff dashboard live queue: load utility as browser-safe JS module
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -2321,6 +2321,25 @@
 
                         <!-- RIGHT COLUMN -->
                         <div class="col-lg-6">
+                            <!-- Antrian Live Hari Ini -->
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-list-ol mr-2"></i>Antrian Live Hari Ini</h3>
+                                    <div class="card-tools d-flex align-items-center">
+                                        <span class="badge badge-light mr-2" id="dashboard-live-queue-count">0</span>
+                                        <button type="button" class="btn btn-tool" onclick="window.refreshDashboardLiveQueue && window.refreshDashboardLiveQueue()" title="Refresh antrian">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                        <a class="btn btn-tool" href="/staff/public/sunday-clinic.html" title="Buka Sunday Clinic">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body" id="dashboard-live-queue-list" style="max-height: 360px; overflow-y: auto;">
+                                    <p class="text-muted mb-0">Memuat antrian live...</p>
+                                </div>
+                            </div>
+
                             <!-- Appointment Minggu Depan -->
                             <div class="card card-primary">
                                 <div class="card-header">
@@ -3198,7 +3217,7 @@
                                                 <div class="input-group">
                                                     <input type="number" step="0.1" id="physical-temp" class="form-control">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text">Â°C</span>
+                                                        <span class="input-group-text">??C</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -3666,7 +3685,7 @@
                                     <div class="info-box bg-light mb-0">
                                         <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
                                         <div class="info-box-content">
-                                            <span class="info-box-text">Stok Kritis (â‰¤5)</span>
+                                            <span class="info-box-text">Stok Kritis (???5)</span>
                                             <span class="info-box-number" id="summary-stock-low">0</span>
                                         </div>
                                     </div>
@@ -8086,7 +8105,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
 
-    // ── Live Queue Toggle (Patient Portal) ──
+    // ?? Live Queue Toggle (Patient Portal) ??
     (function() {
         function _queueToken() {
             return (window.getAuthToken && window.getAuthToken())
@@ -9249,7 +9268,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
     };
 
-    // â”€â”€â”€ Shared row renderer for #manage-patients-tbody â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ????????? Shared row renderer for #manage-patients-tbody ??????????????????????????????????????????????????????????????????
     // Used by BOTH loadWebPatients() and performAdvancedSearch() to keep the
     // template consistent and avoid the dual-render bug (AGENTS.md rule #24).
     function renderManagePatientRow(patient) {
@@ -9287,8 +9306,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
             ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}</div>${visitHistoryBadge}`
             : `<span class="text-muted">-</span>${visitHistoryBadge ? `<div>${visitHistoryBadge}</div>` : ''}`;
         const nameMeta = patient.mr_id
-            ? `${patient.id} • <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
-            : `${patient.id}${visitHistoryBadge ? ` • ${visitHistoryBadge}` : ''}`;
+            ? `${patient.id} ? <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
+            : `${patient.id}${visitHistoryBadge ? ` ? ${visitHistoryBadge}` : ''}`;
         const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.full_name || '-'}</a></div><div class="small text-muted">${nameMeta}</div>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
@@ -9332,7 +9351,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             </tr>
         `;
     }
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 
     async function loadWebPatients() {
         try {
@@ -9749,7 +9768,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 throw new Error(result.message || 'Gagal menandai pasien');
             }
 
-            // Update the row in-place â€” no table reload needed
+            // Update the row in-place ??? no table reload needed
             if (btnEl) {
                 const row = btnEl.closest('tr');
                 if (row) {
@@ -11535,8 +11554,8 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Staff Points + Briefing -->
- <script src="./scripts/staff-points.js?v=20260518a"></script>
- <script src="./scripts/staff-briefing.js?v=20260518a"></script>
+ <script src="./scripts/staff-points.js?v=20260531a"></script>
+ <script src="./scripts/staff-briefing.js?v=20260531a"></script>
  <script>
  function _scHideAllStaffPages() {
      document.documentElement.classList.remove('kantor-saya-active');
@@ -12707,7 +12726,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     <script src="/staff/public/scripts/tap-feedback.js?v=v222"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v222"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v222"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v229"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
@@ -14594,4 +14613,5 @@ function installPWA() {
 
 </body>
 </html>
+
 

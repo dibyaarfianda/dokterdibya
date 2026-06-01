@@ -116,7 +116,8 @@ function showToast(message, type = 'info', duration = 3000) {
         toast.innerHTML = `<i class="fa ${iconMap[type]}"></i> ${message}`;
     }
 
-    document.body.appendChild(toast);
+    const toastContainer = document.getElementById('toast-container');
+    (toastContainer || document.body).appendChild(toast);
 
     // Auto-remove after duration
     setTimeout(() => {

@@ -1,5 +1,5 @@
 /* SISIwanita Patient Tool Shell
-   Shared header, content rhythm, bottom nav, sheet, and intro motion for trial tool pages. */
+   Shared header, content rhythm, bottom nav, sheet, and intro motion for portal tool pages. */
 
 :root {
     --bg: #f7f7f4;
@@ -208,8 +208,8 @@ body.patient-tool-shell .avatar:active,
 body.patient-tool-shell .tap-card:active,
 body.patient-tool-shell .primary-action:active,
 body.patient-tool-shell .ghost-action:active,
-body.patient-tool-shell .trial-button:active,
-body.patient-tool-shell .trial-button-ghost:active {
+body.patient-tool-shell .portal-button:active,
+body.patient-tool-shell .portal-button-ghost:active {
     transform: scale(0.97);
 }
 
@@ -366,8 +366,8 @@ body.patient-tool-shell .status-body { flex: 1; min-width: 0; }
 body.patient-tool-shell .status-body h3 { font-size: 14px !important; margin-bottom: 3px !important; color: var(--ink) !important; }
 body.patient-tool-shell .status-body p { color: var(--muted) !important; font-size: 12px !important; line-height: 1.45 !important; margin: 0 !important; }
 
-body.patient-tool-shell .trial-button,
-body.patient-tool-shell .trial-button-ghost,
+body.patient-tool-shell .portal-button,
+body.patient-tool-shell .portal-button-ghost,
 body.patient-tool-shell .primary-action,
 body.patient-tool-shell .ghost-action {
     border-radius: 14px !important;
@@ -385,9 +385,9 @@ body.patient-tool-shell .ghost-action {
     cursor: pointer;
 }
 
-body.patient-tool-shell .trial-button,
+body.patient-tool-shell .portal-button,
 body.patient-tool-shell .primary-action { background: var(--ink) !important; color: #fff !important; border: 1px solid var(--ink) !important; }
-body.patient-tool-shell .trial-button-ghost,
+body.patient-tool-shell .portal-button-ghost,
 body.patient-tool-shell .ghost-action { background: rgba(255,255,255,0.75) !important; color: var(--ink) !important; border: 1px solid var(--line) !important; }
 
 body.patient-tool-shell #home-bottom-nav {
@@ -681,19 +681,22 @@ body.patient-tool-shell .shell-profile-photo-actions {
 }
 
 body.patient-tool-shell .shell-profile-photo-btn {
-    min-height: 32px !important;
-    border-radius: 12px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 28px !important;
+    border-radius: 11px !important;
     border: 1px solid var(--line) !important;
     background: rgba(255,255,255,0.72) !important;
     color: var(--ink) !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 7px !important;
-    padding: 8px 10px !important;
-    font-size: 11px !important;
+    gap: 5px !important;
+    padding: 6px 8px !important;
+    font-size: 10px !important;
     font-weight: 900 !important;
     cursor: pointer;
+    white-space: nowrap !important;
 }
 
 body.patient-tool-shell .shell-profile-photo-btn.primary {
@@ -731,6 +734,35 @@ body.patient-tool-shell #toast-container { position: fixed; left: 50%; bottom: c
 body.patient-tool-shell #toast-container .toast,
 body.patient-tool-shell .toast { background: #111 !important; color: #fff !important; border-radius: 999px !important; padding: 11px 15px !important; font-size: 12px !important; font-weight: 800 !important; box-shadow: none !important; }
 
+body.patient-tool-shell .reveal {
+    animation: shellCardIn 0.42s ease both;
+    animation-delay: var(--reveal-delay, 0ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(2) {
+    animation-delay: var(--reveal-delay, 40ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(3) {
+    animation-delay: var(--reveal-delay, 80ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(4) {
+    animation-delay: var(--reveal-delay, 120ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(5) {
+    animation-delay: var(--reveal-delay, 160ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(6) {
+    animation-delay: var(--reveal-delay, 200ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(7) {
+    animation-delay: var(--reveal-delay, 240ms);
+}
+
 body:not(.header-animated).patient-tool-shell .brand,
 body:not(.header-animated).patient-tool-shell #home-notif-btn,
 body:not(.header-animated).patient-tool-shell #user-avatar,
@@ -765,6 +797,7 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
 
 @keyframes shellFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes shellTitleIn { from { opacity: 0; transform: translateY(20px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@keyframes shellCardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 520px) {
     body.patient-tool-shell .app { padding-left: 14px !important; padding-right: 14px !important; }
@@ -779,5 +812,71 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
     body.patient-tool-shell *::after {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
+    }
+
+    /* Whitelist Gerakan Bayi opening motion so it matches patient-menu instead of collapsing into the generic kill-switch. */
+    body.patient-tool-shell.kick-counter-page .reveal,
+    body.patient-tool-shell.kick-counter-page .hero-card .status-chip,
+    body.patient-tool-shell.kick-counter-page .hero-card .hero-title,
+    body.patient-tool-shell.kick-counter-page .hero-card .hero-copy,
+    body.patient-tool-shell.kick-counter-page .hero-card .today-row,
+    body.patient-tool-shell.kick-counter-page .brand,
+    body.patient-tool-shell.kick-counter-page #home-notif-btn,
+    body.patient-tool-shell.kick-counter-page #user-avatar,
+    body.patient-tool-shell.tanya-dokter-page .reveal,
+    body.patient-tool-shell.tanya-dokter-page .tool-retrofit-hero,
+    body.patient-tool-shell.tanya-dokter-page .tool-retrofit-hero .hero-title,
+    body.patient-tool-shell.tanya-dokter-page .tool-retrofit-hero .hero-copy,
+    body.patient-tool-shell.tanya-dokter-page .tool-retrofit-hero .today-row,
+    body.patient-tool-shell.tanya-dokter-page .brand,
+    body.patient-tool-shell.tanya-dokter-page #home-notif-btn,
+    body.patient-tool-shell.tanya-dokter-page #user-avatar,
+    body.patient-tool-shell.pregnancy-tracker-page .reveal,
+    body.patient-tool-shell.pregnancy-tracker-page .hero-card .status-chip,
+    body.patient-tool-shell.pregnancy-tracker-page .hero-card .hero-title,
+    body.patient-tool-shell.pregnancy-tracker-page .hero-card .hero-copy,
+    body.patient-tool-shell.pregnancy-tracker-page .hero-card .today-row,
+    body.patient-tool-shell.pregnancy-tracker-page .brand,
+    body.patient-tool-shell.pregnancy-tracker-page #home-notif-btn,
+    body.patient-tool-shell.pregnancy-tracker-page #user-avatar,
+    body.patient-tool-shell.fertility-calendar-page .reveal,
+    body.patient-tool-shell.fertility-calendar-page .hero-card .status-chip,
+    body.patient-tool-shell.fertility-calendar-page .hero-card .hero-title,
+    body.patient-tool-shell.fertility-calendar-page .hero-card .hero-copy,
+    body.patient-tool-shell.fertility-calendar-page .hero-card .today-row,
+    body.patient-tool-shell.fertility-calendar-page .brand,
+    body.patient-tool-shell.fertility-calendar-page #home-notif-btn,
+    body.patient-tool-shell.fertility-calendar-page #user-avatar,
+    body.patient-tool-shell.vitamin-schedule-page .reveal,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .status-chip,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .hero-title,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .hero-copy,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .today-row,
+    body.patient-tool-shell.vitamin-schedule-page .brand,
+    body.patient-tool-shell.vitamin-schedule-page #home-notif-btn,
+    body.patient-tool-shell.vitamin-schedule-page #user-avatar,
+    body.patient-tool-shell.booking-klinik-page *,
+    body.patient-tool-shell.booking-klinik-page *::before,
+    body.patient-tool-shell.booking-klinik-page *::after,
+    body.patient-tool-shell.jadwal-rs-page *,
+    body.patient-tool-shell.jadwal-rs-page *::before,
+    body.patient-tool-shell.jadwal-rs-page *::after,
+    body.patient-tool-shell.riwayat-kunjungan-page *,
+    body.patient-tool-shell.riwayat-kunjungan-page *::before,
+    body.patient-tool-shell.riwayat-kunjungan-page *::after,
+    body.patient-tool-shell.antrian-page *,
+    body.patient-tool-shell.antrian-page *::before,
+    body.patient-tool-shell.antrian-page *::after,
+    body.patient-tool-shell.album-usg-page *,
+    body.patient-tool-shell.album-usg-page *::before,
+    body.patient-tool-shell.album-usg-page *::after,
+    body.patient-tool-shell.dokumen-medis-page *,
+    body.patient-tool-shell.dokumen-medis-page *::before,
+    body.patient-tool-shell.dokumen-medis-page *::after,
+    body.patient-tool-shell.hasil-lab-page *,
+    body.patient-tool-shell.hasil-lab-page *::before,
+    body.patient-tool-shell.hasil-lab-page *::after {
+        animation-duration: 1.05s !important;
+        transition-duration: 1.05s !important;
     }
 }

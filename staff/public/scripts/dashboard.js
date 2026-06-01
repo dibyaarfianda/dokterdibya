@@ -1,11 +1,15 @@
 // Uses VPS API for data loading
 
 import { getIdToken } from './vps-auth-v2.js';
+import { renderLiveQueueHtml } from './live-queue-dashboard-utils.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? 'http://localhost:3001'
     : window.location.origin.replace(/\/$/, '');
+
+let liveQueuePollTimer = null;
+let liveQueueSocketBound = false;
 
 function runWhenIdle(task, timeout = 1200) {
     if (typeof window.requestIdleCallback === 'function') {
@@ -355,6 +359,81 @@ async function loadDashboardStats() {
     }
 }
 
+async function loadDashboardLiveQueue(forceRefresh = false) {
+    const container = document.getElementById('dashboard-live-queue-list');
+    const countEl = document.getElementById('dashboard-live-queue-count');
+    if (!container) return;
+
+    if (!container.dataset.loaded) {
+        container.innerHTML = '<p class="text-muted mb-0">Memuat antrian live...</p>';
+    }
+
+    try {
+        const token = await getIdToken();
+        if (!token) {
+            container.innerHTML = '<p class="text-muted mb-0">Tidak terautentikasi.</p>';
+            if (countEl) countEl.textContent = '0';
+            return;
+        }
+
+        const url = `${VPS_API_BASE}/api/sunday-clinic/queue/today?refresh=${forceRefresh ? '1' : '0'}&_t=${Date.now()}`;
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
+        });
+
+        if (!response.ok) {
+            container.innerHTML = response.status === 403
+                ? '<p class="text-muted mb-0">Akses antrian dibatasi.</p>'
+                : '<p class="text-danger mb-0">Gagal memuat antrian live.</p>';
+            if (countEl) countEl.textContent = '0';
+            return;
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Gagal memuat antrian live');
+        }
+
+        const queueItems = Array.isArray(result.data) ? result.data : [];
+        container.dataset.loaded = '1';
+        container.innerHTML = renderLiveQueueHtml(queueItems, { updatedAt: new Date() });
+        if (countEl) countEl.textContent = String(result.count || queueItems.length || 0);
+    } catch (error) {
+        console.warn('loadDashboardLiveQueue failed:', error);
+        container.innerHTML = '<p class="text-danger mb-0">Gagal memuat antrian live.</p>';
+        if (countEl) countEl.textContent = '0';
+    }
+}
+
+function setupDashboardLiveQueueUpdates() {
+    if (!liveQueuePollTimer) {
+        liveQueuePollTimer = setInterval(() => loadDashboardLiveQueue(false), 30000);
+    }
+
+    if (liveQueueSocketBound) return;
+
+    const bindSocket = () => {
+        const socket = window.socket || (window.__realtimeSyncState && window.__realtimeSyncState.socket);
+        if (!socket || typeof socket.on !== 'function') {
+            setTimeout(bindSocket, 1500);
+            return;
+        }
+
+        liveQueueSocketBound = true;
+        socket.on('queue:updated', () => loadDashboardLiveQueue(true));
+        socket.on('queue:settings_changed', () => loadDashboardLiveQueue(true));
+    };
+
+    bindSocket();
+}
+
+window.refreshDashboardLiveQueue = function refreshDashboardLiveQueue() {
+    return loadDashboardLiveQueue(true);
+};
+
 async function loadRecentActivity() {
     const container = document.getElementById('dashboard-recent-activity');
     if (!container) return;
@@ -425,7 +504,8 @@ export async function initDashboard() {
 
     await Promise.all([
         loadVisitSection(),
-        loadDashboardStats()
+        loadDashboardStats(),
+        loadDashboardLiveQueue(true)
     ]);
 
     const criticalDone = (typeof performance !== 'undefined' && performance.now)
@@ -448,6 +528,8 @@ export async function initDashboard() {
         recordDashboardPerf('recentActivityMs', recentActivityMs);
         console.log('[DASHBOARD PERF] Recent activity loaded in', `${recentActivityMs}ms`);
     });
+
+    setupDashboardLiveQueueUpdates();
 
     if (window.socketIoInstance && !window.__dashboardActivityListenerAttached) {
         setupActivityLogUpdates();

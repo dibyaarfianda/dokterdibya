@@ -2,7 +2,7 @@
   "id": "/",
   "name": "SISIwanita",
   "short_name": "SISIwanita",
-  "description": "Landing page SISIwanita untuk akses Google login dan portal pasien.",
+  "description": "Portal pasien SISIwanita untuk akses jadwal, dokumen medis, tanya dokter, dan informasi kesehatan.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

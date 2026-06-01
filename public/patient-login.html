@@ -3,579 +3,478 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#223a34">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Login Pasien - dokterDIBYA</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Masuk - SISIwanita</title>
 
     <!-- Icons & Manifest -->
     <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
     <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
-    <meta name="application-name" content="dokterDIBYA Patient Portal">
+    <meta name="application-name" content="SISIwanita Patient Portal">
     <meta name="apple-mobile-web-app-title" content="Portal Pasien">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
-    <!-- Google Identity Services (for popup sign-in) -->
+    <!-- Portal Theme Stylesheet -->
+<!-- Google Identity Services (for popup sign-in) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
+        /* Reset & base — keep minimal; theme handles typography/colors */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         :root {
-            --primary: #7EA89F;
-            --primary-dark: #557d73;
-            --bg-dark: #223a34;
-            --bg-card: rgba(255, 255, 255, 0.12);
-            --text: #ffffff;
-            --text-muted: rgba(255,255,255,0.72);
-            --border: rgba(255,255,255,0.18);
-            --success: #10b981;
-            --error: #ef4444;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
+
+        html, body { min-height: 100%; }
+        body.portal-themed {
             min-height: 100vh;
             min-height: 100dvh;
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
             overflow-x: hidden;
+            position: relative;
         }
 
-        /* Loading overlay */
+        /* Subtle page grain */
+        .page-grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Loading overlay — monochrome */
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--bg-dark);
+            inset: 0;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
             z-index: 99999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.25s ease;
         }
-        .loading-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .loading-overlay .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.2);
-            border-top-color: var(--primary);
+        .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .loading-overlay .ov-spinner {
+            width: 36px; height: 36px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-top-color: #111;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
         .loading-overlay p {
-            margin-top: 16px;
+            margin-top: 14px;
             color: var(--text-muted);
+            font-size: 14px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Minimal topbar (brand only) */
+        .mini-topbar {
+            position: relative;
+            z-index: 2;
+            padding: 20px clamp(16px, 4vw, 32px) 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .mini-topbar .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+        .mini-topbar .brand-sub {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 3px;
         }
 
-        /* Animated Background */
-        .bg-gradient {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                linear-gradient(180deg, rgba(21, 38, 34, 0.98) 0%, rgba(33, 58, 52, 0.97) 44%, rgba(89, 126, 117, 0.94) 100%),
-                var(--bg-dark);
-            z-index: 0;
-        }
-
-        /* Container */
-        .container {
+        /* Main container — centers the card */
+        .login-shell {
             position: relative;
             z-index: 1;
-            min-height: 100vh;
-            min-height: 100dvh;
+            min-height: calc(100vh - 80px);
+            min-height: calc(100dvh - 80px);
             display: flex;
-            flex-direction: column;
-            padding: 24px 20px;
-        }
-
-        /* Logo Section */
-        .logo-section {
-            flex: 0 0 auto;
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 40px 0 32px;
-        }
-        .app-name {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        .app-tagline {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-        .sisiwanita-login-logo {
-            width: 176px;
-            height: 176px;
-            margin-bottom: 10px;
-            display: block;
-            object-fit: contain;
-            filter: drop-shadow(0 12px 26px rgba(0,0,0,0.28));
+            justify-content: center;
+            padding: 32px clamp(16px, 4vw, 32px) 48px;
         }
 
-        /* Form Section */
-        .form-section {
-            flex: 1;
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 36px 32px;
+        }
+
+        /* Heading area with green pulse */
+        .login-heading {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.015em;
+            margin-bottom: 6px;
         }
-        .form-title {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        .form-subtitle {
+        .login-subtitle {
             font-size: 14px;
             color: var(--text-muted);
             margin-bottom: 28px;
+            line-height: 1.55;
+        }
+        .login-subtitle .serif {
+            font-family: var(--font-serif);
+            font-style: italic;
+            color: var(--text-secondary);
         }
         .maintenance-note {
-            width: 100%;
-            max-width: 320px;
-            margin: 0 0 16px;
-            padding: 12px 14px;
-            background: rgba(245, 158, 11, 0.14);
-            border: 1px solid rgba(245, 158, 11, 0.35);
-            border-radius: 12px;
-            color: #fcd34d;
+            margin-bottom: 18px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #92400e;
             font-size: 13px;
             line-height: 1.5;
-            text-align: left;
         }
 
-        /* Input Group */
-        .input-group {
-            margin-bottom: 16px;
+        .auth-locked {
+            opacity: 0.68;
+            pointer-events: none;
+            filter: grayscale(0.12);
         }
-        .input-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-muted);
+
+        /* Field row with inline link */
+        .field-row-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
             margin-bottom: 8px;
         }
-        .input-wrapper {
-            position: relative;
-        }
-        .input-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            fill: var(--text-muted);
-            transition: fill 0.2s;
-        }
-        input[type="email"],
-        input[type="password"],
-        input[type="text"],
-        input[type="tel"] {
-            width: 100%;
-            padding: 16px 16px 16px 48px;
-            font-size: 16px;
-            font-family: inherit;
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: 14px;
-            color: var(--text);
-            outline: none;
-            transition: all 0.2s;
-        }
-        input:focus {
-            border-color: rgba(190, 220, 214, 0.72);
-            background: rgba(126, 168, 159, 0.16);
-        }
-        input:focus + .input-icon,
-        input:focus ~ .input-icon {
-            fill: var(--primary);
-        }
-        input::placeholder {
+        .forgot-link {
+            font-size: 12px;
             color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
         }
+        .forgot-link:hover { color: var(--text-primary); }
 
-        /* Error Message */
+        /* Override label margin when inside row-head */
+        .field-row-head .portal-label { margin-bottom: 0; }
+
+        /* Inline error */
         .error-message {
             display: none;
-            padding: 12px 16px;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            color: #fca5a5;
-            font-size: 14px;
+            padding: 10px 14px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 10px;
+            color: #b91c1c;
+            font-size: 13px;
             margin-bottom: 16px;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
-        .error-message.show {
-            display: flex;
-        }
+        .error-message.show { display: flex; }
         .error-message svg {
-            width: 18px;
-            height: 18px;
-            fill: #fca5a5;
+            width: 16px; height: 16px;
+            fill: #b91c1c;
             flex-shrink: 0;
         }
 
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 16px;
-            font-weight: 600;
-            font-family: inherit;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
+        /* Divider */
+        .login-divider {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            box-shadow: 0 8px 24px rgba(126, 168, 159, 0.28);
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line-soft);
         }
-        .btn-primary:active {
-            transform: scale(0.98);
-            box-shadow: 0 4px 12px rgba(126, 168, 159, 0.28);
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .btn-secondary {
-            background: var(--bg-card);
-            color: var(--text);
-            border: 2px solid var(--border);
-        }
-        .btn-secondary:active {
-            background: rgba(255,255,255,0.05);
-        }
+        .login-divider span { padding: 0 14px; }
 
-        .btn-google-large {
+        /* Google button — styled as ghost variant with full Google branding */
+        .btn-google {
             width: 100%;
-            padding: 16px 24px;
-            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 18px;
             border-radius: 12px;
-            background: white;
-            color: #333;
-            border: 1px solid #ddd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
+            background: var(--bg-surface);
+            border: 1px solid var(--line-strong);
+            color: var(--text-primary);
             font-family: inherit;
-            font-weight: 500;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
         }
-        .btn-google-large:hover {
-            background: #f8f8f8;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .btn-google-large:active {
-            transform: scale(0.98);
-        }
+        .btn-google:hover { background: var(--bg-elevated); }
+        .btn-google:active { transform: scale(0.98); }
+        .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
 
-        /* Spinner */
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
+        /* Bottom link */
+        .login-foot {
+            text-align: center;
+            margin-top: 22px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .login-foot a {
+            color: var(--text-primary);
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 1px solid var(--line-strong);
+            transition: border-color 0.2s ease;
+        }
+        .login-foot a:hover { border-color: var(--text-primary); }
+
+        /* Button spinner override */
+        .portal-button .btn-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: #fff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
 
-        /* Footer Links */
-        .footer-links {
-            margin-top: auto;
-            padding-top: 24px;
-            text-align: center;
-        }
-        .footer-links a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        .footer-text {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        /* Page Transitions */
-        .page {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .page.active {
-            display: flex;
-            flex-direction: column;
-            min-height: 100%;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Toggle Password */
-        .toggle-password {
+        /* Password field with toggle */
+        .pw-wrapper { position: relative; }
+        .pw-wrapper .portal-input { padding-right: 44px; }
+        .toggle-pw {
             position: absolute;
-            right: 16px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            padding: 4px;
+            padding: 6px;
             cursor: pointer;
-        }
-        .toggle-password svg {
-            width: 20px;
-            height: 20px;
-            fill: var(--text-muted);
-        }
-
-        /* Divider */
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 24px 0;
             color: var(--text-muted);
-            font-size: 13px;
-        }
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-        .divider span {
-            padding: 0 16px;
-        }
-
-        /* Back Button */
-        .back-btn {
-            position: absolute;
-            top: calc(var(--safe-top) + 16px);
-            left: 16px;
-            width: 40px;
-            height: 40px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            z-index: 10;
         }
-        .back-btn svg {
-            width: 20px;
-            height: 20px;
-            fill: var(--text);
+        .toggle-pw svg { width: 18px; height: 18px; fill: currentColor; }
+        .toggle-pw:hover { color: var(--text-primary); }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card { padding: 28px 22px; }
+            .login-heading { font-size: 28px; }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
 </head>
-<body>
+<body class="portal-themed">
+    <!-- Subtle grain overlay -->
+    <div class="grain-overlay grain-subtle page-grain"></div>
+
     <!-- Loading overlay -->
     <div class="loading-overlay hidden" id="loading-overlay">
-        <div class="spinner" style="width:40px;height:40px;border-width:3px;"></div>
+        <div class="ov-spinner"></div>
         <p>Memproses login...</p>
     </div>
 
-    <div class="bg-gradient"></div>
+    <header class="portal-unified-header">
+        <a class="portal-unified-brand" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+            <div class="brand-title">SISI<span>wanita</span></div>
+            <div class="brand-sub">Masuk</div>
+        </a>
+        <button type="button" class="portal-unified-back" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
+            <i class="fa-solid fa-arrow-left"></i><span>Portal</span>
+        </button>
+    </header>
 
-    <div class="container">
-        <!-- LOGIN PAGE -->
-        <div class="page active" id="page-login">
-            <div class="logo-section">
-                <img src="/images/swlogowhite.svg?v=20260528d" alt="SISIwanita" class="sisiwanita-login-logo">
-                <div class="app-tagline" style="font-size: 18px; color: rgba(255,255,255,0.8);">Portal Privat Anda</div>
+    <!-- Centered login -->
+    <main class="login-shell">
+        <section class="portal-card login-card" id="page-login">
+            <h1 class="login-heading">
+                <span class="green-light" aria-hidden="true">
+                    <span class="green-light-glow"></span>
+                    <span class="green-light-core"></span>
+                </span>
+                Masuk
+            </h1>
+            <p class="login-subtitle">Portal pasien <span class="serif">SISIwanita</span></p>
+            <!-- Error message -->
+            <div class="error-message" id="login-error">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="login-error-text">Login gagal</span>
             </div>
 
-            <div class="form-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
-                <h1 class="form-title">Selamat Datang</h1>
-                <p class="form-subtitle" style="margin-bottom: 30px;">Masuk untuk mengakses portal pasien</p>
-                <div class="error-message" id="login-error">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    <span id="login-error-text">Login gagal</span>
+            <form id="login-form" novalidate>
+                <!-- Email / Phone -->
+                <div class="portal-field">
+                    <label class="portal-label" for="login-email">Email atau Nomor HP</label>
+                    <input
+                        type="text"
+                        id="login-email"
+                        name="email"
+                        class="portal-input"
+                        placeholder="nama@email.com"
+                        autocomplete="username"
+                        required
+                    >
                 </div>
 
-                <button type="button" class="btn btn-google-large" id="btn-google" onclick="loginWithGoogle()" style="width: 100%; max-width: 320px; padding: 16px 24px; font-size: 16px; border-radius: 12px; background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s;">
-                    <svg width="24" height="24" viewBox="0 0 24 24">
+                <!-- Password -->
+                <div class="portal-field">
+                    <div class="field-row-head">
+                        <label class="portal-label" for="login-password">Kata Sandi</label>
+                        <a href="/patient-forgot-password.html" class="forgot-link">Lupa sandi?</a>
+                    </div>
+                    <div class="pw-wrapper">
+                        <input
+                            type="password"
+                            id="login-password"
+                            name="password"
+                            class="portal-input"
+                            placeholder="Minimal 6 karakter"
+                            autocomplete="current-password"
+                            required
+                            minlength="6"
+                        >
+                        <button type="button" class="toggle-pw" onclick="togglePassword('login-password')" aria-label="Tampilkan sandi">
+                            <svg id="toggle-eye-login" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="portal-button" id="btn-login-submit" style="width:100%; margin-top: 4px;">
+                    <span>Masuk</span>
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="login-divider"><span>atau</span></div>
+
+            <!-- Google Sign-In -->
+            <button type="button" class="btn-google" id="btn-google" onclick="loginWithGoogle()">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span>Masuk dengan Google</span>
+            </button>
+
+            <p class="login-foot">
+                Belum punya akun? <a href="/patient-login.html?mode=register">Daftar dengan Google</a>
+            </p>
+        </section>
+
+        <section class="portal-card login-card" id="page-register" style="display: none;">
+            <h1 class="login-heading">
+                <span class="green-light" aria-hidden="true">
+                    <span class="green-light-glow"></span>
+                    <span class="green-light-core"></span>
+                </span>
+                Daftar
+            </h1>
+            <p class="login-subtitle">Portal pasien <span class="serif">SISIwanita</span></p>
+            <div class="maintenance-note">
+                Masukkan kode registrasi dari klinik, lalu lanjutkan pendaftaran dengan akun Google Anda.
+            </div>
+
+            <div class="error-message" id="regcode-error">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="regcode-error-text">Kode registrasi tidak valid</span>
+            </div>
+
+            <div class="error-message" id="register-error">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <span id="register-error-text">Pendaftaran Google gagal</span>
+            </div>
+
+            <form id="regcode-form" novalidate>
+                <div class="portal-field" id="regcode-step1">
+                    <label class="portal-label" for="regcode-input">Kode Registrasi</label>
+                    <input
+                        type="text"
+                        id="regcode-input"
+                        name="registration_code"
+                        class="portal-input"
+                        placeholder="Masukkan 6 karakter kode"
+                        autocomplete="one-time-code"
+                        maxlength="6"
+                        required
+                        style="text-transform: uppercase; letter-spacing: 0.18em; text-align: center;"
+                    >
+                    <button type="submit" class="portal-button" id="btn-validate-code" style="width:100%; margin-top: 14px;">
+                        <span>Validasi Kode</span>
+                    </button>
+                </div>
+            </form>
+
+            <div id="regcode-step2" style="display: none;">
+                <div class="maintenance-note" style="background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.28); color: #166534;">
+                    Kode valid. Lanjutkan pendaftaran dengan Google.
+                </div>
+
+                <button type="button" class="btn-google" id="btn-google-register" onclick="registerWithGoogle()">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    <span style="font-weight: 500;">Masuk dengan Google</span>
+                    <span>Daftar dengan Google</span>
                 </button>
 
-                <div class="footer-links" style="margin-top: 24px;">
-                    <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-regcode'); return false;">Daftar</a></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- REGISTRATION CODE PAGE -->
-        <div class="page" id="page-regcode">
-            <button class="back-btn" onclick="showPage('page-login')">
-                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
-            </button>
-
-            <div class="logo-section" style="padding-top: 60px;">
-                <div class="app-name">Daftar Baru</div>
-                <div class="app-tagline">Masukkan kode registrasi untuk mendaftar</div>
+                <p class="login-foot" style="margin-top: 14px;">
+                    <a href="#" onclick="resetRegCodeStep(); return false;">Gunakan kode lain</a>
+                </p>
             </div>
 
-            <div class="form-section">
-                <div class="error-message" id="regcode-error">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    <span id="regcode-error-text">Kode tidak valid</span>
-                </div>
-
-                <!-- Step 1: Code Input -->
-                <div id="regcode-step1">
-                    <div style="background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="vertical-align: middle; margin-right: 8px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                            Pendaftaran baru memerlukan kode registrasi. Hubungi admin klinik untuk mendapatkan kode.
-                        </p>
-                    </div>
-
-                    <form id="regcode-form">
-                        <div class="input-group">
-                            <label class="input-label">Kode Registrasi</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="regcode-input" placeholder="Masukkan 6 karakter kode" required maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; text-align: center; font-size: 20px; font-weight: 600;">
-                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" id="btn-validate-code" style="margin-top: 16px;">
-                            <span>Validasi Kode</span>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Step 2: Code Valid - Show Google + Email Registration -->
-                <div id="regcode-step2" style="display: none;">
-                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                        <p style="font-size: 14px; color: #10b981; margin: 0; display: flex; align-items: center; gap: 8px;">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                            <span>Kode valid! Lanjutkan pendaftaran di bawah.</span>
-                        </p>
-                    </div>
-
-                    <!-- Google Sign-In (popup) -->
-                    <button type="button" class="btn btn-google-large" id="btn-google-register" onclick="registerWithGoogle()" style="width: 100%; padding: 16px 24px; font-size: 16px; border-radius: 12px; background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s;">
-                        <svg width="24" height="24" viewBox="0 0 24 24">
-                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                        <span style="font-weight: 500;">Daftar dengan Google</span>
-                    </button>
-
-                    <!-- Divider -->
-                    <div class="divider"><span>atau</span></div>
-
-                    <!-- Email Registration Form -->
-                    <form id="register-form">
-                        <div class="input-group">
-                            <label class="input-label">Nama Lengkap</label>
-                            <div class="input-wrapper">
-                                <input type="text" id="register-name" placeholder="Nama lengkap Anda" required style="padding-left: 48px;">
-                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label class="input-label">Email</label>
-                            <div class="input-wrapper">
-                                <input type="email" id="register-email" placeholder="nama@email.com" required style="padding-left: 48px;">
-                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label class="input-label">No. HP (WhatsApp)</label>
-                            <div class="input-wrapper">
-                                <input type="tel" id="register-phone" placeholder="628xxxxxxxxxx" required style="padding-left: 48px;">
-                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label class="input-label">Password</label>
-                            <div class="input-wrapper">
-                                <input type="password" id="register-password" placeholder="Minimal 6 karakter" required minlength="6" style="padding-left: 48px; padding-right: 48px;">
-                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                                <button type="button" class="toggle-password" onclick="togglePassword('register-password')">
-                                    <svg viewBox="0 0 24 24" id="toggle-eye"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="error-message" id="register-error">
-                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                            <span id="register-error-text">Pendaftaran gagal</span>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" id="btn-register-email" style="margin-top: 8px;">
-                            <span>Daftar</span>
-                        </button>
-                    </form>
-
-                    <button type="button" class="btn btn-secondary" onclick="resetRegCodePage()" style="margin-top: 12px;">
-                        <span>Gunakan Kode Lain</span>
-                    </button>
-                </div>
-
-                <div class="footer-links">
-                    <p class="footer-text">Sudah punya akun? <a href="#" onclick="showPage('page-login'); return false;">Masuk</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
+            <p class="login-foot">
+                Sudah punya akun? <a href="/patient-login.html?mode=login">Masuk dengan Google</a>
+            </p>
+        </section>
+    </main>
 
     <script>
+        const AUTH_MAINTENANCE_LOCK = true;
+        const AUTH_MAINTENANCE_MESSAGE = 'Login sedang dalam perbaikan. Silakan coba beberapa saat lagi.';
+        const AUTH_TESTER_MAINTENANCE_MESSAGE = 'Akses login saat ini hanya dibuka untuk akun tester.';
+        const AUTH_TESTER_ALLOWLIST = ['nanda ananda', 'p2025091', 'dibyaarfianda83@gmail.com'];
+
         // ==================== MOBILE APP CONTEXT ====================
         const urlParams = new URLSearchParams(window.location.search);
         const referrer = document.referrer;
         const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+        const requestedMode = (urlParams.get('mode') || 'login').toLowerCase();
         const shouldAutoGoogle = urlParams.get('autoGoogle') === '1';
 
         if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
@@ -585,9 +484,12 @@
         }
 
         // ==================== AUTH CONFIG ====================
-        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        const GOOGLE_CLIENT_ID = '738335602560-ab9ihfr7eei5phhvo724iu0ebro9aed5.apps.googleusercontent.com';
         let validatedRegCode = null;
+        let pendingGoogleAction = 'login';
         let hasAutoTriggeredGoogle = false;
+
+        try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
@@ -595,27 +497,108 @@
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
                 window.location.href = '/patient-menu.html';
+                return;
+            }
+
+            setAuthMode(requestedMode === 'register' ? 'register' : 'login');
+            if (AUTH_MAINTENANCE_LOCK) {
+                applyAuthMaintenanceLock();
             }
         });
 
-        // ==================== PAGE NAVIGATION ====================
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-            document.getElementById(pageId).classList.add('active');
-            document.querySelectorAll('.error-message').forEach(function(e) { e.classList.remove('show'); });
+        function applyAuthMaintenanceLock() {
+            ['page-login', 'page-register'].forEach(function(id) {
+                var page = document.getElementById(id);
+                if (!page) return;
+
+                var old = page.querySelector('.maintenance-note');
+                if (old) old.remove();
+
+                var note = document.createElement('div');
+                note.className = 'maintenance-note';
+                note.textContent = id === 'page-login'
+                    ? (AUTH_MAINTENANCE_MESSAGE + ' ' + AUTH_TESTER_MAINTENANCE_MESSAGE)
+                    : AUTH_MAINTENANCE_MESSAGE;
+
+                var title = page.querySelector('.login-subtitle') || page.querySelector('.login-heading');
+                if (title && title.parentNode) {
+                    title.parentNode.insertBefore(note, title.nextSibling);
+                } else {
+                    page.insertBefore(note, page.firstChild);
+                }
+
+                if (id === 'page-register') {
+                    page.querySelectorAll('input, button, textarea').forEach(function(el) {
+                        if (el.classList.contains('portal-unified-back')) return;
+                        el.disabled = true;
+                    });
+                    page.classList.add('auth-locked');
+                } else {
+                    var keepEnabledIds = {
+                        'login-email': true,
+                        'login-password': true,
+                        'btn-login-submit': true,
+                        'toggle-eye-login': true
+                    };
+                    page.querySelectorAll('input, button, textarea').forEach(function(el) {
+                        if (el.classList.contains('portal-unified-back')) return;
+                        if (keepEnabledIds[el.id]) {
+                            el.disabled = false;
+                            return;
+                        }
+                        el.disabled = true;
+                    });
+                }
+            });
+        }
+
+        function normalizeAuthIdentifier(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function isAllowedMaintenanceTester(identifier) {
+            var normalized = normalizeAuthIdentifier(identifier);
+            if (!normalized) return false;
+
+            return AUTH_TESTER_ALLOWLIST.some(function(key) {
+                var target = normalizeAuthIdentifier(key);
+                return normalized === target || normalized.indexOf(target) !== -1;
+            });
+        }
+
+        function setAuthMode(mode) {
+            var isRegister = mode === 'register';
+            document.getElementById('page-login').style.display = isRegister ? 'none' : '';
+            document.getElementById('page-register').style.display = isRegister ? '' : 'none';
+            clearError('login-error');
+            clearError('regcode-error');
+            clearError('register-error');
+
+            if (isRegister) {
+                window.requestAnimationFrame(function() {
+                    var input = document.getElementById('regcode-input');
+                    if (input) input.focus();
+                });
+            }
         }
 
         // ==================== ERROR HANDLING ====================
         function showError(elementId, message) {
             var errorEl = document.getElementById(elementId);
             var textEl = document.getElementById(elementId + '-text');
-            textEl.textContent = message;
-            errorEl.classList.add('show');
+            if (textEl) textEl.textContent = message;
+            if (errorEl) errorEl.classList.add('show');
+        }
+        function clearError(elementId) {
+            var errorEl = document.getElementById(elementId);
+            if (errorEl) errorEl.classList.remove('show');
         }
 
         // ==================== POST-LOGIN REDIRECT ====================
         function getPostLoginUrl(data) {
-            // Check if profile needs completion (name, phone, birth_date)
             if (data.needs_profile_completion) {
                 return '/complete-profile.html';
             }
@@ -627,10 +610,12 @@
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================
         var googleCodeClient = null;
-        var pendingGoogleAction = null; // 'login' or 'register'
 
         function maybeAutoTriggerGoogleLogin() {
-            if (!shouldAutoGoogle || hasAutoTriggeredGoogle || !googleCodeClient) {
+            if (requestedMode !== 'login' || !shouldAutoGoogle || hasAutoTriggeredGoogle) {
+                return;
+            }
+            if (!googleCodeClient) {
                 return;
             }
             hasAutoTriggeredGoogle = true;
@@ -654,17 +639,16 @@
         initGoogleCodeClient();
 
         async function handleGoogleCodeCallback(response) {
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
             if (response.error) {
                 console.error('[GIS] Error:', response.error);
-                if (pendingGoogleAction === 'register') {
-                    showError('register-error', 'Login Google dibatalkan atau gagal');
-                } else {
-                    showError('login-error', 'Login Google dibatalkan atau gagal');
-                }
+                showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', 'Login Google dibatalkan atau gagal');
                 return;
             }
 
-            // Show loading
             var overlay = document.getElementById('loading-overlay');
             overlay.classList.remove('hidden');
 
@@ -674,7 +658,6 @@
                     redirectUri: 'postmessage'
                 };
 
-                // If registering, include the registration code
                 if (pendingGoogleAction === 'register' && validatedRegCode) {
                     bodyData.registration_code = validatedRegCode;
                 }
@@ -688,7 +671,6 @@
                 var data = await res.json();
 
                 if (res.ok && data.success) {
-                    // Store token and user data
                     localStorage.setItem('vps_auth_token', data.token);
                     if (data.user) {
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
@@ -698,24 +680,26 @@
                 } else {
                     overlay.classList.add('hidden');
                     if (data.code_required) {
-                        // Not registered, needs registration code
-                        if (pendingGoogleAction === 'login') {
-                            showError('login-error', 'Akun belum terdaftar. Silakan daftar terlebih dahulu.');
-                        }
+                        resetRegCodeStep();
+                        setAuthMode('register');
+                        showError('regcode-error', 'Akun belum terdaftar. Masukkan kode registrasi untuk daftar dengan Google.');
                     } else {
-                        var errorId = pendingGoogleAction === 'register' ? 'register-error' : 'login-error';
-                        showError(errorId, data.message || 'Login Google gagal');
+                        showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', data.message || 'Login Google gagal');
                     }
                 }
             } catch (err) {
                 console.error('[GIS] Auth error:', err);
                 overlay.classList.add('hidden');
-                var errorId = pendingGoogleAction === 'register' ? 'register-error' : 'login-error';
-                showError(errorId, 'Terjadi kesalahan. Silakan coba lagi.');
+                showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', 'Terjadi kesalahan. Silakan coba lagi.');
             }
         }
 
         function loginWithGoogle() {
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('login-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
+            clearError('login-error');
             if (!googleCodeClient) {
                 showError('login-error', 'Google Sign-In belum siap. Tunggu sebentar lalu coba lagi.');
                 return;
@@ -724,12 +708,16 @@
             googleCodeClient.requestCode();
         }
 
-        // ==================== REGISTRATION CODE ====================
+        // ==================== REGISTRATION CODE + GOOGLE REGISTER ====================
         document.getElementById('regcode-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            document.getElementById('regcode-error').classList.remove('show');
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('regcode-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
+            clearError('regcode-error');
 
-            var code = document.getElementById('regcode-input').value.trim();
+            var code = document.getElementById('regcode-input').value.trim().toUpperCase();
             if (!code || code.length !== 6) {
                 showError('regcode-error', 'Masukkan kode 6 karakter');
                 return;
@@ -741,25 +729,25 @@
         async function validateRegCode(code) {
             var btn = document.getElementById('btn-validate-code');
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div>';
-            document.getElementById('regcode-error').classList.remove('show');
+            btn.innerHTML = '<div class="btn-spinner"></div>';
 
             try {
                 var res = await fetch('/api/registration-codes/validate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ code: code.toUpperCase().trim() })
+                    body: JSON.stringify({ code: code })
                 });
-                var data = await res.json();
 
+                var data = await res.json();
                 if (res.ok && data.success) {
-                    validatedRegCode = code.toUpperCase().trim();
+                    validatedRegCode = code;
                     document.getElementById('regcode-step1').style.display = 'none';
                     document.getElementById('regcode-step2').style.display = 'block';
                 } else {
                     showError('regcode-error', data.message || 'Kode registrasi tidak valid');
                 }
             } catch (err) {
+                console.error('[Register] Validate code error:', err);
                 showError('regcode-error', 'Tidak dapat terhubung ke server');
             }
 
@@ -767,18 +755,23 @@
             btn.innerHTML = '<span>Validasi Kode</span>';
         }
 
-        function resetRegCodePage() {
+        function resetRegCodeStep() {
             validatedRegCode = null;
             document.getElementById('regcode-input').value = '';
             document.getElementById('regcode-step1').style.display = 'block';
             document.getElementById('regcode-step2').style.display = 'none';
-            document.getElementById('regcode-error').classList.remove('show');
+            clearError('regcode-error');
+            clearError('register-error');
         }
 
         function registerWithGoogle() {
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('register-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
+            clearError('register-error');
             if (!validatedRegCode) {
                 showError('register-error', 'Kode registrasi belum divalidasi');
-                resetRegCodePage();
                 return;
             }
             if (!googleCodeClient) {
@@ -789,73 +782,48 @@
             googleCodeClient.requestCode();
         }
 
-        // ==================== TOGGLE PASSWORD ====================
-        function togglePassword(inputId) {
-            var input = document.getElementById(inputId);
-            var eyeIcon = document.querySelector('#' + inputId).parentElement.querySelector('.toggle-password svg');
-            if (input.type === 'password') {
-                input.type = 'text';
-                eyeIcon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>';
-            } else {
-                input.type = 'password';
-                eyeIcon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
-            }
-        }
-
-        // ==================== EMAIL REGISTRATION ====================
-        document.getElementById('register-form').addEventListener('submit', async function(e) {
+        // ==================== EMAIL/PHONE + PASSWORD LOGIN ====================
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            document.getElementById('register-error').classList.remove('show');
+            var emailOrPhone = document.getElementById('login-email').value.trim();
+            var password = document.getElementById('login-password').value;
 
-            var fullname = document.getElementById('register-name').value.trim();
-            var email = document.getElementById('register-email').value.trim();
-            var phone = document.getElementById('register-phone').value.trim();
-            var password = document.getElementById('register-password').value;
-
-            // Validate
-            if (!fullname || fullname.length < 2) {
-                showError('register-error', 'Nama lengkap harus minimal 2 karakter');
+            if (AUTH_MAINTENANCE_LOCK && !isAllowedMaintenanceTester(emailOrPhone)) {
+                showError('login-error', AUTH_TESTER_MAINTENANCE_MESSAGE);
                 return;
             }
-            if (!email) {
-                showError('register-error', 'Email harus diisi');
-                return;
-            }
-            if (!phone || !phone.match(/^628\d{8,12}$/)) {
-                showError('register-error', 'No. HP harus format 628xxxxxxxxxx');
+
+            clearError('login-error');
+
+            if (!emailOrPhone) {
+                showError('login-error', 'Email atau nomor HP harus diisi');
                 return;
             }
             if (!password || password.length < 6) {
-                showError('register-error', 'Password harus minimal 6 karakter');
-                return;
-            }
-            if (!validatedRegCode) {
-                showError('register-error', 'Kode registrasi belum divalidasi');
-                resetRegCodePage();
+                showError('login-error', 'Kata sandi minimal 6 karakter');
                 return;
             }
 
-            var btn = document.getElementById('btn-register-email');
+            var btn = document.getElementById('btn-login-submit');
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div>';
+            btn.innerHTML = '<div class="btn-spinner"></div>';
+
+            var overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden');
 
             try {
-                var res = await fetch('/api/patients/register', {
+                var res = await fetch('/api/auth/patient-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        fullname: fullname,
-                        email: email,
-                        phone: phone,
-                        password: password,
-                        registration_code: validatedRegCode
+                        email: emailOrPhone,
+                        password: password
                     })
                 });
 
                 var data = await res.json();
 
                 if (res.ok && (data.token || (data.data && data.data.token))) {
-                    // Store token and redirect
                     var token = data.token || (data.data && data.data.token);
                     var user = data.user || (data.data && data.data.user);
                     localStorage.setItem('vps_auth_token', token);
@@ -863,18 +831,34 @@
                         localStorage.setItem('patient_user', JSON.stringify(user));
                     }
                     localStorage.setItem('auth_provider', 'email');
-                    window.location.href = '/patient-intake.html';
+                    window.location.href = getPostLoginUrl(data);
                 } else {
-                    showError('register-error', data.message || 'Pendaftaran gagal. Silakan coba lagi.');
+                    overlay.classList.add('hidden');
+                    showError('login-error', data.message || 'Email/HP atau kata sandi salah');
                 }
             } catch (err) {
-                console.error('[Register] Error:', err);
-                showError('register-error', 'Tidak dapat terhubung ke server');
+                console.error('[Login] Error:', err);
+                overlay.classList.add('hidden');
+                showError('login-error', 'Tidak dapat terhubung ke server');
             }
 
             btn.disabled = false;
-            btn.innerHTML = '<span>Daftar</span>';
+            btn.innerHTML = '<span>Masuk</span>';
         });
+
+        // ==================== TOGGLE PASSWORD ====================
+        function togglePassword(inputId) {
+            var input = document.getElementById(inputId);
+            var eyeIcon = document.getElementById('toggle-eye-login');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (eyeIcon) eyeIcon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>';
+            } else {
+                input.type = 'password';
+                if (eyeIcon) eyeIcon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+            }
+        }
+
     </script>
 </body>
 </html>

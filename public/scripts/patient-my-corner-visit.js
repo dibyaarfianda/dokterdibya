@@ -43,8 +43,8 @@
             '<section class="visit-card visit-widget ' + (widgets.indexOf('favorites') !== -1 ? 'is-visible' : '') + '">' +
                 '<div class="pmc-kicker">Favorit Publik</div>' +
                 '<div class="visit-actions">' +
-                    '<a class="visit-action" href="/artikel-trial.html"><span>Ruang Membaca</span><i class="fa-solid fa-book-open"></i></a>' +
-                    '<a class="visit-action" href="/booking-klinik-trial.html"><span>Booking Klinik</span><i class="fa-solid fa-calendar-check"></i></a>' +
+                    '<a class="visit-action" href="/artikel.html"><span>Ruang Membaca</span><i class="fa-solid fa-book-open"></i></a>' +
+                    '<a class="visit-action" href="/booking-klinik.html"><span>Booking Klinik</span><i class="fa-solid fa-calendar-check"></i></a>' +
                 '</div>' +
             '</section>' +
             '<section class="visit-card visit-widget ' + (widgets.indexOf('journey-note') !== -1 ? 'is-visible' : '') + '">' +

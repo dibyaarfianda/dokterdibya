@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav-active="aplikasi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1a1a1a">
-    <title>Estimasi Biaya - dokterDIBYA</title>
+    <title>Estimasi Biaya - SISIwanita</title>
 
     <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
     <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
@@ -348,6 +348,7 @@
             margin-right: 5px;
         }
     </style>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
 </head>
 <body>
     <div class="safe-area-top"></div>
@@ -577,7 +578,8 @@
         loadEstimasi();
     </script>
 
-    <!-- Theme router (handles old vs trial menu redirect) -->
-    <script src="/scripts/patient-theme-trial.js"></script>
+    <!-- Theme router (handles legacy menu redirect) -->
+<script src="/scripts/portal-bottom-nav.js?v=20260528home1" defer></script>
+<script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 </body>
 </html>

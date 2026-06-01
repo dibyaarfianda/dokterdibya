@@ -14,43 +14,7 @@
     <meta property="og:url" content="https://sisiwanita.id/">
     <title>SISIwanita</title>
     <script>
-        (function enforceSisiwanitaVersion() {
-            var PAGE_VERSION = '20260529blur200';
-            try {
-                if (window.location.protocol === 'file:') return;
-                var url = new URL(window.location.href);
-                var path = url.pathname || '/';
-                var isLandingPath = path === '/' || path === '/index.html' || path === '/sisiwanita/index.html';
-                var allowWorkerReset = url.hostname === 'sisiwanita.id' || url.hostname === 'www.sisiwanita.id';
-                if (isLandingPath && url.searchParams.get('_v') !== PAGE_VERSION) {
-                    url.searchParams.set('_v', PAGE_VERSION);
-                    function navigateFresh(targetUrl) {
-                        var html = '<!doctype html><meta charset="utf-8"><script>location.replace(' + JSON.stringify(targetUrl) + ')<\/script>';
-                        var blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-                        window.location.replace(blobUrl);
-                    }
-                    if (allowWorkerReset && navigator.serviceWorker && navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.getRegistrations()
-                            .then(function(registrations) {
-                                return Promise.all(registrations.map(function(registration) {
-                                    return registration.unregister();
-                                }));
-                            })
-                            .then(function() {
-                                if (window.caches && caches.keys) {
-                                    return caches.keys().then(function(names) {
-                                        return Promise.all(names.map(function(name) { return caches.delete(name); }));
-                                    });
-                                }
-                            })
-                            .catch(function() {})
-                            .then(function() { navigateFresh(url.toString()); });
-                        return;
-                    }
-                    window.location.replace(url.toString());
-                }
-            } catch (e) {}
-        })();
+        window.SISIWANITA_PAGE_VERSION = '20260529blur200';
     </script>
 
     <!-- PWA Manifest -->
@@ -66,7 +30,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Keep trial-landing visuals identical to patient-menu-trial without global trial-theme overrides. -->
+    <!-- Keep portal landing visuals identical to patient-menu without global portal-theme overrides. -->
 
     <style>
         /* ========== CSS VARIABLES (Anvil-Inspired Design System) ========== */
@@ -269,7 +233,7 @@
         .topbar-inner {
             max-width: none;
             margin: 0;
-            padding: 12px 18px;
+            padding: 12px 18px 12px 32px;
             display: grid;
             grid-template-columns: 1fr auto;
             align-items: center;
@@ -4533,7 +4497,7 @@
         /* ========== RESPONSIVE ========== */
         @media (min-width: 600px) {
             .screen { padding-left: 24px; padding-right: 24px; }
-            .topbar-inner { padding-left: 18px; padding-right: 18px; }
+            .topbar-inner { padding-left: 44px; padding-right: 18px; }
             .welcome-pinned-inner { padding-top: 25vh; padding-bottom: 25vh; padding-left: 100px; padding-right: 100px; }
             .bottom-inner { gap: 8px; padding-left: 24px; padding-right: 24px; }
             .hero-greeting { font-size: 62px; }
@@ -4542,7 +4506,7 @@
 
         @media (min-width: 768px) {
             .screen { max-width: 820px; padding-left: 28px; padding-right: 28px; }
-            .topbar-inner { max-width: none; padding-left: 18px; padding-right: 18px; }
+            .topbar-inner { max-width: none; padding-left: 52px; padding-right: 18px; }
             .hero-greeting { font-size: 73px; max-width: 18ch; }
         }
 
@@ -4616,15 +4580,15 @@
                         <span class="vip-badge" id="vip-badge">VIP</span>
                     </div>
                     <div class="dropdown-menu-custom" id="user-dropdown">
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a href="/patient-login.html?autoGoogle=1">
                             <i class="fa-solid fa-pen-to-square"></i>
                             <span>Edit Profil</span>
                         </a>
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a href="/patient-login.html?autoGoogle=1">
                             <i class="fa-solid fa-gear"></i>
                             <span>Setting</span>
                         </a>
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a href="/patient-login.html?autoGoogle=1">
                             <i class="fa-solid fa-comment-dots"></i>
                             <span>Saran & Masukan</span>
                         </a>
@@ -4860,14 +4824,14 @@
                 <div id="tanya-dokter-content" class="tanya-dokter-body" style="display: none;">
                     <p>Punya pertanyaan seputar kehamilan atau kesehatan kandungan? Tanyakan langsung secara privat kepada dr. Dibya.</p>
                     <div class="tanya-actions">
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off" class="tanya-action-btn">
+                        <a href="/patient-login.html?autoGoogle=1" class="tanya-action-btn">
                             <i class="fa-solid fa-pen-to-square"></i>
                             <div>
                                 <div class="label">Ajukan Pertanyaan</div>
                                 <div class="sublabel">Tulis pertanyaan baru</div>
                             </div>
                         </a>
-                        <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off" class="tanya-action-btn">
+                        <a href="/patient-login.html?autoGoogle=1" class="tanya-action-btn">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <div>
                                 <div class="label">Riwayat Tanya Jawab</div>
@@ -4900,7 +4864,7 @@
                         <div class="doc-text-col">
                             <h2 class="doc-heading">Kisah Anda dari Waktu ke Waktu, Dalam Visual.</h2>
                             <p class="doc-sub">Foto USG, hasil laboratorium, dan resume medis tersusun seperti cerita perjalanan Anda — mudah dibuka kapan saja.</p>
-                            <a class="doc-cta-link" href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                            <a class="doc-cta-link" href="/patient-login.html?autoGoogle=1">
                                 <span class="doc-cta-track">
                                     <span class="dot dot-left"></span>
                                     <span class="text">Lihat Album USG</span>
@@ -4986,7 +4950,7 @@
                     </a>
 
                     <!-- Estimasi Biaya — tester only, hidden by default -->
-                    <a href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off" class="proces-row" id="menu-estimasi-biaya" style="display:none;">
+                    <a href="/patient-login.html?autoGoogle=1" class="proces-row" id="menu-estimasi-biaya" style="display:none;">
                         <span class="proces-step"><i class="fa-solid fa-calculator" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ESTIMASI BIAYA</h3>
                         <p class="proces-desc">Perkiraan biaya obat dan suplemen per trimester berdasarkan konfigurasi dokter. Harga bersifat indikatif sesuai kebijakan klinik.</p>
@@ -5016,7 +4980,7 @@
                     <div class="cta-content">
                         <h2 class="cta-heading">Booking Klinik Minggu</h2>
                         <p class="cta-sub">Pesan slot konsultasi dengan dr. Dibya — cepat, mudah, langsung terkonfirmasi.</p>
-                        <a class="doc-cta-link" href="https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off">
+                        <a class="doc-cta-link" href="/patient-login.html?autoGoogle=1">
                             <span class="doc-cta-track">
                                 <span class="dot dot-left"></span>
                                 <span class="text">Booking Sekarang</span>
@@ -5129,7 +5093,7 @@
                 </div>
 
                 <div class="footer-subscribe">
-                    <form class="footer-subscribe-form" onsubmit="window.location.href='https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off'; return false;">
+                    <form class="footer-subscribe-form" onsubmit="window.location.href='/patient-login.html?autoGoogle=1'; return false;">
                         <button class="footer-subscribe-button" type="submit">Daftar Member dengan Google</button>
                     </form>
                     <p class="footer-policy">
@@ -5251,7 +5215,7 @@
                 document.documentElement.classList.add('standalone-pwa');
             }
 
-            window.__trialReducePwaScrollWork = isStandalonePwa &&
+            window.__portalReducePwaScrollWork = isStandalonePwa &&
                 (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
             function getViewportHeight() {
@@ -5280,7 +5244,7 @@
             }
         })();
 
-        var SISIWANITA_LOGIN_URL = 'https://dokterdibya.com/patient-login.html?autoGoogle=1&theme=off';
+        var SISIWANITA_LOGIN_URL = '/patient-login.html?autoGoogle=1';
 
         function isStandalonePortalHref(href) {
             if (!href) return false;
@@ -5310,8 +5274,8 @@
         // ==================== LANDING THEME STATE ====================
         (function() {
             try {
-                sessionStorage.removeItem('patient_portal_theme_mode');
-                sessionStorage.setItem('trial_preview_mode', '1');
+                sessionStorage.removeItem('patient_portal_mode');
+                sessionStorage.setItem('portal_preview_mode', '1');
             } catch(e) {}
         })();
 
@@ -5322,13 +5286,13 @@
                    localStorage.getItem('patient_token');
         }
 
-        function isTrialPreviewMode() {
+        function isPortalPreviewMode() {
             try {
-                if (sessionStorage.getItem('trial_preview_mode') === '1') return true;
+                if (sessionStorage.getItem('portal_preview_mode') === '1') return true;
             } catch (e) {}
 
             var params = new URLSearchParams(window.location.search);
-            var previewParam = params.get('preview') || params.get('trial_preview') || params.get('skipLogin');
+            var previewParam = params.get('preview') || params.get('portal_preview') || params.get('skipLogin');
             return previewParam === '1' || previewParam === 'true';
         }
 
@@ -5436,7 +5400,7 @@
             });
         }
 
-        function activateTrialPreviewMode() {
+        function activatePortalPreviewMode() {
             var loading = document.getElementById('loading-state');
             var wrapper = document.getElementById('content-wrapper');
             var heroName = document.getElementById('hero-patient-name');
@@ -5468,8 +5432,8 @@
             } catch (e) {}
 
             try {
-                if (typeof window.__trialUpdatePwaHeroBgFade === 'function') {
-                    window.requestAnimationFrame(window.__trialUpdatePwaHeroBgFade);
+                if (typeof window.__portalUpdatePwaHeroBgFade === 'function') {
+                    window.requestAnimationFrame(window.__portalUpdatePwaHeroBgFade);
                 }
             } catch (e) {}
 
@@ -5743,14 +5707,14 @@
             } catch (e) {}
 
             var landingParams = new URLSearchParams(window.location.search);
-            var previewParam = landingParams.get('preview') || landingParams.get('trial_preview') || landingParams.get('skipLogin');
+            var previewParam = landingParams.get('preview') || landingParams.get('portal_preview') || landingParams.get('skipLogin');
             var previewRequested = previewParam === '1' || previewParam === 'true';
 
             if (previewRequested) {
-                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
                 try {
                     landingParams.delete('preview');
-                    landingParams.delete('trial_preview');
+                    landingParams.delete('portal_preview');
                     landingParams.delete('skipLogin');
                     var qs = landingParams.toString();
                     var cleanedUrl = qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
@@ -5759,8 +5723,8 @@
             }
 
             // Standalone landing is always public preview on its own origin.
-            try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
-            activateTrialPreviewMode();
+            try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
+            activatePortalPreviewMode();
 
             var isSisiwanitaHost = window.location.hostname === 'sisiwanita.id' || window.location.hostname === 'www.sisiwanita.id';
 
@@ -5775,29 +5739,10 @@
                         registration.update().catch(function() {});
                     }, 60000);
 
-                    // If a new worker is installed, ask it to activate immediately.
-                    registration.addEventListener('updatefound', function() {
-                        var newWorker = registration.installing;
-                        if (!newWorker) return;
-                        newWorker.addEventListener('statechange', function() {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                newWorker.postMessage({ type: 'SKIP_WAITING' });
-                            }
-                        });
-                    });
-
-                    // Soft auto-reload once controller changes (no hard reload needed).
-                    var reloadedBySw = false;
-                    navigator.serviceWorker.addEventListener('controllerchange', function() {
-                        if (reloadedBySw) return;
-                        reloadedBySw = true;
-
-                        try {
-                            sessionStorage.setItem(LIVE_UPDATE_KEY, String(Date.now()));
-                        } catch (e) {}
-
-                        window.location.reload();
-                    });
+                    // Keep updates quiet on landing. Auto-activating and reloading
+                    // during first open makes the page visibly blink when a new
+                    // service worker is available. The fresh worker will take over
+                    // naturally on the next navigation.
                 }).catch(function() {});
             }
 
@@ -5815,14 +5760,14 @@
         // Landing remains in public preview mode even when restored from browser cache.
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
-                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
             }
         });
 
         // Keep preview mode sticky when the tab becomes visible again.
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible') {
-                try { sessionStorage.setItem('trial_preview_mode', '1'); } catch (e) {}
+                try { sessionStorage.setItem('portal_preview_mode', '1'); } catch (e) {}
             }
         });
 
@@ -7062,7 +7007,7 @@
                     }
                 }, { passive: true });
 
-                if (!window.__trialReducePwaScrollWork) {
+                if (!window.__portalReducePwaScrollWork) {
                     window.addEventListener('scroll', refresh, { passive: true });
                 }
                 window.addEventListener('resize', function() {
@@ -7338,7 +7283,7 @@
             var nav = document.querySelector('.bottom-nav');
             var blurFade = document.getElementById('nav-blur-fade');
             if (!nav) return;
-            if (window.__trialReducePwaScrollWork) return;
+            if (window.__portalReducePwaScrollWork) return;
             var threshold = 50;
 
             function parseRgb(color) {
@@ -7552,7 +7497,7 @@
             var infoHeader = document.querySelector('.info-terbaru-block-header');
             var infoContainer = document.getElementById('announcements-container');
             if (!fixedBg || !infoHeader || !infoContainer) return;
-            if (window.__trialReducePwaScrollWork) {
+            if (window.__portalReducePwaScrollWork) {
                 fixedBg.style.opacity = '0';
                 return;
             }
@@ -7961,7 +7906,7 @@
                     p.style.strokeDashoffset = offset.toFixed(1) + 'px';
                 });
             }
-            if (window.__trialReducePwaScrollWork) {
+            if (window.__portalReducePwaScrollWork) {
                 var pwaHeroBgEl = document.getElementById('hero-fixed-bg');
                 var pwaHeroPreg = document.querySelector('.hero-fixed-bg-preg');
                 var pwaFadeTicking = false;
@@ -8011,7 +7956,7 @@
                     });
                 }
 
-                window.__trialUpdatePwaHeroBgFade = updatePwaHeroBgFade;
+                window.__portalUpdatePwaHeroBgFade = updatePwaHeroBgFade;
                 window.addEventListener('scroll', schedulePwaHeroBgFade, { passive: true });
                 window.addEventListener('touchmove', schedulePwaHeroBgFade, { passive: true });
                 window.addEventListener('resize', schedulePwaHeroBgFade, { passive: true });

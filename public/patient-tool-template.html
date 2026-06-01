@@ -17,8 +17,8 @@
         try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch (error) {}
         window.__patientTrialHeaderInstalled = true;
     </script>
-    <script src="/scripts/patient-theme-trial.js?v=20260528kickui1"></script>
-    <link rel="stylesheet" href="/styles/patient-trial-theme.css?v=20260528portal1">
+    <script src="/scripts/patient-theme.js?v=20260528kickui1"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
     <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
 </head>
 <body class="home-sections-locked patient-tool-shell" data-tool-shell-active="aplikasi">
@@ -37,7 +37,7 @@
         <header class="topbar" id="home-topbar">
             <div class="topbar-inner" id="home-topbar-inner">
                 <div class="brand">
-                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu-simple-trial.html" aria-label="Beranda SISIwanita">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
                         <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
                         <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
                     </a>
@@ -104,7 +104,7 @@
 
     <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
         <div class="bottom-inner" id="home-bottom-inner">
-            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu-simple-trial.html')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu.html')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
             <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
             <button class="nav-item soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
             <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
@@ -113,7 +113,7 @@
     </nav>
 
     <div id="toast-container"></div>
-    <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260601a"></script>
     <script>
         PatientToolShell.init({ activeNav: 'aplikasi', unlockOnReady: true });
     </script>

@@ -1,11 +1,11 @@
-/* SISIwanita legacy trial page adapter.
-   Injects the shared Patient Tool Shell around older trial pages without rewriting their page logic. */
+/* SISIwanita legacy portal page adapter.
+   Injects the shared Patient Tool Shell around older portal pages without rewriting their page logic. */
 (function () {
     'use strict';
 
     var VERSION = '20260530d';
     var pageDefaults = {
-        '/album-usg-trial.html': {
+        '/album-usg.html': {
             activeNav: 'dokumen',
             kicker: 'Album USG',
             title: 'Album USG.',
@@ -13,7 +13,7 @@
             metaLabel: 'Status',
             metaValue: 'Galeri USG'
         },
-        '/dokumen-medis-trial.html': {
+        '/dokumen-medis.html': {
             activeNav: 'dokumen',
             kicker: 'Resume Medis',
             title: 'Resume medis.',
@@ -21,7 +21,7 @@
             metaLabel: 'Dokumen',
             metaValue: 'Resume Kunjungan'
         },
-        '/hasil-lab-trial.html': {
+        '/hasil-lab.html': {
             activeNav: 'dokumen',
             kicker: 'Hasil Lab',
             title: 'Hasil laboratorium.',
@@ -29,7 +29,7 @@
             metaLabel: 'Dokumen',
             metaValue: 'Lab Result'
         },
-        '/riwayat-kunjungan-trial.html': {
+        '/riwayat-kunjungan.html': {
             activeNav: 'jadwal',
             kicker: 'Riwayat Kunjungan',
             title: 'Jejak kunjungan.',
@@ -37,7 +37,7 @@
             metaLabel: 'Jadwal',
             metaValue: 'Kunjungan Saya'
         },
-        '/antrian-trial.html': {
+        '/antrian.html': {
             activeNav: 'jadwal',
             kicker: 'Live Queue',
             title: 'Antrian hari ini.',
@@ -45,7 +45,7 @@
             metaLabel: 'Refresh',
             metaValue: 'Otomatis 30 detik'
         },
-        '/booking-klinik-trial.html': {
+        '/booking-klinik.html': {
             activeNav: 'jadwal',
             kicker: 'Booking Klinik',
             title: 'Atur janji klinik.',
@@ -53,7 +53,7 @@
             metaLabel: 'Alur',
             metaValue: '4 langkah'
         },
-        '/jadwal-rs-trial.html': {
+        '/jadwal-rs.html': {
             activeNav: 'jadwal',
             kicker: 'Jadwal Rumah Sakit',
             title: 'Jadwal praktik RS.',
@@ -61,7 +61,7 @@
             metaLabel: 'Mode',
             metaValue: 'Informasi Jadwal'
         },
-        '/tanya-dokter-trial.html': {
+        '/tanya-dokter.html': {
             activeNav: 'aplikasi',
             kicker: 'Tanya Dokter',
             title: 'Konsultasi pribadi.',
@@ -69,7 +69,7 @@
             metaLabel: 'Mode',
             metaValue: 'Asinkron'
         },
-        '/artikel-trial.html': {
+        '/artikel.html': {
             activeNav: 'beranda',
             kicker: 'Ruang Membaca',
             title: 'Nadi pengetahuan.',
@@ -81,28 +81,28 @@
 
     var menuData = {
         dokumen: { title: 'Dokumen', items: [
-            ['fa-solid fa-image', 'Album USG', '/album-usg-trial.html'],
-            ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab-trial.html'],
-            ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
+            ['fa-solid fa-image', 'Album USG', '/album-usg.html'],
+            ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab.html'],
+            ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis.html']
         ]},
         aplikasi: { title: 'Aplikasi', items: [
-            ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter-trial.html'],
-            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?theme=newdesign'],
-            ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
-            ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
-            ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
-            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin-trial.html']
+            ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter.html'],
+            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html'],
+            ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
+            ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
+            ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
+            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html']
         ]},
         jadwal: { title: 'Jadwal', items: [
-            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik-trial.html'],
-            ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs-trial.html'],
-            ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
-            ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
+            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
+            ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs.html'],
+            ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
+            ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
         ]},
         edukasi: { title: 'Edukasi', items: [
-            ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
-            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
-            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
+            ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
+            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
+            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan.html']
         ]}
     };
 
@@ -154,7 +154,7 @@
         topbar.innerHTML = '' +
             '<div class="topbar-inner" id="home-topbar-inner">' +
                 '<div class="brand">' +
-                    '<a class="brand-link soundable" id="home-brand-link" href="/patient-menu-simple-trial.html" aria-label="Beranda SISIwanita">' +
+                    '<a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">' +
                         '<div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>' +
                         '<div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>' +
                     '</a>' +
@@ -169,7 +169,7 @@
                 '</div>' +
             '</div>';
         var fade = document.querySelector('.topbar-blur-fade');
-        if (fade && fade.nextSibling) {
+            if (fade && fade.nextSibling) {
             document.body.insertBefore(topbar, fade.nextSibling);
         } else {
             document.body.insertBefore(topbar, document.body.firstChild);
@@ -210,6 +210,26 @@
         container.insertBefore(hero, container.firstChild);
     }
 
+    function applyLegacyRevealStagger() {
+        var container = findPrimaryContainer();
+        if (!container) return;
+
+        var candidates = Array.prototype.filter.call(container.children || [], function (element) {
+            if (!element || element.nodeType !== 1) return false;
+            if (element.id === 'tool-retrofit-hero') return false;
+            if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return false;
+            if (element.classList.contains('topbar') || element.classList.contains('bottom-nav')) return false;
+            return true;
+        });
+
+        candidates.forEach(function (element, index) {
+            if (!element.classList.contains('reveal')) {
+                element.classList.add('reveal');
+            }
+            element.style.setProperty('--reveal-delay', (Math.min(index, 8) * 40) + 'ms');
+        });
+    }
+
     function injectBottomShell() {
         if (!document.getElementById('sheet-overlay')) {
             var overlay = document.createElement('div');
@@ -233,7 +253,7 @@
             nav.setAttribute('aria-label', 'Navigasi bawah');
             nav.innerHTML = '' +
                 '<div class="bottom-inner" id="home-bottom-inner">' +
-                    '<button class="nav-item soundable" data-tool-nav="beranda" type="button" onclick="go(\'/patient-menu-simple-trial.html\')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="beranda" type="button" onclick="go(\'/patient-menu.html\')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="dokumen" type="button" onclick="openSheet(\'dokumen\')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="aplikasi" type="button" onclick="openSheet(\'aplikasi\')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="jadwal" type="button" onclick="openSheet(\'jadwal\')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>' +
@@ -244,7 +264,7 @@
     }
 
     function removeLegacyInjectedHeaders() {
-        Array.prototype.forEach.call(document.querySelectorAll('.trial-unified-header'), function (header) {
+        Array.prototype.forEach.call(document.querySelectorAll('.portal-unified-header'), function (header) {
             header.remove();
         });
     }
@@ -255,7 +275,7 @@
         var observer = new MutationObserver(function (mutations) {
             var shouldClean = mutations.some(function (mutation) {
                 return Array.prototype.some.call(mutation.addedNodes || [], function (node) {
-                    return node.nodeType === 1 && (node.classList && node.classList.contains('trial-unified-header'));
+                    return node.nodeType === 1 && (node.classList && node.classList.contains('portal-unified-header'));
                 });
             });
             if (shouldClean) removeLegacyInjectedHeaders();
@@ -276,11 +296,12 @@
         body.classList.add('patient-tool-shell', 'legacy-tool-retrofit', 'home-sections-unlocked');
         body.classList.remove('home-sections-locked');
         body.setAttribute('data-tool-shell-active', config.activeNav);
-        window.__patientTrialHeaderInstalled = true;
+        window.__patientPortalHeaderInstalled = true;
 
         injectTopbarBlur();
         injectTopbar();
         injectHero(config);
+        applyLegacyRevealStagger();
         if (window.PatientToolShell && typeof window.PatientToolShell.removeHeroStatusChips === 'function') {
             window.PatientToolShell.removeHeroStatusChips();
         }

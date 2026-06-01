@@ -1,1241 +1,1030 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Kalender Kesuburan - dokterDIBYA</title>
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Kalender Kesuburan - SISIwanita</title>
+
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch (error) {}
+        window.__patientPortalHeaderInstalled = true;
+    </script>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+
     <style>
-        :root {
-            --primary: #0066FF;
-            --primary-dark: #0052CC;
-            --accent: #28a7e9;
-            --success: #10b981;
-            --danger: #ef4444;
-            --bg-gradient: #000000;
+        body.fertility-calendar-page .hero-title {
+            white-space: nowrap;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body.fertility-calendar-page .fertility-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
         }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: #fff;
-            font-weight: 300;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+        body.fertility-calendar-page .fertility-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
         }
 
-        .safe-area-top {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-top, 0px);
-            background: #000000;
-            z-index: 9999;
+        body.fertility-calendar-page .fertility-stat {
+            min-height: 112px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
         }
 
-        .safe-area-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-bottom, 0px);
-            background: #000000;
-            z-index: 9999;
-        }
-
-        /* Background Animation - Hidden for clean look */
-        .bg-animation {
-            display: none;
-        }
-
-        .bubble {
+        body.fertility-calendar-page .fertility-stat::after {
+            content: '';
             position: absolute;
-            background: rgba(255, 255, 255, 0.1);
+            width: 82px;
+            height: 82px;
             border-radius: 50%;
-            animation: float 8s ease-in-out infinite;
+            right: -42px;
+            top: -42px;
+            background: var(--green-soft);
+            pointer-events: none;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-100px) rotate(180deg); }
+        body.fertility-calendar-page .stat-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,0.68);
+            border: 1px solid var(--line);
+            color: var(--green);
+            font-size: 14px;
+            margin-bottom: 12px;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 30px 15px;
+        body.fertility-calendar-page .stat-label,
+        body.fertility-calendar-page .panel-kicker {
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+        }
+
+        body.fertility-calendar-page .stat-value {
+            font-family: var(--display);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+            font-size: clamp(18px, 5vw, 24px);
+            line-height: 1.08;
+            margin-top: 7px;
             position: relative;
             z-index: 1;
         }
 
-        /* Header */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-            padding: 16px 0;
+        body.fertility-calendar-page .fertility-calendar-panel,
+        body.fertility-calendar-page .fertility-form-panel,
+        body.fertility-calendar-page .fertility-history-panel {
+            background: rgba(255,255,255,0.88) !important;
         }
 
-        .header h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--accent);
-            display: flex;
+        body.fertility-calendar-page .calendar-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
             align-items: center;
             gap: 12px;
+            margin-bottom: 12px;
         }
 
-        .header-logo {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
-            background: #ffffff;
-            padding: 6px;
-            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-        }
-
-        .header-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .btn-back {
-            display: flex;
+        body.fertility-calendar-page .calendar-nav {
+            display: grid;
+            grid-template-columns: 38px 1fr 38px;
             align-items: center;
             gap: 8px;
-            color: #47C6F8;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
         }
 
-        .btn-back:hover {
-            color: #0FF;
-        }
-
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.3);
-            border-color: var(--accent);
-        }
-
-        .stat-card.fertile {
-            border-color: rgba(76, 175, 80, 0.4);
-        }
-
-        .stat-card.period {
-            border-color: rgba(244, 67, 54, 0.4);
-        }
-
-        .stat-card.ovulation {
-            border-color: rgba(255, 193, 7, 0.4);
-        }
-
-        .stat-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .stat-card.fertile .stat-icon { color: #4caf50; }
-        .stat-card.period .stat-icon { color: #f44336; }
-        .stat-card.ovulation .stat-icon { color: #ffc107; }
-
-        .stat-label {
-            font-size: 12px;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-
-        .stat-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        /* Calendar */
-        .calendar-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .calendar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-
-        .calendar-nav {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .calendar-nav button {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: #fff;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+        body.fertility-calendar-page .calendar-nav button,
+        body.fertility-calendar-page .btn-today,
+        body.fertility-calendar-page .btn-clear,
+        body.fertility-calendar-page .btn-icon,
+        body.fertility-calendar-page .btn-secondary,
+        body.fertility-calendar-page .btn-danger {
+            font-family: var(--font);
             cursor: pointer;
-            display: flex;
+            transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        }
+
+        body.fertility-calendar-page .calendar-nav button,
+        body.fertility-calendar-page .btn-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 13px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.72);
+            color: var(--ink);
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
         }
 
-        .calendar-nav button:hover {
-            background: rgba(255, 255, 255, 0.2);
+        body.fertility-calendar-page .calendar-nav button:active,
+        body.fertility-calendar-page .btn-today:active,
+        body.fertility-calendar-page .btn-clear:active,
+        body.fertility-calendar-page .btn-icon:active,
+        body.fertility-calendar-page .mode-btn:active {
+            transform: scale(0.96);
         }
 
-        .calendar-month {
+        body.fertility-calendar-page .calendar-month {
+            font-family: var(--display);
             font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-
-        .calendar-day-header {
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.03em;
             text-align: center;
+        }
+
+        body.fertility-calendar-page .btn-today,
+        body.fertility-calendar-page .btn-clear {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.72);
+            color: var(--ink);
+            border-radius: 999px;
+            padding: 10px 12px;
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+        }
+
+        body.fertility-calendar-page .mode-toggle {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        body.fertility-calendar-page .mode-btn {
+            min-height: 40px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.68);
+            color: var(--muted);
+            font-family: var(--font);
+            font-size: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        body.fertility-calendar-page .mode-btn.active {
+            background: var(--ink);
+            border-color: var(--ink);
             color: #fff;
+        }
+
+        body.fertility-calendar-page .mode-btn.intercourse-mode.active {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        body.fertility-calendar-page .selection-hint {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: var(--green-soft);
+            border: 1px solid rgba(92,127,114,0.2);
+            border-radius: 15px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            line-height: 1.4;
+            padding: 11px 12px;
+            margin-bottom: 12px;
+        }
+
+        body.fertility-calendar-page .selection-hint i {
+            color: var(--green);
+            flex: 0 0 auto;
+        }
+
+        body.fertility-calendar-page .selection-hint .hint-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        body.fertility-calendar-page .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 5px;
+        }
+
+        body.fertility-calendar-page .calendar-day-header {
+            text-align: center;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             padding: 8px 0;
         }
 
-        .calendar-day {
+        body.fertility-calendar-page .calendar-day {
             aspect-ratio: 1;
+            min-width: 0;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+            background: rgba(255,255,255,0.62);
+            color: var(--ink-soft);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            position: relative;
             cursor: pointer;
-            position: relative;
-            transition: all 0.2s;
-            background: rgba(255, 255, 255, 0.02);
+            transition: transform 0.14s ease, background 0.16s ease, border-color 0.16s ease;
         }
 
-        .calendar-day:hover {
-            background: rgba(255, 255, 255, 0.1);
+        body.fertility-calendar-page .calendar-day:active {
+            transform: scale(0.95);
         }
 
-        .calendar-day.empty {
-            cursor: default;
+        body.fertility-calendar-page .calendar-day.empty {
+            border: 0;
+            background: transparent;
+            pointer-events: none;
         }
 
-        .calendar-day.today {
-            border: 2px solid #fff;
+        body.fertility-calendar-page .calendar-day.today {
+            border-color: var(--ink);
+            color: var(--ink);
+            box-shadow: inset 0 0 0 1px var(--ink);
         }
 
-        .calendar-day.period {
-            background: rgba(244, 67, 54, 0.3);
-            color: #ff8a80;
-            position: relative;
+        body.fertility-calendar-page .calendar-day.period,
+        body.fertility-calendar-page .calendar-day.selecting-start {
+            background: var(--ink) !important;
+            border-color: var(--ink) !important;
+            color: #fff !important;
         }
 
-        .period-day-badge {
+        body.fertility-calendar-page .calendar-day.fertile {
+            background: var(--green-soft);
+            border-color: rgba(92,127,114,0.22);
+            color: #36584e;
+        }
+
+        body.fertility-calendar-page .calendar-day.peak_fertile {
+            background: rgba(92,127,114,0.2);
+            border-color: var(--green);
+            color: #29483f;
+        }
+
+        body.fertility-calendar-page .calendar-day.ovulation {
+            background: var(--green);
+            border-color: var(--green);
+            color: #fff;
+            box-shadow: 0 0 0 2px rgba(92,127,114,0.13);
+        }
+
+        body.fertility-calendar-page .calendar-day.predicted_period {
+            border-style: dashed;
+            border-color: var(--line-strong);
+            background: repeating-linear-gradient(45deg, rgba(17,17,17,0.055), rgba(17,17,17,0.055) 3px, transparent 3px, transparent 7px);
+        }
+
+        body.fertility-calendar-page .calendar-day.selecting-end {
+            border: 1.5px dashed var(--ink) !important;
+            color: var(--ink) !important;
+            background: rgba(255,255,255,0.8) !important;
+        }
+
+        body.fertility-calendar-page .calendar-day.selecting-range {
+            background: rgba(17,17,17,0.06) !important;
+            border-color: var(--line-strong) !important;
+            color: var(--ink) !important;
+        }
+
+        body.fertility-calendar-page .calendar-day.intercourse-mode-active:hover {
+            background: var(--green-soft) !important;
+            border-color: var(--green) !important;
+        }
+
+        body.fertility-calendar-page .cycle-day-badge {
             position: absolute;
             top: 2px;
             right: 2px;
-            background: rgba(244, 67, 54, 0.8);
-            color: #fff;
-            font-size: 9px;
-            font-weight: 600;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
+            min-width: 15px;
+            height: 13px;
+            padding: 0 3px;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.76);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 7px;
+            font-weight: 900;
+            line-height: 1;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            line-height: 1;
         }
 
-        .cycle-day-badge {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(59, 130, 246, 0.85);
+        body.fertility-calendar-page .calendar-day.period .cycle-day-badge,
+        body.fertility-calendar-page .calendar-day.ovulation .cycle-day-badge {
             color: #fff;
-            font-size: 9px;
-            font-weight: 600;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
+            border-color: rgba(255,255,255,0.28);
+            background: rgba(255,255,255,0.2);
         }
 
-        .intercourse-badge {
+        body.fertility-calendar-page .intercourse-badge {
             position: absolute;
-            bottom: 2px;
+            bottom: 3px;
             left: 50%;
             transform: translateX(-50%);
-            color: #e91e63;
-            font-size: 10px;
-            text-shadow: 0 0 3px rgba(233, 30, 99, 0.5);
+            color: var(--green);
+            font-size: 9px;
         }
 
-        .calendar-day.fertile {
-            background: rgba(76, 175, 80, 0.2);
-            color: #a5d6a7;
-        }
-
-        .calendar-day.peak_fertile {
-            background: rgba(76, 175, 80, 0.4);
-            color: #81c784;
-        }
-
-        .calendar-day.ovulation {
-            background: rgba(255, 193, 7, 0.3);
-            color: #ffd54f;
-        }
-
-        .calendar-day.predicted_period {
-            background: repeating-linear-gradient(
-                45deg,
-                rgba(244, 67, 54, 0.1),
-                rgba(244, 67, 54, 0.1) 2px,
-                transparent 2px,
-                transparent 4px
-            );
-            color: #ff8a80;
-        }
-
-        /* Selection mode styles */
-        .calendar-day.selecting-start {
-            background: rgba(40, 167, 233, 0.4) !important;
-            border: 2px solid var(--accent) !important;
-            color: #fff !important;
-        }
-
-        .calendar-day.selecting-end {
-            background: rgba(40, 167, 233, 0.3) !important;
-            border: 2px dashed var(--accent) !important;
-            color: #fff !important;
-        }
-
-        .calendar-day.selecting-range {
-            background: rgba(40, 167, 233, 0.2) !important;
-            color: #87ceeb !important;
-        }
-
-        .day-indicator {
-            position: absolute;
-            bottom: 4px;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-        }
-
-        /* Selection hint */
-        .selection-hint {
-            background: rgba(40, 167, 233, 0.15);
-            border: 1px solid rgba(40, 167, 233, 0.3);
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            color: var(--accent);
-        }
-
-        .selection-hint i {
-            font-size: 18px;
-        }
-
-        .selection-hint .hint-text {
-            flex: 1;
-        }
-
-        .selection-hint .btn-clear {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            border-radius: 8px;
-            padding: 6px 12px;
+        body.fertility-calendar-page .calendar-day.period .intercourse-badge,
+        body.fertility-calendar-page .calendar-day.ovulation .intercourse-badge {
             color: #fff;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .selection-hint .btn-clear:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Legend */
-        .legend {
+        body.fertility-calendar-page .legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 16px;
             justify-content: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 10px 14px;
+            border-top: 1px solid var(--line);
+            margin-top: 15px;
+            padding-top: 14px;
         }
 
-        .legend-item {
-            display: flex;
+        body.fertility-calendar-page .legend-item {
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: #fff;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
         }
 
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
+        body.fertility-calendar-page .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 5px;
+            border: 1px solid var(--line);
+            flex: 0 0 auto;
         }
 
-        .legend-color.period { background: rgba(244, 67, 54, 0.4); }
-        .legend-color.fertile { background: rgba(76, 175, 80, 0.3); }
-        .legend-color.peak { background: rgba(76, 175, 80, 0.5); }
-        .legend-color.ovulation { background: rgba(255, 193, 7, 0.4); }
-        .legend-color.predicted {
-            background: repeating-linear-gradient(
-                45deg,
-                rgba(244, 67, 54, 0.2),
-                rgba(244, 67, 54, 0.2) 2px,
-                transparent 2px,
-                transparent 4px
-            );
+        body.fertility-calendar-page .legend-color.period { background: var(--ink); border-color: var(--ink); }
+        body.fertility-calendar-page .legend-color.fertile { background: var(--green-soft); border-color: rgba(92,127,114,0.22); }
+        body.fertility-calendar-page .legend-color.peak { background: rgba(92,127,114,0.2); border-color: var(--green); }
+        body.fertility-calendar-page .legend-color.ovulation { background: var(--green); border-color: var(--green); }
+        body.fertility-calendar-page .legend-color.predicted {
+            border-style: dashed;
+            background: repeating-linear-gradient(45deg, rgba(17,17,17,0.055), rgba(17,17,17,0.055) 3px, transparent 3px, transparent 7px);
         }
 
-        .legend-color.intercourse {
-            background: rgba(233, 30, 99, 0.3);
-        }
-
-        /* Mode toggle buttons */
-        .mode-toggle {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .mode-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .mode-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .mode-btn.active {
-            border-color: var(--accent);
-            background: rgba(40, 167, 233, 0.15);
-            color: var(--accent);
-        }
-
-        .mode-btn.intercourse-mode.active {
-            border-color: #e91e63;
-            background: rgba(233, 30, 99, 0.15);
-            color: #e91e63;
-        }
-
-        .calendar-day.intercourse-mode-active {
-            cursor: pointer;
-        }
-
-        .calendar-day.intercourse-mode-active:hover {
-            background: rgba(233, 30, 99, 0.2) !important;
-        }
-
-        /* Add Period Form */
-        .add-period-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            transition: box-shadow 0.5s ease;
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title i {
-            color: var(--accent);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-group label {
-            font-size: 13px;
-            color: #fff;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 12px 14px;
-            color: #fff;
-            font-size: 14px;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .form-group select option {
-            background: #1a1a2e;
-            color: #fff;
-        }
-
-        .symptoms-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .symptom-tag {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            padding: 8px 14px;
-            font-size: 13px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .symptom-tag.active {
-            background: rgba(40, 167, 233, 0.2);
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
-            border: none;
-            border-radius: 10px;
-            padding: 14px 28px;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(40, 167, 233, 0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        body.fertility-calendar-page .legend-cycle-badge {
+            position: static;
             transform: none;
         }
 
-        /* Cycle History */
-        .history-section {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        body.fertility-calendar-page .legend-heart {
+            color: var(--green);
+            font-size: 11px;
         }
 
-        .cycle-list {
+        body.fertility-calendar-page .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        body.fertility-calendar-page .portal-field label {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        body.fertility-calendar-page .portal-input,
+        body.fertility-calendar-page .portal-select,
+        body.fertility-calendar-page .portal-textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.74);
+            color: var(--ink);
+            padding: 11px 12px;
+            font: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+
+        body.fertility-calendar-page .portal-textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+
+        body.fertility-calendar-page .notes-field {
+            margin-bottom: 14px;
+        }
+
+        body.fertility-calendar-page .symptoms-grid {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 16px;
+        }
+
+        body.fertility-calendar-page .symptom-tag {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.68);
+            color: var(--muted);
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body.fertility-calendar-page .symptom-tag.active {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: #fff;
+        }
+
+        body.fertility-calendar-page .cycle-list {
+            display: grid;
+            gap: 9px;
+        }
+
+        body.fertility-calendar-page .cycle-item {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.62);
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 12px;
         }
 
-        .cycle-item {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: border-color 0.2s;
+        body.fertility-calendar-page .cycle-info {
+            min-width: 0;
         }
 
-        .cycle-item:hover {
-            border-color: var(--accent);
-        }
-
-        .cycle-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .cycle-date {
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .cycle-details {
-            font-size: 13px;
-            color: #fff;
-        }
-
-        .cycle-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            color: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .btn-icon:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-icon.delete:hover {
-            background: rgba(244, 67, 54, 0.2);
-            color: #f44336;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #fff;
-        }
-
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #fff;
-        }
-
-        .empty-state p {
+        body.fertility-calendar-page .cycle-date {
+            color: var(--ink);
+            font-family: var(--display);
             font-size: 14px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 3px;
         }
 
-        /* Loading */
-        .loading {
+        body.fertility-calendar-page .cycle-details {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.45;
+        }
+
+        body.fertility-calendar-page .btn-icon.delete:hover {
+            color: #dc2626;
+            border-color: rgba(220,38,38,0.22);
+            background: rgba(220,38,38,0.08);
+        }
+
+        body.fertility-calendar-page .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #fff;
+            padding: 24px 12px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
         }
 
-        .loading i {
-            font-size: 32px;
-            animation: spin 1s linear infinite;
+        body.fertility-calendar-page .empty-state i {
+            display: block;
+            font-size: 28px;
+            opacity: 0.42;
+            margin-bottom: 9px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #333;
-            color: #fff;
-            padding: 14px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            z-index: 1000;
-            transition: transform 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .toast.success {
-            background: #4caf50;
-        }
-
-        .toast.error {
-            background: #f44336;
-        }
-
-        /* Modal */
-        .modal-overlay {
+        body.fertility-calendar-page .modal-overlay {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
+            inset: 0;
+            z-index: 90;
+            background: rgba(17,17,17,0.34);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
 
-        .modal-overlay.show {
+        body.fertility-calendar-page .modal-overlay.show {
             display: flex;
         }
 
-        .modal {
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        body.fertility-calendar-page .modal {
+            width: min(420px, 100%);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: rgba(255,255,255,0.96);
+            box-shadow: var(--shadow);
+            padding: 18px;
         }
 
-        .modal-title {
+        body.fertility-calendar-page .modal-title {
+            color: var(--ink);
+            font-family: var(--display);
             font-size: 18px;
-            font-weight: 600;
-            color: #fff;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 8px;
+        }
+
+        body.fertility-calendar-page .modal-body {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
             margin-bottom: 16px;
         }
 
-        .modal-body {
-            color: #fff;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-
-        .modal-actions {
+        body.fertility-calendar-page .modal-actions {
             display: flex;
-            gap: 12px;
             justify-content: flex-end;
+            gap: 8px;
         }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            border-radius: 10px;
-            padding: 12px 20px;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
+        body.fertility-calendar-page .btn-secondary,
+        body.fertility-calendar-page .btn-danger {
+            min-height: 39px;
+            border-radius: 14px;
+            padding: 9px 13px;
+            font-size: 12px;
+            font-weight: 800;
         }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+        body.fertility-calendar-page .btn-secondary {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.72);
+            color: var(--ink);
         }
 
-        .btn-danger {
-            background: #f44336;
-            border: none;
-            border-radius: 10px;
-            padding: 12px 20px;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-danger:hover {
-            background: #d32f2f;
-        }
-
-        /* Disclaimer */
-        .disclaimer {
-            background: rgba(255, 152, 0, 0.1);
-            border: 1px solid rgba(255, 152, 0, 0.3);
-            border-radius: 16px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-        }
-
-        .disclaimer-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            color: #ffb74d;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .disclaimer-header i {
-            font-size: 18px;
-        }
-
-        .disclaimer-content {
-            font-size: 13px;
-            line-height: 1.6;
+        body.fertility-calendar-page .btn-danger {
+            border: 1px solid #dc2626;
+            background: #dc2626;
             color: #fff;
         }
 
-        .disclaimer-content p {
-            margin-bottom: 10px;
-        }
-
-        .disclaimer-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        .disclaimer-content strong {
-            color: #ffb74d;
-        }
-
-        .disclaimer-content ul {
-            margin: 8px 0;
-            padding-left: 20px;
-        }
-
-        .disclaimer-content li {
-            margin-bottom: 4px;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .container {
-                padding: 16px;
+        @media (max-width: 760px) {
+            body.fertility-calendar-page .fertility-stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .header h1 {
-                font-size: 1.2rem;
+            body.fertility-calendar-page .calendar-header {
+                grid-template-columns: 1fr;
             }
 
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+            body.fertility-calendar-page .btn-today {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 520px) {
+            body.fertility-calendar-page .hero-title {
+                font-size: clamp(27px, 7.4vw, 38px) !important;
             }
 
-            .calendar-day {
+            body.fertility-calendar-page .form-row,
+            body.fertility-calendar-page .mode-toggle {
+                grid-template-columns: 1fr;
+            }
+
+            body.fertility-calendar-page .calendar-grid {
+                gap: 3px;
+            }
+
+            body.fertility-calendar-page .calendar-day {
+                border-radius: 9px;
                 font-size: 12px;
             }
 
-            .legend {
-                gap: 12px;
+            body.fertility-calendar-page .legend {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 380px) {
+            body.fertility-calendar-page .fertility-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            body.fertility-calendar-page .calendar-day {
+                font-size: 11px;
             }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
 </head>
-<body>
-    <div class="safe-area-top"></div>
-    <div class="safe-area-bottom"></div>
-    <!-- Background Animation -->
-    <div class="bg-animation">
-        <div class="bubble" style="width: 80px; height: 80px; left: 10%; top: 20%; animation-delay: 0s;"></div>
-        <div class="bubble" style="width: 40px; height: 40px; left: 30%; top: 60%; animation-delay: 2s;"></div>
-        <div class="bubble" style="width: 60px; height: 60px; left: 70%; top: 30%; animation-delay: 4s;"></div>
-        <div class="bubble" style="width: 50px; height: 50px; left: 80%; top: 70%; animation-delay: 1s;"></div>
-        <div class="bubble" style="width: 30px; height: 30px; left: 50%; top: 80%; animation-delay: 3s;"></div>
+<body class="home-sections-locked patient-tool-shell fertility-calendar-page" data-tool-shell-active="aplikasi">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1><div class="header-logo"><img src="/db-logo.png" alt="Logo"></div> Kalender Kesuburan</h1>
-            <a href="/patient-menu.html" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Kembali
-            </a>
-        </div>
-
-        <!-- Stats -->
-        <div class="stats-grid" id="stats-grid">
-            <div class="stat-card period">
-                <div class="stat-icon"><i class="fas fa-tint"></i></div>
-                <div class="stat-label">Siklus Rata-rata</div>
-                <div class="stat-value" id="avg-cycle">-- hari</div>
-            </div>
-            <div class="stat-card ovulation">
-                <div class="stat-icon"><i class="fas fa-egg"></i></div>
-                <div class="stat-label">Ovulasi Berikutnya</div>
-                <div class="stat-value" id="next-ovulation">--</div>
-            </div>
-            <div class="stat-card fertile">
-                <div class="stat-icon"><i class="fas fa-heart"></i></div>
-                <div class="stat-label">Masa Subur</div>
-                <div class="stat-value" id="fertile-window">--</div>
-            </div>
-            <div class="stat-card period">
-                <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-                <div class="stat-label">Prediksi Menstruasi</div>
-                <div class="stat-value" id="next-period">--</div>
-            </div>
-        </div>
-
-        <!-- Disclaimer -->
-        <div class="disclaimer">
-            <div class="disclaimer-header">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Penting untuk Diketahui</span>
-            </div>
-            <div class="disclaimer-content">
-                <p><strong>Kalender kesuburan ini hanya sebagai estimasi</strong> dan tidak menjamin akurasi 100%. Untuk hasil yang lebih akurat, kombinasikan dengan metode lain:</p>
-                <ul>
-                    <li><strong>Observasi lendir serviks (mukus)</strong> - perubahan konsistensi lendir vagina</li>
-                    <li><strong>Pencatatan Suhu Basal Tubuh (BBT)</strong> - suhu tubuh saat bangun tidur</li>
-                    <li><strong>OPK (Ovulation Predictor Kit)</strong> - alat tes prediksi ovulasi</li>
-                </ul>
-                <p><strong>Peringatan KB:</strong> Metode KB Kalender dan <em>Coitus Interruptus</em> memiliki <strong>tingkat kegagalan tertinggi</strong> dibanding metode kontrasepsi lainnya. Kalender ini tidak menjamin terhindar dari kehamilan.</p>
-            </div>
-        </div>
-
-        <!-- Calendar -->
-        <div class="calendar-container">
-            <div class="calendar-header">
-                <div class="calendar-nav">
-                    <button onclick="prevMonth()"><i class="fas fa-chevron-left"></i></button>
-                    <span class="calendar-month" id="calendar-month">Desember 2025</span>
-                    <button onclick="nextMonth()"><i class="fas fa-chevron-right"></i></button>
+    <main class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
+                    </a>
                 </div>
-                <button onclick="goToToday()" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">
-                    Hari Ini
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </button>
+                    <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
+                        <img id="user-avatar-img" alt="">
+                        <span id="user-avatar-initials">--</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-card reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Kalender Kesuburan</span></div>
+            <h1 class="hero-title">Kalender kesuburan.</h1>
+            <p class="hero-copy">Catat siklus bulanan, lihat prediksi masa subur, dan pahami ritme tubuh dengan tampilan yang tenang.</p>
+            <div class="today-row">
+                <div>
+                    <div class="today-label">Status</div>
+                    <div class="today-value fertility-source" id="cycle-status"><i class="fa-solid fa-calendar-days"></i> Memuat data</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="goToToday()">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    <span>Hari Ini</span>
                 </button>
             </div>
+        </section>
 
-            <!-- Mode Toggle -->
-            <div class="mode-toggle">
-                <button class="mode-btn active" id="mode-period" onclick="setCalendarMode('period')">
-                    <i class="fas fa-tint"></i> Catat Haid
-                </button>
-                <button class="mode-btn intercourse-mode" id="mode-intercourse" onclick="setCalendarMode('intercourse')">
-                    <i class="fas fa-heart"></i> Catat Hubungan Intim
-                </button>
-            </div>
-
-            <!-- Selection Hint -->
-            <div class="selection-hint" id="selection-hint" style="display: none;">
-                <i class="fas fa-hand-pointer"></i>
-                <span class="hint-text" id="hint-text">Klik tanggal untuk pilih hari pertama menstruasi</span>
-                <button class="btn-clear" onclick="clearSelection()">
-                    <i class="fas fa-times"></i> Reset
-                </button>
-            </div>
-
-            <div class="calendar-grid" id="calendar-grid">
-                <!-- Calendar will be rendered here -->
-            </div>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-color period"></div>
-                    <span>Menstruasi</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color fertile"></div>
-                    <span>Masa Subur</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color peak"></div>
-                    <span>Sangat Subur</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color ovulation"></div>
-                    <span>Prediksi Ovulasi</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color predicted"></div>
-                    <span>Prediksi Haid</span>
-                </div>
-                <div class="legend-item">
-                    <span class="cycle-day-badge" style="position: static; transform: none; margin-right: 4px;">H5</span>
-                    <span>Hari menstruasi ke-</span>
-                </div>
-                <div class="legend-item">
-                    <i class="fas fa-heart" style="color: #e91e63; font-size: 12px;"></i>
-                    <span>Hubungan Intim</span>
-                </div>
-            </div>
+        <div class="loading" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Memuat kalender...</span>
         </div>
 
-        <!-- Add Period Form -->
-        <div class="add-period-section" id="add-period-section">
-            <div class="section-title">
-                <i class="fas fa-plus-circle"></i>
-                Catat Menstruasi Baru
-            </div>
-            <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 16px;">
-                <i class="fas fa-info-circle" style="color: var(--accent);"></i>
-                Klik langsung pada kalender di atas untuk memilih tanggal, atau isi manual di bawah
-            </p>
-            <form id="add-period-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tanggal Mulai Haid * <small style="color: #888;">(klik kalender)</small></label>
-                        <input type="date" id="period-start" required>
+        <div id="content-wrapper">
+            <section class="section reveal fertility-stats-section">
+                <div class="fertility-stats-grid" id="stats-grid">
+                    <div class="tool-panel fertility-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-droplet"></i></div>
+                            <div class="stat-label">Siklus Rata-rata</div>
+                            <div class="stat-value" id="avg-cycle">-- hari</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Tanggal Selesai <small style="color: #888;">(klik kalender)</small></label>
-                        <input type="date" id="period-end">
+                    <div class="tool-panel fertility-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-egg"></i></div>
+                            <div class="stat-label">Ovulasi Berikutnya</div>
+                            <div class="stat-value" id="next-ovulation">--</div>
+                        </div>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Jumlah Darah</label>
-                        <select id="flow-intensity">
-                            <option value="light">Sedikit</option>
-                            <option value="medium" selected>Sedang</option>
-                            <option value="heavy">Banyak</option>
-                        </select>
+                    <div class="tool-panel fertility-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-heart"></i></div>
+                            <div class="stat-label">Masa Subur</div>
+                            <div class="stat-value" id="fertile-window">--</div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Intensitas Nyeri</label>
-                        <select id="pain-intensity">
-                            <option value="none">Tidak Nyeri</option>
-                            <option value="light">Ringan</option>
-                            <option value="medium" selected>Sedang</option>
-                            <option value="heavy">Berat</option>
-                        </select>
+                    <div class="tool-panel fertility-stat">
+                        <div>
+                            <div class="stat-icon"><i class="fa-solid fa-calendar-day"></i></div>
+                            <div class="stat-label">Prediksi Haid</div>
+                            <div class="stat-value" id="next-period">--</div>
+                        </div>
                     </div>
                 </div>
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label>Gejala</label>
-                    <div class="symptoms-grid" id="symptoms-grid">
-                        <span class="symptom-tag" data-symptom="cramps">Kram</span>
-                        <span class="symptom-tag" data-symptom="headache">Sakit Kepala</span>
-                        <span class="symptom-tag" data-symptom="bloating">Kembung</span>
-                        <span class="symptom-tag" data-symptom="mood_swings">Mood Swing</span>
-                        <span class="symptom-tag" data-symptom="fatigue">Lelah</span>
-                        <span class="symptom-tag" data-symptom="breast_tenderness">Payudara Nyeri</span>
-                        <span class="symptom-tag" data-symptom="acne">Jerawat</span>
-                        <span class="symptom-tag" data-symptom="backache">Sakit Punggung</span>
-                    </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <label>Catatan</label>
-                    <textarea id="notes" rows="2" placeholder="Catatan tambahan..."></textarea>
-                </div>
-                <button type="submit" class="btn-primary" id="btn-submit">
-                    <i class="fas fa-save"></i>
-                    Simpan Data
-                </button>
-            </form>
-        </div>
+            </section>
 
-        <!-- Cycle History -->
-        <div class="history-section">
-            <div class="section-title">
-                <i class="fas fa-history"></i>
-                Riwayat Siklus
-            </div>
-            <div id="cycle-list" class="cycle-list">
-                <div class="loading">
-                    <i class="fas fa-spinner"></i>
-                    <p>Memuat data...</p>
+            <section class="section reveal fertility-info-section">
+                <div class="status-panel">
+                    <div class="status-icon"><i class="fa-solid fa-circle-info"></i></div>
+                    <div class="status-body">
+                        <h3>Estimasi, bukan alat kontrasepsi</h3>
+                        <p>Kalender ini membantu membaca pola siklus. Untuk keputusan medis, program hamil, atau kontrasepsi, tetap kombinasikan dengan konsultasi dokter dan metode yang lebih akurat.</p>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            </section>
 
-    <!-- Delete Confirmation Modal -->
+            <section class="section reveal fertility-calendar-section">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Kalender</div>
+                        <h2 class="section-title">Peta siklus</h2>
+                    </div>
+                    <div class="section-note" id="calendar-method">Estimasi</div>
+                </div>
+                <div class="tool-panel fertility-calendar-panel">
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button type="button" onclick="prevMonth()" aria-label="Bulan sebelumnya"><i class="fa-solid fa-chevron-left"></i></button>
+                            <span class="calendar-month" id="calendar-month">--</span>
+                            <button type="button" onclick="nextMonth()" aria-label="Bulan berikutnya"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <button type="button" onclick="goToToday()" class="btn-today"><i class="fa-solid fa-location-crosshairs"></i> Hari Ini</button>
+                    </div>
+
+                    <div class="mode-toggle">
+                        <button type="button" class="mode-btn active" id="mode-period" onclick="setCalendarMode('period')">
+                            <i class="fa-solid fa-droplet"></i> Catat Haid
+                        </button>
+                        <button type="button" class="mode-btn intercourse-mode" id="mode-intercourse" onclick="setCalendarMode('intercourse')">
+                            <i class="fa-solid fa-heart"></i> Catat Hubungan
+                        </button>
+                    </div>
+
+                    <div class="selection-hint" id="selection-hint">
+                        <i class="fa-solid fa-hand-pointer"></i>
+                        <span class="hint-text" id="hint-text">Klik tanggal untuk pilih hari pertama menstruasi</span>
+                        <button type="button" class="btn-clear" onclick="clearSelection()"><i class="fa-solid fa-xmark"></i> Reset</button>
+                    </div>
+
+                    <div class="calendar-grid" id="calendar-grid"></div>
+
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color period"></div><span>Menstruasi</span></div>
+                        <div class="legend-item"><div class="legend-color fertile"></div><span>Masa Subur</span></div>
+                        <div class="legend-item"><div class="legend-color peak"></div><span>Sangat Subur</span></div>
+                        <div class="legend-item"><div class="legend-color ovulation"></div><span>Ovulasi</span></div>
+                        <div class="legend-item"><div class="legend-color predicted"></div><span>Prediksi Haid</span></div>
+                        <div class="legend-item"><span class="cycle-day-badge legend-cycle-badge">H5</span><span>Hari siklus</span></div>
+                        <div class="legend-item"><i class="fa-solid fa-heart legend-heart"></i><span>Hubungan</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section reveal fertility-form-section" id="add-period-section">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Catatan Baru</div>
+                        <h2 class="section-title">Menstruasi</h2>
+                    </div>
+                    <div class="section-note">Klik tanggal di kalender atau isi manual</div>
+                </div>
+                <div class="tool-panel fertility-form-panel">
+                    <form id="add-period-form">
+                        <div class="form-row">
+                            <div class="portal-field">
+                                <label for="period-start">Tanggal Mulai Haid *</label>
+                                <input class="portal-input" type="date" id="period-start" required>
+                            </div>
+                            <div class="portal-field">
+                                <label for="period-end">Tanggal Selesai</label>
+                                <input class="portal-input" type="date" id="period-end">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="portal-field">
+                                <label for="flow-intensity">Jumlah Darah</label>
+                                <select class="portal-select" id="flow-intensity">
+                                    <option value="light">Sedikit</option>
+                                    <option value="medium" selected>Sedang</option>
+                                    <option value="heavy">Banyak</option>
+                                </select>
+                            </div>
+                            <div class="portal-field">
+                                <label for="pain-intensity">Intensitas Nyeri</label>
+                                <select class="portal-select" id="pain-intensity">
+                                    <option value="none">Tidak Nyeri</option>
+                                    <option value="light">Ringan</option>
+                                    <option value="medium" selected>Sedang</option>
+                                    <option value="heavy">Berat</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="portal-field">
+                            <label>Gejala</label>
+                            <div class="symptoms-grid" id="symptoms-grid">
+                                <span class="symptom-tag" data-symptom="cramps">Kram</span>
+                                <span class="symptom-tag" data-symptom="headache">Sakit Kepala</span>
+                                <span class="symptom-tag" data-symptom="bloating">Kembung</span>
+                                <span class="symptom-tag" data-symptom="mood_swings">Mood Swing</span>
+                                <span class="symptom-tag" data-symptom="fatigue">Lelah</span>
+                                <span class="symptom-tag" data-symptom="breast_tenderness">Payudara Nyeri</span>
+                                <span class="symptom-tag" data-symptom="acne">Jerawat</span>
+                                <span class="symptom-tag" data-symptom="backache">Sakit Punggung</span>
+                            </div>
+                        </div>
+                        <div class="portal-field notes-field">
+                            <label for="notes">Catatan</label>
+                            <textarea class="portal-textarea" id="notes" rows="2" placeholder="Catatan tambahan..."></textarea>
+                        </div>
+                        <button type="submit" class="portal-button" id="btn-submit">
+                            <i class="fa-solid fa-save"></i> Simpan Data
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="section reveal fertility-history-section">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Riwayat</div>
+                        <h2 class="section-title">Siklus terakhir</h2>
+                    </div>
+                    <div class="section-note" id="cycle-count-label">0 data</div>
+                </div>
+                <div class="tool-panel fertility-history-panel">
+                    <div id="cycle-list" class="cycle-list">
+                        <div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat data...</p></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
     <div class="modal-overlay" id="delete-modal">
         <div class="modal">
             <div class="modal-title">Hapus Data Siklus?</div>
-            <div class="modal-body">
-                Apakah Anda yakin ingin menghapus data siklus ini? Tindakan ini tidak dapat dibatalkan.
-            </div>
+            <div class="modal-body">Data siklus ini akan dihapus dari kalender. Tindakan ini tidak dapat dibatalkan.</div>
             <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeDeleteModal()">Batal</button>
-                <button class="btn-danger" id="btn-confirm-delete">Hapus</button>
+                <button class="btn-secondary" type="button" onclick="closeDeleteModal()">Batal</button>
+                <button class="btn-danger" type="button" id="btn-confirm-delete">Hapus</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
 
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu.html')" aria-label="Beranda">
+                <i class="fa-solid fa-house"></i><span>Beranda</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen">
+                <i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span>
+            </button>
+            <button class="nav-item active soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
+                <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal">
+                <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang">
+                <i class="fa-solid fa-door-open"></i><span>Ruang</span>
+            </button>
+        </div>
+    </nav>
+
+    <div id="toast-container"></div>
+
+    <script src="/scripts/patient-tool-shell.js?v=20260601a"></script>
     <script>
-        const API_BASE = 'https://dokterdibya.com';
+        const API_BASE = '';
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMockMode = urlParams.has('mockApi') || urlParams.has('mockFertility');
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth() + 1;
         let calendarEvents = [];
         let cyclesData = [];
         let deleteTargetId = null;
-
-        // Selection state
-        let selectionMode = 'start'; // 'start', 'end', or 'done'
+        let selectionMode = 'start';
         let selectedStartDate = null;
         let selectedEndDate = null;
-
-        // Calendar mode: 'period' or 'intercourse'
         let calendarMode = 'period';
+        let mockCycles = [];
+        let mockIntercourseDates = new Set();
 
-        // Get auth token
-        function getToken() {
-            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
-        }
-
-        // Check authentication
-        function checkAuth() {
-            const token = getToken();
-            if (!token) {
-                window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname);
-                return false;
-            }
-            return true;
-        }
-
-        // Show toast message
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
-            toast.className = `toast ${type} show`;
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // Format date
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-        }
-
-        function formatDateShort(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-        }
-
-        // Month names
         const monthNames = [
             'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
         ];
 
-        // Render calendar
+            if (isMockMode && !getToken()) {
+            localStorage.setItem('vps_auth_token', 'mock-fertility-token');
+            localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
+        }
+
+        window.PatientToolShell?.init({ activeNav: 'aplikasi' });
+
+        if (checkAuth()) {
+            initFertilityCalendar();
+        }
+
+        async function initFertilityCalendar() {
+            window.PatientToolShell?.updateAvatarInitials();
+            if (isMockMode) seedMockData();
+            await loadCycles();
+            await loadCalendarData();
+            window.PatientToolShell?.showContent({ loadingId: 'loading-state', contentId: 'content-wrapper' });
+        }
+
+        function getToken() {
+            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        }
+
+        function checkAuth() {
+            if (getToken()) return true;
+            window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
+            return false;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const icon = type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'triangle-exclamation' : 'check-circle';
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<i class="fa-solid fa-${icon}"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3200);
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value == null ? '' : String(value);
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            const date = parseLooseDate(dateStr);
+            if (!date) return '-';
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function formatDateShort(dateStr) {
+            const date = parseLooseDate(dateStr);
+            if (!date) return '-';
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        }
+
         function renderCalendar() {
             const grid = document.getElementById('calendar-grid');
             const monthLabel = document.getElementById('calendar-month');
+            if (!grid || !monthLabel) return;
 
             monthLabel.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
 
-            // Day headers
             const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-            let html = dayHeaders.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
-
-            // First day of month
+            let html = dayHeaders.map(day => `<div class="calendar-day-header">${day}</div>`).join('');
             const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
             const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
 
-            // Empty cells before first day
             for (let i = 0; i < firstDay; i++) {
                 html += '<div class="calendar-day empty"></div>';
             }
 
-            // Days of month
-            const today = new Date();
-            const todayStr = today.toISOString().split('T')[0];
-
+            const todayStr = formatLocalDate(new Date());
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isToday = dateStr === todayStr;
+                const dayEvents = calendarEvents.filter(event => event.date === dateStr);
+                const classes = ['calendar-day'];
+                if (dateStr === todayStr) classes.push('today');
 
-                // Find events for this day
-                const dayEvents = calendarEvents.filter(e => e.date === dateStr);
-                let classes = ['calendar-day'];
-
-                if (isToday) classes.push('today');
-
-                // Check if this date is in the selection range
                 const isStart = selectedStartDate === dateStr;
                 const isEnd = selectedEndDate === dateStr;
-                const isInRange = selectedStartDate && selectedEndDate &&
-                    dateStr > selectedStartDate && dateStr < selectedEndDate;
+                    const isInRange = selectedStartDate && selectedEndDate && dateStr > selectedStartDate && dateStr < selectedEndDate;
 
                 if (isStart) {
                     classes.push('selecting-start');
@@ -1244,46 +1033,19 @@
                 } else if (isInRange) {
                     classes.push('selecting-range');
                 } else {
-                    // Priority: period > ovulation > peak_fertile > fertile > predicted_period
-                    const eventTypes = dayEvents.map(e => e.type);
-                    if (eventTypes.includes('period')) {
-                        classes.push('period');
-                    } else if (eventTypes.includes('ovulation')) {
-                        classes.push('ovulation');
-                    } else if (eventTypes.includes('peak_fertile')) {
-                        classes.push('peak_fertile');
-                    } else if (eventTypes.includes('fertile')) {
-                        classes.push('fertile');
-                    } else if (eventTypes.includes('predicted_period')) {
-                        classes.push('predicted_period');
-                    }
+                    const types = dayEvents.map(event => event.type);
+                    if (types.includes('period')) classes.push('period');
+                    else if (types.includes('ovulation')) classes.push('ovulation');
+                    else if (types.includes('peak_fertile')) classes.push('peak_fertile');
+                    else if (types.includes('fertile')) classes.push('fertile');
+                    else if (types.includes('predicted_period')) classes.push('predicted_period');
                 }
 
-                // Calculate cycle day (H1, H2, H3... until next period)
-                let badges = '';
-                if (cyclesData.length > 0) {
-                    const lastCycle = cyclesData[0];
-                    const cycleStart = new Date(lastCycle.period_start_date);
-                    const currentDate = new Date(dateStr);
-                    const cycleDay = Math.floor((currentDate - cycleStart) / (1000 * 60 * 60 * 24)) + 1;
-                    const cycleLen = lastCycle.cycle_length || 28;
-
-                    // Show H1, H2, H3... for all days within the cycle (blue badge)
-                    if (cycleDay > 0 && cycleDay <= cycleLen) {
-                        badges += `<span class="cycle-day-badge">H${cycleDay}</span>`;
-                    }
+                let badges = getCycleDayBadge(dateStr);
+                if (dayEvents.some(event => event.type === 'intercourse')) {
+                    badges += '<span class="intercourse-badge"><i class="fa-solid fa-heart"></i></span>';
                 }
-
-                // Check for intercourse event
-                const hasIntercourse = dayEvents.some(e => e.type === 'intercourse');
-                if (hasIntercourse) {
-                    badges += `<span class="intercourse-badge"><i class="fas fa-heart"></i></span>`;
-                }
-
-                // Add intercourse mode class if active
-                if (calendarMode === 'intercourse') {
-                    classes.push('intercourse-mode-active');
-                }
+                if (calendarMode === 'intercourse') classes.push('intercourse-mode-active');
 
                 html += `<div class="${classes.join(' ')}" data-date="${dateStr}" onclick="handleDayClick('${dateStr}')">${day}${badges}</div>`;
             }
@@ -1292,7 +1054,20 @@
             updateSelectionHint();
         }
 
-        // Navigation
+        function getCycleDayBadge(dateStr) {
+            if (!cyclesData.length) return '';
+            const lastCycle = cyclesData[0];
+            const start = parseLooseDate(lastCycle.period_start_date);
+            const current = parseLooseDate(dateStr);
+            if (!start || !current) return '';
+            const cycleDay = Math.floor((current.getTime() - start.getTime()) / 86400000) + 1;
+            const cycleLength = Number(lastCycle.cycle_length || 28);
+                    if (cycleDay > 0 && cycleDay <= cycleLength) {
+                return `<span class="cycle-day-badge">H${cycleDay}</span>`;
+            }
+            return '';
+        }
+
         function prevMonth() {
             currentMonth--;
             if (currentMonth < 1) {
@@ -1315,202 +1090,198 @@
             currentYear = new Date().getFullYear();
             currentMonth = new Date().getMonth() + 1;
             loadCalendarData();
+            showToast('Kembali ke bulan ini');
         }
 
-        // Select date (for adding period)
         function selectDate(dateStr) {
             if (selectionMode === 'start') {
-                // First click: set start date
                 selectedStartDate = dateStr;
                 selectedEndDate = null;
                 document.getElementById('period-start').value = dateStr;
                 document.getElementById('period-end').value = '';
                 selectionMode = 'end';
-                showToast('Tanggal mulai dipilih. Klik tanggal selesai menstruasi.', 'success');
+                showToast('Tanggal mulai dipilih. Klik tanggal selesai menstruasi.');
             } else if (selectionMode === 'end') {
-                // Second click: set end date
                 if (dateStr < selectedStartDate) {
-                    // If clicked date is before start, swap them
                     selectedEndDate = selectedStartDate;
                     selectedStartDate = dateStr;
                     document.getElementById('period-start').value = dateStr;
                     document.getElementById('period-end').value = selectedEndDate;
-                } else if (dateStr === selectedStartDate) {
-                    // Same date clicked, just set as 1 day period
-                    selectedEndDate = dateStr;
-                    document.getElementById('period-end').value = dateStr;
                 } else {
                     selectedEndDate = dateStr;
                     document.getElementById('period-end').value = dateStr;
                 }
                 selectionMode = 'done';
-                showToast('Rentang tanggal dipilih! Lengkapi form lalu simpan.', 'success');
-
-                // Auto-scroll to form section
+                showToast('Rentang tanggal dipilih. Lengkapi form lalu simpan.');
                 setTimeout(() => {
                     const formSection = document.getElementById('add-period-section');
+                    formSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     if (formSection) {
-                        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        // Highlight the form briefly
-                        formSection.style.boxShadow = '0 0 20px rgba(40, 167, 233, 0.5)';
-                        setTimeout(() => {
-                            formSection.style.boxShadow = '';
-                        }, 2000);
+                        formSection.style.filter = 'drop-shadow(0 0 0 rgba(0,0,0,0))';
                     }
-                }, 300);
+                }, 260);
             } else {
-                // Already done, start over with new selection
                 selectedStartDate = dateStr;
                 selectedEndDate = null;
                 document.getElementById('period-start').value = dateStr;
                 document.getElementById('period-end').value = '';
                 selectionMode = 'end';
-                showToast('Tanggal mulai baru dipilih. Klik tanggal selesai.', 'success');
+                showToast('Tanggal mulai baru dipilih. Klik tanggal selesai.');
             }
             renderCalendar();
         }
 
-        // Clear selection
         function clearSelection(silent = false) {
             selectedStartDate = null;
             selectedEndDate = null;
             selectionMode = 'start';
-            document.getElementById('period-start').value = '';
-            document.getElementById('period-end').value = '';
+            const startInput = document.getElementById('period-start');
+            const endInput = document.getElementById('period-end');
+            if (startInput) startInput.value = '';
+            if (endInput) endInput.value = '';
             renderCalendar();
-            if (!silent) {
-                showToast('Pilihan tanggal direset', 'success');
-            }
+            if (!silent) showToast('Pilihan tanggal direset');
         }
 
-        // Set calendar mode
         function setCalendarMode(mode) {
             calendarMode = mode;
-
-            // Update button states
             document.getElementById('mode-period').classList.toggle('active', mode === 'period');
             document.getElementById('mode-intercourse').classList.toggle('active', mode === 'intercourse');
-
-            // Update hint
-            const hintEl = document.getElementById('selection-hint');
-            const hintText = document.getElementById('hint-text');
-
             if (mode === 'intercourse') {
-                hintEl.style.display = 'flex';
-                hintText.innerHTML = '<strong>Mode Hubungan Intim:</strong> Klik tanggal untuk menandai/hapus';
-                // Clear period selection silently
                 clearSelection(true);
-            } else {
-                updateSelectionHint();
             }
-
             renderCalendar();
         }
 
-        // Handle day click based on mode
         function handleDayClick(dateStr) {
-            if (calendarMode === 'intercourse') {
-                toggleIntercourse(dateStr);
-            } else {
-                selectDate(dateStr);
-            }
+            if (calendarMode === 'intercourse') toggleIntercourse(dateStr);
+            else selectDate(dateStr);
         }
 
-        // Toggle intercourse for a date
         async function toggleIntercourse(dateStr) {
+            if (isMockMode) {
+                if (mockIntercourseDates.has(dateStr)) {
+                    mockIntercourseDates.delete(dateStr);
+                    showToast('Catatan hubungan intim dihapus');
+                } else {
+                    mockIntercourseDates.add(dateStr);
+                    showToast('Hubungan intim dicatat');
+                }
+                await loadCalendarData();
+                return;
+            }
+
             try {
-                const res = await fetch(`${API_BASE}/api/fertility-calendar/intercourse`, {
+                const response = await fetch(`${API_BASE}/api/fertility-calendar/intercourse`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + getToken()
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Cache-Control': 'no-cache'
                     },
                     body: JSON.stringify({ date: dateStr })
                 });
-
-                const result = await res.json();
-
+                const result = await response.json();
                 if (result.success) {
-                    if (result.action === 'added') {
-                        showToast('Hubungan intim dicatat', 'success');
-                    } else {
-                        showToast('Catatan hubungan intim dihapus', 'success');
-                    }
-                    // Reload calendar data
+                    showToast(result.action === 'added' ? 'Hubungan intim dicatat' : 'Catatan hubungan intim dihapus');
                     await loadCalendarData();
                 } else {
                     showToast(result.message || 'Gagal menyimpan', 'error');
                 }
-            } catch (err) {
-                console.error('Error toggling intercourse:', err);
+            } catch (error) {
+                console.error('Error toggling intercourse:', error);
                 showToast('Terjadi kesalahan', 'error');
             }
         }
 
-        // Update selection hint display
         function updateSelectionHint() {
-            const hintEl = document.getElementById('selection-hint');
+            const hint = document.getElementById('selection-hint');
             const hintText = document.getElementById('hint-text');
+            if (!hint || !hintText) return;
 
-            if (selectionMode === 'start' && !selectedStartDate) {
-                hintEl.style.display = 'none';
+            if (calendarMode === 'intercourse') {
+                hint.style.display = 'flex';
+                hintText.innerHTML = '<strong>Mode Hubungan:</strong> klik tanggal untuk menandai atau menghapus.';
+                return;
+            }
+
+                if (selectionMode === 'start' && !selectedStartDate) {
+                hint.style.display = 'none';
             } else {
-                hintEl.style.display = 'flex';
-                if (selectionMode === 'start') {
-                    hintText.innerHTML = '<strong>Langkah 1:</strong> Klik tanggal hari pertama menstruasi';
-                } else if (selectionMode === 'end') {
-                    hintText.innerHTML = `<strong>Mulai:</strong> ${formatDateShort(selectedStartDate)} — <strong>Langkah 2:</strong> Klik tanggal terakhir menstruasi`;
+                hint.style.display = 'flex';
+                if (selectionMode === 'end') {
+                    hintText.innerHTML = `<strong>Mulai:</strong> ${formatDateShort(selectedStartDate)} - <strong>Langkah 2:</strong> klik tanggal terakhir menstruasi.`;
+                } else if (selectionMode === 'done') {
+                    hintText.innerHTML = `<strong>Mulai:</strong> ${formatDateShort(selectedStartDate)} - <strong>Selesai:</strong> ${formatDateShort(selectedEndDate)}.`;
                 } else {
-                    hintText.innerHTML = `<strong>Mulai:</strong> ${formatDateShort(selectedStartDate)} — <strong>Selesai:</strong> ${formatDateShort(selectedEndDate)} ✓`;
+                    hintText.innerHTML = '<strong>Langkah 1:</strong> klik hari pertama menstruasi.';
                 }
             }
         }
 
-        // Load calendar data
         async function loadCalendarData() {
             try {
-                const res = await fetch(`${API_BASE}/api/fertility-calendar/calendar-data?year=${currentYear}&month=${currentMonth}`, {
-                    headers: { 'Authorization': 'Bearer ' + getToken() }
-                });
-                const data = await res.json();
+                if (isMockMode) {
+                    calendarEvents = buildMockEvents();
+                    renderCalendar();
+                    return;
+                }
 
+                const response = await fetch(`${API_BASE}/api/fertility-calendar/calendar-data?year=${currentYear}&month=${currentMonth}&_t=${Date.now()}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                const data = await response.json();
                 if (data.success) {
                     calendarEvents = data.events || [];
+                    updateMethodLabel(data.cycleAnalysis?.method || 'Estimasi kalender');
                 }
-            } catch (e) {
-                console.error('Error loading calendar:', e);
+            } catch (error) {
+                console.error('Error loading calendar:', error);
+                showToast('Gagal memuat kalender', 'error');
             }
             renderCalendar();
         }
 
-        // Load all cycles
         async function loadCycles() {
             try {
-                const res = await fetch(`${API_BASE}/api/fertility-calendar`, {
-                    headers: { 'Authorization': 'Bearer ' + getToken() }
-                });
-                const data = await res.json();
-
-                if (data.success) {
+                const data = isMockMode ? getMockCyclesResponse() : await fetchCycles();
+                if (data && data.success) {
                     cyclesData = data.cycles || [];
                     updateStats(data);
                     renderCycleList();
+                    updateCycleStatus(data);
+                    updateMethodLabel(data.cycleAnalysis?.method || data.currentFertility?.method || 'Estimasi kalender');
+                    return;
                 }
-            } catch (e) {
-                console.error('Error loading cycles:', e);
+                showToast(data?.message || 'Gagal memuat data siklus', 'error');
+            } catch (error) {
+                console.error('Error loading cycles:', error);
                 showToast('Gagal memuat data siklus', 'error');
             }
         }
 
-        // Update stats display
+        async function fetchCycles() {
+            const response = await fetch(`${API_BASE}/api/fertility-calendar?_t=${Date.now()}`, {
+                headers: {
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            return response.json();
+        }
+
         function updateStats(data) {
-            document.getElementById('avg-cycle').textContent = data.averageCycleLength + ' hari';
+            const average = data.averageCycleLength || data.cycleAnalysis?.averageCycleLength || data.cycleAnalysis?.avgCycleLength || '--';
+            document.getElementById('avg-cycle').textContent = average === '--' ? '-- hari' : `${average} hari`;
 
             if (data.currentFertility) {
-                const f = data.currentFertility;
-                document.getElementById('next-ovulation').textContent = formatDateShort(f.ovulationDate);
-                document.getElementById('fertile-window').textContent = `${formatDateShort(f.fertileWindowStart)} - ${formatDateShort(f.fertileWindowEnd)}`;
-                document.getElementById('next-period').textContent = formatDateShort(f.nextPeriodDate);
+                const fertility = data.currentFertility;
+                document.getElementById('next-ovulation').textContent = formatDateShort(fertility.ovulationDate);
+                document.getElementById('fertile-window').textContent = `${formatDateShort(fertility.fertileWindowStart)} - ${formatDateShort(fertility.fertileWindowEnd)}`;
+                document.getElementById('next-period').textContent = formatDateShort(fertility.nextPeriodDate);
             } else {
                 document.getElementById('next-ovulation').textContent = '--';
                 document.getElementById('fertile-window').textContent = '--';
@@ -1518,14 +1289,31 @@
             }
         }
 
-        // Render cycle history list
+        function updateCycleStatus(data) {
+            const status = document.getElementById('cycle-status');
+            const countLabel = document.getElementById('cycle-count-label');
+            if (countLabel) countLabel.textContent = `${cyclesData.length} data`;
+            if (!status) return;
+            if (!cyclesData.length) {
+                status.innerHTML = '<i class="fa-solid fa-calendar-plus"></i> Mulai catat siklus';
+                return;
+            }
+            const average = data.averageCycleLength || data.cycleAnalysis?.averageCycleLength || 28;
+            status.innerHTML = `<i class="fa-solid fa-wave-square"></i> Siklus ${average} hari`;
+        }
+
+        function updateMethodLabel(text) {
+            const method = document.getElementById('calendar-method');
+            if (method) method.textContent = text || 'Estimasi';
+        }
+
         function renderCycleList() {
             const container = document.getElementById('cycle-list');
-
-            if (cyclesData.length === 0) {
+            if (!container) return;
+            if (!cyclesData.length) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <i class="fas fa-calendar-plus"></i>
+                        <i class="fa-solid fa-calendar-plus"></i>
                         <p>Belum ada data siklus.<br>Tambahkan data menstruasi pertama Anda di atas.</p>
                     </div>
                 `;
@@ -1533,122 +1321,120 @@
             }
 
             container.innerHTML = cyclesData.map(cycle => {
-                const symptoms = cycle.symptoms ? JSON.parse(cycle.symptoms) : [];
-                const symptomLabels = {
+                const symptoms = parseSymptoms(cycle.symptoms);
+                const labels = {
                     cramps: 'Kram', headache: 'Sakit Kepala', bloating: 'Kembung',
                     mood_swings: 'Mood Swing', fatigue: 'Lelah', breast_tenderness: 'Payudara Nyeri',
                     acne: 'Jerawat', backache: 'Sakit Punggung'
                 };
-                const symptomText = symptoms.map(s => symptomLabels[s] || s).join(', ');
-
+                const symptomText = symptoms.map(item => labels[item] || item).join(', ');
                 const flowLabels = { light: 'Sedikit', medium: 'Sedang', heavy: 'Banyak' };
                 const painLabels = { none: 'Tidak Nyeri', light: 'Ringan', medium: 'Sedang', heavy: 'Berat' };
-
                 return `
                     <div class="cycle-item">
                         <div class="cycle-info">
                             <div class="cycle-date">${formatDate(cycle.period_start_date)}</div>
                             <div class="cycle-details">
-                                Darah: ${flowLabels[cycle.flow_intensity] || 'Sedang'}
-                                | Nyeri: ${painLabels[cycle.pain_intensity] || 'Tidak Nyeri'}
-                                ${cycle.cycle_length ? ` | Siklus: ${cycle.cycle_length} hari` : ''}
-                                ${symptomText ? `<br>${symptomText}` : ''}
+                                Darah: ${escapeHtml(flowLabels[cycle.flow_intensity] || 'Sedang')}
+                                | Nyeri: ${escapeHtml(painLabels[cycle.pain_intensity] || 'Tidak Nyeri')}
+                                ${cycle.cycle_length ? ` | Siklus: ${Number(cycle.cycle_length)} hari` : ''}
+                                ${symptomText ? `<br>${escapeHtml(symptomText)}` : ''}
                             </div>
                         </div>
-                        <div class="cycle-actions">
-                            <button class="btn-icon delete" onclick="confirmDelete(${cycle.id})" title="Hapus">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                        <button class="btn-icon delete" type="button" onclick="confirmDelete(${Number(cycle.id)})" aria-label="Hapus siklus">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 `;
             }).join('');
         }
 
-        // Sync date inputs with selection state
-        document.getElementById('period-start').addEventListener('change', (e) => {
-            selectedStartDate = e.target.value || null;
-            if (selectedStartDate && !selectedEndDate) {
-                selectionMode = 'end';
-            } else if (selectedStartDate && selectedEndDate) {
-                selectionMode = 'done';
-            } else {
-                selectionMode = 'start';
+        function parseSymptoms(value) {
+            if (!value) return [];
+            if (Array.isArray(value)) return value;
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
             }
+        }
+
+        document.getElementById('period-start').addEventListener('change', event => {
+            selectedStartDate = event.target.value || null;
+            if (selectedStartDate && !selectedEndDate) selectionMode = 'end';
+            else if (selectedStartDate && selectedEndDate) selectionMode = 'done';
+            else selectionMode = 'start';
             renderCalendar();
         });
 
-        document.getElementById('period-end').addEventListener('change', (e) => {
-            selectedEndDate = e.target.value || null;
-            if (selectedStartDate && selectedEndDate) {
-                selectionMode = 'done';
-            } else if (selectedStartDate) {
-                selectionMode = 'end';
-            }
+        document.getElementById('period-end').addEventListener('change', event => {
+            selectedEndDate = event.target.value || null;
+            if (selectedStartDate && selectedEndDate) selectionMode = 'done';
+            else if (selectedStartDate) selectionMode = 'end';
             renderCalendar();
         });
 
-        // Symptom tag toggle
         document.querySelectorAll('.symptom-tag').forEach(tag => {
             tag.addEventListener('click', () => tag.classList.toggle('active'));
         });
 
-        // Add period form submit
-        document.getElementById('add-period-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.getElementById('add-period-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            const button = document.getElementById('btn-submit');
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
 
-            const btn = document.getElementById('btn-submit');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
-
-            const symptoms = Array.from(document.querySelectorAll('.symptom-tag.active'))
-                .map(tag => tag.dataset.symptom);
-
-            const data = {
+            const symptoms = Array.from(document.querySelectorAll('.symptom-tag.active')).map(tag => tag.dataset.symptom);
+            const payload = {
                 period_start_date: document.getElementById('period-start').value,
                 period_end_date: document.getElementById('period-end').value || null,
                 flow_intensity: document.getElementById('flow-intensity').value,
                 pain_intensity: document.getElementById('pain-intensity').value,
-                symptoms: symptoms.length > 0 ? symptoms : null,
+                symptoms: symptoms.length ? symptoms : null,
                 notes: document.getElementById('notes').value || null
             };
 
             try {
-                const res = await fetch(`${API_BASE}/api/fertility-calendar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + getToken()
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-
+                const result = isMockMode ? saveMockCycle(payload) : await saveCycle(payload);
                 if (result.success) {
                     showToast('Data siklus berhasil disimpan');
-                    // Reset form
-                    document.getElementById('add-period-form').reset();
-                    document.querySelectorAll('.symptom-tag.active').forEach(t => t.classList.remove('active'));
-                    // Reset selection state
-                    selectedStartDate = null;
-                    selectedEndDate = null;
-                    selectionMode = 'start';
-                    // Reload data
+                    resetPeriodForm();
                     await loadCycles();
                     await loadCalendarData();
                 } else {
                     showToast(result.message || 'Gagal menyimpan data', 'error');
                 }
-            } catch (err) {
-                console.error('Error saving:', err);
+            } catch (error) {
+                console.error('Error saving cycle:', error);
                 showToast('Terjadi kesalahan', 'error');
             }
 
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Data';
+            button.disabled = false;
+            button.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Data';
         });
 
-        // Delete cycle
+        async function saveCycle(payload) {
+            const response = await fetch(`${API_BASE}/api/fertility-calendar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify(payload)
+            });
+            return response.json();
+        }
+
+        function resetPeriodForm() {
+            document.getElementById('add-period-form').reset();
+            document.querySelectorAll('.symptom-tag.active').forEach(tag => tag.classList.remove('active'));
+            selectedStartDate = null;
+            selectedEndDate = null;
+            selectionMode = 'start';
+        }
+
         function confirmDelete(id) {
             deleteTargetId = id;
             document.getElementById('delete-modal').classList.add('show');
@@ -1661,14 +1447,8 @@
 
         document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
             if (!deleteTargetId) return;
-
             try {
-                const res = await fetch(`${API_BASE}/api/fertility-calendar/${deleteTargetId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + getToken() }
-                });
-                const result = await res.json();
-
+                const result = isMockMode ? deleteMockCycle(deleteTargetId) : await deleteCycle(deleteTargetId);
                 if (result.success) {
                     showToast('Data siklus berhasil dihapus');
                     await loadCycles();
@@ -1676,20 +1456,205 @@
                 } else {
                     showToast(result.message || 'Gagal menghapus', 'error');
                 }
-            } catch (err) {
+            } catch (error) {
+                console.error('Error deleting cycle:', error);
                 showToast('Terjadi kesalahan', 'error');
             }
-
             closeDeleteModal();
         });
 
-        // Initialize
-        if (checkAuth()) {
-            loadCycles();
-            loadCalendarData();
+        async function deleteCycle(id) {
+            const response = await fetch(`${API_BASE}/api/fertility-calendar/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            return response.json();
         }
+
+        function seedMockData() {
+            if (mockCycles.length) return;
+            const today = startOfLocalDay(new Date());
+            const starts = [addDays(today, -12), addDays(today, -41), addDays(today, -70), addDays(today, -98)];
+            mockCycles = starts.map((date, index) => ({
+                id: 9000 + index,
+                period_start_date: formatLocalDate(date),
+                period_end_date: formatLocalDate(addDays(date, 4)),
+                cycle_length: index === starts.length - 1 ? 28 : Math.max(24, Math.round((starts[index].getTime() - starts[index + 1].getTime()) / 86400000)),
+                flow_intensity: index % 2 === 0 ? 'medium' : 'light',
+                pain_intensity: index % 2 === 0 ? 'medium' : 'light',
+                symptoms: JSON.stringify(index === 0 ? ['cramps', 'fatigue'] : ['bloating']),
+                notes: null
+            }));
+            mockIntercourseDates = new Set([
+                formatLocalDate(addDays(starts[0], 8)),
+                formatLocalDate(addDays(starts[0], 12))
+            ]);
+        }
+
+        function getMockCyclesResponse() {
+            const analysis = analyzeLocalCycles(mockCycles);
+            const currentFertility = mockCycles.length ? calculateLocalFertility(mockCycles[0].period_start_date, analysis) : null;
+            return {
+                success: true,
+                cycles: mockCycles.slice().sort((a, b) => String(b.period_start_date).localeCompare(String(a.period_start_date))),
+                averageCycleLength: analysis.averageCycleLength,
+                cycleAnalysis: analysis,
+                currentFertility
+            };
+        }
+
+        function saveMockCycle(payload) {
+            if (!payload.period_start_date) return { success: false, message: 'Tanggal mulai menstruasi wajib diisi' };
+            if (mockCycles.some(cycle => cycle.period_start_date === payload.period_start_date)) {
+                return { success: false, message: 'Data untuk tanggal ini sudah ada' };
+            }
+            const previous = mockCycles.filter(cycle => cycle.period_start_date < payload.period_start_date).sort((a, b) => String(b.period_start_date).localeCompare(String(a.period_start_date)))[0];
+            const cycleLength = previous ? Math.max(20, Math.round((parseLooseDate(payload.period_start_date).getTime() - parseLooseDate(previous.period_start_date).getTime()) / 86400000)) : 28;
+            mockCycles.push({
+                id: Date.now(),
+                period_start_date: payload.period_start_date,
+                period_end_date: payload.period_end_date,
+                cycle_length: cycleLength,
+                flow_intensity: payload.flow_intensity || 'medium',
+                pain_intensity: payload.pain_intensity || 'none',
+                symptoms: payload.symptoms ? JSON.stringify(payload.symptoms) : null,
+                notes: payload.notes || null
+            });
+            mockCycles.sort((a, b) => String(b.period_start_date).localeCompare(String(a.period_start_date)));
+            return { success: true };
+        }
+
+        function deleteMockCycle(id) {
+            const before = mockCycles.length;
+            mockCycles = mockCycles.filter(cycle => Number(cycle.id) !== Number(id));
+            return { success: before !== mockCycles.length, message: before === mockCycles.length ? 'Data tidak ditemukan' : 'Data dihapus' };
+        }
+
+        function buildMockEvents() {
+            const analysis = analyzeLocalCycles(mockCycles);
+            const events = [];
+            mockCycles.forEach(cycle => {
+                const fertility = calculateLocalFertility(cycle.period_start_date, analysis);
+                pushDateRangeEvents(events, cycle.period_start_date, cycle.period_end_date || formatLocalDate(addDays(parseLooseDate(cycle.period_start_date), 4)), 'period', 'Menstruasi', cycle);
+                pushDateRangeEvents(events, fertility.fertileWindowStart, fertility.fertileWindowEnd, 'fertile', 'Masa Subur');
+                pushDateRangeEvents(events, fertility.peakFertileStart, fertility.peakFertileEnd, 'peak_fertile', 'Sangat Subur');
+                events.push({ date: fertility.ovulationDate, type: 'ovulation', label: 'Ovulasi' });
+                events.push({ date: fertility.nextPeriodDate, type: 'predicted_period', label: 'Prediksi Haid' });
+            });
+            mockIntercourseDates.forEach(date => events.push({ date, type: 'intercourse', label: 'Hubungan Intim' }));
+            return events;
+        }
+
+        function pushDateRangeEvents(events, startValue, endValue, type, label, cycle) {
+            const start = parseLooseDate(startValue);
+            const end = parseLooseDate(endValue);
+            if (!start || !end) return;
+            let day = 1;
+            for (let current = new Date(start); current <= end; current.setDate(current.getDate() + 1)) {
+                events.push({
+                    date: formatLocalDate(current),
+                    type,
+                    label,
+                    intensity: cycle?.flow_intensity,
+                    periodDay: day,
+                    cycleStartDate: cycle?.period_start_date
+                });
+                day++;
+            }
+        }
+
+        function analyzeLocalCycles(cycles) {
+            const sorted = cycles.slice().sort((a, b) => String(b.period_start_date).localeCompare(String(a.period_start_date)));
+            const lengths = sorted.map(cycle => Number(cycle.cycle_length)).filter(length => length > 0 && length < 60);
+            const average = lengths.length ? Math.round(lengths.reduce((sum, length) => sum + length, 0) / lengths.length) : 28;
+            const shortest = lengths.length ? Math.min(...lengths) : 28;
+            const longest = lengths.length ? Math.max(...lengths) : 28;
+            const variation = longest - shortest;
+            const isIrregular = variation > 7;
+            return {
+                averageCycleLength: average,
+                avgCycleLength: average,
+                shortestCycle: shortest,
+                longestCycle: longest,
+                cycleVariation: variation,
+                isIrregular,
+                cycleType: isIrregular ? 'irregular' : average >= 26 && average <= 32 ? 'standard_days' : 'regular',
+                method: isIrregular ? `Siklus tidak teratur (${variation} hari)` : 'Standard Days Method'
+            };
+        }
+
+        function calculateLocalFertility(periodStart, analysis) {
+            const start = parseLooseDate(periodStart);
+            const average = Number(analysis.averageCycleLength || 28);
+            let firstFertileDay;
+            let lastFertileDay;
+            let ovulationDay;
+            if (analysis.isIrregular) {
+                firstFertileDay = Math.max(1, Number(analysis.shortestCycle || 28) - 18);
+                lastFertileDay = Math.max(firstFertileDay + 1, Number(analysis.longestCycle || 28) - 11);
+                ovulationDay = average - 14;
+            } else if (analysis.cycleType === 'standard_days') {
+                firstFertileDay = 8;
+                lastFertileDay = 19;
+                ovulationDay = 14;
+            } else {
+                ovulationDay = average - 14;
+                firstFertileDay = ovulationDay - 5;
+                lastFertileDay = ovulationDay + 1;
+            }
+            const ovulationDate = addDays(start, ovulationDay);
+            const fertileStart = addDays(start, firstFertileDay - 1);
+            const fertileEnd = addDays(start, lastFertileDay - 1);
+            const peakStart = addDays(ovulationDate, -2);
+            const nextPeriod = addDays(start, average);
+            return {
+                ovulationDate: formatLocalDate(ovulationDate),
+                fertileWindowStart: formatLocalDate(fertileStart),
+                fertileWindowEnd: formatLocalDate(fertileEnd),
+                peakFertileStart: formatLocalDate(peakStart),
+                peakFertileEnd: formatLocalDate(ovulationDate),
+                nextPeriodDate: formatLocalDate(nextPeriod),
+                method: analysis.method
+            };
+        }
+
+        function parseLooseDate(value) {
+            if (!value) return null;
+            if (value instanceof Date) return startOfLocalDay(value);
+            const dateOnly = String(value).slice(0, 10);
+            const parts = dateOnly.split('-').map(Number);
+            if (parts.length < 3 || parts.some(Number.isNaN)) return null;
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+
+        function startOfLocalDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function addDays(date, days) {
+            const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            next.setDate(next.getDate() + days);
+            return next;
+        }
+
+        function formatLocalDate(value) {
+            const date = value instanceof Date ? value : parseLooseDate(value);
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        window.prevMonth = prevMonth;
+        window.nextMonth = nextMonth;
+        window.goToToday = goToToday;
+        window.setCalendarMode = setCalendarMode;
+        window.clearSelection = clearSelection;
+        window.handleDayClick = handleDayClick;
+        window.confirmDelete = confirmDelete;
+        window.closeDeleteModal = closeDeleteModal;
     </script>
-<script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/js/patient-tracker.js?v=20260424"></script>
+    <script src="/js/push-subscribe.js?v=20260424"></script>
 </body>
 </html>

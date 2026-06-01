@@ -25,12 +25,12 @@
     };
 
     var ROOM_ITEMS = {
-        'album-usg': { label: 'Album USG', copy: 'Frame USG', icon: 'fa-image', url: '/album-usg-trial.html', className: 'pmc-room-frame' },
-        'active-booking': { label: 'Jadwal', copy: 'Kalender klinik', icon: 'fa-calendar-check', url: '/booking-klinik-trial.html', className: 'pmc-room-calendar' },
-        'pregnancy-tracker': { label: 'Tracker', copy: 'Kartu kehamilan', icon: 'fa-chart-line', url: '/pregnancy-tracker-trial.html', className: 'pmc-room-tracker' },
-        documents: { label: 'Dokumen', copy: 'Map medis', icon: 'fa-folder-open', url: '/dokumen-medis-trial.html', className: 'pmc-room-documents' },
-        'vitamin-reminder': { label: 'Vitamin', copy: 'Kotak reminder', icon: 'fa-pills', url: '/jadwal-vitamin-trial.html', className: 'pmc-room-vitamin' },
-        'tanya-dokter': { label: 'Tanya Dokter', copy: 'Chat aman', icon: 'fa-comments', url: '/tanya-dokter-trial.html', className: 'pmc-room-chat' },
+        'album-usg': { label: 'Album USG', copy: 'Frame USG', icon: 'fa-image', url: '/album-usg.html', className: 'pmc-room-frame' },
+        'active-booking': { label: 'Jadwal', copy: 'Kalender klinik', icon: 'fa-calendar-check', url: '/booking-klinik.html', className: 'pmc-room-calendar' },
+        'pregnancy-tracker': { label: 'Tracker', copy: 'Kartu kehamilan', icon: 'fa-chart-line', url: '/pregnancy-tracker.html', className: 'pmc-room-tracker' },
+        documents: { label: 'Dokumen', copy: 'Map medis', icon: 'fa-folder-open', url: '/dokumen-medis.html', className: 'pmc-room-documents' },
+        'vitamin-reminder': { label: 'Vitamin', copy: 'Kotak reminder', icon: 'fa-pills', url: '/jadwal-vitamin.html', className: 'pmc-room-vitamin' },
+        'tanya-dokter': { label: 'Tanya Dokter', copy: 'Chat aman', icon: 'fa-comments', url: '/tanya-dokter.html', className: 'pmc-room-chat' },
         'personal-note': { label: 'Catatan', copy: 'Papan pribadi', icon: 'fa-note-sticky', action: 'note', className: 'pmc-room-note' },
         favorites: { label: 'Favorit', copy: 'Shortcut', icon: 'fa-thumbtack', action: 'favorites', className: 'pmc-room-favorites' }
     };
@@ -81,9 +81,9 @@
                     { id: 'favorites', label: 'Favorit', visible: true, order: 70 }
                 ],
                 favorites: [
-                    { id: 'album-usg', label: 'Album USG', icon: 'fa-image', url: '/album-usg-trial.html' },
-                    { id: 'booking', label: 'Booking', icon: 'fa-calendar-check', url: '/booking-klinik-trial.html' },
-                    { id: 'tanya-dokter', label: 'Tanya Dokter', icon: 'fa-comments', url: '/tanya-dokter-trial.html' }
+                    { id: 'album-usg', label: 'Album USG', icon: 'fa-image', url: '/album-usg.html' },
+                    { id: 'booking', label: 'Booking', icon: 'fa-calendar-check', url: '/booking-klinik.html' },
+                    { id: 'tanya-dokter', label: 'Tanya Dokter', icon: 'fa-comments', url: '/tanya-dokter.html' }
                 ]
             },
             theme: {
@@ -220,7 +220,7 @@
     function getShareUrl() {
         var settings = state.data && state.data.public_settings ? state.data.public_settings : {};
         if (!settings.share_code) return '';
-        return window.location.origin + '/my-corner-visit-trial.html?c=' + encodeURIComponent(settings.share_code);
+        return window.location.origin + '/my-corner-visit.html?c=' + encodeURIComponent(settings.share_code);
     }
 
     function getWidgets() {

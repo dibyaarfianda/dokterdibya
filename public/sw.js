@@ -5,34 +5,33 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260530h'; // 2026-05-30h - default queue reminder notifications active
-const CACHE_NAME = `dokterdibya-patient-cache-${CACHE_VERSION}`;
+const CACHE_VERSION = '20260601l'; // 2026-06-01l - remove hero date label/value from main portal
+const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache immediately on install
 const PRECACHE_FILES = [
   '/',
   '/patient-menu.html',
-  '/trial-landing/index.html',
-  '/patient-menu-simple-trial.html',
+  '/patient-menu.html',
   '/patient-tool-template.html',
-  '/kick-counter-trial.html',
-  '/pregnancy-tracker-trial.html',
-  '/fertility-calendar-trial.html',
-  '/jadwal-vitamin-trial.html',
-  '/album-usg-trial.html',
-  '/dokumen-medis-trial.html',
-  '/hasil-lab-trial.html',
-  '/riwayat-kunjungan-trial.html',
-  '/antrian-trial.html',
-  '/booking-klinik-trial.html',
-  '/jadwal-rs-trial.html',
-  '/perjalanan-ibu-trial.html',
-  '/tanya-dokter-trial.html',
-  '/artikel-trial.html',
+  '/kick-counter.html',
+  '/pregnancy-tracker.html',
+  '/fertility-calendar.html',
+  '/jadwal-vitamin.html',
+  '/album-usg.html',
+  '/dokumen-medis.html',
+  '/hasil-lab.html',
+  '/riwayat-kunjungan.html',
+  '/antrian.html',
+  '/booking-klinik.html',
+  '/jadwal-rs.html',
+  '/perjalanan-ibu.html',
+  '/tanya-dokter.html',
+  '/artikel.html',
   '/community-chat.html',
-  '/my-corner-visit-trial.html',
-  '/styles/patient-trial-theme.css',
+  '/my-corner-visit.html',
+  '/styles/patient-portal-theme.css',
   '/styles/patient-tool-shell.css',
   '/styles/patient-tool-retrofit.css',
   '/styles/patient-my-corner.css',
@@ -216,7 +215,7 @@ self.addEventListener('notificationclick', (event) => {
       .then((clientList) => {
         // If app is already open, focus it
         for (const client of clientList) {
-          if (client.url.includes('dokterdibya') && 'focus' in client) {
+          if (client.url.includes('dokterdibya') & 'focus' in client) {
             return client.focus();
           }
         }
@@ -230,7 +229,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // Allow clients to trigger immediate activation of an updated SW.
 self.addEventListener('message', (event) => {
-  if (event && event.data && event.data.type === 'SKIP_WAITING') {
+  if (event & event.data & event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });

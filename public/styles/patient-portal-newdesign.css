@@ -1,0 +1,1046 @@
+/* ============================================================
+   Portal theme — mirrors newdesign/patient-portal.html
+   Activated by patient-theme.js when 
+   ============================================================ */
+
+/* ---------- Design Tokens ---------- */
+.portal-newdesign-theme {
+    --portal-bg-page: #ffffff;
+    --portal-bg-surface: #ffffff;
+    --portal-bg-elevated: #f6f6f6;
+    --portal-text-primary: #111111;
+    --portal-text-body: #2b2b2b;
+    --portal-text-secondary: #565656;
+    --portal-text-muted: #767676;
+    --portal-line-soft: rgba(0, 0, 0, 0.12);
+    --portal-line-strong: rgba(0, 0, 0, 0.2);
+    --portal-accent: #111111;
+    --portal-accent-hover: #2a2a2a;
+    --portal-accent-soft: rgba(0, 0, 0, 0.08);
+    --portal-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --portal-radius: 12px;
+    --portal-border: 1.8px dashed var(--portal-line-soft);
+    --portal-border-strong: 1.8px dashed var(--portal-line-strong);
+}
+
+/* ---------- Global ---------- */
+html.portal-newdesign-theme,
+body.portal-newdesign-theme {
+    background: var(--portal-bg-page) !important;
+    color: var(--portal-text-primary) !important;
+    font-family: var(--portal-font) !important;
+    -webkit-font-smoothing: antialiased !important;
+}
+
+body.portal-newdesign-theme *:not(i):not(.fa):not([class*="fa-"]) {
+    font-family: var(--portal-font) !important;
+}
+
+body.portal-newdesign-theme .app-wrapper,
+body.portal-newdesign-theme .content,
+body.portal-newdesign-theme .content-full,
+body.portal-newdesign-theme .content-container,
+body.portal-newdesign-theme main {
+    background: transparent !important;
+}
+
+/* ---------- Grid Background (decorative) ---------- */
+body.portal-newdesign-theme::before {
+    content: '';
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    height: 600px;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(to right, #f2f2f2 1px, transparent 1px),
+        linear-gradient(to bottom, #f2f2f2 1px, transparent 1px);
+    background-size: 16px 16px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0,0,0,0.9), rgba(0,0,0,0.25) 55%, transparent 85%);
+    mask-image: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(0,0,0,0.9), rgba(0,0,0,0.25) 55%, transparent 85%);
+}
+
+/* ---------- Topbar / Navbar ---------- */
+body.portal-newdesign-theme .nav-bar,
+body.portal-newdesign-theme .topbar,
+body.portal-newdesign-theme nav {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1.5px dashed var(--portal-line-soft) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    backdrop-filter: blur(24px) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .nav-container,
+body.portal-newdesign-theme .topbar-inner {
+    max-width: 760px !important;
+    margin: 0 auto !important;
+}
+
+body.portal-newdesign-theme .welcome-text,
+body.portal-newdesign-theme .brand {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .welcome-title,
+body.portal-newdesign-theme .brand-title {
+    color: var(--portal-text-primary) !important;
+    font-weight: 700 !important;
+    font-size: 19px !important;
+    letter-spacing: -0.01em !important;
+}
+
+body.portal-newdesign-theme .welcome-subtitle,
+body.portal-newdesign-theme .brand-sub {
+    color: var(--portal-text-muted) !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2em !important;
+}
+
+body.portal-newdesign-theme .nav-bar a,
+body.portal-newdesign-theme .user-info-nav .user-name {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .user-info-nav .user-role {
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Notification Bell ---------- */
+body.portal-newdesign-theme .notification-bell,
+body.portal-newdesign-theme .circle-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background: var(--portal-bg-surface) !important;
+    color: var(--portal-text-primary) !important;
+    border: none !important;
+    display: grid !important;
+    place-items: center !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .notification-bell:hover,
+body.portal-newdesign-theme .circle-btn:hover {
+    background: #f0f0f0 !important;
+}
+
+/* ---------- Avatar ---------- */
+body.portal-newdesign-theme .avatar-circle,
+body.portal-newdesign-theme .user-avatar,
+body.portal-newdesign-theme .avatar,
+body.portal-newdesign-theme .avatar-large,
+body.portal-newdesign-theme .user-avatar-nav .avatar-circle {
+    background: #e9e9e9 !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .avatar-circle span,
+body.portal-newdesign-theme .user-avatar span,
+body.portal-newdesign-theme .avatar span {
+    color: var(--portal-text-primary) !important;
+}
+
+/* ---------- VIP Badge ---------- */
+body.portal-newdesign-theme .vip-badge {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    font-size: 7px !important;
+    font-weight: 700 !important;
+    padding: 1px 4px !important;
+    border-radius: 6px !important;
+    border: 2px solid var(--portal-bg-surface) !important;
+}
+
+/* ---------- Dropdown Menu ---------- */
+body.portal-newdesign-theme .dropdown-menu-custom {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .dropdown-menu-custom a {
+    color: var(--portal-text-primary) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+body.portal-newdesign-theme .dropdown-menu-custom a:hover,
+body.portal-newdesign-theme .dropdown-menu-custom a:active {
+    background: var(--portal-accent-soft) !important;
+}
+
+body.portal-newdesign-theme .dropdown-menu-custom a i {
+    color: var(--portal-text-secondary) !important;
+}
+
+body.portal-newdesign-theme .dropdown-menu-custom a.logout {
+    border-top: var(--portal-border) !important;
+}
+
+/* ---------- Dashboard Cards ---------- */
+body.portal-newdesign-theme .dashboard-card,
+body.portal-newdesign-theme .dash-card {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .dashboard-card:hover,
+body.portal-newdesign-theme .dash-card:hover {
+    background: var(--portal-bg-elevated) !important;
+    border-color: var(--portal-line-strong) !important;
+}
+
+body.portal-newdesign-theme .collapsible-header,
+body.portal-newdesign-theme .dash-card-header {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .collapsible-header h3,
+body.portal-newdesign-theme .dash-card-header h3 {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .collapsible-header i,
+body.portal-newdesign-theme .dash-card-header i {
+    color: var(--portal-text-secondary) !important;
+}
+
+body.portal-newdesign-theme .toggle-icon {
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Welcome Section ---------- */
+body.portal-newdesign-theme #welcome-section {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .welcome-content,
+body.portal-newdesign-theme .welcome-body {
+    color: var(--portal-text-body) !important;
+}
+
+body.portal-newdesign-theme .welcome-content p,
+body.portal-newdesign-theme .welcome-body p {
+    color: var(--portal-text-body) !important;
+}
+
+/* ---------- Menu Grid & Cards ---------- */
+body.portal-newdesign-theme .menu-container {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+body.portal-newdesign-theme .menu-grid {
+    gap: 10px !important;
+}
+
+body.portal-newdesign-theme .menu-card {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+    padding: 20px 14px !important;
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+                background-color 0.25s ease,
+                border-color 0.25s ease,
+                box-shadow 0.25s ease;
+    will-change: transform;
+}
+
+body.portal-newdesign-theme .menu-card:hover {
+    background: var(--portal-bg-elevated) !important;
+    border-color: var(--portal-line-strong) !important;
+    transform: scale(1.03) translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body.portal-newdesign-theme .menu-card:active {
+    transform: scale(0.97);
+    background: var(--portal-accent-soft) !important;
+}
+
+body.portal-newdesign-theme .menu-card h3 {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .menu-card p {
+    font-size: 10px !important;
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Menu Icons ---------- */
+body.portal-newdesign-theme .menu-icon {
+    background: var(--portal-accent-soft) !important;
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    color: var(--portal-text-primary) !important;
+    width: 48px !important;
+    height: 48px !important;
+}
+
+body.portal-newdesign-theme .menu-icon i {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .menu-badge {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Quick Status Card ---------- */
+body.portal-newdesign-theme .quick-status {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+body.portal-newdesign-theme .status-card {
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .status-card .status-icon {
+    background: var(--portal-accent-soft) !important;
+    border: var(--portal-border) !important;
+    border-radius: 10px !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .status-card .status-icon i {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .status-card .status-info h4 {
+    color: var(--portal-text-primary) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+body.portal-newdesign-theme .status-card .status-info p {
+    color: var(--portal-text-muted) !important;
+    font-size: 11px !important;
+}
+
+/* ---------- Birth Congratulations Card ---------- */
+body.portal-newdesign-theme .birth-congrats-card {
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .birth-corner-accent {
+    border-color: var(--portal-accent) !important;
+    border-style: dashed !important;
+    border-width: 1.8px !important;
+}
+
+body.portal-newdesign-theme .birth-header h2 {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .birth-photo {
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .birth-details h3 {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .birth-subtitle {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .birth-detail-box {
+    background: var(--portal-accent-soft) !important;
+    border: var(--portal-border) !important;
+    border-radius: 10px !important;
+}
+
+body.portal-newdesign-theme .birth-detail-label {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .birth-detail-value {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .birth-message-container {
+    background: var(--portal-accent-soft) !important;
+    border-left: 3px dashed var(--portal-accent) !important;
+}
+
+body.portal-newdesign-theme .birth-message-label {
+    color: var(--portal-text-secondary) !important;
+}
+
+body.portal-newdesign-theme .birth-message {
+    color: var(--portal-text-body) !important;
+}
+
+/* ---------- Bottom Sheet ---------- */
+body.portal-newdesign-theme .bottom-sheet-overlay,
+body.portal-newdesign-theme #sheet-overlay {
+    background: rgba(0, 0, 0, 0.35) !important;
+}
+
+body.portal-newdesign-theme .bottom-sheet,
+body.portal-newdesign-theme #bottom-sheet {
+    background: var(--portal-bg-surface) !important;
+    border-top: var(--portal-border-strong) !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .bottom-sheet-handle {
+    background: var(--portal-line-soft) !important;
+}
+
+body.portal-newdesign-theme .bottom-sheet-header,
+body.portal-newdesign-theme .sheet-header {
+    border-bottom: var(--portal-border) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .bottom-sheet-header h3,
+body.portal-newdesign-theme .sheet-header h3,
+body.portal-newdesign-theme #sheet-title {
+    color: var(--portal-text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+}
+
+body.portal-newdesign-theme .sheet-icon,
+body.portal-newdesign-theme #sheet-icon {
+    border: var(--portal-border-strong) !important;
+    border-radius: 10px !important;
+    background: var(--portal-accent-soft) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .sheet-icon i,
+body.portal-newdesign-theme #sheet-icon i {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .sheet-menu-item {
+    color: var(--portal-text-primary) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+body.portal-newdesign-theme .sheet-menu-item:hover,
+body.portal-newdesign-theme .sheet-menu-item:active {
+    background: var(--portal-accent-soft) !important;
+}
+
+body.portal-newdesign-theme .sheet-menu-item i.menu-icon,
+body.portal-newdesign-theme .sheet-menu-item .fa {
+    color: var(--portal-text-secondary) !important;
+}
+
+body.portal-newdesign-theme .sheet-menu-item .arrow {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .item-badge {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+}
+
+body.portal-newdesign-theme .unread-badge {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Download App Banner ---------- */
+body.portal-newdesign-theme .download-app-banner {
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .download-app-banner h4 {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .download-app-banner p {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .download-btn {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+}
+
+body.portal-newdesign-theme .download-btn.appstore,
+body.portal-newdesign-theme .download-btn.ios {
+    background: var(--portal-text-muted) !important;
+}
+
+/* ---------- iOS Install Prompt ---------- */
+body.portal-newdesign-theme .ios-install-prompt {
+    background: var(--portal-bg-surface) !important;
+    border-top: var(--portal-border-strong) !important;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+}
+
+body.portal-newdesign-theme .ios-install-prompt-handle {
+    background: var(--portal-line-soft) !important;
+}
+
+body.portal-newdesign-theme .ios-install-prompt-header h4 {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .ios-install-prompt-close {
+    background: var(--portal-accent-soft) !important;
+    border: var(--portal-border) !important;
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .ios-install-steps li {
+    border-bottom: var(--portal-border) !important;
+    color: var(--portal-text-body) !important;
+}
+
+body.portal-newdesign-theme .ios-step-number {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+}
+
+body.portal-newdesign-theme .ios-step-icon {
+    background: var(--portal-accent-soft) !important;
+}
+
+/* ---------- Notification Permission Banner ---------- */
+body.portal-newdesign-theme .notif-perm-banner,
+body.portal-newdesign-theme #notification-banner {
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .notif-perm-banner .banner-icon,
+body.portal-newdesign-theme #notification-banner .banner-icon {
+    border: var(--portal-border) !important;
+    background: var(--portal-accent-soft) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .notif-perm-banner h4,
+body.portal-newdesign-theme #notification-banner h4,
+body.portal-newdesign-theme #notification-banner div[style*="font-weight"] {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .notif-perm-banner button,
+body.portal-newdesign-theme #notification-banner button {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+/* ---------- Pull to Refresh ---------- */
+body.portal-newdesign-theme .pull-indicator {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Bottom Navigation ---------- */
+body.portal-newdesign-theme .bottom-nav {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-top: var(--portal-border) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    backdrop-filter: blur(24px) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .bottom-nav .nav-item,
+body.portal-newdesign-theme .bottom-nav a {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .bottom-nav .nav-item.active,
+body.portal-newdesign-theme .bottom-nav .nav-item[aria-current='page'],
+body.portal-newdesign-theme .bottom-nav a.active {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .bottom-nav .nav-item.active i,
+body.portal-newdesign-theme .bottom-nav .nav-item.active span {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .bottom-nav .nav-item span,
+body.portal-newdesign-theme .bottom-nav a span {
+    font-size: 9px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    font-weight: 600 !important;
+}
+
+/* ---------- Generic Cards (all pages) ---------- */
+body.portal-newdesign-theme .card,
+body.portal-newdesign-theme .feature-card,
+body.portal-newdesign-theme .quick-action,
+body.portal-newdesign-theme .menu-item,
+body.portal-newdesign-theme .profile-header,
+body.portal-newdesign-theme .profile-card,
+body.portal-newdesign-theme .timeline-card,
+body.portal-newdesign-theme .document-card,
+body.portal-newdesign-theme .notification-item,
+body.portal-newdesign-theme .chat-card,
+body.portal-newdesign-theme .faq-item,
+body.portal-newdesign-theme .info-box,
+body.portal-newdesign-theme .section-card,
+body.portal-newdesign-theme .article-card,
+body.portal-newdesign-theme .booking-card,
+body.portal-newdesign-theme .schedule-card,
+body.portal-newdesign-theme .result-card,
+body.portal-newdesign-theme .lab-card,
+body.portal-newdesign-theme .usg-card,
+body.portal-newdesign-theme .vitamin-card,
+body.portal-newdesign-theme .history-card,
+body.portal-newdesign-theme .visit-card,
+body.portal-newdesign-theme .question-card,
+body.portal-newdesign-theme .answer-card {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .card:hover,
+body.portal-newdesign-theme .feature-card:hover,
+body.portal-newdesign-theme .menu-item:hover,
+body.portal-newdesign-theme .quick-action:hover {
+    background: var(--portal-bg-elevated) !important;
+    border-color: var(--portal-line-strong) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Typography ---------- */
+body.portal-newdesign-theme .card-title,
+body.portal-newdesign-theme .menu-title,
+body.portal-newdesign-theme .page-title,
+body.portal-newdesign-theme h1,
+body.portal-newdesign-theme h2,
+body.portal-newdesign-theme h3,
+body.portal-newdesign-theme h4,
+body.portal-newdesign-theme h5,
+body.portal-newdesign-theme h6 {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .card-subtitle,
+body.portal-newdesign-theme .menu-subtitle,
+body.portal-newdesign-theme .meta,
+body.portal-newdesign-theme .muted,
+body.portal-newdesign-theme .text-muted {
+    color: var(--portal-text-secondary) !important;
+}
+
+body.portal-newdesign-theme p,
+body.portal-newdesign-theme small,
+body.portal-newdesign-theme .subtitle {
+    color: var(--portal-text-body) !important;
+}
+
+/* ---------- Buttons ---------- */
+body.portal-newdesign-theme .btn-primary,
+body.portal-newdesign-theme .primary-btn,
+body.portal-newdesign-theme .action-btn {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--portal-accent) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+}
+
+body.portal-newdesign-theme .btn-primary:hover,
+body.portal-newdesign-theme .primary-btn:hover {
+    background: var(--portal-accent-hover) !important;
+}
+
+body.portal-newdesign-theme .btn-secondary,
+body.portal-newdesign-theme .outline-btn,
+body.portal-newdesign-theme .secondary-btn {
+    background: #ffffff !important;
+    color: var(--portal-text-primary) !important;
+    border: 1px solid var(--portal-line-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme button[type='submit'] {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--portal-accent) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Badges ---------- */
+body.portal-newdesign-theme .badge,
+body.portal-newdesign-theme .notification-badge,
+body.portal-newdesign-theme .notif-badge,
+body.portal-newdesign-theme .new-badge,
+body.portal-newdesign-theme .status-badge {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border: 2px solid var(--portal-bg-surface) !important;
+}
+
+/* ---------- Form Elements ---------- */
+body.portal-newdesign-theme input,
+body.portal-newdesign-theme textarea,
+body.portal-newdesign-theme select {
+    background: #ffffff !important;
+    border: 1px solid var(--portal-line-soft) !important;
+    color: var(--portal-text-primary) !important;
+    border-radius: 8px !important;
+}
+
+body.portal-newdesign-theme input:focus,
+body.portal-newdesign-theme textarea:focus,
+body.portal-newdesign-theme select:focus {
+    border-color: var(--portal-accent) !important;
+    box-shadow: 0 0 0 2px var(--portal-accent-soft) !important;
+    outline: none !important;
+}
+
+body.portal-newdesign-theme input::placeholder,
+body.portal-newdesign-theme textarea::placeholder {
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Tanya Dokter (Ask Doctor) ---------- */
+body.portal-newdesign-theme .chat-bubble,
+body.portal-newdesign-theme .message-bubble {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+}
+
+body.portal-newdesign-theme .chat-bubble.doctor,
+body.portal-newdesign-theme .message-bubble.doctor {
+    background: var(--portal-accent-soft) !important;
+    border-color: var(--portal-line-strong) !important;
+}
+
+/* ---------- Tabs / Segmented Control ---------- */
+body.portal-newdesign-theme .tab-bar,
+body.portal-newdesign-theme .tabs,
+body.portal-newdesign-theme .tab-nav {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+}
+
+body.portal-newdesign-theme .tab-item,
+body.portal-newdesign-theme .tab-btn {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .tab-item.active,
+body.portal-newdesign-theme .tab-btn.active {
+    color: var(--portal-text-primary) !important;
+    background: var(--portal-accent-soft) !important;
+    border-color: var(--portal-line-strong) !important;
+}
+
+/* ---------- Empty States ---------- */
+body.portal-newdesign-theme .empty-state,
+body.portal-newdesign-theme .no-data {
+    color: var(--portal-text-muted) !important;
+}
+
+body.portal-newdesign-theme .empty-state i,
+body.portal-newdesign-theme .no-data i {
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Loading ---------- */
+body.portal-newdesign-theme .loading i,
+body.portal-newdesign-theme .loading-state i {
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Safe Areas ---------- */
+body.portal-newdesign-theme .safe-area-top,
+body.portal-newdesign-theme .safe-area-bottom {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* ---------- Scrollbar ---------- */
+body.portal-newdesign-theme ::-webkit-scrollbar {
+    width: 4px;
+}
+
+body.portal-newdesign-theme ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body.portal-newdesign-theme ::-webkit-scrollbar-thumb {
+    background: var(--portal-line-soft);
+    border-radius: 4px;
+}
+
+/* ---------- Page-specific: patient-portal.css pages ---------- */
+/* Album USG, Hasil Lab, Dokumen Medis, Notifikasi, Profil, Tanya Dokter, Bantuan */
+
+body.portal-newdesign-theme .page-header {
+    background: rgba(255, 255, 255, 0.92) !important;
+    border-bottom: 1.5px dashed var(--portal-line-soft) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    backdrop-filter: blur(24px) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .page-header h1,
+body.portal-newdesign-theme .page-header .back-btn {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .list-item,
+body.portal-newdesign-theme .notification-card,
+body.portal-newdesign-theme .article-item,
+body.portal-newdesign-theme .document-item,
+body.portal-newdesign-theme .lab-item,
+body.portal-newdesign-theme .usg-item,
+body.portal-newdesign-theme .history-item,
+body.portal-newdesign-theme .schedule-item {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .list-item:hover,
+body.portal-newdesign-theme .notification-card:hover,
+body.portal-newdesign-theme .article-item:hover {
+    background: var(--portal-bg-elevated) !important;
+    border-color: var(--portal-line-strong) !important;
+}
+
+/* ---------- Profil page ---------- */
+body.portal-newdesign-theme .profile-avatar-section {
+    background: var(--portal-bg-surface) !important;
+}
+
+body.portal-newdesign-theme .profile-menu-item,
+body.portal-newdesign-theme .menu-row {
+    border-bottom: var(--portal-border) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .profile-menu-item i,
+body.portal-newdesign-theme .menu-row i {
+    color: var(--portal-text-secondary) !important;
+}
+
+body.portal-newdesign-theme .menu-icon.green,
+body.portal-newdesign-theme .menu-icon.blue,
+body.portal-newdesign-theme .menu-icon.orange,
+body.portal-newdesign-theme .menu-icon.red,
+body.portal-newdesign-theme .menu-icon.purple {
+    background: var(--portal-accent-soft) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+/* ---------- Booking page ---------- */
+body.portal-newdesign-theme .time-slot,
+body.portal-newdesign-theme .slot-btn {
+    border: var(--portal-border) !important;
+    border-radius: 8px !important;
+    background: var(--portal-bg-surface) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .time-slot.selected,
+body.portal-newdesign-theme .slot-btn.selected,
+body.portal-newdesign-theme .time-slot.active,
+body.portal-newdesign-theme .slot-btn.active {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border-color: var(--portal-accent) !important;
+}
+
+/* ---------- Calendar ---------- */
+body.portal-newdesign-theme .calendar-header {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .calendar-day.today {
+    background: var(--portal-accent-soft) !important;
+    border: var(--portal-border-strong) !important;
+}
+
+body.portal-newdesign-theme .calendar-day.selected {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Subscription page ---------- */
+body.portal-newdesign-theme .plan-card,
+body.portal-newdesign-theme .pricing-card {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .plan-card.recommended,
+body.portal-newdesign-theme .pricing-card.highlighted {
+    border: var(--portal-border-strong) !important;
+}
+
+/* ---------- Auth pages (login, register, etc.) ---------- */
+body.portal-newdesign-theme .auth-container,
+body.portal-newdesign-theme .login-container,
+body.portal-newdesign-theme .register-container,
+body.portal-newdesign-theme .form-container {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .auth-header,
+body.portal-newdesign-theme .login-header {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .auth-logo,
+body.portal-newdesign-theme .login-logo {
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .google-btn,
+body.portal-newdesign-theme .social-btn {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    color: var(--portal-text-primary) !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .divider,
+body.portal-newdesign-theme .separator {
+    border-color: var(--portal-line-soft) !important;
+    color: var(--portal-text-muted) !important;
+}
+
+/* ---------- Kick Counter ---------- */
+body.portal-newdesign-theme .kick-btn,
+body.portal-newdesign-theme .counter-btn {
+    background: var(--portal-accent) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Pregnancy Tracker ---------- */
+body.portal-newdesign-theme .tracker-card,
+body.portal-newdesign-theme .week-card {
+    border: var(--portal-border) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}
+
+/* ---------- Artikel / Edukasi ---------- */
+body.portal-newdesign-theme .article-header,
+body.portal-newdesign-theme .article-content {
+    color: var(--portal-text-body) !important;
+}
+
+body.portal-newdesign-theme .article-tag,
+body.portal-newdesign-theme .category-tag {
+    background: var(--portal-accent-soft) !important;
+    color: var(--portal-text-primary) !important;
+    border: var(--portal-border) !important;
+}
+
+/* ---------- Toast / Alert ---------- */
+body.portal-newdesign-theme .toast,
+body.portal-newdesign-theme .alert-box {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    box-shadow: none !important;
+    color: var(--portal-text-primary) !important;
+}
+
+/* ---------- Modal ---------- */
+body.portal-newdesign-theme .modal-content,
+body.portal-newdesign-theme .modal-dialog .modal-content {
+    background: var(--portal-bg-surface) !important;
+    border: var(--portal-border-strong) !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+}
+
+body.portal-newdesign-theme .modal-header {
+    border-bottom: var(--portal-border) !important;
+    color: var(--portal-text-primary) !important;
+}
+
+body.portal-newdesign-theme .modal-footer {
+    border-top: var(--portal-border) !important;
+}
+
+/* ---------- Links ---------- */
+body.portal-newdesign-theme a:not(.btn):not(.nav-item):not(.sheet-menu-item):not(.dropdown-menu-custom a) {
+    color: var(--portal-text-primary) !important;
+}
+
+/* ---------- Dividers / HR ---------- */
+body.portal-newdesign-theme hr {
+    border-color: var(--portal-line-soft) !important;
+    border-style: dashed !important;
+}
+
+/* ---------- Tanya Dokter upgrade banner ---------- */
+body.portal-newdesign-theme .upgrade-banner,
+body.portal-newdesign-theme .premium-banner {
+    border: var(--portal-border-strong) !important;
+    border-radius: var(--portal-radius) !important;
+    background: var(--portal-bg-surface) !important;
+    box-shadow: none !important;
+}

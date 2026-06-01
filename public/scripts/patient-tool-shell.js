@@ -1,10 +1,10 @@
 /* SISIwanita Patient Tool Shell
-   Shared navigation, bottom sheet, avatar, and reveal helpers for trial tool pages. */
+   Shared navigation, bottom sheet, avatar, and reveal helpers for portal tool pages. */
 (function () {
     'use strict';
 
     var DEFAULT_ACTIVE_NAV = 'beranda';
-    var DEFAULT_HOME_URL = '/patient-menu-simple-trial.html';
+    var DEFAULT_HOME_URL = '/patient-menu.html';
     var state = window.__patientToolShellState || {
         initialized: false,
         activeNav: DEFAULT_ACTIVE_NAV,
@@ -16,28 +16,28 @@
 
     var defaultMenuData = {
         dokumen: { title: 'Dokumen', items: [
-            ['fa-solid fa-image', 'Album USG', '/album-usg-trial.html'],
-            ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab-trial.html'],
-            ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis-trial.html']
+            ['fa-solid fa-image', 'Album USG', '/album-usg.html'],
+            ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab.html'],
+            ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis.html']
         ]},
         aplikasi: { title: 'Aplikasi', items: [
-            ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter-trial.html'],
-            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?theme=newdesign'],
-            ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter-trial.html'],
-            ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker-trial.html'],
-            ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar-trial.html'],
-            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin-trial.html']
+            ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter.html'],
+            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html'],
+            ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
+            ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
+            ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
+            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html']
         ]},
         jadwal: { title: 'Jadwal', items: [
-            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik-trial.html'],
-            ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs-trial.html'],
-            ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan-trial.html'],
-            ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian-trial.html']
+            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
+            ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs.html'],
+            ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
+            ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
         ]},
         edukasi: { title: 'Edukasi', items: [
-            ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu-trial.html'],
-            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel-trial.html'],
-            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan-trial.html']
+            ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
+            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
+            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan.html']
         ]}
     };
 
@@ -423,7 +423,7 @@
         localStorage.removeItem('vps_auth_token');
         sessionStorage.removeItem('vps_auth_token');
         localStorage.removeItem('patient_user');
-        window.location.href = '/patient-login-trial.html';
+        window.location.href = '/patient-login.html';
     }
 
     function bindTopbarModalActions() {

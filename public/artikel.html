@@ -1,647 +1,553 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-portal-nav="off">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Ruang Membaca - dokterDIBYA</title>
+    <title>Ruang Membaca - SISIwanita</title>
 
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Fonts (Inter + Plus Jakarta Sans + Crimson Text) come from portal theme CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Crimson+Text:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
 
-    <!-- Markdown Parser -->
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Shared Portal Theme -->
+<!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #000000;
+        body.portal-themed {
+            background: var(--bg-page, #ffffff);
+            color: var(--text-primary, #0a0a0a);
+            font-family: var(--font-main, 'Inter', sans-serif);
             min-height: 100vh;
-            color: #ffffff;
             padding-bottom: 80px;
-            padding-top: env(safe-area-inset-top, 0px);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .safe-area-top {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-top, 0px);
-            background: #000000;
-            z-index: 9999;
-        }
-
-        .safe-area-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-bottom, 0px);
-            background: #000000;
-            z-index: 9999;
-        }
-
-        /* Navbar */
-        .nav-bar {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 20px;
-            padding-top: max(15px, env(safe-area-inset-top));
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .back-btn {
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .page-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #f59e0b;
-        }
-
-        /* Main Content */
-        .content {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Intro Card */
-        .intro-card {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+        /* Hero / page heading */
+        .page-hero {
             position: relative;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 28px;
             overflow: hidden;
         }
 
-        .intro-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -30%;
-            width: 120px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
+        .page-hero .grain-overlay {
+            opacity: 0.25;
+            pointer-events: none;
         }
 
-        .intro-card h2 {
-            font-size: 18px;
-            margin-bottom: 8px;
+        .page-hero .section-heading {
             position: relative;
+            z-index: 2;
         }
 
-        .intro-card p {
-            font-size: 13px;
-            opacity: 0.9;
-            line-height: 1.5;
-            position: relative;
+        /* Content container */
+        .reading-room {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 8px 24px 48px;
         }
 
-        /* Filter Tabs */
+        /* Filter tabs */
         .filter-tabs {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin: 8px 0 28px;
         }
 
         .filter-tab {
-            padding: 8px 14px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            color: #888;
-            font-size: 12px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--line-soft, #e5e5e5);
+            border-radius: 999px;
+            color: var(--text-muted, #6b6b6b);
+            font-family: var(--font-main, 'Inter', sans-serif);
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
+        }
+
+        .filter-tab:hover {
+            border-color: var(--line-strong, #0a0a0a);
+            color: var(--text-primary, #0a0a0a);
         }
 
         .filter-tab.active {
-            background: rgba(245, 158, 11, 0.2);
-            border-color: #f59e0b;
-            color: #f59e0b;
+            background: var(--text-primary, #0a0a0a);
+            border-color: var(--text-primary, #0a0a0a);
+            color: #ffffff;
         }
 
-        /* Article Card */
+        /* Article grid */
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 760px) {
+            .articles-grid { grid-template-columns: 1fr; }
+            .page-hero { padding: 28px 20px 20px; }
+            .reading-room { padding: 4px 20px 32px; }
+        }
+
+        /* Article card (extends .portal-card) */
         .article-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 14px;
-            padding: 15px;
-            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: transform 0.25s ease, border-color 0.25s ease;
         }
 
         .article-card:hover {
-            background: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
+            border-color: var(--line-strong, #0a0a0a);
         }
 
-        .article-header {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 12px;
-        }
-
-        .article-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+        .article-card .card-top {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .article-card .portal-card-title {
             font-size: 20px;
-            color: #fff;
-            flex-shrink: 0;
+            line-height: 1.3;
         }
 
-        .article-meta {
-            flex: 1;
-        }
-
-        .article-category {
-            display: inline-block;
-            font-size: 10px;
-            padding: 3px 8px;
-            border-radius: 10px;
-            margin-bottom: 6px;
-            color: #fff;
-        }
-
-        .article-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #fff;
-            line-height: 1.4;
-            margin-bottom: 4px;
-        }
-
-        .article-date {
-            font-size: 11px;
-            color: #888;
-        }
-
-        .article-summary {
-            font-size: 13px;
-            color: #aaa;
-            line-height: 1.5;
-            margin-bottom: 10px;
+        .article-card .portal-card-desc {
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
 
-        .article-source {
-            font-size: 11px;
-            color: #888;
+        .article-card .card-foot {
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 6px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line-soft, #e5e5e5);
+            font-size: 12px;
+            color: var(--text-muted, #6b6b6b);
+        }
+
+        .article-card .card-foot .source {
+            display: inline-flex;
             align-items: center;
             gap: 6px;
         }
 
-        .article-source i {
-            color: #f59e0b;
+        .article-card .read-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-primary, #0a0a0a);
+            font-weight: 600;
+            text-decoration: none;
         }
 
-        /* Empty State */
-        .empty-state {
+        .article-card .read-link .arrow {
+            transition: transform 0.25s ease;
+        }
+
+        .article-card:hover .read-link .arrow {
+            transform: translateX(4px);
+        }
+
+        /* Empty / loading / error */
+        .state-block {
             text-align: center;
             padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted, #6b6b6b);
+            font-family: var(--font-main, 'Inter', sans-serif);
         }
 
-        .empty-state i {
-            font-size: 50px;
-            margin-bottom: 15px;
-            color: #f59e0b;
-            opacity: 0.5;
+        .state-block i {
+            font-size: 36px;
+            margin-bottom: 12px;
+            color: var(--text-primary, #0a0a0a);
+            opacity: 0.6;
         }
 
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .loading i {
-            margin-right: 8px;
+        .state-block .spin {
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Article Modal */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
+            inset: 0;
+            background: rgba(255, 255, 255, 0.98);
             z-index: 1000;
             display: none;
             overflow-y: auto;
         }
 
-        .modal-overlay.active {
-            display: block;
-        }
+        .modal-overlay.active { display: block; }
 
         .modal-content {
-            background: #000000;
             min-height: 100vh;
             padding-top: env(safe-area-inset-top, 0px);
+            background: var(--bg-page, #ffffff);
+            color: var(--text-primary, #0a0a0a);
         }
 
         .modal-header {
-            padding: 60px 20px 25px;
+            padding: 24px 24px 20px;
             padding-top: calc(20px + env(safe-area-inset-top, 0px));
             position: relative;
-            text-align: center;
+            max-width: 760px;
+            margin: 0 auto;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5);
         }
 
         .modal-close {
-            position: absolute;
-            top: calc(15px + env(safe-area-inset-top, 0px));
-            left: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
+            background: transparent;
+            border: 1px solid var(--line-soft, #e5e5e5);
             width: 40px;
             height: 40px;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 18px;
+            border-radius: 999px;
+            color: var(--text-primary, #0a0a0a);
+            font-size: 15px;
             cursor: pointer;
-            z-index: 10;
-        }
-
-        .modal-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
+            margin-bottom: 18px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            color: #fff;
-            margin: 0 auto 15px;
         }
+
+        .modal-close:hover { background: var(--bg-elevated, #f5f5f5); }
 
         .modal-category {
             display: inline-block;
+            font-family: var(--font-main, 'Inter', sans-serif);
             font-size: 11px;
-            padding: 4px 12px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted, #6b6b6b);
             margin-bottom: 12px;
         }
 
         .modal-title {
-            font-size: 22px;
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+            font-size: 32px;
             font-weight: 700;
-            color: #fff;
-            line-height: 1.3;
+            line-height: 1.2;
+            color: var(--text-primary, #0a0a0a);
+            letter-spacing: -0.02em;
         }
 
         .modal-body {
-            padding: 25px 20px 40px;
-            max-width: 600px;
+            padding: 24px;
+            max-width: 760px;
             margin: 0 auto;
         }
 
         .modal-meta {
             display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .modal-meta-item {
-            font-size: 12px;
-            color: #888;
+            gap: 24px;
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5);
+            font-size: 13px;
+            color: var(--text-muted, #6b6b6b);
         }
 
         .modal-meta-item i {
-            color: #f59e0b;
-            margin-right: 5px;
+            color: var(--text-primary, #0a0a0a);
+            margin-right: 6px;
         }
 
         .modal-text {
-            font-size: 15px;
-            color: #ccc;
-            line-height: 1.8;
+            font-family: var(--font-main, 'Inter', sans-serif);
+            font-size: 16px;
+            color: var(--text-body, #333);
+            line-height: 1.75;
         }
 
-        .modal-text p {
-            margin-bottom: 15px;
-        }
+        .modal-text p { margin-bottom: 16px; }
 
-        .modal-text h3 {
-            color: #fff;
-            font-size: 17px;
-            margin: 25px 0 15px;
-        }
-
-        .modal-text ul, .modal-text ol {
-            margin-left: 20px;
-            margin-bottom: 15px;
-        }
-
-        .modal-text li {
-            margin-bottom: 8px;
-        }
-
-        /* Markdown styles */
-        .modal-text h1 {
-            color: #fff;
-            font-size: 22px;
-            margin: 30px 0 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 10px;
-        }
-
-        .modal-text h2 {
-            color: #fff;
-            font-size: 19px;
-            margin: 25px 0 12px;
-        }
-
-        .modal-text h3 {
-            color: #fff;
-            font-size: 17px;
-            margin: 25px 0 15px;
-        }
-
+        .modal-text h1, .modal-text h2, .modal-text h3,
         .modal-text h4, .modal-text h5, .modal-text h6 {
-            color: #f59e0b;
-            font-size: 15px;
-            margin: 20px 0 10px;
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+            color: var(--text-primary, #0a0a0a);
+            margin: 28px 0 12px;
+            letter-spacing: -0.01em;
         }
 
-        .modal-text strong {
-            color: #fff;
-            font-weight: 600;
-        }
+        .modal-text h1 { font-size: 24px; padding-bottom: 8px; border-bottom: 1px solid var(--line-soft, #e5e5e5); }
+        .modal-text h2 { font-size: 21px; }
+        .modal-text h3 { font-size: 18px; }
+        .modal-text h4, .modal-text h5, .modal-text h6 { font-size: 16px; }
 
-        .modal-text em {
-            font-style: italic;
-            color: #ddd;
-        }
+        .modal-text ul, .modal-text ol { margin-left: 22px; margin-bottom: 16px; }
+        .modal-text li { margin-bottom: 8px; }
+
+        .modal-text strong { color: var(--text-primary, #0a0a0a); font-weight: 600; }
+        .modal-text em { font-style: italic; color: var(--text-body, #333); }
 
         .modal-text code {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--bg-elevated, #f5f5f5);
             padding: 2px 6px;
             border-radius: 4px;
-            font-family: monospace;
+            font-family: 'SF Mono', Menlo, monospace;
             font-size: 13px;
-            color: #f59e0b;
+            color: var(--text-primary, #0a0a0a);
         }
 
         .modal-text pre {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
+            background: var(--bg-elevated, #f5f5f5);
+            padding: 16px;
             border-radius: 8px;
             overflow-x: auto;
-            margin: 15px 0;
+            margin: 16px 0;
         }
 
-        .modal-text pre code {
-            background: none;
-            padding: 0;
-            color: #ddd;
-        }
+        .modal-text pre code { background: none; padding: 0; }
 
         .modal-text blockquote {
-            border-left: 3px solid #f59e0b;
-            padding-left: 15px;
-            margin: 15px 0;
-            color: #aaa;
+            border-left: 3px solid var(--text-primary, #0a0a0a);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: var(--text-muted, #6b6b6b);
+            font-family: var(--font-serif, 'Crimson Text', serif);
             font-style: italic;
+            font-size: 18px;
         }
 
         .modal-text hr {
             border: none;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            margin: 25px 0;
+            border-top: 1px solid var(--line-soft, #e5e5e5);
+            margin: 28px 0;
         }
 
         .modal-text a {
-            color: #f59e0b;
+            color: var(--text-primary, #0a0a0a);
             text-decoration: underline;
+            text-underline-offset: 3px;
         }
 
         .modal-text table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 16px 0;
+            font-size: 14px;
         }
 
         .modal-text th, .modal-text td {
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--line-soft, #e5e5e5);
             padding: 10px;
             text-align: left;
         }
 
         .modal-text th {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            background: var(--bg-elevated, #f5f5f5);
+            color: var(--text-primary, #0a0a0a);
+            font-weight: 600;
         }
 
         .modal-text img {
             max-width: 100%;
             border-radius: 8px;
-            margin: 15px 0;
+            margin: 16px 0;
         }
 
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 10px 0;
-            padding-bottom: max(10px, env(safe-area-inset-bottom));
-            background: rgba(0, 0, 0, 0.98);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 100;
-        }
-
-        /* Pull to Refresh */
+        /* Pull to refresh indicator */
         .pull-indicator {
             position: fixed;
-            top: calc(env(safe-area-inset-top, 0px) + 60px);
+            top: calc(env(safe-area-inset-top, 0px) + 80px);
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(245, 158, 11, 0.9);
-            color: #fff;
-            padding: 8px 20px;
-            border-radius: 20px;
+            background: var(--text-primary, #0a0a0a);
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: 999px;
             font-size: 13px;
             z-index: 200;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.25s;
             pointer-events: none;
         }
 
-        .pull-indicator.visible {
-            opacity: 1;
-        }
+        .pull-indicator.visible { opacity: 1; }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: rgba(255, 255, 255, 0.6);
-            text-decoration: none;
-            font-size: 12px;
-            padding: 8px 20px;
-            transition: color 0.3s;
-        }
-
-        .nav-item.active,
-        .nav-item:hover {
-            color: #f59e0b;
-        }
-
-        .nav-item i {
-            font-size: 20px;
-        }
-
-        /* Responsive */
-        @media (max-width: 400px) {
-            .content { padding: 15px; }
-            .article-card { padding: 12px; }
+        @media (max-width: 420px) {
+            .modal-title { font-size: 26px; }
+            .article-card .portal-card-title { font-size: 18px; }
         }
     </style>
-    <script src="/scripts/patient-theme-trial.js"></script>
-</head>
-<body>
-    <div class="safe-area-top"></div>
-    <div class="safe-area-bottom"></div>
+<link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        body.artikel-page #articleModal .modal-content {
+            min-height: 100vh !important;
+            background: var(--bg-page, #ffffff) !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            color: var(--text-primary, #0a0a0a) !important;
+        }
 
-    <!-- Top Navbar -->
-    <nav class="nav-bar">
-        <div class="nav-left">
-            <button class="back-btn" onclick="history.back()">
-                <i class="fa fa-chevron-left"></i>
-            </button>
-            <h1 class="page-title"><i class="fa fa-book"></i> Ruang Membaca</h1>
+        body.artikel-page #articleModal .modal-header,
+        body.artikel-page #articleModal .modal-body {
+            width: min(760px, calc(100% - 32px)) !important;
+            max-width: 760px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        body.artikel-page #articleModal .modal-header {
+            padding: calc(20px + env(safe-area-inset-top, 0px)) 24px 20px !important;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5) !important;
+        }
+
+        body.artikel-page #articleModal .modal-body {
+            padding: 24px !important;
+        }
+
+        body.artikel-page #articleModal .modal-close {
+            margin-bottom: 18px !important;
+        }
+
+        body.artikel-page #articleModal .modal-category {
+            margin-bottom: 12px !important;
+        }
+
+        body.artikel-page #articleModal .modal-title {
+            margin: 0 !important;
+        }
+
+        body.artikel-page #articleModal .modal-meta {
+            margin-bottom: 24px !important;
+            padding-bottom: 18px !important;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5) !important;
+        }
+
+        body.artikel-page #articleModal .modal-text p {
+            margin: 0 0 16px !important;
+        }
+
+        body.artikel-page #articleModal .modal-text h1,
+        body.artikel-page #articleModal .modal-text h2,
+        body.artikel-page #articleModal .modal-text h3,
+        body.artikel-page #articleModal .modal-text h4,
+        body.artikel-page #articleModal .modal-text h5,
+        body.artikel-page #articleModal .modal-text h6 {
+            margin: 28px 0 12px !important;
+        }
+
+        body.artikel-page #articleModal .modal-text ul,
+        body.artikel-page #articleModal .modal-text ol {
+            margin: 0 0 16px 22px !important;
+            padding-left: 0 !important;
+        }
+
+        body.artikel-page #articleModal .modal-text li {
+            margin-bottom: 8px !important;
+        }
+
+        @media (max-width: 420px) {
+            body.artikel-page #articleModal .modal-header,
+            body.artikel-page #articleModal .modal-body {
+                width: calc(100% - 28px) !important;
+            }
+
+            body.artikel-page #articleModal .modal-header,
+            body.artikel-page #articleModal .modal-body {
+                padding-left: 18px !important;
+                padding-right: 18px !important;
+            }
+        }
+    </style>
+    <script>window.__patientPortalHeaderInstalled = true;</script>
+</head>
+<body class="portal-themed home-sections-locked patient-tool-shell legacy-tool-retrofit artikel-page" data-tool-shell-active="beranda" data-tool-kicker="Ruang Membaca" data-tool-title="Nadi pengetahuan." data-tool-copy="Kurasi artikel seputar kehamilan, program hamil, dan kesehatan kandungan dalam tampilan yang nyaman dibaca." data-tool-meta-label="Konten" data-tool-meta-value="Artikel">
+
+    <!-- Hero -->
+    <section class="page-hero" aria-label="Ruang Membaca">
+        <div class="grain-overlay" aria-hidden="true"></div>
+        <div class="section-heading">
+            <span class="section-kicker">
+                <span class="green-light" aria-hidden="true">
+                    <span class="green-light-core"></span>
+                    <span class="green-light-glow"></span>
+                </span>
+                Ruang Membaca
+            </span>
+            <h1 class="section-title">
+                Nadi <span class="serif">pengetahuan</span> untuk perjalanan Anda.
+            </h1>
+            <p class="section-lead">
+                Kurasi bacaan dari jurnal dan panduan medis terkini &mdash; seputar
+                kehamilan, program hamil, dan kesehatan kandungan &mdash; disusun
+                dengan tenang agar setiap tahap terasa lebih jelas.
+            </p>
         </div>
-    </nav>
+    </section>
 
     <!-- Main Content -->
-    <main class="content">
-        <!-- Intro Card -->
-        <div class="intro-card">
-            <h2><i class="fa fa-graduation-cap"></i> Artikel Kesehatan</h2>
-            <p>Artikel pilihan berdasarkan jurnal dan panduan medis terkini tentang kehamilan dan kesehatan kandungan.</p>
-        </div>
-
+    <main class="reading-room">
         <!-- Filter Tabs -->
-        <div class="filter-tabs">
-            <button class="filter-tab active" data-filter="all">Semua</button>
-            <button class="filter-tab" data-filter="kehamilan">Kehamilan</button>
-            <button class="filter-tab" data-filter="program_hamil">Program Hamil</button>
-            <button class="filter-tab" data-filter="gangguan_kandungan">Ginekologi</button>
+        <div class="filter-tabs" role="tablist" aria-label="Filter kategori">
+            <button class="filter-tab active" data-filter="all" role="tab">Semua</button>
+            <button class="filter-tab" data-filter="kehamilan" role="tab">Kehamilan</button>
+            <button class="filter-tab" data-filter="program_hamil" role="tab">Program Hamil</button>
+            <button class="filter-tab" data-filter="gangguan_kandungan" role="tab">Ginekologi</button>
         </div>
 
         <!-- Articles Container -->
-        <div id="articles-container">
-            <div class="loading">
-                <i class="fa fa-spinner fa-spin"></i> Memuat artikel...
+        <div id="articles-container" class="articles-grid">
+            <div class="state-block" style="grid-column: 1 / -1;">
+                <i class="fa-solid fa-spinner spin"></i>
+                <p>Memuat artikel...</p>
             </div>
         </div>
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <a href="/patient-menu.html" class="nav-item">
-            <i class="fa fa-home"></i>
-            <span>Home</span>
-        </a>
-        <a href="/notifikasi.html" class="nav-item">
-            <i class="fa fa-bell"></i>
-            <span>Notifikasi</span>
-        </a>
-        <a href="/profil.html" class="nav-item">
-            <i class="fa fa-user"></i>
-            <span>Profil</span>
-        </a>
-    </nav>
-
     <!-- Pull Indicator -->
     <div class="pull-indicator" id="pullIndicator">
-        <i class="fa fa-refresh"></i> Lepas untuk refresh
+        <i class="fa-solid fa-arrows-rotate"></i> Lepas untuk refresh
     </div>
 
     <!-- Article Modal -->
-    <div class="modal-overlay" id="articleModal">
+    <div class="modal-overlay" id="articleModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-content">
             <div class="modal-header" id="modalHeader">
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fa fa-arrow-left"></i>
+                <button class="modal-close" onclick="closeModal()" aria-label="Tutup">
+                    <i class="fa-solid fa-arrow-left"></i>
                 </button>
-                <div class="modal-icon" id="modalIcon">
-                    <i class="fa fa-book"></i>
-                </div>
                 <span class="modal-category" id="modalCategory">Kategori</span>
                 <h2 class="modal-title" id="modalTitle">Judul Artikel</h2>
+                <!-- Hidden icon holder retained for JS compatibility -->
+                <span id="modalIcon" style="display:none;"></span>
             </div>
             <div class="modal-body">
                 <div class="modal-meta">
                     <div class="modal-meta-item">
-                        <i class="fa fa-book"></i>
-                        <span id="modalSource">dokterDIBYA</span>
+                        <i class="fa-solid fa-book"></i>
+                        <span id="modalSource">SISIwanita</span>
                     </div>
                     <div class="modal-meta-item">
-                        <i class="fa fa-calendar"></i>
+                        <i class="fa-solid fa-calendar"></i>
                         <span id="modalDate">-</span>
                     </div>
                 </div>
@@ -651,6 +557,71 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer (portal theme) -->
+    <footer class="site-footer">
+        <div class="footer-card-frame">
+            <div class="footer-photo" aria-hidden="true"></div>
+            <div class="footer-backdrop" aria-hidden="true"></div>
+            <div class="footer-grid" aria-hidden="true"></div>
+            <div class="footer-orb" aria-hidden="true"></div>
+            <div class="footer-orb-right" aria-hidden="true"></div>
+            <div class="footer-vignette" aria-hidden="true"></div>
+            <div class="footer-grain" aria-hidden="true"></div>
+            <div class="footer-inner">
+                <div class="footer-hero">
+                    <div class="footer-copy">
+                        <span class="footer-newsletter-kicker">Portal Pasien SISIwanita</span>
+                        <h2>Kabar dari Dokter.</h2>
+                        <p>
+                            Kami berbagi catatan berkala seputar kehamilan, kesehatan perempuan,
+                            dan panduan praktis agar setiap tahap terasa lebih jelas dan tenang.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="footer-subscribe">
+                    <form class="footer-subscribe-form" onsubmit="event.preventDefault();">
+                        <input class="footer-subscribe-input" type="email" placeholder="Masukkan alamat email Anda" aria-label="Alamat email">
+                        <button class="footer-subscribe-button" type="submit">Berlangganan</button>
+                    </form>
+                    <p class="footer-policy">
+                        Dengan mendaftar, Anda menyetujui Kebijakan Privasi SISIwanita.
+                    </p>
+                </div>
+
+                <div class="footer-meta">
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Peta Situs</span>
+                        <div class="footer-links">
+                            <a href="/patient-menu.html">Halaman Utama</a>
+                            <a href="/artikel.html">Ruang Membaca</a>
+                            <a href="/artikel-kesehatan.html">Istilah Obgyn</a>
+                            <a href="/perjalanan-ibu.html">Perjalanan Ibu</a>
+                            <a href="/patient-dashboard.html">Dashboard Pasien</a>
+                            <a href="/patient-login.html">Masuk</a>
+                        </div>
+                    </div>
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Hubungi Kami</span>
+                        <a class="footer-email" href="mailto:admin@dokterdibya.com">admin@dokterdibya.com</a>
+                        <div class="footer-social" aria-label="Tautan sosial">
+                            <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.threads.com/" target="_blank" rel="noopener noreferrer" aria-label="Threads"><i class="fa-brands fa-threads"></i></a>
+                            <a href="https://facebook.com/" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                            <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-bottom">
+                    <span>&copy; 2026 SISIwanita</span>
+                    <span>Portal Pasien</span>
+                    <span>Seluruh hak cipta dilindungi</span>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script type="module">
         import { checkAuth } from '/scripts/patient-utils.js';
@@ -679,8 +650,9 @@
         async function loadArticles() {
             const container = document.getElementById('articles-container');
             container.innerHTML = `
-                <div class="loading">
-                    <i class="fa fa-spinner fa-spin"></i> Memuat artikel...
+                <div class="state-block" style="grid-column: 1 / -1;">
+                    <i class="fa-solid fa-spinner spin"></i>
+                    <p>Memuat artikel...</p>
                 </div>
             `;
 
@@ -703,8 +675,8 @@
             } catch (error) {
                 console.error('Error:', error);
                 container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa fa-exclamation-circle"></i>
+                    <div class="state-block" style="grid-column: 1 / -1;">
+                        <i class="fa-solid fa-circle-exclamation"></i>
                         <p>Gagal memuat artikel</p>
                     </div>
                 `;
@@ -716,8 +688,8 @@
 
             if (articles.length === 0) {
                 container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fa fa-newspaper-o"></i>
+                    <div class="state-block" style="grid-column: 1 / -1;">
+                        <i class="fa-regular fa-newspaper"></i>
                         <p>Belum ada artikel</p>
                     </div>
                 `;
@@ -725,28 +697,28 @@
             }
 
             container.innerHTML = articles.map(article => {
-                const color = article.color || '#f59e0b';
-                const icon = (article.icon || '').trim();
-                const hasIcon = icon.length > 0;
                 const dateStr = formatDate(article.created_at);
-                const source = article.source || 'dokterDIBYA';
+                const source = article.source || 'SISIwanita';
+                const category = article.category || 'Kehamilan';
 
                 return `
-                    <div class="article-card" onclick="openArticle(${article.id})">
-                        <div class="article-header">
-                            ${hasIcon ? `<div class="article-icon" style="background: ${color};"><i class="fa ${icon}"></i></div>` : ''}
-                            <div class="article-meta">
-                                <span class="article-category" style="background: ${color};">${escapeHtml(article.category || 'Kehamilan')}</span>
-                                <h3 class="article-title">${escapeHtml(article.title)}</h3>
-                                <span class="article-date">${dateStr}</span>
-                            </div>
+                    <article class="portal-card article-card" onclick="openArticle(${article.id})" role="button" tabindex="0">
+                        <div class="card-top">
+                            <span class="portal-card-kicker">${escapeHtml(category)}</span>
+                            <span class="portal-card-kicker" style="border: 0; padding: 0;">${dateStr}</span>
                         </div>
-                        <p class="article-summary">${escapeHtml(article.summary || '')}</p>
-                        <div class="article-source">
-                            <i class="fa fa-book"></i>
-                            <span>${escapeHtml(source)}</span>
+                        <h3 class="portal-card-title">${escapeHtml(article.title)}</h3>
+                        <p class="portal-card-desc">${escapeHtml(article.summary || '')}</p>
+                        <div class="card-foot">
+                            <span class="source">
+                                <i class="fa-solid fa-book"></i>
+                                ${escapeHtml(source)}
+                            </span>
+                            <span class="read-link">
+                                Baca <span class="arrow">&rarr;</span>
+                            </span>
                         </div>
-                    </div>
+                    </article>
                 `;
             }).join('');
         }
@@ -768,10 +740,9 @@
 
         window.openArticle = async function(id) {
             const modal = document.getElementById('articleModal');
-            document.getElementById('modalIcon').innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
             document.getElementById('modalCategory').textContent = 'Memuat...';
             document.getElementById('modalTitle').textContent = '';
-            document.getElementById('modalText').innerHTML = '<p style="text-align: center;"><i class="fa fa-spinner fa-spin"></i> Memuat...</p>';
+            document.getElementById('modalText').innerHTML = '<p style="text-align: center;"><i class="fa-solid fa-spinner spin"></i> Memuat...</p>';
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
@@ -784,22 +755,18 @@
                 }
 
                 const article = result.data;
-                const color = article.color || '#f59e0b';
-                const icon = (article.icon || '').trim();
-                const hasIcon = icon.length > 0;
                 const dateStr = formatDate(article.updated_at || article.created_at);
 
-                document.getElementById('modalHeader').style.background = color;
-                const modalIcon = document.getElementById('modalIcon');
-                modalIcon.style.display = hasIcon ? 'flex' : 'none';
-                modalIcon.innerHTML = hasIcon ? `<i class="fa ${icon}"></i>` : '';
                 document.getElementById('modalCategory').textContent = article.category || 'Kehamilan';
                 document.getElementById('modalTitle').textContent = article.title;
-                document.getElementById('modalSource').textContent = article.source || 'dokterDIBYA';
+                document.getElementById('modalSource').textContent = article.source || 'SISIwanita';
                 document.getElementById('modalDate').textContent = dateStr;
                 // Parse markdown content
                 const content = article.content || 'Konten tidak tersedia';
                 document.getElementById('modalText').innerHTML = marked.parse(content);
+
+                // Scroll modal to top
+                modal.scrollTop = 0;
 
             } catch (error) {
                 console.error('Error:', error);
@@ -847,7 +814,7 @@
             if (window.scrollY === 0 && touchStartY > 0) {
                 const pullDistance = touchEndY - touchStartY;
                 if (pullDistance > 80) {
-                    pullIndicator.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memuat...';
+                    pullIndicator.innerHTML = '<i class="fa-solid fa-spinner spin"></i> Memuat...';
                     setTimeout(function() {
                         window.location.reload();
                     }, 300);
@@ -858,7 +825,9 @@
             pullIndicator.classList.remove('visible');
         }, { passive: true });
     </script>
-<script src="/js/patient-tracker.js?v=20260209"></script>
-<script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260601a"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260601a"></script>
 </body>
 </html>

@@ -6,6 +6,12 @@
 (function () {
   'use strict';
 
+  if (window.__chatPopupModuleLoaded) {
+    console.log('[ChatPopup] Module already loaded, skipping duplicate initialization');
+    return;
+  }
+  window.__chatPopupModuleLoaded = true;
+
   // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
   function getNavBottomPx() {
     var nav = document.getElementById('mobile-action-bar');
@@ -84,6 +90,16 @@
     window.setTimeout(applyScroll, 80);
     window.setTimeout(applyScroll, 220);
     window.setTimeout(applyScroll, 520);
+  }
+
+  function scheduleChatScrollToLatest() {
+    scrollChatToLatest();
+    window.setTimeout(scrollChatToLatest, 120);
+    window.setTimeout(scrollChatToLatest, 320);
+    window.setTimeout(scrollChatToLatest, 700);
+    window.setTimeout(scrollChatToLatest, 1200);
+    window.setTimeout(scrollChatToLatest, 2200);
+    window.setTimeout(scrollChatToLatest, 4200);
   }
 
   function getReservedBottomPx() {
@@ -224,6 +240,7 @@
     var cont = document.getElementById('chat-popup-container');
     if (!cont || !cont.classList.contains('chat-is-open') || window.innerWidth > 991) return;
     applyMobileFullScreen(cont);
+    scheduleChatScrollToLatest();
   }
 
   function queueChatLayoutSync() {
@@ -347,6 +364,25 @@
     : window.location.origin.replace(/\/$/, '');
 
   async function getChatToken() {
+    const fallbackToken = async () => {
+      return localStorage.getItem('vps_auth_token') ||
+             sessionStorage.getItem('vps_auth_token') ||
+             localStorage.getItem('token') ||
+             sessionStorage.getItem('token') ||
+             localStorage.getItem('idToken') ||
+             sessionStorage.getItem('idToken') ||
+             null;
+    };
+
+    try {
+      if (window.getAuthToken && typeof window.getAuthToken === 'function') {
+        const token = await window.getAuthToken();
+        if (token) return token;
+      }
+    } catch (error) {
+      console.warn('[ChatPopup] getAuthToken failed:', error?.message || error);
+    }
+
     try {
       if (window.getIdToken && typeof window.getIdToken === 'function') {
         const token = await window.getIdToken();
@@ -365,13 +401,155 @@
       console.warn('[ChatPopup] getToken failed:', error?.message || error);
     }
 
-    return localStorage.getItem('vps_auth_token') ||
-           sessionStorage.getItem('vps_auth_token') ||
-           localStorage.getItem('token') ||
-           sessionStorage.getItem('token') ||
-           localStorage.getItem('idToken') ||
-           sessionStorage.getItem('idToken') ||
-           null;
+    return fallbackToken();
+  }
+
+  function getStoredChatToken() {
+    try {
+      return localStorage.getItem('vps_auth_token') ||
+             sessionStorage.getItem('vps_auth_token') ||
+             localStorage.getItem('token') ||
+             sessionStorage.getItem('token') ||
+             localStorage.getItem('idToken') ||
+             sessionStorage.getItem('idToken') ||
+             null;
+    } catch (error) {
+      console.warn('[ChatPopup] Failed to read stored auth token:', error?.message || error);
+      return null;
+    }
+  }
+
+  function normalizeUserFromTokenPayload(token) {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      const payload = parts[1]
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(Math.ceil(parts[1].length / 4) * 4, '=');
+      return JSON.parse(atob(payload));
+    } catch (error) {
+      console.warn('[ChatPopup] Failed to parse auth token payload:', error?.message || error);
+      return null;
+    }
+  }
+
+  async function resolveAuthUser() {
+    const hasUserId = (candidate) => !!(candidate && (candidate.id || candidate.uid || candidate.user_id || candidate.new_id));
+
+    if (hasUserId(window.auth && window.auth.currentUser)) {
+      return window.auth.currentUser;
+    }
+
+    if (hasUserId(window.currentStaffIdentity)) {
+      return window.currentStaffIdentity;
+    }
+
+    if (hasUserId(window.currentStaffUser)) {
+      return window.currentStaffUser;
+    }
+
+    if (window.__realtimeSyncState && hasUserId(window.__realtimeSyncState.currentUser)) {
+      return window.__realtimeSyncState.currentUser;
+    }
+
+    const token = await getChatToken();
+    if (!token) return null;
+
+    const payload = normalizeUserFromTokenPayload(token);
+    if (!payload) return null;
+
+    return {
+      id: payload.id || payload.user_id || payload.uid || payload.sub || null,
+      uid: payload.uid || payload.id || payload.user_id || payload.sub || null,
+      name: payload.name || payload.fullName || payload.email || 'Unknown',
+      role: payload.role || payload.user_role || '',
+      email: payload.email || null
+    };
+  }
+
+  function collectCurrentChatUserIds(localUser) {
+    const ids = new Set();
+    const addId = (value) => {
+      const normalized = String(value == null ? '' : value).trim();
+      if (normalized) ids.add(normalized);
+    };
+
+    const realtimeState = window.__realtimeSyncState || {};
+    const candidates = [
+      localUser,
+      window.auth && window.auth.currentUser,
+      window.currentStaffIdentity,
+      window.currentStaffUser,
+      realtimeState.currentUser
+    ];
+
+    candidates.forEach((candidate) => {
+      if (!candidate || typeof candidate !== 'object') return;
+      addId(candidate.id);
+      addId(candidate.uid);
+      addId(candidate.user_id);
+      addId(candidate.new_id);
+    });
+
+    const payload = normalizeUserFromTokenPayload(getStoredChatToken());
+    if (payload) {
+      addId(payload.id);
+      addId(payload.uid);
+      addId(payload.user_id);
+      addId(payload.new_id);
+      addId(payload.sub);
+    }
+
+    return ids;
+  }
+
+  function normalizeChatNameForMatch(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase()
+      .replace(/\./g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function collectCurrentChatUserNames(localUser) {
+    const names = new Set();
+    const addName = (value) => {
+      const normalized = normalizeChatNameForMatch(value);
+      if (normalized) names.add(normalized);
+    };
+
+    const realtimeState = window.__realtimeSyncState || {};
+    const candidates = [
+      localUser,
+      window.auth && window.auth.currentUser,
+      window.currentStaffIdentity,
+      window.currentStaffUser,
+      realtimeState.currentUser
+    ];
+
+    candidates.forEach((candidate) => {
+      if (!candidate || typeof candidate !== 'object') return;
+      addName(candidate.name);
+      addName(candidate.displayName);
+      addName(candidate.fullName);
+      addName(candidate.email);
+    });
+
+    const payload = normalizeUserFromTokenPayload(getStoredChatToken());
+    if (payload) {
+      addName(payload.name);
+      addName(payload.displayName);
+      addName(payload.fullName);
+      addName(payload.email);
+    }
+
+    return names;
+  }
+
+  function normalizeChatTextForMatch(value) {
+    return String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
   }
 
   // ---------- HTML ----------
@@ -723,7 +901,7 @@
                     if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
                 }
                 if (btn) btn.style.setProperty('display', 'none', 'important');
-                scrollChatToLatest();
+                scheduleChatScrollToLatest();
             } else {
             setChatKeyboardMode(false);
                 chatBox.style.setProperty('display', 'none', 'important');
@@ -771,36 +949,49 @@
         }
 
         // Now wait for auth to enable full features
-        let user = window.auth?.currentUser;
+        let user = await resolveAuthUser();
         console.log('[ChatPopup] Initial user:', user);
 
         // If auth not ready, wait for it
         if (!user) {
-            console.log('[ChatPopup] User not ready, waiting...');
-            await new Promise((resolve) => {
-                const checkAuth = setInterval(() => {
-                    if (window.auth?.currentUser) {
-                        console.log('[ChatPopup] Auth ready!');
-                        clearInterval(checkAuth);
-                        resolve();
-                    }
-                }, 100);
+            console.log('[ChatPopup] User not ready, waiting for auth event...');
 
-                // Timeout after 10 seconds
-                setTimeout(() => {
-                    console.warn('[ChatPopup] Auth wait timeout');
-                    clearInterval(checkAuth);
+            const waitForAuth = () => new Promise((resolve) => {
+                const finalize = (candidate) => {
+                    if (candidate && (candidate.id || candidate.uid)) {
+                        user = candidate;
+                    }
+                    clearInterval(authPoll);
+                    clearTimeout(authTimeout);
                     resolve();
-                }, 10000);
+                };
+
+                const authPoll = setInterval(() => {
+                    resolveAuthUser().then((candidate) => {
+                        if (candidate && (candidate.id || candidate.uid)) {
+                            console.log('[ChatPopup] Auth ready:', candidate);
+                            finalize(candidate);
+                        }
+                    }).catch(() => {});
+                }, 250);
+
+                const authTimeout = setTimeout(async () => {
+                    const fallbackUser = await resolveAuthUser().catch(() => null);
+                    if (fallbackUser) {
+                        console.log('[ChatPopup] Auth fallback available after timeout', fallbackUser);
+                    } else {
+                        console.log('[ChatPopup] Auth wait timeout, continuing with limited mode');
+                    }
+                    finalize(fallbackUser);
+                }, 120000);
             });
 
-            user = window.auth?.currentUser;
-            console.log('[ChatPopup] User after wait:', user);
+            await waitForAuth();
         }
 
-        // Check if user exists. Role fallback is enough for chat features.
+        user = user || (window.auth && (window.auth.currentUser || window.currentStaffIdentity));
         if (!user) {
-            console.warn('[ChatPopup] Chat features limited: User not authenticated', user);
+            console.warn('[ChatPopup] Chat features limited: User not authenticated');
             // Chat toggle still works, but no real-time features
             return;
         }
@@ -848,6 +1039,8 @@
         let boundSocket = null;
         let socketWaitTimer = null;
         let socketWaitAttempts = 0;
+        let historyPollTimer = null;
+        let historyPollInFlight = false;
 
         function clearSocketWaitTimer() {
           if (socketWaitTimer) {
@@ -890,6 +1083,8 @@
   let isChatOpen = isChatOpenBasic;
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
+  const renderedMessageIds = new Set();
+  const pendingSentMessages = new Map();
   const userPhotoCache = new Map();
   const userRoleCache = new Map(); // Cache role_id for badge colors
 
@@ -902,6 +1097,66 @@
     lastReadTimestamp = new Date().toISOString();
     localStorage.setItem(LAST_READ_KEY, lastReadTimestamp);
   }
+
+          function normalizeChatUserId(value) {
+            return String(value == null ? '' : value).trim();
+          }
+
+          function rememberPendingSentMessage(text) {
+            var key = normalizeChatTextForMatch(text);
+            if (!key) return;
+            pendingSentMessages.set(key, Date.now());
+          }
+
+          function consumePendingSentEcho(data) {
+            var key = normalizeChatTextForMatch(data && data.message);
+            if (!key || !pendingSentMessages.has(key)) return false;
+
+            var sentAt = pendingSentMessages.get(key);
+            if (Date.now() - sentAt > 30000) {
+              pendingSentMessages.delete(key);
+              return false;
+            }
+
+            pendingSentMessages.delete(key);
+            if (data && data.id) {
+              renderedMessageIds.add(String(data.id));
+            }
+            console.log('[ChatPopup] Skipping socket echo for recently sent local message:', data);
+            return true;
+          }
+
+          function isOwnChatMessage(data) {
+            var messageUserId = normalizeChatUserId(data && data.user_id);
+            var messageUserName = normalizeChatNameForMatch(data && data.user_name);
+            var currentUserNames = collectCurrentChatUserNames(user);
+
+            if (messageUserName && currentUserNames.has(messageUserName)) {
+              return true;
+            }
+
+            if (!messageUserId) return false;
+
+            var currentUserIds = collectCurrentChatUserIds(user);
+            if (!currentUserIds.size) {
+              console.warn('[ChatPopup] Cannot classify chat message ownership: no current user id available', {
+                data: data,
+                currentUserNames: Array.from(currentUserNames)
+              });
+              return false;
+            }
+
+            var isOwn = currentUserIds.has(messageUserId);
+            if (!isOwn) {
+              console.log('[ChatPopup] Message is not mine', {
+                messageUserId: messageUserId,
+                messageUserName: messageUserName,
+                currentUserIds: Array.from(currentUserIds),
+                currentUserNames: Array.from(currentUserNames)
+              });
+            }
+            return isOwn;
+          }
   
         // Show clear button only for superadmin
         function checkClearButtonVisibility() {
@@ -967,12 +1222,18 @@
           function handleRealtimeChatMessage(data) {
             console.log('[ChatPopup] 📨 Received chat:message:', data);
             console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
-            if (data.user_id !== user.id && data.user_id !== user.uid) {
-              console.log('[ChatPopup] Adding received message');
-              addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id);
-            } else {
-              console.log('[ChatPopup] Skipping own message');
+            if (data && data.id && renderedMessageIds.has(String(data.id))) {
+              console.log('[ChatPopup] Skipping duplicate message id:', data.id);
+              return;
             }
+
+            if (consumePendingSentEcho(data)) {
+              return;
+            }
+
+            var messageType = isOwnChatMessage(data) ? 'sent' : 'received';
+            console.log('[ChatPopup] Adding realtime message:', messageType);
+            addMessage(data.message, messageType, data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id, data.id);
           }
 
           function bindRealtimeSocket(socket) {
@@ -1025,6 +1286,7 @@
 
         // Load chat history
         await loadChatHistory();
+        startChatHistoryPolling();
 
     // Toggle function - exposed globally for WebView onclick compatibility
     function handleToggleChat() {
@@ -1042,14 +1304,14 @@
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
         markMessagesAsRead();
-        scrollChatToLatest();
+        scheduleChatScrollToLatest();
         setTimeout(() => {
-          scrollChatToLatest();
+          scheduleChatScrollToLatest();
           if (chatInput) {
             setChatKeyboardMode(true);
             chatInput.focus();
             queueChatLayoutSync();
-            scrollChatToLatest();
+            scheduleChatScrollToLatest();
           }
         }, 100);
         checkClearButtonVisibility();
@@ -1093,14 +1355,16 @@
     async function sendMessage() {
       const message = chatInput.value.trim();
       if (!message) return;
-      const curUser = window.auth?.currentUser;
+      const curUser = await resolveAuthUser();
       if (!curUser) { console.error('User not authenticated'); return; }
+      user = curUser;
 
       const userPhoto = curUser.photo_url || curUser.photoURL || null;
       const userRoleId = curUser.role_id || null;
 
       // Show immediately
-      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id, userRoleId);
+      rememberPendingSentMessage(message);
+      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id || curUser.uid, userRoleId);
       if (sendAudio && typeof sendAudio.play === 'function') {
         try {
           sendAudio.currentTime = 0;
@@ -1132,6 +1396,9 @@
         if (response.ok) {
             const result = await response.json();
             console.log('[ChatPopup] Message sent successfully:', result);
+            if (result && result.data && result.data.id) {
+              renderedMessageIds.add(String(result.data.id));
+            }
         } else {
             const error = await response.json().catch(() => ({}));
             console.error('[ChatPopup] Failed to send chat message:', response.status, error);
@@ -1175,10 +1442,10 @@
                         messagesContainer.innerHTML = '';
                         resetChatState(); // Reset block tracking
             result.data.forEach(msg => {
-              const type = msg.user_id === user.id ? 'sent' : 'received';
-              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id);
+              const type = isOwnChatMessage(msg) ? 'sent' : 'received';
+              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id, msg.id);
                         });
-            scrollChatToLatest();
+            scheduleChatScrollToLatest();
           }
         }
       } catch (error) {
@@ -1186,12 +1453,65 @@
                 messagesContainer.innerHTML = '<div class="text-center text-muted p-3">Gagal memuat riwayat chat</div>';
       } finally {
         isHistoryLoading = false;
-        scrollChatToLatest();
+        scheduleChatScrollToLatest();
             }
         }
 
+    async function pollChatHistoryForNewMessages() {
+      if (historyPollInFlight || isHistoryLoading) return;
+      historyPollInFlight = true;
+
+      try {
+        const token = await getChatToken();
+        if (!token) return;
+
+        const response = await fetch(`${API_ORIGIN}/api/chat/messages?limit=100&_t=${Date.now()}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache'
+          }
+        });
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+        if (!result.success || !Array.isArray(result.data)) return;
+
+        result.data.forEach((msg) => {
+          if (!msg || !msg.id || renderedMessageIds.has(String(msg.id))) {
+            return;
+          }
+
+          const type = isOwnChatMessage(msg) ? 'sent' : 'received';
+          addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id, msg.id);
+        });
+      } catch (error) {
+        console.warn('[ChatPopup] Chat history polling failed:', error?.message || error);
+      } finally {
+        historyPollInFlight = false;
+      }
+    }
+
+    function startChatHistoryPolling() {
+      if (historyPollTimer) return;
+      historyPollTimer = setInterval(pollChatHistoryForNewMessages, 3000);
+      window.addEventListener('beforeunload', function() {
+        if (historyPollTimer) {
+          clearInterval(historyPollTimer);
+          historyPollTimer = null;
+        }
+      }, { once: true });
+    }
+
     // Add message with avatar support
-    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null) {
+    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null, messageId = null) {
+      if (messageId && renderedMessageIds.has(String(messageId))) {
+        return;
+      }
+      if (messageId) {
+        renderedMessageIds.add(String(messageId));
+      }
+
       const time = timestamp
         ? new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
         : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
@@ -1246,7 +1566,7 @@
 
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
       if (!isHistoryLoading || isChatOpen) {
-        scrollChatToLatest();
+        scheduleChatScrollToLatest();
       } else {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
@@ -1275,6 +1595,7 @@
     // Reset last sender when loading history
     function resetChatState() {
       lastSender = null;
+      renderedMessageIds.clear();
     }
 
     // Escape HTML
@@ -1299,7 +1620,7 @@
                 }
                 
                 try {
-                    const token = localStorage.getItem('vps_auth_token');
+                    const token = await getChatToken();
                     const response = await fetch('/api/admin/clear-chat-logs', {
                         method: 'DELETE',
                         headers: {

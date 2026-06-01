@@ -10,6 +10,8 @@ const router = express.Router();
 const db = require('../db');
 const { verifyPatientToken } = require('../middleware/auth');
 
+const MAX_ACTIVE_SESSION_MINUTES = 120;
+
 let tablesReady = false;
 let tablesPromise = null;
 
@@ -93,6 +95,26 @@ function setNoCacheHeaders(req, res, next) {
     next();
 }
 
+async function closeStaleActiveSessions(patientId) {
+    if (!patientId) return 0;
+
+    const [result] = await db.query(
+        `UPDATE kick_counter_sessions
+         SET status = 'completed',
+             end_time = DATE_ADD(start_time, INTERVAL ? MINUTE),
+             duration_minutes = ?
+         WHERE patient_id = ?
+           AND status = 'active'
+           AND (
+                session_date < CURDATE()
+                OR start_time <= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+           )`,
+        [MAX_ACTIVE_SESSION_MINUTES, MAX_ACTIVE_SESSION_MINUTES, patientId, MAX_ACTIVE_SESSION_MINUTES]
+    );
+
+    return Number(result?.affectedRows || 0);
+}
+
 router.use(setNoCacheHeaders);
 
 // All routes require patient authentication
@@ -120,6 +142,9 @@ router.post('/session', async (req, res) => {
         if (!patientId) return;
         const now = new Date();
         const sessionDate = formatDateLocal(now);
+
+        // Auto-recover stale active sessions from previous days or overlong sessions.
+        await closeStaleActiveSessions(patientId);
 
         // Check if there's already an active session
         const [existing] = await db.query(
@@ -293,6 +318,9 @@ router.get('/today', async (req, res) => {
         const patientId = requirePatientId(req, res);
         if (!patientId) return;
         const today = formatDateLocal();
+
+        // Keep today's summary clean by closing stale active sessions first.
+        await closeStaleActiveSessions(patientId);
 
         const [sessions] = await db.query(
             `SELECT * FROM kick_counter_sessions

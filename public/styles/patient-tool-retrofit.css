@@ -1,6 +1,6 @@
-/* SISIwanita legacy trial page adapter styles. Loaded after older page CSS. */
+/* SISIwanita legacy portal page adapter styles. Loaded after older page CSS. */
 
-html[data-trial-nav="off"] {
+html[data-portal-nav="off"] {
     background: var(--bg, #f7f7f4) !important;
     width: 100vw !important;
     max-width: none !important;
@@ -21,9 +21,9 @@ body.legacy-tool-retrofit .safe-area-top,
 body.legacy-tool-retrofit .safe-area-bottom,
 body.legacy-tool-retrofit .nav-bar,
 body.legacy-tool-retrofit .top-bar,
-body.legacy-tool-retrofit .topbar-trial,
-body.legacy-tool-retrofit .topbar-trial-spacer,
-body.legacy-tool-retrofit .trial-unified-header,
+body.legacy-tool-retrofit .topbar-portal,
+body.legacy-tool-retrofit .topbar-portal-spacer,
+body.legacy-tool-retrofit .portal-unified-header,
 body.legacy-tool-retrofit header.topbar:not(#home-topbar),
 body.legacy-tool-retrofit .bottom-nav:not(#home-bottom-nav),
 body.legacy-tool-retrofit .site-footer,
@@ -198,7 +198,7 @@ body.legacy-tool-retrofit .vitamin-stats-grid {
 }
 
 body.legacy-tool-retrofit .stat-box,
-body.legacy-tool-retrofit .trial-card,
+body.legacy-tool-retrofit .portal-card,
 body.legacy-tool-retrofit .ask-card,
 body.legacy-tool-retrofit .doc-card,
 body.legacy-tool-retrofit .lab-card,
@@ -230,7 +230,7 @@ body.legacy-tool-retrofit .doc-card-inner,
 body.legacy-tool-retrofit .lab-card-inner,
 body.legacy-tool-retrofit .visit-card,
 body.legacy-tool-retrofit .article-card,
-body.legacy-tool-retrofit .trial-card {
+body.legacy-tool-retrofit .portal-card {
     padding: 16px !important;
 }
 
@@ -238,7 +238,7 @@ body.legacy-tool-retrofit .doc-title,
 body.legacy-tool-retrofit .lab-title,
 body.legacy-tool-retrofit .visit-date,
 body.legacy-tool-retrofit .session-title,
-body.legacy-tool-retrofit .trial-card-title,
+body.legacy-tool-retrofit .portal-card-title,
 body.legacy-tool-retrofit .section-title,
 body.legacy-tool-retrofit .modal-title {
     color: var(--ink) !important;
@@ -251,7 +251,7 @@ body.legacy-tool-retrofit .lab-date,
 body.legacy-tool-retrofit .lab-description,
 body.legacy-tool-retrofit .visit-info,
 body.legacy-tool-retrofit .section-lead,
-body.legacy-tool-retrofit .trial-card-desc,
+body.legacy-tool-retrofit .portal-card-desc,
 body.legacy-tool-retrofit .empty-info p,
 body.legacy-tool-retrofit .privacy-note,
 body.legacy-tool-retrofit .refresh-info,
@@ -261,8 +261,8 @@ body.legacy-tool-retrofit .modal-text {
     color: var(--muted) !important;
 }
 
-body.legacy-tool-retrofit .trial-input,
-body.legacy-tool-retrofit .trial-textarea,
+body.legacy-tool-retrofit .portal-input,
+body.legacy-tool-retrofit .portal-textarea,
 body.legacy-tool-retrofit textarea,
 body.legacy-tool-retrofit input,
 body.legacy-tool-retrofit select {
@@ -273,7 +273,7 @@ body.legacy-tool-retrofit select {
     box-shadow: none !important;
 }
 
-body.legacy-tool-retrofit .trial-button,
+body.legacy-tool-retrofit .portal-button,
 body.legacy-tool-retrofit .btn-next,
 body.legacy-tool-retrofit .btn-submit,
 body.legacy-tool-retrofit .btn-download,
@@ -290,7 +290,7 @@ body.legacy-tool-retrofit .mini-btn.primary {
     border-color: var(--ink) !important;
 }
 
-body.legacy-tool-retrofit .trial-button-ghost,
+body.legacy-tool-retrofit .portal-button-ghost,
 body.legacy-tool-retrofit .btn-back,
 body.legacy-tool-retrofit .btn-cancel,
 body.legacy-tool-retrofit .btn-invoice,
