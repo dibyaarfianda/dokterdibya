@@ -55,6 +55,13 @@
             position: relative;
             z-index: 31;
         }
+        .app {
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 0 16px;
+            position: relative;
+            z-index: 31;
+        }
         header {
             padding: 1rem 1.25rem;
             padding-top: calc(env(safe-area-inset-top, 0px) + 2.5rem);
@@ -370,7 +377,7 @@
             overflow-x: hidden;
             color: var(--text-primary, #111111);
         }
-        body.portal-themed.intake-page .topbar-blur-fade {
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-fade {
             position: fixed;
             left: 0;
             right: 0;
@@ -379,22 +386,22 @@
             z-index: 29;
             pointer-events: none;
         }
-        body.portal-themed.intake-page .topbar-blur-fade div[class^="topbar-blur-"] {
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-fade div[class^="topbar-blur-"] {
             opacity: 1;
             position: absolute;
             inset: 0;
             pointer-events: none;
         }
-        body.portal-themed.intake-page .topbar-blur-1 { z-index: 1; -webkit-backdrop-filter: blur(0.15625px); backdrop-filter: blur(0.15625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
-        body.portal-themed.intake-page .topbar-blur-2 { z-index: 2; -webkit-backdrop-filter: blur(0.3125px); backdrop-filter: blur(0.3125px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); }
-        body.portal-themed.intake-page .topbar-blur-3 { z-index: 3; -webkit-backdrop-filter: blur(0.625px); backdrop-filter: blur(0.625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); }
-        body.portal-themed.intake-page .topbar-blur-4 { z-index: 4; -webkit-backdrop-filter: blur(1.25px); backdrop-filter: blur(1.25px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); }
-        body.portal-themed.intake-page .topbar-blur-5 { z-index: 5; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); }
-        body.portal-themed.intake-page .topbar-blur-6 { z-index: 6; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
-        body.portal-themed.intake-page .topbar-blur-7 { z-index: 7; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
-        body.portal-themed.intake-page .topbar-blur-8 { z-index: 8; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-1 { z-index: 1; -webkit-backdrop-filter: blur(0.15625px); backdrop-filter: blur(0.15625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,0) 37.5%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-2 { z-index: 2; -webkit-backdrop-filter: blur(0.3125px); backdrop-filter: blur(0.3125px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 12.5%, rgba(0,0,0,1) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,0) 50%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-3 { z-index: 3; -webkit-backdrop-filter: blur(0.625px); backdrop-filter: blur(0.625px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 25%, rgba(0,0,0,1) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 62.5%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-4 { z-index: 4; -webkit-backdrop-filter: blur(1.25px); backdrop-filter: blur(1.25px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 37.5%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,0) 75%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-5 { z-index: 5; -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 87.5%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-6 { z-index: 6; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 62.5%, rgba(0,0,0,1) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,0) 100%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-7 { z-index: 7; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 75%, rgba(0,0,0,1) 87.5%, rgba(0,0,0,1) 100%); }
+        body.portal-themed.auth-theme-unified.intake-page .topbar-blur-8 { z-index: 8; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); mask-image: linear-gradient(to top, rgba(0,0,0,0) 87.5%, rgba(0,0,0,1) 100%); }
 
-        body.portal-themed.intake-page header.topbar {
+        body.portal-themed.auth-theme-unified.intake-page header.topbar {
             position: sticky;
             top: env(safe-area-inset-top, 0px);
             z-index: 30;
@@ -404,8 +411,8 @@
             padding: 0;
             margin: 0;
         }
-        body.portal-themed.intake-page .topbar-inner {
-            width: min(calc(100% - 32px), 828px);
+        body.portal-themed.auth-theme-unified.intake-page .topbar-inner {
+            width: min(100%, 860px);
             margin: 0 auto;
             padding: 8px 13px 10px;
             display: grid;
@@ -413,7 +420,7 @@
             align-items: center;
             gap: 11px;
         }
-        body.portal-themed.intake-page .brand-link {
+        body.portal-themed.auth-theme-unified.intake-page .brand-link {
             display: inline-flex;
             flex-direction: column;
             gap: 1px;
@@ -425,7 +432,7 @@
             backdrop-filter: none;
             text-decoration: none;
         }
-        body.portal-themed.intake-page .brand-title {
+        body.portal-themed.auth-theme-unified.intake-page .brand-title {
             font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
             font-size: 16px;
             line-height: 1.02;
@@ -433,7 +440,7 @@
             letter-spacing: -0.04em;
             color: #7EA89F;
         }
-        body.portal-themed.intake-page .brand-sub {
+        body.portal-themed.auth-theme-unified.intake-page .brand-sub {
             margin-top: 3px;
             font-size: 7.2px;
             line-height: 1.2;
@@ -474,12 +481,12 @@
             text-decoration: none !important;
             text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14) !important;
         }
-        body.portal-themed.intake-page .top-actions {
+        body.portal-themed.auth-theme-unified.intake-page .top-actions {
             display: flex;
             align-items: center;
             gap: 7px;
         }
-        body.portal-themed.intake-page .icon-btn {
+        body.portal-themed.auth-theme-unified.intake-page .icon-btn {
             border: 1px solid var(--line-soft, rgba(17, 17, 17, 0.09));
             background: rgba(255,255,255,0.82);
             box-shadow: var(--shadow-soft, 0 1px 2px rgba(17, 17, 17, 0.05));
@@ -493,7 +500,7 @@
             cursor: pointer;
             transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
         }
-        body.portal-themed.intake-page .icon-btn:active { transform: scale(0.97); }
+        body.portal-themed.auth-theme-unified.intake-page .icon-btn:active { transform: scale(0.97); }
 
         body.portal-themed.intake-page .intake-shell {
             min-height: 100vh;
@@ -730,11 +737,7 @@
         }
 
         @media (max-width: 640px) {
-            body.portal-themed.intake-page .topbar-inner {
-                width: calc(100% - 32px);
-                padding-left: 13px;
-                padding-right: 13px;
-            }
+            body.portal-themed.auth-theme-unified.intake-page .topbar-inner { width: min(100%, 860px); }
             body.portal-themed.intake-page main {
                 padding: 22px 16px 104px;
             }
@@ -771,7 +774,7 @@
     </script>
     <script src="/scripts/patient-theme.js"></script>
 </head>
-<body class="portal-themed intake-page">
+<body class="portal-themed auth-theme-unified intake-page">
     <div class="topbar-blur-fade" aria-hidden="true">
         <div class="topbar-blur-1"></div>
         <div class="topbar-blur-2"></div>
@@ -783,21 +786,23 @@
         <div class="topbar-blur-8"></div>
     </div>
     <div class="intake-shell">
-        <header class="topbar" id="home-topbar">
-            <div class="topbar-inner" id="home-topbar-inner">
-                <div class="brand">
-                    <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
-                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
-                        <div class="brand-sub" id="home-brand-sub">Portal Wanita Sehat</div>
-                    </a>
+        <div class="app">
+            <header class="topbar" id="home-topbar">
+                <div class="topbar-inner" id="home-topbar-inner">
+                    <div class="brand">
+                        <a href="/patient-menu.html" class="brand-link" id="home-brand-link" aria-label="Beranda SISIwanita">
+                            <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                            <div class="brand-sub" id="home-brand-sub">Portal Wanita Sehat</div>
+                        </a>
+                    </div>
+                    <div class="top-actions" id="home-top-actions">
+                        <button type="button" class="icon-btn" id="home-back-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="top-actions" id="home-top-actions">
-                    <button type="button" class="icon-btn" id="home-back-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke portal">
-                        <i class="fa-solid fa-arrow-left"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
+            </header>
+        </div>
         <main>
             <section class="intake-intro" aria-labelledby="form-title">
                 <h1 id="form-title">Formulir Identitas dan Sosial</h1>
