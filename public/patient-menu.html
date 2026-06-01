@@ -206,7 +206,7 @@
             border-radius: 28px;
             background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86));
             box-shadow: var(--shadow);
-            padding: 20px;
+            padding: 20px 140px 20px 20px;
             overflow: hidden;
             position: relative;
         }
@@ -245,6 +245,43 @@
         }
         .hero-copy { color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 52ch; }
         .hero-copy-strong { font-weight: 800; font-size: 1.05em; }
+        .home-hero-photo {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 96px;
+            height: 96px;
+            border-radius: 28px;
+            border: 1px solid var(--line);
+            background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(240,242,236,0.88));
+            box-shadow: 0 12px 30px rgba(17,17,17,0.08);
+            overflow: hidden;
+            cursor: pointer;
+            padding: 0;
+            display: block;
+        }
+        .home-hero-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transform-origin: center center;
+            transform: translate(var(--home-photo-x, 0px), var(--home-photo-y, 0px)) scale(var(--home-photo-zoom, 1));
+        }
+        .home-hero-photo.has-photo .home-hero-photo-fallback { display: none; }
+        .home-hero-photo-fallback {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            gap: 4px;
+            text-align: center;
+            padding: 10px;
+            color: var(--ink);
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(234,241,236,0.9));
+        }
+        .home-hero-photo-fallback i { font-size: 22px; opacity: 0.72; }
+        .home-hero-photo-fallback span { display: block; font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; }
         .today-row {
             margin-top: 18px;
             display: grid;
@@ -788,6 +825,79 @@
         .profile-head strong { display: block; color: var(--ink); font-family: var(--display); font-size: 19px; line-height: 1.1; letter-spacing: -0.035em; }
         .profile-head small { display: block; color: var(--muted); font-size: 11px; font-weight: 700; margin-top: 4px; }
         .profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .profile-photo-setup {
+            display: grid;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        .profile-photo-preview {
+            position: relative;
+            height: 190px;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid var(--line);
+            background: linear-gradient(145deg, rgba(17,17,17,0.04), rgba(92,127,114,0.08));
+            box-shadow: var(--shadow-soft);
+        }
+        .profile-photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transform-origin: center center;
+            transform: translate(var(--profile-photo-x, 0px), var(--profile-photo-y, 0px)) scale(var(--profile-photo-zoom, 1));
+        }
+        .profile-photo-preview-empty {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            gap: 6px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .profile-photo-preview-empty i { font-size: 26px; opacity: 0.55; }
+        .profile-photo-controls {
+            display: grid;
+            gap: 10px;
+        }
+        .profile-photo-control {
+            display: grid;
+            gap: 6px;
+        }
+        .profile-photo-control label {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+        }
+        .profile-photo-control input[type="range"] {
+            width: 100%;
+            accent-color: #111;
+        }
+        .profile-photo-save-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .profile-photo-save-actions .primary-action,
+        .profile-photo-save-actions .ghost-action,
+        .profile-photo-save-actions .secondary-action {
+            justify-content: center;
+            min-height: 38px;
+        }
+        .profile-photo-note {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.5;
+            font-weight: 700;
+        }
         .pref-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 15px; padding: 12px; margin-top: 10px; }
         .pref-row span { font-size: 13px; font-weight: 800; }
         .pref-row small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
@@ -972,10 +1082,13 @@
 
         @media (max-width: 520px) {
             .app { padding-left: 14px; padding-right: 14px; }
-            .hero-card { padding: 18px; border-radius: 24px; }
+            .hero-card { padding: 18px 104px 18px 18px; border-radius: 24px; }
+            .home-hero-photo { top: 14px; right: 14px; width: 76px; height: 76px; border-radius: 22px; }
             .today-row { grid-template-columns: 1fr; align-items: start; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
+            .profile-photo-preview { height: 170px; }
+            .profile-photo-save-actions { grid-template-columns: 1fr; }
             .corner-panel { grid-template-columns: 1fr; }
             .primary-action { width: 100%; justify-content: center; }
             .section-note { display: none; }
@@ -1205,6 +1318,10 @@
             </section>
 
             <section class="hero-card reveal">
+                <button type="button" class="home-hero-photo soundable" id="home-hero-photo" onclick="openHomePhotoModal(event)" aria-label="Atur foto beranda">
+                    <img id="home-hero-photo-img" alt="Foto beranda">
+                    <span class="home-hero-photo-fallback"><i class="fa-solid fa-image"></i><span>Foto Beranda</span></span>
+                </button>
                 <div class="status-chip"><span class="status-dot"></span><span id="time-greeting">Selamat datang</span></div>
                 <h1 class="hero-title" id="hero-title">Ruang Anda.</h1>
                 <p class="hero-copy" id="hero-copy">Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.</p>
@@ -1579,20 +1696,261 @@
             return profile.profile_picture || profile.photo_url || profile.photoUrl || profile.avatar_url || '';
         }
 
+        const HOME_PHOTO_STORAGE_KEY = 'patient_home_photo_adjust_v1';
+        const HOME_PHOTO_DEFAULT = {
+            photoUrl: '',
+            zoom: 1,
+            offsetX: 0,
+            offsetY: 0
+        };
+        let homePhotoDraft = null;
+
+        function getHomePhotoState() {
+            try {
+                const raw = localStorage.getItem(HOME_PHOTO_STORAGE_KEY);
+                if (!raw) return Object.assign({}, HOME_PHOTO_DEFAULT);
+                return normalizePhotoAdjustState(JSON.parse(raw));
+            } catch (error) {
+                return Object.assign({}, HOME_PHOTO_DEFAULT);
+            }
+        }
+
+        function saveHomePhotoState(state) {
+            const normalized = normalizePhotoAdjustState(state);
+            try {
+                localStorage.setItem(HOME_PHOTO_STORAGE_KEY, JSON.stringify(normalized));
+            } catch (error) {}
+            homePhotoDraft = Object.assign({}, normalized);
+            updateHomeHeroPhoto();
+            return normalized;
+        }
+
+        function updateHomeHeroPhoto(state) {
+            const current = normalizePhotoAdjustState(state || homePhotoDraft || getHomePhotoState());
+            const button = document.getElementById('home-hero-photo');
+            const img = document.getElementById('home-hero-photo-img');
+            if (!button || !img) return current;
+            button.style.setProperty('--home-photo-zoom', current.zoom);
+            button.style.setProperty('--home-photo-x', current.offsetX + 'px');
+            button.style.setProperty('--home-photo-y', current.offsetY + 'px');
+            if (current.photoUrl) {
+                img.src = current.photoUrl;
+                button.classList.add('has-photo');
+            } else {
+                img.removeAttribute('src');
+                button.classList.remove('has-photo');
+            }
+            return current;
+        }
+
+        function renderHomePhotoModal(state) {
+            state = normalizePhotoAdjustState(state || homePhotoDraft || getHomePhotoState());
+            const previewPhoto = state.photoUrl ? '<img id="home-photo-preview-img" src="' + escapeHtml(state.photoUrl) + '" alt="Pratinjau foto beranda">' : '';
+            const emptyState = state.photoUrl ? '' : '<div class="home-photo-preview-empty"><i class="fa-solid fa-image"></i><span>Belum ada foto beranda</span></div>';
+            return '<div class="profile-photo-setup">' +
+                '<div class="home-photo-preview" id="home-photo-preview" style="--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + 'px;--home-photo-y:' + state.offsetY + 'px;">' +
+                    previewPhoto +
+                    emptyState +
+                '</div>' +
+                '<div class="profile-photo-controls">' +
+                    '<div class="profile-photo-control">' +
+                        '<label for="home-photo-zoom">Zoom</label>' +
+                        '<input type="range" id="home-photo-zoom" min="1" max="2.2" step="0.01" value="' + state.zoom + '" oninput="updateHomePhotoDraftFromInputs()">' +
+                    '</div>' +
+                    '<div class="profile-photo-control">' +
+                        '<label for="home-photo-offset-x">Posisi Horizontal</label>' +
+                        '<input type="range" id="home-photo-offset-x" min="-90" max="90" step="1" value="' + state.offsetX + '" oninput="updateHomePhotoDraftFromInputs()">' +
+                    '</div>' +
+                    '<div class="profile-photo-control">' +
+                        '<label for="home-photo-offset-y">Posisi Vertikal</label>' +
+                        '<input type="range" id="home-photo-offset-y" min="-90" max="90" step="1" value="' + state.offsetY + '" oninput="updateHomePhotoDraftFromInputs()">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="profile-photo-note">Foto ini hanya untuk tampilan beranda dan tidak mengubah foto profil.</div>' +
+                '<div class="profile-photo-save-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="openHomePhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload</button>' +
+                    '<button type="button" class="secondary-action soundable" onclick="resetHomePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="saveHomePhotoDraft(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function bindHomePhotoInput() {
+            let input = document.getElementById('home-photo-input');
+            if (!input) {
+                input = document.createElement('input');
+                input.type = 'file';
+                input.id = 'home-photo-input';
+                input.accept = 'image/*';
+                input.className = 'hidden-file-input';
+                document.body.appendChild(input);
+            }
+            if (input.dataset.bound !== '1') {
+                input.dataset.bound = '1';
+                input.addEventListener('change', handleHomePhotoUpload);
+            }
+            return input;
+        }
+
+        function openHomePhotoPicker(event) {
+            stopTopbarEvent(event);
+            const input = bindHomePhotoInput();
+            input.value = '';
+            input.click();
+        }
+
+        async function handleHomePhotoUpload(event) {
+            const input = event && event.target;
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+            if (!file.type || !file.type.startsWith('image/')) {
+                showToast('Pilih file gambar untuk foto beranda');
+                input.value = '';
+                return;
+            }
+            try {
+                const photoUrl = await fileToDataUrl(file);
+                homePhotoDraft = normalizePhotoAdjustState(Object.assign({}, homePhotoDraft || getHomePhotoState(), { photoUrl }));
+                openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
+                showToast('Foto beranda siap diatur');
+            } catch (error) {
+                showToast(error.message || 'Upload foto beranda gagal');
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
+        function fileToDataUrl(file) {
+            return new Promise(function(resolve, reject) {
+                const reader = new FileReader();
+                reader.onload = function() { resolve(String(reader.result || '')); };
+                reader.onerror = function() { reject(new Error('Gagal membaca file foto')); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateHomePhotoDraftFromInputs() {
+            const preview = document.getElementById('home-photo-preview');
+            if (!preview) return;
+            homePhotoDraft = normalizePhotoAdjustState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
+                zoom: document.getElementById('home-photo-zoom')?.value,
+                offsetX: document.getElementById('home-photo-offset-x')?.value,
+                offsetY: document.getElementById('home-photo-offset-y')?.value
+            }));
+            preview.style.setProperty('--home-photo-zoom', homePhotoDraft.zoom);
+            preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + 'px');
+            preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + 'px');
+            const previewImg = document.getElementById('home-photo-preview-img');
+            if (previewImg && homePhotoDraft.photoUrl) previewImg.src = homePhotoDraft.photoUrl;
+        }
+
+        function resetHomePhotoDraft(event) {
+            stopTopbarEvent(event);
+            homePhotoDraft = Object.assign({}, HOME_PHOTO_DEFAULT);
+            openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
+        }
+
+        function saveHomePhotoDraft(event) {
+            stopTopbarEvent(event);
+            if (!homePhotoDraft || !homePhotoDraft.photoUrl) {
+                showToast('Upload foto beranda terlebih dahulu');
+                return;
+            }
+            saveHomePhotoState(homePhotoDraft);
+            openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
+            showToast('Foto beranda disimpan');
+        }
+
+        function openHomePhotoModal(event) {
+            stopTopbarEvent(event);
+            homePhotoDraft = getHomePhotoState();
+            openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
+        }
+
+        const PROFILE_PHOTO_STORAGE_KEY = 'patient_profile_photo_adjust_v1';
+        const PROFILE_PHOTO_DEFAULT = {
+            photoUrl: '',
+            zoom: 1,
+            offsetX: 0,
+            offsetY: 0
+        };
+        let profilePhotoDraft = null;
+
+        function clampPhotoAdjust(value, min, max, fallback) {
+            const num = Number(value);
+            if (!Number.isFinite(num)) return fallback;
+            return Math.min(max, Math.max(min, num));
+        }
+
+        function normalizePhotoAdjustState(state) {
+            state = state || {};
+            return {
+                photoUrl: state.photoUrl || '',
+                zoom: clampPhotoAdjust(state.zoom, 1, 2.2, 1),
+                offsetX: clampPhotoAdjust(state.offsetX, -90, 90, 0),
+                offsetY: clampPhotoAdjust(state.offsetY, -90, 90, 0)
+            };
+        }
+
+        function getProfilePhotoAdjustState() {
+            try {
+                const raw = localStorage.getItem(PROFILE_PHOTO_STORAGE_KEY);
+                if (!raw) return Object.assign({}, PROFILE_PHOTO_DEFAULT);
+                return normalizePhotoAdjustState(JSON.parse(raw));
+            } catch (error) {
+                return Object.assign({}, PROFILE_PHOTO_DEFAULT);
+            }
+        }
+
+        function saveProfilePhotoAdjustState(state) {
+            const normalized = normalizePhotoAdjustState(state);
+            try {
+                localStorage.setItem(PROFILE_PHOTO_STORAGE_KEY, JSON.stringify(normalized));
+            } catch (error) {}
+            profilePhotoDraft = Object.assign({}, normalized);
+            updateProfileAvatar(currentProfile || getStoredProfile());
+            return normalized;
+        }
+
+        function applyPhotoAdjustToElement(element, state, prefix) {
+            if (!element) return;
+            const normalized = normalizePhotoAdjustState(state);
+            const key = prefix || 'profile-photo';
+            element.style.setProperty('--' + key + '-zoom', normalized.zoom);
+            element.style.setProperty('--' + key + '-x', normalized.offsetX + 'px');
+            element.style.setProperty('--' + key + '-y', normalized.offsetY + 'px');
+        }
+
         function updateProfileAvatar(profile) {
             profile = profile || {};
             const img = document.getElementById('user-avatar-img');
             const initials = document.getElementById('user-avatar-initials');
             if (!img || !initials) return;
             const name = profile.fullname || profile.full_name || profile.name || 'Pasien';
-            const photoUrl = getProfilePhotoUrl(profile);
+            const basePhotoUrl = getProfilePhotoUrl(profile);
+            const adjusted = normalizePhotoAdjustState(profilePhotoDraft || getProfilePhotoAdjustState());
+            const photoUrl = adjusted.photoUrl || basePhotoUrl;
+            const avatarButton = document.getElementById('user-avatar');
             if (photoUrl) {
                 img.src = photoUrl;
                 img.style.display = 'block';
+                img.style.transformOrigin = 'center center';
+                img.style.transform = 'translate(' + adjusted.offsetX + 'px, ' + adjusted.offsetY + 'px) scale(' + adjusted.zoom + ')';
+                if (avatarButton) {
+                    avatarButton.style.setProperty('--profile-photo-zoom', adjusted.zoom);
+                    avatarButton.style.setProperty('--profile-photo-x', adjusted.offsetX + 'px');
+                    avatarButton.style.setProperty('--profile-photo-y', adjusted.offsetY + 'px');
+                }
                 initials.style.display = 'none';
             } else {
                 img.removeAttribute('src');
                 img.style.display = 'none';
+                img.style.transform = '';
+                if (avatarButton) {
+                    avatarButton.style.removeProperty('--profile-photo-zoom');
+                    avatarButton.style.removeProperty('--profile-photo-x');
+                    avatarButton.style.removeProperty('--profile-photo-y');
+                }
                 initials.textContent = getInitials(name);
                 initials.style.display = '';
             }
@@ -1617,79 +1975,71 @@
             });
         }
 
-        async function handleProfilePhotoUpload(event) {
-            const input = event && event.target;
-            const file = input && input.files && input.files[0];
-            if (!file) return;
-            if (!file.type || !file.type.startsWith('image/')) {
-                showToast('Pilih file gambar untuk foto profil');
-                input.value = '';
-                return;
-            }
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('Ukuran foto maksimal 2MB');
-                input.value = '';
-                return;
-            }
-            const token = getToken();
-            if (!token) { logout(); return; }
+        function renderProfilePhotoEditor(state) {
+            state = normalizePhotoAdjustState(state || profilePhotoDraft || getProfilePhotoAdjustState());
+            const previewPhoto = state.photoUrl ? '<img id="profile-photo-preview-img" src="' + escapeHtml(state.photoUrl) + '" alt="Pratinjau foto profil">' : '';
+            const emptyState = state.photoUrl ? '' : '<div class="profile-photo-preview-empty"><i class="fa-solid fa-user"></i><span>Belum ada foto profil</span></div>';
+            return '<div class="profile-photo-setup">' +
+                '<div class="profile-photo-preview" id="profile-photo-preview" style="--profile-photo-zoom:' + state.zoom + ';--profile-photo-x:' + state.offsetX + 'px;--profile-photo-y:' + state.offsetY + 'px;">' +
+                    previewPhoto +
+                    emptyState +
+                '</div>' +
+                '<div class="profile-photo-controls">' +
+                    '<div class="profile-photo-control">' +
+                        '<label for="profile-photo-zoom">Zoom</label>' +
+                        '<input type="range" id="profile-photo-zoom" min="1" max="2.2" step="0.01" value="' + state.zoom + '" oninput="updateProfilePhotoDraftFromInputs()">' +
+                    '</div>' +
+                    '<div class="profile-photo-control">' +
+                        '<label for="profile-photo-offset-x">Posisi Horizontal</label>' +
+                        '<input type="range" id="profile-photo-offset-x" min="-90" max="90" step="1" value="' + state.offsetX + '" oninput="updateProfilePhotoDraftFromInputs()">' +
+                    '</div>' +
+                    '<div class="profile-photo-control">' +
+                        '<label for="profile-photo-offset-y">Posisi Vertikal</label>' +
+                        '<input type="range" id="profile-photo-offset-y" min="-90" max="90" step="1" value="' + state.offsetY + '" oninput="updateProfilePhotoDraftFromInputs()">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="profile-photo-note">Foto profil ini berbeda dari foto beranda dan bisa diatur posisi/zoom-nya sendiri.</div>' +
+                '<div class="profile-photo-save-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
+                    '<button type="button" class="secondary-action soundable" onclick="resetProfilePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="saveProfilePhotoDraft(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                '</div>' +
+            '</div>';
+        }
 
-            const formData = new FormData();
-            formData.append('photo', file);
-            showToast('Mengunggah foto profil...');
-            try {
-                const response = await fetch('/api/patients/upload-photo', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token },
-                    body: formData
-                });
-                if (response.status === 401) { logout(); return; }
-                const data = await response.json().catch(function() { return {}; });
-                if (!response.ok || !data.success) throw new Error(data.message || 'Upload foto gagal');
-                const photoUrl = data.photo_url || data.profile_picture || data.url || '';
-                currentProfile = Object.assign({}, currentProfile || getStoredProfile(), {
-                    photo_url: photoUrl,
-                    profile_picture: photoUrl
-                });
-                try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
-                window.currentProfile = currentProfile;
-                updateProfileAvatar(currentProfile);
-                openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile));
-                showToast('Foto profil berhasil diperbarui');
-            } catch (error) {
-                showToast(error.message || 'Upload foto gagal');
-            } finally {
-                input.value = '';
+        function updateProfilePhotoDraftFromInputs() {
+            const preview = document.getElementById('profile-photo-preview');
+            if (!preview) return;
+            profilePhotoDraft = normalizePhotoAdjustState(Object.assign({}, profilePhotoDraft || getProfilePhotoAdjustState(), {
+                zoom: document.getElementById('profile-photo-zoom')?.value,
+                offsetX: document.getElementById('profile-photo-offset-x')?.value,
+                offsetY: document.getElementById('profile-photo-offset-y')?.value
+            }));
+            preview.style.setProperty('--profile-photo-zoom', profilePhotoDraft.zoom);
+            preview.style.setProperty('--profile-photo-x', profilePhotoDraft.offsetX + 'px');
+            preview.style.setProperty('--profile-photo-y', profilePhotoDraft.offsetY + 'px');
+            const previewImg = document.getElementById('profile-photo-preview-img');
+            if (previewImg && profilePhotoDraft.photoUrl) {
+                previewImg.src = profilePhotoDraft.photoUrl;
             }
         }
 
-        function renderProfileModal(profile) {
-            profile = profile || {};
-            const name = profile.fullname || profile.full_name || profile.name || 'Pasien SISIwanita';
-            const medicalId = profile.medical_record_id || profile.medicalRecordId || profile.mr_id || profile.id || '-';
-            const email = profile.email || '-';
-            const phone = profile.phone || profile.phone_number || profile.no_hp || '-';
-            const birthDate = profile.birth_date || profile.date_of_birth || profile.dob || '';
-            const initials = escapeHtml(getInitials(name));
-            const photoUrl = getProfilePhotoUrl(profile);
-            const avatarClass = photoUrl ? 'profile-avatar has-photo' : 'profile-avatar';
-            const photoHtml = photoUrl ? '<img src="' + escapeHtml(photoUrl) + '" alt="Foto profil">' : '';
-            return '<div class="profile-head">' +
-                '<div class="' + avatarClass + '">' + photoHtml + '<span class="profile-avatar-fallback">' + initials + '</span></div>' +
-                '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small>' +
-                    '<div class="profile-photo-actions">' +
-                        '<button type="button" class="profile-photo-btn primary soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
-                        '<button type="button" class="profile-photo-btn soundable" onclick="openProfilePhotoPicker(event, \'gallery\')"><i class="fa-solid fa-image"></i> Pilih foto</button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="profile-grid">' +
-                '<div><span>No. Rekam Medis</span><strong>' + escapeHtml(medicalId) + '</strong></div>' +
-                '<div><span>Email</span><strong>' + escapeHtml(email) + '</strong></div>' +
-                '<div><span>Telepon</span><strong>' + escapeHtml(phone) + '</strong></div>' +
-                '<div><span>Tanggal Lahir</span><strong>' + escapeHtml(formatProfileDate(birthDate)) + '</strong></div>' +
-            '</div>' +
-            '<div class="modal-actions"><button type="button" class="primary-action soundable" onclick="closeTopbarModal(event)"><i class="fa-solid fa-check"></i> Tutup</button></div>';
+        function resetProfilePhotoDraft(event) {
+            stopTopbarEvent(event);
+            profilePhotoDraft = Object.assign({}, PROFILE_PHOTO_DEFAULT, { photoUrl: getProfilePhotoAdjustState().photoUrl || getProfilePhotoUrl(currentProfile || getStoredProfile()) });
+            openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile || getStoredProfile()));
+        }
+
+        function saveProfilePhotoDraft(event) {
+            stopTopbarEvent(event);
+            if (!profilePhotoDraft || !profilePhotoDraft.photoUrl) {
+                showToast('Upload foto profil terlebih dahulu');
+                return;
+            }
+            saveProfilePhotoAdjustState(profilePhotoDraft);
+            updateProfileAvatar(currentProfile || getStoredProfile());
+            openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile || getStoredProfile()));
+            showToast('Foto profil disimpan');
         }
 
         async function fetchProfileForModal() {
@@ -2052,6 +2402,7 @@
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
             document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.';
             updateProfileAvatar(currentProfile);
+            updateHomeHeroPhoto();
             applyMyCorner();
             checkVipSubscription();
         }
