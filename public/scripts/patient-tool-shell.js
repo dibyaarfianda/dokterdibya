@@ -540,7 +540,7 @@
         var photoHtml = photoUrl ? '<img src="' + escapeHtml(photoUrl) + '" alt="Foto profil">' : '';
         return '<div class="shell-profile-head">' +
             '<div class="' + avatarClass + '">' + photoHtml + '<span class="shell-profile-avatar-fallback">' + escapeHtml(getInitials(name)) + '</span></div>' +
-            '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small>' +
+            '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal Wanita Sehat</small>' +
                 '<div class="shell-profile-photo-actions">' +
                     '<button type="button" class="shell-profile-photo-btn primary" data-shell-action="profile-photo-camera"><i class="fa-solid fa-camera"></i>Kamera</button>' +
                     '<button type="button" class="shell-profile-photo-btn" data-shell-action="profile-photo-gallery"><i class="fa-solid fa-image"></i>Pilih foto</button>' +

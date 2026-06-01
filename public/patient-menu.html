@@ -1668,7 +1668,7 @@
                 <div class="brand">
                     <a href="/patient-menu.html" class="brand-link soundable" id="home-brand-link" aria-label="Beranda SISIwanita">
                         <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
-                        <div class="brand-sub" id="home-brand-sub">Portal Privat Kandungan Anda</div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Wanita Sehat</div>
                     </a>
                 </div>
                 <div class="top-actions" id="home-top-actions">
@@ -1715,7 +1715,7 @@
                 </button>
                 <div class="status-chip"><span class="status-dot"></span><span id="time-greeting">Selamat datang</span></div>
                 <h1 class="hero-title" id="hero-title">Ruang Anda.</h1>
-                <p class="hero-copy" id="hero-copy">Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.</p>
+                <p class="hero-copy" id="hero-copy">Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal wanita sehat</span> ini.</p>
                 <div class="today-row">
                     <button class="sound-toggle soundable" id="sound-toggle" onclick="toggleTapSound()">
                         <i class="fa-solid fa-volume-low"></i>
@@ -2802,7 +2802,7 @@
                 '<div class="profile-photo-note">Crop hanya bisa diatur saat upload. Jika ingin mengubah crop, upload ulang foto profil.</div>';
             return '<div class="shell-profile-head">' +
                 '<div class="' + avatarClass + '">' + avatarHtml + '</div>' +
-                '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
+                '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal Wanita Sehat</small></div>' +
             '</div>' +
             photoUploadActions +
             '<div class="shell-profile-grid">' +
@@ -3196,7 +3196,7 @@
             window.currentProfile = currentProfile;
             const firstName = getPortalDisplayName(currentProfile);
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
-            document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.';
+            document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal wanita sehat</span> ini.';
             updateProfileAvatar(currentProfile);
             updateHomeHeroPhoto();
             applyMyCorner();
