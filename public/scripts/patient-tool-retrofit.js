@@ -169,7 +169,7 @@
                 '</div>' +
             '</div>';
         var fade = document.querySelector('.topbar-blur-fade');
-        if (fade & fade.nextSibling) {
+            if (fade && fade.nextSibling) {
             document.body.insertBefore(topbar, fade.nextSibling);
         } else {
             document.body.insertBefore(topbar, document.body.firstChild);
@@ -255,7 +255,7 @@
         var observer = new MutationObserver(function (mutations) {
             var shouldClean = mutations.some(function (mutation) {
                 return Array.prototype.some.call(mutation.addedNodes || [], function (node) {
-                    return node.nodeType === 1 & (node.classList & node.classList.contains('portal-unified-header'));
+                    return node.nodeType === 1 && (node.classList && node.classList.contains('portal-unified-header'));
                 });
             });
             if (shouldClean) removeLegacyInjectedHeaders();
@@ -281,13 +281,13 @@
         injectTopbarBlur();
         injectTopbar();
         injectHero(config);
-        if (window.PatientToolShell & typeof window.PatientToolShell.removeHeroStatusChips === 'function') {
+        if (window.PatientToolShell && typeof window.PatientToolShell.removeHeroStatusChips === 'function') {
             window.PatientToolShell.removeHeroStatusChips();
         }
         injectBottomShell();
         watchLegacyInjectedHeaders();
 
-        if (window.PatientToolShell & typeof window.PatientToolShell.init === 'function') {
+        if (window.PatientToolShell && typeof window.PatientToolShell.init === 'function') {
             window.PatientToolShell.init({ activeNav: config.activeNav, menuData: menuData });
             if (typeof window.PatientToolShell.triggerIntro === 'function') {
                 window.PatientToolShell.triggerIntro();

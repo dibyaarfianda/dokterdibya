@@ -239,12 +239,12 @@
         });
         if (!response.ok) throw new Error('notifications failed');
         var data = await response.json();
-        return data & data.success & Array.isArray(data.notifications) ? data.notifications : [];
+        return data && data.success && Array.isArray(data.notifications) ? data.notifications : [];
     }
 
     async function openNotificationModal(event) {
-        if (event & typeof event.preventDefault === 'function') event.preventDefault();
-        if (event & typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         openTopbarModal('Notifikasi', 'Update pasien', renderModalLoading('Memuat notifikasi...'));
         try {
             state.notifications = await fetchNotifications();
@@ -296,7 +296,7 @@
         });
         if (!response.ok) return stored;
         var data = await response.json();
-        var profile = data & (data.user || data.patient || data.profile) ? (data.user || data.patient || data.profile) : stored;
+        var profile = data && (data.user || data.patient || data.profile) ? (data.user || data.patient || data.profile) : stored;
         state.currentProfile = profile;
         try { localStorage.setItem('patient_user', JSON.stringify(profile)); } catch (error) {}
         return profile;
@@ -322,16 +322,16 @@
     }
 
     function openProfilePhotoPicker(event, mode) {
-        if (event & typeof event.preventDefault === 'function') event.preventDefault();
-        if (event & typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         var input = ensureProfilePhotoInput(mode || 'gallery');
         input.value = '';
         input.click();
     }
 
     async function handleProfilePhotoUpload(event) {
-        var input = event & event.target;
-        var file = input & input.files & input.files[0];
+        var input = event && event.target;
+        var file = input && input.files && input.files[0];
         if (!file) return;
         if (!file.type || file.type.indexOf('image/') !== 0) {
             showShellToast('Pilih file gambar untuk foto profil');
@@ -409,8 +409,8 @@
     }
 
     async function openProfileModal(event) {
-        if (event & typeof event.preventDefault === 'function') event.preventDefault();
-        if (event & typeof event.stopPropagation === 'function') event.stopPropagation();
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         openTopbarModal('Profil', 'Akun pasien', renderProfileModal(getStoredPatient()));
         try {
             var profile = await fetchProfile();
@@ -495,7 +495,7 @@
     }
 
     function openMyCorner() {
-        if (window.PatientMyCorner & typeof window.PatientMyCorner.open === 'function') {
+        if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
             return window.PatientMyCorner.open();
         }
         window.location.href = state.homeUrl + '#my-corner';
@@ -511,7 +511,7 @@
         var photoUrl = getProfilePhotoUrl(user);
         var img = document.getElementById('user-avatar-img');
         var initialsEl = document.getElementById('user-avatar-initials');
-        if (img & photoUrl) {
+        if (img && photoUrl) {
             img.src = photoUrl;
             img.style.display = 'block';
             if (initialsEl) initialsEl.style.display = 'none';

@@ -109,7 +109,7 @@
 
     function mergeData(input) {
         var fallback = getFallbackData();
-        var data = input & typeof input === 'object' ? input : {};
+        var data = input && typeof input === 'object' ? input : {};
         return {
             layout: Object.assign({}, fallback.layout, data.layout || {}),
             theme: Object.assign({}, fallback.theme, data.theme || {}),
@@ -123,7 +123,7 @@
         var headers = Object.assign({
             'Authorization': 'Bearer ' + token,
             'Cache-Control': 'no-cache'
-        }, options & options.headers ? options.headers : {});
+        }, options && options.headers ? options.headers : {});
 
         var response = await fetch(API_BASE + path + (path.indexOf('?') === -1 ? '?_t=' : '&_t=') + Date.now(), Object.assign({}, options || {}, {
             headers: headers,
@@ -137,7 +137,7 @@
     }
 
     function updateDashboard(data) {
-        var theme = (data & data.theme) || getFallbackData().theme;
+        var theme = (data && data.theme) || getFallbackData().theme;
         var name = normalizeText(theme.corner_name, 'Ruang Saya');
         var note = normalizeText(theme.note, DEFAULT_NOTE);
         var cornerName = document.getElementById('corner-name');
@@ -172,7 +172,7 @@
         if (sessionStorage.getItem('patient_my_corner_migrated') === '1') return;
         var localName = localStorage.getItem(CORNER_NAME_KEY);
         var localNote = localStorage.getItem(CORNER_NOTE_KEY);
-        if (!localName & !localNote) return;
+        if (!localName && !localNote) return;
         if (!state.data) return;
         if (localName) state.data.theme.corner_name = localName;
         if (localNote) state.data.theme.note = localNote;
@@ -196,7 +196,7 @@
             state.data = mergeData(data);
             updateDashboard(state.data);
             renderPanel();
-            if (showMessage !== false & window.showToast) window.showToast('Ruang tersimpan');
+            if (showMessage !== false && window.showToast) window.showToast('Ruang tersimpan');
         } catch (error) {
             if (window.showToast) window.showToast(error.message || 'Gagal menyimpan Ruang');
         } finally {
@@ -212,19 +212,19 @@
         root.innerHTML = '<div class="pmc-backdrop" data-pmc-close="1"></div><section class="pmc-shell" role="dialog" aria-modal="true" aria-label="Ruang Saya"><div id="pmc-panel"></div></section>';
         document.body.appendChild(root);
         root.addEventListener('click', function (event) {
-            if (event.target & event.target.getAttribute('data-pmc-close') === '1') closeMyCorner();
+            if (event.target && event.target.getAttribute('data-pmc-close') === '1') closeMyCorner();
         });
         return root;
     }
 
     function getShareUrl() {
-        var settings = state.data & state.data.public_settings ? state.data.public_settings : {};
+        var settings = state.data && state.data.public_settings ? state.data.public_settings : {};
         if (!settings.share_code) return '';
         return window.location.origin + '/my-corner-visit.html?c=' + encodeURIComponent(settings.share_code);
     }
 
     function getWidgets() {
-        var layout = state.data & state.data.layout ? state.data.layout : getFallbackData().layout;
+        var layout = state.data && state.data.layout ? state.data.layout : getFallbackData().layout;
         return (Array.isArray(layout.widgets) ? layout.widgets : [])
             .slice()
             .sort(function (a, b) { return Number(a.order || 0) - Number(b.order || 0); });
@@ -248,7 +248,7 @@
         var ids = ['album-usg'];
         getWidgets().forEach(function (widget) {
             if (widget.visible === false) return;
-            if (ROOM_ITEMS[widget.id] & ids.indexOf(widget.id) === -1) ids.push(widget.id);
+            if (ROOM_ITEMS[widget.id] && ids.indexOf(widget.id) === -1) ids.push(widget.id);
         });
         return ids.map(function (id) { return Object.assign({ id: id }, ROOM_ITEMS[id]); });
     }
@@ -341,7 +341,7 @@
                         var labels = { intro: 'Intro', favorites: 'Favorit', 'journey-note': 'Journey Note', 'public-links': 'Public Links' };
                         return '<button class="pmc-chip-btn ' + (publicWidgets.indexOf(id) !== -1 ? 'is-active' : '') + '" onclick="PatientMyCorner.togglePublicWidget(\'' + id + '\')">' + labels[id] + '</button>';
                     }).join('') + '</div>' +
-                    '<div class="pmc-share-box ' + (publicEnabled & shareUrl ? 'is-visible' : '') + '">' +
+                    '<div class="pmc-share-box ' + (publicEnabled && shareUrl ? 'is-visible' : '') + '">' +
                         '<span class="pmc-share-url">' + escapeHtml(shareUrl || 'Link dibuat setelah disimpan.') + '</span>' +
                         '<div class="pmc-action-row"><button class="pmc-chip-btn" onclick="PatientMyCorner.copyShareLink()"><i class="fa-solid fa-copy"></i> Copy</button><button class="pmc-chip-btn" onclick="PatientMyCorner.previewPublic()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Preview</button><button class="pmc-chip-btn" onclick="PatientMyCorner.regenerateShareCode()"><i class="fa-solid fa-rotate"></i> Regenerate</button></div>' +
                     '</div>' +
@@ -356,7 +356,7 @@
         if (!state.pendingFocus) return;
         var field = document.getElementById(state.pendingFocus);
         state.pendingFocus = null;
-        if (field & typeof field.focus === 'function') {
+        if (field && typeof field.focus === 'function') {
             setTimeout(function () { field.focus(); }, 40);
         }
     }
@@ -380,7 +380,7 @@
         var publicIntro = document.getElementById('pmc-public-intro');
         if (name) state.data.theme.corner_name = normalizeText(name.value, 'Ruang Saya').slice(0, 32);
         if (note) state.data.theme.note = String(note.value || DEFAULT_NOTE).slice(0, 500);
-        if (accent & /^#[0-9a-fA-F]{6}$/.test(accent.value)) state.data.theme.accent = accent.value;
+        if (accent && /^#[0-9a-fA-F]{6}$/.test(accent.value)) state.data.theme.accent = accent.value;
         if (!state.data.public_settings.public_profile) state.data.public_settings.public_profile = {};
         if (publicName) state.data.public_settings.public_profile.display_name = normalizeText(publicName.value, getPatientFirstName()).slice(0, 32);
         state.data.public_settings.public_profile.corner_name = state.data.theme.corner_name;
@@ -441,7 +441,7 @@
                 renderPanel();
                 return;
             }
-            if (item.action === 'favorites' & window.showToast) {
+            if (item.action === 'favorites' && window.showToast) {
                 window.showToast('Favorit ada di bawah ruang');
             }
         },

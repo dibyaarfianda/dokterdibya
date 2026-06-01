@@ -1525,7 +1525,7 @@
             if (response.status === 401) throw new Error('unauthorized');
             if (!response.ok) throw new Error('notifications failed');
             const data = await response.json().catch(() => ({}));
-            return data.success & Array.isArray(data.notifications) ? data.notifications : [];
+            return data.success && Array.isArray(data.notifications) ? data.notifications : [];
         }
 
         async function openNotificationModal(event) {
@@ -1767,7 +1767,7 @@
         function requestNativeBackground() {
             try {
                 const appPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-                if (appPlugin & typeof appPlugin.minimizeApp === 'function') {
+                if (appPlugin && typeof appPlugin.minimizeApp === 'function') {
                     appPlugin.minimizeApp();
                     return true;
                 }
@@ -1885,11 +1885,11 @@
 
         document.addEventListener('click', function(event) {
             const soundTarget = event.target.closest('.soundable');
-            if (soundTarget & !soundTarget.closest('#sound-toggle')) playTapSound();
+            if (soundTarget && !soundTarget.closest('#sound-toggle')) playTapSound();
         }, true);
 
         function applyMyCorner() {
-            const fallback = currentProfile & currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'Ruang Saya';
+            const fallback = currentProfile && currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'Ruang Saya';
             const name = localStorage.getItem(CORNER_NAME_KEY) || fallback;
             const note = localStorage.getItem(CORNER_NOTE_KEY) || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
             const cornerName = document.getElementById('corner-name');
@@ -1901,14 +1901,14 @@
         }
 
         function openMyCorner() {
-            if (window.PatientMyCorner & typeof window.PatientMyCorner.open === 'function') {
+            if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
                 return window.PatientMyCorner.open();
             }
             showToast('Ruang sedang dimuat');
         }
 
         function saveMyCorner() {
-            if (window.PatientMyCorner & typeof window.PatientMyCorner.save === 'function') {
+            if (window.PatientMyCorner && typeof window.PatientMyCorner.save === 'function') {
                 return window.PatientMyCorner.save();
             }
             showToast('Ruang sedang dimuat');
@@ -1923,7 +1923,7 @@
 
         function closeAllModals() {
             const exitModal = document.getElementById('exit-app-modal');
-            const exitWasActive = exitModal & exitModal.classList.contains('active');
+            const exitWasActive = exitModal && exitModal.classList.contains('active');
             document.getElementById('modal-overlay').classList.remove('active');
             document.querySelectorAll('.modal-card').forEach(modal => modal.classList.remove('active'));
             document.body.style.overflow = '';
@@ -1985,7 +1985,7 @@
         async function submitBugReport(event) {
             stopTopbarEvent(event);
             const textarea = document.getElementById('bug-report-message');
-            const message = (textarea & textarea.value ? textarea.value : '').trim();
+            const message = (textarea && textarea.value ? textarea.value : '').trim();
             if (!message) {
                 showToast('Tuliskan detail bug/error terlebih dahulu');
                 if (textarea) textarea.focus();
@@ -2034,7 +2034,7 @@
         function todayLabel() {
             document.getElementById('today-value').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
             const hour = new Date().getHours();
-            const greeting = hour >= 5 & hour < 11 ? 'Selamat Pagi' : hour >= 11 & hour < 15 ? 'Selamat Siang' : hour >= 15 & hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
+            const greeting = hour >= 5 && hour < 11 ? 'Selamat Pagi' : hour >= 11 && hour < 15 ? 'Selamat Siang' : hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
             document.getElementById('time-greeting').textContent = greeting;
         }
 
@@ -2061,7 +2061,7 @@
                 const response = await fetch('/api/patient-questions/can-ask', { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 if (!response.ok) return;
                 const data = await response.json();
-                if (data.success & data.tier === 'vip') document.getElementById('vip-badge').classList.add('show');
+                if (data.success && data.tier === 'vip') document.getElementById('vip-badge').classList.add('show');
             } catch (error) {}
         }
 
@@ -2070,7 +2070,7 @@
                 const response = await fetch('/api/patient-notifications/count?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 const data = await response.json();
                 const badge = document.getElementById('notif-badge');
-                if (data.success & data.count > 0) {
+                if (data.success && data.count > 0) {
                     badge.textContent = data.count > 99 ? '99+' : data.count;
                     badge.style.display = 'flex';
                 } else badge.style.display = 'none';
@@ -2107,7 +2107,7 @@
             const title = String(item?.title || '').toLowerCase();
             if (color.includes('danger') || title.includes('urgent') || title.includes('mendesak')) return 'urgent';
             if (color.includes('warning') || title.includes('penting')) return 'important';
-            if (source === 'notification' & item?.is_read === 0) return 'important';
+            if (source === 'notification' && item?.is_read === 0) return 'important';
             return 'normal';
         }
 
@@ -2177,7 +2177,7 @@
             try {
                 const response = await fetch('/api/patient-documents/unread-counts?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 const data = await response.json();
-                const total = data.success & data.counts ? Number(data.counts.total || 0) : 0;
+                const total = data.success && data.counts ? Number(data.counts.total || 0) : 0;
                 const badge = document.getElementById('doc-nav-badge');
                 if (total > 0) {
                     badge.textContent = total > 99 ? '99+' : total;
@@ -2329,7 +2329,7 @@
                 const response = await fetch('/api/sunday-appointments/my-pending-confirmation?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 if (!response.ok) return;
                 const data = await response.json();
-                if (data.success & data.appointment) showAttendanceConfirmationPopup(data.appointment);
+                if (data.success && data.appointment) showAttendanceConfirmationPopup(data.appointment);
             } catch (error) {}
         }
 
@@ -2461,7 +2461,7 @@
         let homeAutoRevealMode = false;
 
         function getHomeViewportHeight() {
-            if (window.visualViewport & window.visualViewport.height) return window.visualViewport.height;
+            if (window.visualViewport && window.visualViewport.height) return window.visualViewport.height;
             return window.innerHeight || document.documentElement.clientHeight || 720;
         }
 
@@ -2473,7 +2473,7 @@
             document.documentElement.style.setProperty('--home-viewport-height', Math.ceil(viewportHeight) + 'px');
             if (homeActionGapFrozen || window.scrollY > 4 || document.body.classList.contains('home-actions-revealed')) return;
             const statusPanel = document.getElementById('quick-status');
-            const anchor = statusPanel & statusPanel.classList.contains('show') ? statusPanel : hero;
+            const anchor = statusPanel && statusPanel.classList.contains('show') ? statusPanel : hero;
             const anchorBottom = anchor.getBoundingClientRect().bottom;
             const targetTop = viewportHeight * 0.78;
             const gap = Math.max(32, Math.min(168, Math.ceil(targetTop - anchorBottom)));
@@ -2515,12 +2515,12 @@
 
         function preventHomeScrollDuringBrake(event) {
             if (!isHomeScrollBraking()) return;
-            if (event.target & event.target.closest & event.target.closest('.bottom-sheet.active, .modal-card.active')) return;
+            if (event.target && event.target.closest && event.target.closest('.bottom-sheet.active, .modal-card.active')) return;
         }
 
         function getNextVisibleHomeSection(section) {
             let nextSection = section ? section.nextElementSibling : null;
-            while (nextSection & nextSection.offsetHeight < 24) {
+            while (nextSection && nextSection.offsetHeight < 24) {
                 nextSection = nextSection.nextElementSibling;
             }
             return nextSection;
@@ -2600,12 +2600,12 @@
         }
 
         function handleHomeTouchStart(event) {
-            const touch = event.touches & event.touches[0];
+            const touch = event.touches && event.touches[0];
             homeTouchStartY = touch ? touch.clientY : null;
         }
 
         function handleHomeTouchMove(event) {
-            const touch = event.touches & event.touches[0];
+            const touch = event.touches && event.touches[0];
             if (!touch || homeTouchStartY === null) return;
             if (homeTouchStartY - touch.clientY > 10) unlockHomeSections();
         }
@@ -2729,7 +2729,7 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260528room2"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260601room3"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 </body>
 </html>
