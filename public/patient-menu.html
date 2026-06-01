@@ -282,6 +282,27 @@
         }
         .home-hero-photo-fallback i { font-size: 22px; opacity: 0.72; }
         .home-hero-photo-fallback span { display: block; font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; }
+        .home-photo-preview-empty {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            gap: 6px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .home-photo-preview-empty i { font-size: 26px; opacity: 0.55; }
+        .home-photo-hint {
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--muted);
+            text-align: center;
+            font-weight: 700;
+        }
         .today-row {
             margin-top: 18px;
             display: grid;
@@ -1730,24 +1751,31 @@
         const HOME_PHOTO_STORAGE_KEY = 'patient_home_photo_adjust_v1';
         const HOME_PHOTO_DEFAULT = {
             photoUrl: '',
-            zoom: 1,
+            zoom: 1.5,
             offsetX: 0,
             offsetY: 0
         };
         let homePhotoDraft = null;
+        let homePhotoGesture = null;
+
+        function normalizeHomePhotoState(state) {
+            const normalized = normalizePhotoAdjustState(state || HOME_PHOTO_DEFAULT);
+            normalized.zoom = Math.max(1.5, normalized.zoom);
+            return normalized;
+        }
 
         function getHomePhotoState() {
             try {
                 const raw = localStorage.getItem(HOME_PHOTO_STORAGE_KEY);
                 if (!raw) return Object.assign({}, HOME_PHOTO_DEFAULT);
-                return normalizePhotoAdjustState(JSON.parse(raw));
+                return normalizeHomePhotoState(JSON.parse(raw));
             } catch (error) {
                 return Object.assign({}, HOME_PHOTO_DEFAULT);
             }
         }
 
         function saveHomePhotoState(state) {
-            const normalized = normalizePhotoAdjustState(state);
+            const normalized = normalizeHomePhotoState(state);
             try {
                 localStorage.setItem(HOME_PHOTO_STORAGE_KEY, JSON.stringify(normalized));
             } catch (error) {}
@@ -1757,7 +1785,7 @@
         }
 
         function updateHomeHeroPhoto(state) {
-            const current = normalizePhotoAdjustState(state || homePhotoDraft || getHomePhotoState());
+            const current = normalizeHomePhotoState(state || homePhotoDraft || getHomePhotoState());
             const button = document.getElementById('home-hero-photo');
             const img = document.getElementById('home-hero-photo-img');
             if (!button || !img) return current;
@@ -1775,29 +1803,15 @@
         }
 
         function renderHomePhotoModal(state) {
-            state = normalizePhotoAdjustState(state || homePhotoDraft || getHomePhotoState());
+            state = normalizeHomePhotoState(state || homePhotoDraft || getHomePhotoState());
             const previewPhoto = state.photoUrl ? '<img id="home-photo-preview-img" src="' + escapeHtml(state.photoUrl) + '" alt="Pratinjau foto beranda">' : '';
             const emptyState = state.photoUrl ? '' : '<div class="home-photo-preview-empty"><i class="fa-solid fa-image"></i><span>Belum ada foto beranda</span></div>';
             return '<div class="profile-photo-setup">' +
-                '<div class="home-photo-preview" id="home-photo-preview" style="--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + 'px;--home-photo-y:' + state.offsetY + 'px;">' +
+                '<div class="home-photo-preview" id="home-photo-preview" data-gesture-target="home-photo" style="--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + 'px;--home-photo-y:' + state.offsetY + 'px;">' +
                     previewPhoto +
                     emptyState +
                 '</div>' +
-                '<div class="profile-photo-controls">' +
-                    '<div class="profile-photo-control">' +
-                        '<label for="home-photo-zoom">Zoom</label>' +
-                        '<input type="range" id="home-photo-zoom" min="1" max="2.2" step="0.01" value="' + state.zoom + '" oninput="updateHomePhotoDraftFromInputs()">' +
-                    '</div>' +
-                    '<div class="profile-photo-control">' +
-                        '<label for="home-photo-offset-x">Posisi Horizontal</label>' +
-                        '<input type="range" id="home-photo-offset-x" min="-90" max="90" step="1" value="' + state.offsetX + '" oninput="updateHomePhotoDraftFromInputs()">' +
-                    '</div>' +
-                    '<div class="profile-photo-control">' +
-                        '<label for="home-photo-offset-y">Posisi Vertikal</label>' +
-                        '<input type="range" id="home-photo-offset-y" min="-90" max="90" step="1" value="' + state.offsetY + '" oninput="updateHomePhotoDraftFromInputs()">' +
-                    '</div>' +
-                '</div>' +
-                '<div class="profile-photo-note">Foto ini hanya untuk tampilan beranda dan tidak mengubah foto profil.</div>' +
+                '<div class="home-photo-hint">Tap, drag, dan pinch pada foto untuk mengatur zoom/posisi. Tidak ada slider.</div>' +
                 '<div class="profile-photo-save-actions">' +
                     '<button type="button" class="ghost-action soundable" onclick="openHomePhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload</button>' +
                     '<button type="button" class="secondary-action soundable" onclick="resetHomePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
@@ -1861,18 +1875,105 @@
         }
 
         function updateHomePhotoDraftFromInputs() {
+            applyHomePhotoDraftToPreview();
+        }
+
+        function applyHomePhotoDraftToPreview() {
             const preview = document.getElementById('home-photo-preview');
             if (!preview) return;
-            homePhotoDraft = normalizePhotoAdjustState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
-                zoom: document.getElementById('home-photo-zoom')?.value,
-                offsetX: document.getElementById('home-photo-offset-x')?.value,
-                offsetY: document.getElementById('home-photo-offset-y')?.value
-            }));
+            homePhotoDraft = normalizeHomePhotoState(homePhotoDraft || getHomePhotoState());
             preview.style.setProperty('--home-photo-zoom', homePhotoDraft.zoom);
             preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + 'px');
             preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + 'px');
             const previewImg = document.getElementById('home-photo-preview-img');
             if (previewImg && homePhotoDraft.photoUrl) previewImg.src = homePhotoDraft.photoUrl;
+        }
+
+        function bindHomePhotoPreviewGestures() {
+            const preview = document.getElementById('home-photo-preview');
+            if (!preview || preview.dataset.gestureBound === '1') return;
+            preview.dataset.gestureBound = '1';
+            const pointers = new Map();
+            let dragStart = null;
+            let pinchStart = null;
+
+            const clampZoom = function(value) {
+                return Math.min(2.2, Math.max(1.5, value));
+            };
+
+            const updateFromGesture = function() {
+                if (!homePhotoDraft) homePhotoDraft = getHomePhotoState();
+                homePhotoDraft = normalizeHomePhotoState(homePhotoDraft);
+                preview.style.setProperty('--home-photo-zoom', homePhotoDraft.zoom);
+                preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + 'px');
+                preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + 'px');
+            };
+
+            preview.addEventListener('pointerdown', function(event) {
+                if (event.button && event.button !== 0) return;
+                preview.setPointerCapture(event.pointerId);
+                pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                preview.classList.add('is-dragging');
+                if (pointers.size === 1) {
+                    dragStart = {
+                        x: event.clientX,
+                        y: event.clientY,
+                        offsetX: normalizeHomePhotoState(homePhotoDraft || getHomePhotoState()).offsetX,
+                        offsetY: normalizeHomePhotoState(homePhotoDraft || getHomePhotoState()).offsetY
+                    };
+                    pinchStart = null;
+                } else if (pointers.size === 2) {
+                    const points = Array.from(pointers.values());
+                    pinchStart = {
+                        distance: Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y) || 1,
+                        zoom: normalizeHomePhotoState(homePhotoDraft || getHomePhotoState()).zoom,
+                        offsetX: normalizeHomePhotoState(homePhotoDraft || getHomePhotoState()).offsetX,
+                        offsetY: normalizeHomePhotoState(homePhotoDraft || getHomePhotoState()).offsetY,
+                        centerX: (points[0].x + points[1].x) / 2,
+                        centerY: (points[0].y + points[1].y) / 2
+                    };
+                }
+                event.preventDefault();
+            });
+
+            preview.addEventListener('pointermove', function(event) {
+                if (!pointers.has(event.pointerId)) return;
+                pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (pointers.size === 1 && dragStart) {
+                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
+                        offsetX: dragStart.offsetX + (event.clientX - dragStart.x),
+                        offsetY: dragStart.offsetY + (event.clientY - dragStart.y)
+                    }));
+                    updateFromGesture();
+                } else if (pointers.size === 2 && pinchStart) {
+                    const points = Array.from(pointers.values());
+                    const distance = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y) || 1;
+                    const centerX = (points[0].x + points[1].x) / 2;
+                    const centerY = (points[0].y + points[1].y) / 2;
+                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
+                        zoom: clampZoom(pinchStart.zoom * (distance / pinchStart.distance)),
+                        offsetX: pinchStart.offsetX + (centerX - pinchStart.centerX),
+                        offsetY: pinchStart.offsetY + (centerY - pinchStart.centerY)
+                    }));
+                    updateFromGesture();
+                }
+                event.preventDefault();
+            });
+
+            const finishGesture = function(event) {
+                if (pointers.has(event.pointerId)) pointers.delete(event.pointerId);
+                if (pointers.size === 0) {
+                    preview.classList.remove('is-dragging');
+                    dragStart = null;
+                    pinchStart = null;
+                }
+            };
+
+            preview.addEventListener('pointerup', finishGesture);
+            preview.addEventListener('pointercancel', finishGesture);
+            preview.addEventListener('pointerleave', function(event) {
+                if (pointers.has(event.pointerId)) finishGesture(event);
+            });
         }
 
         function resetHomePhotoDraft(event) {
@@ -1896,6 +1997,7 @@
             stopTopbarEvent(event);
             homePhotoDraft = getHomePhotoState();
             openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
+            window.setTimeout(bindHomePhotoPreviewGestures, 0);
         }
 
         const PROFILE_PHOTO_STORAGE_KEY = 'patient_profile_photo_adjust_v1';
