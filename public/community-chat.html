@@ -2256,14 +2256,6 @@
     const backButton = document.getElementById('chat-back-btn');
     if (backButton) {
         backButton.addEventListener('click', () => {
-            try {
-                if (document.referrer && new URL(document.referrer).origin === window.location.origin && window.history.length > 1) {
-                    window.history.back();
-                    return;
-                }
-            } catch (_) {
-                // Fallback handled below.
-            }
             window.location.href = '/patient-menu.html';
         });
     }
