@@ -65,7 +65,26 @@ async function saveSettings(patientId, input) {
         [patientId, settings.nickname, settings.notification_sound]
     );
 
+    await syncCommunityChatNickname(patientId, settings.nickname);
+
     return getSettings(patientId);
+}
+
+async function syncCommunityChatNickname(patientId, nickname) {
+    try {
+        await db.query(
+            `INSERT INTO community_chat_profiles
+                (user_id, user_type, nickname)
+             VALUES (?, 'patient', ?)
+             ON DUPLICATE KEY UPDATE
+                nickname = VALUES(nickname),
+                updated_at = CURRENT_TIMESTAMP`,
+            [patientId, nickname]
+        );
+    } catch (error) {
+        if (error && error.code === 'ER_NO_SUCH_TABLE') return;
+        throw error;
+    }
 }
 
 module.exports = {
