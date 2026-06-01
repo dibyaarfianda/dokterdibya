@@ -266,7 +266,10 @@
             object-fit: cover;
             display: block;
             transform-origin: center center;
-            transform: translate(var(--home-photo-x, 0px), var(--home-photo-y, 0px)) scale(var(--home-photo-zoom, 1));
+            transform: translate(
+                calc(var(--home-photo-x, 0px) * var(--home-photo-frame-scale, 1)),
+                calc(var(--home-photo-y, 0px) * var(--home-photo-frame-scale, 1))
+            ) scale(var(--home-photo-zoom, 1));
         }
         .home-hero-photo.has-photo .home-hero-photo-fallback { display: none; }
         .home-hero-photo-fallback {
@@ -883,7 +886,10 @@
             object-fit: cover;
             display: block;
             transform-origin: center center;
-            transform: translate(var(--home-photo-x, 0px), var(--home-photo-y, 0px)) scale(var(--home-photo-zoom, 1));
+            transform: translate(
+                calc(var(--home-photo-x, 0px) * var(--home-photo-frame-scale, 1)),
+                calc(var(--home-photo-y, 0px) * var(--home-photo-frame-scale, 1))
+            ) scale(var(--home-photo-zoom, 1));
         }
         .profile-photo-preview-empty {
             position: absolute;
@@ -1755,6 +1761,7 @@
             offsetX: 0,
             offsetY: 0
         };
+        const HOME_PHOTO_PREVIEW_BASE_SIZE = 190;
         let homePhotoDraft = null;
         let homePhotoGesture = null;
 
@@ -1789,6 +1796,9 @@
             const button = document.getElementById('home-hero-photo');
             const img = document.getElementById('home-hero-photo-img');
             if (!button || !img) return current;
+            const buttonWidth = button.getBoundingClientRect().width || button.clientWidth || 0;
+            const frameScale = buttonWidth > 0 ? (buttonWidth / HOME_PHOTO_PREVIEW_BASE_SIZE) : 1;
+            button.style.setProperty('--home-photo-frame-scale', String(frameScale));
             button.style.setProperty('--home-photo-zoom', current.zoom);
             button.style.setProperty('--home-photo-x', current.offsetX + 'px');
             button.style.setProperty('--home-photo-y', current.offsetY + 'px');
@@ -1807,7 +1817,7 @@
             const previewPhoto = state.photoUrl ? '<img id="home-photo-preview-img" src="' + escapeHtml(state.photoUrl) + '" alt="Pratinjau foto beranda">' : '';
             const emptyState = state.photoUrl ? '' : '<div class="home-photo-preview-empty"><i class="fa-solid fa-image"></i><span>Belum ada foto beranda</span></div>';
             return '<div class="profile-photo-setup">' +
-                '<div class="home-photo-preview" id="home-photo-preview" data-gesture-target="home-photo" style="--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + 'px;--home-photo-y:' + state.offsetY + 'px;">' +
+                '<div class="home-photo-preview" id="home-photo-preview" data-gesture-target="home-photo" style="--home-photo-frame-scale:1;--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + 'px;--home-photo-y:' + state.offsetY + 'px;">' +
                     previewPhoto +
                     emptyState +
                 '</div>' +
@@ -1882,6 +1892,7 @@
             const preview = document.getElementById('home-photo-preview');
             if (!preview) return;
             homePhotoDraft = normalizeHomePhotoState(homePhotoDraft || getHomePhotoState());
+            preview.style.setProperty('--home-photo-frame-scale', '1');
             preview.style.setProperty('--home-photo-zoom', homePhotoDraft.zoom);
             preview.style.setProperty('--home-photo-x', homePhotoDraft.offsetX + 'px');
             preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + 'px');
@@ -3249,6 +3260,9 @@
         window.addEventListener('touchmove', preventHomeScrollDuringBrake, { passive: false, capture: true });
         window.addEventListener('resize', updateHomeActionGap, { passive: true });
         if (window.visualViewport) window.visualViewport.addEventListener('resize', updateHomeActionGap, { passive: true });
+        window.addEventListener('resize', function() {
+            if (document.getElementById('home-hero-photo')) updateHomeHeroPhoto();
+        }, { passive: true });
         window.addEventListener('pageshow', function(event) {
             resetScrollToTop();
             lockHomeSections();
