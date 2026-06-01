@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601e'; // 2026-06-01e - fix profile modal runtime helper missing
+const CACHE_VERSION = '20260601f'; // 2026-06-01f - responsive profile modal sizing on small screens
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
