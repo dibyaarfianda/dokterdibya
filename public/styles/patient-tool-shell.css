@@ -843,7 +843,15 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
     body.patient-tool-shell.fertility-calendar-page .hero-card .today-row,
     body.patient-tool-shell.fertility-calendar-page .brand,
     body.patient-tool-shell.fertility-calendar-page #home-notif-btn,
-    body.patient-tool-shell.fertility-calendar-page #user-avatar {
+    body.patient-tool-shell.fertility-calendar-page #user-avatar,
+    body.patient-tool-shell.vitamin-schedule-page .reveal,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .status-chip,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .hero-title,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .hero-copy,
+    body.patient-tool-shell.vitamin-schedule-page .hero-card .today-row,
+    body.patient-tool-shell.vitamin-schedule-page .brand,
+    body.patient-tool-shell.vitamin-schedule-page #home-notif-btn,
+    body.patient-tool-shell.vitamin-schedule-page #user-avatar {
         animation-duration: 1.05s !important;
         transition-duration: 1.05s !important;
     }
