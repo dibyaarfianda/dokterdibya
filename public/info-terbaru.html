@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <title>Info Terbaru - SISIwanita</title>
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <style>
+        :root {
+            --page-max: 760px;
+            --line-soft: rgba(15, 23, 42, 0.1);
+            --line-strong: rgba(15, 23, 42, 0.18);
+            --bg-soft: rgba(248, 249, 250, 0.9);
+            --ink: #0f172a;
+            --muted: #5f6c83;
+            --urgent: #dc2626;
+            --important: #b7791f;
+            --normal: #5c7f72;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+            background: #fbfcfd;
+            color: var(--ink);
+            min-height: 100vh;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .topbar-inner {
+            max-width: var(--page-max);
+            margin: 0 auto;
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--line-soft);
+            border-radius: 50%;
+            background: #fff;
+            color: var(--ink);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+        }
+
+        .head-copy {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .head-copy h1 {
+            margin: 0;
+            font-size: 17px;
+            line-height: 1.25;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .head-copy p {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .page {
+            max-width: var(--page-max);
+            margin: 0 auto;
+            padding: 14px 14px calc(90px + env(safe-area-inset-bottom, 0px));
+            display: grid;
+            gap: 10px;
+        }
+
+        .state-card {
+            border: 1px dashed var(--line-soft);
+            border-radius: 14px;
+            padding: 18px 14px;
+            background: #fff;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .info-card {
+            border: 1px dashed var(--line-soft);
+            border-radius: 14px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .info-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 12px 0;
+        }
+
+        .info-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+
+        .info-badge.is-urgent {
+            color: var(--urgent);
+            background: rgba(220, 38, 38, 0.08);
+            border-color: rgba(220, 38, 38, 0.2);
+        }
+
+        .info-badge.is-important {
+            color: var(--important);
+            background: rgba(183, 121, 31, 0.09);
+            border-color: rgba(183, 121, 31, 0.22);
+        }
+
+        .info-badge.is-normal {
+            color: var(--normal);
+            background: rgba(92, 127, 114, 0.12);
+            border-color: rgba(92, 127, 114, 0.22);
+        }
+
+        .info-time {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .info-body {
+            padding: 10px 12px 12px;
+        }
+
+        .info-title {
+            margin: 0 0 6px;
+            font-size: 14px;
+            line-height: 1.35;
+            font-weight: 900;
+            color: var(--ink);
+        }
+
+        .info-message {
+            margin: 0;
+            color: #243144;
+            font-size: 12px;
+            line-height: 1.58;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .refresh-btn {
+            border: 1px dashed var(--line-soft);
+            background: #fff;
+            color: var(--ink);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .refresh-wrap {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 2px;
+        }
+
+        @media (max-width: 420px) {
+            .head-copy h1 { font-size: 16px; }
+            .info-title { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <button class="back-btn" onclick="window.location.href='/patient-menu.html'" aria-label="Kembali ke beranda">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="head-copy">
+                <h1>Info Terbaru</h1>
+                <p>Halaman ini menampilkan pengumuman klinik terbaru.</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="refresh-wrap">
+            <button class="refresh-btn" type="button" onclick="loadAnnouncements(true)">
+                <i class="fa-solid fa-rotate-right"></i> Muat Ulang
+            </button>
+        </div>
+        <section id="info-list" class="state-card">Memuat info terbaru...</section>
+    </main>
+
+    <script type="module">
+        import { checkAuth, apiRequest, escapeHtml, formatRelativeTime, getToken } from '/scripts/patient-utils.js';
+
+        const infoList = document.getElementById('info-list');
+
+        function getPriorityLabel(priority) {
+            const value = String(priority || '').toLowerCase();
+            if (value === 'urgent') return { cls: 'is-urgent', icon: 'fa-solid fa-triangle-exclamation', text: 'Urgent' };
+            if (value === 'important') return { cls: 'is-important', icon: 'fa-solid fa-circle-exclamation', text: 'Penting' };
+            return { cls: 'is-normal', icon: 'fa-solid fa-bullhorn', text: 'Info' };
+        }
+
+        function normalizeMessage(item) {
+            const primary = String(item.message || '').trim();
+            if (primary) return primary;
+            const fallback = String(item.formatted_content || '').replace(/<[^>]*>/g, ' ').trim();
+            return fallback || 'Belum ada isi pengumuman.';
+        }
+
+        function renderAnnouncements(items) {
+            const safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+            if (!safeItems.length) {
+                infoList.className = 'state-card';
+                infoList.innerHTML = 'Belum ada pengumuman aktif saat ini.';
+                return;
+            }
+
+            infoList.className = '';
+            infoList.innerHTML = safeItems.map((item) => {
+                const meta = getPriorityLabel(item.priority);
+                const title = escapeHtml(String(item.title || 'Info Klinik'));
+                const message = escapeHtml(normalizeMessage(item));
+                const timeLabel = escapeHtml(formatRelativeTime(item.created_at || item.published_at || new Date().toISOString()));
+                return [
+                    '<article class="info-card">',
+                        '<div class="info-card-head">',
+                            '<span class="info-badge ' + meta.cls + '"><i class="' + meta.icon + '"></i> ' + meta.text + '</span>',
+                            '<span class="info-time">' + timeLabel + '</span>',
+                        '</div>',
+                        '<div class="info-body">',
+                            '<h2 class="info-title">' + title + '</h2>',
+                            '<p class="info-message">' + message + '</p>',
+                        '</div>',
+                    '</article>'
+                ].join('');
+            }).join('');
+        }
+
+        async function loadAnnouncements(forceRefresh) {
+            if (forceRefresh) {
+                infoList.className = 'state-card';
+                infoList.innerHTML = 'Memuat ulang info terbaru...';
+            }
+
+            try {
+                const token = getToken();
+                if (!token) {
+                    window.location.href = '/patient-login.html';
+                    return;
+                }
+
+                const url = '/api/announcements/active?_t=' + Date.now();
+                const response = await apiRequest(url, {
+                    headers: {
+                        Authorization: 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                const items = response && response.success && Array.isArray(response.announcements)
+                    ? response.announcements
+                    : [];
+
+                renderAnnouncements(items);
+            } catch (error) {
+                console.error('Failed loading announcements:', error);
+                infoList.className = 'state-card';
+                infoList.innerHTML = 'Info terbaru belum bisa dimuat. Coba lagi dalam beberapa saat.';
+            }
+        }
+
+        window.loadAnnouncements = loadAnnouncements;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!checkAuth()) return;
+            await loadAnnouncements(false);
+        });
+    </script>
+    <script src="/scripts/portal-bottom-nav.js?v=20260528home1" defer></script>
+</body>
+</html>
