@@ -3351,6 +3351,7 @@
         let homeScrollBrakeTarget = null;
         let homeUnlockTimer = null;
         let homeAutoRevealMode = false;
+        const HOME_HERO_ANIMATION_MS = 1620;
 
         function getHomeViewportHeight() {
             if (window.visualViewport && window.visualViewport.height) return window.visualViewport.height;
@@ -3436,7 +3437,8 @@
             if (!actionSection) return;
             const viewportHeight = getHomeViewportHeight();
             const rect = actionSection.getBoundingClientRect();
-            if (rect.top < viewportHeight * 0.98) {
+            const shouldReveal = homeAutoRevealMode || rect.top < viewportHeight * 0.98;
+            if (shouldReveal) {
                 freezeHomeActionGap();
                 document.body.classList.add('home-actions-revealed');
                 if (!homeAutoRevealMode) brakeHomeScrollAt(actionSection, 760);
@@ -3484,7 +3486,7 @@
                     revealPrimaryActionsIfReady();
                     homeAutoRevealMode = false;
                 });
-            }, 980);
+            }, HOME_HERO_ANIMATION_MS);
         }
 
         function handleHomeWheelReveal(event) {
