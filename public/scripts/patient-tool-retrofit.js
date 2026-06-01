@@ -210,6 +210,26 @@
         container.insertBefore(hero, container.firstChild);
     }
 
+    function applyLegacyRevealStagger() {
+        var container = findPrimaryContainer();
+        if (!container) return;
+
+        var candidates = Array.prototype.filter.call(container.children || [], function (element) {
+            if (!element || element.nodeType !== 1) return false;
+            if (element.id === 'tool-retrofit-hero') return false;
+            if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') return false;
+            if (element.classList.contains('topbar') || element.classList.contains('bottom-nav')) return false;
+            return true;
+        });
+
+        candidates.forEach(function (element, index) {
+            if (!element.classList.contains('reveal')) {
+                element.classList.add('reveal');
+            }
+            element.style.setProperty('--reveal-delay', (Math.min(index, 8) * 40) + 'ms');
+        });
+    }
+
     function injectBottomShell() {
         if (!document.getElementById('sheet-overlay')) {
             var overlay = document.createElement('div');
@@ -281,6 +301,7 @@
         injectTopbarBlur();
         injectTopbar();
         injectHero(config);
+        applyLegacyRevealStagger();
         if (window.PatientToolShell && typeof window.PatientToolShell.removeHeroStatusChips === 'function') {
             window.PatientToolShell.removeHeroStatusChips();
         }
