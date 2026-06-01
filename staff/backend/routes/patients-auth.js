@@ -377,6 +377,12 @@ router.post('/register', handlePatientRegister);
 
 // Login with email
 router.post('/login', async (req, res) => {
+    return res.status(410).json({
+        success: false,
+        google_only: true,
+        message: 'Login lewat email sudah ditutup. Silakan masuk dengan Google.'
+    });
+
     try {
         const { email, password } = req.body;
 
