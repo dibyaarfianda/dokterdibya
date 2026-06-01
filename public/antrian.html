@@ -1780,7 +1780,7 @@
                         loadQueue(false);
                     });
                     socket.on('queue:settings_changed', function(data) {
-                        if (data & data.is_queue_visible === false) {
+                        if (data && data.is_queue_visible === false) {
                             showQueueHidden();
                         } else {
                             loadQueue(false);
@@ -1805,5 +1805,6 @@
 
     <script src="/scripts/patient-tool-shell.js?v=20260530d"></script>
     <script src="/scripts/patient-tool-retrofit.js?v=20260530d"></script>
+    <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 </body>
 </html>
