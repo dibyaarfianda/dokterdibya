@@ -1227,7 +1227,25 @@ router.put('/profile', verifyToken, async (req, res) => {
  * Upload profile photo to Cloudflare R2
  * Max size: 2MB, Allowed: JPEG, PNG, WebP
  */
-router.post('/upload-photo', verifyToken, photoUpload.single('photo'), async (req, res) => {
+function handleProfilePhotoUpload(req, res, next) {
+    photoUpload.single('photo')(req, res, (error) => {
+        if (!error) return next();
+
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                message: 'Ukuran file melebihi batas maksimal 2 MB'
+            });
+        }
+
+        return res.status(400).json({
+            success: false,
+            message: error.message || 'File foto tidak valid'
+        });
+    });
+}
+
+router.post('/upload-photo', verifyToken, handleProfilePhotoUpload, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({
