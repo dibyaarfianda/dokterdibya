@@ -876,6 +876,10 @@
             border: 1px solid var(--line);
             background: linear-gradient(145deg, rgba(17,17,17,0.04), rgba(92,127,114,0.08));
             box-shadow: var(--shadow-soft);
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
         .home-photo-preview img {
             width: 100%;
@@ -885,6 +889,7 @@
             transform-origin: center center;
             transform: translate(var(--home-photo-x, 0%), var(--home-photo-y, 0%)) scale(var(--home-photo-zoom, 1));
             pointer-events: none;
+            -webkit-user-select: none;
             user-select: none;
             -webkit-user-drag: none;
         }
@@ -1898,6 +1903,7 @@
             const pointers = new Map();
             let dragStart = null;
             let pinchStart = null;
+            let activePointerId = null;
 
             const clampZoom = function(value) {
                 return Math.min(2.2, Math.max(1, value));
@@ -1916,9 +1922,48 @@
                 preview.style.setProperty('--home-photo-y', homePhotoDraft.offsetY + '%');
             };
 
+            const finishGesture = function(pointerId) {
+                if (typeof pointerId !== 'undefined' && pointers.has(pointerId)) pointers.delete(pointerId);
+                if (typeof pointerId !== 'undefined' && activePointerId === pointerId) activePointerId = null;
+                if (pointers.size === 0) {
+                    preview.classList.remove('is-dragging');
+                    dragStart = null;
+                    pinchStart = null;
+                }
+            };
+
+            const handleMove = function(event) {
+                if (!pointers.has(event.pointerId)) return;
+                pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+                if (pointers.size === 1 && dragStart) {
+                    const rect = preview.getBoundingClientRect();
+                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
+                        offsetX: dragStart.offsetX + percentFromPx(event.clientX - dragStart.x, rect.width),
+                        offsetY: dragStart.offsetY + percentFromPx(event.clientY - dragStart.y, rect.height)
+                    }));
+                    updateFromGesture();
+                } else if (pointers.size === 2 && pinchStart) {
+                    const points = Array.from(pointers.values());
+                    const distance = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y) || 1;
+                    const centerX = (points[0].x + points[1].x) / 2;
+                    const centerY = (points[0].y + points[1].y) / 2;
+                    const rect = preview.getBoundingClientRect();
+                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
+                        zoom: clampZoom(pinchStart.zoom * (distance / pinchStart.distance)),
+                        offsetX: pinchStart.offsetX + percentFromPx(centerX - pinchStart.centerX, rect.width),
+                        offsetY: pinchStart.offsetY + percentFromPx(centerY - pinchStart.centerY, rect.height)
+                    }));
+                    updateFromGesture();
+                }
+                event.preventDefault();
+            };
+
             preview.addEventListener('pointerdown', function(event) {
                 if (event.button && event.button !== 0) return;
-                preview.setPointerCapture(event.pointerId);
+                activePointerId = event.pointerId;
+                if (preview.setPointerCapture) {
+                    try { preview.setPointerCapture(event.pointerId); } catch (error) {}
+                }
                 pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
                 preview.classList.add('is-dragging');
                 if (pointers.size === 1) {
@@ -1943,46 +1988,9 @@
                 event.preventDefault();
             });
 
-            preview.addEventListener('pointermove', function(event) {
-                if (!pointers.has(event.pointerId)) return;
-                pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-                if (pointers.size === 1 && dragStart) {
-                    const rect = preview.getBoundingClientRect();
-                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
-                        offsetX: dragStart.offsetX + percentFromPx(event.clientX - dragStart.x, rect.width),
-                        offsetY: dragStart.offsetY + percentFromPx(event.clientY - dragStart.y, rect.height)
-                    }));
-                    updateFromGesture();
-                } else if (pointers.size === 2 && pinchStart) {
-                    const points = Array.from(pointers.values());
-                    const distance = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y) || 1;
-                    const centerX = (points[0].x + points[1].x) / 2;
-                    const centerY = (points[0].y + points[1].y) / 2;
-                    const rect = preview.getBoundingClientRect();
-                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
-                        zoom: clampZoom(pinchStart.zoom * (distance / pinchStart.distance)),
-                        offsetX: pinchStart.offsetX + percentFromPx(centerX - pinchStart.centerX, rect.width),
-                        offsetY: pinchStart.offsetY + percentFromPx(centerY - pinchStart.centerY, rect.height)
-                    }));
-                    updateFromGesture();
-                }
-                event.preventDefault();
-            });
-
-            const finishGesture = function(event) {
-                if (pointers.has(event.pointerId)) pointers.delete(event.pointerId);
-                if (pointers.size === 0) {
-                    preview.classList.remove('is-dragging');
-                    dragStart = null;
-                    pinchStart = null;
-                }
-            };
-
-            preview.addEventListener('pointerup', finishGesture);
-            preview.addEventListener('pointercancel', finishGesture);
-            preview.addEventListener('pointerleave', function(event) {
-                if (pointers.has(event.pointerId)) finishGesture(event);
-            });
+            window.addEventListener('pointermove', handleMove, { passive: false });
+            window.addEventListener('pointerup', function(event) { finishGesture(event.pointerId); }, { passive: true });
+            window.addEventListener('pointercancel', function(event) { finishGesture(event.pointerId); }, { passive: true });
         }
 
         function resetHomePhotoDraft(event) {
@@ -2128,44 +2136,9 @@
                 '</div>' +
                 '<div class="profile-photo-controls">' +
                     '<div class="profile-photo-control">' +
-                        '<label for="profile-photo-zoom">Zoom</label>' +
-                        '<input type="range" id="profile-photo-zoom" min="1" max="2.2" step="0.01" value="' + state.zoom + '" oninput="updateProfilePhotoDraftFromInputs()">' +
-                    '</div>' +
-                    '<div class="profile-photo-control">' +
-                        '<label for="profile-photo-offset-x">Posisi Horizontal</label>' +
-                        '<input type="range" id="profile-photo-offset-x" min="-90" max="90" step="1" value="' + state.offsetX + '" oninput="updateProfilePhotoDraftFromInputs()">' +
-                    '</div>' +
-                    '<div class="profile-photo-control">' +
-                        '<label for="profile-photo-offset-y">Posisi Vertikal</label>' +
-                        '<input type="range" id="profile-photo-offset-y" min="-90" max="90" step="1" value="' + state.offsetY + '" oninput="updateProfilePhotoDraftFromInputs()">' +
-                    '</div>' +
-                '</div>' +
-                '<div class="profile-photo-note">Foto profil ini berbeda dari foto beranda dan bisa diatur posisi/zoom-nya sendiri.</div>' +
-                '<div class="profile-photo-save-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
-                    '<button type="button" class="secondary-action soundable" onclick="resetProfilePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
-                    '<button type="button" class="primary-action soundable" onclick="saveProfilePhotoDraft(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
-                '</div>' +
-            '</div>';
-        }
-
-        function updateProfilePhotoDraftFromInputs() {
-            const preview = document.getElementById('profile-photo-preview');
-            if (!preview) return;
-            profilePhotoDraft = normalizePhotoAdjustState(Object.assign({}, profilePhotoDraft || getProfilePhotoAdjustState(), {
-                zoom: document.getElementById('profile-photo-zoom')?.value,
-                offsetX: document.getElementById('profile-photo-offset-x')?.value,
-                offsetY: document.getElementById('profile-photo-offset-y')?.value
-            }));
-            preview.style.setProperty('--profile-photo-zoom', profilePhotoDraft.zoom);
-            preview.style.setProperty('--profile-photo-x', profilePhotoDraft.offsetX + 'px');
-            preview.style.setProperty('--profile-photo-y', profilePhotoDraft.offsetY + 'px');
-            const previewImg = document.getElementById('profile-photo-preview-img');
-            if (previewImg && profilePhotoDraft.photoUrl) {
-                previewImg.src = profilePhotoDraft.photoUrl;
-            }
-        }
-
+            window.addEventListener('pointermove', handleMove, { passive: false });
+            window.addEventListener('pointerup', function(event) { finishGesture(event.pointerId); }, { passive: true });
+            window.addEventListener('pointercancel', function(event) { finishGesture(event.pointerId); }, { passive: true });
         function resetProfilePhotoDraft(event) {
             stopTopbarEvent(event);
             profilePhotoDraft = Object.assign({}, PROFILE_PHOTO_DEFAULT, { photoUrl: getProfilePhotoAdjustState().photoUrl || getProfilePhotoUrl(currentProfile || getStoredProfile()) });
