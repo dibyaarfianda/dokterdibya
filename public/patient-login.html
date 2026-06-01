@@ -477,7 +477,7 @@
         const requestedMode = (urlParams.get('mode') || 'login').toLowerCase();
         const shouldAutoGoogle = urlParams.get('autoGoogle') === '1';
 
-        if (fromMobile || (referrer & referrer.includes('dokterdibya.com') & referrer.includes('token='))) {
+        if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
             console.log('[Login] Detected mobile app context, redirecting to app');
             localStorage.removeItem('from_mobile_app');
             window.location.href = 'dokterdibya://logout';
@@ -495,7 +495,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
-            if (token & user.id) {
+            if (token && user.id) {
                 window.location.href = '/patient-menu.html';
                 return;
             }
@@ -602,7 +602,7 @@
             if (data.needs_profile_completion) {
                 return '/complete-profile.html';
             }
-            if (data.intake_completed === false || (data.user & !data.user.intake_completed)) {
+            if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
                 return '/patient-intake.html';
             }
             return '/patient-menu.html';
@@ -658,7 +658,7 @@
                     redirectUri: 'postmessage'
                 };
 
-                if (pendingGoogleAction === 'register' & validatedRegCode) {
+                if (pendingGoogleAction === 'register' && validatedRegCode) {
                     bodyData.registration_code = validatedRegCode;
                 }
 
@@ -670,7 +670,7 @@
 
                 var data = await res.json();
 
-                if (res.ok & data.success) {
+                if (res.ok && data.success) {
                     localStorage.setItem('vps_auth_token', data.token);
                     if (data.user) {
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
@@ -739,7 +739,7 @@
                 });
 
                 var data = await res.json();
-                if (res.ok & data.success) {
+                if (res.ok && data.success) {
                     validatedRegCode = code;
                     document.getElementById('regcode-step1').style.display = 'none';
                     document.getElementById('regcode-step2').style.display = 'block';
@@ -823,9 +823,9 @@
 
                 var data = await res.json();
 
-                if (res.ok & (data.token || (data.data & data.data.token))) {
-                    var token = data.token || (data.data & data.data.token);
-                    var user = data.user || (data.data & data.data.user);
+                if (res.ok && (data.token || (data.data && data.data.token))) {
+                    var token = data.token || (data.data && data.data.token);
+                    var user = data.user || (data.data && data.data.user);
                     localStorage.setItem('vps_auth_token', token);
                     if (user) {
                         localStorage.setItem('patient_user', JSON.stringify(user));
