@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Community Chat - dokterDIBYA</title>
+    <title>Community Chat - SISIwanita</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
         :root {
@@ -1428,7 +1428,7 @@
             }
         }
 
-        /* SISIwanita Community theme: applied only for /community-chat.html?theme=newdesign */
+        /* SISIwanita Community theme: default on patient chat */
         body.community-newdesign {
             --bg: #f6faf7;
             --card: rgba(255, 255, 255, 0.9);
@@ -1474,35 +1474,71 @@
             box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
         }
 
-        body.community-newdesign .topbar-room {
-            display: grid;
-            grid-template-columns: 40px minmax(0, 1fr);
-            grid-template-rows: auto auto;
-            column-gap: 10px;
+        .topbar-brand {
+            display: inline-flex;
             align-items: center;
+            gap: 10px;
+            min-width: 0;
         }
 
-        body.community-newdesign .topbar-room::before {
-            content: "\f0c0";
-            grid-column: 1;
-            grid-row: 1 / span 2;
-            width: 40px;
-            height: 40px;
-            border-radius: 16px;
+        .topbar-back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 13px;
+            border: 1px solid rgba(92, 127, 114, 0.22);
+            background: rgba(255, 255, 255, 0.86);
+            color: #2f4f45;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-family: FontAwesome;
-            font-size: 17px;
-            color: #ffffff;
-            background: linear-gradient(145deg, #5c7f72, #243d35);
-            box-shadow: 0 10px 22px rgba(64, 99, 86, 0.22);
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(34, 61, 52, 0.12);
+            flex: 0 0 auto;
         }
 
-        body.community-newdesign .topbar-room::after {
-            content: "SISIwanita Community";
-            grid-column: 2;
-            grid-row: 2;
+        .topbar-brand-link {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 2px;
+            text-decoration: none;
+            min-width: 0;
+        }
+
+        .topbar-brand-title {
+            font-size: 16px;
+            line-height: 1.03;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: #7EA89F;
+            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.2);
+            white-space: nowrap;
+        }
+
+        .topbar-brand-title span {
+            color: #7EA89F;
+            font-weight: 700;
+        }
+
+        .topbar-brand-sub {
+            font-size: 7px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #7EA89F;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.18);
+        }
+
+        body.community-newdesign .topbar-room {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto;
+            justify-items: end;
+            text-align: right;
+            min-width: 0;
+        }
+
+        body.community-newdesign .topbar-room-kicker {
             min-width: 0;
             color: var(--muted);
             font-size: 11px;
@@ -1514,12 +1550,14 @@
         }
 
         body.community-newdesign .topbar-room-title {
-            grid-column: 2;
-            grid-row: 1;
             font-size: 18px;
             line-height: 1.12;
             color: var(--text);
             letter-spacing: 0;
+        }
+
+        body.community-newdesign .status-wrap {
+            margin-left: 8px;
         }
 
         body.community-newdesign .status-chip {
@@ -1826,19 +1864,25 @@
             }
 
             body.community-newdesign .topbar-room {
-                grid-template-columns: 36px minmax(0, 1fr);
-                column-gap: 9px;
-            }
-
-            body.community-newdesign .topbar-room::before {
-                width: 36px;
-                height: 36px;
-                border-radius: 14px;
-                font-size: 15px;
+                justify-items: end;
             }
 
             body.community-newdesign .topbar-room-title {
-                font-size: 17px;
+                font-size: 16px;
+            }
+
+            .topbar-back-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 12px;
+            }
+
+            .topbar-brand-title {
+                font-size: 14px;
+            }
+
+            .topbar-brand-sub {
+                font-size: 6.2px;
             }
 
             body.community-newdesign .chat-head {
@@ -1924,7 +1968,17 @@
 <div class="page">
     <div id="chat-wallpaper-layer" class="chat-wallpaper-layer" aria-hidden="true"></div>
     <div class="topbar">
+        <div class="topbar-brand">
+            <button type="button" id="chat-back-btn" class="topbar-back-btn" title="Kembali">
+                <i class="fa fa-arrow-left"></i>
+            </button>
+            <a class="topbar-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                <span class="topbar-brand-title">SISI<span>wanita</span></span>
+                <span class="topbar-brand-sub">Portal Wanita Sehat</span>
+            </a>
+        </div>
         <div class="topbar-room">
+            <div class="topbar-room-kicker">Lobby Utama</div>
             <div id="active-room-name" class="topbar-room-title">-</div>
         </div>
         <div class="status-wrap">
@@ -2103,7 +2157,10 @@
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
     const useCompactModerator = isStaffEmbed || urlParams.get('moderator') === 'compact';
-    const useNewDesignTheme = urlParams.get('theme') === 'newdesign';
+    const themeMode = String(urlParams.get('theme') || '').toLowerCase();
+    const forceLegacyTheme = themeMode === 'legacy' || themeMode === 'old' || themeMode === 'classic';
+    const forceNewTheme = themeMode === 'newdesign' || themeMode === 'sisiwanita';
+    const useNewDesignTheme = !isStaffEmbed && (forceNewTheme || !forceLegacyTheme);
     const userAgent = navigator.userAgent || '';
     const isAndroidDevice = /Android/i.test(userAgent);
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -2195,6 +2252,21 @@
         staffGrid: document.getElementById('staff-grid'),
         saveModeratorsBtn: document.getElementById('save-moderators-btn')
     };
+
+    const backButton = document.getElementById('chat-back-btn');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            try {
+                if (document.referrer && new URL(document.referrer).origin === window.location.origin && window.history.length > 1) {
+                    window.history.back();
+                    return;
+                }
+            } catch (_) {
+                // Fallback handled below.
+            }
+            window.location.href = '/patient-menu.html';
+        });
+    }
 
     function setModeratorPanelExpanded(expanded) {
         if (!el.moderatorPanel) return;
