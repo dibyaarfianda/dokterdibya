@@ -202,6 +202,7 @@
 
         .hero-card {
             margin-top: 4px;
+            --sound-toggle-right-shift: 184px;
             border: 1px solid var(--line);
             border-radius: 28px;
             background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86));
@@ -410,6 +411,8 @@
         }
         .today-row {
             margin-top: 18px;
+            margin-right: calc(-1 * var(--sound-toggle-right-shift, 0px));
+            padding-right: 4px;
             display: flex;
             justify-content: flex-end;
             align-items: center;
@@ -1605,7 +1608,7 @@
 
         @media (max-width: 520px) {
             .app { padding-left: 14px; padding-right: 14px; }
-            .hero-card { padding: 18px 156px 18px 18px; border-radius: 24px; }
+            .hero-card { --sound-toggle-right-shift: 126px; padding: 18px 156px 18px 18px; border-radius: 24px; }
             .home-hero-photo { top: 14px; right: 14px; width: 132px; height: 132px; border-radius: 28px; }
             .birth-congrats-home { border-radius: 20px; padding: 12px; }
             .birth-congrats-head { flex-direction: column; gap: 6px; }
@@ -1657,7 +1660,7 @@
             #topbar-modal.is-profile-modal .shell-modal-actions {
                 grid-template-columns: 1fr;
             }
-            .today-row { grid-template-columns: 1fr; align-items: start; }
+            .today-row { margin-right: calc(-1 * var(--sound-toggle-right-shift, 0px)); align-items: flex-end; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
             .profile-photo-preview { height: 170px; }
