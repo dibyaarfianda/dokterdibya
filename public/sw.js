@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601o'; // 2026-06-01o - keep login/intake topbar above blur fade
+const CACHE_VERSION = '20260601p'; // 2026-06-01p - match login/intake brand title to original home style
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
