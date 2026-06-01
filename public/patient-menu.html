@@ -916,6 +916,121 @@
         #topbar-modal.is-profile-modal .profile-photo-save-actions {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+        #topbar-modal.is-profile-modal .shell-profile-head {
+            display: grid;
+            grid-template-columns: 64px 1fr;
+            gap: 12px;
+            align-items: center;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: linear-gradient(150deg, rgba(255,255,255,0.9), rgba(238,242,233,0.92));
+            padding: 12px;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid rgba(17,17,17,0.08);
+            background: linear-gradient(145deg, rgba(92,127,114,0.18), rgba(17,17,17,0.07));
+            display: grid;
+            place-items: center;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-avatar-fallback {
+            color: var(--green);
+            font-weight: 900;
+            font-size: 18px;
+            letter-spacing: 0.02em;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-head span {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-head strong {
+            display: block;
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 20px;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+            overflow-wrap: anywhere;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-head small {
+            display: block;
+            color: var(--ink-soft);
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: 4px;
+            line-height: 1.35;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 2px;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-grid div {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(17,17,17,0.03);
+            padding: 10px;
+            min-height: 76px;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-grid span {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-grid strong {
+            display: block;
+            color: var(--ink);
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        #topbar-modal.is-profile-modal .shell-modal-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 4px;
+        }
+        #topbar-modal.is-profile-modal .shell-modal-link {
+            min-height: 38px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-size: 11px;
+            font-weight: 900;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+        #topbar-modal.is-profile-modal .shell-modal-link.danger {
+            border-color: rgba(185, 28, 28, 0.24);
+            color: #9f1239;
+            background: rgba(255, 241, 242, 0.8);
+        }
         .topbar-modal-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .topbar-modal-summary div,
         .profile-grid div {
@@ -1311,6 +1426,25 @@
             }
             #topbar-modal.is-profile-modal .profile-photo-preview { height: 148px; }
             #topbar-modal.is-profile-modal .profile-photo-save-actions { grid-template-columns: 1fr; }
+            #topbar-modal.is-profile-modal .shell-profile-head {
+                grid-template-columns: 56px 1fr;
+                gap: 10px;
+                padding: 10px;
+            }
+            #topbar-modal.is-profile-modal .shell-profile-avatar {
+                width: 56px;
+                height: 56px;
+            }
+            #topbar-modal.is-profile-modal .shell-profile-head strong { font-size: 18px; }
+            #topbar-modal.is-profile-modal .shell-profile-grid {
+                grid-template-columns: 1fr;
+            }
+            #topbar-modal.is-profile-modal .shell-profile-grid div {
+                min-height: 0;
+            }
+            #topbar-modal.is-profile-modal .shell-modal-actions {
+                grid-template-columns: 1fr;
+            }
             .today-row { grid-template-columns: 1fr; align-items: start; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
@@ -2410,11 +2544,12 @@
             const birthDate = profile.birth_date || profile.date_of_birth || profile.dob || '';
             const previewState = normalizePhotoAdjustState(profilePhotoDraft || getProfilePhotoAdjustState() || { photoUrl: getProfilePhotoUrl(profile) });
             if (!previewState.photoUrl) previewState.photoUrl = getProfilePhotoUrl(profile);
+            const avatarClass = previewState.photoUrl ? 'shell-profile-avatar has-photo' : 'shell-profile-avatar';
             const avatarHtml = previewState.photoUrl
                 ? '<img src="' + escapeHtml(previewState.photoUrl) + '" alt="Foto profil">'
                 : '<span class="shell-profile-avatar-fallback">' + escapeHtml(getInitials(name)) + '</span>';
             return '<div class="shell-profile-head">' +
-                '<div class="shell-profile-avatar has-photo">' + avatarHtml + '</div>' +
+                '<div class="' + avatarClass + '">' + avatarHtml + '</div>' +
                 '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
             '</div>' +
             renderProfilePhotoEditor(previewState) +
