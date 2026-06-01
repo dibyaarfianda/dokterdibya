@@ -879,6 +879,34 @@
         .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
         .modal-actions button { flex: 1; justify-content: center; }
         .topbar-modal-body { display: grid; gap: 10px; }
+        #topbar-modal {
+            max-height: min(88vh, calc(100dvh - 22px));
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        #topbar-modal .modal-head {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #fff;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        #topbar-modal .topbar-modal-body {
+            min-height: 0;
+            overflow: auto;
+            padding-right: 2px;
+        }
+        #topbar-modal.is-profile-modal .shell-profile-grid {
+            grid-template-columns: 1fr;
+        }
+        #topbar-modal.is-profile-modal .profile-photo-preview {
+            height: min(170px, 32vh);
+        }
+        #topbar-modal.is-profile-modal .profile-photo-save-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
         .topbar-modal-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .topbar-modal-summary div,
         .profile-grid div {
@@ -1249,6 +1277,21 @@
             .app { padding-left: 14px; padding-right: 14px; }
             .hero-card { padding: 18px 156px 18px 18px; border-radius: 24px; }
             .home-hero-photo { top: 14px; right: 14px; width: 132px; height: 132px; border-radius: 28px; }
+            .modal-card {
+                width: calc(100% - 18px);
+                padding: 14px;
+                border-radius: 20px;
+                max-height: calc(100dvh - 18px);
+            }
+            #topbar-modal {
+                top: calc(env(safe-area-inset-top, 0px) + 8px);
+                transform: translate(-50%, 0) scale(0.98);
+            }
+            #topbar-modal.active {
+                transform: translate(-50%, 0) scale(1);
+            }
+            #topbar-modal.is-profile-modal .profile-photo-preview { height: 148px; }
+            #topbar-modal.is-profile-modal .profile-photo-save-actions { grid-template-columns: 1fr; }
             .today-row { grid-template-columns: 1fr; align-items: start; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
@@ -1742,6 +1785,7 @@
             titleEl.textContent = title || 'Menu';
             kickerEl.textContent = kicker || 'SISIwanita';
             bodyEl.innerHTML = bodyHtml || '';
+            modal.classList.toggle('is-profile-modal', String(title || '').toLowerCase() === 'profil');
             overlay.classList.add('active');
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
