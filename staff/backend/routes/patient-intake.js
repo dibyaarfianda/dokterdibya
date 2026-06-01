@@ -212,6 +212,54 @@ function validatePayload(body) {
     return errors;
 }
 
+function getAuthenticatedPatientIdFromHeader(req) {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return null;
+        }
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return decoded && decoded.id ? decoded.id : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function fillDobFromPatientProfile(payload, patientId) {
+    if (!payload || typeof payload !== 'object') {
+        return;
+    }
+
+    if (!payload.dob && payload.birth_date) {
+        payload.dob = payload.birth_date;
+    }
+
+    if (payload.dob || !patientId) {
+        return;
+    }
+
+    const [rows] = await db.query(
+        `SELECT DATE_FORMAT(birth_date, '%Y-%m-%d') AS birth_date, age
+         FROM patients
+         WHERE id = ?
+         LIMIT 1`,
+        [patientId]
+    );
+
+    if (!rows.length) {
+        return;
+    }
+
+    const patient = rows[0];
+    if (patient.birth_date) {
+        payload.dob = patient.birth_date;
+    }
+    if (!payload.age && patient.age) {
+        payload.age = patient.age;
+    }
+}
+
 function deriveEncryptionKey() {
     if (!ENCRYPTION_KEY) {
         if (!encryptionWarningLogged) {
@@ -463,6 +511,10 @@ function toDate(value) {
 router.post('/api/patient-intake', async (req, res, next) => {
     try {
         const payload = req.body;
+        const authenticatedPatientId = getAuthenticatedPatientIdFromHeader(req);
+
+        await fillDobFromPatientProfile(payload, authenticatedPatientId);
+
         const errors = validatePayload(payload);
         if (errors.length) {
             return res.status(422).json({ success: false, errors });
@@ -571,21 +623,8 @@ router.post('/api/patient-intake', async (req, res, next) => {
 
         logger.info(`Patient intake submitted: ${submissionId} (status: ${status})`);
 
-        // Extract authenticated patient ID from JWT token BEFORE integration
-        let authenticatedPatientId = null;
-        try {
-            const authHeader = req.headers.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                const token = authHeader.substring(7);
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                if (decoded && decoded.id) {
-                    authenticatedPatientId = decoded.id;
-                    logger.info(`Authenticated patient ID for intake: ${authenticatedPatientId}`);
-                }
-            }
-        } catch (tokenError) {
-            // Token verification failed - that's OK for non-authenticated submissions
-            logger.debug('No authenticated patient for intake', { error: tokenError.message });
+        if (authenticatedPatientId) {
+            logger.info(`Authenticated patient ID for intake: ${authenticatedPatientId}`);
         }
 
         // Auto-integrate to EMR system (pass authenticatedPatientId to ensure correct patient is updated)
@@ -849,6 +888,8 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
     try {
         const patientId = req.user.id;
         const payload = req.body;
+
+        await fillDobFromPatientProfile(payload, patientId);
 
         const errors = validatePayload(payload);
         if (errors.length) {
