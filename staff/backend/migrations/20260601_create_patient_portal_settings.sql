@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS patient_portal_settings (
-    patient_id VARCHAR(32) NOT NULL PRIMARY KEY,
+    patient_id VARCHAR(10) COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY,
     nickname VARCHAR(40) NULL,
     notification_sound ENUM('default', 'chime', 'bell', 'soft', 'none') NOT NULL DEFAULT 'default',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
