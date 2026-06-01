@@ -1856,6 +1856,13 @@
             return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
+        function formatDateLong(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return String(value);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
         function getProfilePhotoUrl(profile) {
             profile = profile || {};
             return profile.profile_picture || profile.photo_url || profile.photoUrl || profile.avatar_url || '';
