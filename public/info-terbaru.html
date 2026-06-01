@@ -183,8 +183,89 @@
             color: #243144;
             font-size: 12px;
             line-height: 1.58;
-            white-space: pre-wrap;
             word-break: break-word;
+        }
+
+        .info-message p,
+        .info-message ul,
+        .info-message ol,
+        .info-message pre,
+        .info-message blockquote,
+        .info-message h1,
+        .info-message h2,
+        .info-message h3,
+        .info-message h4 {
+            margin: 0 0 8px;
+        }
+
+        .info-message p:last-child,
+        .info-message ul:last-child,
+        .info-message ol:last-child,
+        .info-message pre:last-child,
+        .info-message blockquote:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-message h1,
+        .info-message h2,
+        .info-message h3,
+        .info-message h4 {
+            color: var(--ink);
+            line-height: 1.35;
+            font-weight: 900;
+        }
+
+        .info-message h1 { font-size: 15px; }
+        .info-message h2 { font-size: 14px; }
+        .info-message h3 { font-size: 13px; }
+        .info-message h4 { font-size: 12px; }
+
+        .info-message ul,
+        .info-message ol {
+            padding-left: 18px;
+        }
+
+        .info-message li + li {
+            margin-top: 4px;
+        }
+
+        .info-message a {
+            color: #1d4ed8;
+            text-decoration: underline;
+            word-break: break-all;
+        }
+
+        .info-message code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+            background: rgba(15, 23, 42, 0.06);
+            border: 1px solid var(--line-soft);
+            border-radius: 6px;
+            padding: 1px 5px;
+            font-size: 11px;
+        }
+
+        .info-message pre {
+            overflow-x: auto;
+            border: 1px solid var(--line-soft);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(15, 23, 42, 0.04);
+        }
+
+        .info-message pre code {
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            font-size: 11px;
+            white-space: pre;
+        }
+
+        .info-message blockquote {
+            border-left: 3px solid rgba(92, 127, 114, 0.4);
+            margin-left: 0;
+            padding-left: 10px;
+            color: #3d4d64;
         }
 
         .info-thumb {
@@ -245,6 +326,8 @@
         <section id="info-list" class="state-card">Memuat info terbaru...</section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
     <script type="module">
         import { checkAuth, apiRequest, escapeHtml, formatRelativeTime, getToken } from '/scripts/patient-utils.js';
 
@@ -260,8 +343,35 @@
         function normalizeMessage(item) {
             const primary = String(item.message || '').trim();
             if (primary) return primary;
-            const fallback = String(item.formatted_content || '').replace(/<[^>]*>/g, ' ').trim();
+            const fallback = String(item.formatted_content || '').trim();
             return fallback || 'Belum ada isi pengumuman.';
+        }
+
+        function renderMarkdownMessage(messageText) {
+            const raw = String(messageText || '').trim();
+            if (!raw) {
+                return '<p>Belum ada isi pengumuman.</p>';
+            }
+
+            const hasMarked = window.marked && typeof window.marked.parse === 'function';
+            const hasPurify = window.DOMPurify && typeof window.DOMPurify.sanitize === 'function';
+
+            if (hasMarked && hasPurify) {
+                const markdownHtml = window.marked.parse(raw, {
+                    gfm: true,
+                    breaks: true,
+                    headerIds: false,
+                    mangle: false
+                });
+
+                return window.DOMPurify.sanitize(markdownHtml, {
+                    USE_PROFILES: { html: true },
+                    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'title'],
+                    FORBID_ATTR: ['style', 'onerror', 'onclick', 'onload']
+                });
+            }
+
+            return '<p>' + escapeHtml(raw).replace(/\n/g, '<br>') + '</p>';
         }
 
         function buildAnnouncementsUrl(patientId) {
@@ -299,7 +409,7 @@
             infoList.innerHTML = safeItems.map((item) => {
                 const meta = getPriorityLabel(item.priority);
                 const title = escapeHtml(String(item.title || 'Info Klinik'));
-                const message = escapeHtml(normalizeMessage(item));
+                const messageHtml = renderMarkdownMessage(normalizeMessage(item));
                 const timeLabel = escapeHtml(formatRelativeTime(item.created_at || item.published_at || new Date().toISOString()));
                 const authorLabel = escapeHtml(String(item.created_by_name || 'Admin Klinik'));
                 const imageHtml = item.image_url
@@ -314,7 +424,7 @@
                         '<div class="info-body">',
                             '<h2 class="info-title">' + title + '</h2>',
                             '<p class="info-meta">' + authorLabel + '</p>',
-                            '<p class="info-message">' + message + '</p>',
+                            '<div class="info-message">' + messageHtml + '</div>',
                             imageHtml,
                         '</div>',
                     '</article>'
