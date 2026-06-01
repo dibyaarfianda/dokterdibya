@@ -37,6 +37,7 @@
         }
 
         html, body { min-height: 100%; }
+        html { background: var(--bg-surface, #f7f7f4); }
         body.portal-themed {
             min-height: 100vh;
             min-height: 100dvh;
@@ -44,6 +45,9 @@
             padding-bottom: var(--safe-bottom);
             overflow-x: hidden;
             position: relative;
+            background:
+                radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
+                linear-gradient(180deg, #fbfbf8 0%, var(--bg-surface, #f7f7f4) 52%, #ffffff 100%);
         }
 
         .app {

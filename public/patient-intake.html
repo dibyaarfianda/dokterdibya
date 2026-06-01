@@ -23,21 +23,20 @@
             --bg-gradient: radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%), linear-gradient(180deg, #fbfbf8 0%, #f7f7f4 52%, #ffffff 100%);
         }
         * { box-sizing: border-box; }
+        html {
+            background: var(--bg-surface, #f7f7f4);
+        }
         body {
             margin: 0;
             font-family: var(--font-main, 'Inter', sans-serif);
-            background: var(--bg-gradient);
+            background:
+                radial-gradient(circle at 12% 4%, rgba(92, 127, 114, 0.12), transparent 27%),
+                linear-gradient(180deg, #fbfbf8 0%, var(--bg-surface, #f7f7f4) 52%, #ffffff 100%);
             color: var(--text-primary, #111111);
             position: relative;
         }
         .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            overflow: hidden;
+            display: none;
         }
         .bubble {
             position: absolute;
@@ -342,8 +341,13 @@
         footer {
             padding: 1rem;
             text-align: center;
-            font-size: 0.78rem;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 7.2px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #7EA89F;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14);
         }
         small {
             color: rgba(255, 255, 255, 0.7);
@@ -671,7 +675,13 @@
             border-radius: 12px;
         }
         body.portal-themed.intake-page footer {
-            color: var(--text-muted, #717171);
+            color: #7EA89F;
+            font-size: 7.2px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14);
             padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
         }
         body.portal-themed.intake-page .bubble {
@@ -734,7 +744,6 @@
         <div class="topbar-blur-7"></div>
         <div class="topbar-blur-8"></div>
     </div>
-    <div class="bg-animation" id="bgAnimation"></div>
     <div class="intake-shell">
         <header class="topbar" id="home-topbar">
             <div class="topbar-inner" id="home-topbar-inner">
@@ -1090,7 +1099,7 @@
             </div>
         </main>
         <footer>
-            dokterDIBYA &mdash; Privasi Anda menjadi prioritas kami.
+            SISIwanita &mdash; Portal Privat Kandungan Anda
         </footer>
         <div class="toast" id="toast"></div>
     </div>
@@ -1848,25 +1857,6 @@
             }
             showStep(currentStep);
         })();
-
-        // Create animated bubbles
-        function createBubbles() {
-            const bg = document.getElementById('bgAnimation');
-            for (let i = 0; i < 10; i++) {
-                const bubble = document.createElement('div');
-                bubble.className = 'bubble';
-                const size = Math.random() * 100 + 50;
-                bubble.style.width = size + 'px';
-                bubble.style.height = size + 'px';
-                bubble.style.left = Math.random() * 100 + '%';
-                bubble.style.top = Math.random() * 100 + '%';
-                bubble.style.animationDelay = Math.random() * 5 + 's';
-                bg.appendChild(bubble);
-            }
-        }
-
-        // Initialize bubbles on load
-        createBubbles();
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
