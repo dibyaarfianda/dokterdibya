@@ -1047,11 +1047,11 @@
                 console.log('[PROFIL] API response:', data);
 
                 // Handle response - API returns { user: {...} } without success field
-                if (data & data.user) {
+                if (data && data.user) {
                     profileData = data.user;
                     console.log('[PROFIL] Profile loaded:', profileData.fullname || profileData.full_name);
                     renderProfile();
-                } else if (data & data.success === false) {
+                } else if (data && data.success === false) {
                     console.error('[PROFIL] API error:', data.message);
                     showToast(data.message || 'Gagal memuat profil', 'error');
                 } else {
@@ -1114,7 +1114,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success & data.tier === 'vip') {
+                    if (data.success && data.tier === 'vip') {
                         const badge = document.getElementById('vip-badge');
                         if (badge) badge.classList.add('show');
                     }
@@ -1167,7 +1167,7 @@
                     body: JSON.stringify({ fullname: name, email, phone })
                 });
 
-                if (data & data.success) {
+                if (data && data.success) {
                     showToast('Profil berhasil diperbarui', 'success');
                     closeEditModal();
                     await loadProfile();
@@ -1190,8 +1190,14 @@
             if (!e.target.files || !e.target.files[0]) return;
 
             const file = e.target.files[0];
+            if (!file.type || !file.type.startsWith('image/')) {
+                showToast('Pilih file gambar untuk foto profil', 'error');
+                e.target.value = '';
+                return;
+            }
             if (file.size > 2 * 1024 * 1024) {
                 showToast('Ukuran file maksimal 2MB', 'error');
+                e.target.value = '';
                 return;
             }
 
@@ -1200,30 +1206,45 @@
 
             try {
                 const token = getToken();
+                if (!token) {
+                    showToast('Sesi login habis. Silakan masuk ulang.', 'error');
+                    utilLogout();
+                    return;
+                }
+
+                showToast('Mengunggah foto profil...', 'info', 5000);
                 const response = await fetch('/api/patients/upload-photo', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
 
-                const data = await response.json();
+                if (response.status === 401) {
+                    showToast('Sesi login habis. Silakan masuk ulang.', 'error');
+                    utilLogout();
+                    return;
+                }
 
-                if (data.success) {
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok && data.success) {
                     showToast('Foto profil berhasil diperbarui', 'success');
                     await loadProfile();
                 } else {
-                    showToast(data.message || 'Gagal upload foto', 'error');
+                    showToast(data.message || `Gagal upload foto (${response.status})`, 'error');
                 }
             } catch (e) {
                 console.error('Error uploading:', e);
-                showToast('Gagal upload foto', 'error');
+                showToast(e.message || 'Gagal upload foto. Periksa koneksi lalu coba lagi.', 'error');
+            } finally {
+                e.target.value = '';
             }
         }
 
         // Change password
         function changePassword() {
             // Check if user has password (Google-only users may not have one)
-            if (profileData & !profileData.has_password) {
+            if (profileData && !profileData.has_password) {
                 showToast('Akun ini menggunakan Google Sign-In. Fitur ubah password tidak tersedia.', 'info');
                 return;
             }
@@ -1269,7 +1290,7 @@
                     })
                 });
 
-                if (data & data.success) {
+                if (data && data.success) {
                     showToast('Password berhasil diubah', 'success');
                     closePasswordModal();
                 } else {
@@ -1369,7 +1390,7 @@
                 localStorage.removeItem('patient_token');
                 localStorage.removeItem('patient_user');
 
-                const isCapacitor = window.Capacitor & window.Capacitor.isNativePlatform & window.Capacitor.isNativePlatform();
+                const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
                 if (isCapacitor) {
                     window.location.href = 'dokterdibya://logout';
                 } else {
@@ -1380,7 +1401,7 @@
 
         // Keyboard
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' & document.getElementById('edit-modal').classList.contains('active')) {
+            if (e.key === 'Escape' && document.getElementById('edit-modal').classList.contains('active')) {
                 closeEditModal();
             }
         });
