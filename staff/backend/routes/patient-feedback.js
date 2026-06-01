@@ -14,6 +14,55 @@ function setNoCacheHeaders(res) {
     res.set('Expires', '0');
 }
 
+function toNullableInt(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    const str = String(value).trim();
+    if (!str) {
+        return null;
+    }
+    if (!/^\d+$/.test(str)) {
+        return null;
+    }
+    const parsed = Number.parseInt(str, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function resolveFeedbackPatientId(user) {
+    const directCandidates = [
+        user?.new_id,
+        user?.user_id,
+        user?.patient_id,
+        user?.id,
+    ];
+
+    for (const candidate of directCandidates) {
+        const parsed = toNullableInt(candidate);
+        if (parsed !== null) {
+            return parsed;
+        }
+    }
+
+    const email = String(user?.email || '').trim();
+    if (!email) {
+        return null;
+    }
+
+    try {
+        const [rows] = await db.execute(
+            'SELECT new_id FROM users WHERE email = ? LIMIT 1',
+            [email]
+        );
+        if (!rows.length) {
+            return null;
+        }
+        return toNullableInt(rows[0].new_id);
+    } catch (error) {
+        return null;
+    }
+}
+
 /**
  * POST /api/patient-feedback
  * Kirim feedback dari pasien. Bisa berulang kali, max 10/hari.
@@ -37,16 +86,32 @@ router.post('/', verifyPatientToken, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Rating harus antara 1-5' });
         }
 
-        const userId = req.user.id || req.user.new_id;
-        const patientId = req.user.patient_id || userId || null;
-        const patientName = is_anonymous ? null : (req.user.name || req.user.display_name || null);
+        const patientId = await resolveFeedbackPatientId(req.user);
+        const patientName = is_anonymous
+            ? null
+            : (req.user.name || req.user.display_name || req.user.fullname || req.user.full_name || null);
 
         // Cek daily limit
-        const [[{ count }]] = await db.execute(
-            `SELECT COUNT(*) AS count FROM patient_feedback
-             WHERE patient_id = ? AND DATE(created_at) = CURDATE()`,
-            [patientId || 0]
-        );
+        let count = 0;
+        if (patientId !== null) {
+            const [[row]] = await db.execute(
+                `SELECT COUNT(*) AS count FROM patient_feedback
+                 WHERE patient_id = ? AND DATE(created_at) = CURDATE()`,
+                [patientId]
+            );
+            count = Number(row?.count || 0);
+        } else {
+            const fallbackName = String(patientName || 'anon').trim();
+            const [[row]] = await db.execute(
+                `SELECT COUNT(*) AS count FROM patient_feedback
+                 WHERE patient_id IS NULL
+                   AND patient_name = ?
+                   AND DATE(created_at) = CURDATE()`,
+                [fallbackName]
+            );
+            count = Number(row?.count || 0);
+        }
+
         if (count >= DAILY_LIMIT) {
             return res.status(429).json({ success: false, message: `Batas pengiriman feedback hari ini sudah tercapai (maks ${DAILY_LIMIT}x/hari)` });
         }
