@@ -681,19 +681,22 @@ body.patient-tool-shell .shell-profile-photo-actions {
 }
 
 body.patient-tool-shell .shell-profile-photo-btn {
-    min-height: 32px !important;
-    border-radius: 12px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 28px !important;
+    border-radius: 11px !important;
     border: 1px solid var(--line) !important;
     background: rgba(255,255,255,0.72) !important;
     color: var(--ink) !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 7px !important;
-    padding: 8px 10px !important;
-    font-size: 11px !important;
+    gap: 5px !important;
+    padding: 6px 8px !important;
+    font-size: 10px !important;
     font-weight: 900 !important;
     cursor: pointer;
+    white-space: nowrap !important;
 }
 
 body.patient-tool-shell .shell-profile-photo-btn.primary {
