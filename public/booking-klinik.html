@@ -1365,10 +1365,10 @@
                     isValid = bookingData.date !== null;
                     break;
                 case 2:
-                    isValid = bookingData.session !== null & bookingData.slot !== null;
+                    isValid = bookingData.session !== null && bookingData.slot !== null;
                     break;
                 case 3:
-                    isValid = bookingData.chiefComplaint & bookingData.chiefComplaint.length >= 10;
+                    isValid = bookingData.chiefComplaint && bookingData.chiefComplaint.length >= 10;
                     break;
                 case 4:
                     isValid = true;

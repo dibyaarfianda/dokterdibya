@@ -409,7 +409,7 @@
             const token = getToken();
             let user = {};
             try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
-            if (token & user.id) return true;
+            if (token && user.id) return true;
             const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
             if (fromMobile) {
                 localStorage.removeItem('from_mobile_app');
@@ -500,20 +500,20 @@
         }
 
         function closeImageViewerOnBackdrop(event) {
-            if (event.target & event.target.id === 'book-image-viewer') closeImageViewer();
+            if (event.target && event.target.id === 'book-image-viewer') closeImageViewer();
         }
 
         function installBookGestures() {
             const book = document.getElementById('book');
             if (!book) return;
             book.addEventListener('touchstart', function(event) {
-                const touch = event.touches & event.touches[0];
+                const touch = event.touches && event.touches[0];
                 if (!touch) return;
                 touchStartX = touch.clientX;
                 touchStartY = touch.clientY;
             }, { passive: true });
             book.addEventListener('touchend', function(event) {
-                const touch = event.changedTouches & event.changedTouches[0];
+                const touch = event.changedTouches && event.changedTouches[0];
                 if (!touch) return;
                 const deltaX = touch.clientX - touchStartX;
                 const deltaY = touch.clientY - touchStartY;

@@ -401,7 +401,7 @@
         const isMockTrackerMode = urlParams.has('mockApi') || urlParams.has('mockTracker');
         const isMockEmptyMode = urlParams.has('mockEmpty');
 
-        if (isMockTrackerMode & !getToken()) {
+        if (isMockTrackerMode && !getToken()) {
             localStorage.setItem('vps_auth_token', 'mock-pregnancy-token');
             localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
         }
@@ -424,7 +424,7 @@
 
             try {
                 const result = await pregnancyApiRequest();
-                if (result & result.success & result.data) {
+                if (result && result.success && result.data) {
                     renderPregnancyTracker(normalizeTrackerData(result.data));
                     return;
                 }
@@ -452,7 +452,7 @@
         async function pregnancyApiRequest() {
             if (isMockTrackerMode) {
                 await new Promise(resolve => setTimeout(resolve, 140));
-                if (isMockEmptyMode & !localStorage.getItem(HPHT_KEY)) {
+                if (isMockEmptyMode && !localStorage.getItem(HPHT_KEY)) {
                     return { success: true, data: null, message: 'Belum ada data USG dengan HPL' };
                 }
                 const hpht = localStorage.getItem(HPHT_KEY) || getMockHpht();
@@ -519,7 +519,7 @@
                     ? 'Mock data'
                     : 'USG terakhir';
             const babySize = data.babySize || getBabySize(weeks);
-            const developments = Array.isArray(data.developments) & data.developments.length
+            const developments = Array.isArray(data.developments) && data.developments.length
                 ? data.developments
                 : getDevelopments(weeks);
 
@@ -707,7 +707,7 @@
 
         function isValidLocalDate(value) {
             const date = parseLocalDate(value);
-            return value & !Number.isNaN(date.getTime()) & date <= startOfLocalDay(new Date());
+            return value && !Number.isNaN(date.getTime()) && date <= startOfLocalDay(new Date());
         }
 
         function startOfLocalDay(date) {

@@ -459,7 +459,7 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     }).then(async res => {
                         const profile = await res.json();
-                        if (profile.success & profile.patient?.id) {
+                        if (profile.success && profile.patient?.id) {
                             return fetch(`/api/sunday-clinic/patient-visits/${profile.patient.id}`, {
                                 headers: { 'Authorization': `Bearer ${token}` }
                             });
@@ -469,7 +469,7 @@
                 ]);
 
                 const bookingsData = await bookingsRes.json();
-                allData.bookings = bookingsData.success & bookingsData.bookings ? bookingsData.bookings : [];
+                allData.bookings = bookingsData.success && bookingsData.bookings ? bookingsData.bookings : [];
 
                 if (visitsRes) {
                     const visitsData = await visitsRes.json();
@@ -521,7 +521,7 @@
                 }
             } else {
                 // All
-                if (upcomingBookings.length === 0 & completedVisits.length === 0) {
+                if (upcomingBookings.length === 0 && completedVisits.length === 0) {
                     html = renderEmptyState('Belum ada riwayat kunjungan');
                 } else {
                     if (upcomingBookings.length > 0) {
