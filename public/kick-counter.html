@@ -1589,8 +1589,8 @@
             const container = document.getElementById('kick-counter-main');
             const alertContainer = document.getElementById('kick-alert-container');
             const summary = data.summary || {
-                total_kicks: data.today?.kicks ? data.today?.total_kicks ? 0,
-                total_sessions: data.today?.sessions ? data.today?.sessions_count ? (data.sessions ? data.sessions.length : 0),
+                total_kicks: Number(data.today?.total_kicks ?? data.today?.kicks ?? 0),
+                total_sessions: Number(data.today?.total_sessions ?? data.today?.sessions_count ?? data.today?.sessions ?? (Array.isArray(data.sessions) ? data.sessions.length : 0)),
                 avg_per_session: 0
             };
             if (!summary.avg_per_session) {
@@ -1800,8 +1800,8 @@
                         : (result.stats?.week || []);
                     const week = rawWeek.map(day => ({
                         date: day.date,
-                        kicks: Number(day.kicks ? day.total_kicks ? 0),
-                        sessions: Number(day.sessions ? day.total_sessions ? 0)
+                        kicks: Number(day.total_kicks ?? day.kicks ?? 0),
+                        sessions: Number(day.total_sessions ?? day.sessions ?? 0)
                     }));
                     renderKickChart(week);
                 }
