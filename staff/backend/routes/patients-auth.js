@@ -22,6 +22,7 @@ const {
     isPatientRequestIpBlocked,
     rememberBlockedPatientRequestIp
 } = require('../utils/patientAccessBlocklist');
+const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
 
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
@@ -202,7 +203,7 @@ async function handlePatientRegister(req, res) {
     try {
         const { fullname, email, phone, password, registration_code } = req.body;
 
-        if (await isPatientRequestIpBlocked(req)) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && await isPatientRequestIpBlocked(req)) {
             logger.warn(`Patient registration blocked by IP blocklist: ${email}`);
             return res.status(403).json({
                 success: false,
@@ -219,7 +220,7 @@ async function handlePatientRegister(req, res) {
             return res.status(400).json({ message: 'Password minimal 6 karakter' });
         }
 
-        if (isPatientIdentityBlocked({ name: fullname })) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name: fullname })) {
             rememberBlockedPatientRequestIp(req);
             logger.warn(`Patient registration blocked by name blocklist: ${email}`);
             return res.status(403).json({
@@ -373,7 +374,7 @@ router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (await isPatientRequestIpBlocked(req)) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && await isPatientRequestIpBlocked(req)) {
             logger.warn(`Patient login blocked by IP blocklist: ${email}`);
             return res.status(403).json({
                 success: false,
@@ -401,7 +402,7 @@ router.post('/login', async (req, res) => {
         const patient = patients[0];
         console.log('Patient found:', patient.id, 'Has password:', !!patient.password);
 
-        if (isPatientIdentityBlocked({ name: patient.full_name })) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name: patient.full_name })) {
             rememberBlockedPatientRequestIp(req);
             logger.warn(`Patient login blocked by name blocklist: ${patient.email}`);
             return res.status(403).json({
@@ -478,7 +479,7 @@ router.post('/login', async (req, res) => {
 // Google OAuth Login/Register
 router.post('/auth/google', async (req, res) => {
     try {
-        if (await isPatientRequestIpBlocked(req)) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && await isPatientRequestIpBlocked(req)) {
             logger.warn('[GOOGLE-AUTH] Blocked by IP blocklist');
             return res.status(403).json({
                 success: false,
@@ -524,7 +525,7 @@ router.post('/auth/google', async (req, res) => {
         const payload = ticket.getPayload();
         const { email, name, sub: googleId, picture } = payload;
 
-        if (isPatientIdentityBlocked({ name })) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name })) {
             rememberBlockedPatientRequestIp(req);
             logger.warn(`[GOOGLE-AUTH] Blocked by name blocklist: ${email}`);
             return res.status(403).json({
@@ -546,7 +547,7 @@ router.post('/auth/google', async (req, res) => {
             // Update Google ID if not set
             patient = existingPatients[0];
 
-            if (isPatientIdentityBlocked({ name: patient.full_name })) {
+            if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name: patient.full_name })) {
                 rememberBlockedPatientRequestIp(req);
                 logger.warn(`[GOOGLE-AUTH] Existing patient blocked by name blocklist: ${patient.email}`);
                 return res.status(403).json({
@@ -782,7 +783,7 @@ router.post('/auth/google', async (req, res) => {
 // Google OAuth Code Exchange (for mobile app)
 router.post('/google-auth-code', async (req, res) => {
     try {
-        if (await isPatientRequestIpBlocked(req)) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && await isPatientRequestIpBlocked(req)) {
             logger.warn('[GOOGLE-AUTH-CODE] Blocked by IP blocklist');
             return res.status(403).json({
                 success: false,
@@ -841,7 +842,7 @@ router.post('/google-auth-code', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Tidak dapat mengambil email dari akun Google' });
         }
 
-        if (isPatientIdentityBlocked({ name })) {
+        if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name })) {
             rememberBlockedPatientRequestIp(req);
             logger.warn(`[GOOGLE-AUTH-CODE] Blocked by name blocklist: ${email}`);
             return res.status(403).json({
@@ -862,7 +863,7 @@ router.post('/google-auth-code', async (req, res) => {
             patient = existingPatients[0];
             console.log('[GOOGLE-AUTH] Existing patient found:', patient.id);
 
-            if (isPatientIdentityBlocked({ name: patient.full_name })) {
+            if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked({ name: patient.full_name })) {
                 rememberBlockedPatientRequestIp(req);
                 logger.warn(`[GOOGLE-AUTH-CODE] Existing patient blocked by name blocklist: ${patient.email}`);
                 return res.status(403).json({
