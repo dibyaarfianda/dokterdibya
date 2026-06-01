@@ -1231,7 +1231,7 @@
                 const data = await apiRequest('/api/doctors/available');
                 const select = document.getElementById('doctor-select');
 
-                if (data & data.success & data.doctors & data.doctors.length > 0) {
+                if (data && data.success && data.doctors && data.doctors.length > 0) {
                     select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
                     data.doctors.forEach(doc => {
                         const option = document.createElement('option');
@@ -1252,7 +1252,7 @@
         }
 
         function handleImageSelect(e) {
-            if (e.target.files & e.target.files[0]) {
+            if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(ev) {
                     document.getElementById('preview-img').src = ev.target.result;
@@ -1286,7 +1286,7 @@
                 const formData = new FormData();
                 formData.append('question_text', questionText);
                 formData.append('doctor_id', doctorId);
-                if (imageInput.files & imageInput.files[0]) {
+                if (imageInput.files && imageInput.files[0]) {
                     formData.append('image', imageInput.files[0]);
                 }
 
@@ -1389,7 +1389,7 @@
 
             try {
                 const data = await apiRequest(`/api/patient-questions/${questionId}`);
-                if (data & data.success) {
+                if (data && data.success) {
                     const q = data.question;
                     const replies = data.replies || [];
                     const doctorName = q.doctor_name || 'dr. Dibya';
@@ -1489,7 +1489,7 @@
                     body: JSON.stringify({ message })
                 });
 
-                if (data & data.success) {
+                if (data && data.success) {
                     textarea.value = '';
                     openThread(currentQuestionId);
                     loadHistory();

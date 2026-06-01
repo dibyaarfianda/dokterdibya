@@ -281,6 +281,8 @@
             .catch(function(err) {
                 if (Notification.permission === 'denied') {
                     console.log(LOG_PREFIX, 'Notification permission denied by user');
+                } else if (err && err.name === 'AbortError' && /push service not available/i.test(String(err.message || ''))) {
+                    console.log(LOG_PREFIX, 'Push service unavailable on this device/browser, skipping subscription');
                 } else {
                     console.error(LOG_PREFIX, 'Subscribe failed:', err);
                 }

@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601h'; // 2026-06-01h - fix album-usg socket same-origin CORS
+const CACHE_VERSION = '20260601i'; // 2026-06-01i - second-pass bug sweep and push warning cleanup
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
