@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601m'; // 2026-06-01m - unify registration + intake header/theme styles
+const CACHE_VERSION = '20260601n'; // 2026-06-01n - align login/intake to home topbar shell
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
