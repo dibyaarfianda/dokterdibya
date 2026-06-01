@@ -358,7 +358,7 @@
         <div class="page active" id="page-login">
             <div class="logo-section">
                 <img src="/db-logo.png" alt="dokterDIBYA" style="width: 120px; height: 120px; margin-bottom: 16px; border-radius: 24px; background: white; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-                <div class="app-tagline">Portal Privat Anda</div>
+                <div class="app-tagline">Portal Wanita Sehat</div>
             </div>
 
             <div class="form-section">

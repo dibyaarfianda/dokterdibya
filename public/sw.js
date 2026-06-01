@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601r'; // 2026-06-01r - match auth/intake background and footer to home
+const CACHE_VERSION = '20260601s'; // 2026-06-01s - rename SISIwanita portal subtitle
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
