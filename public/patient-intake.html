@@ -323,6 +323,12 @@
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.7);
         }
+        .field-note {
+            margin: 0.35rem 0 0;
+            font-size: 0.78rem;
+            color: var(--text-muted, #717171);
+            line-height: 1.35;
+        }
         .alert {
             border-radius: 0.75rem;
             padding: 0.85rem;
@@ -1456,6 +1462,37 @@
             });
         }
 
+        function addFieldCompletionHints() {
+            const fields = form.querySelectorAll('.field');
+            fields.forEach((container) => {
+                const input = container.querySelector('input, select, textarea');
+                if (!input) return;
+                const type = (input.type || '').toLowerCase();
+                if (['hidden', 'checkbox', 'radio', 'button', 'submit', 'reset', 'file'].includes(type)) return;
+                if (container.querySelector('.field-note')) return;
+
+                const isRequired = input.required || !!container.querySelector('[required]');
+                const note = document.createElement('p');
+                note.className = 'field-note';
+
+                if (type === 'number') {
+                    note.textContent = isRequired
+                        ? 'Kolom wajib diisi. Jika tidak ada data, isi 0.'
+                        : 'Jika tidak ada data, isi 0.';
+                } else if (input.tagName === 'SELECT') {
+                    note.textContent = isRequired
+                        ? 'Kolom wajib dipilih sebelum kirim data.'
+                        : 'Pilih opsi yang paling sesuai.';
+                } else {
+                    note.textContent = isRequired
+                        ? 'Kolom wajib diisi. Jika tidak ada data, tulis: tidak ada.'
+                        : 'Jika tidak ada data, tulis: tidak ada.';
+                }
+
+                container.appendChild(note);
+            });
+        }
+
         // Initialize stepper
         function initStepper() {
             stepper.innerHTML = '';
@@ -1797,6 +1834,7 @@
         // Initialize
         initStepper();
         initAutoSave();
+        addFieldCompletionHints();
         
         // Load existing data from server (if logged in), then fallback to draft
         (async function init() {
