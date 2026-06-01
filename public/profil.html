@@ -246,6 +246,159 @@
             transform: scale(1.1);
         }
 
+        /* ========== CROP EDITOR ========== */
+        #crop-editor-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.93);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .crop-editor-card {
+            width: min(380px, 100%);
+            background: #ffffff;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 40px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .crop-editor-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+            flex-shrink: 0;
+        }
+        .crop-editor-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #111;
+        }
+        .crop-editor-close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #888;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .crop-editor-body {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .crop-editor-hint {
+            font-size: 12px;
+            color: #888;
+            margin: 0 0 12px;
+            text-align: center;
+        }
+        #crop-editor-stage {
+            position: relative;
+            width: min(300px, 100%);
+            aspect-ratio: 1;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 20px;
+            background: linear-gradient(145deg, #dbeafe, #e2e8f0);
+            box-shadow: inset 0 0 0 1px rgba(148,163,184,0.24), 0 8px 24px rgba(0,0,0,0.12);
+            touch-action: none;
+            user-select: none;
+            cursor: grab;
+        }
+        #crop-editor-stage.is-dragging { cursor: grabbing; }
+        #crop-editor-image {
+            position: absolute;
+            top: 0; left: 0;
+            transform-origin: top left;
+            pointer-events: none;
+            user-select: none;
+            display: block;
+        }
+        /* Circle mask */
+        #crop-editor-stage.crop-circle::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 0 999px rgba(0,0,0,0.36);
+            border: 2.5px solid rgba(255,255,255,0.88);
+            pointer-events: none;
+            z-index: 2;
+        }
+        /* Square mask — just a soft inset border */
+        #crop-editor-stage.crop-square::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 2.5px solid rgba(255,255,255,0.6);
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        #crop-editor-stage::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.18);
+            pointer-events: none;
+            z-index: 3;
+        }
+        .crop-editor-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .crop-editor-reset-btn {
+            flex-shrink: 0;
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .crop-editor-reset-btn:active { background: #e9ecef; }
+        #crop-editor-zoom {
+            flex: 1;
+            cursor: pointer;
+            accent-color: #111;
+        }
+        #crop-editor-zoom-value {
+            min-width: 40px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: 600;
+            color: #0d6efd;
+        }
+        .crop-editor-footer {
+            padding: 0 20px 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+        .crop-editor-apply-btn {
+            padding: 10px 24px;
+            background: #111;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .crop-editor-apply-btn:active { background: #333; }
+
         .profile-name {
             font-size: 20px;
             font-weight: 700;
@@ -1180,30 +1333,38 @@
             }
         }
 
-        // Edit avatar
+        // Edit avatar — opens file picker, crop editor opened on file select
         function editAvatar() {
             document.getElementById('avatar-input').click();
         }
 
-        // Handle avatar upload
+        // Handle avatar upload — read file then open crop editor
         async function handleAvatarUpload(e) {
             if (!e.target.files || !e.target.files[0]) return;
 
             const file = e.target.files[0];
+            e.target.value = '';
+
             if (!file.type || !file.type.startsWith('image/')) {
                 showToast('Pilih file gambar untuk foto profil', 'error');
-                e.target.value = '';
                 return;
             }
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('Ukuran file maksimal 2MB', 'error');
-                e.target.value = '';
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('Ukuran file maksimal 10MB', 'error');
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('photo', file);
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                openCropEditor(ev.target.result, 'circle', async function(croppedBase64) {
+                    await uploadCroppedAvatar(croppedBase64);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
 
+        // Upload cropped avatar to server
+        async function uploadCroppedAvatar(base64DataUrl) {
             try {
                 const token = getToken();
                 if (!token) {
@@ -1213,6 +1374,12 @@
                 }
 
                 showToast('Mengunggah foto profil...', 'info', 5000);
+
+                // Convert base64 to Blob then upload via multipart (R2 storage)
+                const blob = dataURLToBlob(base64DataUrl);
+                const formData = new FormData();
+                formData.append('photo', blob, 'profile.png');
+
                 const response = await fetch('/api/patients/upload-photo', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -1233,13 +1400,233 @@
                 } else {
                     showToast(data.message || `Gagal upload foto (${response.status})`, 'error');
                 }
-            } catch (e) {
-                console.error('Error uploading:', e);
-                showToast(e.message || 'Gagal upload foto. Periksa koneksi lalu coba lagi.', 'error');
-            } finally {
-                e.target.value = '';
+            } catch (err) {
+                console.error('Error uploading avatar:', err);
+                showToast(err.message || 'Gagal upload foto. Periksa koneksi lalu coba lagi.', 'error');
             }
         }
+
+        // Convert data URL to Blob
+        function dataURLToBlob(dataURL) {
+            const [header, b64] = dataURL.split(',');
+            const mime = header.match(/:(.*?);/)[1];
+            const binary = atob(b64);
+            const arr = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        }
+
+        // ===== CROP EDITOR ENGINE =====
+        const cropEditorState = {
+            image: null, scale: 1, minScale: 1, maxScale: 4,
+            offsetX: 0, offsetY: 0,
+            dragging: false, pointerId: null,
+            startX: 0, startY: 0, originX: 0, originY: 0
+        };
+        let cropEditorCallback = null;
+        let cropEditorBound = false;
+
+        function getCropStageSize() {
+            const stage = document.getElementById('crop-editor-stage');
+            return stage ? Math.max(240, stage.clientWidth) : 240;
+        }
+
+        function renderCropEditor() {
+            const img = document.getElementById('crop-editor-image');
+            const zoomVal = document.getElementById('crop-editor-zoom-value');
+            const zoomRange = document.getElementById('crop-editor-zoom');
+            if (!img || !cropEditorState.image) return;
+            const w = cropEditorState.image.naturalWidth * cropEditorState.scale;
+            const h = cropEditorState.image.naturalHeight * cropEditorState.scale;
+            img.style.width = w + 'px';
+            img.style.height = h + 'px';
+            img.style.transform = `translate(${cropEditorState.offsetX}px, ${cropEditorState.offsetY}px)`;
+            const pct = Math.round((cropEditorState.scale / cropEditorState.minScale) * 100);
+            if (zoomVal) zoomVal.textContent = pct + '%';
+            if (zoomRange) zoomRange.value = String(pct);
+        }
+
+        function clampCropEditorOffsets() {
+            if (!cropEditorState.image) return;
+            const stageSize = getCropStageSize();
+            const w = cropEditorState.image.naturalWidth * cropEditorState.scale;
+            const h = cropEditorState.image.naturalHeight * cropEditorState.scale;
+            cropEditorState.offsetX = Math.min(0, Math.max(stageSize - w, cropEditorState.offsetX));
+            cropEditorState.offsetY = Math.min(0, Math.max(stageSize - h, cropEditorState.offsetY));
+        }
+
+        function recenterCropEditor() {
+            if (!cropEditorState.image) return;
+            const stageSize = getCropStageSize();
+            const w = cropEditorState.image.naturalWidth * cropEditorState.scale;
+            const h = cropEditorState.image.naturalHeight * cropEditorState.scale;
+            cropEditorState.offsetX = (stageSize - w) / 2;
+            cropEditorState.offsetY = (stageSize - h) / 2;
+            clampCropEditorOffsets();
+            renderCropEditor();
+        }
+
+        function setCropEditorZoom(pct) {
+            if (!cropEditorState.image) return;
+            const val = Math.max(100, Math.min(400, Number(pct)));
+            const newScale = cropEditorState.minScale * (val / 100);
+            const oldW = cropEditorState.image.naturalWidth * cropEditorState.scale;
+            const newW = cropEditorState.image.naturalWidth * newScale;
+            const oldH = cropEditorState.image.naturalHeight * cropEditorState.scale;
+            const newH = cropEditorState.image.naturalHeight * newScale;
+            cropEditorState.offsetX += (oldW - newW) / 2;
+            cropEditorState.offsetY += (oldH - newH) / 2;
+            cropEditorState.scale = newScale;
+            clampCropEditorOffsets();
+            renderCropEditor();
+        }
+
+        function exportCropEditorImage() {
+            if (!cropEditorState.image) return null;
+            const stageSize = getCropStageSize();
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            const sourceX = Math.max(0, (-cropEditorState.offsetX) / cropEditorState.scale);
+            const sourceY = Math.max(0, (-cropEditorState.offsetY) / cropEditorState.scale);
+            const sourceSize = stageSize / cropEditorState.scale;
+            ctx.drawImage(cropEditorState.image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, 512, 512);
+            return canvas.toDataURL('image/png');
+        }
+
+        function openCropEditor(sourceUrl, mode, callback) {
+            cropEditorCallback = callback || null;
+            const overlay = document.getElementById('crop-editor-overlay');
+            const stage = document.getElementById('crop-editor-stage');
+            const hint = document.querySelector('#crop-editor-overlay .crop-editor-hint');
+            if (!overlay || !stage) return;
+
+            stage.classList.toggle('crop-circle', mode === 'circle');
+            stage.classList.toggle('crop-square', mode === 'square');
+            if (hint) hint.textContent = mode === 'circle'
+                ? 'Geser & zoom foto. Area dalam lingkaran adalah hasil akhir.'
+                : 'Geser & zoom foto. Seluruh area kotak adalah hasil akhir.';
+
+            const img = new Image();
+            img.onload = function() {
+                cropEditorState.image = img;
+                cropEditorState.dragging = false;
+                cropEditorState.pointerId = null;
+                const stageSize = getCropStageSize();
+                cropEditorState.minScale = Math.max(stageSize / img.naturalWidth, stageSize / img.naturalHeight);
+                cropEditorState.maxScale = cropEditorState.minScale * 4;
+                cropEditorState.scale = cropEditorState.minScale;
+                const zoomRange = document.getElementById('crop-editor-zoom');
+                if (zoomRange) zoomRange.value = '100';
+                document.getElementById('crop-editor-image').src = sourceUrl;
+                recenterCropEditor();
+                overlay.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                bindCropEditor();
+            };
+            img.onerror = function() { showToast('Gagal memuat foto', 'error'); };
+            img.src = sourceUrl;
+        }
+
+        function closeCropEditor() {
+            const overlay = document.getElementById('crop-editor-overlay');
+            if (overlay) overlay.style.display = 'none';
+            document.body.style.overflow = '';
+            cropEditorState.image = null;
+            cropEditorState.dragging = false;
+            cropEditorState.pointerId = null;
+        }
+
+        function bindCropEditor() {
+            if (cropEditorBound) return;
+            cropEditorBound = true;
+
+            const stage = document.getElementById('crop-editor-stage');
+            if (!stage) return;
+
+            stage.addEventListener('pointerdown', function(e) {
+                if (!cropEditorState.image) return;
+                cropEditorState.dragging = true;
+                cropEditorState.pointerId = e.pointerId;
+                cropEditorState.startX = e.clientX;
+                cropEditorState.startY = e.clientY;
+                cropEditorState.originX = cropEditorState.offsetX;
+                cropEditorState.originY = cropEditorState.offsetY;
+                stage.classList.add('is-dragging');
+                e.preventDefault();
+            });
+
+            window.addEventListener('pointermove', function(e) {
+                if (!cropEditorState.dragging || cropEditorState.pointerId !== e.pointerId) return;
+                cropEditorState.offsetX = cropEditorState.originX + (e.clientX - cropEditorState.startX);
+                cropEditorState.offsetY = cropEditorState.originY + (e.clientY - cropEditorState.startY);
+                clampCropEditorOffsets();
+                renderCropEditor();
+            });
+
+            const stopDrag = function(e) {
+                if (cropEditorState.pointerId !== null && e.pointerId !== cropEditorState.pointerId) return;
+                cropEditorState.dragging = false;
+                cropEditorState.pointerId = null;
+                stage.classList.remove('is-dragging');
+            };
+            window.addEventListener('pointerup', stopDrag);
+            window.addEventListener('pointercancel', stopDrag);
+
+            stage.addEventListener('wheel', function(e) {
+                if (!cropEditorState.image) return;
+                e.preventDefault();
+                const zoomRange = document.getElementById('crop-editor-zoom');
+                const cur = Number(zoomRange ? zoomRange.value : 100);
+                const next = Math.max(100, Math.min(400, cur + (e.deltaY < 0 ? 8 : -8)));
+                if (zoomRange) zoomRange.value = String(next);
+                setCropEditorZoom(next);
+            }, { passive: false });
+
+            stage.addEventListener('dblclick', function() {
+                const zoomRange = document.getElementById('crop-editor-zoom');
+                if (zoomRange) zoomRange.value = '100';
+                cropEditorState.scale = cropEditorState.minScale;
+                recenterCropEditor();
+            });
+
+            const zoomRange = document.getElementById('crop-editor-zoom');
+            if (zoomRange) {
+                zoomRange.addEventListener('input', function(e) { setCropEditorZoom(e.target.value); });
+            }
+
+            document.getElementById('crop-editor-reset').addEventListener('click', function() {
+                const zoomRange = document.getElementById('crop-editor-zoom');
+                if (zoomRange) zoomRange.value = '100';
+                cropEditorState.scale = cropEditorState.minScale;
+                recenterCropEditor();
+            });
+
+            document.getElementById('crop-editor-cancel').addEventListener('click', closeCropEditor);
+
+            document.getElementById('crop-editor-apply').addEventListener('click', function() {
+                const result = exportCropEditorImage();
+                if (!result) { showToast('Gagal memproses foto', 'error'); return; }
+                closeCropEditor();
+                if (cropEditorCallback) cropEditorCallback(result);
+            });
+
+            window.addEventListener('resize', function() {
+                if (!cropEditorState.image) return;
+                const stageSize = getCropStageSize();
+                const fitScale = Math.max(stageSize / cropEditorState.image.naturalWidth, stageSize / cropEditorState.image.naturalHeight);
+                const ratio = cropEditorState.scale / cropEditorState.minScale;
+                cropEditorState.minScale = fitScale;
+                cropEditorState.maxScale = fitScale * 4;
+                cropEditorState.scale = Math.min(fitScale * 4, Math.max(fitScale, fitScale * ratio));
+                clampCropEditorOffsets();
+                renderCropEditor();
+            });
+        }
+        // ===== END CROP EDITOR ENGINE =====
+
 
         // Change password
         function changePassword() {
@@ -1409,5 +1796,30 @@
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
     <script src="/scripts/portal-bottom-nav.js?v=20260528home1" defer></script>
+
+    <!-- ===== CROP EDITOR OVERLAY ===== -->
+    <div id="crop-editor-overlay">
+        <div class="crop-editor-card">
+            <div class="crop-editor-header">
+                <span class="crop-editor-title" id="crop-editor-title">Atur Foto Profil</span>
+                <button class="crop-editor-close-btn" id="crop-editor-cancel">&times;</button>
+            </div>
+            <div class="crop-editor-body">
+                <p class="crop-editor-hint">Geser &amp; zoom foto. Area dalam lingkaran adalah hasil akhir.</p>
+                <div id="crop-editor-stage" class="crop-circle">
+                    <img id="crop-editor-image" alt="">
+                </div>
+                <div class="crop-editor-toolbar">
+                    <button class="crop-editor-reset-btn" id="crop-editor-reset">Reset</button>
+                    <input type="range" id="crop-editor-zoom" min="100" max="400" step="1" value="100">
+                    <span id="crop-editor-zoom-value">100%</span>
+                </div>
+            </div>
+            <div class="crop-editor-footer">
+                <button class="crop-editor-apply-btn" id="crop-editor-apply">✓ Gunakan Foto Ini</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
