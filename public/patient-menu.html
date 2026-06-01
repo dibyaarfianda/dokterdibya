@@ -249,9 +249,9 @@
             position: absolute;
             top: 18px;
             right: 18px;
-            width: 96px;
-            height: 96px;
-            border-radius: 28px;
+            width: 144px;
+            height: 144px;
+            border-radius: 32px;
             border: 1px solid var(--line);
             background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(240,242,236,0.88));
             box-shadow: 0 12px 30px rgba(17,17,17,0.08);
@@ -1140,8 +1140,8 @@
 
         @media (max-width: 520px) {
             .app { padding-left: 14px; padding-right: 14px; }
-            .hero-card { padding: 18px 104px 18px 18px; border-radius: 24px; }
-            .home-hero-photo { top: 14px; right: 14px; width: 76px; height: 76px; border-radius: 22px; }
+            .hero-card { padding: 18px 164px 18px 18px; border-radius: 24px; }
+            .home-hero-photo { top: 14px; right: 14px; width: 112px; height: 112px; border-radius: 26px; }
             .today-row { grid-template-columns: 1fr; align-items: start; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
@@ -1757,7 +1757,7 @@
         const HOME_PHOTO_STORAGE_KEY = 'patient_home_photo_adjust_v1';
         const HOME_PHOTO_DEFAULT = {
             photoUrl: '',
-            zoom: 1.5,
+            zoom: 1,
             offsetX: 0,
             offsetY: 0
         };
@@ -1767,7 +1767,6 @@
 
         function normalizeHomePhotoState(state) {
             const normalized = normalizePhotoAdjustState(state || HOME_PHOTO_DEFAULT);
-            normalized.zoom = Math.max(1.5, normalized.zoom);
             return normalized;
         }
 
