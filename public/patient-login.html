@@ -157,6 +157,12 @@
             line-height: 1.5;
         }
 
+        .auth-locked {
+            opacity: 0.68;
+            pointer-events: none;
+            filter: grayscale(0.12);
+        }
+
         /* Field row with inline link */
         .field-row-head {
             display: flex;
@@ -459,6 +465,9 @@
     </main>
 
     <script>
+        const AUTH_MAINTENANCE_LOCK = true;
+        const AUTH_MAINTENANCE_MESSAGE = 'Login sedang dalam perbaikan. Silakan coba beberapa saat lagi.';
+
         // ==================== MOBILE APP CONTEXT ====================
         const urlParams = new URLSearchParams(window.location.search);
         const referrer = document.referrer;
@@ -490,7 +499,37 @@
             }
 
             setAuthMode(requestedMode === 'register' ? 'register' : 'login');
+            if (AUTH_MAINTENANCE_LOCK) {
+                applyAuthMaintenanceLock();
+            }
         });
+
+        function applyAuthMaintenanceLock() {
+            ['page-login', 'page-register'].forEach(function(id) {
+                var page = document.getElementById(id);
+                if (!page) return;
+
+                var old = page.querySelector('.maintenance-note');
+                if (old) old.remove();
+
+                var note = document.createElement('div');
+                note.className = 'maintenance-note';
+                note.textContent = AUTH_MAINTENANCE_MESSAGE;
+
+                var title = page.querySelector('.login-subtitle') || page.querySelector('.login-heading');
+                if (title && title.parentNode) {
+                    title.parentNode.insertBefore(note, title.nextSibling);
+                } else {
+                    page.insertBefore(note, page.firstChild);
+                }
+
+                page.querySelectorAll('input, button, textarea').forEach(function(el) {
+                    if (el.classList.contains('portal-unified-back')) return;
+                    el.disabled = true;
+                });
+                page.classList.add('auth-locked');
+            });
+        }
 
         function setAuthMode(mode) {
             var isRegister = mode === 'register';
@@ -562,6 +601,10 @@
         initGoogleCodeClient();
 
         async function handleGoogleCodeCallback(response) {
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
             if (response.error) {
                 console.error('[GIS] Error:', response.error);
                 showError(pendingGoogleAction === 'register' ? 'register-error' : 'login-error', 'Login Google dibatalkan atau gagal');
@@ -614,6 +657,10 @@
         }
 
         function loginWithGoogle() {
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('login-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
             clearError('login-error');
             if (!googleCodeClient) {
                 showError('login-error', 'Google Sign-In belum siap. Tunggu sebentar lalu coba lagi.');
@@ -626,6 +673,10 @@
         // ==================== REGISTRATION CODE + GOOGLE REGISTER ====================
         document.getElementById('regcode-form').addEventListener('submit', function(e) {
             e.preventDefault();
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('regcode-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
             clearError('regcode-error');
 
             var code = document.getElementById('regcode-input').value.trim().toUpperCase();
@@ -676,6 +727,10 @@
         }
 
         function registerWithGoogle() {
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('register-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
             clearError('register-error');
             if (!validatedRegCode) {
                 showError('register-error', 'Kode registrasi belum divalidasi');
@@ -692,6 +747,10 @@
         // ==================== EMAIL/PHONE + PASSWORD LOGIN ====================
         document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+            if (AUTH_MAINTENANCE_LOCK) {
+                showError('login-error', AUTH_MAINTENANCE_MESSAGE);
+                return;
+            }
             clearError('login-error');
 
             var emailOrPhone = document.getElementById('login-email').value.trim();
