@@ -554,7 +554,7 @@
                     throw new Error(data.message || 'Gagal mengambil data');
                 }
 
-                var config = (data.data & data.data.config) ? data.data.config : {};
+                var config = (data.data && data.data.config) ? data.data.config : {};
                 var trimesterConfigs = config.trimester_configs || { t1: [], t2: [], t3: [] };
 
                 // Updated at
@@ -580,5 +580,6 @@
 
     <!-- Theme router (handles legacy menu redirect) -->
 <script src="/scripts/portal-bottom-nav.js?v=20260528home1" defer></script>
+<script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 </body>
 </html>
