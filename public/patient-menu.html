@@ -2250,9 +2250,48 @@
                 '</div>' +
                 '<div class="profile-photo-controls">' +
                     '<div class="profile-photo-control">' +
-            window.addEventListener('pointermove', handleMove, { passive: false });
-            window.addEventListener('pointerup', function(event) { finishGesture(event.pointerId); }, { passive: true });
-            window.addEventListener('pointercancel', function(event) { finishGesture(event.pointerId); }, { passive: true });
+                        '<label>Zoom</label>' +
+                        '<input type="range" min="1" max="2.2" step="0.01" value="' + state.zoom + '" oninput="updateProfilePhotoDraftFromInputs()" id="profile-photo-zoom">' +
+                    '</div>' +
+                    '<div class="profile-photo-control">' +
+                        '<label>Geser Horizontal</label>' +
+                        '<input type="range" min="-90" max="90" step="1" value="' + state.offsetX + '" oninput="updateProfilePhotoDraftFromInputs()" id="profile-photo-offset-x">' +
+                    '</div>' +
+                    '<div class="profile-photo-control">' +
+                        '<label>Geser Vertikal</label>' +
+                        '<input type="range" min="-90" max="90" step="1" value="' + state.offsetY + '" oninput="updateProfilePhotoDraftFromInputs()" id="profile-photo-offset-y">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="profile-photo-save-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \"camera\")"><i class="fa-solid fa-camera"></i> Kamera</button>' +
+                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \"gallery\")"><i class="fa-solid fa-image"></i> Galeri</button>' +
+                    '<button type="button" class="secondary-action soundable" onclick="resetProfilePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="saveProfilePhotoDraft(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function updateProfilePhotoDraftFromInputs() {
+            const zoomInput = document.getElementById('profile-photo-zoom');
+            const xInput = document.getElementById('profile-photo-offset-x');
+            const yInput = document.getElementById('profile-photo-offset-y');
+            profilePhotoDraft = normalizePhotoAdjustState(Object.assign({}, profilePhotoDraft || getProfilePhotoAdjustState(), {
+                zoom: zoomInput ? Number(zoomInput.value) : 1,
+                offsetX: xInput ? Number(xInput.value) : 0,
+                offsetY: yInput ? Number(yInput.value) : 0
+            }));
+            const preview = document.getElementById('profile-photo-preview');
+            if (preview) {
+                preview.style.setProperty('--profile-photo-zoom', profilePhotoDraft.zoom);
+                preview.style.setProperty('--profile-photo-x', profilePhotoDraft.offsetX + 'px');
+                preview.style.setProperty('--profile-photo-y', profilePhotoDraft.offsetY + 'px');
+            }
+            const previewImg = document.getElementById('profile-photo-preview-img');
+            if (previewImg && profilePhotoDraft.photoUrl) {
+                previewImg.src = profilePhotoDraft.photoUrl;
+            }
+        }
+
         function resetProfilePhotoDraft(event) {
             stopTopbarEvent(event);
             profilePhotoDraft = Object.assign({}, PROFILE_PHOTO_DEFAULT, { photoUrl: getProfilePhotoAdjustState().photoUrl || getProfilePhotoUrl(currentProfile || getStoredProfile()) });
@@ -3317,6 +3356,7 @@
         window.openProfileModal = openProfileModal;
         window.openProfilePhotoPicker = openProfilePhotoPicker;
         window.handleProfilePhotoUpload = handleProfilePhotoUpload;
+        window.updateProfilePhotoDraftFromInputs = updateProfilePhotoDraftFromInputs;
         window.markTopbarNotificationRead = markTopbarNotificationRead;
         window.markAllTopbarNotificationsRead = markAllTopbarNotificationsRead;
         window.cancelActiveBooking = cancelActiveBooking;
