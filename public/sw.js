@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601o'; // 2026-06-01o - whitelist kick-counter opening motion in reduced-motion mode
+const CACHE_VERSION = '20260601p'; // 2026-06-01p - whitelist tanya dokter, pregnancy tracker, and fertility calendar motion
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
