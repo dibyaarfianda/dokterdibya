@@ -824,7 +824,7 @@
         }, { passive: true });
 
         document.addEventListener('touchmove', function(e) {
-            if (window.scrollY === 0 & touchStartY > 0) {
+            if (window.scrollY === 0 && touchStartY > 0) {
                 touchEndY = e.touches[0].clientY;
                 const pullDistance = touchEndY - touchStartY;
                 if (pullDistance > 80) {
@@ -836,7 +836,7 @@
         }, { passive: true });
 
         document.addEventListener('touchend', function(e) {
-            if (window.scrollY === 0 & touchStartY > 0) {
+            if (window.scrollY === 0 && touchStartY > 0) {
                 const pullDistance = touchEndY - touchStartY;
                 if (pullDistance > 80) {
                     pullIndicator.innerHTML = '<i class="fa-solid fa-spinner spin"></i> Memuat...';

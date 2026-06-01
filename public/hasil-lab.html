@@ -559,7 +559,7 @@
             try {
                 const data = await apiRequest('/api/patient-documents/my-documents?type=lab_result');
 
-                if (data & data.success & data.documents) {
+                if (data && data.success && data.documents) {
                     labResults = data.documents.map(doc => ({
                         id: doc.id,
                         url: doc.file_url,

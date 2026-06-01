@@ -662,7 +662,7 @@
 
                 window.allImages = [];
 
-                if (response & response.success & response.documents) {
+                if (response && response.success && response.documents) {
                     window.allImages = response.documents;
                 } else if (!response.success) {
                     // API returned error response
@@ -720,7 +720,7 @@
                 const date = new Date(img.published_at || img.created_at);
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !img.first_viewed_at;
-                const isThumbnail = window.customThumbnailId & parseInt(window.customThumbnailId) === img.id;
+                    const isThumbnail = window.customThumbnailId && parseInt(window.customThumbnailId, 10) === img.id;
 
                 // Use detectedType for badge, fallback to original type
                 const effectiveType = img.detectedType || img.type;
@@ -779,7 +779,7 @@
             document.getElementById('lightbox-title').textContent = img.title || 'USG';
 
             // Update thumbnail button
-            const isThumbnail = window.customThumbnailId & parseInt(window.customThumbnailId) === img.id;
+                const isThumbnail = window.customThumbnailId && parseInt(window.customThumbnailId, 10) === img.id;
             const btnThumbnail = document.getElementById('btn-thumbnail');
             if (isThumbnail) {
                 btnThumbnail.classList.add('active');

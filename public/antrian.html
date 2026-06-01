@@ -1133,7 +1133,7 @@
                 }
 
                 const payload = await response.json();
-                if (payload.success & payload.settings) {
+                if (payload.success && payload.settings) {
                     _reminderSettings.enabled = !!payload.settings.enabled;
                     _reminderSettings.threshold = Number(payload.settings.threshold_ahead) || _reminderSettings.threshold;
                     _reminderSettings.backgroundPushEnabled = !!payload.settings.background_push_enabled;
@@ -1176,7 +1176,7 @@
                 }
 
                 const payload = await response.json();
-                if (payload.success & payload.settings) {
+                if (payload.success && payload.settings) {
                     _reminderSettings.enabled = !!payload.settings.enabled;
                     _reminderSettings.threshold = Number(payload.settings.threshold_ahead) || _reminderSettings.threshold;
                     _reminderSettings.backgroundPushEnabled = !!payload.settings.background_push_enabled;
@@ -1207,7 +1207,7 @@
                 options.push(`<option value="${escHtml(key)}">${escHtml(label)}</option>`);
             });
             sessionSelect.innerHTML = options.join('');
-            sessionSelect.value = currentValue & seen.has(currentValue) ? currentValue : '';
+            sessionSelect.value = currentValue && seen.has(currentValue) ? currentValue : '';
         }
 
         async function loadActiveBookingForQueueDate(date) {
@@ -1233,7 +1233,7 @@
 
                 const payload = await response.json();
                 const sameDateBooking = (payload.bookings || []).find(function(booking) {
-                    return booking.appointment_date === date & String(booking.status).toLowerCase() === 'confirmed';
+                    return booking.appointment_date === date && String(booking.status).toLowerCase() === 'confirmed';
                 }) || (payload.bookings || []).find(function(booking) {
                     return booking.appointment_date === date;
                 }) || null;
@@ -1257,7 +1257,7 @@
         }
 
         function getReminderTarget() {
-            if (_reminderSettings.source === 'auto' & _activeBooking) {
+            if (_reminderSettings.source === 'auto' && _activeBooking) {
                 return {
                     session: Number(_activeBooking.session),
                     slot: Number(_activeBooking.slot_number),
@@ -1307,7 +1307,7 @@
             }
 
             const targetApt = _queueData.find(function(apt) {
-                return Number(apt.session) === target.session & Number(apt.slot_number) === target.slot;
+                return Number(apt.session) === target.session && Number(apt.slot_number) === target.slot;
             });
 
             if (!targetApt) {
@@ -1317,8 +1317,8 @@
 
             const aheadCount = _queueData.filter(function(apt) {
                 return Number(apt.session) === target.session
-                    & Number(apt.slot_number) < target.slot
-                    & !isQueueFinished(apt.queue_status || 'menunggu');
+                    && Number(apt.slot_number) < target.slot
+                    && !isQueueFinished(apt.queue_status || 'menunggu');
             }).length;
 
             const currentStatus = STATUS_LABELS[targetApt.queue_status] || targetApt.queue_status;
@@ -1353,7 +1353,7 @@
             }
 
             const result = await Notification.requestPermission();
-            if (result === 'granted' & typeof window.ensurePatientPushSubscription === 'function') {
+                if (result === 'granted' && typeof window.ensurePatientPushSubscription === 'function') {
                 window.ensurePatientPushSubscription();
             }
             refreshPushStatusIndicator();
@@ -1411,7 +1411,7 @@
             }
 
             const targetApt = _queueData.find(function(apt) {
-                return Number(apt.session) === target.session & Number(apt.slot_number) === target.slot;
+                return Number(apt.session) === target.session && Number(apt.slot_number) === target.slot;
             });
 
             if (!targetApt) {
@@ -1425,8 +1425,8 @@
 
             const aheadCount = _queueData.filter(function(apt) {
                 return Number(apt.session) === target.session
-                    & Number(apt.slot_number) < target.slot
-                    & !isQueueFinished(apt.queue_status || 'menunggu');
+                    && Number(apt.slot_number) < target.slot
+                    && !isQueueFinished(apt.queue_status || 'menunggu');
             }).length;
 
             if (aheadCount > Number(_reminderSettings.threshold || 0)) {
@@ -1444,7 +1444,7 @@
                 showReminderPopup(message);
             }
 
-            if (_reminderSettings.browserEnabled & 'Notification' in window & Notification.permission === 'granted') {
+            if (_reminderSettings.browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
                 try {
                     new Notification('Pengingat Antrian', {
                         body: message,
@@ -1495,13 +1495,13 @@
             ].forEach(function(el) {
                 if (!el) return;
                 el.addEventListener('change', handleReminderSettingChange);
-                if (el.tagName === 'INPUT' & el.type === 'number') {
+                if (el.tagName === 'INPUT' && el.type === 'number') {
                     el.addEventListener('input', handleReminderSettingChange);
                 }
             });
 
             els.soundFile.addEventListener('change', function(event) {
-                const file = event.target.files & event.target.files[0];
+                const file = event.target.files && event.target.files[0];
                 if (!file) return;
                 if (file.size > 500 * 1024) {
                     alert('Ukuran file suara maksimal 500 KB agar bisa disimpan di perangkat ini.');

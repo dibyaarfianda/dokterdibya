@@ -941,7 +941,7 @@
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
         ];
 
-        if (isMockMode & !getToken()) {
+            if (isMockMode && !getToken()) {
             localStorage.setItem('vps_auth_token', 'mock-fertility-token');
             localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
         }
@@ -1024,7 +1024,7 @@
 
                 const isStart = selectedStartDate === dateStr;
                 const isEnd = selectedEndDate === dateStr;
-                const isInRange = selectedStartDate & selectedEndDate & dateStr > selectedStartDate & dateStr < selectedEndDate;
+                    const isInRange = selectedStartDate && selectedEndDate && dateStr > selectedStartDate && dateStr < selectedEndDate;
 
                 if (isStart) {
                     classes.push('selecting-start');
@@ -1062,7 +1062,7 @@
             if (!start || !current) return '';
             const cycleDay = Math.floor((current.getTime() - start.getTime()) / 86400000) + 1;
             const cycleLength = Number(lastCycle.cycle_length || 28);
-            if (cycleDay > 0 & cycleDay <= cycleLength) {
+                    if (cycleDay > 0 && cycleDay <= cycleLength) {
                 return `<span class="cycle-day-badge">H${cycleDay}</span>`;
             }
             return '';
@@ -1205,7 +1205,7 @@
                 return;
             }
 
-            if (selectionMode === 'start' & !selectedStartDate) {
+                if (selectionMode === 'start' && !selectedStartDate) {
                 hint.style.display = 'none';
             } else {
                 hint.style.display = 'flex';
@@ -1248,7 +1248,7 @@
         async function loadCycles() {
             try {
                 const data = isMockMode ? getMockCyclesResponse() : await fetchCycles();
-                if (data & data.success) {
+                if (data && data.success) {
                     cyclesData = data.cycles || [];
                     updateStats(data);
                     renderCycleList();
@@ -1362,15 +1362,15 @@
 
         document.getElementById('period-start').addEventListener('change', event => {
             selectedStartDate = event.target.value || null;
-            if (selectedStartDate & !selectedEndDate) selectionMode = 'end';
-            else if (selectedStartDate & selectedEndDate) selectionMode = 'done';
+            if (selectedStartDate && !selectedEndDate) selectionMode = 'end';
+            else if (selectedStartDate && selectedEndDate) selectionMode = 'done';
             else selectionMode = 'start';
             renderCalendar();
         });
 
         document.getElementById('period-end').addEventListener('change', event => {
             selectedEndDate = event.target.value || null;
-            if (selectedStartDate & selectedEndDate) selectionMode = 'done';
+            if (selectedStartDate && selectedEndDate) selectionMode = 'done';
             else if (selectedStartDate) selectionMode = 'end';
             renderCalendar();
         });
@@ -1568,7 +1568,7 @@
 
         function analyzeLocalCycles(cycles) {
             const sorted = cycles.slice().sort((a, b) => String(b.period_start_date).localeCompare(String(a.period_start_date)));
-            const lengths = sorted.map(cycle => Number(cycle.cycle_length)).filter(length => length > 0 & length < 60);
+            const lengths = sorted.map(cycle => Number(cycle.cycle_length)).filter(length => length > 0 && length < 60);
             const average = lengths.length ? Math.round(lengths.reduce((sum, length) => sum + length, 0) / lengths.length) : 28;
             const shortest = lengths.length ? Math.min(...lengths) : 28;
             const longest = lengths.length ? Math.max(...lengths) : 28;
@@ -1581,7 +1581,7 @@
                 longestCycle: longest,
                 cycleVariation: variation,
                 isIrregular,
-                cycleType: isIrregular ? 'irregular' : average >= 26 & average <= 32 ? 'standard_days' : 'regular',
+                cycleType: isIrregular ? 'irregular' : average >= 26 && average <= 32 ? 'standard_days' : 'regular',
                 method: isIrregular ? `Siklus tidak teratur (${variation} hari)` : 'Standard Days Method'
             };
         }
