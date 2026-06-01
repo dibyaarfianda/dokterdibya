@@ -2878,6 +2878,10 @@
         return data;
     }
 
+    function normalizeText(value) {
+        return String(value || '').trim();
+    }
+
     async function ensureNicknameOnLogin() {
         try {
             const profileData = await api('/me/profile');
