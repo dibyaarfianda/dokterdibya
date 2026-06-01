@@ -350,14 +350,16 @@ async function resolveUserIdentity(user) {
 
     let defaultName = user.name || user.full_name || user.email || 'User';
     let portalNickname = null;
+    let fallbackAvatarUrl = null;
 
     if (userType === 'patient') {
         const [rows] = await db.query(
-            'SELECT full_name FROM patients WHERE id = ? LIMIT 1',
+            'SELECT full_name, photo_url FROM patients WHERE id = ? LIMIT 1',
             [userId]
         );
         if (rows.length > 0) {
             defaultName = rows[0].full_name || defaultName;
+            fallbackAvatarUrl = rows[0].photo_url || null;
         }
         portalNickname = await getPatientPortalNickname(userId);
     } else {
@@ -386,7 +388,7 @@ async function resolveUserIdentity(user) {
         defaultName,
         nickname: effectiveNickname,
         bio: profile?.bio || '',
-        avatarUrl: profile?.avatar_url || null,
+        avatarUrl: profile?.avatar_url || fallbackAvatarUrl || null,
         profileVisible: profile ? profile.profile_visible === 1 : true
     };
 }
@@ -745,7 +747,10 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
                     WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.nickname, ''), NULLIF(pps.nickname, ''), NULLIF(m.sender_nickname, ''))
                     ELSE m.sender_nickname
                 END AS sender_nickname,
-                m.sender_avatar,
+                CASE
+                    WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(p.photo_url, ''), NULLIF(m.sender_avatar, ''))
+                    ELSE COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(m.sender_avatar, ''))
+                END AS sender_avatar,
                 m.message,
                 m.created_at
              FROM community_chat_messages m
@@ -753,6 +758,8 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
                 ON cp.user_id = m.sender_id AND cp.user_type = m.sender_type
              LEFT JOIN patient_portal_settings pps
                 ON pps.patient_id = m.sender_id AND m.sender_type = 'patient'
+             LEFT JOIN patients p
+                ON p.id = m.sender_id AND m.sender_type = 'patient'
              WHERE m.room_id = ?
              ORDER BY m.created_at DESC
              LIMIT ?`,
@@ -868,7 +875,10 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
                     WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.nickname, ''), NULLIF(pps.nickname, ''), NULLIF(m.sender_nickname, ''))
                     ELSE m.sender_nickname
                 END AS sender_nickname,
-                m.sender_avatar,
+                CASE
+                    WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(p.photo_url, ''), NULLIF(m.sender_avatar, ''))
+                    ELSE COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(m.sender_avatar, ''))
+                END AS sender_avatar,
                 m.message,
                 m.created_at
              FROM community_chat_messages m
@@ -876,6 +886,8 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
                 ON cp.user_id = m.sender_id AND cp.user_type = m.sender_type
              LEFT JOIN patient_portal_settings pps
                 ON pps.patient_id = m.sender_id AND m.sender_type = 'patient'
+             LEFT JOIN patients p
+                ON p.id = m.sender_id AND m.sender_type = 'patient'
              WHERE m.id = ?
              LIMIT 1`,
             [result.insertId]
