@@ -625,6 +625,50 @@ body.patient-tool-shell .shell-notification-copy span { color: var(--ink-soft) !
 body.patient-tool-shell .shell-notification-copy small { color: var(--muted) !important; font-size: 10px !important; font-weight: 800 !important; }
 body.patient-tool-shell .shell-unread-dot { width: 8px !important; height: 8px !important; border-radius: 50% !important; background: var(--green) !important; }
 
+body.patient-tool-shell .shell-settings-panel { display: grid !important; gap: 10px !important; }
+body.patient-tool-shell .shell-settings-row {
+    width: 100% !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,0.72) !important;
+    color: var(--ink) !important;
+    padding: 12px !important;
+    display: grid !important;
+    grid-template-columns: 36px 1fr auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    text-align: left !important;
+    cursor: pointer;
+}
+body.patient-tool-shell .shell-settings-row i {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 13px !important;
+    display: grid !important;
+    place-items: center !important;
+    background: var(--green-soft) !important;
+    color: var(--green) !important;
+}
+body.patient-tool-shell .shell-settings-row strong { display: block !important; font-size: 13px !important; font-weight: 900 !important; line-height: 1.2 !important; }
+body.patient-tool-shell .shell-settings-row span { display: block !important; color: var(--muted) !important; font-size: 11px !important; font-weight: 700 !important; margin-top: 2px !important; }
+body.patient-tool-shell .shell-settings-count { min-width: 22px !important; height: 22px !important; border-radius: 11px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; padding: 0 7px !important; background: #dc2626 !important; color: #fff !important; font-size: 10px !important; font-weight: 900 !important; font-style: normal !important; }
+body.patient-tool-shell .shell-settings-field { display: grid !important; gap: 6px !important; }
+body.patient-tool-shell .shell-settings-field label { color: var(--muted) !important; font-size: 10px !important; font-weight: 900 !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+body.patient-tool-shell .shell-settings-input,
+body.patient-tool-shell .shell-settings-select {
+    width: 100% !important;
+    min-height: 40px !important;
+    border-radius: 13px !important;
+    border: 1px solid var(--line) !important;
+    background: rgba(255,255,255,0.78) !important;
+    color: var(--ink) !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+}
+body.patient-tool-shell .shell-settings-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+body.patient-tool-shell .shell-modal-link.primary { background: #111 !important; color: #fff !important; border-color: #111 !important; }
+
 body.patient-tool-shell .shell-modal-empty {
     min-height: 148px !important;
     display: grid !important;

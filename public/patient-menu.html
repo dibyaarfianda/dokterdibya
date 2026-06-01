@@ -1062,6 +1062,39 @@
         .notification-copy span { color: var(--ink-soft); font-size: 12px; line-height: 1.35; font-weight: 600; }
         .notification-copy small { color: var(--muted); font-size: 10px; font-weight: 800; }
         .unread-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+        .settings-panel { display: grid; gap: 10px; }
+        .settings-row {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.72);
+            color: var(--ink);
+            padding: 12px;
+            display: grid;
+            grid-template-columns: 36px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            cursor: pointer;
+        }
+        .settings-row i { width: 36px; height: 36px; border-radius: 13px; display: grid; place-items: center; background: var(--green-soft); color: var(--green); }
+        .settings-row strong { display: block; font-size: 13px; font-weight: 900; line-height: 1.2; }
+        .settings-row span { display: block; color: var(--muted); font-size: 11px; font-weight: 700; margin-top: 2px; }
+        .settings-count { min-width: 22px; height: 22px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; padding: 0 7px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 900; }
+        .settings-field { display: grid; gap: 6px; }
+        .settings-field label { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+        .settings-input, .settings-select {
+            width: 100%;
+            min-height: 40px;
+            border-radius: 13px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.78);
+            color: var(--ink);
+            padding: 0 12px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .settings-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .modal-empty { min-height: 148px; display: grid; place-items: center; gap: 8px; text-align: center; color: var(--muted); padding: 24px 12px; }
         .modal-empty i { font-size: 28px; opacity: 0.55; }
         .modal-empty p { margin: 0; font-size: 12px; font-weight: 700; }
@@ -1639,8 +1672,8 @@
                     </a>
                 </div>
                 <div class="top-actions" id="home-top-actions">
-                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
-                        <i class="fa-solid fa-bell"></i>
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openSettingsModal(event)" aria-label="Pengaturan">
+                        <i class="fa-solid fa-gear"></i>
                         <span class="badge" id="notif-badge">0</span>
                     </button>
                     <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
@@ -1879,6 +1912,10 @@
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
         let topbarNotifications = [];
+        let portalSettings = {
+            nickname: null,
+            notification_sound: 'default'
+        };
         let homeBackGuardInstalled = false;
         let homeBackExitConfirmed = false;
 
@@ -2037,6 +2074,159 @@
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + getToken() }
                 });
+            } catch (error) {}
+        }
+
+        function getPortalDisplayName(profile) {
+            const nickname = String(portalSettings.nickname || '').trim();
+            const sourceName = nickname || profile?.fullname || profile?.full_name || profile?.name || 'Pasien';
+            return String(sourceName).split(' ')[0] || 'Pasien';
+        }
+
+        function applyPortalSettings(settings) {
+            portalSettings = Object.assign({}, portalSettings, settings || {});
+            try { localStorage.setItem('patient_portal_settings', JSON.stringify(portalSettings)); } catch (error) {}
+            const heroTitle = document.getElementById('hero-title');
+            if (heroTitle) heroTitle.textContent = getPortalDisplayName(currentProfile || getStoredProfile()) + ', ini ruang Anda.';
+        }
+
+        async function fetchPortalSettings() {
+            const response = await fetch('/api/patients/portal-settings?_t=' + Date.now(), {
+                headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                cache: 'no-store'
+            });
+            if (response.status === 401) throw new Error('unauthorized');
+            if (!response.ok) throw new Error('portal settings failed');
+            const data = await response.json().catch(() => ({}));
+            return data.success && data.settings ? data.settings : portalSettings;
+        }
+
+        async function loadPortalSettings() {
+            try {
+                let cached = null;
+                try { cached = JSON.parse(localStorage.getItem('patient_portal_settings') || 'null'); } catch (error) {}
+                if (cached) applyPortalSettings(cached);
+                const settings = await fetchPortalSettings();
+                applyPortalSettings(settings);
+                return settings;
+            } catch (error) {
+                if (error.message === 'unauthorized') throw error;
+                return portalSettings;
+            }
+        }
+
+        function getDisplayedNotificationCount() {
+            const badge = document.getElementById('notif-badge');
+            const value = badge && badge.style.display !== 'none' ? badge.textContent : '';
+            return value || '0';
+        }
+
+        function renderSettingsModal() {
+            const count = getDisplayedNotificationCount();
+            const nickname = portalSettings.nickname || '';
+            const sound = portalSettings.notification_sound || 'default';
+            const option = function(value, label) {
+                return '<option value="' + value + '"' + (sound === value ? ' selected' : '') + '>' + label + '</option>';
+            };
+            return '<div class="settings-panel">' +
+                '<button type="button" class="settings-row soundable" onclick="openSettingsNotifications(event)">' +
+                    '<i class="fa-solid fa-bell"></i><span><strong>Notifikasi</strong><span>Lihat update pasien dan pengumuman klinik</span></span>' +
+                    '<em class="settings-count">' + escapeHtml(count) + '</em>' +
+                '</button>' +
+                '<div class="settings-field">' +
+                    '<label for="portal-nickname">Nickname Anda</label>' +
+                    '<input id="portal-nickname" class="settings-input" maxlength="40" value="' + escapeHtml(nickname) + '" placeholder="Contoh: Bunda">' +
+                '</div>' +
+                '<div class="settings-field">' +
+                    '<label for="portal-notification-sound">Suara Notifikasi</label>' +
+                    '<select id="portal-notification-sound" class="settings-select">' +
+                        option('default', 'Default') +
+                        option('chime', 'Chime') +
+                        option('bell', 'Bell') +
+                        option('soft', 'Soft') +
+                        option('none', 'Tanpa Suara') +
+                    '</select>' +
+                '</div>' +
+                '<div class="settings-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="playPortalNotificationSound(event)"><i class="fa-solid fa-volume-high"></i> Test</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="savePortalSettings(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                '</div>' +
+                '<button type="button" class="settings-row soundable" onclick="go(\'/patient-intake.html\')">' +
+                    '<i class="fa-solid fa-clipboard-list"></i><span><strong>Form Intake</strong><span>Edit atau update data intake Anda</span></span>' +
+                    '<i class="fa-solid fa-chevron-right"></i>' +
+                '</button>' +
+            '</div>';
+        }
+
+        async function openSettingsModal(event) {
+            stopTopbarEvent(event);
+            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+            try {
+                const settings = await loadPortalSettings();
+                applyPortalSettings(settings);
+                openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+            } catch (error) {
+                if (error.message === 'unauthorized') logout();
+            }
+        }
+
+        function openSettingsNotifications(event) {
+            stopTopbarEvent(event);
+            openNotificationModal(event);
+        }
+
+        async function savePortalSettings(event) {
+            stopTopbarEvent(event);
+            const nickname = document.getElementById('portal-nickname')?.value || '';
+            const notificationSound = document.getElementById('portal-notification-sound')?.value || 'default';
+            try {
+                const response = await fetch('/api/patients/portal-settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nickname: nickname,
+                        notification_sound: notificationSound
+                    })
+                });
+                if (response.status === 401) { logout(); return; }
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan');
+                applyPortalSettings(data.settings);
+                openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+                showToast('Pengaturan portal disimpan');
+            } catch (error) {
+                showToast(error.message || 'Pengaturan gagal disimpan');
+            }
+        }
+
+        function playPortalNotificationSound(event) {
+            stopTopbarEvent(event);
+            const soundType = document.getElementById('portal-notification-sound')?.value || portalSettings.notification_sound || 'default';
+            if (soundType === 'none') {
+                showToast('Suara notifikasi dinonaktifkan');
+                return;
+            }
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!audioContext) audioContext = new AudioCtx();
+                if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+                const now = audioContext.currentTime;
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                const frequencyMap = { chime: 880, bell: 660, soft: 440, default: 520 };
+                osc.type = soundType === 'bell' ? 'triangle' : 'sine';
+                osc.frequency.setValueAtTime(frequencyMap[soundType] || frequencyMap.default, now);
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.14, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start(now);
+                osc.stop(now + 0.52);
             } catch (error) {}
         }
 
@@ -3004,7 +3194,7 @@
             try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
             
             window.currentProfile = currentProfile;
-            const firstName = (currentProfile.fullname || currentProfile.full_name || 'Pasien').split(' ')[0];
+            const firstName = getPortalDisplayName(currentProfile);
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
             document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal privat</span> ini.';
             updateProfileAvatar(currentProfile);
@@ -3616,7 +3806,10 @@
                     .catch(() => {});
             }
 
-            try { await loadProfile(); } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
+            try {
+                await loadProfile();
+                await loadPortalSettings();
+            } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
             requestAnimationFrame(function() {
@@ -3642,6 +3835,10 @@
         window.closeSheet = closeSheet;
         window.closeAllModals = closeAllModals;
         window.closeTopbarModal = closeTopbarModal;
+        window.openSettingsModal = openSettingsModal;
+        window.openSettingsNotifications = openSettingsNotifications;
+        window.savePortalSettings = savePortalSettings;
+        window.playPortalNotificationSound = playPortalNotificationSound;
         window.openNotificationModal = openNotificationModal;
         window.openProfileModal = openProfileModal;
         window.openProfilePhotoPicker = openProfilePhotoPicker;

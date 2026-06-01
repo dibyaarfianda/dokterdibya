@@ -12,6 +12,7 @@ const { deletePatientWithRelations } = require('../services/patientDeletion');
 const r2Storage = require('../services/r2Storage');
 const logger = require('../utils/logger');
 const PatientPasswordService = require('../services/PatientPasswordService');
+const PatientPortalSettingsService = require('../services/PatientPortalSettingsService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
@@ -1149,6 +1150,33 @@ router.get('/profile', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+});
+
+router.get('/portal-settings', verifyToken, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    try {
+        const settings = await PatientPortalSettingsService.getSettings(req.user.id);
+        res.json({ success: true, settings });
+    } catch (error) {
+        logger.error('Portal settings load error', { patientId: req.user.id, error: error.message });
+        res.status(500).json({ success: false, message: 'Gagal mengambil pengaturan portal' });
+    }
+});
+
+router.put('/portal-settings', verifyToken, async (req, res) => {
+    try {
+        const settings = await PatientPortalSettingsService.saveSettings(req.user.id, req.body || {});
+        res.json({ success: true, settings });
+    } catch (error) {
+        logger.error('Portal settings save error', { patientId: req.user.id, error: error.message });
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode ? error.message : 'Gagal menyimpan pengaturan portal'
+        });
     }
 });
 

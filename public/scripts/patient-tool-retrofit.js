@@ -160,8 +160,8 @@
                     '</a>' +
                 '</div>' +
                 '<div class="top-actions" id="home-top-actions">' +
-                    '<button class="icon-btn soundable" id="home-notif-btn" type="button" onclick="openNotificationModal(event)" aria-label="Notifikasi">' +
-                        '<i class="fa-solid fa-bell"></i><span class="badge" id="notif-badge">0</span>' +
+                    '<button class="icon-btn soundable" id="home-notif-btn" type="button" onclick="openSettingsModal(event)" aria-label="Pengaturan">' +
+                        '<i class="fa-solid fa-gear"></i><span class="badge" id="notif-badge">0</span>' +
                     '</button>' +
                     '<button class="avatar soundable" id="user-avatar" type="button" onclick="openProfileModal(event)" aria-label="Profil">' +
                         '<img id="user-avatar-img" alt=""><span id="user-avatar-initials">--</span><span class="vip-badge" id="vip-badge">VIP</span>' +
