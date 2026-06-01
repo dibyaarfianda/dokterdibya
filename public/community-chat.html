@@ -2878,6 +2878,61 @@
         return data;
     }
 
+    async function ensureNicknameOnLogin() {
+        try {
+            const profileData = await api('/me/profile');
+            const existingNickname = normalizeText(profileData?.profile?.nickname);
+            if (existingNickname) {
+                return true;
+            }
+
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+                const promptValue = window.prompt(
+                    'Sebelum masuk Community Chat, isi nama samaran/nickname terlebih dahulu.\n\nGunakan nama yang sopan dan tidak menyerupai nama Dr. Dibya Arfianda.'
+                );
+
+                if (promptValue === null) {
+                    showToast('Nickname wajib diisi sebelum masuk Community Chat.', 'warning');
+                    if (!isStaffEmbed) {
+                        window.location.href = '/patient-menu.html';
+                    }
+                    return false;
+                }
+
+                const candidate = normalizeText(promptValue);
+                if (!candidate) {
+                    window.alert('Nickname wajib diisi.');
+                    continue;
+                }
+
+                try {
+                    const saveData = await api('/me/profile', {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            nickname: candidate,
+                            bio: '',
+                            profile_visible: true
+                        })
+                    });
+
+                    const savedNickname = normalizeText(saveData?.profile?.nickname);
+                    if (savedNickname) {
+                        showToast('Nickname berhasil disimpan.', 'success');
+                        return true;
+                    }
+                } catch (saveError) {
+                    window.alert(saveError.message || 'Nickname tidak valid. Coba nama lain.');
+                }
+            }
+
+            showToast('Gagal menyimpan nickname. Silakan coba lagi.', 'error');
+            return false;
+        } catch (error) {
+            showToast('Gagal memuat profile chat. Coba lagi.', 'error');
+            return false;
+        }
+    }
+
     function renderRooms() {
         const orderedRooms = [...rooms].sort((a, b) => {
             if (a.slug === 'lobby') return -1;
@@ -3530,6 +3585,11 @@
         if (!currentUser || !currentUser.id) {
             showToast('Token tidak valid. Silakan login ulang.', 'error');
             window.location.href = '/patient-login.html';
+            return;
+        }
+
+        const nicknameReady = await ensureNicknameOnLogin();
+        if (!nicknameReady) {
             return;
         }
 
