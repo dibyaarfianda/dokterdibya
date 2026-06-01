@@ -810,4 +810,17 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
     }
+
+    /* Whitelist Gerakan Bayi opening motion so it matches patient-menu instead of collapsing into the generic kill-switch. */
+    body.patient-tool-shell.kick-counter-page .reveal,
+    body.patient-tool-shell.kick-counter-page .hero-card .status-chip,
+    body.patient-tool-shell.kick-counter-page .hero-card .hero-title,
+    body.patient-tool-shell.kick-counter-page .hero-card .hero-copy,
+    body.patient-tool-shell.kick-counter-page .hero-card .today-row,
+    body.patient-tool-shell.kick-counter-page .brand,
+    body.patient-tool-shell.kick-counter-page #home-notif-btn,
+    body.patient-tool-shell.kick-counter-page #user-avatar {
+        animation-duration: 1.05s !important;
+        transition-duration: 1.05s !important;
+    }
 }
