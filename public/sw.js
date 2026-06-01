@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601q'; // 2026-06-01q - load auth brand override after portal theme
+const CACHE_VERSION = '20260601r'; // 2026-06-01r - match auth/intake background and footer to home
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
