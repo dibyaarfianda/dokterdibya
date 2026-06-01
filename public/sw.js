@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602r'; // 2026-06-02r - refresh Community Chat back button to always open Home
+const CACHE_VERSION = '20260602s'; // 2026-06-02s - refresh Community Chat top kicker label to Chat Komunitas
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
