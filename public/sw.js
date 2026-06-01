@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602p'; // 2026-06-02p - refresh Community Chat SISIwanita header and back button update
+const CACHE_VERSION = '20260602q'; // 2026-06-02q - refresh Community Profile SISIwanita theme + avatar fallback update
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
