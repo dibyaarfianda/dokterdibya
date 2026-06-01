@@ -1335,7 +1335,18 @@
 
         // Edit avatar — opens file picker, crop editor opened on file select
         function editAvatar() {
-            document.getElementById('avatar-input').click();
+            const input = document.getElementById('avatar-input');
+            if (!input) {
+                showToast('Input foto profil tidak ditemukan', 'error');
+                return;
+            }
+            // Safety net for cases where the DOMContentLoaded binder did not run yet.
+            if (input.dataset.bound !== '1') {
+                input.dataset.bound = '1';
+                input.addEventListener('change', handleAvatarUpload);
+            }
+            input.value = '';
+            input.click();
         }
 
         // Handle avatar upload — read file then open crop editor
@@ -1356,11 +1367,52 @@
 
             const reader = new FileReader();
             reader.onload = function(ev) {
-                openCropEditor(ev.target.result, 'circle', async function(croppedBase64) {
-                    await uploadCroppedAvatar(croppedBase64);
-                });
+                const source = ev && ev.target ? ev.target.result : '';
+                if (!source) {
+                    showToast('Gagal membaca file gambar', 'error');
+                    return;
+                }
+
+                const hasCropElements = document.getElementById('crop-editor-overlay') && document.getElementById('crop-editor-stage');
+                if (!hasCropElements) {
+                    // Fallback to direct upload if crop editor markup is unavailable.
+                    uploadAvatarFileDirect(file);
+                    return;
+                }
+
+                try {
+                    openCropEditor(source, 'circle', async function(croppedBase64) {
+                        await uploadCroppedAvatar(croppedBase64);
+                    });
+                } catch (error) {
+                    console.error('Crop editor open failed, fallback to direct upload:', error);
+                    uploadAvatarFileDirect(file);
+                }
+            };
+            reader.onerror = function() {
+                showToast('Gagal membaca file gambar', 'error');
             };
             reader.readAsDataURL(file);
+        }
+
+        async function uploadAvatarFileDirect(file) {
+            try {
+                showToast('Editor crop tidak tersedia, upload langsung foto...', 'info', 3500);
+                const fileDataUrl = await fileToDataUrl(file);
+                await uploadCroppedAvatar(fileDataUrl);
+            } catch (error) {
+                console.error('Direct upload fallback failed:', error);
+                showToast(error.message || 'Gagal upload foto profil', 'error');
+            }
+        }
+
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(ev) { resolve(String(ev?.target?.result || '')); };
+                reader.onerror = function() { reject(new Error('Gagal membaca file gambar')); };
+                reader.readAsDataURL(file);
+            });
         }
 
         // Upload cropped avatar to server
