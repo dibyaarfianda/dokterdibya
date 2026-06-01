@@ -731,6 +731,19 @@ body.patient-tool-shell #toast-container { position: fixed; left: 50%; bottom: c
 body.patient-tool-shell #toast-container .toast,
 body.patient-tool-shell .toast { background: #111 !important; color: #fff !important; border-radius: 999px !important; padding: 11px 15px !important; font-size: 12px !important; font-weight: 800 !important; box-shadow: none !important; }
 
+body.patient-tool-shell .reveal {
+    animation: shellCardIn 0.42s ease both;
+    animation-delay: var(--reveal-delay, 0ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(2) {
+    animation-delay: var(--reveal-delay, 40ms);
+}
+
+body.patient-tool-shell .reveal:nth-child(3) {
+    animation-delay: var(--reveal-delay, 80ms);
+}
+
 body:not(.header-animated).patient-tool-shell .brand,
 body:not(.header-animated).patient-tool-shell #home-notif-btn,
 body:not(.header-animated).patient-tool-shell #user-avatar,
@@ -765,6 +778,7 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
 
 @keyframes shellFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes shellTitleIn { from { opacity: 0; transform: translateY(20px); filter: blur(5px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@keyframes shellCardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 520px) {
     body.patient-tool-shell .app { padding-left: 14px !important; padding-right: 14px !important; }

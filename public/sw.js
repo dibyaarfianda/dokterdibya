@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601l'; // 2026-06-01l - fix kick-counter inline module parse error
+const CACHE_VERSION = '20260601m'; // 2026-06-01m - unify opening animation rhythm across tool pages
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
