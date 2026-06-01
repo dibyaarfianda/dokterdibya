@@ -835,7 +835,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="emergency_contact">Kontak Darurat</label>
-                                    <input type="tel" id="emergency_contact" name="emergency_contact" pattern="628[0-9]{9,12}" placeholder="628xxxxxxxxxx">
+                                    <input type="text" id="emergency_contact" name="emergency_contact" placeholder="628xxxxxxxxxx / tidak ada">
                                 </div>
                             </div>
                         </div>
@@ -1199,6 +1199,7 @@
         const btnSubmit = document.getElementById('btn-submit');
         const stepper = document.getElementById('stepper');
         const form = document.getElementById('intake-form');
+        const NO_DATA_TEXT = 'tidak ada';
 
         // Load existing intake from server if logged in
         async function loadExistingIntake() {
@@ -1489,24 +1490,91 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Validate current step
-        function validateCurrentStep() {
-            const currentStepEl = steps[currentStep];
-            const requiredInputs = currentStepEl.querySelectorAll('[required]');
+        function isElementVisible(element) {
+            if (!element || element.disabled) return false;
+            if (element.hidden || element.closest('[hidden]')) return false;
+            if (element.style && element.style.display === 'none') return false;
+            return element.offsetParent !== null;
+        }
 
-            for (let input of requiredInputs) {
-                if (!input.value.trim() && input.type !== 'checkbox') {
-                    input.focus();
-                    showToast('Mohon isi semua field yang wajib diisi');
+        function normalizeTextFields(scope) {
+            const fields = scope.querySelectorAll('input, textarea');
+            fields.forEach((field) => {
+                if (!isElementVisible(field) || field.readOnly) return;
+                const type = (field.type || '').toLowerCase();
+                if (['hidden', 'checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'number', 'date'].includes(type)) {
+                    return;
+                }
+                if (!String(field.value || '').trim()) {
+                    field.value = NO_DATA_TEXT;
+                }
+            });
+        }
+
+        function validateStepScope(scope) {
+            normalizeTextFields(scope);
+
+            const fields = scope.querySelectorAll('input, select, textarea');
+            for (const field of fields) {
+                if (!isElementVisible(field)) continue;
+                const type = (field.type || '').toLowerCase();
+                if (['hidden', 'button', 'submit', 'reset', 'file'].includes(type)) continue;
+                if (type === 'checkbox' || type === 'radio') continue;
+                if (field.readOnly) continue;
+
+                const value = String(field.value || '').trim();
+
+                if (field.tagName === 'SELECT' && !value) {
+                    field.focus();
+                    showToast('Semua kolom wajib diisi. Mohon pilih opsi pada dropdown.');
                     return false;
                 }
-                if (input.type === 'checkbox' && !input.checked) {
-                    input.focus();
-                    showToast('Mohon centang persetujuan yang diperlukan');
+
+                if (type === 'number' && !value) {
+                    field.focus();
+                    showToast('Kolom angka wajib diisi. Jika tidak ada, isi 0.');
+                    return false;
+                }
+
+                if (field.id === 'phone' && !/^628\d{9,12}$/.test(value)) {
+                    field.focus();
+                    showToast('Nomor Telepon/HP wajib format 628xxxxxxxxxx.');
+                    return false;
+                }
+
+                if (!value) {
+                    field.focus();
+                    showToast('Semua kolom wajib diisi. Jika tidak ada, tulis tidak ada.');
                     return false;
                 }
             }
 
+            const requiredChecks = scope.querySelectorAll('input[type="checkbox"][required]');
+            for (const checkbox of requiredChecks) {
+                if (!isElementVisible(checkbox)) continue;
+                if (!checkbox.checked) {
+                    checkbox.focus();
+                    showToast('Mohon centang persetujuan yang diperlukan.');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Validate current step
+        function validateCurrentStep() {
+            return validateStepScope(steps[currentStep]);
+        }
+
+        function validateAllSteps() {
+            for (let i = 0; i < steps.length; i++) {
+                if (!validateStepScope(steps[i])) {
+                    currentStep = i;
+                    showStep(currentStep);
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -1530,7 +1598,7 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            if (!validateCurrentStep()) {
+            if (!validateAllSteps()) {
                 return;
             }
 
