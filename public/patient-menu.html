@@ -1872,6 +1872,7 @@
 
     <input type="file" id="profile-photo-camera-input" class="hidden-file-input" accept="image/*">
     <input type="file" id="profile-photo-input" class="hidden-file-input" accept="image/*">
+    <script src="/scripts/profile-photo-cropper.js?v=20260601crop1"></script>
     <div class="toast" id="toast"></div>
 
     <script>
@@ -2123,19 +2124,16 @@
             const previewPhoto = state.photoUrl ? '<img id="home-photo-preview-img" src="' + escapeHtml(state.photoUrl) + '" alt="Pratinjau foto beranda">' : '';
             const emptyState = state.photoUrl ? '' : '<div class="home-photo-preview-empty"><i class="fa-solid fa-image"></i><span>Belum ada foto beranda</span></div>';
             return '<div class="profile-photo-setup">' +
-                '<div class="home-photo-preview" id="home-photo-preview" data-gesture-target="home-photo" style="--home-photo-zoom:' + state.zoom + ';--home-photo-x:' + state.offsetX + '%;--home-photo-y:' + state.offsetY + '%;">' +
+                '<div class="home-photo-preview" id="home-photo-preview" style="--home-photo-zoom:1;--home-photo-x:0%;--home-photo-y:0%;">' +
                     previewPhoto +
                     emptyState +
                 '</div>' +
-                '<div class="home-photo-hint">Tap, drag, dan pinch pada foto untuk mengatur zoom/posisi. Tidak ada slider.</div>' +
+                '<div class="home-photo-hint">Crop hanya bisa diatur saat upload. Jika ingin mengubah crop, upload ulang foto beranda.</div>' +
                 '<div class="profile-photo-save-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="openHomePhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload</button>' +
-                    '<button type="button" class="secondary-action soundable" onclick="resetHomePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
-                    '<button type="button" class="primary-action soundable" onclick="saveHomePhotoDraft(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                    '<button type="button" class="ghost-action soundable" onclick="openHomePhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload Ulang</button>' +
                 '</div>' +
             '</div>';
         }
-
         function bindHomePhotoInput() {
             let input = document.getElementById('home-photo-input');
             if (!input) {
@@ -2174,31 +2172,50 @@
                 if (input) input.value = '';
                 return;
             }
-            try {
-                var photoUrl = await fileToDataUrl(file);
-                openCropEditor(photoUrl, 'square', function(croppedBase64) {
-                    homePhotoDraft = normalizeHomePhotoState(Object.assign({}, homePhotoDraft || getHomePhotoState(), {
-                        photoUrl: croppedBase64, zoom: 1, offsetX: 0, offsetY: 0
-                    }));
-                    saveHomePhotoState(homePhotoDraft);
-                    showToast('Foto beranda disimpan');
-                });
-            } catch (error) {
-                showToast(error.message || 'Upload foto beranda gagal');
-            } finally {
+            if (typeof window.openProfilePhotoCropper !== 'function') {
+                showToast('Editor foto belum siap. Muat ulang halaman lalu coba lagi.');
                 if (input) input.value = '';
+                return;
             }
-        }
 
-        function fileToDataUrl(file) {
-            return new Promise(function(resolve, reject) {
-                const reader = new FileReader();
-                reader.onload = function() { resolve(String(reader.result || '')); };
-                reader.onerror = function() { reject(new Error('Gagal membaca file foto')); };
-                reader.readAsDataURL(file);
+            window.openProfilePhotoCropper({
+                file: file,
+                title: 'Atur Foto Beranda',
+                shape: 'square',
+                onCancel: function() {
+                    if (input) input.value = '';
+                },
+                onSave: function(blob) {
+                    return blobToDataUrl(blob).then(function(croppedDataUrl) {
+                        homePhotoDraft = normalizeHomePhotoState({
+                            photoUrl: croppedDataUrl,
+                            zoom: 1,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
+                        saveHomePhotoState(homePhotoDraft);
+                        updateHomeHeroPhoto(homePhotoDraft);
+                        openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
+                        showToast('Foto beranda disimpan');
+                        return true;
+                    }).catch(function(error) {
+                        showToast(error.message || 'Upload foto beranda gagal');
+                        return false;
+                    }).finally(function() {
+                        if (input) input.value = '';
+                    });
+                }
             });
         }
 
+        function blobToDataUrl(blob) {
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function() { resolve(String(reader.result || '')); };
+                reader.onerror = function() { reject(new Error('Gagal membaca file foto')); };
+                reader.readAsDataURL(blob);
+            });
+        }
         function updateHomePhotoDraftFromInputs() {
             applyHomePhotoDraftToPreview();
         }
@@ -2332,7 +2349,7 @@
             stopTopbarEvent(event);
             homePhotoDraft = getHomePhotoState();
             openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
-            window.setTimeout(bindHomePhotoPreviewGestures, 0);
+            // Crop is adjusted only during upload; no post-save crop editing.
         }
 
         const PROFILE_PHOTO_STORAGE_KEY = 'patient_profile_photo_adjust_v1';
@@ -2523,18 +2540,64 @@
                 input.value = '';
                 return;
             }
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Ukuran foto maksimal 2MB');
+                input.value = '';
+                return;
+            }
+
+            if (typeof window.openProfilePhotoCropper !== 'function') {
+                showToast('Editor foto belum siap. Muat ulang halaman lalu coba lagi.');
+                input.value = '';
+                return;
+            }
+
+            window.openProfilePhotoCropper({
+                file: file,
+                title: 'Atur Foto Profil',
+                onCancel: function() {
+                    input.value = '';
+                },
+                onSave: function(blob) {
+                    return uploadProfilePhotoBlob(blob, input);
+                }
+            });
+        }
+
+        async function uploadProfilePhotoBlob(blob, input) {
+            const token = getToken();
+            if (!token) { logout(); return false; }
+
+            const formData = new FormData();
+            formData.append('photo', blob, 'profile-photo.jpg');
+            showToast('Mengunggah foto profil...');
             try {
-                const photoUrl = await fileToDataUrl(file);
-                profilePhotoDraft = normalizePhotoAdjustState(Object.assign({}, profilePhotoDraft || getProfilePhotoAdjustState(), { photoUrl }));
-                openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile || getStoredProfile()));
-                showToast('Foto profil siap diatur');
+                const response = await fetch('/api/patients/upload-photo', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                if (response.status === 401) { logout(); return false; }
+                const data = await response.json().catch(function() { return {}; });
+                if (!response.ok || !data.success) throw new Error(data.message || 'Upload foto gagal');
+                const photoUrl = data.photo_url || data.profile_picture || data.url || '';
+                currentProfile = Object.assign({}, currentProfile || getStoredProfile(), {
+                    photo_url: photoUrl,
+                    profile_picture: photoUrl
+                });
+                try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
+                window.currentProfile = currentProfile;
+                updateProfileAvatar(currentProfile);
+                openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile));
+                showToast('Foto profil berhasil diperbarui');
+                return true;
             } catch (error) {
-                showToast(error.message || 'Upload foto profil gagal');
+                showToast(error.message || 'Upload foto gagal');
+                return false;
             } finally {
                 if (input) input.value = '';
             }
         }
-
         function renderProfileModal(profile) {
             profile = profile || {};
             const name = profile.fullname || profile.full_name || profile.name || 'Pasien SISIwanita';
@@ -2548,11 +2611,17 @@
             const avatarHtml = previewState.photoUrl
                 ? '<img src="' + escapeHtml(previewState.photoUrl) + '" alt="Foto profil">'
                 : '<span class="shell-profile-avatar-fallback">' + escapeHtml(getInitials(name)) + '</span>';
+            const photoUploadActions =
+                '<div class="profile-photo-save-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
+                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'gallery\')"><i class="fa-solid fa-image"></i> Upload Ulang</button>' +
+                '</div>' +
+                '<div class="profile-photo-note">Crop hanya bisa diatur saat upload. Jika ingin mengubah crop, upload ulang foto profil.</div>';
             return '<div class="shell-profile-head">' +
                 '<div class="' + avatarClass + '">' + avatarHtml + '</div>' +
                 '<div><span>Profil pasien</span><strong>' + escapeHtml(name) + '</strong><small>Portal privat kandungan Anda</small></div>' +
             '</div>' +
-            renderProfilePhotoEditor(previewState) +
+            photoUploadActions +
             '<div class="shell-profile-grid">' +
                 '<div><span>No. Rekam Medis</span><strong>' + escapeHtml(medicalId) + '</strong></div>' +
                 '<div><span>Email</span><strong>' + escapeHtml(email) + '</strong></div>' +
