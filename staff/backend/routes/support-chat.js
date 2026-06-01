@@ -272,7 +272,7 @@ async function seedFAQ() {
         },
         {
             keywords: ['daftar akun', 'registrasi', 'buat akun', 'signup', 'mendaftar', 'bergabung', 'pasien baru'],
-            answer: '📝 *Cara Mendaftar Sebagai Pasien Baru:*\n\n1. Buka halaman utama portal\n2. Tekan **Daftar**\n3. Masukkan kode registrasi (dapatkan dari klinik)\n4. Isi data diri\n5. Verifikasi email\n\nKode registrasi bisa diperoleh saat berkunjung ke klinik.',
+            answer: '📝 *Cara Mendaftar Sebagai Pasien Baru:*\n\n1. Buka halaman utama portal\n2. Tekan **Daftar**\n3. Masukkan kode registrasi (dapatkan dari klinik)\n4. Lanjutkan dengan akun Google\n5. Lengkapi data diri bila diminta\n\nKode registrasi bisa diperoleh saat berkunjung ke klinik.',
             category: 'akun',
             priority: 5
         }

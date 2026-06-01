@@ -189,20 +189,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
         } else {
-            // Email flow: save to sessionStorage and redirect to set-password
-            const profileData = {
-                fullname,
-                phone,
-                birth_date: birthdate,
-                age: age ? parseInt(age) : null,
-                email: email,
-                registration_code: registrationCode || null
-            };
-
-            sessionStorage.setItem('profile_data', JSON.stringify(profileData));
-
-            // Redirect to set-password page
-            window.location.href = 'set-password.html';
+            showError('Pendaftaran lewat email sudah ditutup. Silakan daftar dengan Google.');
+            window.location.href = '/patient-login.html?mode=register';
         }
     });
 
