@@ -2,80 +2,152 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Lengkapi Profil - dokterDIBYA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Lengkapi Profil - SISIwanita</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
-            --primary: #0066FF;
-            --primary-dark: #0052CC;
-            --success: #10b981;
-            --danger: #ef4444;
-            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            --body-font: 'Inter', sans-serif;
+            --text-primary: #19241f;
+            --text-secondary: #43564d;
+            --line-soft: rgba(84, 104, 95, 0.2);
+            --line-focus: rgba(126, 168, 159, 0.9);
+            --card-bg: rgba(255, 255, 255, 0.84);
+            --card-shadow: 0 24px 44px rgba(43, 66, 57, 0.12);
+            --danger: #d14343;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--bg-gradient);
+            font-family: var(--body-font);
+            background:
+                radial-gradient(circle at 9% 6%, rgba(126, 168, 159, 0.16), transparent 28%),
+                radial-gradient(circle at 94% 0%, rgba(194, 180, 156, 0.2), transparent 24%),
+                linear-gradient(180deg, #fbfbf8 0%, #f7f7f4 56%, #ffffff 100%);
             min-height: 100vh;
+            min-height: 100dvh;
+            color: var(--text-primary);
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+
+        .page-grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: radial-gradient(rgba(30, 47, 41, 0.045) 0.55px, transparent 0.55px);
+            background-size: 3px 3px;
+            opacity: 0.45;
+            z-index: 0;
+        }
+
+        .mini-topbar {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 860px);
+            margin: 0 auto;
+            padding: 14px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-link {
+            text-decoration: none;
+            display: inline-flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .brand-title {
+            font-family: var(--display);
+            font-size: 16px;
+            line-height: 1.02;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: #7ea89f;
+            text-shadow: 0 2px 10px rgba(26, 45, 38, 0.2), 0 1px 2px rgba(26, 45, 38, 0.14);
+        }
+
+        .brand-sub {
+            margin-top: 3px;
+            font-size: 7.2px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #7ea89f;
+            text-shadow: 0 1px 8px rgba(26, 45, 38, 0.18), 0 1px 2px rgba(26, 45, 38, 0.12);
+        }
+
+        .back-btn {
+            border: 1px solid var(--line-soft);
+            background: rgba(255, 255, 255, 0.82);
+            box-shadow: 0 12px 24px rgba(43, 66, 57, 0.11);
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 21px;
+            line-height: 1;
+            transition: transform 0.18s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.96);
+        }
+
+        .profile-shell {
+            position: relative;
+            z-index: 1;
+            min-height: calc(100vh - 76px);
+            min-height: calc(100dvh - 76px);
+            width: min(100%, 860px);
+            margin: 0 auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 18px 16px 24px;
         }
 
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            overflow: hidden;
+        .profile-card {
+            width: min(100%, 540px);
+            background: var(--card-bg);
+            border: 1px solid rgba(121, 152, 142, 0.18);
+            border-radius: 26px;
+            padding: 30px 24px 24px;
+            box-shadow: var(--card-shadow);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            animation: fadeUp 0.5s ease;
         }
 
-        .bubble {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 8s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-100px) rotate(180deg); }
-        }
-
-        .container {
-            position: relative;
-            z-index: 1;
-            max-width: 500px;
-            width: 100%;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 40px 35px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            animation: slideUp 0.6s ease-out;
-        }
-
-        @keyframes slideUp {
+        @keyframes fadeUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(18px);
             }
             to {
                 opacity: 1;
@@ -83,29 +155,41 @@
             }
         }
 
-        .logo-section {
-            text-align: center;
-            margin-bottom: 30px;
+        .profile-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #2f5b4e;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
         }
 
-        .logo-section img {
-            height: 80px;
-            width: auto;
-            margin-bottom: 20px;
+        .profile-kicker::before {
+            content: '';
+            width: 9px;
+            height: 9px;
+            border-radius: 999px;
+            background: #3ebd7a;
+            box-shadow: 0 0 0 6px rgba(62, 189, 122, 0.14);
         }
 
         h1 {
-            font-size: 26px;
-            color: #ffffff;
+            font-family: var(--display);
+            font-size: clamp(28px, 6vw, 34px);
+            line-height: 1.06;
+            letter-spacing: -0.03em;
             margin-bottom: 10px;
-            text-align: center;
+            color: #13211c;
         }
 
         .subtitle {
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-secondary);
             font-size: 14px;
+            line-height: 1.5;
             margin-bottom: 30px;
-            text-align: center;
         }
 
         .form-group {
@@ -114,9 +198,11 @@
 
         .form-group label {
             display: block;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
-            font-weight: 500;
+            color: #2c3f37;
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 700;
             margin-bottom: 8px;
         }
 
@@ -127,52 +213,53 @@
         .form-control {
             width: 100%;
             padding: 14px 16px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            color: #ffffff;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid var(--line-soft);
+            border-radius: 16px;
+            color: #15221d;
             font-size: 15px;
-            font-family: 'Poppins', sans-serif;
-            transition: all 0.3s ease;
+            font-family: var(--body-font);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
         .form-control:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);
-            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--line-focus);
+            box-shadow: 0 0 0 4px rgba(126, 168, 159, 0.22);
+            background: #ffffff;
         }
 
         .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.4);
+            color: #8a9d95;
         }
 
         .form-control:disabled,
         .form-control[readonly] {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(236, 242, 239, 0.95);
+            color: #5f746b;
             cursor: not-allowed;
-            opacity: 0.6;
+            opacity: 1;
         }
 
         .btn-primary {
             width: 100%;
-            padding: 16px;
-            background: var(--primary);
+            padding: 15px;
+            background: #0c1012;
             border: none;
-            border-radius: 12px;
+            border-radius: 16px;
             color: #ffffff;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Poppins', sans-serif;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+            font-family: var(--body-font);
             margin-top: 10px;
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 102, 255, 0.3);
+            box-shadow: 0 14px 24px rgba(12, 16, 18, 0.22);
         }
 
         .btn-primary:active {
@@ -180,49 +267,63 @@
         }
 
         .btn-primary:disabled {
-            background: rgba(255, 255, 255, 0.2);
+            background: #cfd8d4;
+            color: #768882;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .help-text {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
+            color: #7f928b;
             margin-top: 5px;
+            line-height: 1.4;
         }
 
-        /* Mobile responsive */
+        .registration-code-group .form-control {
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            text-align: center;
+            font-weight: 700;
+        }
+
         @media (max-width: 480px) {
-            .card {
-                padding: 30px 25px;
+            .mini-topbar {
+                padding-top: 12px;
+            }
+
+            .profile-shell {
+                align-items: flex-start;
+                padding-top: 18px;
+            }
+
+            .profile-card {
+                border-radius: 22px;
+                padding: 24px 18px 18px;
             }
 
             h1 {
-                font-size: 22px;
-            }
-
-            .form-control {
-                padding: 12px 14px;
-                font-size: 14px;
-            }
-
-            .btn-primary {
-                padding: 14px;
-                font-size: 15px;
+                font-size: 28px;
             }
         }
     </style>
     <script src="/scripts/patient-theme.js"></script>
 </head>
 <body>
-    <div class="bg-animation" id="bgAnimation"></div>
+    <div class="page-grain" aria-hidden="true"></div>
 
-    <div class="container">
-        <div class="card">
-            <div class="logo-section">
-                <img src="images/logo-white.svg" alt="dokterDIBYA">
-            </div>
+    <header class="mini-topbar">
+        <a class="brand-link" href="/patient-menu.html" aria-label="SISIwanita">
+            <div class="brand-title"><span>SISI</span>wanita</div>
+            <div class="brand-sub">PORTAL WANITA SEHAT</div>
+        </a>
+        <a class="back-btn" href="/patient-login.html?mode=login" aria-label="Kembali">&larr;</a>
+    </header>
 
+    <main class="profile-shell">
+        <section class="profile-card">
+            <div class="profile-kicker">Profil Pasien</div>
             <h1>Lengkapi Profil Anda</h1>
             <p class="subtitle">
                 Silakan isi informasi dasar Anda untuk melanjutkan pendaftaran
@@ -230,9 +331,9 @@
 
             <form id="complete-profile-form">
                 <!-- Registration Code Field (shown only if required) -->
-                <div class="form-group" id="registration-code-group" style="display: none;">
+                <div class="form-group registration-code-group" id="registration-code-group" hidden>
                     <label for="registration_code">Kode Registrasi <span class="required">*</span></label>
-                    <input type="text" class="form-control" id="registration_code" placeholder="Masukkan kode dari WhatsApp" style="text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+                    <input type="text" class="form-control" id="registration_code" placeholder="Masukkan kode dari WhatsApp">
                     <div class="help-text">Kode 6 karakter yang Anda terima dari klinik via WhatsApp</div>
                 </div>
 
@@ -261,8 +362,8 @@
                     Simpan & Lanjutkan
                 </button>
             </form>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <!-- Extract token from URL for mobile app -->
     <script>
@@ -276,31 +377,6 @@
                 localStorage.setItem('from_mobile_app', 'true');
             }
         })();
-    </script>
-
-    <script>
-        // Create floating bubbles animation
-        function createBubbles() {
-            const bgAnimation = document.getElementById('bgAnimation');
-            const bubbleCount = 15;
-
-            for (let i = 0; i < bubbleCount; i++) {
-                const bubble = document.createElement('div');
-                bubble.className = 'bubble';
-
-                const size = Math.random() * 60 + 20;
-                bubble.style.width = size + 'px';
-                bubble.style.height = size + 'px';
-                bubble.style.left = Math.random() * 100 + '%';
-                bubble.style.top = Math.random() * 100 + '%';
-                bubble.style.animationDelay = Math.random() * 8 + 's';
-                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
-
-                bgAnimation.appendChild(bubble);
-            }
-        }
-
-        createBubbles();
     </script>
 
     <!-- Complete Profile Handler V5 - Supports Google Sign-In flow -->
