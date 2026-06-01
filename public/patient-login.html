@@ -2,8 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Masuk - SISIwanita</title>
@@ -182,6 +181,12 @@
             transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
         }
         body.portal-themed.auth-theme-unified .icon-btn:active { transform: scale(0.97); }
+
+        .login-submit-action { width: 100%; margin-top: 4px; }
+        .registration-code-input { text-transform: uppercase; letter-spacing: 0.18em; text-align: center; }
+        .registration-code-action { width: 100%; margin-top: 14px; }
+        .registration-success-note { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.28); color: #166534; }
+        .registration-secondary-link { margin-top: 14px; }
 
         /* Subtle page grain */
         .page-grain {
@@ -534,7 +539,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="portal-button" id="btn-login-submit" style="width:100%; margin-top: 4px;">
+                <button type="submit" class="portal-button login-submit-action" id="btn-login-submit">
                     <span>Masuk</span>
                 </button>
             </form>
@@ -558,7 +563,7 @@
             </p>
         </section>
 
-        <section class="portal-card login-card" id="page-register" style="display: none;">
+        <section class="portal-card login-card" id="page-register" hidden>
             <h1 class="login-heading">
                 <span class="green-light" aria-hidden="true">
                     <span class="green-light-glow"></span>
@@ -588,21 +593,20 @@
                         type="text"
                         id="regcode-input"
                         name="registration_code"
-                        class="portal-input"
+                        class="portal-input registration-code-input"
                         placeholder="Masukkan 6 karakter kode"
                         autocomplete="one-time-code"
                         maxlength="6"
                         required
-                        style="text-transform: uppercase; letter-spacing: 0.18em; text-align: center;"
                     >
-                    <button type="submit" class="portal-button" id="btn-validate-code" style="width:100%; margin-top: 14px;">
+                    <button type="submit" class="portal-button registration-code-action" id="btn-validate-code">
                         <span>Validasi Kode</span>
                     </button>
                 </div>
             </form>
 
-            <div id="regcode-step2" style="display: none;">
-                <div class="maintenance-note" style="background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.28); color: #166534;">
+            <div id="regcode-step2" hidden>
+                <div class="maintenance-note registration-success-note">
                     Kode valid. Lanjutkan pendaftaran dengan Google.
                 </div>
 
@@ -616,7 +620,7 @@
                     <span>Daftar dengan Google</span>
                 </button>
 
-                <p class="login-foot" style="margin-top: 14px;">
+                <p class="login-foot registration-secondary-link">
                     <a href="#" onclick="resetRegCodeStep(); return false;">Gunakan kode lain</a>
                 </p>
             </div>
@@ -734,8 +738,8 @@
 
         function setAuthMode(mode) {
             var isRegister = mode === 'register';
-            document.getElementById('page-login').style.display = isRegister ? 'none' : '';
-            document.getElementById('page-register').style.display = isRegister ? '' : 'none';
+            document.getElementById('page-login').hidden = isRegister;
+            document.getElementById('page-register').hidden = !isRegister;
             clearError('login-error');
             clearError('regcode-error');
             clearError('register-error');
@@ -905,7 +909,7 @@
                 if (res.ok && data.success) {
                     validatedRegCode = code;
                     document.getElementById('regcode-step1').style.display = 'none';
-                    document.getElementById('regcode-step2').style.display = 'block';
+                    document.getElementById('regcode-step2').hidden = false;
                 } else {
                     showError('regcode-error', data.message || 'Kode registrasi tidak valid');
                 }
@@ -922,7 +926,7 @@
             validatedRegCode = null;
             document.getElementById('regcode-input').value = '';
             document.getElementById('regcode-step1').style.display = 'block';
-            document.getElementById('regcode-step2').style.display = 'none';
+            document.getElementById('regcode-step2').hidden = true;
             clearError('regcode-error');
             clearError('register-error');
         }
