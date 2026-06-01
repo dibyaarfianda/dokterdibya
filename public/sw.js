@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260601c'; // 2026-06-01c - profil photo open hotfix
+const CACHE_VERSION = '20260601d'; // 2026-06-01d - fix patient-menu profile modal script parse issue
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
