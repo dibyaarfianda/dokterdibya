@@ -10,9 +10,19 @@
         activeNav: DEFAULT_ACTIVE_NAV,
         homeUrl: DEFAULT_HOME_URL,
         menuData: null,
-        notifications: []
+        notifications: [],
+        portalSettings: {
+            nickname: null,
+            notification_sound: 'default'
+        }
     };
     window.__patientToolShellState = state;
+    if (!state.portalSettings) {
+        state.portalSettings = {
+            nickname: null,
+            notification_sound: 'default'
+        };
+    }
 
     var defaultMenuData = {
         dokumen: { title: 'Dokumen', items: [
@@ -284,6 +294,147 @@
         } catch (error) {}
     }
 
+    async function fetchPortalSettings() {
+        var token = getToken();
+        var cached;
+        try { cached = JSON.parse(localStorage.getItem('patient_portal_settings') || 'null'); } catch (error) {}
+        if (cached) state.portalSettings = Object.assign({}, state.portalSettings, cached);
+        if (isMockToken(token)) return state.portalSettings;
+
+        var response = await fetch('/api/patients/portal-settings?_t=' + Date.now(), {
+            headers: {
+                Authorization: 'Bearer ' + token,
+                'Cache-Control': 'no-cache'
+            },
+            cache: 'no-store'
+        });
+        if (!response.ok) throw new Error('portal settings failed');
+        var data = await response.json().catch(function () { return {}; });
+        if (data && data.success && data.settings) {
+            state.portalSettings = Object.assign({}, state.portalSettings, data.settings);
+            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
+        }
+        return state.portalSettings;
+    }
+
+    function getDisplayedNotificationCount() {
+        var badge = document.getElementById('notif-badge');
+        var value = badge && badge.style.display !== 'none' ? badge.textContent : '';
+        return value || '0';
+    }
+
+    function renderSettingsModal() {
+        var count = getDisplayedNotificationCount();
+        var settings = state.portalSettings || {};
+        var nickname = settings.nickname || '';
+        var sound = settings.notification_sound || 'default';
+        var option = function (value, label) {
+            return '<option value="' + value + '"' + (sound === value ? ' selected' : '') + '>' + label + '</option>';
+        };
+        return '<div class="shell-settings-panel">' +
+            '<button type="button" class="shell-settings-row" data-shell-action="open-notifications">' +
+                '<i class="fa-solid fa-bell"></i><span><strong>Notifikasi</strong><span>Lihat update pasien dan pengumuman klinik</span></span>' +
+                '<em class="shell-settings-count">' + escapeHtml(count) + '</em>' +
+            '</button>' +
+            '<div class="shell-settings-field">' +
+                '<label for="portal-nickname">Nickname Anda</label>' +
+                '<input id="portal-nickname" class="shell-settings-input" maxlength="40" value="' + escapeHtml(nickname) + '" placeholder="Contoh: Bunda">' +
+            '</div>' +
+            '<div class="shell-settings-field">' +
+                '<label for="portal-notification-sound">Suara Notifikasi</label>' +
+                '<select id="portal-notification-sound" class="shell-settings-select">' +
+                    option('default', 'Default') +
+                    option('chime', 'Chime') +
+                    option('bell', 'Bell') +
+                    option('soft', 'Soft') +
+                    option('none', 'Tanpa Suara') +
+                '</select>' +
+            '</div>' +
+            '<div class="shell-settings-actions">' +
+                '<button type="button" class="shell-modal-link" data-shell-action="test-portal-sound"><i class="fa-solid fa-volume-high"></i>Test</button>' +
+                '<button type="button" class="shell-modal-link primary" data-shell-action="save-portal-settings"><i class="fa-solid fa-check"></i>Simpan</button>' +
+            '</div>' +
+            '<button type="button" class="shell-settings-row" data-shell-action="edit-intake">' +
+                '<i class="fa-solid fa-clipboard-list"></i><span><strong>Form Intake</strong><span>Edit atau update data intake Anda</span></span>' +
+                '<i class="fa-solid fa-chevron-right"></i>' +
+            '</button>' +
+        '</div>';
+    }
+
+    async function openSettingsModal(event) {
+        if (event && typeof event.preventDefault === 'function') event.preventDefault();
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+        openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+        try {
+            await fetchPortalSettings();
+            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+        } catch (error) {}
+    }
+
+    async function savePortalSettings() {
+        var token = getToken();
+        var nicknameEl = document.getElementById('portal-nickname');
+        var soundEl = document.getElementById('portal-notification-sound');
+        var payload = {
+            nickname: nicknameEl ? nicknameEl.value : '',
+            notification_sound: soundEl ? soundEl.value : 'default'
+        };
+        if (isMockToken(token)) {
+            state.portalSettings = Object.assign({}, state.portalSettings, payload);
+            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
+            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+            showShellToast('Pengaturan portal disimpan');
+            return;
+        }
+        try {
+            var response = await fetch('/api/patients/portal-settings', {
+                method: 'PUT',
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            var data = await response.json().catch(function () { return {}; });
+            if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan');
+            state.portalSettings = Object.assign({}, state.portalSettings, data.settings);
+            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
+            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+            showShellToast('Pengaturan portal disimpan');
+        } catch (error) {
+            showShellToast(error.message || 'Pengaturan gagal disimpan');
+        }
+    }
+
+    function playPortalNotificationSound() {
+        var soundEl = document.getElementById('portal-notification-sound');
+        var soundType = soundEl ? soundEl.value : state.portalSettings.notification_sound || 'default';
+        if (soundType === 'none') {
+            showShellToast('Suara notifikasi dinonaktifkan');
+            return;
+        }
+        try {
+            var AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            var context = state.audioContext || new AudioCtx();
+            state.audioContext = context;
+            if (context.state === 'suspended') context.resume().catch(function () {});
+            var now = context.currentTime;
+            var osc = context.createOscillator();
+            var gain = context.createGain();
+            var frequencyMap = { chime: 880, bell: 660, soft: 440, default: 520 };
+            osc.type = soundType === 'bell' ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(frequencyMap[soundType] || frequencyMap.default, now);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.14, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            osc.connect(gain);
+            gain.connect(context.destination);
+            osc.start(now);
+            osc.stop(now + 0.52);
+        } catch (error) {}
+    }
+
     async function fetchProfile() {
         var token = getToken();
         var stored = getStoredPatient();
@@ -431,10 +582,13 @@
         var avatarButton = document.getElementById('user-avatar');
         if (notifButton) {
             notifButton.setAttribute('aria-haspopup', 'dialog');
+            notifButton.setAttribute('aria-label', 'Pengaturan');
+            var icon = notifButton.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-gear';
             notifButton.onclick = function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                openNotificationModal(event);
+                openSettingsModal(event);
                 return false;
             };
         }
@@ -461,6 +615,10 @@
         event.preventDefault();
         var actionName = action.getAttribute('data-shell-action');
         if (actionName === 'read-all-notifications') markAllNotificationsRead();
+        if (actionName === 'open-notifications') openNotificationModal(event);
+        if (actionName === 'save-portal-settings') savePortalSettings();
+        if (actionName === 'test-portal-sound') playPortalNotificationSound();
+        if (actionName === 'edit-intake') go('/patient-intake.html');
         if (actionName === 'close-modal') closeTopbarModal();
         if (actionName === 'logout') logout();
         if (actionName === 'profile-photo-camera') openProfilePhotoPicker(event, 'camera');
@@ -591,6 +749,7 @@
         openSheet: openSheet,
         closeSheet: closeSheet,
         openMyCorner: openMyCorner,
+        openSettingsModal: openSettingsModal,
         openNotificationModal: openNotificationModal,
         openProfileModal: openProfileModal,
         openProfilePhotoPicker: openProfilePhotoPicker,
@@ -611,6 +770,7 @@
     window.openSheet = openSheet;
     window.closeSheet = closeSheet;
     window.openMyCorner = openMyCorner;
+    window.openSettingsModal = openSettingsModal;
     window.openNotificationModal = openNotificationModal;
     window.openProfileModal = openProfileModal;
     window.openProfilePhotoPicker = openProfilePhotoPicker;
