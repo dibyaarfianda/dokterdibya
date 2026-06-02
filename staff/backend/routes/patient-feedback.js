@@ -142,10 +142,23 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
         if (category) { where += ' AND category = ?'; params.push(category); }
 
         const [rows] = await db.execute(
-            `SELECT id, patient_id, patient_name, category, message, rating, is_anonymous, created_at
-             FROM patient_feedback
+            `SELECT pf.id,
+                    pf.patient_id,
+                    pf.patient_name,
+                    pf.category,
+                    pf.message,
+                    pf.rating,
+                    pf.is_anonymous,
+                    pf.created_at,
+                    p.full_name AS patient_real_name,
+                    pps.nickname AS patient_nickname,
+                    u.name AS user_display_name
+             FROM patient_feedback pf
+             LEFT JOIN users u ON u.new_id = pf.patient_id
+             LEFT JOIN patients p ON p.email = u.email
+             LEFT JOIN patient_portal_settings pps ON pps.patient_id = p.id
              WHERE ${where}
-             ORDER BY created_at DESC
+             ORDER BY pf.created_at DESC
              LIMIT ? OFFSET ?`,
             [...params, parseInt(limit), parseInt(offset)]
         );
