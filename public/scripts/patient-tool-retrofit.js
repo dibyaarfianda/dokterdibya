@@ -87,7 +87,6 @@
         ]},
         aplikasi: { title: 'Aplikasi', items: [
             ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter.html'],
-            ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html'],
             ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
             ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
