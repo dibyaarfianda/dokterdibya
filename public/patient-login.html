@@ -393,6 +393,34 @@
         .btn-google:hover { background: var(--bg-elevated); }
         .btn-google:active { transform: scale(0.98); }
         .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .btn-guest-demo {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            margin-top: 12px;
+            padding: 13px 18px;
+            border-radius: 12px;
+            background: rgba(126, 168, 159, 0.12);
+            border: 1px solid rgba(126, 168, 159, 0.28);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 650;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-guest-demo:hover { background: rgba(126, 168, 159, 0.18); border-color: rgba(126, 168, 159, 0.42); }
+        .btn-guest-demo:active { transform: scale(0.98); }
+        .btn-guest-demo i { font-size: 15px; color: #5C7F72; }
+        .guest-demo-note {
+            margin: 9px 4px 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            line-height: 1.45;
+            text-align: center;
+        }
 
         /* Bottom link */
         .login-foot {
@@ -511,6 +539,11 @@
                 </svg>
                 <span>Masuk dengan Google</span>
             </button>
+            <button type="button" class="btn-guest-demo" id="btn-guest-demo" onclick="startGuestDemo()">
+                <i class="fa-solid fa-eye"></i>
+                <span>Lihat Demo Portal</span>
+            </button>
+            <p class="guest-demo-note">Mode tamu memakai contoh tampilan. Data medis pribadi, booking, chat, dan dokumen hanya aktif setelah login.</p>
 
             <p class="login-foot">
                 Belum punya akun? <a href="/patient-login.html?mode=register">Daftar dengan Google</a>
@@ -590,6 +623,8 @@
         const AUTH_MAINTENANCE_MESSAGE = 'Login sedang dalam perbaikan. Silakan coba beberapa saat lagi.';
         const AUTH_TESTER_MAINTENANCE_MESSAGE = 'Akses login saat ini hanya dibuka untuk akun tester.';
         const AUTH_TESTER_ALLOWLIST = ['nanda ananda', 'p2025091', 'dibyaarfianda83@gmail.com'];
+        const GUEST_MODE_KEY = 'sisiwanita_guest_mode';
+        const GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
 
         // ==================== MOBILE APP CONTEXT ====================
         const urlParams = new URLSearchParams(window.location.search);
@@ -611,6 +646,29 @@
         let hasAutoTriggeredGoogle = false;
 
         try { sessionStorage.removeItem('patient_portal_mode'); } catch(e) {}
+
+        function clearGuestSessionMarkers() {
+            try {
+                localStorage.removeItem(GUEST_MODE_KEY);
+                localStorage.removeItem(GUEST_STARTED_AT_KEY);
+                sessionStorage.removeItem(GUEST_MODE_KEY);
+                sessionStorage.removeItem(GUEST_STARTED_AT_KEY);
+            } catch (error) {}
+        }
+
+        function startGuestDemo() {
+            try {
+                localStorage.removeItem('vps_auth_token');
+                sessionStorage.removeItem('vps_auth_token');
+                localStorage.removeItem('patient_token');
+                localStorage.removeItem('patient_user');
+                localStorage.removeItem('auth_provider');
+                clearGuestSessionMarkers();
+                sessionStorage.setItem(GUEST_MODE_KEY, '1');
+                sessionStorage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
+            } catch (error) {}
+            window.location.href = '/patient-menu.html?guest=1';
+        }
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {

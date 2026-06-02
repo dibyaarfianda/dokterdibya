@@ -5,6 +5,9 @@
 
 // Token key - matches vps-auth-v2.js
 const TOKEN_KEY = 'vps_auth_token';
+const GUEST_MODE_KEY = 'sisiwanita_guest_mode';
+const GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
+const GUEST_SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 
 // API Base URL
 const API_BASE = window.location.hostname === 'localhost'
@@ -19,14 +22,79 @@ function getToken() {
     return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
 
+function clearGuestStorage() {
+    localStorage.removeItem(GUEST_MODE_KEY);
+    localStorage.removeItem(GUEST_STARTED_AT_KEY);
+    sessionStorage.removeItem(GUEST_MODE_KEY);
+    sessionStorage.removeItem(GUEST_STARTED_AT_KEY);
+}
+
+function isGuestMode() {
+    const marker = sessionStorage.getItem(GUEST_MODE_KEY) || localStorage.getItem(GUEST_MODE_KEY);
+    if (marker !== '1') return false;
+    const startedAt = Number(sessionStorage.getItem(GUEST_STARTED_AT_KEY) || localStorage.getItem(GUEST_STARTED_AT_KEY) || 0);
+    if (startedAt && Date.now() - startedAt > GUEST_SESSION_TTL_MS) {
+        clearGuestStorage();
+        return false;
+    }
+    return true;
+}
+
+function startGuestSession(options = {}) {
+    const storage = options.persist ? localStorage : sessionStorage;
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('patient_token');
+    localStorage.removeItem('patient_user');
+    clearGuestStorage();
+    storage.setItem(GUEST_MODE_KEY, '1');
+    storage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
+}
+
+function endGuestSession() {
+    clearGuestStorage();
+}
+
+function getGuestProfile() {
+    return {
+        id: 'DEMO',
+        patient_id: 'DEMO',
+        medicalRecordId: 'DEMO',
+        fullname: 'Tamu SISIwanita',
+        full_name: 'Tamu SISIwanita',
+        name: 'Tamu SISIwanita',
+        email: 'demo@sisiwanita.id',
+        phone: '-',
+        birth_date: null,
+        is_guest: true
+    };
+}
+
+function showGuestUpgradePrompt(message) {
+    const text = message || 'Mode demo hanya untuk melihat-lihat. Masuk dengan akun pasien untuk memakai fitur pribadi.';
+    const event = new CustomEvent('sisiwanita:guest-upgrade', {
+        detail: { message: text },
+        cancelable: true
+    });
+    window.dispatchEvent(event);
+    if (!event.defaultPrevented) window.alert(text);
+}
+
+function requireRealPatient(message) {
+    if (!isGuestMode()) return true;
+    showGuestUpgradePrompt(message);
+    return false;
+}
+
 /**
  * Check if user is authenticated
  * Redirects to login page if not
  * @returns {boolean}
  */
-function checkAuth() {
+function checkAuth(options = {}) {
     const token = getToken();
     if (!token) {
+        if (options.allowGuest && isGuestMode()) return true;
         window.location.href = '/patient-login.html';
         return false;
     }
@@ -39,6 +107,9 @@ function checkAuth() {
 function logout() {
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('patient_token');
+    localStorage.removeItem('patient_user');
+    clearGuestStorage();
     window.location.href = '/patient-login.html';
 }
 
@@ -52,6 +123,14 @@ async function apiRequest(endpoint, options = {}) {
     const token = getToken();
 
     if (!token) {
+        if (isGuestMode()) {
+            return {
+                success: false,
+                guestMode: true,
+                code: 'GUEST_MODE',
+                message: 'Mode demo tidak dapat mengakses data pasien pribadi.'
+            };
+        }
         window.location.href = '/patient-login.html';
         return null;
     }
@@ -476,7 +555,15 @@ function truncateText(text, maxLength = 100) {
 export {
     TOKEN_KEY,
     API_BASE,
+    GUEST_MODE_KEY,
+    GUEST_STARTED_AT_KEY,
     getToken,
+    isGuestMode,
+    startGuestSession,
+    endGuestSession,
+    getGuestProfile,
+    showGuestUpgradePrompt,
+    requireRealPatient,
     checkAuth,
     logout,
     apiRequest,
@@ -505,7 +592,15 @@ export {
 window.PatientUtils = {
     TOKEN_KEY,
     API_BASE,
+    GUEST_MODE_KEY,
+    GUEST_STARTED_AT_KEY,
     getToken,
+    isGuestMode,
+    startGuestSession,
+    endGuestSession,
+    getGuestProfile,
+    showGuestUpgradePrompt,
+    requireRealPatient,
     checkAuth,
     logout,
     apiRequest,
