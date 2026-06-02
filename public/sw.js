@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602y'; // 2026-06-02y - remove Chat Komunitas from menu Aplikasi and quick actions
+const CACHE_VERSION = '20260602z'; // 2026-06-02z - restore Chat Komunitas as quick card (outside menu Aplikasi)
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
