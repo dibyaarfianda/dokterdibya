@@ -4387,7 +4387,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260602guest1', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260602guest2', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -4573,6 +4573,7 @@
             requestAnimationFrame(updateHomeActionGap);
             triggerHomeIntroAnimation();
             scheduleHomeAutoUnlock();
+            if (isGuestMode()) return;
             if (event.persisted) {
                 loadNotificationCount();
                 loadHomeAnnouncements();
@@ -4582,7 +4583,7 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260601room3"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260602guest2"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 
     <!-- ===== CROP EDITOR OVERLAY ===== -->
