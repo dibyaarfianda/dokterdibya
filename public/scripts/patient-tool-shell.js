@@ -46,8 +46,7 @@
         ]},
         edukasi: { title: 'Edukasi', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
-            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-            ['fa-solid fa-stethoscope', 'Istilah Obgyn', '/artikel-kesehatan.html']
+            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html']
         ]}
     };
 
