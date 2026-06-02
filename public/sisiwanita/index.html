@@ -14,7 +14,7 @@
     <meta property="og:url" content="https://sisiwanita.id/">
     <title>SISIwanita</title>
     <script>
-        window.SISIWANITA_PAGE_VERSION = '20260529blur200';
+        window.SISIWANITA_PAGE_VERSION = '20260602sticky-mobile1';
     </script>
 
     <!-- PWA Manifest -->
@@ -98,6 +98,48 @@
         html.standalone-pwa .patient-features-section {
             overflow-anchor: none !important;
             background: var(--bg-page) !important;
+        }
+
+        html.mobile-scroll-light {
+            scroll-behavior: auto;
+            overscroll-behavior-x: none;
+            overscroll-behavior-y: auto;
+        }
+
+        html.mobile-scroll-light body {
+            overscroll-behavior-x: none;
+            overscroll-behavior-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        html.mobile-scroll-light .proces-section {
+            padding-top: 104px !important;
+            min-height: auto !important;
+            overflow-anchor: none !important;
+            background: var(--bg-page) !important;
+        }
+
+        html.mobile-scroll-light .proces-row {
+            position: relative !important;
+            top: auto !important;
+            z-index: auto !important;
+            padding-top: 18px !important;
+            padding-bottom: 30px !important;
+            transition: none !important;
+            will-change: auto !important;
+            overflow-anchor: none !important;
+        }
+
+        html.mobile-scroll-light .proces-desc {
+            opacity: 1 !important;
+            max-height: none !important;
+            transition: none !important;
+            will-change: auto !important;
+            overflow-anchor: none !important;
+        }
+
+        html.mobile-scroll-light .proces-spacer {
+            height: 72px !important;
         }
 
         body {
@@ -5215,6 +5257,16 @@
                 document.documentElement.classList.add('standalone-pwa');
             }
 
+            var isMobileScrollDevice = !window.matchMedia ||
+                window.matchMedia('(pointer: coarse)').matches ||
+                window.matchMedia('(hover: none)').matches ||
+                window.matchMedia('(max-width: 900px)').matches;
+
+            if (isMobileScrollDevice) {
+                document.documentElement.classList.add('mobile-scroll-light');
+            }
+
+            window.__portalReduceMobileScrollWork = isMobileScrollDevice;
             window.__portalReducePwaScrollWork = isStandalonePwa &&
                 (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
@@ -7571,6 +7623,11 @@
             var PAD_BOT_MIN = 10;
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
+
+            if (window.__portalReduceMobileScrollWork) {
+                document.documentElement.classList.add('mobile-scroll-light');
+                return;
+            }
 
             // Compute COLLAPSED_H from the actual collapsed title block.
             function getCollapsedH() {
