@@ -1249,6 +1249,51 @@
             color: #9f1239;
             background: rgba(255, 241, 242, 0.8);
         }
+        #topbar-modal .guest-prompt-panel { display: grid; gap: 14px; }
+        #topbar-modal .guest-prompt-empty {
+            min-height: 132px !important;
+            padding: 18px 14px 12px !important;
+            gap: 12px;
+        }
+        #topbar-modal .guest-prompt-empty p {
+            color: var(--ink);
+            font-size: 14px;
+            line-height: 1.45;
+            font-weight: 800;
+            max-width: 34ch;
+        }
+        #topbar-modal .guest-prompt-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            width: 100%;
+        }
+        #topbar-modal .guest-prompt-action {
+            min-height: 44px;
+            border-radius: 14px;
+            border: 1px solid var(--line-strong);
+            background: #fff;
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 900;
+            line-height: 1.15;
+            text-align: center;
+            cursor: pointer;
+            padding: 0 14px;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-decoration: none;
+        }
+        #topbar-modal .guest-prompt-action i { flex: 0 0 auto; font-size: 13px; }
+        #topbar-modal .guest-prompt-action.primary {
+            background: #111;
+            border-color: #111;
+            color: #fff;
+        }
         .topbar-modal-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .topbar-modal-summary div,
         .profile-grid div {
@@ -1701,6 +1746,13 @@
             }
             #topbar-modal.is-profile-modal .shell-modal-actions {
                 grid-template-columns: 1fr;
+            }
+            #topbar-modal .guest-prompt-actions {
+                grid-template-columns: 1fr;
+            }
+            #topbar-modal .guest-prompt-action {
+                min-height: 46px;
+                font-size: 13px;
             }
             .today-row { margin-right: calc(-1 * var(--sound-toggle-right-shift, 0px)); align-items: flex-end; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
@@ -2280,14 +2332,14 @@
         }
 
         function renderGuestPromptBody(message) {
-            return '<div class="settings-panel">' +
-                '<div class="modal-empty" style="min-height:112px;padding:14px 8px;">' +
+            return '<div class="settings-panel guest-prompt-panel">' +
+                '<div class="modal-empty guest-prompt-empty">' +
                     '<i class="fa-solid fa-lock" style="font-size:28px;color:var(--green);"></i>' +
                     '<p>' + escapeHtml(message || 'Mode demo hanya untuk melihat-lihat. Masuk dengan akun pasien untuk memakai fitur ini.') + '</p>' +
                 '</div>' +
-                '<div class="shell-modal-actions">' +
-                    '<button type="button" class="shell-modal-link" data-shell-action="close-modal"><i class="fa-solid fa-eye"></i>Lanjut lihat demo</button>' +
-                    '<button type="button" class="shell-modal-link" onclick="endGuestAndLogin(event)"><i class="fa-solid fa-right-to-bracket"></i>Masuk / Daftar</button>' +
+                '<div class="guest-prompt-actions">' +
+                    '<button type="button" class="guest-prompt-action" data-shell-action="close-modal"><i class="fa-solid fa-eye"></i><span>Lanjut lihat demo</span></button>' +
+                    '<button type="button" class="guest-prompt-action primary" onclick="endGuestAndLogin(event)"><i class="fa-solid fa-right-to-bracket"></i><span>Masuk / Daftar</span></button>' +
                 '</div>' +
             '</div>';
         }
@@ -4399,7 +4451,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260602guest3', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260602guest4', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
