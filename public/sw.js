@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602guest4'; // 2026-06-02 tidy guest prompt buttons
+const CACHE_VERSION = '20260602jadwalrs1'; // 2026-06-02 complete Jadwal RS demo fallback
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

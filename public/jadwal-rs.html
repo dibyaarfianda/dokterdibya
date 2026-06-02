@@ -138,6 +138,21 @@
             line-height: 1.45;
         }
 
+        body.jadwal-rs-page .rs-demo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 9px;
+            border: 1px solid rgba(17, 17, 17, 0.1);
+            border-radius: 999px;
+            padding: 5px 8px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.7);
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
         body.jadwal-rs-page .rs-state {
             border: 1px solid var(--line);
             border-radius: 8px;
@@ -206,10 +221,14 @@
                 { location: 'rsud_gambiran', name: 'RSUD Gambiran', color: '#2563eb', icon: 'fa-solid fa-hospital' },
                 { location: 'rs_bhayangkara', name: 'RS Bhayangkara', color: '#0f766e', icon: 'fa-solid fa-hospital' }
             ];
+            var DEMO_NOTE = 'Jadwal demo - konfirmasi kembali ke admin sebelum berangkat.';
             var MOCK_SCHEDULES = [
-                { location: 'rsia_melinda', day_of_week: 1, start_time: '08:00:00', end_time: '10:00:00', notes: '' },
-                { location: 'rsud_gambiran', day_of_week: 3, start_time: '09:00:00', end_time: '11:00:00', notes: '' },
-                { location: 'rs_bhayangkara', day_of_week: 5, start_time: '07:30:00', end_time: '09:30:00', notes: '' }
+                { location: 'rsia_melinda', day_of_week: 1, start_time: '08:00:00', end_time: '10:00:00', notes: DEMO_NOTE, is_demo: true },
+                { location: 'rsia_melinda', day_of_week: 4, start_time: '16:00:00', end_time: '18:00:00', notes: DEMO_NOTE, is_demo: true },
+                { location: 'rsud_gambiran', day_of_week: 2, start_time: '09:00:00', end_time: '11:00:00', notes: DEMO_NOTE, is_demo: true },
+                { location: 'rsud_gambiran', day_of_week: 5, start_time: '08:00:00', end_time: '10:00:00', notes: DEMO_NOTE, is_demo: true },
+                { location: 'rs_bhayangkara', day_of_week: 3, start_time: '07:30:00', end_time: '09:30:00', notes: DEMO_NOTE, is_demo: true },
+                { location: 'rs_bhayangkara', day_of_week: 6, start_time: '10:00:00', end_time: '12:00:00', notes: DEMO_NOTE, is_demo: true }
             ];
 
             var listEl = document.getElementById('rs-list');
@@ -250,12 +269,17 @@
                     dayName: DAY_NAMES[safeDay] || '-',
                     startTime: formatTime(raw.start_time || raw.startTime),
                     endTime: formatTime(raw.end_time || raw.endTime),
-                    notes: raw.notes || ''
+                    notes: raw.notes || '',
+                    isDemo: Boolean(raw.is_demo || raw.isDemo)
                 };
             }
 
+            function getDemoSchedules() {
+                return MOCK_SCHEDULES.map(normalizeSchedule);
+            }
+
             async function fetchSchedules() {
-                if (mockMode) return MOCK_SCHEDULES.map(normalizeSchedule);
+                if (mockMode) return getDemoSchedules();
 
                 var responses = await Promise.all(HOSPITALS.map(function (hospital) {
                     return fetch('/api/practice-schedules?location=' + encodeURIComponent(hospital.location), {
@@ -270,7 +294,8 @@
                     });
                 }));
 
-                return responses.flat().map(normalizeSchedule);
+                var schedules = responses.flat().map(normalizeSchedule);
+                return schedules.length ? schedules : getDemoSchedules();
             }
 
             function renderSchedules(schedules) {
@@ -295,6 +320,7 @@
                                     '<div class="rs-detail"><i class="fa-regular fa-calendar"></i><span>' + escapeHtml(schedule.dayName) + '</span></div>' +
                                     '<div class="rs-detail"><i class="fa-regular fa-clock"></i><span>' + escapeHtml(schedule.startTime) + ' - ' + escapeHtml(schedule.endTime) + ' WIB</span></div>' +
                                 '</div>' +
+                                (schedule.isDemo ? '<div class="rs-demo-badge"><i class="fa-solid fa-flask"></i>Demo</div>' : '') +
                                 (schedule.notes ? '<div class="rs-note">' + escapeHtml(schedule.notes) + '</div>' : '') +
                             '</div>' +
                         '</article>';
@@ -308,8 +334,8 @@
                     updatedEl.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
                 } catch (error) {
                     console.error('[JadwalRS] Failed to load schedules:', error);
-                    listEl.innerHTML = '<div class="rs-state"><i class="fa-solid fa-circle-exclamation"></i>Gagal memuat jadwal RS.</div>';
-                    updatedEl.textContent = 'Gagal';
+                    renderSchedules(getDemoSchedules());
+                    updatedEl.textContent = 'Demo';
                 }
             }
 
