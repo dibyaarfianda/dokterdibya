@@ -4,6 +4,9 @@
     var API_BASE = '/api/patient-workdesk';
     var CORNER_NAME_KEY = 'patient_my_corner_name';
     var CORNER_NOTE_KEY = 'patient_my_corner_note';
+    var GUEST_MODE_KEY = 'sisiwanita_guest_mode';
+    var GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
+    var GUEST_SESSION_TTL_MS = 4 * 60 * 60 * 1000;
     var DEFAULT_NOTE = 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
     var state = {
         loaded: false,
@@ -44,6 +47,24 @@
 
     function getToken() {
         return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token') || '';
+    }
+
+    function clearGuestMode() {
+        localStorage.removeItem(GUEST_MODE_KEY);
+        localStorage.removeItem(GUEST_STARTED_AT_KEY);
+        sessionStorage.removeItem(GUEST_MODE_KEY);
+        sessionStorage.removeItem(GUEST_STARTED_AT_KEY);
+    }
+
+    function isGuestMode() {
+        var marker = sessionStorage.getItem(GUEST_MODE_KEY) || localStorage.getItem(GUEST_MODE_KEY);
+        if (marker !== '1') return false;
+        var startedAt = Number(sessionStorage.getItem(GUEST_STARTED_AT_KEY) || localStorage.getItem(GUEST_STARTED_AT_KEY) || 0);
+        if (startedAt && Date.now() - startedAt > GUEST_SESSION_TTL_MS) {
+            clearGuestMode();
+            return false;
+        }
+        return true;
     }
 
     function escapeHtml(value) {
@@ -150,6 +171,12 @@
     }
 
     async function loadWorkdesk() {
+        if (isGuestMode()) {
+            state.data = state.data || getFallbackData();
+            state.loaded = true;
+            updateDashboard(state.data);
+            return state.data;
+        }
         if (state.loading) return state.data || getFallbackData();
         state.loading = true;
         try {
@@ -182,6 +209,7 @@
 
     async function saveWorkdesk(showMessage) {
         if (!state.data || state.saving) return;
+        if (isGuestMode()) return state.data;
         state.saving = true;
         try {
             var data = await apiRequest('/layout', {
