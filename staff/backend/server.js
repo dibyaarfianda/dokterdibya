@@ -218,6 +218,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
     '/api/patient-workdesk',   // Patient My Corner / workdesk sync
     '/api/support-chat',       // Support chat (bot + staff escalation)
+    '/api/guest-activity',     // Guest/demo portal activity tracking
 ];
 
 const PATIENT_AUTH_BOOTSTRAP_ROUTES = [
@@ -468,6 +469,9 @@ app.use('/api/polls', pollsRoutes);
 // Patient Activity routes (aggregated patient activities for admin dashboard)
 const patientActivityRoutes = require('./routes/patient-activity');
 app.use('/api/patient-activity', patientActivityRoutes);
+
+const guestActivityRoutes = require('./routes/guest-activity');
+app.use('/api/guest-activity', guestActivityRoutes);
 
 // Patient Access Blocklist routes (dokter/superadmin only)
 const patientAccessBlocklistRoutes = require('./routes/patient-access-blocklist');

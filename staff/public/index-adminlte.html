@@ -1069,18 +1069,21 @@
             margin-bottom: 0 !important;
         }
 
-        #patient-activity-page:not(.d-none) {
+        #patient-activity-page:not(.d-none),
+        #guest-activity-page:not(.d-none) {
             display: block !important;
             min-height: calc(100vh - 120px) !important;
             overflow: visible !important;
         }
 
-        #patient-activity-page .card-body {
+        #patient-activity-page .card-body,
+        #guest-activity-page .card-body {
             overflow: visible !important;
         }
 
         @media (max-width: 991.98px) {
-            body:not(.kantor-saya-active) #patient-activity-page:not(.d-none) {
+            body:not(.kantor-saya-active) #patient-activity-page:not(.d-none),
+            body:not(.kantor-saya-active) #guest-activity-page:not(.d-none) {
                 max-height: none !important;
                 padding-bottom: 96px !important;
                 overflow-y: visible !important;
@@ -2054,6 +2057,12 @@
                         <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-check"></i>
                             <p>Aktivitas Pasien</p>
+                        </a>
+                    </li>
+                    <li class="nav-item dokter-only d-none" id="nav-guest-activity">
+                        <a href="#" class="nav-link" onclick="showGuestActivityPage(); return false;">
+                            <i class="nav-icon fas fa-user-secret" style="color: #20c997;"></i>
+                            <p>Aktivitas Demo</p>
                         </a>
                     </li>
 
@@ -6799,6 +6808,126 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- GUEST / DEMO ACTIVITY PAGE -->
+                <div id="guest-activity-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title"><i class="fas fa-user-secret mr-2"></i>Aktivitas Guest / Demo</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" onclick="loadGuestActivity()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="ga-stat-sessions-today">0</h3>
+                                                    <p>Guest Hari Ini</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-user-clock"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="ga-stat-sessions">0</h3>
+                                                    <p>Guest (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-users-viewfinder"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-dark">
+                                                <div class="inner">
+                                                    <h3 id="ga-stat-page-views">0</h3>
+                                                    <p>Page Views Demo</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-eye"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h3 id="ga-stat-upgrade-prompts">0</h3>
+                                                    <p>Prompt Login</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-right-to-bracket"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tipe Aktivitas</label>
+                                                <select class="form-control" id="ga-filter-type" onchange="loadGuestActivity()">
+                                                    <option value="">Semua</option>
+                                                    <option value="guest_start">Mulai Demo</option>
+                                                    <option value="page_view">Page View</option>
+                                                    <option value="demo_navigation">Navigasi Demo</option>
+                                                    <option value="upgrade_prompt">Prompt Login</option>
+                                                    <option value="login_redirect">Klik Masuk / Daftar</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Dari Tanggal</label>
+                                                <input type="date" class="form-control" id="ga-filter-from" onchange="loadGuestActivity()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Sampai Tanggal</label>
+                                                <input type="date" class="form-control" id="ga-filter-to" onchange="loadGuestActivity()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Cari Session/Halaman</label>
+                                                <input type="text" class="form-control" id="ga-filter-search" placeholder="Ketik untuk mencari..." onkeyup="debounceGuestActivitySearch()">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:160px">Waktu</th>
+                                                    <th style="width:170px">Guest Session</th>
+                                                    <th style="width:150px">Tipe</th>
+                                                    <th>Detail</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="guest-activity-body">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted small" id="guest-activity-pagination-info">Menampilkan 0 dari 0</div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="guest-activity-pagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- MOBILE APP PAGE -->
                 <div id="mobile-app-page" class="d-none">
                     <div class="row">
@@ -8101,7 +8230,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v222';
+    window.__assetVersion = 'v226';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
@@ -10894,6 +11023,149 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         } catch (error) {
             console.error('Load patient activity error:', error);
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
+        }
+    };
+
+    // ============================================
+    // Guest / Demo Activity Functions
+    // ============================================
+    let guestActivityPage = 0;
+    const guestActivityLimit = 50;
+    let guestActivitySearchTimeout = null;
+
+    function escapeGuestActivityHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
+
+    function formatGuestActivityType(type) {
+        const badges = {
+            guest_start: '<span class="badge badge-info"><i class="fas fa-play mr-1"></i>Mulai Demo</span>',
+            page_view: '<span class="badge badge-dark"><i class="fas fa-eye mr-1"></i>Page View</span>',
+            demo_navigation: '<span class="badge badge-success"><i class="fas fa-compass mr-1"></i>Navigasi</span>',
+            upgrade_prompt: '<span class="badge badge-warning"><i class="fas fa-lock mr-1"></i>Prompt Login</span>',
+            login_redirect: '<span class="badge badge-primary"><i class="fas fa-right-to-bracket mr-1"></i>Masuk / Daftar</span>'
+        };
+        return badges[type] || '<span class="badge badge-secondary">' + escapeGuestActivityHtml(type || '-') + '</span>';
+    }
+
+    window.showGuestActivityPage = function() {
+        document.documentElement.classList.remove('kantor-saya-active');
+        document.body.classList.remove('kantor-saya-active');
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        document.getElementById('guest-activity-page')?.classList.remove('d-none');
+
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.getElementById('nav-guest-activity')?.removeAttribute('hidden');
+        document.getElementById('nav-guest-activity')?.classList.remove('d-none');
+        document.querySelector('#nav-guest-activity .nav-link')?.classList.add('active');
+
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) floatingPanel.classList.add('d-none');
+
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const fromEl = document.getElementById('ga-filter-from');
+        const toEl = document.getElementById('ga-filter-to');
+        if (fromEl && !fromEl.value) fromEl.value = thirtyDaysAgo.toISOString().split('T')[0];
+        if (toEl && !toEl.value) toEl.value = today.toISOString().split('T')[0];
+
+        loadGuestActivity();
+    };
+
+    window.debounceGuestActivitySearch = function() {
+        clearTimeout(guestActivitySearchTimeout);
+        guestActivitySearchTimeout = setTimeout(() => loadGuestActivity(), 500);
+    };
+
+    window.loadGuestActivity = async function(page = 0) {
+        guestActivityPage = page;
+        const tbody = document.getElementById('guest-activity-body');
+        if (!tbody) return;
+
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><p class="mb-0">Memuat data...</p></td></tr>';
+
+        try {
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('vps_auth_token');
+            const typeFilter = document.getElementById('ga-filter-type')?.value || '';
+            const fromDate = document.getElementById('ga-filter-from')?.value || '';
+            const toDate = document.getElementById('ga-filter-to')?.value || '';
+            const search = document.getElementById('ga-filter-search')?.value || '';
+
+            let url = `/api/guest-activity?limit=${guestActivityLimit}&offset=${page * guestActivityLimit}`;
+            if (typeFilter) url += `&type=${encodeURIComponent(typeFilter)}`;
+            if (fromDate) url += `&from=${fromDate}`;
+            if (toDate) url += `&to=${toDate}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Failed to load guest activity');
+
+            const result = await response.json();
+            const data = result.data || [];
+            const stats = result.stats || {};
+
+            document.getElementById('ga-stat-sessions-today').textContent = stats.sessionsToday || 0;
+            document.getElementById('ga-stat-sessions').textContent = stats.sessions || 0;
+            document.getElementById('ga-stat-page-views').textContent = stats.pageViews || 0;
+            document.getElementById('ga-stat-upgrade-prompts').textContent = stats.upgradePrompts || 0;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Belum ada aktivitas guest/demo</p></td></tr>';
+                document.getElementById('guest-activity-pagination-info').textContent = 'No data';
+                document.getElementById('guest-activity-pagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = data.map(d => {
+                const date = new Date(d.timestamp);
+                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const session = escapeGuestActivityHtml(d.session_id || '-');
+                const shortSession = session.length > 18 ? session.slice(0, 18) + '...' : session;
+                const path = escapeGuestActivityHtml(d.page_path || '-');
+                const title = escapeGuestActivityHtml(d.page_title || 'Demo portal');
+                const details = escapeGuestActivityHtml(d.details || '-');
+                const userAgent = escapeGuestActivityHtml(d.user_agent || '-');
+                return `<tr>
+                    <td><small>${dateStr}<br><span class="text-muted">${timeStr}</span></small></td>
+                    <td><strong title="${session}">${shortSession}</strong><br><small class="text-muted">${escapeGuestActivityHtml(d.ip_address || '-')}</small></td>
+                    <td>${formatGuestActivityType(d.type)}</td>
+                    <td><small><strong>${title}</strong><br><span class="text-muted">${path}</span><br>${details}<br><span class="text-muted" title="${userAgent}">${userAgent}</span></small></td>
+                </tr>`;
+            }).join('');
+
+            const total = result.count || data.length;
+            const start = page * guestActivityLimit + 1;
+            const end = Math.min((page + 1) * guestActivityLimit, total);
+            document.getElementById('guest-activity-pagination-info').textContent = `Showing ${start}-${end} of ${total}`;
+
+            const totalPages = Math.ceil(total / guestActivityLimit);
+            const paginationEl = document.getElementById('guest-activity-pagination');
+            let paginationHtml = '';
+            if (page > 0) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadGuestActivity(${page - 1}); return false;">Prev</a></li>`;
+            }
+            for (let i = 0; i < totalPages && i < 5; i++) {
+                const startPage = Math.max(0, page - 2);
+                const pageNum = startPage + i;
+                if (pageNum >= totalPages) break;
+                paginationHtml += `<li class="page-item ${pageNum === page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadGuestActivity(${pageNum}); return false;">${pageNum + 1}</a></li>`;
+            }
+            if (page < totalPages - 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadGuestActivity(${page + 1}); return false;">Next</a></li>`;
+            }
+            paginationEl.innerHTML = paginationHtml;
+        } catch (error) {
+            console.error('Load guest activity error:', error);
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
         }
     };

@@ -117,6 +117,7 @@ function initPages() {
     pages.bulkUploadUSG = grab('bulk-upload-usg-page');
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
+    pages.guestActivity = grab('guest-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
     pages.troubleshooting = grab('troubleshooting-page');
     pages.patientBlockList = grab('patient-block-list-page');
