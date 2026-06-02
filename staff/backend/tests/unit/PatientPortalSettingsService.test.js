@@ -36,6 +36,7 @@ describe('PatientPortalSettingsService', () => {
     });
 
     it('trims nickname and upserts settings', async () => {
+        db.query.mockResolvedValueOnce([[]]);
         db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
         db.query.mockResolvedValueOnce([{ affectedRows: 1 }]);
         db.query.mockResolvedValueOnce([[{

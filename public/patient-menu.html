@@ -1991,7 +1991,7 @@
                         <span class="icon doctor-color"><i class="fa-solid fa-comments"></i></span>
                         <span><h3>Tanya Dokter</h3><p>Privat dan terpantau</p></span>
                     </button>
-                    <button class="tap-card soundable" onclick="go('/community-chat.html?_v=20260602nick5')">
+                    <button class="tap-card soundable" onclick="go('/community-chat.html?_v=20260602nick6')">
                         <span class="icon community-color"><i class="fa-solid fa-users"></i></span>
                         <span><h3>Chat Komunitas</h3><p>Ruang ngobrol pasien</p></span>
                     </button>
@@ -2430,6 +2430,56 @@
             } catch (error) {
                 showToast(error.message || 'Pengaturan gagal disimpan');
             }
+        }
+
+        async function savePortalNicknameOnly(nickname, notificationSound) {
+            const response = await fetch('/api/patients/portal-settings', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + getToken(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nickname: nickname,
+                    notification_sound: notificationSound || 'default'
+                })
+            });
+            if (response.status === 401) throw new Error('unauthorized');
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.message || 'Gagal menyimpan nickname');
+            return data.settings || {};
+        }
+
+        async function ensurePortalNicknameOnLogin() {
+            const existingNickname = String(portalSettings.nickname || '').trim();
+            if (existingNickname) return true;
+
+            const ruleText = 'Nickname wajib diisi sebelum menggunakan portal.\n\nAturan nickname:\n- minimal 3 karakter\n- tidak boleh mengandung kata kotor/vulgar\n- tidak boleh mengandung nama staff atau nama Dr. Dibya Arfianda';
+
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+                const input = window.prompt(ruleText);
+                const candidate = String(input || '').trim();
+                if (!candidate) {
+                    window.alert('Nickname wajib diisi.');
+                    continue;
+                }
+
+                try {
+                    const settings = await savePortalNicknameOnly(candidate, portalSettings.notification_sound || 'default');
+                    applyPortalSettings(settings);
+                    showToast('Nickname berhasil disimpan');
+                    return true;
+                } catch (error) {
+                    if (error.message === 'unauthorized') {
+                        logout();
+                        return false;
+                    }
+                    window.alert(error.message || 'Nickname tidak valid. Coba nama lain.');
+                }
+            }
+
+            showToast('Nickname wajib diisi untuk melanjutkan.', 'warning');
+            return false;
         }
 
         function playPortalNotificationSound(event) {
@@ -3949,7 +3999,7 @@
                 ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis.html']
             ]},
             aplikasi: { title: 'Aplikasi', items: [
-                ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?_v=20260602nick5'],
+                ['fa-solid fa-users', 'Chat Komunitas', '/community-chat.html?_v=20260602nick6'],
                 ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
                 ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
                 ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
@@ -4197,6 +4247,12 @@
                 await loadProfile();
                 await loadPortalSettings();
             } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
+
+            const nicknameReady = await ensurePortalNicknameOnLogin();
+            if (!nicknameReady) {
+                return;
+            }
+
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
             requestAnimationFrame(function() {
