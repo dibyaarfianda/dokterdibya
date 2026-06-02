@@ -387,15 +387,19 @@ function renderTroubleshootingReports(reports) {
     }
 
     tbody.innerHTML = reports.map(report => {
-        const patientName = report.is_anonymous ? 'Anonim' : (report.patient_name || 'Pasien');
-        const patientId = report.patient_id || '-';
+        const patientName = report.is_anonymous
+            ? 'Anonim'
+            : (report.patient_real_name || report.patient_name || 'Pasien');
+        const patientNickname = report.is_anonymous
+            ? '-'
+            : (report.patient_nickname || report.user_display_name || '-');
         const message = escapeHtml(report.message || '-').replace(/\n/g, '<br>');
         return `
             <tr>
                 <td><small>${escapeHtml(formatTroubleshootingDate(report.created_at))}</small></td>
                 <td>
                     <div class="font-weight-bold">${escapeHtml(patientName)}</div>
-                    <small class="text-muted">ID: ${escapeHtml(patientId)}</small>
+                    <small class="text-muted">ID: ${escapeHtml(patientNickname)}</small>
                 </td>
                 <td class="troubleshooting-message-cell">${message}</td>
             </tr>
