@@ -2182,15 +2182,17 @@
         };
         const GUEST_DEMO_ROUTES = {
             '/patient-menu.html': {},
-            '/kick-counter.html': { mockParam: 'mockApi' },
-            '/pregnancy-tracker.html': { mockParam: 'mockApi' },
-            '/fertility-calendar.html': { mockParam: 'mockApi' },
-            '/jadwal-vitamin.html': { mockParam: 'mockApi' },
             '/jadwal-rs.html': { mockParam: 'mockApi' },
             '/perjalanan-ibu.html': {},
             '/artikel.html': {},
             '/info-terbaru.html': {}
         };
+        const GUEST_LOGIN_ROUTES = new Set([
+            '/kick-counter.html',
+            '/pregnancy-tracker.html',
+            '/fertility-calendar.html',
+            '/jadwal-vitamin.html'
+        ]);
         let currentProfile = null;
         let homeInfoItems = [];
         let homeAnnouncementDetailsById = {};
@@ -2322,6 +2324,12 @@
             parsed.searchParams.set('guest', '1');
             if (rule.mockParam) parsed.searchParams.set(rule.mockParam, '1');
             return parsed.pathname + parsed.search + parsed.hash;
+        }
+
+        function isGuestLoginRoute(url) {
+            let parsed;
+            try { parsed = new URL(url, window.location.origin); } catch (error) { return false; }
+            return parsed.origin === window.location.origin && GUEST_LOGIN_ROUTES.has(parsed.pathname);
         }
 
         function openTopbarModal(title, kicker, bodyHtml) {
@@ -3268,6 +3276,10 @@
 
         function go(url) {
             if (isGuestMode()) {
+                if (isGuestLoginRoute(url)) {
+                    endGuestAndLogin();
+                    return;
+                }
                 const guestUrl = getGuestNavigationUrl(url);
                 if (!guestUrl) {
                     showGuestUpgradePrompt('Halaman ini memakai data atau aksi pasien asli. Masuk dengan akun pasien untuk membukanya.');
@@ -4387,7 +4399,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260602guest2', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260602guest3', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
