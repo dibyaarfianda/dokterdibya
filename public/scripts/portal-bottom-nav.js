@@ -43,8 +43,7 @@
         ],
         edukasi: [
             ['fa-solid fa-heart', 'Langkah Awal Ibu', '/perjalanan-ibu.html'],
-            ['fa-solid fa-book-open', 'Nadi Pengetahuan', '/artikel.html'],
-            ['fa-solid fa-stethoscope', 'Mengenai istilah bidang Obgyn', '/artikel-kesehatan.html']
+            ['fa-solid fa-book-open', 'Nadi Pengetahuan', '/artikel.html']
         ],
         jadwal: [
             ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
