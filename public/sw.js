@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602w'; // 2026-06-02w - temporarily hide Istilah Obgyn menu from patient portal
+const CACHE_VERSION = '20260602x'; // 2026-06-02x - remove Chat Komunitas from menu Aplikasi on portal
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
