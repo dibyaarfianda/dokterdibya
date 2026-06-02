@@ -14,7 +14,7 @@
     <meta property="og:url" content="https://sisiwanita.id/">
     <title>SISIwanita</title>
     <script>
-        window.SISIWANITA_PAGE_VERSION = '20260602sticky-mobile1';
+        window.SISIWANITA_PAGE_VERSION = '20260602sticky-mobile2';
     </script>
 
     <!-- PWA Manifest -->
@@ -140,6 +140,26 @@
 
         html.mobile-scroll-light .proces-spacer {
             height: 72px !important;
+        }
+
+        html.sticky-stack-light {
+            scroll-behavior: auto;
+            overscroll-behavior-x: none;
+            overscroll-behavior-y: auto;
+        }
+
+        html.sticky-stack-light body {
+            overscroll-behavior-x: none;
+            overscroll-behavior-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        html.sticky-stack-light .proces-section,
+        html.sticky-stack-light .proces-row,
+        html.sticky-stack-light .proces-desc {
+            transition: none !important;
+            will-change: auto !important;
+            overflow-anchor: none !important;
         }
 
         body {
@@ -5257,16 +5277,32 @@
                 document.documentElement.classList.add('standalone-pwa');
             }
 
-            var isMobileScrollDevice = !window.matchMedia ||
-                window.matchMedia('(pointer: coarse)').matches ||
-                window.matchMedia('(hover: none)').matches ||
-                window.matchMedia('(max-width: 900px)').matches;
-
-            if (isMobileScrollDevice) {
-                document.documentElement.classList.add('mobile-scroll-light');
+            function matchesQuery(query) {
+                return !!(window.matchMedia && window.matchMedia(query).matches);
             }
 
-            window.__portalReduceMobileScrollWork = isMobileScrollDevice;
+            var ua = navigator.userAgent || '';
+            var hasTouch = (navigator.maxTouchPoints || 0) > 0 ||
+                matchesQuery('(pointer: coarse)') ||
+                matchesQuery('(hover: none)');
+            var isIpad = /iPad/i.test(ua) ||
+                (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+            var isIphone = /iPhone|iPod/i.test(ua);
+            var isAndroid = /Android/i.test(ua);
+            var isSmallViewport = matchesQuery('(max-width: 600px)');
+            var usePhoneStaticLight = hasTouch && isSmallViewport && isIphone && !isAndroid;
+            var useStickyStackLight = hasTouch && !usePhoneStaticLight &&
+                (isIpad || isAndroid || matchesQuery('(max-width: 1180px)'));
+
+            if (usePhoneStaticLight) {
+                document.documentElement.classList.add('mobile-scroll-light');
+            } else if (useStickyStackLight) {
+                document.documentElement.classList.add('sticky-stack-light');
+            }
+
+            window.__portalStickyStackMode = usePhoneStaticLight ? 'phone-static' :
+                (useStickyStackLight ? 'touch-sticky-light' : 'full');
+            window.__portalReduceMobileScrollWork = usePhoneStaticLight;
             window.__portalReducePwaScrollWork = isStandalonePwa &&
                 (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
@@ -7624,9 +7660,16 @@
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
 
+            var stickyMode = window.__portalStickyStackMode || 'full';
+            var isTouchStickyLight = stickyMode === 'touch-sticky-light';
+
             if (window.__portalReduceMobileScrollWork) {
                 document.documentElement.classList.add('mobile-scroll-light');
                 return;
+            }
+
+            if (isTouchStickyLight) {
+                document.documentElement.classList.add('sticky-stack-light');
             }
 
             // Compute COLLAPSED_H from the actual collapsed title block.
@@ -7784,6 +7827,12 @@
                     sd.descHeights = sd.rows.map(function(row) {
                         return Math.min(measureExpandedRow(row).descHeight, 120);
                     });
+                    sd.descEls = sd.rows.map(function(row) {
+                        return row.querySelector('.proces-desc');
+                    });
+                    sd.lastStyleState = sd.rows.map(function(_, i) {
+                        return (sd.lastStyleState && sd.lastStyleState[i]) || {};
+                    });
 
                     sd.targetP = sd.rows.map(function(_, i) { return sd.targetP[i] || 0; });
                     sd.renderP = sd.rows.map(function(_, i) { return sd.renderP[i] || 0; });
@@ -7815,18 +7864,30 @@
                 var row = sd.rows[i];
                 if (!row) return;
 
+                if (isTouchStickyLight) {
+                    p = Math.round(p * 100) / 100;
+                }
+
+                var state = (sd.lastStyleState && sd.lastStyleState[i]) || {};
+                if (isTouchStickyLight && state.p === p) {
+                    return;
+                }
+
                 // Later rows stack on top of earlier rows (card-deck effect).
                 // Expanded (incoming from below) > transitioning > collapsed.
                 var layer;
                 if (p >= 1) layer = 800 + i;        // collapsed: lowest tier
                 else if (p > 0) layer = 900 + i;    // transitioning: middle tier
                 else layer = 1000 + i;               // expanded: highest (covers rows above)
-                row.style.zIndex = String(layer);
+                if (state.layer !== layer) {
+                    row.style.zIndex = String(layer);
+                    state.layer = layer;
+                }
 
                 // Each row fades its own description early in its own collapse timeline,
                 // then continues shrinking after the text is already gone.
                 var descH = (sd.descHeights && sd.descHeights[i]) || 80;
-                var desc = row.querySelector('.proces-desc');
+                var desc = (sd.descEls && sd.descEls[i]) || row.querySelector('.proces-desc');
                 if (desc) {
                     var isPatientFeaturesRow = sd.el && sd.el.classList.contains('patient-features-section');
                     var fadeStart = isPatientFeaturesRow ? 0.28 : 0;
@@ -7837,15 +7898,35 @@
                     var heightEndP = isPatientFeaturesRow ? 0.92 : 0.88;
                     var heightP = Math.max(0, Math.min(1, (p - heightStart) / Math.max(0.01, heightEndP - heightStart)));
                     var remainingDescRatio = Math.max(0, 1 - heightP);
+                    var opacityValue = Math.max(0, opacity).toFixed(3);
+                    var maxHeightValue = (descH * remainingDescRatio).toFixed(1) + 'px';
 
-                    desc.style.setProperty('opacity', Math.max(0, opacity).toFixed(3), 'important');
-                    desc.style.setProperty('max-height', (descH * remainingDescRatio).toFixed(1) + 'px', 'important');
+                    if (state.opacity !== opacityValue) {
+                        desc.style.setProperty('opacity', opacityValue, 'important');
+                        state.opacity = opacityValue;
+                    }
+                    if (state.maxHeight !== maxHeightValue) {
+                        desc.style.setProperty('max-height', maxHeightValue, 'important');
+                        state.maxHeight = maxHeightValue;
+                    }
                 }
 
                 var padTop = PAD_TOP_MAX - (PAD_TOP_MAX - PAD_TOP_MIN) * p;
                 var padBot = PAD_BOT_MAX - (PAD_BOT_MAX - PAD_BOT_MIN) * p;
-                row.style.paddingTop = padTop.toFixed(1) + 'px';
-                row.style.paddingBottom = padBot.toFixed(1) + 'px';
+                var padTopValue = padTop.toFixed(1) + 'px';
+                var padBotValue = padBot.toFixed(1) + 'px';
+                if (state.padTop !== padTopValue) {
+                    row.style.paddingTop = padTopValue;
+                    state.padTop = padTopValue;
+                }
+                if (state.padBot !== padBotValue) {
+                    row.style.paddingBottom = padBotValue;
+                    state.padBot = padBotValue;
+                }
+                state.p = p;
+                if (sd.lastStyleState) {
+                    sd.lastStyleState[i] = state;
+                }
             }
 
             function onScroll() {
@@ -7935,11 +8016,18 @@
             }
 
             window.addEventListener('scroll', scheduleScrollSync, { passive: true });
-            window.addEventListener('wheel', scheduleScrollSync, { passive: true });
-            window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
+            if (!isTouchStickyLight) {
+                window.addEventListener('wheel', scheduleScrollSync, { passive: true });
+                window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
+            }
 
             onScroll();
-            scrollSyncInterval = window.setInterval(onScroll, 33);
+            if (!isTouchStickyLight) {
+                scrollSyncInterval = window.setInterval(onScroll, 33);
+            } else {
+                setTimeout(scheduleScrollSync, 120);
+                setTimeout(scheduleScrollSync, 700);
+            }
         })();
 
         // ==================== HERO FIXED BG FADE ON SCROLL ====================
