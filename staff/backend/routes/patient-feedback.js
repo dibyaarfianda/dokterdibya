@@ -29,6 +29,20 @@ function toNullableInt(value) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
+function extractPatientPortalIdFromMessage(message) {
+    const text = String(message || '');
+    if (!text) {
+        return null;
+    }
+
+    const match = text.match(/Patient\s*ID\s*:\s*([A-Za-z0-9_-]+)/i);
+    if (!match || !match[1]) {
+        return null;
+    }
+
+    return String(match[1]).trim() || null;
+}
+
 async function resolveFeedbackPatientId(user) {
     const directCandidates = [
         user?.new_id,
@@ -162,6 +176,98 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
              LIMIT ? OFFSET ?`,
             [...params, parseInt(limit), parseInt(offset)]
         );
+
+        if (rows.length) {
+            const numericPatientIds = new Set();
+            const portalPatientIds = new Set();
+
+            for (const row of rows) {
+                const numericPatientId = toNullableInt(row.patient_id);
+                if (numericPatientId !== null) {
+                    numericPatientIds.add(numericPatientId);
+                }
+
+                const portalPatientId = extractPatientPortalIdFromMessage(row.message);
+                if (portalPatientId) {
+                    row._portal_patient_id = portalPatientId;
+                    portalPatientIds.add(portalPatientId);
+                }
+            }
+
+            const usersByNewId = new Map();
+            if (numericPatientIds.size) {
+                const placeholders = Array.from({ length: numericPatientIds.size }, () => '?').join(', ');
+                const [userRows] = await db.execute(
+                    `SELECT new_id, name, email
+                     FROM users
+                     WHERE new_id IN (${placeholders})`,
+                    Array.from(numericPatientIds)
+                );
+                for (const userRow of userRows) {
+                    const key = toNullableInt(userRow.new_id);
+                    if (key !== null) {
+                        usersByNewId.set(key, userRow);
+                    }
+                }
+            }
+
+            const patientById = new Map();
+            if (portalPatientIds.size) {
+                const placeholders = Array.from({ length: portalPatientIds.size }, () => '?').join(', ');
+                const [patientRows] = await db.execute(
+                    `SELECT p.id, p.full_name, p.email, pps.nickname
+                     FROM patients p
+                     LEFT JOIN patient_portal_settings pps ON pps.patient_id = p.id
+                     WHERE p.id IN (${placeholders})`,
+                    Array.from(portalPatientIds)
+                );
+                for (const patientRow of patientRows) {
+                    patientById.set(String(patientRow.id), patientRow);
+                }
+            }
+
+            const patientByEmail = new Map();
+            const emailCandidates = Array.from(usersByNewId.values())
+                .map((userRow) => String(userRow.email || '').trim().toLowerCase())
+                .filter(Boolean);
+
+            if (emailCandidates.length) {
+                const placeholders = Array.from({ length: emailCandidates.length }, () => '?').join(', ');
+                const [patientRows] = await db.execute(
+                    `SELECT p.id, p.full_name, p.email, pps.nickname
+                     FROM patients p
+                     LEFT JOIN patient_portal_settings pps ON pps.patient_id = p.id
+                     WHERE LOWER(TRIM(p.email)) IN (${placeholders})`,
+                    emailCandidates
+                );
+                for (const patientRow of patientRows) {
+                    const key = String(patientRow.email || '').trim().toLowerCase();
+                    if (key) {
+                        patientByEmail.set(key, patientRow);
+                    }
+                }
+            }
+
+            for (const row of rows) {
+                const numericPatientId = toNullableInt(row.patient_id);
+                const userRow = numericPatientId !== null ? usersByNewId.get(numericPatientId) : null;
+                const userEmail = String(userRow?.email || '').trim().toLowerCase();
+                const patientFromEmail = userEmail ? patientByEmail.get(userEmail) : null;
+                const patientFromMessage = row._portal_patient_id ? patientById.get(row._portal_patient_id) : null;
+                const resolvedPatient = patientFromMessage || patientFromEmail || null;
+
+                row.user_display_name = row.user_display_name || userRow?.name || null;
+                row.patient_real_name = row.patient_real_name || resolvedPatient?.full_name || null;
+                row.patient_nickname = row.patient_nickname || resolvedPatient?.nickname || null;
+
+                if (!row.patient_nickname && Number(row.is_anonymous) !== 1) {
+                    row.patient_nickname = row.patient_name || row.user_display_name || null;
+                }
+
+                delete row._portal_patient_id;
+            }
+        }
+
         const [[{ total }]] = await db.execute(
             `SELECT COUNT(*) AS total FROM patient_feedback WHERE ${where}`, params
         );
