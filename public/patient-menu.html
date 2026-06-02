@@ -190,6 +190,36 @@
         }
         .vip-badge.show { display: block; }
 
+        .guest-demo-banner {
+            margin: 0 0 14px;
+            padding: 13px 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(126, 168, 159, 0.3);
+            background: rgba(126, 168, 159, 0.13);
+            color: var(--ink);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 11px;
+            align-items: center;
+        }
+        .guest-demo-banner i { color: var(--green); font-size: 15px; }
+        .guest-demo-banner strong { display: block; font-size: 13px; line-height: 1.25; font-weight: 900; }
+        .guest-demo-banner span { display: block; color: var(--ink-soft); font-size: 11px; line-height: 1.35; font-weight: 650; }
+        .guest-demo-banner button {
+            border: 0;
+            border-radius: 12px;
+            background: #111;
+            color: #fff;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 850;
+            padding: 9px 11px;
+            cursor: pointer;
+        }
+        body.guest-demo-mode #vip-badge,
+        body.guest-demo-mode #notif-badge,
+        body.guest-demo-mode #doc-nav-badge { display: none !important; }
+
         .loading {
             min-height: 70vh;
             display: grid;
@@ -2135,6 +2165,32 @@
         const TAP_SOUND_KEY = 'patient_tap_sound_enabled';
         const BUG_REPORT_MAX_LENGTH = 1500;
         const BUG_REPORT_API_MAX_LENGTH = 2000;
+        const GUEST_MODE_KEY = 'sisiwanita_guest_mode';
+        const GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
+        const GUEST_SESSION_TTL_MS = 4 * 60 * 60 * 1000;
+        const GUEST_DEMO_PROFILE = {
+            id: 'DEMO',
+            patient_id: 'DEMO',
+            medicalRecordId: 'DEMO',
+            fullname: 'Tamu SISIwanita',
+            full_name: 'Tamu SISIwanita',
+            name: 'Tamu SISIwanita',
+            email: 'demo@sisiwanita.id',
+            phone: '-',
+            birth_date: null,
+            is_guest: true
+        };
+        const GUEST_DEMO_ROUTES = {
+            '/patient-menu.html': {},
+            '/kick-counter.html': { mockParam: 'mockApi' },
+            '/pregnancy-tracker.html': { mockParam: 'mockApi' },
+            '/fertility-calendar.html': { mockParam: 'mockApi' },
+            '/jadwal-vitamin.html': { mockParam: 'mockApi' },
+            '/jadwal-rs.html': { mockParam: 'mockApi' },
+            '/perjalanan-ibu.html': {},
+            '/artikel.html': {},
+            '/info-terbaru.html': {}
+        };
         let currentProfile = null;
         let homeInfoItems = [];
         let homeAnnouncementDetailsById = {};
@@ -2151,6 +2207,38 @@
 
         function getToken() {
             return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+        }
+
+        function clearGuestMode() {
+            try {
+                localStorage.removeItem(GUEST_MODE_KEY);
+                localStorage.removeItem(GUEST_STARTED_AT_KEY);
+                sessionStorage.removeItem(GUEST_MODE_KEY);
+                sessionStorage.removeItem(GUEST_STARTED_AT_KEY);
+            } catch (error) {}
+        }
+
+        function startGuestMode() {
+            try {
+                localStorage.removeItem('vps_auth_token');
+                sessionStorage.removeItem('vps_auth_token');
+                localStorage.removeItem('patient_token');
+                localStorage.removeItem('patient_user');
+                clearGuestMode();
+                sessionStorage.setItem(GUEST_MODE_KEY, '1');
+                sessionStorage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
+            } catch (error) {}
+        }
+
+        function isGuestMode() {
+            const marker = sessionStorage.getItem(GUEST_MODE_KEY) || localStorage.getItem(GUEST_MODE_KEY);
+            if (marker !== '1') return false;
+            const startedAt = Number(sessionStorage.getItem(GUEST_STARTED_AT_KEY) || localStorage.getItem(GUEST_STARTED_AT_KEY) || 0);
+            if (startedAt && Date.now() - startedAt > GUEST_SESSION_TTL_MS) {
+                clearGuestMode();
+                return false;
+            }
+            return true;
         }
 
         function normalizePatientName(value) {
@@ -2185,7 +2273,55 @@
         }
 
         function getStoredProfile() {
+            if (isGuestMode()) return Object.assign({}, GUEST_DEMO_PROFILE);
             try { return JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) { return {}; }
+        }
+
+        function renderGuestPromptBody(message) {
+            return '<div class="settings-panel">' +
+                '<div class="modal-empty" style="min-height:112px;padding:14px 8px;">' +
+                    '<i class="fa-solid fa-lock" style="font-size:28px;color:var(--green);"></i>' +
+                    '<p>' + escapeHtml(message || 'Mode demo hanya untuk melihat-lihat. Masuk dengan akun pasien untuk memakai fitur ini.') + '</p>' +
+                '</div>' +
+                '<div class="shell-modal-actions">' +
+                    '<button type="button" class="shell-modal-link" data-shell-action="close-modal"><i class="fa-solid fa-eye"></i>Lanjut lihat demo</button>' +
+                    '<button type="button" class="shell-modal-link" onclick="endGuestAndLogin(event)"><i class="fa-solid fa-right-to-bracket"></i>Masuk / Daftar</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function showGuestUpgradePrompt(message, event) {
+            stopTopbarEvent(event);
+            openTopbarModal('Mode Demo', 'SISIwanita', renderGuestPromptBody(message));
+        }
+
+        function requireRealPatient(message, event) {
+            if (!isGuestMode()) return true;
+            showGuestUpgradePrompt(message, event);
+            return false;
+        }
+
+        function endGuestAndLogin(event) {
+            stopTopbarEvent(event);
+            try {
+                localStorage.removeItem('vps_auth_token');
+                sessionStorage.removeItem('vps_auth_token');
+                localStorage.removeItem('patient_token');
+                localStorage.removeItem('patient_user');
+            } catch (error) {}
+            clearGuestMode();
+            window.location.href = '/patient-login.html?mode=login';
+        }
+
+        function getGuestNavigationUrl(url) {
+            let parsed;
+            try { parsed = new URL(url, window.location.origin); } catch (error) { return null; }
+            if (parsed.origin !== window.location.origin) return null;
+            const rule = GUEST_DEMO_ROUTES[parsed.pathname];
+            if (!rule) return null;
+            parsed.searchParams.set('guest', '1');
+            if (rule.mockParam) parsed.searchParams.set(rule.mockParam, '1');
+            return parsed.pathname + parsed.search + parsed.hash;
         }
 
         function openTopbarModal(title, kicker, bodyHtml) {
@@ -2270,6 +2406,7 @@
 
         async function openNotificationModal(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Notifikasi berisi data pribadi pasien. Masuk dengan akun pasien untuk membukanya.', event)) return;
             openTopbarModal('Notifikasi', 'Update pasien', renderModalLoading('Memuat notifikasi...'));
             try {
                 topbarNotifications = await fetchTopbarNotifications();
@@ -2390,6 +2527,7 @@
 
         async function openSettingsModal(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Pengaturan portal tersimpan untuk akun pasien. Masuk untuk mengatur profil dan notifikasi.', event)) return;
             openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
             try {
                 const settings = await loadPortalSettings();
@@ -2407,6 +2545,7 @@
 
         async function savePortalSettings(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Mode demo tidak menyimpan pengaturan akun pasien.', event)) return;
             const nickname = document.getElementById('portal-nickname')?.value || '';
             const notificationSound = document.getElementById('portal-notification-sound')?.value || 'default';
             try {
@@ -2810,6 +2949,7 @@
 
         function openHomePhotoModal(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Foto beranda hanya tersimpan untuk akun pasien. Masuk untuk mengaturnya.', event)) return;
             homePhotoDraft = getHomePhotoState();
             openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
             // Crop is adjusted only during upload; no post-save crop editing.
@@ -2906,6 +3046,7 @@
 
         function openProfilePhotoPicker(event, mode) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Foto profil hanya bisa diatur setelah login sebagai pasien.', event)) return;
             const input = document.getElementById(mode === 'camera' ? 'profile-photo-camera-input' : 'profile-photo-input');
             if (!input) return;
             if (mode === 'camera') input.setAttribute('capture', 'environment');
@@ -3098,6 +3239,7 @@
         }
 
         async function fetchProfileForModal() {
+            if (isGuestMode()) return Object.assign({}, GUEST_DEMO_PROFILE);
             try {
                 const response = await fetch('/api/patients/profile?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 if (response.status === 401) throw new Error('unauthorized');
@@ -3114,6 +3256,7 @@
 
         async function openProfileModal(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Profil berisi data pasien pribadi. Masuk dengan akun pasien untuk melihatnya.', event)) return;
             openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile || getStoredProfile()));
             try {
                 const profile = await fetchProfileForModal();
@@ -3124,7 +3267,22 @@
         }
 
         function go(url) {
+            if (isGuestMode()) {
+                const guestUrl = getGuestNavigationUrl(url);
+                if (!guestUrl) {
+                    showGuestUpgradePrompt('Halaman ini memakai data atau aksi pasien asli. Masuk dengan akun pasien untuk membukanya.');
+                    return;
+                }
+                window.location.href = guestUrl;
+                return;
+            }
             window.location.href = url;
+        }
+
+        function handleSheetNavigation(event, url) {
+            stopTopbarEvent(event);
+            go(url);
+            return false;
         }
 
         function showToast(message) {
@@ -3306,6 +3464,7 @@
         }
 
         function openMyCorner() {
+            if (!requireRealPatient('Ruang personal tersimpan untuk akun pasien. Masuk untuk membuka dan mengaturnya.')) return;
             if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
                 return window.PatientMyCorner.open();
             }
@@ -3355,6 +3514,7 @@
 
         function openBugReportModal(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Laporan bug memakai konteks akun pasien agar tim bisa menindaklanjuti dengan tepat.', event)) return;
             const textarea = document.getElementById('bug-report-message');
             if (textarea) textarea.value = '';
             updateBugReportCount();
@@ -3407,6 +3567,7 @@
 
         async function submitBugReport(event) {
             stopTopbarEvent(event);
+            if (!requireRealPatient('Mode demo tidak dapat mengirim laporan bug.', event)) return;
             const textarea = document.getElementById('bug-report-message');
             const message = (textarea && textarea.value ? textarea.value : '').trim();
             if (!message) {
@@ -4020,7 +4181,7 @@
             const data = menuData[category];
             if (!data) return;
             document.getElementById('sheet-title').textContent = data.title;
-            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '"><i class="' + item[0] + '"></i><span>' + item[1] + '</span></a>').join('');
+            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" onclick="return handleSheetNavigation(event, \'' + item[2] + '\')"><i class="' + item[0] + '"></i><span>' + item[1] + '</span></a>').join('');
             document.getElementById('sheet-overlay').classList.add('active');
             document.getElementById('bottom-sheet').classList.add('active');
         }
@@ -4220,7 +4381,87 @@
             sessionStorage.removeItem('vps_auth_token');
             localStorage.removeItem('patient_token');
             localStorage.removeItem('patient_user');
+            clearGuestMode();
             window.location.href = '/patient-login.html';
+        }
+
+        function refreshPatientServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js?v=20260602guest1', { scope: '/' })
+                    .then(registration => registration.update().catch(() => {}))
+                    .catch(() => {});
+            }
+        }
+
+        function insertGuestDemoBanner() {
+            const hero = document.querySelector('.hero-card');
+            if (!hero || document.getElementById('guest-demo-banner')) return;
+            const banner = document.createElement('section');
+            banner.id = 'guest-demo-banner';
+            banner.className = 'guest-demo-banner reveal';
+            banner.innerHTML = '<i class="fa-solid fa-eye"></i>' +
+                '<div><strong>Mode demo aktif</strong><span>Anda bisa melihat tampilan portal. Data medis, booking, chat, dokumen, dan pengaturan hanya aktif setelah login.</span></div>' +
+                '<button type="button" onclick="endGuestAndLogin(event)">Login</button>';
+            hero.parentNode.insertBefore(banner, hero);
+        }
+
+        function initGuestHome() {
+            document.body.classList.add('guest-demo-mode');
+            currentProfile = Object.assign({}, GUEST_DEMO_PROFILE);
+            window.currentProfile = currentProfile;
+            portalSettings = Object.assign({}, portalSettings, { nickname: 'Tamu' });
+
+            const heroTitle = document.getElementById('hero-title');
+            const heroCopy = document.getElementById('hero-copy');
+            if (heroTitle) heroTitle.textContent = 'Tamu, ini demo portal.';
+            if (heroCopy) heroCopy.innerHTML = 'Jelajahi tampilan <span class="hero-copy-strong">portal wanita sehat</span>. Fitur pribadi akan terbuka setelah login pasien.';
+
+            updateProfileAvatar(currentProfile);
+            updateHomeHeroPhoto();
+            insertGuestDemoBanner();
+            applyMyCorner();
+            const cornerName = document.getElementById('corner-name');
+            const cornerCardTitle = document.getElementById('corner-card-title');
+            const cornerDesc = document.getElementById('corner-desc');
+            if (cornerName) cornerName.textContent = 'Ruang Demo';
+            if (cornerCardTitle) cornerCardTitle.textContent = 'Demo';
+            if (cornerDesc) cornerDesc.textContent = 'Preview ruang personal. Masuk untuk menyimpan catatan dan preferensi.';
+
+            const liveQueue = document.getElementById('live-queue-home-section');
+            if (liveQueue) liveQueue.style.display = 'none';
+            const birthCongrats = document.getElementById('birth-congrats-home');
+            if (birthCongrats) {
+                birthCongrats.classList.remove('show');
+                birthCongrats.style.display = 'none';
+            }
+            const quickStatus = document.getElementById('quick-status');
+            if (quickStatus) quickStatus.classList.remove('show', 'warning');
+            const cancelButton = document.getElementById('booking-cancel-btn');
+            if (cancelButton) cancelButton.style.display = 'none';
+            const notifBadge = document.getElementById('notif-badge');
+            const docBadge = document.getElementById('doc-nav-badge');
+            if (notifBadge) notifBadge.style.display = 'none';
+            if (docBadge) docBadge.style.display = 'none';
+
+            const trackerBig = document.getElementById('tracker-big');
+            const trackerDesc = document.getElementById('tracker-desc');
+            if (trackerBig) trackerBig.textContent = 'Demo';
+            if (trackerDesc) trackerDesc.textContent = 'Buka aplikasi untuk melihat contoh monitoring tanpa data pribadi.';
+            renderHomeAnnouncements([{
+                source: 'announcement',
+                title: 'Selamat datang di demo SISIwanita',
+                message: 'Mode ini menampilkan contoh portal. Masuk dengan akun pasien untuk membuka fitur personal.',
+                created_at: new Date().toISOString()
+            }], 0);
+
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+            document.body.classList.add('home-sections-unlocked', 'home-actions-revealed', 'home-later-revealed', 'home-actions-settled');
+            requestAnimationFrame(function() {
+                updateHomeActionGap();
+                revealPrimaryActionsIfReady();
+            });
+            triggerHomeIntroAnimation();
         }
 
         async function init() {
@@ -4230,16 +4471,22 @@
             lockHomeSections();
             todayLabel();
             updateSoundUI();
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('guest') === '1') startGuestMode();
             const token = getToken();
             let user = {};
             try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
-            if (!token || !user.id) { window.location.href = '/patient-login.html'; return; }
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260530h', { scope: '/' })
-                    .then(registration => registration.update().catch(() => {}))
-                    .catch(() => {});
+            if (!token || !user.id) {
+                if (isGuestMode()) {
+                    refreshPatientServiceWorker();
+                    initGuestHome();
+                    return;
+                }
+                window.location.href = '/patient-login.html';
+                return;
             }
+
+            refreshPatientServiceWorker();
 
             try {
                 await loadProfile();
@@ -4273,6 +4520,8 @@
         window.saveMyCorner = saveMyCorner;
         window.toggleTapSound = toggleTapSound;
         window.go = go;
+        window.handleSheetNavigation = handleSheetNavigation;
+        window.endGuestAndLogin = endGuestAndLogin;
         window.openSheet = openSheet;
         window.closeSheet = closeSheet;
         window.closeAllModals = closeAllModals;
