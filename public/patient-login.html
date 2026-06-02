@@ -630,6 +630,7 @@
         const AUTH_TESTER_ALLOWLIST = ['nanda ananda', 'p2025091', 'dibyaarfianda83@gmail.com'];
         const GUEST_MODE_KEY = 'sisiwanita_guest_mode';
         const GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
+        const GUEST_SESSION_ID_KEY = 'sisiwanita_guest_session_id';
 
         // ==================== MOBILE APP CONTEXT ====================
         const urlParams = new URLSearchParams(window.location.search);
@@ -658,6 +659,42 @@
                 localStorage.removeItem(GUEST_STARTED_AT_KEY);
                 sessionStorage.removeItem(GUEST_MODE_KEY);
                 sessionStorage.removeItem(GUEST_STARTED_AT_KEY);
+                sessionStorage.removeItem(GUEST_SESSION_ID_KEY);
+            } catch (error) {}
+        }
+
+        function getGuestSessionId() {
+            try {
+                var existing = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
+                if (existing) return existing;
+                var generated = 'guest_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+                sessionStorage.setItem(GUEST_SESSION_ID_KEY, generated);
+                return generated;
+            } catch (error) {
+                return 'guest_' + Date.now().toString(36);
+            }
+        }
+
+        function trackGuestActivity(eventType, details) {
+            try {
+                var payload = JSON.stringify({
+                    session_id: getGuestSessionId(),
+                    event_type: eventType,
+                    page_path: window.location.pathname + window.location.search,
+                    page_title: document.title,
+                    details: details || '',
+                    referrer: document.referrer || ''
+                });
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/api/guest-activity', new Blob([payload], { type: 'application/json' }));
+                    return;
+                }
+                fetch('/api/guest-activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: payload,
+                    keepalive: true
+                }).catch(function() {});
             } catch (error) {}
         }
 
@@ -671,6 +708,7 @@
                 clearGuestSessionMarkers();
                 sessionStorage.setItem(GUEST_MODE_KEY, '1');
                 sessionStorage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
+                trackGuestActivity('guest_start', 'Guest/demo mulai dari halaman login');
             } catch (error) {}
             window.location.href = '/patient-menu.html?guest=1';
         }
