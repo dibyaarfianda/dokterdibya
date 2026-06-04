@@ -281,7 +281,7 @@ input { font-family: inherit; }
 }
 
 .app-content {
-  padding: 16px 16px 24px;
+  padding: 16px 16px calc(var(--nav-height) + var(--safe-bottom) + 28px);
 }
 
 .app-loading {
@@ -582,6 +582,7 @@ input { font-family: inherit; }
   border-radius: var(--radius);
   padding: 12px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .calendar-header-row {
@@ -601,11 +602,14 @@ input { font-family: inherit; }
 .calendar-body {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, minmax(46px, 1fr));
   gap: 2px;
 }
 
 .calendar-cell {
-  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 46px;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -615,6 +619,7 @@ input { font-family: inherit; }
   position: relative;
   transition: background 0.15s;
   gap: 2px;
+  overflow: hidden;
 }
 
 .calendar-cell:hover {
@@ -645,12 +650,14 @@ input { font-family: inherit; }
 .calendar-day-number {
   font-size: 13px;
   font-weight: 500;
+  line-height: 1;
 }
 
 .calendar-dots {
   display: flex;
   gap: 2px;
   justify-content: center;
+  min-height: 6px;
 }
 
 .calendar-dot {
@@ -683,6 +690,8 @@ input { font-family: inherit; }
   font-weight: 700;
   line-height: 1;
   height: 13px;
+  min-width: 20px;
+  justify-content: center;
 }
 
 .calendar-surgery-badge svg {
@@ -706,6 +715,7 @@ input { font-family: inherit; }
   font-weight: 700;
   line-height: 1;
   height: 13px;
+  min-width: 18px;
 }
 
 .calendar-cell.is-today .calendar-space-badge {
@@ -1064,9 +1074,11 @@ input { font-family: inherit; }
 .location-legend {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-top: 16px;
+  column-gap: 14px;
+  row-gap: 8px;
+  margin: 14px 0 0;
   flex-wrap: wrap;
+  padding-bottom: 8px;
 }
 
 .legend-item {
@@ -1861,6 +1873,12 @@ input { font-family: inherit; }
 
 /* Responsive - larger phones */
 @media (min-width: 400px) {
+  .calendar-body {
+    grid-template-rows: repeat(6, minmax(52px, 1fr));
+  }
+  .calendar-cell {
+    min-height: 52px;
+  }
   .calendar-day-number {
     font-size: 14px;
   }
