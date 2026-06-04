@@ -3,41 +3,161 @@
 # include /etc/nginx/snippets/sisiwanita-patient-redirects.conf;
 
 location = / {
-    return 301 https://sisiwanita.id/;
+    return 301 https://sisiwanita.id/$is_args$args;
 }
 
 location = /index.html {
-    return 301 https://sisiwanita.id/;
+    return 301 https://sisiwanita.id/$is_args$args;
 }
 
 location = /patient-login.html {
-    return 301 https://sisiwanita.id/patient-login.html;
+    return 301 https://sisiwanita.id/patient-login.html$is_args$args;
+}
+
+location = /patient-login-backup.html {
+    return 301 https://sisiwanita.id/patient-login.html$is_args$args;
 }
 
 location = /patient-menu.html {
-    return 301 https://sisiwanita.id/patient-menu.html;
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
 }
 
 location = /patient-dashboard.html {
-    return 301 https://sisiwanita.id/patient-menu.html;
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
+}
+
+location = /patient-visit-history.html {
+    return 301 https://sisiwanita.id/riwayat-kunjungan.html$is_args$args;
+}
+
+location = /patient-billing.html {
+    return 301 https://sisiwanita.id/riwayat-kunjungan.html$is_args$args;
+}
+
+location = /riwayat-medis.html {
+    return 301 https://sisiwanita.id/riwayat-kunjungan.html$is_args$args;
+}
+
+location = /complete-profile.html {
+    return 301 https://sisiwanita.id/complete-profile.html$is_args$args;
+}
+
+location = /complete-birthdate.html {
+    return 301 https://sisiwanita.id/complete-birthdate.html$is_args$args;
+}
+
+location = /identitas-awal.html {
+    return 301 https://sisiwanita.id/identitas-awal.html$is_args$args;
+}
+
+location = /patient-intake.html {
+    return 301 https://sisiwanita.id/patient-intake.html$is_args$args;
+}
+
+location = /intake-status.html {
+    return 301 https://sisiwanita.id/intake-status.html$is_args$args;
+}
+
+location = /verify-email.html {
+    return 301 https://sisiwanita.id/verify-email.html$is_args$args;
+}
+
+location = /reset-password.html {
+    return 301 https://sisiwanita.id/reset-password.html$is_args$args;
+}
+
+location = /set-password.html {
+    return 301 https://sisiwanita.id/set-password.html$is_args$args;
+}
+
+location = /register.html {
+    return 301 https://sisiwanita.id/patient-login.html$is_args$args;
+}
+
+location = /mobile-google-callback.html {
+    return 301 https://sisiwanita.id/mobile-google-callback.html$is_args$args;
+}
+
+location = /app-logout.html {
+    return 301 https://sisiwanita.id/app-logout.html$is_args$args;
+}
+
+location = /patient-tool-template.html {
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
+}
+
+location = /patient-dashboard-preview.html {
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
+}
+
+location = /patient-dashboard%20copy.html {
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
+}
+
+location = /booking-appointment.html {
+    return 301 https://sisiwanita.id/booking-klinik.html$is_args$args;
+}
+
+location = /practice-locations.html {
+    return 301 https://sisiwanita.id/jadwal-rs.html$is_args$args;
+}
+
+location = /practice-schedule.html {
+    return 301 https://sisiwanita.id/jadwal-rs.html$is_args$args;
+}
+
+location = /gallery-kenangan.html {
+    return 301 https://sisiwanita.id/gallery-kenangan.html$is_args$args;
+}
+
+location = /privacy-policy.html {
+    return 301 https://sisiwanita.id/privacy-policy.html$is_args$args;
+}
+
+location = /index2.html {
+    return 301 https://sisiwanita.id/$is_args$args;
+}
+
+location = /app-ui-preview.html {
+    return 301 https://sisiwanita.id/$is_args$args;
+}
+
+location = /feature-password-management.html {
+    return 301 https://sisiwanita.id/$is_args$args;
+}
+
+location = /footer-preview.html {
+    return 301 https://sisiwanita.id/$is_args$args;
+}
+
+location = /prototype-modern-ui.html {
+    return 301 https://sisiwanita.id/$is_args$args;
+}
+
+location = /prototype-martin1-ui.html {
+    return 301 https://sisiwanita.id/$is_args$args;
 }
 
 location = /patient-menu-simple-trial.html {
-    return 301 https://sisiwanita.id/patient-menu.html;
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
 }
 
 location = /patient-menu-trial.html {
-    return 301 https://sisiwanita.id/patient-menu.html;
+    return 301 https://sisiwanita.id/patient-menu.html$is_args$args;
 }
 
 location = /patient-login-trial.html {
-    return 301 https://sisiwanita.id/patient-login.html;
+    return 301 https://sisiwanita.id/patient-login.html$is_args$args;
 }
 
-location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|booking-klinik|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|jadwal-rs|jadwal-vitamin|kick-counter|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|tanya-dokter)\.html$ {
-    return 301 https://sisiwanita.id/$1.html;
+location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|bantuan|booking-klinik|community-chat|community-profile|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|info-terbaru|jadwal-rs|jadwal-vitamin|kelas-persalinan|kick-counter|konfirmasi-hadir|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|subscription|subscription-success|tanya-dokter)\.html$ {
+    return 301 https://sisiwanita.id/$1.html$is_args$args;
 }
 
-location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|booking-klinik|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|jadwal-rs|jadwal-vitamin|kick-counter|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|tanya-dokter)-trial\.html$ {
-    return 301 https://sisiwanita.id/$1.html;
+location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|bantuan|booking-klinik|community-chat|community-profile|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|info-terbaru|jadwal-rs|jadwal-vitamin|kelas-persalinan|kick-counter|konfirmasi-hadir|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|subscription|subscription-success|tanya-dokter)-trial\.html$ {
+    return 301 https://sisiwanita.id/$1.html$is_args$args;
+}
+
+location ~ ^/(antrian-live|booking-klinik|gerakan-bayi|jadwal-vitamin|kalender-kesuburan|monitoring-kehamilan|perjalanan-ibu|ruang-membaca|tanya-dokter|update-terkini)-promo-mock\.html$ {
+    return 301 https://sisiwanita.id/$is_args$args;
 }
