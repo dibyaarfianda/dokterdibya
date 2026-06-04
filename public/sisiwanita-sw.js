@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260604login5';
+const CACHE_VERSION = '20260605pwa1';
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -7,12 +7,14 @@ const PRECACHE_URLS = [
   '/index.html',
   '/patient-login.html',
   '/patient-menu.html',
+  '/mobile-app-disabled.html',
   '/album-usg.html',
   '/dokumen-medis.html',
   '/hasil-lab.html',
   '/booking-klinik.html',
   '/antrian.html',
   '/sisiwanita.webmanifest',
+  '/scripts/patient-native-app-guard.js',
   OFFLINE_URL,
   '/images/pwa-icons/swlogo-pwa-192x192.png',
   '/images/pwa-icons/swlogo-pwa-512x512.png'

@@ -99,6 +99,56 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+const LEGACY_PATIENT_NATIVE_APP_MESSAGE = 'Aplikasi mobile dokterDIBYA versi lama sudah dinonaktifkan. Silakan akses Portal Pasien melalui PWA SISIwanita di https://sisiwanita.id';
+
+function isLegacyPatientNativeAppRequest(req) {
+    const origin = (req.headers.origin || '').toLowerCase();
+    const userAgent = req.headers['user-agent'] || '';
+    const fullPath = req.originalUrl || req.url || '';
+
+    const isPatientApiPath = fullPath.startsWith('/api/patients')
+        || fullPath.startsWith('/api/auth/patient-login')
+        || fullPath.startsWith('/api/patient/')
+        || fullPath.startsWith('/api/patient-')
+        || fullPath.startsWith('/api/registration-codes')
+        || fullPath.startsWith('/api/sunday-appointments')
+        || fullPath.startsWith('/api/hospital-appointments')
+        || fullPath.startsWith('/api/fertility-calendar')
+        || fullPath.startsWith('/api/kick-counter')
+        || fullPath.startsWith('/api/community-chat')
+        || fullPath.startsWith('/api/support-chat')
+        || fullPath.startsWith('/api/tanya-subscriptions')
+        || fullPath.startsWith('/api/usg-photos')
+        || fullPath.startsWith('/api/billings/my-billings')
+        || fullPath.startsWith('/api/polls');
+
+    if (!isPatientApiPath) return false;
+
+    const isNativeOrigin = origin === 'capacitor://localhost' || origin === 'ionic://localhost';
+    const isAndroidWebView = /Android/i.test(userAgent) && (/(;\s*wv\)|\bwv\b)/i.test(userAgent) || /Version\/\d+(?:\.\d+)?/i.test(userAgent));
+    const isLocalNativeWebView = /^https?:\/\/localhost(?::\d+)?$/i.test(origin) && isAndroidWebView;
+
+    return isNativeOrigin || isLocalNativeWebView || isAndroidWebView;
+}
+
+app.use('/api', (req, res, next) => {
+    if (!isLegacyPatientNativeAppRequest(req)) return next();
+
+    logger.warn('Legacy patient native app request blocked', {
+        path: req.originalUrl || req.url,
+        origin: req.headers.origin || 'none',
+        userAgent: req.headers['user-agent'] || 'unknown',
+        ip: req.ip
+    });
+
+    return res.status(410).json({
+        success: false,
+        code: 'LEGACY_PATIENT_APP_DISABLED',
+        message: LEGACY_PATIENT_NATIVE_APP_MESSAGE,
+        pwaUrl: 'https://sisiwanita.id'
+    });
+});
+
 // Smart rate limiting — IP-keyed, endpoint-tiered
 const { authLimiter, expensiveLimiter, standardLimiter, coalesce, getCoalesceStats } = require('./middleware/rateLimiter');
 app.use('/api/auth/', authLimiter);
