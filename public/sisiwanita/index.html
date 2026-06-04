@@ -14,11 +14,11 @@
     <meta property="og:url" content="https://sisiwanita.id/">
     <title>SISIwanita</title>
     <script>
-        window.SISIWANITA_PAGE_VERSION = '20260602sticky-mobile2';
+        window.SISIWANITA_PAGE_VERSION = '20260604login-redirect1';
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260527s4">
+    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260604s1">
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -297,7 +297,7 @@
             margin: 0;
             padding: 12px 18px 12px 32px;
             display: grid;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: minmax(0, 1fr) auto auto;
             align-items: center;
             gap: 12px;
         }
@@ -345,6 +345,45 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .top-login-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-height: 36px;
+            padding: 8px 13px;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--topbar-ink) 26%, transparent);
+            background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+            color: var(--topbar-ink);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease;
+        }
+
+        .top-login-link:hover,
+        .top-login-link:focus-visible {
+            background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+            border-color: color-mix(in srgb, var(--topbar-ink) 40%, transparent);
+            color: var(--topbar-ink);
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        .top-login-link:active {
+            transform: scale(0.96);
+        }
+
+        .top-login-link i {
+            font-size: 12px;
         }
 
         .circle-btn {
@@ -4572,6 +4611,13 @@
             .hero-greeting { font-size: 73px; max-width: 18ch; }
         }
 
+        @media (max-width: 390px) {
+            .topbar-inner { padding-left: 22px; padding-right: 12px; gap: 8px; }
+            .brand-title { font-size: 23px; }
+            .brand-sub { font-size: 9px; }
+            .top-login-link { min-height: 34px; padding: 8px 10px; font-size: 11px; gap: 5px; }
+        }
+
         /* ========== REDUCED MOTION ========== */
         /* Whitelist: .menu-card .menu-icon .cta-btn .doc-card .journey-card .journey-card-frame .journey-card-media .journey-card-copy .journey-card-kicker .journey-card-title .journey-card-cta .journey-card-cta-dot .journey-card-cta-text .site-footer .footer-card-frame .footer-photo .footer-grain .footer-vignette .footer-inner .doc-cta-link .doc-cta-track .dot .dot-left .dot-right .text .cta-arc-mask .cta-bg-img .cta-curves .cta-curve .cta-curve-path .brand .circle-btn .avatar .hero-greeting .kicker = interactive cards/booking visuals + footer parallax + hero page-load animations exempt from kill-switch */
         @media (prefers-reduced-motion: reduce) {
@@ -4627,6 +4673,10 @@
                     <div class="brand-sub">Portal Wanita Sehat</div>
                 </div>
             </div>
+            <a class="top-login-link" href="/patient-login.html?autoGoogle=1" aria-label="Masuk ke portal pasien sekarang">
+                <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                <span>Masuk sekarang</span>
+            </a>
             <div class="top-actions" hidden>
                 <!-- Notification Bell -->
                 <button class="circle-btn" id="notification-bell" onclick="navigateTo('notifikasi')" aria-label="Notifikasi">
