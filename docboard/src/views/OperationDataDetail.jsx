@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS } from '../utils/constants';
+import { getDayName, formatDateDisplay } from '../utils/date';
 
 function facilityLocation(facility) {
   if (facility === 'melinda') return LOCATIONS.rsia_melinda;
@@ -71,7 +72,7 @@ export default function OperationDataDetail({ id }) {
   const payload = data.payload || {};
   const report = reportPayload(payload);
   const loc = facilityLocation(record.facility);
-  const date = record.operation_date ? new Date(record.operation_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+  const date = record.operation_date ? `${getDayName(record.operation_date, true)}, ${formatDateDisplay(record.operation_date)}` : '-';
   const time = record.operation_time ? String(record.operation_time).slice(0, 5) : '--:--';
 
   return (

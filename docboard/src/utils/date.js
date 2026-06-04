@@ -5,10 +5,27 @@ const MONTHS_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
   'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
+export function parseLocalDate(date) {
+  if (date instanceof Date) return date;
+  if (typeof date === 'string') {
+    const dateOnly = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnly) {
+      return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
+    }
+  }
+  return new Date(date);
+}
+
 // Format date to YYYY-MM-DD using local timezone (GMT+7)
 export function formatDateLocal(date) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function normalizeDateInput(date) {
+  if (!date) return '';
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  return formatDateLocal(date);
 }
 
 export function today() {
@@ -16,7 +33,7 @@ export function today() {
 }
 
 export function getDayName(date, full = false) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   return full ? DAYS_FULL[d.getDay()] : DAYS_ID[d.getDay()];
 }
 
@@ -25,12 +42,12 @@ export function getMonthName(month, full = true) {
 }
 
 export function formatDateDisplay(date) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   return `${d.getDate()} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export function formatDateShort(date) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 }
 
@@ -85,7 +102,7 @@ export function isToday(dateStr) {
 
 // Get Monday of the week containing the given date
 export function getWeekStart(date) {
-  const d = new Date(date);
+  const d = parseLocalDate(date);
   const day = d.getDay(); // 0=Sun, 1=Mon, ...
   const diff = day === 0 ? -6 : 1 - day; // Adjust so Monday=start
   const monday = new Date(d);

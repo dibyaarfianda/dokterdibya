@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY, COMPLICATION_GRADES, WOUND_CLASSES, getRolePermissions } from '../utils/constants';
 import { userRole } from '../stores/auth';
 import PostOpNotesForm from '../components/PostOpNotesForm';
+import { getDayName, formatDateDisplay } from '../utils/date';
 
 const ASA_LABELS = {
   1: 'ASA I - Sehat',
@@ -142,8 +143,7 @@ export default function SurgeryDetail({ id }) {
   const status = SURGERY_STATUS[s.status] || SURGERY_STATUS.planned;
   const opCat = OP_CATEGORY[s.op_category] || {};
   const operationDisplayName = s.op_display_name || s.operation_type_other || s.op_name_id || s.op_name;
-  const dateObj = new Date(s.surgery_date);
-  const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateStr = `${getDayName(s.surgery_date, true)}, ${formatDateDisplay(s.surgery_date)}`;
   const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : null;
   const team = s.team_members || [];
 

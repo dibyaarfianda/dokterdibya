@@ -1,6 +1,13 @@
 const pool = require('../db');
 const logger = require('../utils/logger');
 
+function formatDateLocal(date) {
+  if (!date) return null;
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 class SurgeryService {
 
   decorateSurgeryRow(row) {
@@ -8,6 +15,7 @@ class SurgeryService {
 
     return {
       ...row,
+      surgery_date: formatDateLocal(row.surgery_date),
       op_display_name: row.operation_type_other || row.op_name_id || row.op_name || '',
       team_members: typeof row.team_members === 'string' ? JSON.parse(row.team_members) : row.team_members
     };
@@ -206,6 +214,26 @@ class SurgeryService {
     return rows;
   }
 
+  async getFallbackOperationTypeId() {
+    const [preferred] = await pool.query(
+      `SELECT id FROM surgery_operation_types
+       WHERE is_active = 1 AND code = 'OTHER-OP'
+       LIMIT 1`
+    );
+    if (preferred.length > 0) return preferred[0].id;
+
+    const [rows] = await pool.query(
+      `SELECT id FROM surgery_operation_types
+       WHERE is_active = 1
+       ORDER BY sort_order ASC, id ASC
+       LIMIT 1`
+    );
+    if (rows.length === 0) {
+      throw new Error('Tidak ada jenis operasi aktif');
+    }
+    return rows[0].id;
+  }
+
   // =====================================================
   // SURGERY SCHEDULES
   // =====================================================
@@ -226,8 +254,7 @@ class SurgeryService {
 
     const days = {};
     for (const row of rows) {
-      const d = new Date(row.surgery_date);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const dateStr = formatDateLocal(row.surgery_date);
       if (!days[dateStr]) {
         days[dateStr] = { total: 0, locations: [], surgeries: [] };
       }
@@ -281,6 +308,7 @@ class SurgeryService {
       anesthesia_type, asa_score, npo_status,
       team_members, special_notes, idempotency_key
     } = data;
+    const resolvedOperationTypeId = operation_type_id || await this.getFallbackOperationTypeId();
 
     // Idempotency check: if key provided and already exists, return existing record
     if (idempotency_key) {
@@ -306,7 +334,7 @@ class SurgeryService {
       [
         patient_name, patient_age || null, patient_id || null, mr_id || null,
         diagnosis, lab_results || null, radiology_results || null, usg_results || null,
-        operation_type_id, operation_type_other || null,
+        resolvedOperationTypeId, operation_type_other || null,
         location, surgery_date, surgery_time || null, estimated_duration_min || null,
         anesthesia_type || null, asa_score || null, npo_status || null,
         team_members ? JSON.stringify(team_members) : null,
@@ -319,7 +347,7 @@ class SurgeryService {
     // Audit log
     await this.logAudit(result.insertId, 'created', userId, {
       patient_name,
-      operation_type_id,
+      operation_type_id: resolvedOperationTypeId,
       operation_type_other: operation_type_other || null,
       location,
       surgery_date
@@ -329,6 +357,11 @@ class SurgeryService {
   }
 
   async updateSurgery(id, data, userId) {
+    const updateData = { ...data };
+    if ((updateData.operation_type_id === null || updateData.operation_type_id === '') && updateData.operation_type_other) {
+      updateData.operation_type_id = await this.getFallbackOperationTypeId();
+    }
+
     const fields = [];
     const values = [];
 
@@ -343,17 +376,17 @@ class SurgeryService {
 
     const changedFields = {};
     for (const field of allowedFields) {
-      if (data[field] !== undefined) {
+      if (updateData[field] !== undefined) {
         fields.push(`${field} = ?`);
-        values.push(data[field]);
-        changedFields[field] = data[field];
+        values.push(updateData[field]);
+        changedFields[field] = updateData[field];
       }
     }
 
     // Handle team_members separately (JSON)
-    if (data.team_members !== undefined) {
+    if (updateData.team_members !== undefined) {
       fields.push('team_members = ?');
-      values.push(JSON.stringify(data.team_members));
+      values.push(JSON.stringify(updateData.team_members));
       changedFields.team_members = '(updated)';
     }
 
