@@ -24,9 +24,36 @@ const activityLogger = require('./services/activityLogger');
 
 const app = express();
 const server = http.createServer(app);
+
+const configuredCorsOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([
+    ...configuredCorsOrigins,
+    'https://dokterdibya.com',
+    'https://www.dokterdibya.com',
+    'https://sisiwanita.id',
+    'https://www.sisiwanita.id',
+    'https://simrs.melinda.co.id',  // Chrome extension for SIMRS Melinda export
+    'capacitor://localhost',        // Capacitor Android/iOS app
+    'http://localhost',             // Capacitor local dev
+    'ionic://localhost',            // Ionic apps
+    'https://localhost'             // Secure localhost
+].filter(Boolean)));
+
+function isCorsOriginAllowed(origin) {
+    return !origin || allowedOrigins.includes(origin);
+}
+
+function corsOriginDelegate(origin, callback) {
+    callback(null, isCorsOriginAllowed(origin));
+}
+
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: corsOriginDelegate,
         methods: ['GET', 'POST']
     },
     pingTimeout: 60000,
@@ -65,27 +92,8 @@ app.use(metricsMiddleware);
 app.use(requestLogger);
 app.use(performanceLogger);
 
-// CORS - allow multiple origins including Chrome extension and mobile apps
-const allowedOrigins = [
-    process.env.CORS_ORIGIN,
-    'https://simrs.melinda.co.id',  // Chrome extension for SIMRS Melinda export
-    'capacitor://localhost',        // Capacitor Android/iOS app
-    'http://localhost',             // Capacitor local dev
-    'ionic://localhost',            // Ionic apps
-    'https://localhost'             // Secure localhost
-].filter(Boolean);
-
 app.use(cors({
-    origin: function(origin, callback) {
-        // Allow requests with no origin (mobile apps, Postman, etc)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(null, false);
-        }
-    },
+    origin: corsOriginDelegate,
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
