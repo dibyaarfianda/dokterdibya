@@ -1,6 +1,26 @@
-# Legacy patient trial redirects from dokterdibya.com to sisiwanita.id.
+# Patient-facing redirects from dokterdibya.com to sisiwanita.id.
 # Include this inside the HTTPS `server` block for dokterdibya.com:
 # include /etc/nginx/snippets/sisiwanita-patient-redirects.conf;
+
+location = / {
+    return 301 https://sisiwanita.id/;
+}
+
+location = /index.html {
+    return 301 https://sisiwanita.id/;
+}
+
+location = /patient-login.html {
+    return 301 https://sisiwanita.id/patient-login.html;
+}
+
+location = /patient-menu.html {
+    return 301 https://sisiwanita.id/patient-menu.html;
+}
+
+location = /patient-dashboard.html {
+    return 301 https://sisiwanita.id/patient-menu.html;
+}
 
 location = /patient-menu-simple-trial.html {
     return 301 https://sisiwanita.id/patient-menu.html;
@@ -12,6 +32,10 @@ location = /patient-menu-trial.html {
 
 location = /patient-login-trial.html {
     return 301 https://sisiwanita.id/patient-login.html;
+}
+
+location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|booking-klinik|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|jadwal-rs|jadwal-vitamin|kick-counter|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|tanya-dokter)\.html$ {
+    return 301 https://sisiwanita.id/$1.html;
 }
 
 location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|booking-klinik|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|jadwal-rs|jadwal-vitamin|kick-counter|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|tanya-dokter)-trial\.html$ {

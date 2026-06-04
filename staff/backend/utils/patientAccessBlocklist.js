@@ -9,6 +9,9 @@ const BLOCKED_PATIENT_IPS = new Set(
         .filter(Boolean)
 );
 
+const PATIENT_AUTH_BLOCK_DERIVED_IPS = process.env.PATIENT_AUTH_BLOCK_DERIVED_IPS === 'true';
+const PATIENT_AUTH_REMEMBER_BLOCKED_IPS = process.env.PATIENT_AUTH_REMEMBER_BLOCKED_IPS === 'true';
+
 const rememberedBlockedPatientIps = new Set();
 let tableReady = false;
 let configuredBlocklistCache = {
@@ -67,12 +70,14 @@ function isPatientIpBlocked(ipAddress) {
     return normalizedIp.length > 0 && (
         BLOCKED_PATIENT_IPS.has(normalizedIp)
         || configuredBlocklistCache.ips.has(normalizedIp)
-        || rememberedBlockedPatientIps.has(normalizedIp)
-        || derivedIpCache.ips.has(normalizedIp)
+        || (PATIENT_AUTH_REMEMBER_BLOCKED_IPS && rememberedBlockedPatientIps.has(normalizedIp))
+        || (PATIENT_AUTH_BLOCK_DERIVED_IPS && derivedIpCache.ips.has(normalizedIp))
     );
 }
 
 function rememberBlockedPatientRequestIp(req) {
+    if (!PATIENT_AUTH_REMEMBER_BLOCKED_IPS) return;
+
     const ipAddress = getRequestIp(req);
     if (ipAddress) {
         rememberedBlockedPatientIps.add(ipAddress);
@@ -80,6 +85,11 @@ function rememberBlockedPatientRequestIp(req) {
 }
 
 async function refreshDerivedBlockedIps() {
+    if (!PATIENT_AUTH_BLOCK_DERIVED_IPS) {
+        derivedIpCache = { loadedAt: Date.now(), ips: new Set() };
+        return derivedIpCache.ips;
+    }
+
     const now = Date.now();
     if (now - derivedIpCache.loadedAt < DERIVED_IP_CACHE_TTL_MS) {
         return derivedIpCache.ips;
@@ -261,6 +271,8 @@ async function isPatientRequestIpBlocked(req) {
     }
 
     if (isPatientIpBlocked(ipAddress)) return true;
+
+    if (!PATIENT_AUTH_BLOCK_DERIVED_IPS) return false;
 
     try {
         const derivedIps = await refreshDerivedBlockedIps();
