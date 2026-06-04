@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Aplikasi Lama Dinonaktifkan - SISIwanita</title>
+    <link rel="icon" type="image/png" href="/images/pwa-icons/swlogo-pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; margin: 0; }
+        body {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: grid;
+            place-items: center;
+            padding: calc(env(safe-area-inset-top, 0px) + 24px) 18px calc(env(safe-area-inset-bottom, 0px) + 24px);
+            background:
+                radial-gradient(circle at 16% 8%, rgba(126, 169, 159, 0.22), transparent 28%),
+                radial-gradient(circle at 88% 18%, rgba(197, 181, 151, 0.2), transparent 24%),
+                linear-gradient(180deg, #fbfbf8 0%, #f7f7f4 54%, #ffffff 100%);
+            color: #17231f;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .shell {
+            width: min(100%, 440px);
+            padding: 28px 22px 24px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(70, 91, 82, 0.13);
+            border-radius: 22px;
+            box-shadow: 0 24px 58px rgba(43, 66, 57, 0.13);
+            text-align: left;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        .brand img {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+        }
+        .brand span {
+            display: block;
+            color: #6a7c74;
+            font-size: 12px;
+            letter-spacing: 0.02em;
+        }
+        .brand strong {
+            display: block;
+            color: #17231f;
+            font-size: 15px;
+        }
+        h1 {
+            margin: 0 0 12px;
+            color: #17231f;
+            font-size: clamp(24px, 8vw, 34px);
+            line-height: 1.05;
+            letter-spacing: 0;
+        }
+        p {
+            margin: 0 0 16px;
+            color: #4c5f57;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .steps {
+            margin: 20px 0;
+            padding: 16px;
+            border-radius: 16px;
+            background: rgba(126, 169, 159, 0.12);
+            color: #2f453d;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        .steps strong { color: #17231f; }
+        .actions {
+            display: grid;
+            gap: 10px;
+            margin-top: 22px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 13px 16px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .btn-primary {
+            background: #17231f;
+            color: #ffffff;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.55);
+            border-color: rgba(70, 91, 82, 0.18);
+            color: #2f453d;
+        }
+        .note {
+            margin-top: 18px;
+            color: #78877f;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <main class="shell" role="main">
+        <div class="brand">
+            <img src="/images/pwa-icons/swlogo-pwa-192x192.png" alt="SISIwanita">
+            <div>
+                <span>Portal Pasien</span>
+                <strong>SISIwanita</strong>
+            </div>
+        </div>
+
+        <h1>Aplikasi lama sudah dinonaktifkan.</h1>
+        <p>
+            Portal pasien kini dipusatkan melalui PWA SISIwanita agar akses lebih ringan, aman, dan selalu mendapat pembaruan terbaru.
+        </p>
+
+        <div class="steps">
+            <strong>Cara akses terbaru:</strong><br>
+            buka <strong>sisiwanita.id</strong> melalui Chrome atau Safari, lalu pilih <strong>Masuk sekarang</strong>. Anda juga dapat menambahkan SISIwanita ke layar utama seperti aplikasi.
+        </div>
+
+        <div class="actions">
+            <a class="btn btn-primary" href="https://sisiwanita.id/patient-login.html?autoGoogle=1">Masuk lewat SISIwanita</a>
+            <a class="btn btn-secondary" href="https://sisiwanita.id/">Buka sisiwanita.id</a>
+        </div>
+
+        <p class="note">
+            Jika masih melihat halaman ini dari ikon aplikasi lama, silakan hapus aplikasi lama dari perangkat dan gunakan PWA SISIwanita dari browser.
+        </p>
+    </main>
+</body>
+</html>
