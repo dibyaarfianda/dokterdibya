@@ -14,7 +14,7 @@
     <meta property="og:url" content="https://sisiwanita.id/">
     <title>SISIwanita</title>
     <script>
-        window.SISIWANITA_PAGE_VERSION = '20260604login-redirect1';
+        window.SISIWANITA_PAGE_VERSION = '20260604login-opacity1';
     </script>
 
     <!-- PWA Manifest -->
@@ -230,6 +230,7 @@
             transform: none;
             opacity: 1;
             --topbar-ink: color-mix(in srgb, #ffffff calc(var(--hero-green-opacity, 1) * 100%), #000000);
+            --top-login-ink: color-mix(in srgb, #7EA99F calc(var(--hero-green-opacity, 1) * 100%), #000000);
             color: var(--topbar-ink);
         }
 
@@ -355,9 +356,9 @@
             min-height: 36px;
             padding: 8px 13px;
             border-radius: 999px;
-            border: 1px solid color-mix(in srgb, var(--topbar-ink) 26%, transparent);
-            background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
-            color: var(--topbar-ink);
+            border: 1px solid color-mix(in srgb, var(--top-login-ink) 34%, transparent);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--top-login-ink);
             font-size: 12px;
             font-weight: 700;
             line-height: 1;
@@ -371,9 +372,9 @@
 
         .top-login-link:hover,
         .top-login-link:focus-visible {
-            background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
-            border-color: color-mix(in srgb, var(--topbar-ink) 40%, transparent);
-            color: var(--topbar-ink);
+            background: rgba(255, 255, 255, 0.16);
+            border-color: color-mix(in srgb, var(--top-login-ink) 46%, transparent);
+            color: var(--top-login-ink);
             text-decoration: none;
             transform: translateY(-1px);
         }
