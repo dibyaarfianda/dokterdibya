@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260605pwa1';
+const CACHE_VERSION = '20260605birth1';
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';

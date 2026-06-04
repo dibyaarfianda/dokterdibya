@@ -645,6 +645,26 @@
             font-weight: 900;
             white-space: nowrap;
         }
+        .birth-congrats-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .birth-congrats-close {
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(179,95,123,0.18);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.76);
+            color: var(--rose);
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(17,17,17,0.06);
+        }
+        .birth-congrats-close:active { transform: scale(0.96); }
         .birth-congrats-body {
             display: grid;
             grid-template-columns: 112px 1fr;
@@ -1348,6 +1368,55 @@
         .settings-row strong { display: block; font-size: 13px; font-weight: 900; line-height: 1.2; }
         .settings-row span { display: block; color: var(--muted); font-size: 11px; font-weight: 700; margin-top: 2px; }
         .settings-count { min-width: 22px; height: 22px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; padding: 0 7px; background: #dc2626; color: #fff; font-size: 10px; font-weight: 900; }
+        .settings-subpanel {
+            border: 1px solid var(--line);
+            border-radius: 17px;
+            background: rgba(255,255,255,0.62);
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+        }
+        .settings-subpanel .modal-empty { min-height: 92px; padding: 16px 8px; }
+        .settings-subhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .settings-subhead strong { display: block; font-size: 13px; line-height: 1.2; font-weight: 900; }
+        .settings-subhead span { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; line-height: 1.35; font-weight: 700; }
+        .settings-subhead i { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; background: rgba(179,95,123,0.11); color: var(--rose); flex: 0 0 auto; }
+        .settings-birth-list { display: grid; gap: 8px; }
+        .settings-birth-item {
+            border: 1px solid rgba(179,95,123,0.14);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.74);
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 10px;
+        }
+        .settings-birth-item strong { display: block; color: var(--ink); font-size: 12px; line-height: 1.25; font-weight: 900; }
+        .settings-birth-item span { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; line-height: 1.35; font-weight: 750; }
+        .settings-birth-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 6px;
+            color: var(--green);
+            font-size: 10px;
+            font-weight: 900;
+        }
+        .settings-birth-status.hidden { color: var(--rose); }
+        .settings-birth-action {
+            min-height: 34px;
+            border: 1px solid rgba(92,127,114,0.18);
+            border-radius: 999px;
+            background: var(--ink);
+            color: #fff;
+            padding: 0 12px;
+            font-size: 10px;
+            font-weight: 900;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .settings-birth-action.secondary { background: rgba(255,255,255,0.76); color: var(--ink); }
         .settings-field { display: grid; gap: 6px; }
         .settings-field label { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
         .settings-input, .settings-select {
@@ -1700,10 +1769,13 @@
             .home-hero-photo { top: 14px; right: 14px; width: 132px; height: 132px; border-radius: 28px; }
             .birth-congrats-home { border-radius: 20px; padding: 12px; }
             .birth-congrats-head { flex-direction: column; gap: 6px; }
+            .birth-congrats-actions { width: 100%; justify-content: space-between; }
             .birth-congrats-badge { align-self: flex-start; }
             .birth-congrats-heading { font-size: 19px; }
             .birth-congrats-body { grid-template-columns: 1fr; }
             .birth-congrats-photo-wrap { width: 100%; height: 150px; }
+            .settings-birth-item { grid-template-columns: 1fr; }
+            .settings-birth-action { justify-self: start; }
             .modal-card {
                 width: calc(100% - 18px);
                 padding: 14px;
@@ -2011,7 +2083,10 @@
                         <h2 class="birth-congrats-heading">Selamat atas kelahiran buah hati Anda</h2>
                         <p class="birth-congrats-doctor" id="birth-congrats-doctor">Dari tim SISIwanita</p>
                     </div>
-                    <span class="birth-congrats-badge" id="birth-congrats-child-badge">Anak ke-1</span>
+                    <div class="birth-congrats-actions">
+                        <span class="birth-congrats-badge" id="birth-congrats-child-badge">Anak ke-1</span>
+                        <button type="button" class="birth-congrats-close soundable" onclick="dismissBirthCongratsHome(event)" aria-label="Sembunyikan ucapan kelahiran"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
                 </div>
                 <div class="birth-congrats-body">
                     <div class="birth-congrats-photo-wrap" id="birth-congrats-photo-wrap">
@@ -2254,6 +2329,10 @@
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
         let topbarNotifications = [];
+        let currentBirthCongratsId = '';
+        let birthCongratsSettingsRecords = [];
+        let birthCongratsSettingsLoaded = false;
+        let birthCongratsSettingsLoading = false;
         let portalSettings = {
             nickname: null,
             notification_sound: 'default'
@@ -2625,20 +2704,120 @@
                     '<i class="fa-solid fa-clipboard-list"></i><span><strong>Form Intake</strong><span>Edit atau update data intake Anda</span></span>' +
                     '<i class="fa-solid fa-chevron-right"></i>' +
                 '</button>' +
+                renderBirthCongratsSettingsPanel() +
             '</div>';
+        }
+
+        function renderBirthCongratsSettingsPanel() {
+            let content = '';
+            if (birthCongratsSettingsLoading || !birthCongratsSettingsLoaded) {
+                content = '<div class="modal-empty"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat ucapan kelahiran...</p></div>';
+            } else if (!birthCongratsSettingsRecords.length) {
+                content = '<div class="modal-empty"><i class="fa-regular fa-heart"></i><p>Belum ada ucapan kelahiran yang diterbitkan.</p></div>';
+            } else {
+                content = '<div class="settings-birth-list">' + birthCongratsSettingsRecords.map(function(item) {
+                    const id = escapeHtml(item.id || '');
+                    const childNumber = Number(item.child_number || 1);
+                    const babyName = String(item.baby_name || 'Buah Hati').trim();
+                    const published = Number(item.is_published || 0) === 1;
+                    const dismissed = Number(item.patient_dismissed || 0) === 1;
+                    const dateValue = item.birth_date ? formatDateLong(item.birth_date) : '-';
+                    const statusIcon = dismissed ? 'fa-eye-slash' : 'fa-eye';
+                    const statusText = published ? (dismissed ? 'Sedang disembunyikan' : 'Sedang tampil di beranda') : 'Menunggu publikasi';
+                    const action = published
+                        ? '<button type="button" class="settings-birth-action soundable ' + (dismissed ? '' : 'secondary') + '" data-birth-id="' + id + '" onclick="toggleBirthCongratsFromSettings(this.dataset.birthId, ' + (dismissed ? 'true' : 'false') + ', event)">' + (dismissed ? 'Tampilkan lagi' : 'Sembunyikan') + '</button>'
+                        : '';
+                    return '<div class="settings-birth-item">' +
+                        '<div>' +
+                            '<strong>' + escapeHtml(babyName) + '</strong>' +
+                            '<span>Anak ke-' + escapeHtml(Number.isFinite(childNumber) && childNumber > 0 ? childNumber : 1) + ' - ' + escapeHtml(dateValue) + '</span>' +
+                            '<em class="settings-birth-status ' + (dismissed ? 'hidden' : '') + '"><i class="fa-solid ' + statusIcon + '"></i>' + escapeHtml(statusText) + '</em>' +
+                        '</div>' +
+                        action +
+                    '</div>';
+                }).join('') + '</div>';
+            }
+            return '<div class="settings-subpanel" id="birth-congrats-settings-panel">' +
+                '<div class="settings-subhead">' +
+                    '<span><strong>Ucapan Kelahiran</strong><span>Atur apakah kartu ucapan kelahiran tampil di beranda.</span></span>' +
+                    '<i class="fa-solid fa-baby"></i>' +
+                '</div>' +
+                content +
+            '</div>';
+        }
+
+        function refreshBirthCongratsSettingsPanel() {
+            const panel = document.getElementById('birth-congrats-settings-panel');
+            if (!panel) return;
+            panel.outerHTML = renderBirthCongratsSettingsPanel();
+        }
+
+        async function fetchBirthCongratsSettingsRecords() {
+            const response = await fetch('/api/patient/birth-all?_t=' + Date.now(), {
+                headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                cache: 'no-store'
+            });
+            if (response.status === 401) throw new Error('unauthorized');
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.message || 'Ucapan kelahiran belum bisa dimuat');
+            return Array.isArray(data.data) ? data.data : [];
+        }
+
+        async function loadBirthCongratsSettings() {
+            birthCongratsSettingsLoading = true;
+            refreshBirthCongratsSettingsPanel();
+            try {
+                birthCongratsSettingsRecords = await fetchBirthCongratsSettingsRecords();
+                birthCongratsSettingsLoaded = true;
+                return birthCongratsSettingsRecords;
+            } finally {
+                birthCongratsSettingsLoading = false;
+                refreshBirthCongratsSettingsPanel();
+            }
         }
 
         async function openSettingsModal(event) {
             stopTopbarEvent(event);
             if (!requireRealPatient('Pengaturan portal tersimpan untuk akun pasien. Masuk untuk mengatur profil dan notifikasi.', event)) return;
+            birthCongratsSettingsLoading = true;
             openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
-            try {
-                const settings = await loadPortalSettings();
-                applyPortalSettings(settings);
-                openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
-            } catch (error) {
-                if (error.message === 'unauthorized') logout();
+            const results = await Promise.allSettled([loadPortalSettings(), loadBirthCongratsSettings()]);
+            const unauthorized = results.some(function(result) { return result.status === 'rejected' && result.reason && result.reason.message === 'unauthorized'; });
+            if (unauthorized) { logout(); return; }
+            if (results[0].status === 'fulfilled') applyPortalSettings(results[0].value);
+            if (results[0].status === 'rejected' || results[1].status === 'rejected') {
+                showToast('Sebagian pengaturan belum bisa dimuat');
             }
+            if (document.getElementById('topbar-modal')?.classList.contains('active')) {
+                openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
+            }
+        }
+
+        async function toggleBirthCongratsFromSettings(id, shouldShow, event) {
+            stopTopbarEvent(event);
+            if (!id) return;
+            try {
+                await updateBirthCongratsVisibility(id, shouldShow);
+                await loadBirthCongratsSettings();
+                await loadBirthCongratsHome();
+                showToast(shouldShow ? 'Ucapan kelahiran ditampilkan lagi' : 'Ucapan kelahiran disembunyikan');
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                showToast(error.message || 'Pengaturan ucapan kelahiran gagal');
+            }
+        }
+
+        async function updateBirthCongratsVisibility(id, shouldShow) {
+            const endpoint = shouldShow ? '/api/patient/birth-show/' : '/api/patient/birth-dismiss/';
+            const response = await fetch(endpoint + encodeURIComponent(id), {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                cache: 'no-store'
+            });
+            if (response.status === 401) throw new Error('unauthorized');
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.message || 'Ucapan kelahiran gagal diperbarui');
+            return data;
         }
 
         function openSettingsNotifications(event) {
@@ -4107,6 +4286,8 @@
         function hideBirthCongratsHome() {
             const card = document.getElementById('birth-congrats-home');
             if (!card) return;
+            currentBirthCongratsId = '';
+            card.removeAttribute('data-birth-id');
             card.classList.remove('show');
             requestAnimationFrame(updateHomeActionGap);
         }
@@ -4125,6 +4306,9 @@
             const weightValue = String(data.birth_weight || data.weight || '-').trim() || '-';
             const lengthValue = String(data.birth_length || data.length || '-').trim() || '-';
             const messageValue = String(data.message || 'Selamat atas kelahiran buah hati Anda!').trim();
+            currentBirthCongratsId = String(data.id || '').trim();
+            if (currentBirthCongratsId) card.dataset.birthId = currentBirthCongratsId;
+            else card.removeAttribute('data-birth-id');
 
             document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + doctorName;
             document.getElementById('birth-congrats-child-badge').textContent = 'Anak ke-' + (Number.isFinite(childNumber) && childNumber > 0 ? childNumber : 1);
@@ -4174,6 +4358,27 @@
             } catch (error) {
                 if (error.message === 'unauthorized') { logout(); return; }
                 hideBirthCongratsHome();
+            }
+        }
+
+        async function dismissBirthCongratsHome(event) {
+            stopTopbarEvent(event);
+            const card = document.getElementById('birth-congrats-home');
+            const birthId = currentBirthCongratsId || card?.dataset.birthId || '';
+            if (!birthId) {
+                hideBirthCongratsHome();
+                return;
+            }
+            try {
+                await updateBirthCongratsVisibility(birthId, false);
+                hideBirthCongratsHome();
+                birthCongratsSettingsLoaded = false;
+                birthCongratsSettingsRecords = [];
+                showToast('Ucapan kelahiran disembunyikan');
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                showToast(error.message || 'Ucapan kelahiran gagal disembunyikan');
+                loadBirthCongratsHome();
             }
         }
 
@@ -4637,6 +4842,8 @@
         window.closeTopbarModal = closeTopbarModal;
         window.openSettingsModal = openSettingsModal;
         window.openSettingsNotifications = openSettingsNotifications;
+        window.dismissBirthCongratsHome = dismissBirthCongratsHome;
+        window.toggleBirthCongratsFromSettings = toggleBirthCongratsFromSettings;
         window.savePortalSettings = savePortalSettings;
         window.playPortalNotificationSound = playPortalNotificationSound;
         window.openNotificationModal = openNotificationModal;
