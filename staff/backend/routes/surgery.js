@@ -10,6 +10,43 @@ const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
 
+function emptyToNull(value) {
+  if (value === undefined || value === null) return value;
+  return String(value).trim() === '' ? null : value;
+}
+
+function nullableInt(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function sanitizeSurgeryPayload(body = {}) {
+  const payload = { ...body };
+
+  [
+    'patient_id',
+    'mr_id',
+    'lab_results',
+    'radiology_results',
+    'usg_results',
+    'surgery_time',
+    'anesthesia_type',
+    'npo_status',
+    'special_notes',
+    'post_op_notes',
+    'cancellation_reason'
+  ].forEach((field) => {
+    if (payload[field] !== undefined) payload[field] = emptyToNull(payload[field]);
+  });
+
+  ['patient_age', 'estimated_duration_min', 'asa_score'].forEach((field) => {
+    if (payload[field] !== undefined) payload[field] = nullableInt(payload[field]);
+  });
+
+  return payload;
+}
+
 /**
  * GET /lookup-rm/:mrId
  * Fetch patient data from SIMRS by medical record number (DRD)
@@ -583,7 +620,8 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { patient_name, diagnosis, operation_type_id, operation_type_other, location, surgery_date } = req.body;
+    const payload = sanitizeSurgeryPayload(req.body);
+    const { patient_name, diagnosis, operation_type_id, operation_type_other, location, surgery_date } = payload;
 
     if (!patient_name || !diagnosis || (!operation_type_id && !operation_type_other) || !location || !surgery_date) {
       return res.status(400).json({
@@ -592,7 +630,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const surgery = await surgeryService.createSurgery(req.body, req.user?.id);
+    const surgery = await surgeryService.createSurgery(payload, req.user?.id);
 
     // Send push notification for new booking (fire-and-forget)
     docboardPush.sendNewBookingNotification(surgery).catch(err => {
@@ -617,7 +655,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
-    const surgery = await surgeryService.updateSurgery(req.params.id, req.body, req.user?.id);
+    const surgery = await surgeryService.updateSurgery(req.params.id, sanitizeSurgeryPayload(req.body), req.user?.id);
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery update error:', error);
