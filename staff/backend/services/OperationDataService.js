@@ -62,6 +62,13 @@ function normalizeTime(value) {
   return `${String(match[1]).padStart(2, '0')}:${match[2]}:00`;
 }
 
+function mapRecordDates(row) {
+  return {
+    ...row,
+    operation_date: normalizeDate(row.operation_date),
+  };
+}
+
 function mysqlDateTime(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -237,7 +244,7 @@ class OperationDataService {
     );
 
     return {
-      rows,
+      rows: rows.map(mapRecordDates),
       pagination: { page, limit, total: countRow.total, has_more: offset + rows.length < countRow.total },
     };
   }
@@ -248,7 +255,7 @@ class OperationDataService {
       [id]
     );
     if (!rows.length) return null;
-    const record = rows[0];
+    const record = mapRecordDates(rows[0]);
     const payload = await r2Storage.getJson(record.r2_key, record.r2_bucket || process.env.OPERATION_DATA_R2_BUCKET_NAME);
     return { record, payload };
   }

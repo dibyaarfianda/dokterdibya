@@ -3,8 +3,23 @@ import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS } from '../utils/constants';
 import DatePickerCalendar from '../components/DatePickerCalendar';
+import { normalizeDateInput, formatDateShort } from '../utils/date';
 
 const LOCATION_KEYS = Object.keys(LOCATIONS);
+
+function defaultOperationDataStartDate() {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 2);
+  return normalizeDateInput(date);
+}
+
+function operationDataLocation(facility) {
+  const key = String(facility || '').toLowerCase();
+  if (key === 'melinda' || key === 'rsia_melinda') return 'rsia_melinda';
+  if (key === 'gambiran' || key === 'rsud_gambiran') return 'rsud_gambiran';
+  if (key === 'bhayangkara' || key === 'rs_bhayangkara') return 'rs_bhayangkara';
+  return '';
+}
 
 export default function SurgeryForm({ id }) {
   const isEdit = !!id;
@@ -54,6 +69,12 @@ export default function SurgeryForm({ id }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const searchTimeout = useRef(null);
+
+  const [operationDataSearch, setOperationDataSearch] = useState('');
+  const [operationDataResults, setOperationDataResults] = useState([]);
+  const [operationDataLoading, setOperationDataLoading] = useState(false);
+  const [showOperationDataSearch, setShowOperationDataSearch] = useState(false);
+  const operationDataTimeout = useRef(null);
 
   useEffect(() => {
     loadData();
@@ -116,7 +137,7 @@ export default function SurgeryForm({ id }) {
         const data = await api.getSurgery(id);
         if (data.surgery) {
           const s = data.surgery;
-          const dateStr = new Date(s.surgery_date).toISOString().split('T')[0];
+          const dateStr = normalizeDateInput(s.surgery_date);
           const parsedOps = parseOperationSelection(typesData.types || [], s);
           setForm({
             patient_name: s.patient_name || '',
@@ -284,6 +305,63 @@ export default function SurgeryForm({ id }) {
         patient_id: patient.id || f.patient_id
       }));
     }
+  }
+
+  function handleOperationDataSearchInput(value) {
+    setOperationDataSearch(value);
+    if (operationDataTimeout.current) clearTimeout(operationDataTimeout.current);
+
+    if (value.length < 2) {
+      setOperationDataResults([]);
+      setShowOperationDataSearch(false);
+      return;
+    }
+
+    setShowOperationDataSearch(true);
+    operationDataTimeout.current = setTimeout(async () => {
+      setOperationDataLoading(true);
+      try {
+        const data = await api.getOperationData({
+          facility: 'all',
+          start: defaultOperationDataStartDate(),
+          end: normalizeDateInput(new Date()),
+          q: value,
+          limit: 10,
+        });
+        setOperationDataResults(data.data || []);
+      } catch (err) {
+        console.error('Operation data search error:', err);
+      } finally {
+        setOperationDataLoading(false);
+      }
+    }, 300);
+  }
+
+  function selectOperationData(record) {
+    const parsedOps = parseOperationSelection(opTypes, {
+      operation_type_id: null,
+      operation_type_other: record.operation_name || ''
+    });
+    const location = operationDataLocation(record.facility);
+
+    setOperationDataSearch('');
+    setOperationDataResults([]);
+    setShowOperationDataSearch(false);
+    setForm(f => ({
+      ...f,
+      patient_name: record.patient_name || f.patient_name,
+      mr_id: record.mr_id || f.mr_id,
+      diagnosis: record.diagnosis || f.diagnosis,
+      operation_type_id: parsedOps.selectedIds[0] || f.operation_type_id,
+      operation_type_ids: parsedOps.selectedIds.length ? parsedOps.selectedIds : f.operation_type_ids,
+      operation_type_other: parsedOps.customText || f.operation_type_other,
+      location: location || f.location,
+      surgery_date: normalizeDateInput(record.operation_date) || f.surgery_date,
+      surgery_time: record.operation_time ? String(record.operation_time).substring(0, 5) : f.surgery_time,
+      special_notes: f.special_notes || `Sumber data operasi: ${record.facility || 'RS'}${record.case_id ? ` / Case ${record.case_id}` : ''}`
+    }));
+
+    if (record.mr_id) setRmInput(record.mr_id);
   }
 
   // =====================================================
@@ -483,6 +561,41 @@ export default function SurgeryForm({ id }) {
         <div class="form-section rm-section">
           <div class="form-section-title">Cari Pasien</div>
 
+          <div class="form-group" style="position:relative">
+            <label>Cari Data Operasi RS</label>
+            <input
+              type="text"
+              value={operationDataSearch}
+              onInput={e => handleOperationDataSearchInput(e.target.value)}
+              placeholder="Cari dari Melinda, Gambiran, Bhayangkara..."
+            />
+            {showOperationDataSearch && (
+              <div class="search-dropdown">
+                {operationDataLoading ? (
+                  <div class="search-loading">Mencari data operasi...</div>
+                ) : operationDataResults.length === 0 ? (
+                  <div class="search-empty">Tidak ditemukan</div>
+                ) : (
+                  operationDataResults.map(record => {
+                    const locKey = operationDataLocation(record.facility);
+                    const loc = LOCATIONS[locKey];
+                    return (
+                      <button key={record.id} type="button" class="search-result" onClick={() => selectOperationData(record)}>
+                        <div class="search-result-name">{record.patient_name}</div>
+                        <div class="search-result-meta">
+                          {record.operation_name || 'Operasi'} · {normalizeDateInput(record.operation_date) || '-'} {record.operation_time ? String(record.operation_time).substring(0, 5) : ''}
+                        </div>
+                        <div class="search-result-meta">
+                          {loc?.shortName || record.facility} {record.mr_id ? `· MR ${record.mr_id}` : ''}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Search by name */}
           <div class="form-group" style="position:relative">
             <label>Cari Nama</label>
@@ -557,8 +670,7 @@ export default function SurgeryForm({ id }) {
                   <div class="rm-history-label">Riwayat kunjungan:</div>
                   <div class="rm-history-list">
                     {rmResult.history.slice(0, 5).map(v => {
-                      const d = new Date(v.date);
-                      const dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: '2-digit' });
+                      const dateStr = formatDateShort(v.date);
                       const isActive = v.mr_id === rmInput;
                       return (
                         <button

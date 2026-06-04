@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS } from '../utils/constants';
-import { today } from '../utils/date';
+import { today, formatDateShort } from '../utils/date';
 
 const FACILITY_OPTIONS = [
   { value: 'all', label: 'Semua RS' },
@@ -26,9 +26,7 @@ function facilityLocation(facility) {
 
 function formatDate(value) {
   if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDateShort(value);
 }
 
 function formatTime(value) {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
-import { today } from '../utils/date';
+import { today, normalizeDateInput, getDayName, formatDateShort } from '../utils/date';
 import ExportButton from '../components/ExportButton';
 
 export default function SurgeryList() {
@@ -26,8 +26,7 @@ export default function SurgeryList() {
   // Group by date
   const grouped = {};
   for (const s of surgeries) {
-    const d = new Date(s.surgery_date);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const dateStr = normalizeDateInput(s.surgery_date);
     if (!grouped[dateStr]) grouped[dateStr] = [];
     grouped[dateStr].push(s);
   }
@@ -70,9 +69,8 @@ export default function SurgeryList() {
         <div class="surgery-groups">
           {Object.entries(grouped).map(([date, items]) => {
             const isToday = date === todayStr;
-            const dateObj = new Date(date + 'T00:00:00');
-            const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'long' });
-            const dateDisplay = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            const dayName = getDayName(date, true);
+            const dateDisplay = formatDateShort(date);
 
             return (
               <div key={date} class="surgery-group">
