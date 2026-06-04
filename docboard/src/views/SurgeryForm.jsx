@@ -453,6 +453,7 @@ export default function SurgeryForm({ id }) {
       const payload = {
         ...form,
         patient_age: form.patient_age ? parseInt(form.patient_age) : null,
+        asa_score: form.asa_score ? parseInt(form.asa_score, 10) : null,
         operation_type_id: primaryOperationId ? parseInt(primaryOperationId, 10) : null,
         operation_type_ids: form.operation_type_ids.map(Number),
         operation_type_other: combinedLabels.length > 1 || customLabels.length > 0

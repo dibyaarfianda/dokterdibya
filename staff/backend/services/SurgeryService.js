@@ -8,6 +8,18 @@ function formatDateLocal(date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function nullableString(value) {
+  if (value === undefined || value === null) return null;
+  const normalized = String(value).trim();
+  return normalized || null;
+}
+
+function nullableInt(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
 class SurgeryService {
 
   decorateSurgeryRow(row) {
@@ -309,6 +321,9 @@ class SurgeryService {
       team_members, special_notes, idempotency_key
     } = data;
     const resolvedOperationTypeId = operation_type_id || await this.getFallbackOperationTypeId();
+    const normalizedPatientAge = nullableInt(patient_age);
+    const normalizedDuration = nullableInt(estimated_duration_min);
+    const normalizedAsaScore = nullableInt(asa_score);
 
     // Idempotency check: if key provided and already exists, return existing record
     if (idempotency_key) {
@@ -332,11 +347,11 @@ class SurgeryService {
         team_members, special_notes, created_by, idempotency_key)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        patient_name, patient_age || null, patient_id || null, mr_id || null,
+        patient_name, normalizedPatientAge, nullableString(patient_id), nullableString(mr_id),
         diagnosis, lab_results || null, radiology_results || null, usg_results || null,
         resolvedOperationTypeId, operation_type_other || null,
-        location, surgery_date, surgery_time || null, estimated_duration_min || null,
-        anesthesia_type || null, asa_score || null, npo_status || null,
+        location, surgery_date, surgery_time || null, normalizedDuration,
+        anesthesia_type || null, normalizedAsaScore, npo_status || null,
         team_members ? JSON.stringify(team_members) : null,
         special_notes || null, userId || null, idempotency_key || null
       ]
@@ -361,6 +376,11 @@ class SurgeryService {
     if ((updateData.operation_type_id === null || updateData.operation_type_id === '') && updateData.operation_type_other) {
       updateData.operation_type_id = await this.getFallbackOperationTypeId();
     }
+    if (updateData.patient_age !== undefined) updateData.patient_age = nullableInt(updateData.patient_age);
+    if (updateData.estimated_duration_min !== undefined) updateData.estimated_duration_min = nullableInt(updateData.estimated_duration_min);
+    if (updateData.asa_score !== undefined) updateData.asa_score = nullableInt(updateData.asa_score);
+    if (updateData.patient_id !== undefined) updateData.patient_id = nullableString(updateData.patient_id);
+    if (updateData.mr_id !== undefined) updateData.mr_id = nullableString(updateData.mr_id);
 
     const fields = [];
     const values = [];
