@@ -234,6 +234,7 @@ function executeLoadedScripts(doc, baseUrl) {
 function hideAllPages() {
     document.documentElement.classList.remove('kantor-saya-active');
     document.body.classList.remove('kantor-saya-active');
+    document.body.classList.remove('community-chat-active');
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
     document.querySelectorAll('[id$="-page"]').forEach(function (p) {
         if (p.closest('#content-kantor-saya')) {
@@ -243,6 +244,67 @@ function hideAllPages() {
     });
     document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
 }
+
+let communityChatViewportSyncBound = false;
+function syncCommunityChatFrameHeight() {
+    if (!document.body.classList.contains('community-chat-active')) return;
+
+    const page = document.getElementById('community-chat-page');
+    if (!page) return;
+
+    const rect = page.getBoundingClientRect();
+    const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0;
+    const availableHeight = Math.max(320, Math.floor(viewportHeight - Math.max(0, rect.top)));
+    document.documentElement.style.setProperty('--staff-community-chat-height', `${availableHeight}px`);
+}
+
+function bindCommunityChatViewportSync() {
+    if (communityChatViewportSyncBound) return;
+    communityChatViewportSyncBound = true;
+    window.addEventListener('resize', syncCommunityChatFrameHeight, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncCommunityChatFrameHeight, { passive: true });
+        window.visualViewport.addEventListener('scroll', syncCommunityChatFrameHeight, { passive: true });
+    }
+}
+
+function sendCommunityChatStaffToken(targetWindow) {
+    const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+    if (!targetWindow || !token) return;
+
+    const payload = {
+        type: 'STAFF_COMMUNITY_CHAT_AUTH',
+        token
+    };
+    const targetOrigin = window.location.origin;
+    let attempts = 0;
+    const post = () => {
+        attempts += 1;
+        try {
+            targetWindow.postMessage(payload, targetOrigin);
+        } catch (error) {
+            console.warn('[CommunityChat] Failed to send staff auth token:', error.message);
+        }
+        if (attempts < 8) {
+            setTimeout(post, 250);
+        }
+    };
+    post();
+}
+
+function bridgeCommunityChatFrameAuth(frame) {
+    if (!frame) return;
+    const send = () => sendCommunityChatStaffToken(frame.contentWindow);
+    frame.addEventListener('load', send, { once: false });
+    send();
+}
+
+window.addEventListener('message', function handleCommunityChatAuthRequest(event) {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data || {};
+    if (data.type !== 'COMMUNITY_CHAT_READY_FOR_STAFF_AUTH') return;
+    sendCommunityChatStaffToken(event.source);
+});
 function setTitleAndActive(title, navId, mobileAction) {
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = title;
@@ -325,8 +387,12 @@ function showDashboardPage() {
 
 function showCommunityChatPage() {
     hideAllPages();
+    document.body.classList.add('community-chat-active');
     pages.communityChat?.classList.remove('d-none');
     setTitleAndActive('Chat', 'nav-community-chat', 'community-chat');
+    bindCommunityChatViewportSync();
+    syncCommunityChatFrameHeight();
+    setTimeout(syncCommunityChatFrameHeight, 80);
 
     const chatTree = document.getElementById('nav-chat-main');
     if (chatTree) {
@@ -336,13 +402,14 @@ function showCommunityChatPage() {
     }
 
     const frame = document.getElementById('staff-community-chat-frame');
-    if (frame && !frame.src) {
+    if (frame && !frame.getAttribute('src')) {
         frame.src = '/community-chat.html?embed=staff';
     }
+    bridgeCommunityChatFrameAuth(frame);
 }
 
 function openCommunityChatPopup() {
-    const popupUrl = '/community-chat.html?moderator=compact&_t=' + Date.now();
+    const popupUrl = '/community-chat.html?moderator=compact&staffBridge=1&_t=' + Date.now();
     const popupFeatures = 'width=1400,height=900,resizable=yes,scrollbars=yes,location=yes,status=yes,menubar=no,toolbar=no';
     const popupWindow = window.open(popupUrl, 'communityChatWindow', popupFeatures);
     if (popupWindow) {
@@ -352,6 +419,7 @@ function openCommunityChatPopup() {
             // Ignore cross-window navigation edge cases and still focus popup.
         }
         popupWindow.focus();
+        sendCommunityChatStaffToken(popupWindow);
     }
 }
 

@@ -1265,11 +1265,36 @@
         }
 
         /* Embedded community chat page in staff panel */
+        body.community-chat-active .content-wrapper,
+        body.community-chat-active .content,
+        body.community-chat-active .container-fluid {
+            overflow: hidden !important;
+            padding-bottom: 0 !important;
+        }
+
+        body.community-chat-active .main-footer {
+            display: none !important;
+        }
+
+        body.community-chat-active #community-chat-page {
+            height: var(--staff-community-chat-height, calc(100dvh - 72px)) !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+        }
+
         .staff-community-chat-card {
             min-height: calc(100vh - 145px);
             height: calc(100vh - 145px);
             display: flex;
             flex-direction: column;
+        }
+
+        body.community-chat-active .staff-community-chat-card {
+            min-height: 0 !important;
+            height: 100% !important;
+            margin-bottom: 0 !important;
+            border-radius: 0 !important;
+            overflow: hidden !important;
         }
 
         .staff-community-chat-card .card-body {
@@ -1281,6 +1306,11 @@
             overflow: hidden;
         }
 
+        body.community-chat-active .staff-community-chat-card .card-body {
+            min-height: 0 !important;
+            height: 100% !important;
+        }
+
         .staff-community-chat-frame {
             width: 100%;
             min-height: 100%;
@@ -1289,6 +1319,13 @@
             border: 0;
             border-radius: 0 0 0.5rem 0.5rem;
             background: #0b1220;
+        }
+
+        body.community-chat-active .staff-community-chat-frame {
+            min-height: 0 !important;
+            height: 100% !important;
+            border-radius: 0 !important;
+            display: block !important;
         }
 
         /* Notification Badge Styles */
@@ -1786,7 +1823,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v225'; // Staff dashboard live queue: load utility as browser-safe JS module
+            const CACHE_VERSION = 'v239'; // Community chat staff auth bridge and fullscreen embed
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -7130,17 +7167,8 @@ Contoh Markdown:
                 <!-- COMMUNITY CHAT PAGE -->
                 <div id="community-chat-page" class="d-none">
                     <div class="card staff-community-chat-card">
-                        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #007bff, #3f8cff); color: #fff;">
-                            <h3 class="card-title mb-0"><i class="fas fa-comments mr-2"></i>Community Chat</h3>
-                            <div class="d-flex align-items-center" style="gap: 10px;">
-                                <small>Sinkron dengan portal pasien</small>
-                                <button type="button" class="btn btn-sm btn-light" onclick="openCommunityChatPopup()" title="Buka chat di jendela terpisah">
-                                    <i class="fas fa-external-link-alt"></i> Pop Up
-                                </button>
-                            </div>
-                        </div>
                         <div class="card-body p-0">
-                            <iframe id="staff-community-chat-frame" class="staff-community-chat-frame" src="/community-chat.html?embed=staff" title="Community Chat"></iframe>
+                            <iframe id="staff-community-chat-frame" class="staff-community-chat-frame" title="Community Chat"></iframe>
                         </div>
                     </div>
                 </div>
@@ -8112,7 +8140,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v238';
+    window.__assetVersion = 'v239';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };

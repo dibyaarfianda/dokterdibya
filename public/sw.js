@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260605intakegate'; // 2026-06-05 enforce intake form completion gate
+const CACHE_VERSION = '20260605communitychat'; // 2026-06-05 community chat staff embed bridge
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
