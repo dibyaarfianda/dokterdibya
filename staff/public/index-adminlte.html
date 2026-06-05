@@ -1823,7 +1823,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v240'; // Ruang Saya patient activity filter
+            const CACHE_VERSION = 'v241'; // Move Booking Settings to Sistem menu
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -2020,19 +2020,13 @@
                     <li class="nav-item has-treeview dokter-only d-none" id="nav-jadwal-booking">
                         <a href="#" class="nav-link">
                             <i class="nav-icon fas fa-calendar-alt"></i>
-                            <p>Jadwal / Booking Settings <i class="right fas fa-angle-left"></i></p>
+                            <p>Jadwal <i class="right fas fa-angle-left"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-jadwal">
                                 <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
                                     <i class="fas fa-calendar-alt nav-icon"></i>
                                     <p>Jadwal</p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-booking-settings">
-                                <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
-                                    <i class="fas fa-calendar-day nav-icon"></i>
-                                    <p>Booking Settings</p>
                                 </a>
                             </li>
                         </ul>
@@ -2170,6 +2164,12 @@
                         <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
                             <i class="nav-icon fas fa-user-shield"></i>
                             <p>Users / Roles</p>
+                        </a>
+                    </li>
+                    <li class="nav-item dokter-only d-none" id="nav-booking-settings">
+                        <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-day"></i>
+                            <p>Booking Settings</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-pengaturan">
@@ -8150,7 +8150,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v240';
+    window.__assetVersion = 'v241';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
