@@ -345,17 +345,16 @@ async function getRoomBySlug(slug) {
     return rows[0] || null;
 }
 
-async function findActiveDirectRoom(staffUserId, patientId) {
+async function findActiveDirectRoom(_staffUserId, patientId) {
     const [rows] = await db.query(
         `SELECT slug
          FROM community_chat_rooms
          WHERE is_archived = 0
            AND is_direct = 1
-           AND direct_staff_id = ?
            AND direct_patient_id = ?
          ORDER BY updated_at DESC, id DESC
          LIMIT 1`,
-        [staffUserId, patientId]
+        [patientId]
     );
 
     if (rows.length === 0) return null;
@@ -380,19 +379,14 @@ function getRoomDisplayMeta(row, currentUserType, currentUserId) {
         };
     }
 
-    if (String(row.direct_staff_id || '') === String(currentUserId || '')) {
-        const patientName = row.direct_patient_name || `Pasien ${row.direct_patient_id || ''}`.trim();
-        return {
-            name: patientName,
-            description: 'Percakapan pribadi dengan pasien',
-            counterpart_name: patientName
-        };
-    }
-
+    const patientName = row.direct_patient_name || `Pasien ${row.direct_patient_id || ''}`.trim();
+    const staffName = row.direct_staff_name || 'Staff';
     return {
-        name: row.name || 'Chat Pasien',
-        description: row.description || 'Percakapan pribadi',
-        counterpart_name: null
+        name: patientName || row.name || 'Chat Pasien',
+        description: String(row.direct_staff_id || '') === String(currentUserId || '')
+            ? 'Percakapan pribadi dengan pasien'
+            : `Percakapan pasien - dibuka oleh ${staffName}`,
+        counterpart_name: patientName || null
     };
 }
 
@@ -405,7 +399,7 @@ function canAccessRoom(room, user) {
         return String(room.direct_patient_id || '') === userId;
     }
 
-    return String(room.direct_staff_id || '') === userId;
+    return isStaffUser(user);
 }
 
 async function resolveUserIdentity(user) {
@@ -604,7 +598,8 @@ router.get('/rooms', verifyToken, async (req, res) => {
         const isVip = isPatientUser(req.user) ? await isVipPatient(userId) : null;
         const accessClause = userType === 'patient'
             ? '(r.is_direct = 0 OR r.direct_patient_id = ?)'
-            : '(r.is_direct = 0 OR r.direct_staff_id = ?)';
+            : '(r.is_direct = 0 OR r.is_direct = 1)';
+        const accessParams = userType === 'patient' ? [userId] : [];
 
         const [rows] = await db.query(
             `SELECT
@@ -650,7 +645,7 @@ router.get('/rooms', verifyToken, async (req, res) => {
                 r.created_at,
                 r.updated_at
             ORDER BY (r.slug = ?) DESC, COALESCE(MAX(m.created_at), r.created_at) DESC`,
-            [userId, userId, DEFAULT_LOBBY_SLUG]
+            [userId, ...accessParams, DEFAULT_LOBBY_SLUG]
         );
 
         res.json({
@@ -966,6 +961,7 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
                 room: room.slug,
                 message
             });
+            emitRoomListChanged();
         }
 
         res.json({ success: true, message });

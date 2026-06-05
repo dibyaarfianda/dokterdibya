@@ -2187,6 +2187,10 @@
     let selectedDirectPatient = null;
     let renderedMessageIds = new Set();
     let quotedMessage = null;
+    let messagePollTimer = null;
+    let roomsPollTimer = null;
+    let isPollingMessages = false;
+    let isPollingRooms = false;
     let stableAppHeight = 0;
     let uiSettings = {
         theme: 'light',
@@ -3352,6 +3356,7 @@
         if (socket) {
             socket.emit('community:join', { room: data.room.slug, token });
         }
+        startCommunitySyncPolling();
 
         syncDirectRoomActions();
         updateModeratorUi();
@@ -3382,6 +3387,43 @@
 
         el.messages.appendChild(node);
         el.messages.scrollTop = el.messages.scrollHeight;
+    }
+
+    async function pollActiveRoomMessages() {
+        if (!activeRoom || isPollingMessages) return;
+        isPollingMessages = true;
+        try {
+            const data = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages?limit=120`);
+            if (!activeRoom || data.room.slug !== activeRoom.slug) return;
+            syncRoomListEntry(data.room);
+            (data.messages || []).forEach((message) => appendMessage(message));
+            renderRooms();
+        } catch (error) {
+            console.warn('[CommunityChat] message sync failed:', error.message);
+        } finally {
+            isPollingMessages = false;
+        }
+    }
+
+    async function pollRoomsForUpdates() {
+        if (isPollingRooms) return;
+        isPollingRooms = true;
+        try {
+            await loadRooms(false);
+        } catch (error) {
+            console.warn('[CommunityChat] room sync failed:', error.message);
+        } finally {
+            isPollingRooms = false;
+        }
+    }
+
+    function startCommunitySyncPolling() {
+        if (!messagePollTimer) {
+            messagePollTimer = window.setInterval(pollActiveRoomMessages, 3000);
+        }
+        if (!roomsPollTimer) {
+            roomsPollTimer = window.setInterval(pollRoomsForUpdates, 10000);
+        }
     }
 
     async function sendMessage() {
