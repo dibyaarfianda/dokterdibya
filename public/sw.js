@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260605icon3'; // 2026-06-05 exit app closes PWA to login
+const CACHE_VERSION = '20260605exitpwa1'; // 2026-06-05 PWA exit closed screen
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -13,6 +13,7 @@ const OFFLINE_URL = '/offline.html';
 const PRECACHE_FILES = [
   '/',
   '/patient-menu.html',
+  '/app-closed.html',
   '/patient-menu.html',
   '/info-terbaru.html',
   '/patient-tool-template.html',
