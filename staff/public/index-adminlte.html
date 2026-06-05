@@ -1956,6 +1956,59 @@
                             <p>Jadwal</p>
                         </a>
                     </li>
+                    <li class="nav-item has-treeview dokter-only d-none" id="nav-tools-audit">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-toolbox"></i>
+                            <p>
+                                Tools & Audit
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showTroubleshootingPage(); return false;">
+                                    <i class="fas fa-bug nav-icon text-danger"></i>
+                                    <p>Troubleshooting</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
+                                    <i class="fas fa-user-check nav-icon"></i>
+                                    <p>Aktivitas Pasien</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showGuestActivityPage(); return false;">
+                                    <i class="fas fa-user-secret nav-icon text-success"></i>
+                                    <p>Aktivitas Demo</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showActivityLogPage(); return false;">
+                                    <i class="fas fa-history nav-icon"></i>
+                                    <p>Log Aktivitas</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showPatientBlockListPage(); return false;">
+                                    <i class="fas fa-ban nav-icon"></i>
+                                    <p>Block List</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
+                                    <i class="fas fa-chart-line nav-icon"></i>
+                                    <p>Analisis Finansial</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
+                                    <i class="fas fa-user-clock nav-icon"></i>
+                                    <p>Aktivitas Staff</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-item d-none" id="nav-docboard">
                         <a href="#" class="nav-link" onclick="showDocboardPage(); return false;">
                             <i class="nav-icon fas fa-procedures"></i>
@@ -8148,7 +8201,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v229';
+    window.__assetVersion = 'v230';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };

@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v229'; // Widgetize low-frequency staff sidebar tools
+const STAFF_PWA_VERSION = 'v230'; // Add visible Tools & Audit sidebar group
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
@@ -12,7 +12,6 @@ const versionedStaffAsset = (path) => `${path}?v=${STAFF_PWA_VERSION}`;
 
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
-  '/staff/public/index-adminlte.html',
   versionedStaffAsset('/staff/public/styles/mobile-responsive.css'),
   '/staff/public/styles/chat-slide-panel.css',
   versionedStaffAsset('/staff/public/sounds/send.mp3'),
