@@ -174,7 +174,7 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                 FROM patient_activity_log pal
                 LEFT JOIN patients p ON pal.patient_id = p.id
                 WHERE pal.event_type = 'view_halaman'
-                  AND LOWER(COALESCE(pal.page_name, pal.details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|ruang saya|my corner|kalender'
+                  AND LOWER(COALESCE(pal.page_name, pal.details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|kalender'
                   AND pal.created_at >= ? AND pal.created_at <= ?
             `;
             const toolParams = [fromDate, toDateEnd];
@@ -186,6 +186,33 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             }
 
             queries.push({ query: toolQuery, params: toolParams });
+        }
+
+        // Ruang Saya usage / Coming Soon attempts
+        if (!type || type === 'ruang_saya') {
+            let myCornerQuery = `
+                SELECT
+                    'ruang_saya' as type,
+                    pal.created_at as timestamp,
+                    p.full_name as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT('Ruang Saya: ', COALESCE(pal.page_name, pal.details, '-')) as details
+                FROM patient_activity_log pal
+                LEFT JOIN patients p ON pal.patient_id = p.id
+                WHERE pal.event_type = 'view_halaman'
+                  AND LOWER(COALESCE(pal.page_name, pal.details, '')) REGEXP 'ruang saya|my corner'
+                  AND pal.created_at >= ? AND pal.created_at <= ?
+            `;
+            const myCornerParams = [fromDate, toDateEnd];
+
+            if (search) {
+                myCornerQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR pal.page_name LIKE ? OR pal.details LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                myCornerParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+            }
+
+            queries.push({ query: myCornerQuery, params: myCornerParams });
         }
 
         // Payment activities (from patient_activity_log)
@@ -410,7 +437,8 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             [[bugReportStats]],
             [[supportChatStats]],
             [[doctorQuestionStats]],
-            [[toolUsageStats]]
+            [[toolUsageStats]],
+            [[myCornerStats]]
         ] = await Promise.all([
             db.query('SELECT COUNT(*) as count FROM sunday_appointments WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
             db.query('SELECT COUNT(*) as count FROM patient_intake_submissions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
@@ -423,7 +451,8 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             db.query("SELECT COUNT(*) as count FROM patient_feedback WHERE category = 'bug' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
             db.query('SELECT COUNT(*) as count FROM support_chat_sessions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
             db.query('SELECT COUNT(*) as count FROM patient_questions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
-            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND LOWER(COALESCE(page_name, details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|ruang saya|my corner|kalender' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd])
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND LOWER(COALESCE(page_name, details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|kalender' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND LOWER(COALESCE(page_name, details, '')) REGEXP 'ruang saya|my corner' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd])
         ]);
 
         res.json({
@@ -442,7 +471,8 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                 bugReports: bugReportStats.count,
                 supportChats: supportChatStats.count,
                 doctorQuestions: doctorQuestionStats.count,
-                toolUsage: toolUsageStats.count
+                toolUsage: toolUsageStats.count,
+                myCorner: myCornerStats.count
             }
         });
 
@@ -546,12 +576,18 @@ router.get('/stats', verifyToken, requireSuperadmin, async (req, res) => {
                  SELECT 'tool_pasien' as feature_type, COUNT(*) as count
                  FROM patient_activity_log
                  WHERE event_type = 'view_halaman'
-                   AND LOWER(COALESCE(page_name, details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|ruang saya|my corner|kalender'
+                   AND LOWER(COALESCE(page_name, details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|kalender'
                    AND created_at >= ?
-             ) feature_counts
+                 UNION ALL
+                 SELECT 'ruang_saya' as feature_type, COUNT(*) as count
+                 FROM patient_activity_log
+                 WHERE event_type = 'view_halaman'
+                   AND LOWER(COALESCE(page_name, details, '')) REGEXP 'ruang saya|my corner'
+                   AND created_at >= ?
+              ) feature_counts
              GROUP BY feature_type
              ORDER BY count DESC`,
-            [since, since, since, since, since]
+            [since, since, since, since, since, since]
         );
 
         res.json({

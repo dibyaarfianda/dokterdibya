@@ -1823,7 +1823,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v239'; // Community chat staff auth bridge and fullscreen embed
+            const CACHE_VERSION = 'v240'; // Ruang Saya patient activity filter
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -6759,6 +6759,15 @@ Contoh Markdown:
                                                 <div class="icon"><i class="fas fa-tools"></i></div>
                                             </div>
                                         </div>
+                                        <div class="col-lg-3 col-12">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-my-corner">0</h3>
+                                                    <p>Ruang Saya (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-door-open"></i></div>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between mb-4 patient-activity-portal-shortcuts">
@@ -6809,6 +6818,7 @@ Contoh Markdown:
                                                     <option value="login">Login</option>
                                                     <option value="view_halaman">Page View</option>
                                                     <option value="tool_pasien">Tool Pasien</option>
+                                                    <option value="ruang_saya">Ruang Saya</option>
                                                     <option value="pembayaran">Pembayaran</option>
                                                     <option value="community_chat">Chat Komunitas</option>
                                                     <option value="bug_report">Bug/Error</option>
@@ -8140,7 +8150,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v239';
+    window.__assetVersion = 'v240';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
@@ -11006,6 +11016,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             document.getElementById('pa-stat-support-chats').textContent = stats.supportChats || 0;
             document.getElementById('pa-stat-doctor-questions').textContent = stats.doctorQuestions || 0;
             document.getElementById('pa-stat-tool-usage').textContent = stats.toolUsage || 0;
+            document.getElementById('pa-stat-my-corner').textContent = stats.myCorner || 0;
 
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada aktivitas pasien</p></td></tr>';
@@ -11032,6 +11043,8 @@ Apakah Anda yakin ingin melanjutkan?`;
                     typeBadge = '<span class="badge badge-dark"><i class="fas fa-eye mr-1"></i>Page View</span>';
                 } else if (d.type === 'tool_pasien') {
                     typeBadge = '<span class="badge badge-secondary"><i class="fas fa-tools mr-1"></i>Tool Pasien</span>';
+                } else if (d.type === 'ruang_saya') {
+                    typeBadge = '<span class="badge badge-info"><i class="fas fa-door-open mr-1"></i>Ruang Saya</span>';
                 } else if (d.type === 'pembayaran') {
                     typeBadge = '<span class="badge badge-danger"><i class="fas fa-credit-card mr-1"></i>Pembayaran</span>';
                 } else if (d.type === 'community_chat') {
@@ -11271,6 +11284,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 login: 'Login',
                 view_halaman: 'Page View',
                 tool_pasien: 'Tool Pasien',
+                ruang_saya: 'Ruang Saya',
                 booking: 'Booking',
                 pembayaran: 'Pembayaran',
                 community_chat: 'Chat Komunitas',
@@ -11283,6 +11297,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 login: 'fas fa-sign-in-alt text-secondary',
                 view_halaman: 'fas fa-eye text-dark',
                 tool_pasien: 'fas fa-tools text-secondary',
+                ruang_saya: 'fas fa-door-open text-info',
                 booking: 'fas fa-calendar-check text-info',
                 pembayaran: 'fas fa-credit-card text-danger',
                 community_chat: 'fas fa-comments text-info',

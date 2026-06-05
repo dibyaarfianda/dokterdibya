@@ -253,6 +253,39 @@
         }
     }
 
+    function normalizePatientName(value) {
+        return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    function isMyCornerAllowedProfile() {
+        var profile = Object.assign({}, getStoredProfile(), window.currentProfile || {});
+        var patientName = normalizePatientName(profile.fullname || profile.full_name || profile.name || '');
+        return patientName === 'nanda ananda' || patientName === 'feby kumalasari';
+    }
+
+    function showMyCornerComingSoon() {
+        if (typeof window.showToast === 'function') {
+            window.showToast('Ruang Saya Coming Soon');
+            return;
+        }
+        alert('Ruang Saya Coming Soon');
+    }
+
+    function trackMyCornerComingSoon() {
+        var token = getToken();
+        if (!token || isGuestMode()) return;
+        fetch('/api/patients/track-page', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({
+                page_name: 'Ruang Saya - Coming Soon'
+            })
+        }).catch(function () {});
+    }
+
     function getProfilePhotoUrl() {
         var profile = Object.assign({}, getStoredProfile(), window.currentProfile || {});
         return profile.profile_picture || profile.photo_url || profile.photoUrl || profile.avatar_url || profile.picture || '';
@@ -1763,6 +1796,11 @@
     }
 
     async function openMyCorner() {
+        if (!isMyCornerAllowedProfile()) {
+            trackMyCornerComingSoon();
+            showMyCornerComingSoon();
+            return;
+        }
         ensureRoot();
         unlockIntroAudio();
         state.mode = 'view';
