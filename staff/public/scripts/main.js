@@ -249,6 +249,11 @@ function setTitleAndActive(title, navId, mobileAction) {
     if (navId) {
         const link = document.querySelector(`#${navId} .nav-link`);
         if (link) link.classList.add('active');
+        const parentTree = link ? link.closest('.has-treeview') : null;
+        if (parentTree) {
+            parentTree.classList.add('menu-open');
+            parentTree.querySelector(':scope > .nav-link')?.classList.add('active');
+        }
         // Save last visited page so refresh/back restores it
         try { sessionStorage.setItem('lastStaffNavId', navId); } catch(e) {}
     }
@@ -4183,6 +4188,24 @@ async function applyMenuVisibility(user) {
         'staff_briefing': ['nav-staff-briefing']
     };
 
+    const widgetizedToolNavIds = [
+        'nav-troubleshooting',
+        'nav-patient-activity',
+        'nav-guest-activity',
+        'management-nav-activity-log',
+        'finance-analysis-nav',
+        'management-nav-block-list',
+        'nav-staff-activity'
+    ];
+
+    function markToolsAuditActive(activeNavId) {
+        if (!widgetizedToolNavIds.includes(activeNavId)) return;
+        const toolsNav = document.getElementById('nav-tools-audit');
+        if (!toolsNav) return;
+        toolsNav.classList.add('menu-open');
+        toolsNav.querySelector(':scope > .nav-link')?.classList.add('active');
+    }
+
     // Superadmin/dokter sees everything - show all hidden menus
     const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
     if (isDokter) {
@@ -4245,6 +4268,7 @@ async function applyMenuVisibility(user) {
                             element.classList.remove('d-none');
                             element.removeAttribute('hidden');
                         }
+                        markToolsAuditActive(elementId);
                     }
                 }
             }
