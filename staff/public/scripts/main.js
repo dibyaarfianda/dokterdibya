@@ -670,13 +670,28 @@ async function loadPasienBaru() {
         }).join('');
 
         // Initialize DataTable (already destroyed at the beginning of function)
-        $('#hospital-patients-table').DataTable({
-            responsive: true,
-            pageLength: 25,
-            order: [[1, 'asc']],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-            }
+        try {
+            $('#hospital-patients-table').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[1, 'asc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+                }
+            });
+        } catch (dtError) {
+            console.warn('DataTable init warning:', dtError.message);
+        }
+
+        // Attach event listeners to view buttons
+        document.querySelectorAll('.btn-view-hospital-patient').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const patientId = this.getAttribute('data-patient-id');
+                if (typeof window.viewPatientDetail === 'function') {
+                    window.viewPatientDetail(patientId);
+                }
+            });
         });
     } catch (error) {
         console.error('Error loading pasien baru:', error);
@@ -768,8 +783,8 @@ async function loadHospitalPatients(location) {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const patientId = this.getAttribute('data-patient-id');
-                if (typeof viewPatientDetail === 'function') {
-                    viewPatientDetail(patientId);
+                if (typeof window.viewPatientDetail === 'function') {
+                    window.viewPatientDetail(patientId);
                 }
             });
         });
