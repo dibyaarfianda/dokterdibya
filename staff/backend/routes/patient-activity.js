@@ -364,7 +364,19 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             });
         }
 
-        const combinedQuery = queries.map(q => `(${q.query})`).join(' UNION ALL ');
+        const combinedQuery = queries.map((q, index) => {
+            const alias = `activity_source_${index}`;
+            return `(
+                SELECT
+                    CONVERT(${alias}.type USING utf8mb4) COLLATE utf8mb4_unicode_ci as type,
+                    ${alias}.timestamp as timestamp,
+                    CONVERT(${alias}.patient_name USING utf8mb4) COLLATE utf8mb4_unicode_ci as patient_name,
+                    CONVERT(${alias}.patient_email USING utf8mb4) COLLATE utf8mb4_unicode_ci as patient_email,
+                    CONVERT(${alias}.patient_phone USING utf8mb4) COLLATE utf8mb4_unicode_ci as patient_phone,
+                    CONVERT(${alias}.details USING utf8mb4) COLLATE utf8mb4_unicode_ci as details
+                FROM (${q.query}) ${alias}
+            )`;
+        }).join(' UNION ALL ');
         const combinedParams = queries.flatMap(q => q.params);
 
         // Get total count
