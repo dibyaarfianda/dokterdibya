@@ -8103,10 +8103,102 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v233';
+    window.__assetVersion = 'v235';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
+
+    (function installGlobalDataTableDateSorting() {
+        if (!window.jQuery || !$.fn || !$.fn.dataTable || !$.fn.dataTable.ext || window.__globalDataTableDateSortingInstalled) return;
+        window.__globalDataTableDateSortingInstalled = true;
+
+        const monthMap = {
+            januari: 1, jan: 1,
+            februari: 2, feb: 2,
+            maret: 3, mar: 3,
+            april: 4, apr: 4,
+            mei: 5,
+            juni: 6, jun: 6,
+            juli: 7, jul: 7,
+            agustus: 8, agu: 8, aug: 8,
+            september: 9, sep: 9,
+            oktober: 10, okt: 10, oct: 10,
+            november: 11, nov: 11,
+            desember: 12, des: 12, dec: 12
+        };
+
+        function normalizeYear(year) {
+            const numericYear = Number(year);
+            if (!Number.isFinite(numericYear)) return null;
+            if (numericYear < 100) return numericYear >= 70 ? 1900 + numericYear : 2000 + numericYear;
+            return numericYear;
+        }
+
+        function stripTableHtml(value) {
+            return String(value || '')
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/&nbsp;/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        window.parseDokterDibyaTableDateSort = function(value) {
+            const text = stripTableHtml(value);
+            if (!text || text === '-') return null;
+
+            const numeric = text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?\b/);
+            if (numeric) {
+                const day = Number(numeric[1]);
+                const month = Number(numeric[2]);
+                const year = normalizeYear(numeric[3]);
+                const hour = Number(numeric[4] || 0);
+                const minute = Number(numeric[5] || 0);
+                const second = Number(numeric[6] || 0);
+                if (year && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                    return new Date(year, month - 1, day, hour, minute, second).getTime();
+                }
+            }
+
+            const longDate = text.toLowerCase().match(/\b(\d{1,2})\s+([a-z]+)\s+(\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?\b/);
+            if (longDate) {
+                const day = Number(longDate[1]);
+                const month = monthMap[longDate[2]];
+                const year = normalizeYear(longDate[3]);
+                const hour = Number(longDate[4] || 0);
+                const minute = Number(longDate[5] || 0);
+                const second = Number(longDate[6] || 0);
+                if (year && month && day >= 1 && day <= 31) {
+                    return new Date(year, month - 1, day, hour, minute, second).getTime();
+                }
+            }
+
+            if (/^\d{4}-\d{1,2}-\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?)?/.test(text)) {
+                const fallbackDate = new Date(text);
+                return Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate.getTime();
+            }
+
+            return null;
+        };
+
+        $.fn.dataTable.ext.type.detect.unshift(function(data) {
+            return window.parseDokterDibyaTableDateSort(data) !== null ? 'dokterdibya-date' : null;
+        });
+
+        $.fn.dataTable.ext.type.order['dokterdibya-date-pre'] = function(data) {
+            return window.parseDokterDibyaTableDateSort(data) || 0;
+        };
+
+        $.fn.dataTable.ext.order['dokterdibya-data-order-date'] = function(settings, col) {
+            return this.api().column(col, { order: 'index' }).nodes().map(function(td) {
+                const explicitOrder = td.getAttribute('data-order');
+                if (explicitOrder !== null && explicitOrder !== '') {
+                    const numericOrder = Number(explicitOrder);
+                    if (Number.isFinite(numericOrder)) return numericOrder;
+                }
+                return window.parseDokterDibyaTableDateSort(td.textContent || td.innerHTML) || 0;
+            });
+        };
+    })();
 
     // ── Live Queue Toggle (Patient Portal) ──
     (function() {
@@ -9274,11 +9366,44 @@ body.mobile-app-mode .mobile-action-bar-force button {
     // â”€â”€â”€ Shared row renderer for #manage-patients-tbody â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Used by BOTH loadWebPatients() and performAdvancedSearch() to keep the
     // template consistent and avoid the dual-render bug (AGENTS.md rule #24).
+    function getPatientTableDateValue(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    function formatPatientTableDate(value) {
+        const date = getPatientTableDateValue(value);
+        if (!date) return '-';
+        return `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear().toString().slice(-2)}`;
+    }
+
+    function getPatientTableDateSort(value) {
+        const date = getPatientTableDateValue(value);
+        return date ? String(date.getTime()) : '0';
+    }
+
+    function getManagePatientDataTableOptions(extraOptions = {}) {
+        return Object.assign({
+            "pageLength": 25,
+            "searching": false,
+            "columnDefs": [
+                {
+                    "targets": [3, 5, 6],
+                    "orderDataType": "dokterdibya-data-order-date",
+                    "type": "num"
+                }
+            ]
+        }, extraOptions);
+    }
+
     function renderManagePatientRow(patient) {
-        const registerDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
-        const registerDateSort = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
-        const visitDate = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
-        const visitDateSort = patient.last_visit ? (() => { const d = new Date(patient.last_visit); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
+        const registeredAt = patient.registration_date || patient.created_at;
+        const registerDate = formatPatientTableDate(registeredAt);
+        const registerDateSort = getPatientTableDateSort(registeredAt);
+        const visitDate = formatPatientTableDate(patient.last_visit);
+        const visitDateSort = getPatientTableDateSort(patient.last_visit);
+        const hplDateSort = getPatientTableDateSort(patient.hpl);
         const resumeStatusMap = {
             'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume OK</span>',
             'sudah_kirim_resume': '<span class="badge badge-info">Resume OK</span>',
@@ -9346,7 +9471,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 </td>
                 <td>${nameCell}</td>
                 <td>${formatPatientType(patient.last_visit_type)}</td>
-                <td>${hplCell}</td>
+                <td data-order="${hplDateSort}">${hplCell}</td>
                 <td>${resumeStatusBadge}</td>
                 <td data-order="${registerDateSort}">${registerDate}</td>
                 <td data-order="${visitDateSort}">${visitDate}</td>
@@ -9399,11 +9524,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
             // Initialize DataTable with fresh data (already cleared before DOM update)
             if ($.fn.DataTable) {
-                const dt = $('#manage-patients-table').DataTable({
-                    "pageLength": 25,
+                const dt = $('#manage-patients-table').DataTable(getManagePatientDataTableOptions({
                     "order": [[6, 'desc']], // Sort by visit date (column 6: Terakhir Visit) - newest first
-                    "searching": false // Disable built-in search, use advanced search only
-                });
+                }));
                 // Restore previous page position so user doesn't jump back to page 1
                 if (savedPage > 0) {
                     dt.page(savedPage).draw('page');
@@ -9577,13 +9700,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
             tbody.innerHTML = data.data.map(renderManagePatientRow).join('');
 
             // Reinitialize DataTable with fresh data
-            $('#manage-patients-table').DataTable({
-                "pageLength": 25,
+            $('#manage-patients-table').DataTable(getManagePatientDataTableOptions({
                 "order": [[1, 'asc']], // Sort by name (column 1)
-                "searching": false, // Disable built-in search since we have advanced search
                 "paging": data.data.length > 25, // Only show pagination if more than 25 results
                 "info": true
-            });
+            }));
 
             // Attach event listeners to view buttons
             document.querySelectorAll('.btn-view-patient').forEach(btn => {
