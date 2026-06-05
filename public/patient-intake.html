@@ -1873,6 +1873,35 @@
         initAutoSave();
         addFieldCompletionHints();
         initHeightUnknownToggle();
+
+        // If required=1, this page was opened as a mandatory gate — hide all escape routes
+        (function enforceRequiredMode() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('required') !== '1') return;
+
+            // Hide back button and make brand logo non-clickable
+            const backBtn = document.getElementById('home-back-btn');
+            const brandLink = document.getElementById('home-brand-link');
+            if (backBtn) backBtn.style.display = 'none';
+            if (brandLink) {
+                brandLink.removeAttribute('href');
+                brandLink.style.cursor = 'default';
+                brandLink.style.pointerEvents = 'none';
+            }
+
+            // Show a sticky notice at top
+            const notice = document.createElement('div');
+            notice.id = 'intake-required-notice';
+            notice.style.cssText = 'position:sticky;top:0;z-index:999;background:#111;color:#fff;text-align:center;padding:10px 16px;font-size:13px;letter-spacing:0.01em;';
+            notice.textContent = 'Lengkapi data diri terlebih dahulu untuk mengakses portal.';
+            document.body.insertBefore(notice, document.body.firstChild);
+
+            // Intercept browser back button
+            history.pushState(null, '', window.location.href);
+            window.addEventListener('popstate', function() {
+                history.pushState(null, '', window.location.href);
+            });
+        })();
         
         // Load existing data from server (if logged in), then fallback to draft
         (async function init() {

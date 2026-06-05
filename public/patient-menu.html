@@ -3981,6 +3981,12 @@
             
             window.currentProfile = currentProfile;
 
+            // GATE: intake form wajib diisi sebelum bisa akses portal
+            if (!currentProfile.intake_completed) {
+                window.location.replace('/patient-intake.html?required=1');
+                return;
+            }
+
             // Set server home photo URL (takes priority over localStorage)
             _homePhotoServerUrl = currentProfile.home_photo_url || '';
 
