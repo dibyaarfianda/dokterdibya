@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260602guestactivity1'; // 2026-06-02 guest/demo activity tracking
+const CACHE_VERSION = '20260605homephoto'; // 2026-06-05 migrate home photo to R2
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -44,6 +44,15 @@ const PRECACHE_FILES = [
   '/patient-intake.html',
   '/offline.html',
   '/images/dibya-logo.png',
+  '/images/ruang-saya/pastel.jpg',
+  '/images/ruang-saya/icons-transparent/album.png',
+  '/images/ruang-saya/icons-transparent/dokumen.png',
+  '/images/ruang-saya/icons-transparent/favorit.png',
+  '/images/ruang-saya/icons-transparent/jadwal.png',
+  '/images/ruang-saya/icons-transparent/resume.png',
+  '/images/ruang-saya/icons-transparent/tanyadokter.png',
+  '/images/ruang-saya/icons-transparent/tracker.png',
+  '/images/ruang-saya/icons-transparent/vitamin.png',
   '/images/pwa-icons/swlogo-pwa-192x192.png',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
   'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',

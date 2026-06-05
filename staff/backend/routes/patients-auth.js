@@ -778,6 +778,7 @@ router.post('/auth/google', async (req, res) => {
                 email: patient.email,
                 phone: patient.phone,
                 photo_url: patient.photo_url,
+                home_photo_url: patient.home_photo_url || null,
                 email_verified: 1,
                 google_id: patient.google_id || googleId,
                 intake_completed: intakeCompleted,
@@ -984,6 +985,7 @@ router.post('/google-auth-code', async (req, res) => {
                 email: patient.email,
                 phone: patient.phone,
                 photo_url: patient.photo_url,
+                home_photo_url: patient.home_photo_url || null,
                 email_verified: 1,
                 google_id: patient.google_id || googleId,
                 intake_completed: intakeCompleted,
@@ -1248,7 +1250,7 @@ router.put('/profile', verifyToken, async (req, res) => {
         
         // Fetch updated profile
         const [updatedPatient] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date FROM patients WHERE id = ?',
+            'SELECT id, full_name, email, phone, photo_url, home_photo_url, birth_date, age, registration_date FROM patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -1357,6 +1359,74 @@ router.post('/upload-photo', verifyToken, handleProfilePhotoUpload, async (req, 
             success: false,
             message: 'Gagal mengupload foto profil'
         });
+    }
+});
+
+// POST /api/patients/upload-home-photo - Upload home/beranda photo to R2
+const homePhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+    fileFilter: (req, file, cb) => {
+        const allowed = /jpeg|jpg|png|webp/;
+        if (allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase())) {
+            return cb(null, true);
+        }
+        cb(new Error('Hanya file gambar (JPEG, PNG, WebP) yang diperbolehkan'));
+    }
+});
+
+router.post('/upload-home-photo', verifyToken, (req, res, next) => {
+    homePhotoUpload.single('photo')(req, res, (err) => {
+        if (!err) return next();
+        const msg = err.code === 'LIMIT_FILE_SIZE' ? 'Ukuran file melebihi batas 5 MB' : (err.message || 'File tidak valid');
+        return res.status(400).json({ success: false, message: msg });
+    });
+}, async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ success: false, message: 'Tidak ada file yang diupload' });
+        if (!r2Storage.isR2Configured()) return res.status(500).json({ success: false, message: 'Storage tidak dikonfigurasi' });
+
+        const patientId = req.user.id;
+
+        // Delete old home photo from R2 if exists
+        const [existing] = await db.query('SELECT home_photo_r2_key FROM patients WHERE id = ?', [patientId]);
+        const oldKey = existing[0] && existing[0].home_photo_r2_key;
+        if (oldKey) {
+            try { await r2Storage.deleteFile(oldKey); } catch (e) { logger.warn('Failed to delete old home photo', { key: oldKey, error: e.message }); }
+        }
+
+        // Upload new photo to R2
+        const result = await r2Storage.uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype, 'home-photos');
+        const proxyUrl = `/api/r2/${result.key}`;
+
+        await db.query(
+            'UPDATE patients SET home_photo_r2_key = ?, home_photo_url = ?, updated_at = NOW() WHERE id = ?',
+            [result.key, proxyUrl, patientId]
+        );
+
+        logger.info('Home photo uploaded', { patientId, key: result.key });
+        res.json({ success: true, home_photo_url: proxyUrl });
+
+    } catch (error) {
+        logger.error('Upload home photo error', { error: error.message });
+        res.status(500).json({ success: false, message: 'Gagal mengupload foto beranda' });
+    }
+});
+
+// DELETE /api/patients/home-photo - Remove home/beranda photo
+router.delete('/home-photo', verifyToken, async (req, res) => {
+    try {
+        const patientId = req.user.id;
+        const [existing] = await db.query('SELECT home_photo_r2_key FROM patients WHERE id = ?', [patientId]);
+        const oldKey = existing[0] && existing[0].home_photo_r2_key;
+        if (oldKey) {
+            try { await r2Storage.deleteFile(oldKey); } catch (e) { logger.warn('Failed to delete home photo from R2', { key: oldKey }); }
+        }
+        await db.query('UPDATE patients SET home_photo_r2_key = NULL, home_photo_url = NULL, updated_at = NOW() WHERE id = ?', [patientId]);
+        res.json({ success: true });
+    } catch (error) {
+        logger.error('Delete home photo error', { error: error.message });
+        res.status(500).json({ success: false, message: 'Gagal menghapus foto beranda' });
     }
 });
 
@@ -1570,7 +1640,7 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
 
         // Fetch updated profile
         const [updatedPatient] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
+            'SELECT id, full_name, email, phone, photo_url, home_photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
             [req.user.id]
         );
 
@@ -1589,6 +1659,7 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
                 email: patient.email,
                 phone: patient.phone,
                 photo_url: patient.photo_url,
+                home_photo_url: patient.home_photo_url || null,
                 birth_date: patient.birth_date,
                 age: patient.age,
                 registration_date: patient.registration_date,
@@ -1734,7 +1805,7 @@ router.post('/complete-profile-full', verifyToken, async (req, res) => {
 
         // Fetch updated profile
         const [updatedPatient] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
+            'SELECT id, full_name, email, phone, photo_url, home_photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
             [req.user.id]
         );
 
@@ -1753,6 +1824,7 @@ router.post('/complete-profile-full', verifyToken, async (req, res) => {
                 email: patient.email,
                 phone: patient.phone,
                 photo_url: patient.photo_url,
+                home_photo_url: patient.home_photo_url || null,
                 birth_date: patient.birth_date,
                 age: patient.age,
                 registration_date: patient.registration_date,
@@ -2373,43 +2445,43 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
 
         // Baby size comparison by week
         const babySizes = {
-            4: { size: 'Biji Poppy', emoji: '🌱', length: '0.1 cm' },
-            5: { size: 'Biji Wijen', emoji: '🌱', length: '0.2 cm' },
-            6: { size: 'Biji Lentil', emoji: '🫘', length: '0.4 cm' },
-            7: { size: 'Blueberry', emoji: '🫐', length: '1 cm' },
-            8: { size: 'Raspberry', emoji: '🍇', length: '1.6 cm' },
-            9: { size: 'Anggur', emoji: '🍇', length: '2.3 cm' },
-            10: { size: 'Kurma', emoji: '🫒', length: '3.1 cm' },
-            11: { size: 'Jeruk Limau', emoji: '🍋', length: '4.1 cm' },
-            12: { size: 'Jeruk Nipis', emoji: '🍋', length: '5.4 cm' },
-            13: { size: 'Lemon', emoji: '🍋', length: '7.4 cm' },
-            14: { size: 'Jeruk', emoji: '🍊', length: '8.7 cm' },
-            15: { size: 'Apel', emoji: '🍎', length: '10.1 cm' },
-            16: { size: 'Alpukat', emoji: '🥑', length: '11.6 cm' },
-            17: { size: 'Pir', emoji: '🍐', length: '13 cm' },
-            18: { size: 'Paprika', emoji: '🫑', length: '14.2 cm' },
-            19: { size: 'Tomat Besar', emoji: '🍅', length: '15.3 cm' },
-            20: { size: 'Pisang', emoji: '🍌', length: '16.4 cm' },
-            21: { size: 'Wortel', emoji: '🥕', length: '26.7 cm' },
-            22: { size: 'Jagung', emoji: '🌽', length: '27.8 cm' },
-            23: { size: 'Mangga', emoji: '🥭', length: '28.9 cm' },
-            24: { size: 'Jagung Besar', emoji: '🌽', length: '30 cm' },
-            25: { size: 'Terong', emoji: '🍆', length: '34.6 cm' },
-            26: { size: 'Brokoli', emoji: '🥦', length: '35.6 cm' },
-            27: { size: 'Kembang Kol', emoji: '🥬', length: '36.6 cm' },
-            28: { size: 'Terong Besar', emoji: '🍆', length: '37.6 cm' },
-            29: { size: 'Labu Siam', emoji: '🎃', length: '38.6 cm' },
-            30: { size: 'Kubis', emoji: '🥬', length: '39.9 cm' },
-            31: { size: 'Kelapa', emoji: '🥥', length: '41.1 cm' },
-            32: { size: 'Nangka', emoji: '🍈', length: '42.4 cm' },
-            33: { size: 'Nanas', emoji: '🍍', length: '43.7 cm' },
-            34: { size: 'Melon', emoji: '🍈', length: '45 cm' },
-            35: { size: 'Melon Besar', emoji: '🍈', length: '46.2 cm' },
-            36: { size: 'Pepaya', emoji: '🍈', length: '47.4 cm' },
-            37: { size: 'Labu', emoji: '🎃', length: '48.6 cm' },
-            38: { size: 'Labu Besar', emoji: '🎃', length: '49.8 cm' },
-            39: { size: 'Semangka Mini', emoji: '🍉', length: '50.7 cm' },
-            40: { size: 'Semangka', emoji: '🍉', length: '51.2 cm' }
+            4: { size: 'Biji Poppy', emoji: 'Ã°Å¸Å’Â±', length: '0.1 cm' },
+            5: { size: 'Biji Wijen', emoji: 'Ã°Å¸Å’Â±', length: '0.2 cm' },
+            6: { size: 'Biji Lentil', emoji: 'Ã°Å¸Â«Ëœ', length: '0.4 cm' },
+            7: { size: 'Blueberry', emoji: 'Ã°Å¸Â«Â', length: '1 cm' },
+            8: { size: 'Raspberry', emoji: 'Ã°Å¸Ââ€¡', length: '1.6 cm' },
+            9: { size: 'Anggur', emoji: 'Ã°Å¸Ââ€¡', length: '2.3 cm' },
+            10: { size: 'Kurma', emoji: 'Ã°Å¸Â«â€™', length: '3.1 cm' },
+            11: { size: 'Jeruk Limau', emoji: 'Ã°Å¸Ââ€¹', length: '4.1 cm' },
+            12: { size: 'Jeruk Nipis', emoji: 'Ã°Å¸Ââ€¹', length: '5.4 cm' },
+            13: { size: 'Lemon', emoji: 'Ã°Å¸Ââ€¹', length: '7.4 cm' },
+            14: { size: 'Jeruk', emoji: 'Ã°Å¸ÂÅ ', length: '8.7 cm' },
+            15: { size: 'Apel', emoji: 'Ã°Å¸ÂÅ½', length: '10.1 cm' },
+            16: { size: 'Alpukat', emoji: 'Ã°Å¸Â¥â€˜', length: '11.6 cm' },
+            17: { size: 'Pir', emoji: 'Ã°Å¸ÂÂ', length: '13 cm' },
+            18: { size: 'Paprika', emoji: 'Ã°Å¸Â«â€˜', length: '14.2 cm' },
+            19: { size: 'Tomat Besar', emoji: 'Ã°Å¸Ââ€¦', length: '15.3 cm' },
+            20: { size: 'Pisang', emoji: 'Ã°Å¸ÂÅ’', length: '16.4 cm' },
+            21: { size: 'Wortel', emoji: 'Ã°Å¸Â¥â€¢', length: '26.7 cm' },
+            22: { size: 'Jagung', emoji: 'Ã°Å¸Å’Â½', length: '27.8 cm' },
+            23: { size: 'Mangga', emoji: 'Ã°Å¸Â¥Â­', length: '28.9 cm' },
+            24: { size: 'Jagung Besar', emoji: 'Ã°Å¸Å’Â½', length: '30 cm' },
+            25: { size: 'Terong', emoji: 'Ã°Å¸Ââ€ ', length: '34.6 cm' },
+            26: { size: 'Brokoli', emoji: 'Ã°Å¸Â¥Â¦', length: '35.6 cm' },
+            27: { size: 'Kembang Kol', emoji: 'Ã°Å¸Â¥Â¬', length: '36.6 cm' },
+            28: { size: 'Terong Besar', emoji: 'Ã°Å¸Ââ€ ', length: '37.6 cm' },
+            29: { size: 'Labu Siam', emoji: 'Ã°Å¸Å½Æ’', length: '38.6 cm' },
+            30: { size: 'Kubis', emoji: 'Ã°Å¸Â¥Â¬', length: '39.9 cm' },
+            31: { size: 'Kelapa', emoji: 'Ã°Å¸Â¥Â¥', length: '41.1 cm' },
+            32: { size: 'Nangka', emoji: 'Ã°Å¸ÂË†', length: '42.4 cm' },
+            33: { size: 'Nanas', emoji: 'Ã°Å¸ÂÂ', length: '43.7 cm' },
+            34: { size: 'Melon', emoji: 'Ã°Å¸ÂË†', length: '45 cm' },
+            35: { size: 'Melon Besar', emoji: 'Ã°Å¸ÂË†', length: '46.2 cm' },
+            36: { size: 'Pepaya', emoji: 'Ã°Å¸ÂË†', length: '47.4 cm' },
+            37: { size: 'Labu', emoji: 'Ã°Å¸Å½Æ’', length: '48.6 cm' },
+            38: { size: 'Labu Besar', emoji: 'Ã°Å¸Å½Æ’', length: '49.8 cm' },
+            39: { size: 'Semangka Mini', emoji: 'Ã°Å¸Ââ€°', length: '50.7 cm' },
+            40: { size: 'Semangka', emoji: 'Ã°Å¸Ââ€°', length: '51.2 cm' }
         };
 
         const weekClamped = Math.max(4, Math.min(40, weeksPregnant));
