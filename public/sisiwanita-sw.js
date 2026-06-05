@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260605sw2icon5'; // sw2v5 covers manifest, favicon, apple-touch-icon, and notification icons
+const CACHE_VERSION = '20260605install1'; // auto-show PWA install popup for Android and iOS
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
