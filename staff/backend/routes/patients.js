@@ -52,6 +52,20 @@ function isPatientAccessBlocked(patient, blockedNames) {
     return patientName.length > 0 && blockedNames.has(patientName);
 }
 
+function visiblePatientCondition(alias = 'p') {
+    return `${alias}.status = 'active'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM patient_merge_quarantine pmq
+            WHERE pmq.source_patient_id = ${alias}.id
+              AND pmq.status = 'quarantined'
+        )`;
+}
+
+function appendVisiblePatientCondition(query, alias = 'p', hasOuterWhere = true) {
+    return query + (hasOuterWhere ? ' AND ' : ' WHERE ') + visiblePatientCondition(alias);
+}
+
 // Configure multer for birth photo upload
 const birthPhotoUpload = multer({
     storage: multer.memoryStorage(),
@@ -173,6 +187,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                         SELECT 1 FROM sunday_clinic_records scr WHERE scr.patient_id = p.id
                     )
                 `;
+                query = appendVisiblePatientCondition(query);
             } else {
                 // Patients whose last visit was at specific location
                 // Use resume_medis creation date from medical_records as visit date
@@ -202,6 +217,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                     WHERE latest.visit_location = ?
                 `;
                 params.push(last_visit_location);
+                query = appendVisiblePatientCondition(query);
             }
 
             if (search) {
@@ -238,6 +254,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 WHERE a.hospital_location = ?
             `;
             params.push(hospital);
+            query = appendVisiblePatientCondition(query, 'p', false);
 
             if (search) {
                 query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
@@ -291,9 +308,10 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                     WHERE mr.record_type = 'anamnesa'
                       AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
                 ) latest_anamnesa ON p.id = latest_anamnesa.patient_id`;
+            query = appendVisiblePatientCondition(query);
 
             if (search) {
-                query += ' WHERE (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
+                query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
                 const searchTerm = `%${search}%`;
                 params.push(searchTerm, searchTerm, searchTerm);
             }
@@ -347,6 +365,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                             SELECT 1 FROM sunday_clinic_records scr WHERE scr.patient_id = p.id
                         )
                     `;
+                    countQuery = appendVisiblePatientCondition(countQuery);
                 } else {
                     countQuery = `
                         SELECT COUNT(*) as total FROM patients p
@@ -363,6 +382,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                         WHERE latest.visit_location = ?
                     `;
                     countParams.push(last_visit_location);
+                    countQuery = appendVisiblePatientCondition(countQuery);
                 }
                 if (search) {
                     countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
@@ -374,6 +394,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                    INNER JOIN appointments a ON p.id = a.patient_id
                    WHERE a.hospital_location = ?`;
                 countParams.push(hospital);
+                countQuery = appendVisiblePatientCondition(countQuery);
                 if (search) {
                     countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
                     const searchTerm = `%${search}%`;
@@ -381,8 +402,9 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 }
             } else {
                 countQuery = 'SELECT COUNT(*) as total FROM patients p';
+                countQuery = appendVisiblePatientCondition(countQuery, 'p', false);
                 if (search) {
-                    countQuery += ' WHERE (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
+                    countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
                     const searchTerm = `%${search}%`;
                     countParams.push(searchTerm, searchTerm, searchTerm);
                 }
@@ -658,6 +680,7 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
             LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
             LEFT JOIN users u ON p.id = u.new_id
             WHERE 1=1
+              AND ${visiblePatientCondition('p')}
         `;
         const params = [];
 
@@ -869,7 +892,12 @@ router.post('/api/patients/fix-names', verifyToken, async (req, res) => {
         }
 
         // Get all patients with potentially incorrect name capitalization
-        const [patients] = await db.query('SELECT id, full_name FROM patients WHERE full_name IS NOT NULL');
+        const [patients] = await db.query(`
+            SELECT id, full_name
+            FROM patients p
+            WHERE p.full_name IS NOT NULL
+              AND ${visiblePatientCondition('p')}
+        `);
 
         let updatedCount = 0;
         const changes = [];
@@ -968,6 +996,7 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
             ) latest ON p.id = latest.patient_id AND latest.rn = 1
             LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id
             WHERE bc.id IS NULL
+            AND ${visiblePatientCondition('p')}
             AND DATEDIFF(CURDATE(), latest.hpht) >= 259
             AND DATEDIFF(CURDATE(), latest.hpht) < 280
             ORDER BY days_pregnant DESC
@@ -1062,6 +1091,7 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
             ) latest ON p.id = latest.patient_id AND latest.rn = 1
             LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id
             WHERE bc.id IS NULL
+            AND ${visiblePatientCondition('p')}
             AND DATEDIFF(CURDATE(), latest.hpht) >= 280
             ORDER BY days_pregnant DESC
         `;
@@ -1314,7 +1344,12 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
 // GET PATIENT BY ID (Protected)
 router.get('/api/patients/:id', verifyToken, async (req, res) => {
     try {
-        const [rows] = await db.query('SELECT * FROM patients WHERE id = ?', [req.params.id]);
+        const [rows] = await db.query(`
+            SELECT *
+            FROM patients p
+            WHERE p.id = ?
+              AND ${visiblePatientCondition('p')}
+        `, [req.params.id]);
         if (rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Patient not found' });
         }
@@ -1426,7 +1461,8 @@ router.get('/api/patients/profile', verifyToken, async (req, res) => {
                 COALESCE(p.photo_url, u.photo_url) as profile_picture
             FROM patients p
             LEFT JOIN users u ON p.id = u.new_id
-            WHERE p.id = ?`,
+            WHERE p.id = ?
+              AND ${visiblePatientCondition('p')}`,
             [userId]
         );
 
@@ -2271,6 +2307,7 @@ router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, r
             SELECT bc.*, p.full_name as patient_name
             FROM birth_congratulations bc
             JOIN patients p ON bc.patient_id = p.id
+            WHERE ${visiblePatientCondition('p')}
             ORDER BY bc.created_at DESC
         `);
 
@@ -2319,6 +2356,7 @@ router.get('/api/birth-testimonials', verifyToken, async (req, res) => {
             JOIN patients p ON p.id = bc.patient_id
             WHERE bc.patient_testimonial IS NOT NULL
               AND TRIM(bc.patient_testimonial) <> ''
+              AND ${visiblePatientCondition('p')}
             ORDER BY bc.patient_testimonial_submitted_at DESC, bc.created_at DESC
         `);
 
