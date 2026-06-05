@@ -1,11 +1,11 @@
 /**
- * Service Worker for Dokter Dibya Patient Portal PWA
+ * Service Worker for SISIwanita Patient Portal PWA
  * Provides offline support and caching
  */
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260605sw2icon4'; // 2026-06-05 new swlogo2 icons with new filenames
+const CACHE_VERSION = '20260605sw2icon5'; // 2026-06-05 sw2v5 covers manifest, favicon, apple-touch-icon, and notifications
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -54,7 +54,11 @@ const PRECACHE_FILES = [
   '/images/ruang-saya/icons-transparent/tanyadokter.png',
   '/images/ruang-saya/icons-transparent/tracker.png',
   '/images/ruang-saya/icons-transparent/vitamin.png',
-  '/images/pwa-icons/swlogo-pwa-192x192.png',
+  '/images/pwa-icons/sw2v5-any-192.png',
+  '/images/pwa-icons/sw2v5-any-180.png',
+  '/images/pwa-icons/sw2v5-any-512.png',
+  '/images/pwa-icons/sw2v5-mask-192.png',
+  '/images/pwa-icons/sw2v5-mask-512.png',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
   'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
@@ -203,9 +207,9 @@ self.addEventListener('push', (event) => {
 
   const data = event.data.json();
   const options = {
-    body: data.body || 'Notifikasi baru dari Dokter Dibya',
-    icon: '/images/pwa-icons/swlogo-pwa-192x192.png',
-    badge: '/images/pwa-icons/swlogo-pwa-72x72.png',
+    body: data.body || 'Notifikasi baru dari SISIwanita',
+    icon: '/images/pwa-icons/sw2v5-any-192.png',
+    badge: '/images/pwa-icons/sw2v5-any-72.png',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/patient-menu.html'
@@ -213,7 +217,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Dokter Dibya', options)
+    self.registration.showNotification(data.title || 'SISIwanita', options)
   );
 });
 
