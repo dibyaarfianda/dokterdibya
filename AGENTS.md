@@ -2055,3 +2055,194 @@ User reported that chat messages between Staff Panel and Sunday Clinic were stil
 
 **Lesson:**
 - For Team Chat, same-account multi-tab/page behavior is different from local socket echo. Suppress only the sender tab's pending echo, then render same-account broadcasts in other tabs as `sent`. Always verify production assets over HTTP, because pushed code is not enough if the VPS worktree is dirty and `git pull` aborts.
+
+### 54. Session Log - 3 June 2026
+
+**Patient Portal Ruang Saya Fullscreen Room Intro (User Confirmed Good Job)**
+
+User confirmed with "sudah full. good job" after the final Ruang Saya fullscreen and intro timing fix.
+
+**Problem:**
+- Ruang Saya initially still felt like a dashboard or technical panel, not a personal room.
+- The requested experience was: short intro, fade to black, show room name and owner, then fade into a fullscreen room with no bottom nav or header.
+- On mobile review, intro felt too fast and the room still showed white side gaps.
+
+**What worked:**
+1. Keep Ruang Saya local/private and render it as an immersive overlay from `public/scripts/patient-my-corner.js`, not as a dashboard section.
+2. Hide patient portal chrome while the room is open so there is no header or bottom nav competing with the room.
+3. Add an entry overlay with stage elements:
+    - `.pmc-entry-stage`
+    - `.pmc-entry-door-left`
+    - `.pmc-entry-door-right`
+    - `.pmc-entry-threshold`
+    - `.pmc-entry-light`
+    - `.pmc-entry-copy`
+4. Slow the intro enough for mobile:
+    - CSS entry/shell animations around `3.6s`
+    - JS `startIntro()` timeout set to `3600ms`
+5. Remove the fixed-width shell cap that caused side gaps:
+    ```css
+    .pmc-shell {
+        position: absolute;
+        inset: 0;
+        width: 100vw;
+        max-width: none;
+        height: 100dvh;
+        min-height: 100dvh;
+    }
+    ```
+6. Remove mobile content padding specifically for the fullscreen room:
+    ```css
+    @media (max-width: 430px) {
+        .pmc-content-room-quiet {
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+    ```
+7. Keep settings scroll stable across rerenders with `renderPanel({ preserveScroll: true })`.
+
+**Verification pattern that mattered:**
+1. Use phone-accessible local preview bound to `0.0.0.0`, then test from HP via LAN IP.
+2. Use Playwright metrics across mobile widths (`393`, `430`, `480`) to verify:
+    - `.pmc-shell` left/right gaps are `0`
+    - `.pmc-content-room-quiet` left/right gaps are `0`
+    - `.pmc-room-scene` left/right gaps are `0`
+3. Run syntax/diff checks:
+    - `node --check public/scripts/patient-my-corner.js`
+    - `node --check public/scripts/patient-my-corner-visit.js`
+    - `node --check public/sw.js`
+    - `git diff --check`
+
+**Lesson:**
+- For fullscreen patient room experiences, full overlay width is not enough; also audit inner mobile padding rules. A global `.pmc-content` mobile padding can leave visible side gaps even when `#pmc-root` and `.pmc-shell` are full viewport.
+- When the user asks for a room, avoid dashboard language and dense controls. Treat the first view as atmosphere, identity, and presence; keep editing controls secondary.
+
+### 55. Session Log - 3 June 2026
+
+**Patient Portal Ruang Saya Grid Edit + Drag Ghost Fix (User Confirmed Good Work)**
+
+User confirmed with "kerja bagus!" after the Ruang Saya grid edit/drag interaction was tuned on mobile preview.
+
+**Problems fixed:**
+1. Widget drag ghost felt detached from the user's finger.
+2. USG widget and room title ghost looked separated because cloned drag ghosts were moved outside `.pmc-room-grid`.
+3. Long-press could still trigger browser selection/context behavior instead of directly entering edit mode.
+4. USG ribbon needed to be one line and lower on the thumbnail.
+
+**What worked:**
+1. In `public/scripts/patient-my-corner.js`, clean cloned drag ghosts before appending to `body`:
+    - remove `is-dragging` and `is-hold-ready` from the clone
+    - otherwise `.pmc-room-block.is-dragging { transform: scale(0.96) }` can override the ghost transform
+2. Use per-type drag anchors:
+    - large widgets (`usg`, `clock`, `ai`) use `--pmc-drag-offset-y: 62%`
+    - icons and title use `--pmc-drag-offset-y: 50%`
+    - this avoids both hanging below the finger and jumping too far above tap
+3. Add ghost-specific CSS mirroring grid-only rules:
+    - `.pmc-room-drag-ghost .pmc-room-title`
+    - `.pmc-room-drag-ghost .pmc-usg-thumb-widget`
+    - `.pmc-room-drag-ghost .pmc-pastel-date-widget`
+    - `.pmc-room-drag-ghost .pmc-pastel-ai-card`
+    - this keeps USG/title content inside the ghost after the clone leaves `.pmc-room-grid`
+4. Disable browser selection/drag/callout in the room grid:
+    - `user-select: none`
+    - `-webkit-touch-callout: none`
+    - `-webkit-user-drag: none`
+    - inline `oncontextmenu`, `onselectstart`, and `ondragstart` prevention on room blocks
+5. USG ribbon final local tuning:
+    - one-line text with `white-space: nowrap` and ellipsis
+    - position lowered to `top: 74%`
+6. Version used for local preview/cache:
+    - `20260603roomlocal43`
+
+**Verification pattern:**
+1. Restart phone-accessible preview server bound to `0.0.0.0:4177` after version bumps.
+2. Use Playwright smoke checks to verify:
+    - USG ghost offset is `62%`
+    - icon/title ghost offset is `50%`
+    - USG and title ghost children report `childInsideGhost: true`
+    - asset URL contains the latest roomlocal version
+3. Run:
+    - `node --check public/scripts/patient-my-corner.js`
+    - `node --check public/sw.js`
+    - `get_errors` for edited files
+    - `git diff --check`
+
+**Lesson:**
+- When cloning draggable grid items into `body`, any CSS scoped under the original grid container no longer applies. Add ghost-specific selectors for every child component that depends on grid-scoped rules.
+- For mobile drag feel, do not use one universal pointer offset for every item. Large widgets and small icons need different anchors.
+
+### 56. Session Log - 5 June 2026
+
+**SISIwanita Patient Portal Migration + Google Registration Success**
+
+User confirmed full Google registration/login worked without problems after the SISIwanita migration.
+
+**What worked:**
+1. Keep patient portal files in `public/` while serving them through `sisiwanita.id`; do not move active patient files to `/temp` because `sisiwanita.id` depends on the same static root and service worker precache.
+2. Redirect old patient-facing `dokterdibya.com` HTML routes to `sisiwanita.id` through nginx, preserving query strings with `$is_args$args` for token/code flows.
+3. Keep Staff Panel, API, Socket.IO, shared document, uploads, and staff routes on `dokterdibya.com` so staff workflows are not disrupted.
+4. Allow both domains in backend CORS and Socket.IO using a shared origin delegate:
+    - `https://sisiwanita.id`
+    - `https://www.sisiwanita.id`
+    - `https://dokterdibya.com`
+    - `https://www.dokterdibya.com`
+5. Add delayed `Masuk sekarang` CTA animation on `public/sisiwanita/index.html` using opacity/filter/clip-path instead of transform so existing hover/active transforms remain stable.
+6. Bump `public/sisiwanita-sw.js` cache version after SISIwanita frontend changes.
+
+**Verified successful production flow:**
+1. Google auth code received from SISIwanita.
+2. Google token exchange succeeded.
+3. Registration code `897ZDM` validated.
+4. New patient created: `P2026273`.
+5. Intake loaded, submitted, integrated into EMR, and linked to authenticated patient.
+6. `intake_completed=1` marked for `P2026273`.
+7. Portal continued to document badge check for that patient.
+
+**Important guardrails:**
+- A Google attempt without registration code must remain blocked for new patients.
+- Invalid registration code must remain blocked.
+- Query-string redirects are critical for `complete-profile.html`, `reset-password.html`, and `mobile-google-callback.html`.
+- When verifying after deployment, check live HTTP assets and PM2 logs, not only pushed commits.
+
+**Lesson:**
+- For patient-domain migration, treat `dokterdibya.com` and `sisiwanita.id` as two front doors to a shared backend during transition. The safe path is redirect patient pages, expand CORS/socket origins, keep staff routes untouched, and verify a real Google registration all the way through intake before declaring success.
+
+### 57. Session Log - 5 June 2026
+
+**Staff Patient Activity Timeline Collation Fix (User Confirmed Good)**
+
+User confirmed with "sudah bagus" after the Staff Panel Aktivitas Pasien page loaded correctly again.
+
+**Problem:**
+- Staff Panel Aktivitas Pasien showed "Gagal memuat data" after expanding the timeline to include portal interactions.
+- Each new source query worked alone, but the combined endpoint failed when all sources were loaded together.
+
+**Root Cause:**
+- MariaDB failed the combined `UNION ALL` query with `ER_CANT_AGGREGATE_NCOLLATIONS` because activity rows came from tables with different text collations.
+
+**What worked:**
+1. Keep the source queries unchanged, then wrap each query before unioning.
+2. Normalize text output columns in the wrapper:
+    - `type`
+    - `patient_name`
+    - `patient_email`
+    - `patient_phone`
+    - `details`
+3. Use:
+    ```sql
+    CONVERT(activity_source.column USING utf8mb4) COLLATE utf8mb4_unicode_ci
+    ```
+4. Commit and deploy the backend route hotfix:
+    - `394cfa02 Fix patient activity collation error`
+
+**Verification pattern:**
+1. Test each source query separately if the combined endpoint fails.
+2. Test the exact `UNION ALL` shape; individual query success does not rule out collation errors.
+3. Verify authenticated production endpoints:
+    - `/api/patient-activity?limit=3` returns `HTTP 200`
+    - `/api/patient-activity/stats?days=30` returns `HTTP 200`
+4. Check logs after the smoke test; old errors before deploy can remain in the tail, but no new `Failed to load patient activity` should appear.
+
+**Lesson:**
+- For cross-table timeline aggregators in MariaDB, normalize text collations at the union boundary. This preserves individual query logic while preventing hidden collation conflicts between patient, chat, feedback, and support tables.
