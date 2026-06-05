@@ -3701,22 +3701,31 @@
         function requestNativeBackground() {
             try {
                 const appPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-                if (appPlugin && typeof appPlugin.minimizeApp === 'function') {
-                    appPlugin.minimizeApp();
-                    return true;
+                if (appPlugin) {
+                    // exitApp closes the app process; Capacitor LocalNotifications
+                    // are OS-scheduled and continue firing after app exit.
+                    if (typeof appPlugin.exitApp === 'function') {
+                        appPlugin.exitApp();
+                        return true;
+                    }
+                    if (typeof appPlugin.minimizeApp === 'function') {
+                        appPlugin.minimizeApp();
+                        return true;
+                    }
                 }
             } catch (error) {}
 
             if (isAndroidWebView()) {
                 try {
-                    window.location.href = 'dokterdibya://background';
+                    window.location.href = 'dokterdibya://close';
                     return true;
                 } catch (error) {}
             }
 
-            try {
-                window.close();
-            } catch (error) {}
+            // Chrome PWA: window.close() is blocked for home-screen-launched windows.
+            // Try anyway, then fall back to login redirect below.
+            try { window.open('', '_self').close(); } catch (error) {}
+            try { window.close(); } catch (error) {}
             return false;
         }
 
@@ -3731,13 +3740,14 @@
 
             const nativeHandled = requestNativeBackground();
             if (!nativeHandled) {
+                // Chrome PWA: window cannot be closed programmatically.
+                // Navigate to login page so the app appears "reset".
+                // Service worker stays alive — push notifications keep working.
                 window.setTimeout(function() {
                     if (document.visibilityState !== 'hidden') {
-                        homeBackExitConfirmed = false;
-                        rearmHomeBackGuard();
-                        showToast('Notifikasi tetap aktif. Gunakan tombol Home untuk menutup aplikasi.');
+                        window.location.replace('/patient-login.html');
                     }
-                }, 600);
+                }, 350);
             }
         }
 
