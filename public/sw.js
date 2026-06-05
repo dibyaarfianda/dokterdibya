@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260605exitpwa1'; // 2026-06-05 PWA exit closed screen
+const CACHE_VERSION = '20260605sisiinstall1'; // 2026-06-05 force SISIwanita manifest name
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
