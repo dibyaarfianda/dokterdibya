@@ -55,6 +55,15 @@
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <style>
+        /* Remove Bootstrap modal backdrop overlay - staff panel doesn't need it */
+        .modal-backdrop {
+            display: none !important;
+        }
+        /* Ensure modal still has correct stacking without backdrop */
+        .modal {
+            background: transparent !important;
+        }
+
         /* Browser policy: show staff panel at ~80% only in regular browser mode.
            PWA/mobile-app mode must stay true 100%. */
         html.browser-zoom-80:not(.mobile-app-mode) {
