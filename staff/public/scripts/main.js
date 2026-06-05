@@ -1473,7 +1473,7 @@ function showCashierPage() {
         console.error('Failed to load billing modules:', error);
     });
 }
-function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient', 'patients'); }
+function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Kelola Pasien', 'nav-patient', 'patients'); }
 function showRecordHistoryPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Rekam / Riwayat', 'nav-record-history', 'patients'); }
 // Make function globally accessible for onclick handlers
 window.showPatientPage = showPatientPage;
