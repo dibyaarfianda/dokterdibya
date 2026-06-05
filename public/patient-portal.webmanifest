@@ -1,62 +1,38 @@
 {
-  "id": "/patient-portal",
-  "name": "dokterDIBYA",
-  "short_name": "dokterDIBYA",
-  "description": "Portal pasien untuk booking jadwal, riwayat kunjungan, dan informasi kesehatan",
+  "id": "/sisiwanita",
+  "name": "SISIwanita",
+  "short_name": "SISIwanita",
+  "description": "Portal pasien SISIwanita untuk booking jadwal, riwayat kunjungan, dan informasi kesehatan",
   "start_url": "/patient-menu.html?source=pwa",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#0066FF",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
     {
-      "src": "/images/pwa-icons/swlogo-pwa-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/images/pwa-icons/swlogo-pwa-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/images/pwa-icons/swlogo-pwa-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/images/pwa-icons/swlogo-pwa-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/images/pwa-icons/swlogo-pwa-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/images/pwa-icons/swlogo-pwa-192x192.png",
+      "src": "/images/pwa-icons/swlogo-pwa-any-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
     },
     {
-      "src": "/images/pwa-icons/swlogo-pwa-384x384.png",
-      "sizes": "384x384",
+      "src": "/images/pwa-icons/swlogo-pwa-mask-192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "maskable"
     },
     {
-      "src": "/images/pwa-icons/swlogo-pwa-512x512.png",
+      "src": "/images/pwa-icons/swlogo-pwa-any-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any"
+    },
+    {
+      "src": "/images/pwa-icons/swlogo-pwa-mask-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["health", "medical"],
