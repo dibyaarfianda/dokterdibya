@@ -203,7 +203,11 @@
         'docboard-page-launcher': true,
         'point-staff-page-launcher': true,
         'bulk-upload-usg-page-launcher': true,
+        'troubleshooting-page-launcher': true,
+        'activity-log-page-launcher': true,
         'patient-activity-page-launcher': true,
+        'guest-activity-page-launcher': true,
+        'patient-block-list-page-launcher': true,
         'finance-analysis-page-launcher': true,
         'staff-activity-page-launcher': true
     };
@@ -278,25 +282,29 @@
             'docboard-page-launcher': 90,
             'point-staff-page-launcher': 100,
             'bulk-upload-usg-page-launcher': 110,
-            'patient-activity-page-launcher': 120,
-            'finance-analysis-page-launcher': 130,
-            'staff-activity-page-launcher': 140,
-            'shortcut-menu': 150,
-            'quick-search-pasien': 160,
-            'online-users-mini': 170,
-            'recent-patients': 180,
-            'point-saya': 190,
-            'tanya-dokter-inbox-preview': 200,
-            'recent-activity-saya': 210,
-            'sticky-notes': 220,
-            'todo-list': 230,
-            'inventory-alert': 240,
-            'birthday-reminder': 250,
-            'calendar-mini': 260,
-            'pomodoro-timer': 270,
-            'quote-of-the-day': 280,
-            'external-iframe': 290,
-            'custom-integration': 300
+            'troubleshooting-page-launcher': 120,
+            'activity-log-page-launcher': 130,
+            'patient-activity-page-launcher': 140,
+            'guest-activity-page-launcher': 150,
+            'patient-block-list-page-launcher': 160,
+            'finance-analysis-page-launcher': 170,
+            'staff-activity-page-launcher': 180,
+            'shortcut-menu': 190,
+            'quick-search-pasien': 200,
+            'online-users-mini': 210,
+            'recent-patients': 220,
+            'point-saya': 230,
+            'tanya-dokter-inbox-preview': 240,
+            'recent-activity-saya': 250,
+            'sticky-notes': 260,
+            'todo-list': 270,
+            'inventory-alert': 280,
+            'birthday-reminder': 290,
+            'calendar-mini': 300,
+            'pomodoro-timer': 310,
+            'quote-of-the-day': 320,
+            'external-iframe': 330,
+            'custom-integration': 340
         };
 
         return Object.prototype.hasOwnProperty.call(orderMap, widgetId) ? orderMap[widgetId] : 999;
@@ -1058,6 +1066,26 @@
                 };
             }
         }),
+        'troubleshooting-page-launcher': buildPageLauncherWidgetDef({
+            id: 'troubleshooting-page-launcher',
+            label: 'Troubleshooting',
+            icon: 'fa-bug',
+            headerIcon: 'fa-bug',
+            description: 'Laporan bug/error dari portal pasien tanpa memenuhi sidebar utama.',
+            buttonLabel: 'Buka Laporan',
+            actionName: 'showTroubleshootingPage',
+            defaultSize: { w: 4, h: 2, minW: 3, minH: 2 }
+        }),
+        'activity-log-page-launcher': buildPageLauncherWidgetDef({
+            id: 'activity-log-page-launcher',
+            label: 'Log Aktivitas',
+            icon: 'fa-history',
+            headerIcon: 'fa-history',
+            description: 'Audit inventori dan perubahan operasional apotik.',
+            buttonLabel: 'Buka Log',
+            actionName: 'showActivityLogPage',
+            defaultSize: { w: 4, h: 2, minW: 3, minH: 2 }
+        }),
         'patient-activity-page-launcher': buildPageLauncherWidgetDef({
             id: 'patient-activity-page-launcher',
             label: 'Aktivitas Pasien',
@@ -1094,6 +1122,28 @@
                     emptyText: 'Belum ada aktivitas pasien.'
                 };
             }
+        }),
+        'guest-activity-page-launcher': buildPageLauncherWidgetDef({
+            id: 'guest-activity-page-launcher',
+            label: 'Aktivitas Demo',
+            icon: 'fa-user-secret',
+            headerIcon: 'fa-user-secret',
+            description: 'Pantau aktivitas pengunjung demo dan jalur upgrade ke pasien.',
+            buttonLabel: 'Lihat Demo',
+            actionName: 'showGuestActivityPage',
+            isAvailable: isDokterUser,
+            defaultSize: { w: 4, h: 2, minW: 3, minH: 2 }
+        }),
+        'patient-block-list-page-launcher': buildPageLauncherWidgetDef({
+            id: 'patient-block-list-page-launcher',
+            label: 'Block List',
+            icon: 'fa-ban',
+            headerIcon: 'fa-ban',
+            description: 'Kelola pembatasan akses pasien dari widget dokter.',
+            buttonLabel: 'Buka Block List',
+            actionName: 'showPatientBlockListPage',
+            isAvailable: isDokterUser,
+            defaultSize: { w: 4, h: 2, minW: 3, minH: 2 }
         }),
         'finance-analysis-page-launcher': buildPageLauncherWidgetDef({
             id: 'finance-analysis-page-launcher',
@@ -1570,13 +1620,16 @@
             { widgetId: 'support-chat-page-launcher', x: 4, y: 9, w: 4, h: 2 },
             { widgetId: 'docboard-page-launcher', x: 8, y: 9, w: 4, h: 2 },
             { widgetId: 'point-staff-page-launcher', x: 0, y: 11, w: 4, h: 2 },
-            { widgetId: 'bulk-upload-usg-page-launcher', x: 4, y: 11, w: 4, h: 2 }
+            { widgetId: 'troubleshooting-page-launcher', x: 4, y: 11, w: 4, h: 2 },
+            { widgetId: 'activity-log-page-launcher', x: 8, y: 11, w: 4, h: 2 }
         ];
 
         if (isDokterUser()) {
-            blueprints.push({ widgetId: 'patient-activity-page-launcher', x: 8, y: 11, w: 4, h: 2 });
-            blueprints.push({ widgetId: 'finance-analysis-page-launcher', x: 0, y: 13, w: 4, h: 2 });
-            blueprints.push({ widgetId: 'staff-activity-page-launcher', x: 4, y: 13, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'patient-activity-page-launcher', x: 0, y: 13, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'guest-activity-page-launcher', x: 4, y: 13, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'patient-block-list-page-launcher', x: 8, y: 13, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'finance-analysis-page-launcher', x: 0, y: 15, w: 4, h: 2 });
+            blueprints.push({ widgetId: 'staff-activity-page-launcher', x: 4, y: 15, w: 4, h: 2 });
         }
 
         return blueprints

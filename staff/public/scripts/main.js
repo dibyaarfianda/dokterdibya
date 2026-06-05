@@ -4188,6 +4188,7 @@ async function applyMenuVisibility(user) {
     if (isDokter) {
         // Show dokter-only elements
         document.querySelectorAll('.dokter-only').forEach(el => {
+            if (el.classList.contains('sidebar-widgetized')) return;
             el.classList.remove('d-none');
             el.removeAttribute('hidden');
         });
@@ -4240,8 +4241,10 @@ async function applyMenuVisibility(user) {
                     } else {
                         element.style.display = '';
                         // Also remove d-none class if present
-                        element.classList.remove('d-none');
-                        element.removeAttribute('hidden');
+                        if (!element.classList.contains('sidebar-widgetized')) {
+                            element.classList.remove('d-none');
+                            element.removeAttribute('hidden');
+                        }
                     }
                 }
             }
