@@ -52,8 +52,13 @@
 
         body.embed-staff {
             background: transparent;
-            min-height: var(--app-height);
-            height: var(--app-height);
+            min-height: 100%;
+            height: 100%;
+        }
+
+        html:has(body.embed-staff) {
+            height: 100%;
+            overflow: hidden;
         }
 
         body.embed-staff,
@@ -109,6 +114,7 @@
             max-width: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         body.embed-staff .topbar {
@@ -2156,6 +2162,7 @@
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
+    const useStaffTokenBridge = isStaffEmbed || urlParams.get('staffBridge') === '1';
     const useCompactModerator = isStaffEmbed || urlParams.get('moderator') === 'compact';
     const themeMode = String(urlParams.get('theme') || '').toLowerCase();
     const forceLegacyTheme = themeMode === 'legacy' || themeMode === 'old' || themeMode === 'classic';
@@ -2165,7 +2172,7 @@
     const isAndroidDevice = /Android/i.test(userAgent);
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     const isAndroidWebView = isAndroidDevice && (userAgent.includes(' wv') || userAgent.includes('; wv)') || userAgent.includes('Version/'));
-    const useAndroidBottomNavFallback = isAndroidDevice && (isAndroidWebView || isStandaloneMode);
+    const useAndroidBottomNavFallback = !isStaffEmbed && isAndroidDevice && (isAndroidWebView || isStandaloneMode);
 
     let socket = null;
     let token = null;
@@ -2906,6 +2913,47 @@
         return null;
     }
 
+    function requestStaffTokenFromParent() {
+        const message = { type: 'COMMUNITY_CHAT_READY_FOR_STAFF_AUTH' };
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, window.location.origin);
+            }
+            if (window.opener && !window.opener.closed) {
+                window.opener.postMessage(message, window.location.origin);
+            }
+        } catch (_) {
+            // The staff panel also sends auth repeatedly; this request is only a hint.
+        }
+    }
+
+    function waitForStaffTokenBridge(timeoutMs = 5000) {
+        requestStaffTokenFromParent();
+
+        return new Promise((resolve) => {
+            let resolved = false;
+            const cleanup = () => {
+                window.removeEventListener('message', handleMessage);
+            };
+            const finish = (value) => {
+                if (resolved) return;
+                resolved = true;
+                cleanup();
+                resolve(value);
+            };
+            const handleMessage = (event) => {
+                if (event.origin !== window.location.origin) return;
+                const data = event.data || {};
+                if (data.type !== 'STAFF_COMMUNITY_CHAT_AUTH') return;
+                if (typeof data.token !== 'string' || !data.token.trim()) return;
+                finish(data.token.trim());
+            };
+
+            window.addEventListener('message', handleMessage);
+            setTimeout(() => finish(null), timeoutMs);
+        });
+    }
+
     function applyEmbedMode() {
         document.body.classList.toggle('community-newdesign', useNewDesignTheme);
         if (isStaffEmbed) {
@@ -3611,13 +3659,29 @@
 
         token = getToken();
         if (!token) {
-            window.location.href = '/patient-login.html';
-            return;
+            if (useStaffTokenBridge) {
+                if (el.statusBadge) el.statusBadge.textContent = 'Menghubungkan ke Staff Panel...';
+                token = await waitForStaffTokenBridge();
+            }
+
+            if (!token) {
+                if (useStaffTokenBridge) {
+                    showToast('Sesi Staff Panel tidak ditemukan. Silakan muat ulang dari Staff Panel.', 'error');
+                    if (el.statusBadge) el.statusBadge.textContent = 'Sesi staff tidak tersedia';
+                    return;
+                }
+                window.location.href = '/patient-login.html';
+                return;
+            }
         }
 
         currentUser = decodeToken(token);
         if (!currentUser || !currentUser.id) {
             showToast('Token tidak valid. Silakan login ulang.', 'error');
+            if (useStaffTokenBridge) {
+                if (el.statusBadge) el.statusBadge.textContent = 'Sesi staff tidak valid';
+                return;
+            }
             window.location.href = '/patient-login.html';
             return;
         }
