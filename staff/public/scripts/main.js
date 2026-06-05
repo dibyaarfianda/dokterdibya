@@ -1473,7 +1473,7 @@ function showCashierPage() {
         console.error('Failed to load billing modules:', error);
     });
 }
-function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Kelola Pasien', 'nav-patient', 'patients'); }
+function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient', 'patients'); }
 function showRecordHistoryPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Rekam / Riwayat', 'nav-record-history', 'patients'); }
 // Make function globally accessible for onclick handlers
 window.showPatientPage = showPatientPage;
@@ -4178,7 +4178,7 @@ async function applyMenuVisibility(user) {
     const menuMapping = {
         'kantor_saya': ['nav-kantor-saya'],
         'dashboard': null, // Dashboard always visible
-        'kelola_pasien': ['nav-patient', 'nav-record-history'],
+        'kelola_pasien': ['nav-kelola-pasien', 'nav-record-history'],
         'pasien_baru': ['nav-pasien-baru'],
         'klinik_privat': ['nav-klinik-private'],
         'rsia_melinda': ['nav-rsia-melinda'],
@@ -4640,6 +4640,7 @@ function restoreLastPage() {
             'nav-rs-bhayangkara-pasien':            () => showHospitalPatientsPage('rs_bhayangkara'),
             'nav-pasien-baru':                      () => showPasienBaruPage(),
             'nav-patient':                          () => showPatientPage(),
+            'nav-kelola-pasien':                   () => showKelolaPasienPage(),
             'nav-record-history':                   () => showRecordHistoryPage(),
             'nav-admin':                            () => showStokOpnamePage(),
             'nav-pengaturan':                       () => showPengaturanPage(),

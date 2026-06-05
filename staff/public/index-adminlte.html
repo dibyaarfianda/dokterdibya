@@ -1994,8 +1994,8 @@
 
                     <!-- PASIEN -->
                     <li class="nav-header">PASIEN</li>
-                    <li class="nav-item" id="nav-patient">
-                        <a href="#" class="nav-link" onclick="showPatientPage(); return false;">
+                    <li class="nav-item" id="nav-kelola-pasien">
+                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Kelola Pasien</p>
                         </a>
@@ -2464,7 +2464,7 @@
                         <div class="col-12">
                             <div id="tindakan-patient-alert" class="alert alert-warning">
                                 <i class="fas fa-exclamation-triangle mr-2"></i>
-                                <strong>Pasien belum dipilih.</strong> Silakan pilih pasien di menu <a href="#" onclick="showPatientPage(); return false;" class="alert-link font-weight-bold">Kelola Pasien</a> terlebih dahulu.
+                                <strong>Pasien belum dipilih.</strong> Silakan pilih pasien di menu <a href="#" onclick="showManagePatientsPage(); return false;" class="alert-link font-weight-bold">Kelola Pasien</a> terlebih dahulu.
                             </div>
                             <div id="selected-patient-display" class="alert alert-success d-none">
                                 <i class="fas fa-check-circle mr-2"></i>
@@ -8103,7 +8103,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v232';
+    window.__assetVersion = 'v233';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
@@ -8499,7 +8499,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        const kelolaPasienNav = document.querySelector('#nav-patient .nav-link');
+        const kelolaPasienNav = document.querySelector('#nav-kelola-pasien .nav-link');
         if (kelolaPasienNav) {
             kelolaPasienNav.classList.add('active');
         }
