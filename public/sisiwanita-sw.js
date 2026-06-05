@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260605sw2icon4'; // new swlogo2 icons with new filenames
+const CACHE_VERSION = '20260605sw2icon5'; // sw2v5 covers manifest, favicon, apple-touch-icon, and notification icons
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -16,8 +16,11 @@ const PRECACHE_URLS = [
   '/sisiwanita.webmanifest',
   '/scripts/patient-native-app-guard.js',
   OFFLINE_URL,
-  '/images/pwa-icons/swlogo-pwa-192x192.png',
-  '/images/pwa-icons/swlogo-pwa-512x512.png'
+  '/images/pwa-icons/sw2v5-any-192.png',
+  '/images/pwa-icons/sw2v5-any-512.png',
+  '/images/pwa-icons/sw2v5-mask-192.png',
+  '/images/pwa-icons/sw2v5-mask-512.png',
+  '/images/pwa-icons/sw2v5-any-180.png'
 ];
 
 self.addEventListener('install', function(event) {
