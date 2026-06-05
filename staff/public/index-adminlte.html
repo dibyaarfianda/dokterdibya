@@ -2178,13 +2178,13 @@
                             <p>Pengaturan</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-import-fields">
+                    <li class="nav-item dokter-only d-none" id="nav-import-fields" style="display: none !important;">
                         <a href="#" class="nav-link" onclick="showImportFieldsPage(); return false;">
                             <i class="nav-icon fas fa-i-cursor"></i>
                             <p>Import Fields</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-medify-sync">
+                    <li class="nav-item dokter-only d-none" id="nav-medify-sync" style="display: none !important;">
                         <a href="#" class="nav-link" onclick="showMedifySyncPage(); return false;">
                             <i class="nav-icon fas fa-hospital-user"></i>
                             <p>MEDIFY Sync</p>
@@ -8150,7 +8150,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v242';
+    window.__assetVersion = 'v243';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
