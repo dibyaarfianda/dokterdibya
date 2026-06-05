@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260605sw2icon2'; // new swlogo2 icons with new filenames
+const CACHE_VERSION = '20260605sw2icon3'; // new swlogo2 icons with new filenames
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
