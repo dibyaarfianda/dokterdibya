@@ -546,7 +546,7 @@ router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, 
     
     const [patients] = await db.query(
         `SELECT id, full_name AS fullname, email, phone, birth_date, age, photo_url, google_id,
-                registration_date, status, profile_completed, created_at, updated_at 
+                home_photo_url, registration_date, status, profile_completed, created_at, updated_at 
          FROM patients 
          WHERE id = ?`,
         [patientId]

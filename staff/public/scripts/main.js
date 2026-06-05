@@ -5028,6 +5028,7 @@ async function showPatientDetail(patientId) {
             birth_date: patient.birth_date,
             age: patient.age,
             photo_url: patient.photo_url,
+            home_photo_url: patient.home_photo_url || null,
             google_id: patient.google_id,
             profile_completed: patient.profile_completed,
             status: patient.status,
@@ -5084,6 +5085,14 @@ async function showPatientDetail(patientId) {
                                                 ${normalizedPatient.photo_url ? 
                                                     `<img src="${normalizedPatient.photo_url}" alt="Photo" style="max-width: 100px; border-radius: 50%;">` : 
                                                     '<span class="text-muted">Tidak ada foto</span>'}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Foto Beranda</th>
+                                            <td>
+                                                ${normalizedPatient.home_photo_url ?
+                                                    `<img src="${normalizedPatient.home_photo_url}" alt="Foto Beranda" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;display:block;">` :
+                                                    '<span class="text-muted">Belum dipasang</span>'}
                                             </td>
                                         </tr>
                                         <tr>

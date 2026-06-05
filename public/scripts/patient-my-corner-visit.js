@@ -11,6 +11,24 @@
         return new URLSearchParams(window.location.search).get('c') || '';
     }
 
+    function getClockMoodId() {
+        var hour = new Date().getHours();
+        if (hour >= 18 || hour < 5) return 'night';
+        if (hour < 10) return 'morning';
+        if (hour >= 15) return 'warm';
+        return 'calm';
+    }
+
+    function getVisitMood(theme) {
+        var mood = theme && theme.mood ? String(theme.mood) : 'auto';
+        return mood === 'auto' ? getClockMoodId() : mood;
+    }
+
+    function getThemeClass(theme, key, prefix) {
+        var value = theme && theme[key] ? String(theme[key]) : 'none';
+        return prefix + '-' + value.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+    }
+
     function renderError(message) {
         var root = document.getElementById('visit-root');
         if (!root) return;
@@ -27,13 +45,30 @@
         var profile = data.profile || {};
         var theme = data.theme || {};
         var widgets = Array.isArray(data.public_widgets) ? data.public_widgets : [];
+        var mood = getVisitMood(theme);
+        var roomClass = [
+            'visit-room-scene',
+            'pmc-room-scene',
+            'pmc-mood-' + mood,
+            getThemeClass(theme, 'wallpaper', 'pmc-wall'),
+            getThemeClass(theme, 'floor', 'pmc-floor'),
+            getThemeClass(theme, 'lamp', 'pmc-lamp'),
+            getThemeClass(theme, 'plant', 'pmc-plant'),
+            getThemeClass(theme, 'frame', 'pmc-frame')
+        ].join(' ');
         document.documentElement.style.setProperty('--pmc-accent', theme.accent || '#5c7f72');
         root.className = '';
-        root.innerHTML = '<section class="visit-card">' +
-            '<div class="visit-avatar">' + escapeHtml(profile.avatar_initials || 'PA') + '</div>' +
-            '<h1 class="visit-title">' + escapeHtml(profile.corner_name || theme.corner_name || 'Ruang Saya') + '</h1>' +
-            '<p class="visit-intro">' + escapeHtml(profile.intro || 'Ruang publik pasien.') + '</p>' +
-            '<div class="visit-label" style="margin-top:12px;"><i class="fa-solid fa-user-shield"></i> Read-only, public-safe</div>' +
+        root.innerHTML = '<section class="visit-room-shell">' +
+            '<div class="' + escapeHtml(roomClass) + '">' +
+                '<div class="pmc-room-wall"></div><div class="pmc-room-window"><i class="fa-solid fa-sun"></i></div><div class="pmc-room-floor"></div>' +
+                '<div class="pmc-room-title"><span>Ruang yang dikunjungi</span><h1>' + escapeHtml(profile.corner_name || theme.corner_name || 'Ruang Saya') + '</h1><p>milik ' + escapeHtml(profile.display_name || 'Pasien') + '</p></div>' +
+                '<div class="pmc-room-whisper"><span>Mode kunjungan</span><p>' + escapeHtml(profile.intro || 'Ruang publik kecil yang pemiliknya izinkan untuk dikunjungi.') + '</p></div>' +
+                '<div class="pmc-room-memory" aria-hidden="true"><i class="fa-solid fa-image"></i></div>' +
+                '<div class="pmc-room-deco pmc-room-plant" aria-hidden="true"><i class="fa-solid fa-seedling"></i></div>' +
+                '<div class="pmc-room-deco pmc-room-lamp" aria-hidden="true"><i class="fa-solid fa-lightbulb"></i></div>' +
+                '<div class="pmc-room-rug" aria-hidden="true"></div>' +
+            '</div>' +
+            '<div class="visit-label"><i class="fa-solid fa-user-shield"></i> Tampilan aman untuk pengunjung</div>' +
             '</section>' +
             '<section class="visit-card visit-widget ' + (widgets.indexOf('intro') !== -1 ? 'is-visible' : '') + '">' +
                 '<div class="pmc-kicker">Pemilik Ruang</div>' +
@@ -48,11 +83,11 @@
                 '</div>' +
             '</section>' +
             '<section class="visit-card visit-widget ' + (widgets.indexOf('journey-note') !== -1 ? 'is-visible' : '') + '">' +
-                '<div class="pmc-kicker">Journey Note</div>' +
+                '<div class="pmc-kicker">Catatan Perjalanan</div>' +
                 '<p class="visit-empty">Catatan publik ringan akan tampil di sini saat pemilik menambahkannya.</p>' +
             '</section>' +
             '<section class="visit-card visit-widget ' + (widgets.indexOf('public-links') !== -1 ? 'is-visible' : '') + '">' +
-                '<div class="pmc-kicker">Public Links</div>' +
+                '<div class="pmc-kicker">Tautan Pilihan</div>' +
                 '<p class="visit-empty">Link publik pilihan pemilik akan tampil di sini.</p>' +
             '</section>';
     }
