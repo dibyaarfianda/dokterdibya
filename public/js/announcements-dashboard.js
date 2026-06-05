@@ -1,7 +1,7 @@
 // Patient Dashboard Announcements
 const API_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3000/api' 
-    : 'https://dokterdibya.com/api';
+    : window.location.origin + '/api';
 
 let socket = null;
 let infoTerbaruAllAnnouncements = [];
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initializeSocket() {
     const socketUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3000' 
-        : 'https://dokterdibya.com';
+        : window.location.origin;
     
     socket = io(socketUrl, {
         transports: ['polling'],

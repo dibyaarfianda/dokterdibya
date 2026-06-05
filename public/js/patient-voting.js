@@ -3,7 +3,7 @@
 
     const API_URL = window.location.hostname === 'localhost'
         ? 'http://localhost:3000/api'
-        : 'https://dokterdibya.com/api';
+        : window.location.origin + '/api';
 
     let socket = null;
     let currentPoll = null;
@@ -553,7 +553,7 @@
 
         const socketUrl = window.location.hostname === 'localhost'
             ? 'http://localhost:3000'
-            : 'https://dokterdibya.com';
+            : window.location.origin;
 
         socket = io(socketUrl, {
             transports: ['polling'],

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#ffffff">
     <title>Ruang Publik - SISIwanita</title>
     <link rel="manifest" href="/patient-portal.webmanifest?v=20260524swlogo1">
@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260524f">
+    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260604quote4">
     <style>
         :root { --pmc-accent: #5c7f72; }
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -28,6 +28,19 @@
         .visit-label { display: inline-flex; align-items: center; gap: 7px; border: 1px solid rgba(17,17,17,0.09); border-radius: 999px; background: rgba(255,255,255,0.82); padding: 8px 10px; color: #555; font-size: 11px; font-weight: 800; }
         .visit-back { border: 1px solid rgba(17,17,17,0.1); background: rgba(255,255,255,0.88); color: #111; min-height: 40px; border-radius: 14px; padding: 0 12px; font-weight: 900; font-size: 12px; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; }
         .visit-loading { min-height: 64vh; display: grid; place-items: center; text-align: center; color: #717171; gap: 8px; }
+        .visit-room-shell { display: grid; gap: 10px; margin-top: 10px; }
+        .visit-room-scene { min-height: min(68vh, 620px); border-radius: 30px; border: 0; box-shadow: 0 22px 60px rgba(17,17,17,0.1); }
+        .visit-room-scene .pmc-room-title { top: 66px; left: 18px; right: 96px; }
+        .visit-room-scene .pmc-room-whisper { left: 18px; right: 18px; bottom: 112px; }
+        .visit-room-scene .pmc-room-rug { bottom: 42px; }
+        body .visit-room-scene.pmc-mood-night .pmc-room-title span,
+        body .visit-room-scene.pmc-mood-night .pmc-room-whisper span { color: #bfe0c9 !important; -webkit-text-fill-color: #bfe0c9 !important; }
+        body .visit-room-scene.pmc-mood-night .pmc-room-title h1 { color: #fff8ed !important; -webkit-text-fill-color: #fff8ed !important; text-shadow: 0 2px 22px rgba(0,0,0,0.34); }
+        body .visit-room-scene.pmc-mood-night .pmc-room-title p { color: rgba(255,248,237,0.82) !important; -webkit-text-fill-color: rgba(255,248,237,0.82) !important; }
+        body .visit-room-scene.pmc-mood-night .pmc-room-whisper { background: rgba(255,248,237,0.18); border-color: rgba(255,248,237,0.2); }
+        body .visit-room-scene.pmc-mood-night .pmc-room-whisper p { color: rgba(255,248,237,0.84) !important; -webkit-text-fill-color: rgba(255,248,237,0.84) !important; }
+        .visit-room-scene .pmc-room-controls,
+        .visit-room-scene + .pmc-room-soft-dock { display: none; }
         .visit-card { border: 1px solid rgba(17,17,17,0.09); background: rgba(255,255,255,0.86); border-radius: 18px; padding: 14px; box-shadow: 0 1px 2px rgba(17,17,17,0.05); margin-top: 12px; }
         .visit-avatar { width: 56px; height: 56px; border-radius: 20px; display: grid; place-items: center; background: color-mix(in srgb, var(--pmc-accent) 16%, #ffffff); color: var(--pmc-accent); font-weight: 900; margin-bottom: 12px; }
         .visit-title { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; font-size: 34px; line-height: 0.98; letter-spacing: -0.055em; margin-bottom: 10px; }
@@ -57,6 +70,6 @@
             <div>Memuat ruang publik...</div>
         </div>
     </main>
-    <script src="/scripts/patient-my-corner-visit.js?v=20260524g"></script>
+    <script src="/scripts/patient-my-corner-visit.js?v=20260604quote4"></script>
 </body>
 </html>
