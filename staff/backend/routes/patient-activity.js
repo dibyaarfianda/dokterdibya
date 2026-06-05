@@ -3,7 +3,9 @@
 /**
  * Patient Activity API
  * Aggregates patient activities: bookings, intake forms, registrations,
- * plus tracked events from patient_activity_log (login, page views, payments)
+ * tracked events from patient_activity_log (login, page views, payments),
+ * and patient portal interactions such as community chat, feedback,
+ * support chat, and Tanya Dokter.
  */
 
 const express = require('express');
@@ -159,6 +161,33 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             queries.push({ query: viewQuery, params: viewParams });
         }
 
+        // Patient tool usage (from tracked page views)
+        if (!type || type === 'tool_pasien') {
+            let toolQuery = `
+                SELECT
+                    'tool_pasien' as type,
+                    pal.created_at as timestamp,
+                    p.full_name as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT('Tool pasien: ', COALESCE(pal.page_name, pal.details, '-')) as details
+                FROM patient_activity_log pal
+                LEFT JOIN patients p ON pal.patient_id = p.id
+                WHERE pal.event_type = 'view_halaman'
+                  AND LOWER(COALESCE(pal.page_name, pal.details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|ruang saya|my corner|kalender'
+                  AND pal.created_at >= ? AND pal.created_at <= ?
+            `;
+            const toolParams = [fromDate, toDateEnd];
+
+            if (search) {
+                toolQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR pal.page_name LIKE ? OR pal.details LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                toolParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+            }
+
+            queries.push({ query: toolQuery, params: toolParams });
+        }
+
         // Payment activities (from patient_activity_log)
         if (!type || type === 'pembayaran') {
             let payQuery = `
@@ -182,6 +211,147 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             }
 
             queries.push({ query: payQuery, params: payParams });
+        }
+
+        // Community chat messages (patient messages only)
+        if (!type || type === 'community_chat') {
+            let communityChatQuery = `
+                SELECT
+                    'community_chat' as type,
+                    m.created_at as timestamp,
+                    COALESCE(p.full_name, m.sender_name, m.sender_nickname, 'Pasien') as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT(
+                        'Chat komunitas: ',
+                        COALESCE(r.name, r.slug, '-'),
+                        IF(r.is_direct = 1, ' (direct)', ''),
+                        ' - ',
+                        LEFT(COALESCE(m.message, ''), 180)
+                    ) as details
+                FROM community_chat_messages m
+                JOIN community_chat_rooms r ON r.id = m.room_id
+                LEFT JOIN patients p ON p.id = m.sender_id AND m.sender_type = 'patient'
+                WHERE m.sender_type = 'patient' AND m.created_at >= ? AND m.created_at <= ?
+            `;
+            const communityChatParams = [fromDate, toDateEnd];
+
+            if (search) {
+                communityChatQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR m.sender_name LIKE ? OR m.sender_nickname LIKE ? OR m.message LIKE ? OR r.name LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                communityChatParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            }
+
+            queries.push({ query: communityChatQuery, params: communityChatParams });
+        }
+
+        // Patient feedback / bug reports
+        if (!type || type === 'bug_report') {
+            let feedbackQuery = `
+                SELECT
+                    'bug_report' as type,
+                    pf.created_at as timestamp,
+                    CASE
+                        WHEN pf.is_anonymous = 1 THEN 'Anonim'
+                        ELSE COALESCE(p_direct.full_name, p_user.full_name, pf.patient_name, u.name, 'Pasien')
+                    END as patient_name,
+                    CASE WHEN pf.is_anonymous = 1 THEN NULL ELSE COALESCE(p_direct.email, p_user.email, u.email) END as patient_email,
+                    CASE WHEN pf.is_anonymous = 1 THEN NULL ELSE COALESCE(p_direct.phone, p_user.phone) END as patient_phone,
+                    CONCAT(
+                        'Feedback ', pf.category,
+                        IF(pf.rating IS NOT NULL, CONCAT(' - rating ', pf.rating, '/5'), ''),
+                        ': ',
+                        LEFT(COALESCE(pf.message, ''), 180)
+                    ) as details
+                FROM patient_feedback pf
+                LEFT JOIN patients p_direct ON p_direct.id = pf.patient_id
+                LEFT JOIN users u ON u.new_id = pf.patient_id
+                LEFT JOIN patients p_user ON LOWER(TRIM(p_user.email)) = LOWER(TRIM(u.email))
+                WHERE pf.category = 'bug' AND pf.created_at >= ? AND pf.created_at <= ?
+            `;
+            const feedbackParams = [fromDate, toDateEnd];
+
+            if (search) {
+                feedbackQuery += ` AND (p_direct.full_name LIKE ? OR p_direct.email LIKE ? OR p_user.full_name LIKE ? OR p_user.email LIKE ? OR pf.patient_name LIKE ? OR pf.message LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                feedbackParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            }
+
+            queries.push({ query: feedbackQuery, params: feedbackParams });
+        }
+
+        // Support chat sessions
+        if (!type || type === 'support_chat') {
+            let supportChatQuery = `
+                SELECT
+                    'support_chat' as type,
+                    COALESCE(m.last_message_at, s.updated_at, s.created_at) as timestamp,
+                    COALESCE(p.full_name, s.patient_name, 'Pasien') as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT(
+                        'Support chat ', s.status,
+                        IF(s.owner_staff_name IS NOT NULL, CONCAT(' - ', s.owner_staff_name), ''),
+                        IF(m.last_message IS NOT NULL, CONCAT(': ', LEFT(m.last_message, 180)), '')
+                    ) as details
+                FROM support_chat_sessions s
+                LEFT JOIN patients p ON p.id = s.patient_id
+                LEFT JOIN (
+                    SELECT sm.session_id, sm.content AS last_message, sm.created_at AS last_message_at
+                    FROM support_chat_messages sm
+                    INNER JOIN (
+                        SELECT session_id, MAX(created_at) AS max_created_at
+                        FROM support_chat_messages
+                        GROUP BY session_id
+                    ) latest ON latest.session_id = sm.session_id AND latest.max_created_at = sm.created_at
+                ) m ON m.session_id = s.id
+                WHERE COALESCE(m.last_message_at, s.updated_at, s.created_at) >= ?
+                  AND COALESCE(m.last_message_at, s.updated_at, s.created_at) <= ?
+            `;
+            const supportChatParams = [fromDate, toDateEnd];
+
+            if (search) {
+                supportChatQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR s.patient_name LIKE ? OR s.patient_id LIKE ? OR m.last_message LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                supportChatParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            }
+
+            queries.push({ query: supportChatQuery, params: supportChatParams });
+        }
+
+        // Tanya Dokter questions
+        if (!type || type === 'tanya_dokter') {
+            let tanyaDokterQuery = `
+                SELECT
+                    'tanya_dokter' as type,
+                    pq.created_at as timestamp,
+                    p.full_name as patient_name,
+                    p.email as patient_email,
+                    p.phone as patient_phone,
+                    CONCAT(
+                        'Tanya Dokter ', pq.status,
+                        IF(reply_stats.reply_count IS NOT NULL, CONCAT(' - ', reply_stats.reply_count, ' balasan'), ''),
+                        ': ',
+                        LEFT(COALESCE(pq.question_text, ''), 180)
+                    ) as details
+                FROM patient_questions pq
+                JOIN patients p ON p.id = pq.patient_id
+                LEFT JOIN (
+                    SELECT question_id, COUNT(*) AS reply_count
+                    FROM question_replies
+                    GROUP BY question_id
+                ) reply_stats ON reply_stats.question_id = pq.id
+                WHERE pq.created_at >= ? AND pq.created_at <= ?
+            `;
+            const tanyaDokterParams = [fromDate, toDateEnd];
+
+            if (search) {
+                tanyaDokterQuery += ` AND (p.full_name LIKE ? OR p.email LIKE ? OR pq.question_text LIKE ?)`;
+                const searchTerm = `%${search}%`;
+                tanyaDokterParams.push(searchTerm, searchTerm, searchTerm);
+            }
+
+            queries.push({ query: tanyaDokterQuery, params: tanyaDokterParams });
         }
 
         // Combine all queries with UNION ALL
@@ -223,7 +393,12 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             [[totalPatients]],
             [[loginStats]],
             [[pageViewStats]],
-            [[paymentStats]]
+            [[paymentStats]],
+            [[communityChatStats]],
+            [[bugReportStats]],
+            [[supportChatStats]],
+            [[doctorQuestionStats]],
+            [[toolUsageStats]]
         ] = await Promise.all([
             db.query('SELECT COUNT(*) as count FROM sunday_appointments WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
             db.query('SELECT COUNT(*) as count FROM patient_intake_submissions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
@@ -231,7 +406,12 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
             db.query('SELECT COUNT(*) as count FROM patients'),
             db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'login' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
             db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
-            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd])
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'pembayaran' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
+            db.query("SELECT COUNT(*) as count FROM community_chat_messages WHERE sender_type = 'patient' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
+            db.query("SELECT COUNT(*) as count FROM patient_feedback WHERE category = 'bug' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd]),
+            db.query('SELECT COUNT(*) as count FROM support_chat_sessions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
+            db.query('SELECT COUNT(*) as count FROM patient_questions WHERE created_at >= ? AND created_at <= ?', [statsFromDate, rangeEnd]),
+            db.query("SELECT COUNT(*) as count FROM patient_activity_log WHERE event_type = 'view_halaman' AND LOWER(COALESCE(page_name, details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|ruang saya|my corner|kalender' AND created_at >= ? AND created_at <= ?", [statsFromDate, rangeEnd])
         ]);
 
         res.json({
@@ -245,7 +425,12 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
                 totalPatients: totalPatients.count,
                 logins: loginStats.count,
                 pageViews: pageViewStats.count,
-                payments: paymentStats.count
+                payments: paymentStats.count,
+                communityChats: communityChatStats.count,
+                bugReports: bugReportStats.count,
+                supportChats: supportChatStats.count,
+                doctorQuestions: doctorQuestionStats.count,
+                toolUsage: toolUsageStats.count
             }
         });
 
@@ -326,6 +511,37 @@ router.get('/stats', verifyToken, requireSuperadmin, async (req, res) => {
             [since]
         );
 
+        // 6. Feature interactions that live outside patient_activity_log.
+        const [featureBreakdown] = await db.query(
+            `SELECT feature_type, SUM(count) as count
+             FROM (
+                 SELECT 'community_chat' as feature_type, COUNT(*) as count
+                 FROM community_chat_messages
+                 WHERE sender_type = 'patient' AND created_at >= ?
+                 UNION ALL
+                 SELECT 'bug_report' as feature_type, COUNT(*) as count
+                 FROM patient_feedback
+                 WHERE category = 'bug' AND created_at >= ?
+                 UNION ALL
+                 SELECT 'support_chat' as feature_type, COUNT(*) as count
+                 FROM support_chat_sessions
+                 WHERE created_at >= ?
+                 UNION ALL
+                 SELECT 'tanya_dokter' as feature_type, COUNT(*) as count
+                 FROM patient_questions
+                 WHERE created_at >= ?
+                 UNION ALL
+                 SELECT 'tool_pasien' as feature_type, COUNT(*) as count
+                 FROM patient_activity_log
+                 WHERE event_type = 'view_halaman'
+                   AND LOWER(COALESCE(page_name, details, '')) REGEXP 'album|usg|antrian|fertility|kesuburan|gerakan|kick|vitamin|lab|pregnancy|kehamilan|perjalanan|ruang saya|my corner|kalender'
+                   AND created_at >= ?
+             ) feature_counts
+             GROUP BY feature_type
+             ORDER BY count DESC`,
+            [since, since, since, since, since]
+        );
+
         res.json({
             success: true,
             days,
@@ -333,7 +549,8 @@ router.get('/stats', verifyToken, requireSuperadmin, async (req, res) => {
             loginTrend,
             topPatients,
             eventBreakdown,
-            hourlyPattern
+            hourlyPattern,
+            featureBreakdown
         });
 
     } catch (error) {
