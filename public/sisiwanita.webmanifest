@@ -13,25 +13,25 @@
   "categories": ["health", "medical"],
   "icons": [
     {
-      "src": "/images/pwa-icons/sw2v3-any-192.png",
+      "src": "/images/pwa-icons/sw2v4-any-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/pwa-icons/sw2v3-mask-192.png",
+      "src": "/images/pwa-icons/sw2v4-mask-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/images/pwa-icons/sw2v3-any-512.png",
+      "src": "/images/pwa-icons/sw2v4-any-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/pwa-icons/sw2v3-mask-512.png",
+      "src": "/images/pwa-icons/sw2v4-mask-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
