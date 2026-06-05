@@ -176,13 +176,19 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         // Filter by last visit location from sunday_clinic_records
         if (last_visit_location) {
             if (last_visit_location === 'no_visit') {
-                // Patients with no visits (Pasien Baru)
+                // Patients with no visits (Pasien Baru) — include intake address
                 query = `
                     SELECT p.*,
                         NULL as last_visit_loc,
                         NULL as last_visit_date,
-                        NULL as mr_id
+                        NULL as mr_id,
+                        IFNULL(JSON_UNQUOTE(JSON_EXTRACT(pis.payload, '$.address')), '') as intake_address
                     FROM patients p
+                    LEFT JOIN (
+                        SELECT patient_id, payload
+                        FROM patient_intake_submissions
+                        WHERE id IN (SELECT MAX(id) FROM patient_intake_submissions GROUP BY patient_id)
+                    ) pis ON pis.patient_id = p.id
                     WHERE NOT EXISTS (
                         SELECT 1 FROM sunday_clinic_records scr WHERE scr.patient_id = p.id
                     )
@@ -229,6 +235,8 @@ router.get('/api/patients', verifyToken, async (req, res) => {
             // Apply sorting - default to last_visit DESC (most recent visit first)
             if (sort === 'name') {
                 query += ' ORDER BY p.full_name ASC';
+            } else if (last_visit_location === 'no_visit') {
+                query += ' ORDER BY p.registration_date DESC, p.created_at DESC';
             } else {
                 query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
             }
