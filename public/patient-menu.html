@@ -12,7 +12,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/swlogo-pwa-180x180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260528room2">
+    <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260604quote4">
     <script src="/scripts/patient-native-app-guard.js?v=20260605pwa1"></script>
     <style>
         :root {
@@ -2959,6 +2959,8 @@
         };
         let homePhotoDraft = null;
         let homePhotoGesture = null;
+        // Canonical URL from server (R2), updated after load/upload
+        let _homePhotoServerUrl = '';
 
         function normalizeHomePhotoState(state) {
             const normalized = normalizePhotoAdjustState(state || HOME_PHOTO_DEFAULT);
@@ -2968,21 +2970,60 @@
         function getHomePhotoState() {
             try {
                 const raw = localStorage.getItem(HOME_PHOTO_STORAGE_KEY);
-                if (!raw) return Object.assign({}, HOME_PHOTO_DEFAULT);
-                return normalizeHomePhotoState(JSON.parse(raw));
+                const stored = raw ? JSON.parse(raw) : {};
+                // Server URL always wins over any cached photoUrl
+                const photoUrl = _homePhotoServerUrl || stored.photoUrl || '';
+                return normalizeHomePhotoState(Object.assign({}, HOME_PHOTO_DEFAULT, stored, { photoUrl }));
             } catch (error) {
-                return Object.assign({}, HOME_PHOTO_DEFAULT);
+                return Object.assign({}, HOME_PHOTO_DEFAULT, { photoUrl: _homePhotoServerUrl });
             }
         }
 
         function saveHomePhotoState(state) {
             const normalized = normalizeHomePhotoState(state);
+            // Only persist crop adjustments to localStorage — URL lives in DB/R2
             try {
-                localStorage.setItem(HOME_PHOTO_STORAGE_KEY, JSON.stringify(normalized));
+                const toStore = { zoom: normalized.zoom, offsetX: normalized.offsetX, offsetY: normalized.offsetY };
+                localStorage.setItem(HOME_PHOTO_STORAGE_KEY, JSON.stringify(toStore));
             } catch (error) {}
             homePhotoDraft = Object.assign({}, normalized);
             updateHomeHeroPhoto();
             return normalized;
+        }
+
+        // Auto-migrate: if localStorage has a base64/blob photoUrl, upload it to R2 silently
+        async function migrateHomePhotoToR2(token) {
+            try {
+                const raw = localStorage.getItem(HOME_PHOTO_STORAGE_KEY);
+                if (!raw) return;
+                const stored = JSON.parse(raw);
+                const localUrl = stored.photoUrl || '';
+                // Only migrate base64 data URLs or blob URLs
+                if (!localUrl || (!localUrl.startsWith('data:image') && !localUrl.startsWith('blob:'))) return;
+
+                const resp = await fetch(localUrl);
+                const blob = await resp.blob();
+                const mimeType = blob.type || 'image/jpeg';
+                const ext = mimeType.split('/')[1] || 'jpg';
+                const formData = new FormData();
+                formData.append('photo', blob, 'home-photo.' + ext);
+
+                const uploadResp = await fetch('/api/patients/upload-home-photo', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                if (!uploadResp.ok) return;
+                const data = await uploadResp.json();
+                if (data.success && data.home_photo_url) {
+                    _homePhotoServerUrl = data.home_photo_url;
+                    // Clear photoUrl from localStorage, keep adjustments only
+                    const toStore = { zoom: stored.zoom || 1, offsetX: stored.offsetX || 0, offsetY: stored.offsetY || 0 };
+                    localStorage.setItem(HOME_PHOTO_STORAGE_KEY, JSON.stringify(toStore));
+                    homePhotoDraft = Object.assign({}, homePhotoDraft || {}, { photoUrl: _homePhotoServerUrl });
+                    updateHomeHeroPhoto();
+                }
+            } catch (e) { /* silent migration */ }
         }
 
         function updateHomeHeroPhoto(state) {
@@ -3070,9 +3111,26 @@
                     if (input) input.value = '';
                 },
                 onSave: function(blob) {
-                    return blobToDataUrl(blob).then(function(croppedDataUrl) {
+                    // Upload directly to R2 instead of storing base64 in localStorage
+                    var token = getToken();
+                    var mimeType = blob.type || 'image/jpeg';
+                    var ext = mimeType.split('/')[1] || 'jpg';
+                    var formData = new FormData();
+                    formData.append('photo', blob, 'home-photo.' + ext);
+
+                    showToast('Mengupload foto beranda...');
+
+                    return fetch('/api/patients/upload-home-photo', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        body: formData
+                    }).then(function(resp) {
+                        return resp.json();
+                    }).then(function(data) {
+                        if (!data.success) throw new Error(data.message || 'Upload gagal');
+                        _homePhotoServerUrl = data.home_photo_url;
                         homePhotoDraft = normalizeHomePhotoState({
-                            photoUrl: croppedDataUrl,
+                            photoUrl: _homePhotoServerUrl,
                             zoom: 1,
                             offsetX: 0,
                             offsetY: 0
@@ -3080,7 +3138,7 @@
                         saveHomePhotoState(homePhotoDraft);
                         updateHomeHeroPhoto(homePhotoDraft);
                         openTopbarModal('Foto Beranda', 'Tampilan beranda', renderHomePhotoModal(homePhotoDraft));
-                        showToast('Foto beranda disimpan');
+                        showToast('Foto beranda berhasil disimpan');
                         return true;
                     }).catch(function(error) {
                         showToast(error.message || 'Upload foto beranda gagal');
@@ -3922,6 +3980,15 @@
             try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
             
             window.currentProfile = currentProfile;
+
+            // Set server home photo URL (takes priority over localStorage)
+            _homePhotoServerUrl = currentProfile.home_photo_url || '';
+
+            // If no server photo yet but localStorage has one, migrate silently
+            if (!_homePhotoServerUrl) {
+                migrateHomePhotoToR2(token);
+            }
+
             const firstName = getPortalDisplayName(currentProfile);
             document.getElementById('hero-title').textContent = firstName + ', ini ruang Anda.';
             document.getElementById('hero-copy').innerHTML = 'Kesehatan Anda tersimpan dengan rapi dan aman di <span class="hero-copy-strong">portal wanita sehat</span> ini.';
@@ -4700,7 +4767,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260602guestactivity1', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260604quote4', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
@@ -4899,7 +4966,7 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260602guest2"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260604quote4"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 
     <!-- ===== CROP EDITOR OVERLAY ===== -->
