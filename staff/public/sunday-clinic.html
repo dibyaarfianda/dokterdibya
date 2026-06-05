@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260531chat8';
+            var PAGE_VERSION = '20260605billing1';
             window.__sundayClinicChatVersion = 'v229';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
@@ -658,7 +658,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260531chat4';
+            const SC_CACHE_VERSION = 'v20260605billing1';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {

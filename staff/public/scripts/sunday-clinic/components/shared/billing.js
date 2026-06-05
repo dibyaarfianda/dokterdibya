@@ -782,13 +782,22 @@ export default {
             `;
         }).join('');
 
-        // Status badge
+        // Status badge + who confirmed
+        const confirmedBy = billing.confirmed_by || '';
+        const confirmedAt = billing.confirmed_at ? new Date(billing.confirmed_at).toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
         let statusBadge = '<span class="badge badge-warning">Draft</span>';
         if (status === 'confirmed') {
-            statusBadge = '<span class="badge badge-success">Dikonfirmasi</span>';
+            statusBadge = `<span class="badge badge-success">Dikonfirmasi</span>`;
         } else if (status === 'paid') {
-            statusBadge = '<span class="badge badge-primary">Lunas</span>';
+            statusBadge = `<span class="badge badge-primary">Lunas</span>`;
         }
+        const confirmedByHtml = (status === 'confirmed' || status === 'paid') && confirmedBy
+            ? `<div class="mt-2 p-2 rounded" style="background:#e8f5e9;border:1px solid #a5d6a7;font-size:13px;">
+                   <i class="fas fa-user-check text-success mr-1"></i>
+                   <strong>Dikonfirmasi oleh: ${escapeHtml(confirmedBy)}</strong>
+                   ${confirmedAt ? `<span class="text-muted ml-2">${confirmedAt}</span>` : ''}
+               </div>`
+            : '';
 
         // Action buttons
         let actionsHtml = '';
@@ -922,6 +931,8 @@ export default {
                             ` : ''}
                         </tbody>
                     </table>
+
+                    ${confirmedByHtml}
 
                     <div class="mt-3">
                         ${actionsHtml}
@@ -1116,19 +1127,10 @@ export default {
                 });
             });
 
-            // 1. Confirm billing button (dokter only)
+            // 1. Confirm billing button (all staff)
                     const confirmBtn = document.getElementById('btn-confirm-billing');
                     if (confirmBtn) {
                         confirmBtn.addEventListener('click', async function() {
-                            const userRole = window.currentStaffIdentity?.role || '';
-                            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
-                            
-                            if (!isDokter) {
-                                window.showToast('error', 'Hanya dokter yang dapat mengkonfirmasi tagihan');
-                                return;
-                            }
-
-
                             try {
                                 const token = window.getToken?.();
                                 if (!token) return;
