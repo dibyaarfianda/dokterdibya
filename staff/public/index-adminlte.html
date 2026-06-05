@@ -1151,6 +1151,10 @@
             margin: 0 !important;
         }
 
+        .patient-activity-portal-shortcuts {
+            gap: 10px;
+        }
+
         /* Avatar hover animation */
         #navbar-user-avatar {
             transition: transform 0.3s ease;
@@ -6713,6 +6717,66 @@ Contoh Markdown:
                                                 <div class="icon"><i class="fas fa-credit-card"></i></div>
                                             </div>
                                         </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-community-chats">0</h3>
+                                                    <p>Chat Komunitas (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-comments"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-danger">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-bug-reports">0</h3>
+                                                    <p>Bug/Error (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-bug"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-support-chats">0</h3>
+                                                    <p>Support Chat (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-headset"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-primary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-doctor-questions">0</h3>
+                                                    <p>Tanya Dokter (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-user-md"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-12">
+                                            <div class="small-box bg-secondary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-tool-usage">0</h3>
+                                                    <p>Tool Pasien (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-tools"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between mb-4 patient-activity-portal-shortcuts">
+                                        <div>
+                                            <div class="font-weight-bold"><i class="fas fa-layer-group mr-1 text-primary"></i>Interaksi Portal</div>
+                                            <div class="small text-muted">Timeline ini menggabungkan booking, login, tool pasien, chat, laporan bug, support, dan Tanya Dokter.</div>
+                                        </div>
+                                        <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Shortcut interaksi portal">
+                                            <button type="button" class="btn btn-outline-info" onclick="showCommunityChatPage()"><i class="fas fa-comments mr-1"></i>Chat</button>
+                                            <button type="button" class="btn btn-outline-danger" onclick="showTroubleshootingPage()"><i class="fas fa-bug mr-1"></i>Bug</button>
+                                            <button type="button" class="btn btn-outline-success" onclick="showSupportChatPage()"><i class="fas fa-headset mr-1"></i>Support</button>
+                                            <button type="button" class="btn btn-outline-primary" onclick="showTanyaDokterPage()"><i class="fas fa-user-md mr-1"></i>Tanya</button>
+                                        </div>
                                     </div>
 
                                     <!-- Statistics Section (collapsible) -->
@@ -6749,7 +6813,12 @@ Contoh Markdown:
                                                     <option value="registration">Registrasi</option>
                                                     <option value="login">Login</option>
                                                     <option value="view_halaman">Page View</option>
+                                                    <option value="tool_pasien">Tool Pasien</option>
                                                     <option value="pembayaran">Pembayaran</option>
+                                                    <option value="community_chat">Chat Komunitas</option>
+                                                    <option value="bug_report">Bug/Error</option>
+                                                    <option value="support_chat">Support Chat</option>
+                                                    <option value="tanya_dokter">Tanya Dokter</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -8230,7 +8299,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v226';
+    window.__assetVersion = 'v227';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
@@ -10883,6 +10952,12 @@ Apakah Anda yakin ingin melanjutkan?`;
     const patientActivityLimit = 50;
     let patientActivitySearchTimeout = null;
 
+    function escapePatientActivityHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
+
     window.showPatientActivityPage = function() {
         document.documentElement.classList.remove('kantor-saya-active');
         document.body.classList.remove('kantor-saya-active');
@@ -10961,6 +11036,11 @@ Apakah Anda yakin ingin melanjutkan?`;
             document.getElementById('pa-stat-logins').textContent = stats.logins || 0;
             document.getElementById('pa-stat-page-views').textContent = stats.pageViews || 0;
             document.getElementById('pa-stat-payments').textContent = stats.payments || 0;
+            document.getElementById('pa-stat-community-chats').textContent = stats.communityChats || 0;
+            document.getElementById('pa-stat-bug-reports').textContent = stats.bugReports || 0;
+            document.getElementById('pa-stat-support-chats').textContent = stats.supportChats || 0;
+            document.getElementById('pa-stat-doctor-questions').textContent = stats.doctorQuestions || 0;
+            document.getElementById('pa-stat-tool-usage').textContent = stats.toolUsage || 0;
 
             if (data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada aktivitas pasien</p></td></tr>';
@@ -10974,7 +11054,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-                let typeBadge = '<span class="badge badge-secondary">' + d.type + '</span>';
+                let typeBadge = '<span class="badge badge-secondary">' + escapePatientActivityHtml(d.type || '-') + '</span>';
                 if (d.type === 'booking') {
                     typeBadge = '<span class="badge badge-info"><i class="fas fa-calendar-check mr-1"></i>Booking</span>';
                 } else if (d.type === 'intake') {
@@ -10985,15 +11065,29 @@ Apakah Anda yakin ingin melanjutkan?`;
                     typeBadge = '<span class="badge badge-secondary"><i class="fas fa-sign-in-alt mr-1"></i>Login</span>';
                 } else if (d.type === 'view_halaman') {
                     typeBadge = '<span class="badge badge-dark"><i class="fas fa-eye mr-1"></i>Page View</span>';
+                } else if (d.type === 'tool_pasien') {
+                    typeBadge = '<span class="badge badge-secondary"><i class="fas fa-tools mr-1"></i>Tool Pasien</span>';
                 } else if (d.type === 'pembayaran') {
                     typeBadge = '<span class="badge badge-danger"><i class="fas fa-credit-card mr-1"></i>Pembayaran</span>';
+                } else if (d.type === 'community_chat') {
+                    typeBadge = '<span class="badge badge-info"><i class="fas fa-comments mr-1"></i>Chat Komunitas</span>';
+                } else if (d.type === 'bug_report') {
+                    typeBadge = '<span class="badge badge-danger"><i class="fas fa-bug mr-1"></i>Bug/Error</span>';
+                } else if (d.type === 'support_chat') {
+                    typeBadge = '<span class="badge badge-success"><i class="fas fa-headset mr-1"></i>Support Chat</span>';
+                } else if (d.type === 'tanya_dokter') {
+                    typeBadge = '<span class="badge badge-primary"><i class="fas fa-user-md mr-1"></i>Tanya Dokter</span>';
                 }
+
+                const patientName = escapePatientActivityHtml(d.patient_name || '-');
+                const patientMeta = escapePatientActivityHtml(d.patient_email || d.patient_phone || '-');
+                const details = escapePatientActivityHtml(d.details || '-');
 
                 return `<tr>
                     <td><small>${dateStr}<br><span class="text-muted">${timeStr}</span></small></td>
-                    <td><strong>${d.patient_name || '-'}</strong><br><small class="text-muted">${d.patient_email || d.patient_phone || '-'}</small></td>
+                    <td><strong>${patientName}</strong><br><small class="text-muted">${patientMeta}</small></td>
                     <td>${typeBadge}</td>
-                    <td><small>${d.details || '-'}</small></td>
+                    <td><small>${details}</small></td>
                 </tr>`;
             }).join('');
 
@@ -11193,7 +11287,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         content.innerHTML = '<div class="text-center py-4 w-100 text-muted"><i class="fas fa-spinner fa-spin fa-lg"></i><p class="mb-0 mt-2">Memuat statistik...</p></div>';
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('vps_auth_token');
             const response = await fetch('/api/patient-activity/stats?days=30', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -11208,15 +11302,25 @@ Apakah Anda yakin ingin melanjutkan?`;
             const eventLabels = {
                 login: 'Login',
                 view_halaman: 'Page View',
+                tool_pasien: 'Tool Pasien',
                 booking: 'Booking',
-                pembayaran: 'Pembayaran'
+                pembayaran: 'Pembayaran',
+                community_chat: 'Chat Komunitas',
+                bug_report: 'Bug/Error',
+                support_chat: 'Support Chat',
+                tanya_dokter: 'Tanya Dokter'
             };
 
             const eventIcons = {
                 login: 'fas fa-sign-in-alt text-secondary',
                 view_halaman: 'fas fa-eye text-dark',
+                tool_pasien: 'fas fa-tools text-secondary',
                 booking: 'fas fa-calendar-check text-info',
-                pembayaran: 'fas fa-credit-card text-danger'
+                pembayaran: 'fas fa-credit-card text-danger',
+                community_chat: 'fas fa-comments text-info',
+                bug_report: 'fas fa-bug text-danger',
+                support_chat: 'fas fa-headset text-success',
+                tanya_dokter: 'fas fa-user-md text-primary'
             };
 
             // Build HTML for all stats panels
@@ -11234,7 +11338,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                     const pct = Math.round((p.views / maxViews) * 100);
                     html += '<tr>' +
                         '<td class="py-1" style="width:20px;"><small class="text-muted">' + (i + 1) + '.</small></td>' +
-                        '<td class="py-1"><small>' + (p.page_name || '-') + '</small>' +
+                        '<td class="py-1"><small>' + escapePatientActivityHtml(p.page_name || '-') + '</small>' +
                         '<div class="progress" style="height:4px;"><div class="progress-bar bg-primary" style="width:' + pct + '%"></div></div></td>' +
                         '<td class="py-1 text-right" style="width:40px;"><strong>' + p.views + '</strong></td>' +
                         '</tr>';
@@ -11254,7 +11358,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                     var icon = eventIcons[e.event_type] || 'fas fa-circle text-muted';
                     var label = eventLabels[e.event_type] || e.event_type;
                     html += '<tr>' +
-                        '<td class="py-1"><i class="' + icon + ' mr-1"></i><small>' + label + '</small></td>' +
+                        '<td class="py-1"><i class="' + icon + ' mr-1"></i><small>' + escapePatientActivityHtml(label) + '</small></td>' +
                         '<td class="py-1 text-right"><strong>' + e.count + '</strong> <small class="text-muted">(' + pct + '%)</small></td>' +
                         '</tr>';
                 });
@@ -11262,6 +11366,24 @@ Apakah Anda yakin ingin melanjutkan?`;
                 html += '</tbody></table>';
             } else {
                 html += '<p class="text-muted small">Belum ada data</p>';
+            }
+
+            html += '<h6 class="font-weight-bold mt-3"><i class="fas fa-layer-group mr-1 text-primary"></i> Interaksi Fitur</h6>';
+            if (result.featureBreakdown && result.featureBreakdown.length > 0) {
+                var totalFeatures = result.featureBreakdown.reduce(function(s, e) { return s + e.count; }, 0);
+                html += '<table class="table table-sm table-borderless mb-0"><tbody>';
+                result.featureBreakdown.forEach(function(e) {
+                    var pct = totalFeatures > 0 ? Math.round((e.count / totalFeatures) * 100) : 0;
+                    var icon = eventIcons[e.feature_type] || 'fas fa-circle text-muted';
+                    var label = eventLabels[e.feature_type] || e.feature_type;
+                    html += '<tr>' +
+                        '<td class="py-1"><i class="' + icon + ' mr-1"></i><small>' + escapePatientActivityHtml(label) + '</small></td>' +
+                        '<td class="py-1 text-right"><strong>' + e.count + '</strong> <small class="text-muted">(' + pct + '%)</small></td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table>';
+            } else {
+                html += '<p class="text-muted small">Belum ada interaksi fitur tambahan</p>';
             }
 
             html += '</div>';
