@@ -5473,6 +5473,78 @@
                     </div>
                 </div>
                 
+                <div id="invoice-history-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-file-invoice-dollar mr-2"></i>Riwayat Invoice / Keuangan
+                                    </h3>
+                                    <div class="card-tools">
+                                        <span class="badge badge-primary" id="invoice-count">0 invoice</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-3 mb-2">
+                                            <label for="invoice-start-date" class="mb-1">Tanggal Mulai</label>
+                                            <input type="date" id="invoice-start-date" class="form-control" onchange="loadInvoiceHistory()">
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <label for="invoice-end-date" class="mb-1">Tanggal Akhir</label>
+                                            <input type="date" id="invoice-end-date" class="form-control" onchange="loadInvoiceHistory()">
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            <label for="invoice-status-filter" class="mb-1">Status</label>
+                                            <select id="invoice-status-filter" class="form-control" onchange="loadInvoiceHistory()">
+                                                <option value="">Semua Status</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="paid">Lunas</option>
+                                                <option value="cancelled">Dibatalkan</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 mb-2">
+                                            <label for="invoice-search" class="mb-1">Cari Pasien / ID</label>
+                                            <div class="input-group">
+                                                <input type="text" id="invoice-search" class="form-control" placeholder="Nama pasien atau ID pasien" onkeydown="if(event.key === 'Enter'){ loadInvoiceHistory(); }">
+                                                <div class="input-group-append">
+                                                    <button type="button" class="btn btn-primary" onclick="loadInvoiceHistory()">
+                                                        <i class="fas fa-search"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>No. Invoice</th>
+                                                    <th>Tanggal</th>
+                                                    <th>Pasien</th>
+                                                    <th>Jenis Kunjungan</th>
+                                                    <th class="text-right">Total</th>
+                                                    <th>Status</th>
+                                                    <th class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="invoice-history-tbody">
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted py-4">
+                                                        <i class="fas fa-file-invoice"></i> Belum ada data dimuat
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="analytics-page" class="d-none"></div>
 
                 <!-- IMPORT FIELDS PAGE (Dokter Only) -->
@@ -8150,7 +8222,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v243';
+    window.__assetVersion = 'v244';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
