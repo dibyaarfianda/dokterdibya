@@ -24,6 +24,27 @@ Before using any method, class, API, or dependency:
 - `getMyBillings()` vs `getVisitHistory()` - wrong method name caused build failure
 - `PullToRefreshBox` requires Material3 1.3.0+ but project uses BOM 2024.02.00
 
+## CRITICAL: Follow Approved Planning Exactly
+
+**When a plan has been discussed or approved, implementation MUST follow that plan exactly.**
+
+Rules:
+1. **Do not deviate from the approved plan** during implementation.
+2. **Do not improvise, add alternate designs, or change direction** just because it seems better in the moment.
+3. If the approved plan appears incomplete, risky, or blocked by the actual codebase, **stop and ask for confirmation before changing the plan**.
+4. If the user says a specific planning direction is better, that direction becomes the source of truth for implementation.
+5. Implementation reports must clearly mention whether the completed work matches the approved plan.
+
+**DO NOT:**
+- Replace a planned widget/search/command approach with a different sidebar/grouping approach without approval
+- Add visible UI that was not part of the agreed plan
+- Treat emergency feedback as permission to redesign the solution
+
+**ALWAYS:**
+- Keep changes inside the approved scope
+- Ask before deviating
+- Revert or adjust quickly if implementation drift is discovered
+
 ## CRITICAL: Git Commits
 
 **NEVER add "Co-Authored-By" line in commit messages.** Just write the commit message without any co-author attribution.
