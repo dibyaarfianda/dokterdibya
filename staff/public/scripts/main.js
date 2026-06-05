@@ -1474,8 +1474,10 @@ function showCashierPage() {
     });
 }
 function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient', 'patients'); }
+function showRecordHistoryPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Rekam / Riwayat', 'nav-record-history', 'patients'); }
 // Make function globally accessible for onclick handlers
 window.showPatientPage = showPatientPage;
+window.showRecordHistoryPage = showRecordHistoryPage;
 
 async function showAnamnesa() { 
     hideAllPages(); 
@@ -4176,10 +4178,13 @@ async function applyMenuVisibility(user) {
     const menuMapping = {
         'kantor_saya': ['nav-kantor-saya'],
         'dashboard': null, // Dashboard always visible
-        'kelola_pasien': ['nav-kelola-pasien'],
-        'pasien_baru': ['nav-kelola-pasien'], // Same as kelola_pasien
-        'klinik_privat': ['nav-klinik-private', 'nav-birth-class'],
-        'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan', 'management-nav-kelola-supplier'],
+        'kelola_pasien': ['nav-patient', 'nav-record-history'],
+        'pasien_baru': ['nav-pasien-baru'],
+        'klinik_privat': ['nav-klinik-private'],
+        'rsia_melinda': ['nav-rsia-melinda'],
+        'rsud_gambiran': ['nav-rsud-gambiran'],
+        'rs_bhayangkara': ['nav-rs-bhayangkara'],
+        'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan'],
         'keuangan': ['nav-invoice-history'],
         'kelola_roles': ['management-nav-kelola-roles'],
         'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
@@ -4187,24 +4192,6 @@ async function applyMenuVisibility(user) {
         'staff_points': ['nav-staff-points'],
         'staff_briefing': ['nav-staff-briefing']
     };
-
-    const widgetizedToolNavIds = [
-        'nav-troubleshooting',
-        'nav-patient-activity',
-        'nav-guest-activity',
-        'management-nav-activity-log',
-        'finance-analysis-nav',
-        'management-nav-block-list',
-        'nav-staff-activity'
-    ];
-
-    function markToolsAuditActive(activeNavId) {
-        if (!widgetizedToolNavIds.includes(activeNavId)) return;
-        const toolsNav = document.getElementById('nav-tools-audit');
-        if (!toolsNav) return;
-        toolsNav.classList.add('menu-open');
-        toolsNav.querySelector(':scope > .nav-link')?.classList.add('active');
-    }
 
     // Superadmin/dokter sees everything - show all hidden menus
     const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
@@ -4223,11 +4210,6 @@ async function applyMenuVisibility(user) {
         // Show invoice history for dokter
         const invoiceNav = document.getElementById('nav-invoice-history');
         if (invoiceNav) invoiceNav.classList.remove('d-none');
-        // Show birth congrats menu for dokter
-        const birthCongratsNav = document.getElementById('nav-birth-congrats');
-        if (birthCongratsNav) birthCongratsNav.classList.remove('d-none');
-        const birthTestimonialsNav = document.getElementById('nav-birth-testimonials');
-        if (birthTestimonialsNav) birthTestimonialsNav.classList.remove('d-none');
         return; // All menus visible
     }
 
@@ -4268,7 +4250,6 @@ async function applyMenuVisibility(user) {
                             element.classList.remove('d-none');
                             element.removeAttribute('hidden');
                         }
-                        markToolsAuditActive(elementId);
                     }
                 }
             }
@@ -4659,9 +4640,10 @@ function restoreLastPage() {
             'nav-rs-bhayangkara-pasien':            () => showHospitalPatientsPage('rs_bhayangkara'),
             'nav-pasien-baru':                      () => showPasienBaruPage(),
             'nav-patient':                          () => showPatientPage(),
+            'nav-record-history':                   () => showRecordHistoryPage(),
             'nav-admin':                            () => showStokOpnamePage(),
             'nav-pengaturan':                       () => showPengaturanPage(),
-            'management-nav-kelola-obat':           () => showKelolaObatPage(),
+            'management-nav-kelola-obat':           () => showKelolaObatManagementPage(),
             'nav-logs':                             () => showLogPage(),
             'nav-appointments':                     () => showAppointmentsPage(),
             'nav-analytics':                        () => showAnalyticsPage(),
@@ -5963,6 +5945,7 @@ window.showPatientBlockListPage = showPatientBlockListPage;
 window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
 window.showHospitalPatientsPage = showHospitalPatientsPage;
 window.showPasienBaruPage = showPasienBaruPage;
+window.showRecordHistoryPage = showRecordHistoryPage;
 window.startPatientVisit = startPatientVisit;
 window.confirmHospitalAppointment = confirmHospitalAppointment;
 window.completeHospitalAppointment = completeHospitalAppointment;

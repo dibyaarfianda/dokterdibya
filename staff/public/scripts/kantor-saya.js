@@ -742,7 +742,7 @@
             icon: 'fa-thumbtack',
             defaultSize: { w: 6, h: 2, minW: 3, minH: 2 },
             defaultConfig: {
-                pinned: ['nav-dashboard', 'nav-kelola-pasien', 'nav-jadwal', 'nav-docboard', 'nav-notifications']
+                pinned: ['nav-dashboard', 'nav-kantor-saya', 'nav-klinik-private', 'nav-patient', 'nav-tanya-dokter']
             },
             render: renderShortcutWidget,
             configure: configureShortcutWidget
