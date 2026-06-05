@@ -2167,7 +2167,7 @@
                         <div class="corner-name" id="corner-name">Ruang Saya</div>
                         <p class="corner-desc" id="corner-desc">Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.</p>
                     </div>
-                    <button class="primary-action soundable" onclick="openMyCorner()"><i class="fa-solid fa-pen"></i> Atur</button>
+                    <button class="primary-action soundable" id="my-corner-action-btn" onclick="openMyCorner()"><i class="fa-solid fa-pen"></i> Atur</button>
                 </div>
             </section>
 
@@ -2421,11 +2421,37 @@
 
         const LIVE_PATIENT_IDS = ['P2025091', 'P001'];
         const LIVE_PATIENT_NAMES = ['nanda ananda', 'feby kumalasari'];
+        const MY_CORNER_ALLOWED_NAMES = ['nanda ananda', 'feby kumalasari'];
 
         function isLivePatientProfile(profile) {
             const patientId = String(profile?.id || profile?.patient_id || profile?.medicalRecordId || '').trim();
             const patientName = normalizePatientName(profile?.fullname || profile?.full_name || profile?.name || '');
             return LIVE_PATIENT_IDS.includes(patientId) || LIVE_PATIENT_NAMES.includes(patientName);
+        }
+
+        function isMyCornerAllowedProfile(profile) {
+            const patientName = normalizePatientName(profile?.fullname || profile?.full_name || profile?.name || '');
+            return MY_CORNER_ALLOWED_NAMES.includes(patientName);
+        }
+
+        function showMyCornerComingSoon() {
+            showToast('Ruang Saya Coming Soon');
+        }
+
+        function trackMyCornerComingSoon() {
+            if (!currentProfile || isGuestMode()) return;
+            const token = getToken();
+            if (!token) return;
+            fetch('/api/patients/track-page', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                    page_name: 'Ruang Saya - Coming Soon'
+                })
+            }).catch(() => {});
         }
 
         function redirectUnsupportedPatient(profile) { return false; }
@@ -3803,13 +3829,22 @@
             const cornerName = document.getElementById('corner-name');
             const cornerCardTitle = document.getElementById('corner-card-title');
             const cornerDesc = document.getElementById('corner-desc');
+            const cornerAction = document.getElementById('my-corner-action-btn');
+            const isAllowed = isMyCornerAllowedProfile(currentProfile || getStoredProfile());
             if (cornerName) cornerName.textContent = name;
             if (cornerCardTitle) cornerCardTitle.textContent = name.length > 14 ? 'Ruang' : name;
-            if (cornerDesc) cornerDesc.textContent = note;
+            if (cornerDesc) cornerDesc.textContent = isAllowed ? note : 'Coming Soon';
+            if (cornerAction && !isAllowed) cornerAction.innerHTML = '<i class="fa-solid fa-clock"></i> Coming Soon';
+            if (cornerAction && isAllowed) cornerAction.innerHTML = '<i class="fa-solid fa-pen"></i> Atur';
         }
 
         function openMyCorner() {
             if (!requireRealPatient('Ruang personal tersimpan untuk akun pasien. Masuk untuk membuka dan mengaturnya.')) return;
+            if (!isMyCornerAllowedProfile(currentProfile || getStoredProfile())) {
+                trackMyCornerComingSoon();
+                showMyCornerComingSoon();
+                return;
+            }
             if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
                 return window.PatientMyCorner.open();
             }
@@ -4972,7 +5007,7 @@
             }
         });
     </script>
-    <script src="/scripts/patient-my-corner.js?v=20260604quote4"></script>
+    <script src="/scripts/patient-my-corner.js?v=20260605ruangsaya"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 
     <!-- ===== CROP EDITOR OVERLAY ===== -->
