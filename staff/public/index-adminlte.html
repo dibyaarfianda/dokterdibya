@@ -2039,7 +2039,7 @@
                             </p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-troubleshooting">
+                    <li class="nav-item sidebar-widgetized" id="nav-troubleshooting" hidden>
                         <a href="#" class="nav-link" onclick="showTroubleshootingPage(); return false;">
                             <i class="nav-icon fas fa-bug text-danger"></i>
                             <p>Troubleshooting</p>
@@ -2051,13 +2051,13 @@
                             <p>Upload USG</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-patient-activity">
+                    <li class="nav-item dokter-only d-none sidebar-widgetized" id="nav-patient-activity" hidden>
                         <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-check"></i>
                             <p>Aktivitas Pasien</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-guest-activity">
+                    <li class="nav-item dokter-only d-none sidebar-widgetized" id="nav-guest-activity" hidden>
                         <a href="#" class="nav-link" onclick="showGuestActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-secret" style="color: #20c997;"></i>
                             <p>Aktivitas Demo</p>
@@ -2144,7 +2144,7 @@
                             <p>Supplier</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="management-nav-activity-log">
+                    <li class="nav-item sidebar-widgetized" id="management-nav-activity-log" hidden>
                         <a href="#" class="nav-link" onclick="showActivityLogPage(); return false;">
                             <i class="nav-icon fas fa-history"></i>
                             <p>Log Aktivitas</p>
@@ -2153,7 +2153,7 @@
 
                     <!-- MANAGEMENT -->
                     <li class="nav-header" id="management-header">MANAGEMENT</li>
-                    <li class="nav-item dokter-only d-none" id="finance-analysis-nav" hidden>
+                    <li class="nav-item dokter-only d-none sidebar-widgetized" id="finance-analysis-nav" hidden>
                         <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
                             <i class="nav-icon fas fa-chart-line"></i>
                             <p>Analisis Finansial</p>
@@ -2165,13 +2165,13 @@
                             <p>Staff Roles</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="management-nav-block-list">
+                    <li class="nav-item dokter-only d-none sidebar-widgetized" id="management-nav-block-list" hidden>
                         <a href="#" class="nav-link" onclick="showPatientBlockListPage(); return false;">
                             <i class="nav-icon fas fa-ban"></i>
                             <p>Block List</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-staff-activity" hidden>
+                    <li class="nav-item dokter-only d-none sidebar-widgetized" id="nav-staff-activity" hidden>
                         <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-clock"></i>
                             <p>Aktivitas Staff</p>
@@ -8148,7 +8148,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v228';
+    window.__assetVersion = 'v229';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
@@ -10821,9 +10821,12 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        document.getElementById('nav-patient-activity')?.removeAttribute('hidden');
-        document.getElementById('nav-patient-activity')?.classList.remove('d-none');
-        document.querySelector('#nav-patient-activity .nav-link')?.classList.add('active');
+        const patientActivityNav = document.getElementById('nav-patient-activity');
+        if (patientActivityNav && !patientActivityNav.classList.contains('sidebar-widgetized')) {
+            patientActivityNav.removeAttribute('hidden');
+            patientActivityNav.classList.remove('d-none');
+        }
+        patientActivityNav?.querySelector('.nav-link')?.classList.add('active');
 
         // Hide floating panel
         const floatingPanel = document.getElementById('floating-kelola-pasien');
@@ -11004,9 +11007,12 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.getElementById('guest-activity-page')?.classList.remove('d-none');
 
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        document.getElementById('nav-guest-activity')?.removeAttribute('hidden');
-        document.getElementById('nav-guest-activity')?.classList.remove('d-none');
-        document.querySelector('#nav-guest-activity .nav-link')?.classList.add('active');
+        const guestActivityNav = document.getElementById('nav-guest-activity');
+        if (guestActivityNav && !guestActivityNav.classList.contains('sidebar-widgetized')) {
+            guestActivityNav.removeAttribute('hidden');
+            guestActivityNav.classList.remove('d-none');
+        }
+        guestActivityNav?.querySelector('.nav-link')?.classList.add('active');
 
         const floatingPanel = document.getElementById('floating-kelola-pasien');
         if (floatingPanel) floatingPanel.classList.add('d-none');
