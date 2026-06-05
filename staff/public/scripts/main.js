@@ -608,6 +608,16 @@ function getVisitHistoryBadge(patient) {
     return badgeMap[status] ?? badgeMap.belum_pernah_kontrol;
 }
 
+function calcAgeFromBirth(birthDate) {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age >= 0 ? age : null;
+}
+
 async function loadPasienBaru() {
     const tbody = document.getElementById('hospital-patients-tbody');
     const table = document.getElementById('hospital-patients-table');
@@ -622,7 +632,22 @@ async function loadPasienBaru() {
         console.warn('DataTable destroy warning:', e.message);
     }
 
-    tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
+    // Set Pasien Baru-specific thead
+    const theadRow = table.querySelector('thead tr');
+    if (theadRow) {
+        theadRow.innerHTML = `
+            <th>ID</th>
+            <th>Nama Lengkap</th>
+            <th>Umur</th>
+            <th>Alamat</th>
+            <th>Telepon</th>
+            <th>Tanggal Registrasi</th>
+            <th>Profil Lengkap</th>
+            <th>Aksi</th>
+        `;
+    }
+
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
 
     try {
         const token = getAuthToken();
@@ -639,27 +664,39 @@ async function loadPasienBaru() {
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Tidak ada pasien tanpa DRD</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada pasien tanpa DRD</td></tr>`;
             return;
         }
 
         tbody.innerHTML = data.data.map(patient => {
-            const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-            const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-            const statusBadge = patient.status === 'active' ?
-                '<span class="badge badge-success">Aktif</span>' :
-                '<span class="badge badge-secondary">Nonaktif</span>';
+            // Age: use stored value or calculate from birth_date
+            const ageVal = patient.age || calcAgeFromBirth(patient.birth_date);
+            const ageDisplay = ageVal != null ? ageVal + ' th' : '-';
+
+            // Registration date (newest first sort via data-order)
+            const regRaw = patient.registration_date || patient.created_at;
+            const regSort = regRaw ? new Date(regRaw).toISOString() : '';
+            const regDisplay = regRaw ? new Date(regRaw).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+
+            // Address from intake submission
+            const alamat = (patient.intake_address && patient.intake_address.trim())
+                ? escapeHtml(patient.intake_address)
+                : '<span class="text-muted small">-</span>';
+
+            // Profile completeness badge
+            const profilBadge = patient.photo_url
+                ? '<span class="badge badge-success"><i class="fas fa-check mr-1"></i>Lengkap</span>'
+                : '<span class="badge badge-light border">Belum</span>';
 
             return `
                 <tr>
                     <td>${escapeHtml(patient.id)}</td>
                     <td>${escapeHtml(patient.full_name || '-')}</td>
+                    <td>${ageDisplay}</td>
+                    <td style="max-width:180px;white-space:normal;word-break:break-word;">${alamat}</td>
                     <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
-                    <td>${birthDate}</td>
-                    <td>${patient.age || '-'}</td>
-                    <td>${getVisitHistoryBadge(patient)}</td>
-                    <td>${regDate}</td>
-                    <td>${statusBadge}</td>
+                    <td data-order="${regSort}">${regDisplay}</td>
+                    <td>${profilBadge}</td>
                     <td class="text-nowrap">
                         <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${escapeHtml(patient.id)}" title="Detail">
                             <i class="fas fa-eye"></i>
@@ -669,12 +706,12 @@ async function loadPasienBaru() {
             `;
         }).join('');
 
-        // Initialize DataTable (already destroyed at the beginning of function)
+        // Initialize DataTable — sort by Tanggal Registrasi DESC (col 5)
         try {
             $('#hospital-patients-table').DataTable({
                 responsive: true,
                 pageLength: 25,
-                order: [[1, 'asc']],
+                order: [[5, 'desc']],
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
                 }
@@ -695,7 +732,7 @@ async function loadPasienBaru() {
         });
     } catch (error) {
         console.error('Error loading pasien baru:', error);
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Gagal memuat data: ${escapeHtml(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Gagal memuat data: ${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
@@ -713,6 +750,22 @@ async function loadHospitalPatients(location) {
         }
     } catch (e) {
         console.warn('DataTable destroy warning:', e.message);
+    }
+
+    // Restore original hospital patients thead (9 cols)
+    const theadRow = table.querySelector('thead tr');
+    if (theadRow) {
+        theadRow.innerHTML = `
+            <th>ID</th>
+            <th>Nama Lengkap</th>
+            <th>Telepon</th>
+            <th>Tanggal Lahir</th>
+            <th>Usia</th>
+            <th>Kunjungan Terakhir</th>
+            <th>Tgl Registrasi</th>
+            <th>Status</th>
+            <th>Aksi</th>
+        `;
     }
 
     tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
@@ -744,6 +797,8 @@ async function loadHospitalPatients(location) {
                 '<span class="badge badge-success">Aktif</span>' :
                 '<span class="badge badge-secondary">Nonaktif</span>';
 
+            const ageVal = patient.age || calcAgeFromBirth(patient.birth_date);
+            const ageDisplay = ageVal != null ? ageVal : '-';
             const visitHistoryBadge = getVisitHistoryBadge(patient);
 
             return `
@@ -752,7 +807,7 @@ async function loadHospitalPatients(location) {
                     <td>${escapeHtml(patient.full_name || '-')}</td>
                     <td>${escapeHtml(patient.whatsapp || patient.phone || '-')}</td>
                     <td>${birthDate}</td>
-                    <td>${patient.age || '-'}</td>
+                    <td>${ageDisplay}</td>
                     <td><div>${lastVisit}</div>${visitHistoryBadge ? `<div class="mt-1">${visitHistoryBadge}</div>` : ''}</td>
                     <td>${regDate}</td>
                     <td>${statusBadge}</td>
