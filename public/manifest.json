@@ -10,25 +10,25 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/images/pwa-icons/sw2v7-any-192.png",
+      "src": "/images/pwa-icons/sw2v8-any-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/pwa-icons/sw2v7-mask-192.png",
+      "src": "/images/pwa-icons/sw2v8-mask-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/images/pwa-icons/sw2v7-any-512.png",
+      "src": "/images/pwa-icons/sw2v8-any-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/pwa-icons/sw2v7-mask-512.png",
+      "src": "/images/pwa-icons/sw2v8-mask-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
