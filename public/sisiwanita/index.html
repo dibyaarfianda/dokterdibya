@@ -18,7 +18,7 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260605install1">
+    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260606installgate">
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -8385,9 +8385,6 @@
             if (typeof window.updatePatientPortalInstallButtons === 'function') {
                 window.updatePatientPortalInstallButtons();
             }
-            if (getInstallPlatform() === 'android') {
-                autoShowInstallPrompt();
-            }
         });
 
         window.addEventListener('appinstalled', function() {
@@ -8452,7 +8449,6 @@
             }
 
             updateDownloadBanner();
-            setTimeout(autoShowInstallPrompt, 900);
         })();
 
         function configureInstallPrompt(platform) {
