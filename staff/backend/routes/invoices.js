@@ -30,8 +30,8 @@ router.get('/history', verifyToken, async (req, res) => {
                 r.created_at as visit_date,
                 r.visit_location
             FROM sunday_clinic_billings b
-            LEFT JOIN patients p ON p.id = b.patient_id
-            LEFT JOIN sunday_clinic_records r ON r.mr_id = b.mr_id AND r.id = (SELECT MIN(id) FROM sunday_clinic_records WHERE mr_id = b.mr_id)
+            LEFT JOIN patients p ON p.id COLLATE utf8mb4_unicode_ci = b.patient_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN sunday_clinic_records r ON r.mr_id COLLATE utf8mb4_unicode_ci = b.mr_id COLLATE utf8mb4_unicode_ci AND r.id = (SELECT MIN(id) FROM sunday_clinic_records WHERE mr_id COLLATE utf8mb4_unicode_ci = b.mr_id COLLATE utf8mb4_unicode_ci)
             WHERE b.invoice_url IS NOT NULL
         `;
         const params = [];
