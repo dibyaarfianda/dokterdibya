@@ -2109,6 +2109,12 @@
                             <p>Obat</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="management-nav-kelola-supplier">
+                        <a href="#" class="nav-link" onclick="showKelolaSupplierPage(); return false;">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Supplier</p>
+                        </a>
+                    </li>
                     <li class="nav-item" id="management-nav-kelola-tindakan">
                         <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
                             <i class="nav-icon fas fa-hand-holding-medical"></i>
@@ -8245,7 +8251,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v249';
+    window.__assetVersion = 'v250';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
