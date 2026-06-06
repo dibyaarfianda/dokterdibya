@@ -3136,9 +3136,11 @@ async function loadInvoiceHistory() {
                 ? `<a href="${inv.etiket_signed_url}" target="_blank" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket PDF"><i class="fas fa-tag"></i> Etiket</a>`
                 : '';
 
-            const confirmedBy = inv.confirmed_by
-                ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${inv.confirmed_by}</small>`
-                : '';
+            const statusValue = inv.invoice_status || inv.status;
+            const paidBy = inv.paid_by_display || inv.paid_by || (statusValue === 'paid' ? inv.last_modified_by : '');
+            const statusBy = statusValue === 'paid'
+                ? (paidBy ? `<small class="text-muted d-block"><i class="fas fa-money-check-alt mr-1"></i>${paidBy}</small>` : '')
+                : (inv.confirmed_by ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${inv.confirmed_by}</small>` : '');
 
             return `
                 <tr>
@@ -3150,7 +3152,7 @@ async function loadInvoiceHistory() {
                     </td>
                     <td>${location}</td>
                     <td class="text-right font-weight-bold">${amount}</td>
-                    <td>${statusBadge}${confirmedBy}</td>
+                    <td>${statusBadge}${statusBy}</td>
                     <td class="text-center">
                         ${invoiceBtn}${etiketBtn}
                         ${!invoiceBtn && !etiketBtn ? '<span class="text-muted small">Belum dicetak</span>' : ''}

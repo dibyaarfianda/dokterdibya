@@ -23,6 +23,9 @@ router.get('/history', verifyToken, async (req, res) => {
                 b.etiket_url,
                 b.confirmed_by,
                 b.confirmed_at,
+                b.paid_by,
+                b.paid_at,
+                b.last_modified_by,
                 b.printed_at,
                 b.printed_by,
                 b.created_at,
@@ -77,7 +80,8 @@ router.get('/history', verifyToken, async (req, res) => {
                 etiket_signed_url: etiketSignedUrl,
                 invoice_number: row.mr_id,
                 total_amount: row.total,
-                invoice_status: row.status
+                invoice_status: row.status,
+                paid_by_display: row.paid_by || (row.status === 'paid' ? row.last_modified_by : null)
             };
         }));
 
