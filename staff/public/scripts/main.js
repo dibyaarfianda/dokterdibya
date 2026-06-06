@@ -3096,84 +3096,145 @@ async function loadInvoiceHistory() {
         const data = await response.json();
         const invoices = data.invoices || [];
 
+        // Store for client-side sort
+        window.__invoiceRawData = invoices;
+        window.__invoiceSortCol = '';
+        window.__invoiceSortDir = 'asc';
+        // Reset sort indicators
+        ['date', 'patient', 'total', 'status'].forEach(c => {
+            const el = document.getElementById('invoice-sort-' + c);
+            if (el) el.textContent = '⇅';
+            const th = document.getElementById('invoice-th-' + c);
+            if (th) th.classList.remove('sort-active');
+        });
+
         countBadge.textContent = `${invoices.length} invoice`;
 
-        if (invoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-file-invoice"></i> Tidak ada invoice ditemukan</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = invoices.map(inv => {
-            const rawDate = inv.visit_date || inv.created_at;
-            const visitDate = rawDate ? new Date(rawDate).toLocaleDateString('id-ID', {
-                day: 'numeric', month: 'short', year: 'numeric'
-            }) : '-';
-            const amount = new Intl.NumberFormat('id-ID', {
-                style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-            }).format(inv.total_amount || inv.total || 0);
-
-            const statusBadges = {
-                'paid':      '<span class="badge badge-success">Lunas</span>',
-                'confirmed': '<span class="badge badge-info">Dikonfirmasi</span>',
-                'draft':     '<span class="badge badge-warning">Draft</span>',
-                'cancelled': '<span class="badge badge-danger">Dibatalkan</span>'
-            };
-            const statusBadge = statusBadges[inv.invoice_status || inv.status] || '<span class="badge badge-secondary">-</span>';
-
-            const locationMap = {
-                'klinik_private': 'Klinik Privat',
-                'rsia_melinda':   'RSIA Melinda',
-                'rsud_gambiran':  'RSUD Gambiran',
-                'rs_bhayangkara': 'RS Bhayangkara'
-            };
-            const location = locationMap[inv.visit_location] || inv.visit_location || '-';
-
-            // Use signed URLs from R2 (generated server-side)
-            const invoiceBtn = inv.invoice_signed_url
-                ? `<a href="${inv.invoice_signed_url}" target="_blank" class="btn btn-xs btn-info" title="Lihat Invoice PDF"><i class="fas fa-file-pdf"></i> Invoice</a>`
-                : '';
-            const etiketBtn = inv.etiket_signed_url
-                ? `<a href="${inv.etiket_signed_url}" target="_blank" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket PDF"><i class="fas fa-tag"></i> Etiket</a>`
-                : '';
-
-            const statusValue = inv.invoice_status || inv.status;
-            const paidBy = inv.paid_by_display || inv.paid_by || (statusValue === 'paid' ? inv.last_modified_by : '');
-            const statusBy = statusValue === 'paid'
-                ? (paidBy ? `<small class="text-muted d-block"><i class="fas fa-money-check-alt mr-1"></i>${paidBy}</small>` : '')
-                : (inv.confirmed_by ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${inv.confirmed_by}</small>` : '');
-            const mrId = inv.mr_id || inv.invoice_number || '';
-            const mrUrl = mrId ? buildSundayClinicAppUrl(mrId, 'billing') : '';
-            const mrLink = mrUrl
-                ? `<a href="${mrUrl}" class="invoice-drd-link" title="Buka status tagihan ${escapeHtml(mrId)}"><code>${escapeHtml(mrId)}</code></a>`
-                : `<code>${escapeHtml(mrId || '-')}</code>`;
-
-            return `
-                <tr>
-                    <td>${mrLink}</td>
-                    <td>${visitDate}</td>
-                    <td>
-                        <strong>${inv.patient_name || '-'}</strong><br>
-                        <small class="text-muted">${inv.patient_id || ''}</small>
-                    </td>
-                    <td>${location}</td>
-                    <td class="text-right font-weight-bold">${amount}</td>
-                    <td>${statusBadge}${statusBy}</td>
-                    <td class="text-center">
-                        ${invoiceBtn}${etiketBtn}
-                        ${!invoiceBtn && !etiketBtn ? '<span class="text-muted small">Belum dicetak</span>' : ''}
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        renderInvoiceRows(invoices);
 
     } catch (error) {
         console.error('Error loading invoice history:', error);
+        const tbody = document.getElementById('invoice-history-tbody');
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle"></i> Gagal memuat data</td></tr>';
     }
 }
 
+function renderInvoiceRows(invoices) {
+    const tbody = document.getElementById('invoice-history-tbody');
+    if (!tbody) return;
+
+    if (!invoices || invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-file-invoice"></i> Tidak ada invoice ditemukan</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = invoices.map(inv => {
+        const rawDate = inv.visit_date || inv.created_at;
+        const visitDate = rawDate ? new Date(rawDate).toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'short', year: 'numeric'
+        }) : '-';
+        const amount = new Intl.NumberFormat('id-ID', {
+            style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+        }).format(inv.total_amount || inv.total || 0);
+
+        const statusBadges = {
+            'paid':      '<span class="badge badge-success">Lunas</span>',
+            'confirmed': '<span class="badge badge-info">Dikonfirmasi</span>',
+            'draft':     '<span class="badge badge-warning">Draft</span>',
+            'cancelled': '<span class="badge badge-danger">Dibatalkan</span>'
+        };
+        const statusBadge = statusBadges[inv.invoice_status || inv.status] || '<span class="badge badge-secondary">-</span>';
+
+        const locationMap = {
+            'klinik_private': 'Klinik Privat',
+            'rsia_melinda':   'RSIA Melinda',
+            'rsud_gambiran':  'RSUD Gambiran',
+            'rs_bhayangkara': 'RS Bhayangkara'
+        };
+        const location = locationMap[inv.visit_location] || inv.visit_location || '-';
+
+        const invoiceBtn = inv.invoice_signed_url
+            ? `<a href="${inv.invoice_signed_url}" target="_blank" class="btn btn-xs btn-info" title="Lihat Invoice PDF"><i class="fas fa-file-pdf"></i> Invoice</a>`
+            : '';
+        const etiketBtn = inv.etiket_signed_url
+            ? `<a href="${inv.etiket_signed_url}" target="_blank" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket PDF"><i class="fas fa-tag"></i> Etiket</a>`
+            : '';
+
+        const statusValue = inv.invoice_status || inv.status;
+        const paidBy = inv.paid_by_display || inv.paid_by || (statusValue === 'paid' ? inv.last_modified_by : '');
+        const statusBy = statusValue === 'paid'
+            ? (paidBy ? `<small class="text-muted d-block"><i class="fas fa-money-check-alt mr-1"></i>${paidBy}</small>` : '')
+            : (inv.confirmed_by ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${inv.confirmed_by}</small>` : '');
+        const mrId = inv.mr_id || inv.invoice_number || '';
+        const mrUrl = mrId ? buildSundayClinicAppUrl(mrId, 'billing') : '';
+        const mrLink = mrUrl
+            ? `<a href="${mrUrl}" class="invoice-drd-link" title="Buka status tagihan ${escapeHtml(mrId)}"><code>${escapeHtml(mrId)}</code></a>`
+            : `<code>${escapeHtml(mrId || '-')}</code>`;
+
+        return `
+            <tr>
+                <td>${mrLink}</td>
+                <td>${visitDate}</td>
+                <td>
+                    <strong>${inv.patient_name || '-'}</strong><br>
+                    <small class="text-muted">${inv.patient_id || ''}</small>
+                </td>
+                <td>${location}</td>
+                <td class="text-right font-weight-bold">${amount}</td>
+                <td>${statusBadge}${statusBy}</td>
+                <td class="text-center">
+                    ${invoiceBtn}${etiketBtn}
+                    ${!invoiceBtn && !etiketBtn ? '<span class="text-muted small">Belum dicetak</span>' : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function sortInvoiceTable(col) {
+    const invoices = window.__invoiceRawData || [];
+    if (!invoices.length) return;
+
+    const prevCol = window.__invoiceSortCol;
+    const prevDir = window.__invoiceSortDir;
+    const dir = (prevCol === col && prevDir === 'asc') ? 'desc' : 'asc';
+    window.__invoiceSortCol = col;
+    window.__invoiceSortDir = dir;
+
+    // Update icons and active class
+    ['date', 'patient', 'total', 'status'].forEach(c => {
+        const icon = document.getElementById('invoice-sort-' + c);
+        const th = document.getElementById('invoice-th-' + c);
+        if (icon) icon.textContent = c === col ? (dir === 'asc' ? '▲' : '▼') : '⇅';
+        if (th) th.classList.toggle('sort-active', c === col);
+    });
+
+    const sorted = [...invoices].sort((a, b) => {
+        let va, vb;
+        if (col === 'date') {
+            va = new Date(a.visit_date || a.created_at || 0).getTime();
+            vb = new Date(b.visit_date || b.created_at || 0).getTime();
+        } else if (col === 'patient') {
+            va = (a.patient_name || '').toLowerCase();
+            vb = (b.patient_name || '').toLowerCase();
+        } else if (col === 'total') {
+            va = Number(a.total_amount || a.total || 0);
+            vb = Number(b.total_amount || b.total || 0);
+        } else if (col === 'status') {
+            va = a.invoice_status || a.status || '';
+            vb = b.invoice_status || b.status || '';
+        }
+        if (va < vb) return dir === 'asc' ? -1 : 1;
+        if (va > vb) return dir === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    renderInvoiceRows(sorted);
+}
+
 window.showInvoiceHistoryPage = showInvoiceHistoryPage;
 window.loadInvoiceHistory = loadInvoiceHistory;
+window.sortInvoiceTable = sortInvoiceTable;
 // ==================== END INVOICE HISTORY ====================
 
 function showBookingSettingsPage() {
