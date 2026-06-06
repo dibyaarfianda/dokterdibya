@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260606sw2v8logo80'; // 2026-06-06 swlogonew.svg icon at 80% canvas
+const CACHE_VERSION = '20260606pwa-install-gate'; // 2026-06-06 install prompt gated to registered portal users
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -16,10 +16,10 @@ const PRECACHE_URLS = [
   '/sisiwanita.webmanifest',
   '/scripts/patient-native-app-guard.js',
   OFFLINE_URL,
-  '/images/pwa-icons/sw2v8-any-192.png',
-  '/images/pwa-icons/sw2v8-any-512.png',
-  '/images/pwa-icons/sw2v8-mask-192.png',
-  '/images/pwa-icons/sw2v8-mask-512.png',
+  '/images/pwa-icons/sw2v8-any-192x192.png',
+  '/images/pwa-icons/sw2v8-any-512x512.png',
+  '/images/pwa-icons/sw2v8-mask-192x192.png',
+  '/images/pwa-icons/sw2v8-mask-512x512.png',
   '/images/pwa-icons/sw2v8-any-180.png'
 ];
 
