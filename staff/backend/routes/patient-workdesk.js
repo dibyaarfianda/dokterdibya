@@ -19,6 +19,29 @@ const DEFAULT_WIDGETS = [
 ];
 
 const PUBLIC_WIDGET_ALLOWLIST = new Set(['intro', 'favorites', 'journey-note', 'public-links']);
+const ROOM_ITEM_IDS = new Set([
+    'album-usg',
+    'active-booking',
+    'pregnancy-tracker',
+    'documents',
+    'vitamin-reminder',
+    'tanya-dokter',
+    'personal-note',
+    'favorites'
+]);
+const ROOM_STATIC_BLOCKS = new Set(['title', 'photo', 'clock', 'ai', 'usg']);
+const ROOM_STYLE_IDS = new Set(['sisiwanita', 'warm-blush', 'calm-sky', 'pastel-bunny']);
+const ROOM_MOOD_IDS = new Set(['auto', 'morning', 'calm', 'warm', 'night']);
+const ROOM_WALLPAPER_IDS = new Set(['linen', 'sunwash', 'botanical']);
+const ROOM_FLOOR_IDS = new Set(['warm-oak', 'soft-mat', 'plain']);
+const ROOM_LAMP_IDS = new Set(['glow', 'reading', 'none']);
+const ROOM_PLANT_IDS = new Set(['leafy', 'sprout', 'none']);
+const ROOM_FRAME_IDS = new Set(['memory', 'quote', 'none']);
+const CLOCK_SIZE_IDS = new Set(['small', 'medium', 'large']);
+const CLOCK_TYPE_IDS = new Set(['digital', 'analog']);
+const TITLE_FONT_IDS = new Set(['rounded', 'serif', 'soft']);
+const TITLE_SIZE_IDS = new Set(['small', 'medium', 'large']);
+const RIBBON_COLOR_IDS = new Set(['pink', 'mint', 'sky', 'lemon']);
 
 function setNoCacheHeaders(res, isPublic = false) {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -60,6 +83,11 @@ function getDefaultLayout() {
     return {
         version: 1,
         mode: 'mobile-stack',
+        pastel_block_order: [],
+        pastel_block_positions: {},
+        pastel_block_sizes: {},
+        pastel_icon_order: [],
+        pastel_hidden_icons: [],
         widgets: DEFAULT_WIDGETS.map((widget) => ({ ...widget })),
         favorites: [
             { id: 'album-usg', label: 'Album USG', icon: 'fa-image', url: '/album-usg-trial.html' },
@@ -74,7 +102,21 @@ function getDefaultTheme() {
         corner_name: 'My Corner',
         note: 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.',
         preset: 'calm',
-        accent: '#5c7f72'
+        accent: '#5c7f72',
+        mood: 'auto',
+        style: 'sisiwanita',
+        show_room_name: true,
+        clock_widget_size: 'medium',
+        clock_widget_type: 'analog',
+        title_font: 'rounded',
+        title_size: 'medium',
+        ribbon_text: 'Album USG',
+        ribbon_color: 'pink',
+        wallpaper: 'linen',
+        floor: 'plain',
+        lamp: 'glow',
+        plant: 'sprout',
+        frame: 'none'
     };
 }
 
@@ -101,6 +143,66 @@ function normalizeFavorite(item) {
     };
 }
 
+function normalizeEnum(value, allowlist, fallbackValue) {
+    const text = normalizeText(value, 40, fallbackValue);
+    return allowlist.has(text) ? text : fallbackValue;
+}
+
+function isValidRoomBlockId(id) {
+    if (ROOM_STATIC_BLOCKS.has(id)) return true;
+    return typeof id === 'string' && id.startsWith('icon:') && ROOM_ITEM_IDS.has(id.slice(5));
+}
+
+function normalizeRoomBlockOrder(input) {
+    if (!Array.isArray(input)) return [];
+    const seen = new Set();
+    return input
+        .map((value) => normalizeText(value, 60))
+        .filter((value) => {
+            if (!value || !isValidRoomBlockId(value) || seen.has(value)) return false;
+            seen.add(value);
+            return true;
+        })
+        .slice(0, 24);
+}
+
+function normalizeRoomItemIdList(input) {
+    if (!Array.isArray(input)) return [];
+    const seen = new Set();
+    return input
+        .map((value) => normalizeText(value, 60))
+        .filter((value) => {
+            if (!value || !ROOM_ITEM_IDS.has(value) || seen.has(value)) return false;
+            seen.add(value);
+            return true;
+        })
+        .slice(0, 12);
+}
+
+function normalizeRoomBlockPositions(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    return Object.entries(input).reduce((acc, [key, value]) => {
+        const id = normalizeText(key, 60);
+        if (!isValidRoomBlockId(id) || !value || typeof value !== 'object') return acc;
+        const col = Math.max(1, Math.min(4, Math.round(Number(value.col) || 1)));
+        const row = Math.max(1, Math.min(8, Math.round(Number(value.row) || 1)));
+        acc[id] = { col, row };
+        return acc;
+    }, {});
+}
+
+function normalizeRoomBlockSizes(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+    return Object.entries(input).reduce((acc, [key, value]) => {
+        const id = normalizeText(key, 60);
+        if (!isValidRoomBlockId(id) || !value || typeof value !== 'object') return acc;
+        const colSpan = Math.max(1, Math.min(4, Math.round(Number(value.colSpan) || 1)));
+        const rowSpan = Math.max(1, Math.min(4, Math.round(Number(value.rowSpan) || 1)));
+        acc[id] = { colSpan, rowSpan };
+        return acc;
+    }, {});
+}
+
 function normalizeLayout(input) {
     const fallback = getDefaultLayout();
     const source = input && typeof input === 'object' ? input : fallback;
@@ -123,6 +225,11 @@ function normalizeLayout(input) {
     return {
         version: 1,
         mode: 'mobile-stack',
+        pastel_block_order: normalizeRoomBlockOrder(source.pastel_block_order || fallback.pastel_block_order),
+        pastel_block_positions: normalizeRoomBlockPositions(source.pastel_block_positions || fallback.pastel_block_positions),
+        pastel_block_sizes: normalizeRoomBlockSizes(source.pastel_block_sizes || fallback.pastel_block_sizes),
+        pastel_icon_order: normalizeRoomItemIdList(source.pastel_icon_order || fallback.pastel_icon_order),
+        pastel_hidden_icons: normalizeRoomItemIdList(source.pastel_hidden_icons || fallback.pastel_hidden_icons),
         widgets: normalizedWidgets.length ? normalizedWidgets : fallback.widgets,
         favorites
     };
@@ -135,7 +242,21 @@ function normalizeTheme(input) {
         corner_name: normalizeText(source.corner_name, 32, fallback.corner_name),
         note: normalizeMultilineText(source.note, 500, fallback.note),
         preset: normalizeText(source.preset, 24, fallback.preset),
-        accent: normalizeHexColor(source.accent, fallback.accent)
+        accent: normalizeHexColor(source.accent, fallback.accent),
+        mood: normalizeEnum(source.mood, ROOM_MOOD_IDS, fallback.mood),
+        style: normalizeEnum(source.style, ROOM_STYLE_IDS, fallback.style),
+        show_room_name: source.show_room_name !== false,
+        clock_widget_size: normalizeEnum(source.clock_widget_size, CLOCK_SIZE_IDS, fallback.clock_widget_size),
+        clock_widget_type: normalizeEnum(source.clock_widget_type, CLOCK_TYPE_IDS, fallback.clock_widget_type),
+        title_font: normalizeEnum(source.title_font, TITLE_FONT_IDS, fallback.title_font),
+        title_size: normalizeEnum(source.title_size, TITLE_SIZE_IDS, fallback.title_size),
+        ribbon_text: normalizeText(source.ribbon_text, 14, fallback.ribbon_text),
+        ribbon_color: normalizeEnum(source.ribbon_color, RIBBON_COLOR_IDS, fallback.ribbon_color),
+        wallpaper: normalizeEnum(source.wallpaper, ROOM_WALLPAPER_IDS, fallback.wallpaper),
+        floor: normalizeEnum(source.floor, ROOM_FLOOR_IDS, fallback.floor),
+        lamp: normalizeEnum(source.lamp, ROOM_LAMP_IDS, fallback.lamp),
+        plant: normalizeEnum(source.plant, ROOM_PLANT_IDS, fallback.plant),
+        frame: normalizeEnum(source.frame, ROOM_FRAME_IDS, fallback.frame)
     };
 }
 
