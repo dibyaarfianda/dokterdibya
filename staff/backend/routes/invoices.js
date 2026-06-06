@@ -27,21 +27,21 @@ router.get('/history', verifyToken, async (req, res) => {
                 b.printed_by,
                 b.created_at,
                 p.full_name as patient_name,
-                r.visit_date,
+                r.created_at as visit_date,
                 r.visit_location
             FROM sunday_clinic_billings b
             LEFT JOIN patients p ON p.id = b.patient_id
-            LEFT JOIN sunday_clinic_records r ON r.mr_id = b.mr_id
+            LEFT JOIN sunday_clinic_records r ON r.mr_id = b.mr_id AND r.id = (SELECT MIN(id) FROM sunday_clinic_records WHERE mr_id = b.mr_id)
             WHERE b.invoice_url IS NOT NULL
         `;
         const params = [];
 
         if (start_date) {
-            query += ' AND DATE(COALESCE(r.visit_date, b.created_at)) >= ?';
+            query += ' AND DATE(b.created_at) >= ?';
             params.push(start_date);
         }
         if (end_date) {
-            query += ' AND DATE(COALESCE(r.visit_date, b.created_at)) <= ?';
+            query += ' AND DATE(b.created_at) <= ?';
             params.push(end_date);
         }
         if (status) {
@@ -53,7 +53,7 @@ router.get('/history', verifyToken, async (req, res) => {
             params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
 
-        query += ' ORDER BY COALESCE(r.visit_date, b.created_at) DESC LIMIT 500';
+        query += ' ORDER BY b.created_at DESC LIMIT 500';
 
         const [rows] = await db.query(query, params);
 
