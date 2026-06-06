@@ -1487,6 +1487,24 @@
             padding: 0.75rem;
             border-radius: 4px;
         }
+        /* Invoice sortable column headers */
+        .invoice-sort-th {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .invoice-sort-th:hover {
+            background-color: #dde5ee !important;
+        }
+        .invoice-sort-icon {
+            font-size: 10px;
+            opacity: 0.35;
+            margin-left: 4px;
+        }
+        .invoice-sort-th.sort-active .invoice-sort-icon {
+            opacity: 1;
+            color: #007bff;
+        }
     </style>
 
         <!-- Mobile Responsive Styles -->
@@ -5522,11 +5540,11 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>No. Invoice</th>
-                                                    <th>Tanggal</th>
-                                                    <th>Pasien</th>
+                                                    <th id="invoice-th-date" class="invoice-sort-th" onclick="sortInvoiceTable('date')">Tanggal <span id="invoice-sort-date" class="invoice-sort-icon">⇅</span></th>
+                                                    <th id="invoice-th-patient" class="invoice-sort-th" onclick="sortInvoiceTable('patient')">Pasien <span id="invoice-sort-patient" class="invoice-sort-icon">⇅</span></th>
                                                     <th>Jenis Kunjungan</th>
-                                                    <th class="text-right">Total</th>
-                                                    <th>Status</th>
+                                                    <th id="invoice-th-total" class="text-right invoice-sort-th" onclick="sortInvoiceTable('total')">Total <span id="invoice-sort-total" class="invoice-sort-icon">⇅</span></th>
+                                                    <th id="invoice-th-status" class="invoice-sort-th" onclick="sortInvoiceTable('status')">Status <span id="invoice-sort-status" class="invoice-sort-icon">⇅</span></th>
                                                     <th class="text-center">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -8222,7 +8240,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v247';
+    window.__assetVersion = 'v248';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
