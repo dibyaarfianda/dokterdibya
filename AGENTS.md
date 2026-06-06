@@ -2267,3 +2267,45 @@ User confirmed with "sudah bagus" after the Staff Panel Aktivitas Pasien page lo
 
 **Lesson:**
 - For cross-table timeline aggregators in MariaDB, normalize text collations at the union boundary. This preserves individual query logic while preventing hidden collation conflicts between patient, chat, feedback, and support tables.
+
+### 58. Session Log - 6 June 2026
+
+**Invoice Table Client-Side Sort Buttons (User Confirmed "good job")**
+
+User confirmed with "good job" after sortable column headers were added to the invoice/keuangan table.
+
+**What worked:**
+
+1. **Refactor `loadInvoiceHistory()` in `staff/public/scripts/main.js`:**
+    - Store fetched data in `window.__invoiceRawData` after successful fetch
+    - Track sort state in `window.__invoiceSortCol` and `window.__invoiceSortDir`
+    - Extract inline rendering to a standalone `renderInvoiceRows(invoices)` function
+    - Add `sortInvoiceTable(col)` function that sorts a copy of raw data and re-renders
+    - Export `window.sortInvoiceTable = sortInvoiceTable`
+
+2. **Sort logic in `sortInvoiceTable(col)`:**
+    - Toggle direction: first click = `asc`, second click on same column = `desc`
+    - Date: compare `new Date(visit_date || created_at).getTime()`
+    - Patient: compare `patient_name.toLowerCase()`
+    - Total: compare `Number(total_amount || total || 0)`
+    - Status: compare `invoice_status || status` string
+    - After sort: update icons (`▲`/`▼`/`⇅`) and toggle `.sort-active` class on `<th>`
+
+3. **Update `<th>` headers in `staff/public/index-adminlte.html`:**
+    - Add `id`, `class="invoice-sort-th"`, `onclick="sortInvoiceTable('...')"` to Tanggal, Pasien, Total, Status columns
+    - Add `<span id="invoice-sort-{col}" class="invoice-sort-icon">⇅</span>` inside each `<th>`
+
+4. **Add CSS in `<style>` block:**
+    ```css
+    .invoice-sort-th { cursor: pointer; user-select: none; white-space: nowrap; }
+    .invoice-sort-th:hover { background-color: #dde5ee !important; }
+    .invoice-sort-th.sort-active .invoice-sort-icon { opacity: 1; color: #007bff; }
+    ```
+
+5. **Bump asset versions:** `v247` → `v248` in `index-adminlte.html` and `sw.js`
+
+6. **Deploy:** `git push` from local, then `ssh root@72.60.78.188 "cd /var/www/dokterdibya && git pull origin main"` — no PM2 restart needed (frontend-only change).
+
+**Lesson:**
+- For client-side sort on staff tables, store raw API data in a `window.__rawData` variable at fetch time, then sort a copy with `[...array].sort(...)` and re-render. This avoids extra API calls and keeps sort state across renders.
+- Frontend-only changes only need `git pull` on VPS, not `pm2 restart`.
