@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260606pwa-install-gate'; // 2026-06-06 install prompt gated to registered portal users
+const CACHE_VERSION = '20260606roomthemes'; // 2026-06-06 Ruang Saya relevant settings and themes
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';

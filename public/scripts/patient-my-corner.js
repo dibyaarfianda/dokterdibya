@@ -166,43 +166,60 @@
 
     var ROOM_STYLE_PRESETS = [
         {
-            id: 'quiet',
-            label: 'Hening',
-            copy: 'Ruang lega, sedikit benda, cocok untuk masuk dan diam sebentar.',
-            icon: 'fa-circle',
+            id: 'sisiwanita',
+            label: 'Default SISIwanita',
+            copy: 'Putih bersih dengan sage lembut seperti halaman awal.',
+            icon: 'fa-seedling',
             accent: '#5c7f72',
-            mood: 'auto',
+            mood: 'calm',
             wallpaper: 'linen',
             floor: 'plain',
             lamp: 'glow',
             plant: 'sprout',
-            frame: 'none'
+            frame: 'none',
+            tier: 'free'
         },
         {
-            id: 'natural',
-            label: 'Natural',
-            copy: 'Ada tanaman kecil dan dinding lebih hidup, tapi tetap lapang.',
-            icon: 'fa-seedling',
-            accent: '#4f7d68',
-            mood: 'auto',
+            id: 'warm-blush',
+            label: 'Warm Blush',
+            copy: 'Putih hangat, blush lembut, dan beige personal.',
+            icon: 'fa-heart',
+            accent: '#c56b7b',
+            mood: 'warm',
+            wallpaper: 'sunwash',
+            floor: 'plain',
+            lamp: 'glow',
+            plant: 'sprout',
+            frame: 'none',
+            tier: 'free'
+        },
+        {
+            id: 'calm-sky',
+            label: 'Calm Sky',
+            copy: 'Putih, biru lembut, dan sage tipis yang fresh.',
+            icon: 'fa-cloud',
+            accent: '#5a8da4',
+            mood: 'morning',
+            wallpaper: 'linen',
+            floor: 'soft-mat',
+            lamp: 'glow',
+            plant: 'sprout',
+            frame: 'none',
+            tier: 'free'
+        },
+        {
+            id: 'pastel-bunny',
+            label: 'Pastel Bunny',
+            copy: 'Theme premium pastel playful yang dipakai room sekarang.',
+            icon: 'fa-crown',
+            accent: '#b86da1',
+            mood: 'calm',
             wallpaper: 'botanical',
-            floor: 'warm-oak',
+            floor: 'soft-mat',
             lamp: 'glow',
             plant: 'leafy',
-            frame: 'memory'
-        },
-        {
-            id: 'hangat',
-            label: 'Hangat',
-            copy: 'Lebih personal untuk malam, dengan cahaya dan warna lembut.',
-            icon: 'fa-mug-hot',
-            accent: '#b8704f',
-            mood: 'auto',
-            wallpaper: 'sunwash',
-            floor: 'warm-oak',
-            lamp: 'reading',
-            plant: 'sprout',
-            frame: 'quote'
+            frame: 'quote',
+            tier: 'premium'
         }
     ];
 
@@ -456,7 +473,7 @@
                 preset: 'calm',
                 accent: '#5c7f72',
                 mood: 'auto',
-                style: 'quiet',
+                style: 'sisiwanita',
                 show_room_name: showRoomName,
                 clock_widget_size: getStoredClockSize(),
                 clock_widget_type: getStoredClockType(),
@@ -938,6 +955,15 @@
         '</div>';
     }
 
+    function renderStandardHomeIcon(item) {
+        var icon = item.icon || WIDGET_ICONS[item.id] || 'fa-heart';
+        return '<div class="pmc-standard-app-icon" data-pastel-icon-id="' + escapeHtml(item.id) + '">' +
+            '<b class="pmc-icon-remove" onclick="PatientMyCorner.hidePastelIcon(event, \'' + escapeHtml(item.id) + '\')" aria-label="Sembunyikan ' + escapeHtml(item.label || item.id) + '">-</b>' +
+            '<span><i class="fa-solid ' + escapeHtml(icon) + '"></i></span>' +
+            '<small>' + escapeHtml(item.label || item.id) + '</small>' +
+        '</div>';
+    }
+
     function renderPastelClockWidget(theme) {
         var info = getPastelDateInfo();
         var size = ['small', 'medium', 'large'].indexOf(theme.clock_widget_size) === -1 ? 'medium' : theme.clock_widget_size;
@@ -1055,7 +1081,7 @@
         } else if (blockId.indexOf('icon:') === 0) {
             var itemId = blockId.slice(5);
             var item = Object.assign({ id: itemId }, ROOM_ITEMS[itemId] || {});
-            content = renderPastelHomeIcon(item, index);
+            content = theme.style === 'pastel-bunny' ? renderPastelHomeIcon(item, index) : renderStandardHomeIcon(item);
         }
         return '<div class="' + escapeHtml(blockClass) + '" style="' + blockStyle + '" data-room-block-id="' + escapeHtml(blockId) + '" onpointerdown="PatientMyCorner.beginRoomBlockDrag(event, \'' + escapeHtml(blockId) + '\')" onclick="PatientMyCorner.openRoomBlock(event, \'' + escapeHtml(actionId) + '\')" oncontextmenu="event.preventDefault()" onselectstart="return false" ondragstart="return false">' + content + renderRoomResizeHandle(blockId) + '</div>';
     }
@@ -1089,9 +1115,22 @@
     }
 
     function renderStylePresetButton(preset, activeStyle) {
-        return '<button class="pmc-style-preset ' + (activeStyle === preset.id ? 'is-active' : '') + '" onclick="PatientMyCorner.applyRoomStyle(\'' + escapeHtml(preset.id) + '\')" style="--style-color:' + escapeHtml(preset.accent) + '">' +
-            '<span><i class="fa-solid ' + escapeHtml(preset.icon) + '"></i></span><div><strong>' + escapeHtml(preset.label) + '</strong><small>' + escapeHtml(preset.copy) + '</small></div>' +
-        '</button>';
+        var premiumBadge = preset.tier === 'premium' ? '<em class="pmc-theme-badge">Premium</em>' : '';
+        return '<button class="pmc-style-preset pmc-theme-option-' + escapeHtml(preset.id) + ' ' + (activeStyle === preset.id ? 'is-active' : '') + '" onclick="PatientMyCorner.applyRoomStyle(\'' + escapeHtml(preset.id) + '\')" style="--style-color:' + escapeHtml(preset.accent) + '">' +
+            '<span><i class="fa-solid ' + escapeHtml(preset.icon) + '"></i></span><div><strong>' + escapeHtml(preset.label) + premiumBadge + '</strong><small>' + escapeHtml(preset.copy) + '</small></div>' +
+            '</button>';
+    }
+
+    function renderRibbonSettings(theme) {
+        var text = limitRibbonText(theme.ribbon_text, getStoredRibbonText());
+        var color = RIBBON_COLORS.indexOf(theme.ribbon_color) === -1 ? getStoredRibbonColor() : theme.ribbon_color;
+        return '<section class="pmc-card pmc-ribbon-settings-card">' +
+            '<div><h3 class="pmc-card-title">Ribbon USG</h3><p class="pmc-card-copy">Atur tulisan kecil yang menempel di frame USG.</p></div>' +
+            '<div class="pmc-field"><label for="pmc-ribbon-text">Teks ribbon</label><input id="pmc-ribbon-text" maxlength="' + RIBBON_TEXT_MAX + '" value="' + escapeHtml(text) + '" oninput="PatientMyCorner.setRibbonText(this.value)"></div>' +
+            '<div class="pmc-chip-row pmc-ribbon-color-row">' + RIBBON_COLORS.map(function (item) {
+                return '<button class="pmc-chip-btn pmc-ribbon-choice pmc-ribbon-choice-' + escapeHtml(item) + ' ' + (color === item ? 'is-active' : '') + '" onclick="PatientMyCorner.setRibbonColor(\'' + escapeHtml(item) + '\')" type="button">' + escapeHtml(item) + '</button>';
+            }).join('') + '</div>' +
+        '</section>';
     }
 
     function renderDecorOption(group, item, activeValue) {
@@ -1123,16 +1162,18 @@
         var mood = getResolvedMood(theme);
         var roomBlockIds = getVisibleRoomBlockIds(theme);
         var roomBlockPositions = resolveRoomBlockPositions(theme, 'ai');
+        var activeStyle = findRoomStyle(theme.style).id;
         var sceneClass = [
             'pmc-room-scene',
-            'pmc-pastel-home',
+            'pmc-theme-' + activeStyle,
+            activeStyle === 'pastel-bunny' ? 'pmc-pastel-home' : '',
             'pmc-mood-' + mood.id,
             getThemeClass(theme, 'wallpaper', 'pmc-wall'),
             getThemeClass(theme, 'floor', 'pmc-floor'),
             getThemeClass(theme, 'lamp', 'pmc-lamp'),
             getThemeClass(theme, 'plant', 'pmc-plant'),
             getThemeClass(theme, 'frame', 'pmc-frame')
-        ].join(' ');
+        ].filter(Boolean).join(' ');
         return '<div class="pmc-content pmc-content-room pmc-content-room-quiet">' +
             '<section class="' + escapeHtml(sceneClass) + '" aria-label="Ruang pasien pribadi">' +
                 '<div class="pmc-room-wall"></div><div class="pmc-room-floor"></div>' +
@@ -1159,24 +1200,29 @@
         var publicEnabled = !!settings.public_enabled;
         var publicWidgets = Array.isArray(settings.public_widgets) ? settings.public_widgets : [];
         var mood = getResolvedMood(theme);
-        var activeStyle = theme.style || 'quiet';
-        var autoMood = theme.mood === 'auto' || !theme.mood;
+        var activeStyle = findRoomStyle(theme.style).id;
         var showRoomName = theme.show_room_name !== false;
+        var previewClass = [
+            'pmc-decor-preview',
+            'pmc-mood-' + mood.id,
+            'pmc-theme-' + activeStyle,
+            getThemeClass(theme, 'wallpaper', 'pmc-wall'),
+            getThemeClass(theme, 'floor', 'pmc-floor'),
+            getThemeClass(theme, 'lamp', 'pmc-lamp'),
+            getThemeClass(theme, 'plant', 'pmc-plant'),
+            getThemeClass(theme, 'frame', 'pmc-frame')
+        ].join(' ');
 
         return '<div class="pmc-content pmc-decorate-content pmc-decorate-content-simple">' +
                 '<section class="pmc-decor-studio">' +
-                    '<div class="pmc-decor-preview pmc-mood-' + escapeHtml(mood.id) + ' ' + escapeHtml(getThemeClass(theme, 'wallpaper', 'pmc-wall')) + ' ' + escapeHtml(getThemeClass(theme, 'floor', 'pmc-floor')) + ' ' + escapeHtml(getThemeClass(theme, 'lamp', 'pmc-lamp')) + ' ' + escapeHtml(getThemeClass(theme, 'plant', 'pmc-plant')) + ' ' + escapeHtml(getThemeClass(theme, 'frame', 'pmc-frame')) + '">' +
+                    '<div class="' + escapeHtml(previewClass) + '">' +
                         '<div class="pmc-decor-preview-wall"></div><div class="pmc-decor-preview-floor"></div><div class="pmc-decor-preview-frame"><i class="fa-solid fa-image"></i></div><div class="pmc-decor-preview-plant"><i class="fa-solid fa-seedling"></i></div><div class="pmc-decor-preview-lamp"><i class="fa-solid fa-lightbulb"></i></div>' +
                     '</div>' +
-                    '<div class="pmc-decor-studio-copy"><span>Ruang hidup</span><h1>' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h1><p>Ruang mengikuti waktu. Saat malam, lampu dan warna ikut meredup otomatis.</p></div>' +
+                    '<div class="pmc-decor-studio-copy"><span>Pengaturan Ruang Saya</span><h1>' + escapeHtml(theme.corner_name || 'Ruang Saya') + '</h1><p>Atur theme, nama, widget, dan tampilan kecil di room pribadi.</p></div>' +
                 '</section>' +
-                '<section class="pmc-card pmc-auto-room-card">' +
-                    '<div><h3 class="pmc-card-title">Suasana otomatis</h3><p class="pmc-card-copy">Sekarang terbaca sebagai ' + escapeHtml(mood.label) + '. Biarkan aktif agar ruang berubah sendiri pagi sampai malam.</p></div>' +
-                    '<button class="pmc-switch ' + (autoMood ? 'is-on' : '') + '" onclick="PatientMyCorner.applyDecor(\'mood\', \'auto\')" aria-label="Suasana otomatis"></button>' +
-                '</section>' +
-                '<div class="pmc-section-title">Pilih Rasa Ruang</div>' +
+                '<div class="pmc-section-title">Theme Ruang</div>' +
                 '<section class="pmc-style-preset-list">' + ROOM_STYLE_PRESETS.map(function (preset) { return renderStylePresetButton(preset, activeStyle); }).join('') + '</section>' +
-                '<div class="pmc-section-title">Nama dan Kalimat</div>' +
+                '<div class="pmc-section-title">Identitas Ruang</div>' +
                 '<section class="pmc-card pmc-identity-card">' +
                     '<div class="pmc-field"><label for="pmc-name">Nama ruang</label><input id="pmc-name" maxlength="32" value="' + escapeHtml(theme.corner_name || 'Ruang Saya') + '"></div>' +
                     '<div class="pmc-field"><label for="pmc-note">Kalimat di ruang</label><textarea id="pmc-note" maxlength="180">' + escapeHtml(theme.note || DEFAULT_NOTE) + '</textarea></div>' +
@@ -1184,11 +1230,18 @@
                     '<button class="pmc-switch ' + (showRoomName ? 'is-on' : '') + '" onclick="PatientMyCorner.toggleRoomName()" aria-label="Tampilkan nama di dinding"></button></div>' +
                     '<div class="pmc-card-row pmc-title-style-row"><div><h3 class="pmc-card-title">Font judul</h3><p class="pmc-card-copy">Pilih rasa tulisan nama ruang.</p></div></div>' + renderSegmentedOptions(TITLE_FONTS, theme.title_font || getStoredTitleFont(), 'setTitleFont') +
                     '<div class="pmc-card-row pmc-title-style-row"><div><h3 class="pmc-card-title">Ukuran judul</h3><p class="pmc-card-copy">Kecilkan atau besarkan tulisan di dinding.</p></div></div>' + renderSegmentedOptions(TITLE_SIZES, theme.title_size || getStoredTitleSize(), 'setTitleSize') +
+                '</section>' +
+                '<div class="pmc-section-title">Widget Room</div>' +
+                '<section class="pmc-card pmc-widget-room-card">' +
                     '<div class="pmc-card-row pmc-title-style-row"><div><h3 class="pmc-card-title">Tipe jam</h3><p class="pmc-card-copy">Pilih analog atau angka.</p></div></div>' + renderSegmentedOptions([{ id: 'digital', label: 'Angka' }, { id: 'analog', label: 'Analog' }], theme.clock_widget_type || getStoredClockType(), 'setClockType') +
+                    '<div class="pmc-widget-help"><i class="fa-solid fa-hand-pointer"></i><span>Di layar room, tahan widget lalu geser untuk mengatur posisi.</span></div>' +
                 '</section>' +
                 renderIconVisibilitySettings() +
+                '<div class="pmc-section-title">USG</div>' +
+                renderRibbonSettings(theme) +
+                '<div class="pmc-section-title">Kunjungan Publik</div>' +
                 '<section class="pmc-card pmc-public-simple-card">' +
-                    '<div class="pmc-card-row"><div><h3 class="pmc-card-title">Izinkan dikunjungi</h3><p class="pmc-card-copy">Pengunjung hanya melihat versi publik yang Anda pilih. Cocok untuk menerima dukungan, bunga, dan inspirasi tanpa membuka data medis.</p></div>' +
+                    '<div class="pmc-card-row"><div><h3 class="pmc-card-title">Izinkan dikunjungi</h3><p class="pmc-card-copy">Siapkan versi publik ringan dari Ruang Saya. Data medis tetap tidak dibuka.</p></div>' +
                     '<button class="pmc-switch ' + (publicEnabled ? 'is-on' : '') + '" onclick="PatientMyCorner.togglePublic()" aria-label="Izinkan ruang dikunjungi"></button></div>' +
                     '<div class="pmc-visit-benefits"><span><i class="fa-solid fa-seedling"></i> Bunga</span><span><i class="fa-solid fa-heart"></i> Dukungan</span><span><i class="fa-solid fa-lock"></i> Aman</span></div>' +
                     (publicEnabled ? '<div class="pmc-field"><label for="pmc-public-name">Nama publik</label><input id="pmc-public-name" maxlength="32" value="' + escapeHtml(publicProfile.display_name || getPatientFirstName()) + '"></div>' +
@@ -1201,6 +1254,11 @@
                         '<span class="pmc-share-url">' + escapeHtml(shareUrl || 'Link dibuat setelah disimpan.') + '</span>' +
                         '<div class="pmc-action-row"><button class="pmc-chip-btn" onclick="PatientMyCorner.copyShareLink()"><i class="fa-solid fa-copy"></i> Salin</button><button class="pmc-chip-btn" onclick="PatientMyCorner.previewPublic()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat</button><button class="pmc-chip-btn" onclick="PatientMyCorner.regenerateShareCode()"><i class="fa-solid fa-rotate"></i> Ganti link</button></div>' +
                     '</div>' +
+                '</section>' +
+                '<div class="pmc-section-title">Reset Layout</div>' +
+                '<section class="pmc-card pmc-reset-layout-card">' +
+                    '<div class="pmc-card-row"><div><h3 class="pmc-card-title">Reset posisi widget</h3><p class="pmc-card-copy">Kembalikan posisi dan ukuran widget ke default tanpa menghapus nama, catatan, theme, atau public setting.</p></div>' +
+                    '<button class="pmc-chip-btn" onclick="PatientMyCorner.resetRoomLayout()" type="button"><i class="fa-solid fa-rotate-left"></i> Reset</button></div>' +
                 '</section>' +
             '</div>' +
             '<footer class="pmc-footer"><button class="pmc-ghost" onclick="PatientMyCorner.setMode(\'view\')"><i class="fa-solid fa-eye"></i> Lihat Ruang</button><button class="pmc-primary" onclick="PatientMyCorner.save()"><i class="fa-solid fa-check"></i> Simpan</button></footer>';
@@ -2120,6 +2178,22 @@
             updateDashboard(state.data);
             renderPanel({ preserveScroll: true });
         },
+        setRibbonText: function (value) {
+            if (!state.data) state.data = getFallbackData();
+            if (!state.data.theme) state.data.theme = getFallbackData().theme;
+            var text = limitRibbonText(value, getStoredRibbonText());
+            state.data.theme.ribbon_text = text;
+            localStorage.setItem(CORNER_RIBBON_TEXT_KEY, text);
+        },
+        setRibbonColor: function (color) {
+            syncInputsToState();
+            if (!state.data) state.data = getFallbackData();
+            if (!state.data.theme) state.data.theme = getFallbackData().theme;
+            var nextColor = RIBBON_COLORS.indexOf(color) === -1 ? getStoredRibbonColor() : color;
+            state.data.theme.ribbon_color = nextColor;
+            localStorage.setItem(CORNER_RIBBON_COLOR_KEY, nextColor);
+            renderPanel({ preserveScroll: true });
+        },
         toggleRoomName: function () {
             syncInputsToState();
             if (!state.data) state.data = getFallbackData();
@@ -2146,6 +2220,22 @@
             } catch (error) {
                 if (window.showToast) window.showToast(error.message || 'Gagal reset');
             }
+        },
+        resetRoomLayout: function () {
+            syncInputsToState();
+            if (!state.data) state.data = getFallbackData();
+            if (!state.data.layout) state.data.layout = getFallbackData().layout;
+            state.data.layout.pastel_block_order = getFallbackData().layout.pastel_block_order.slice();
+            state.data.layout.pastel_block_positions = {};
+            state.data.layout.pastel_block_sizes = {};
+            try {
+                localStorage.removeItem(CORNER_BLOCK_ORDER_KEY);
+                localStorage.removeItem(CORNER_BLOCK_POSITIONS_KEY);
+                localStorage.removeItem(CORNER_BLOCK_SIZES_KEY);
+            } catch (_error) {}
+            renderPanel({ preserveScroll: true });
+            saveWorkdesk(false).catch(function () {});
+            if (window.showToast) window.showToast('Posisi widget direset');
         },
         togglePublic: function () {
             syncInputsToState();
