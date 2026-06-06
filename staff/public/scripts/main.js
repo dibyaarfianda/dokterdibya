@@ -3141,10 +3141,15 @@ async function loadInvoiceHistory() {
             const statusBy = statusValue === 'paid'
                 ? (paidBy ? `<small class="text-muted d-block"><i class="fas fa-money-check-alt mr-1"></i>${paidBy}</small>` : '')
                 : (inv.confirmed_by ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${inv.confirmed_by}</small>` : '');
+            const mrId = inv.mr_id || inv.invoice_number || '';
+            const mrUrl = mrId ? buildSundayClinicAppUrl(mrId, 'billing') : '';
+            const mrLink = mrUrl
+                ? `<a href="${mrUrl}" class="invoice-drd-link" title="Buka status tagihan ${escapeHtml(mrId)}"><code>${escapeHtml(mrId)}</code></a>`
+                : `<code>${escapeHtml(mrId || '-')}</code>`;
 
             return `
                 <tr>
-                    <td><code>${inv.invoice_number || inv.mr_id}</code></td>
+                    <td>${mrLink}</td>
                     <td>${visitDate}</td>
                     <td>
                         <strong>${inv.patient_name || '-'}</strong><br>
