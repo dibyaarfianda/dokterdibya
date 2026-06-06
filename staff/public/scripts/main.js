@@ -105,6 +105,7 @@ function initPages() {
     pages.birthClass = grab('birth-class-page');
     pages.activityLog = grab('activity-log-page');
     pages.kelolaSupplier = grab('kelola-supplier-page');
+    pages.perhatianKhusus = grab('perhatian-khusus-page');
     pages.staffActivity = grab('staff-activity-page');
     pages.hospitalAppointments = grab('hospital-appointments-page');
     pages.hospitalPatients = grab('hospital-patients-page');
@@ -1611,6 +1612,16 @@ function showCashierPage() {
         console.error('Failed to load billing modules:', error);
     });
 }
+function showPerhatianKhususPage() {
+    hideAllPages();
+    pages.perhatianKhusus?.classList.remove('d-none');
+    setTitleAndActive('Perhatian Khusus', 'nav-perhatian-khusus', 'perhatian-khusus');
+    if (typeof window.loadHplRiskPatients === 'function') {
+        window.loadHplRiskPatients();
+    }
+}
+window.showPerhatianKhususPage = showPerhatianKhususPage;
+
 function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient', 'patients'); }
 function showRecordHistoryPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Rekam / Riwayat', 'nav-record-history', 'patients'); }
 // Make function globally accessible for onclick handlers

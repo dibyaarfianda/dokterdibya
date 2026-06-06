@@ -2056,20 +2056,19 @@
                             <p>Pasien Baru</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-record-history">
+                    <li class="nav-item" id="nav-perhatian-khusus">
+                        <a href="#" class="nav-link" onclick="showPerhatianKhususPage(); return false;">
+                            <i class="nav-icon fas fa-exclamation-circle text-danger"></i>
+                            <p>Perhatian Khusus</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" style="display: none !important;" id="nav-record-history">
                         <a href="#" class="nav-link" onclick="showRecordHistoryPage(); return false;">
                             <i class="nav-icon fas fa-notes-medical"></i>
                             <p>Rekam / Riwayat</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
-                        <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
-                            <i class="nav-icon fas fa-cloud-upload-alt text-primary"></i>
-                            <p>Upload USG</p>
-                        </a>
-                    </li>
 
-                    <!-- KOMUNIKASI -->
                     <li class="nav-header">KOMUNIKASI</li>
                     <li class="nav-item dokter-only d-none" id="nav-tanya-dokter">
                         <a href="#" class="nav-link" onclick="showTanyaDokterPage(); return false;">
@@ -2134,6 +2133,18 @@
                             <p>Invoice / Keuangan</p>
                         </a>
                     </li>
+                    <li class="nav-item dokter-only d-none" id="nav-finance-analysis">
+                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
+                            <i class="nav-icon fas fa-chart-line text-success"></i>
+                            <p>Analisa Keuangan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
+                        <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
+                            <i class="nav-icon fas fa-cloud-upload-alt text-primary"></i>
+                            <p>Upload USG</p>
+                        </a>
+                    </li>
 
                     <!-- MONITORING -->
                     <li class="nav-header">MONITORING</li>
@@ -2152,7 +2163,7 @@
                     <li class="nav-item dokter-only d-none" id="nav-staff-activity">
                         <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-clock"></i>
-                            <p>Staff Activity</p>
+                            <p>Aktivitas Staff</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-troubleshooting">
@@ -2182,7 +2193,7 @@
                             <p>Booking Settings</p>
                         </a>
                     </li>
-                    <li class="nav-item dokter-only d-none" id="nav-pengaturan">
+                    <li class="nav-item dokter-only d-none" style="display: none !important;" id="nav-pengaturan">
                         <a href="#" class="nav-link" onclick="showPengaturanPage(); return false;">
                             <i class="nav-icon fas fa-cog"></i>
                             <p>Pengaturan</p>
@@ -6005,6 +6016,72 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- Perhatian Khusus Page -->
+                <div id="perhatian-khusus-page" class="d-none">
+                    <div class="row mb-3">
+                        <div class="col-lg-6 mb-3 mb-lg-0">
+                            <div class="card card-warning card-outline h-100">
+                                <div class="card-header py-2">
+                                    <h3 class="card-title mb-0">
+                                        <i class="fas fa-clock mr-2"></i>Tag Kuning - Mendekati HPL
+                                        <span class="badge badge-warning ml-2" id="near-hpl-count">0</span>
+                                    </h3>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-sm table-bordered table-striped mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama</th>
+                                                    <th>No. Telp</th>
+                                                    <th>Diagnosis Kontrol Terakhir</th>
+                                                    <th>Tanggal Kontrol Terakhir</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="near-hpl-patients-tbody">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card card-danger card-outline h-100">
+                                <div class="card-header py-2">
+                                    <h3 class="card-title mb-0">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>Tag Merah - Lebih dari HPL
+                                        <span class="badge badge-danger ml-2" id="overdue-hpl-count">0</span>
+                                    </h3>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                        <table class="table table-sm table-bordered table-striped mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama</th>
+                                                    <th>No. Telp</th>
+                                                    <th>Diagnosis Kontrol Terakhir</th>
+                                                    <th>Tanggal Kontrol Terakhir</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="overdue-hpl-patients-tbody">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Kelola Pasien Page -->
                 <div id="manage-patients-page" class="d-none">
                     <!-- Advanced Search Card -->
@@ -6096,70 +6173,6 @@ Contoh Markdown:
                                             </div>
                                         </div>
                                     </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-lg-6 mb-3 mb-lg-0">
-                            <div class="card card-warning card-outline h-100">
-                                <div class="card-header py-2">
-                                    <h3 class="card-title mb-0">
-                                        <i class="fas fa-clock mr-2"></i>Tag Kuning - Mendekati HPL
-                                        <span class="badge badge-warning ml-2" id="near-hpl-count">0</span>
-                                    </h3>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered table-striped mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th>Nama</th>
-                                                    <th>No. Telp</th>
-                                                    <th>Diagnosis Kontrol Terakhir</th>
-                                                    <th>Tanggal Kontrol Terakhir</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="near-hpl-patients-tbody">
-                                                <tr>
-                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-6">
-                            <div class="card card-danger card-outline h-100">
-                                <div class="card-header py-2">
-                                    <h3 class="card-title mb-0">
-                                        <i class="fas fa-exclamation-triangle mr-2"></i>Tag Merah - Lebih dari HPL
-                                        <span class="badge badge-danger ml-2" id="overdue-hpl-count">0</span>
-                                    </h3>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                        <table class="table table-sm table-bordered table-striped mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th>Nama</th>
-                                                    <th>No. Telp</th>
-                                                    <th>Diagnosis Kontrol Terakhir</th>
-                                                    <th>Tanggal Kontrol Terakhir</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="overdue-hpl-patients-tbody">
-                                                <tr>
-                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -8232,7 +8245,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script>
     // Stable version string for cache busting - bump when deploying new code
     // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v248';
+    window.__assetVersion = 'v249';
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
