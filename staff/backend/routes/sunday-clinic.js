@@ -37,6 +37,8 @@ async function ensureBillingTables() {
                 billing_data JSON,
                 confirmed_at TIMESTAMP NULL,
                 confirmed_by VARCHAR(255),
+                paid_at TIMESTAMP NULL,
+                paid_by VARCHAR(255),
                 printed_at TIMESTAMP NULL,
                 printed_by VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -45,6 +47,12 @@ async function ensureBillingTables() {
                 INDEX idx_patient_id (patient_id),
                 INDEX idx_status (status)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        await db.query(`
+            ALTER TABLE sunday_clinic_billings
+            ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP NULL,
+            ADD COLUMN IF NOT EXISTS paid_by VARCHAR(255) NULL
         `);
 
         // Create sunday_clinic_billing_items table
@@ -3018,13 +3026,16 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
         }
 
         // Update status to paid only after stock deduction succeeds.
+        const paidBy = req.user.name || req.user.id || 'Staff';
         await db.query(
             `UPDATE sunday_clinic_billings
              SET status = 'paid',
+                 paid_at = NOW(),
+                 paid_by = ?,
                  last_modified_by = ?,
                  last_modified_at = NOW()
-             WHERE mr_id = ?`,
-            [req.user.name || req.user.id || 'Staff', normalizedMrId]
+              WHERE mr_id = ?`,
+            [paidBy, paidBy, normalizedMrId]
         );
 
         // Auto-finalize the medical record when billing is paid
