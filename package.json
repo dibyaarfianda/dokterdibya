@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "node-fetch": "^2.7.0",
-    "pdfkit": "^0.18.0"
+    "pdfkit": "^0.18.0",
+    "sharp": "^0.34.5"
   }
 }
