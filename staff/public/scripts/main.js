@@ -3104,34 +3104,56 @@ async function loadInvoiceHistory() {
         }
 
         tbody.innerHTML = invoices.map(inv => {
-            const visitDate = new Date(inv.visit_date).toLocaleDateString('id-ID', {
+            const rawDate = inv.visit_date || inv.created_at;
+            const visitDate = rawDate ? new Date(rawDate).toLocaleDateString('id-ID', {
                 day: 'numeric', month: 'short', year: 'numeric'
-            });
+            }) : '-';
             const amount = new Intl.NumberFormat('id-ID', {
                 style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-            }).format(inv.total_amount || 0);
+            }).format(inv.total_amount || inv.total || 0);
 
             const statusBadges = {
-                'paid': '<span class="badge badge-success">Lunas</span>',
-                'pending': '<span class="badge badge-warning">Pending</span>',
+                'paid':      '<span class="badge badge-success">Lunas</span>',
+                'confirmed': '<span class="badge badge-info">Dikonfirmasi</span>',
+                'draft':     '<span class="badge badge-warning">Draft</span>',
                 'cancelled': '<span class="badge badge-danger">Dibatalkan</span>'
             };
-            const statusBadge = statusBadges[inv.invoice_status] || '<span class="badge badge-secondary">-</span>';
+            const statusBadge = statusBadges[inv.invoice_status || inv.status] || '<span class="badge badge-secondary">-</span>';
+
+            const locationMap = {
+                'klinik_private': 'Klinik Privat',
+                'rsia_melinda':   'RSIA Melinda',
+                'rsud_gambiran':  'RSUD Gambiran',
+                'rs_bhayangkara': 'RS Bhayangkara'
+            };
+            const location = locationMap[inv.visit_location] || inv.visit_location || '-';
+
+            // Use signed URLs from R2 (generated server-side)
+            const invoiceBtn = inv.invoice_signed_url
+                ? `<a href="${inv.invoice_signed_url}" target="_blank" class="btn btn-xs btn-info" title="Lihat Invoice PDF"><i class="fas fa-file-pdf"></i> Invoice</a>`
+                : '';
+            const etiketBtn = inv.etiket_signed_url
+                ? `<a href="${inv.etiket_signed_url}" target="_blank" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket PDF"><i class="fas fa-tag"></i> Etiket</a>`
+                : '';
+
+            const confirmedBy = inv.confirmed_by
+                ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${inv.confirmed_by}</small>`
+                : '';
 
             return `
                 <tr>
-                    <td><code>${inv.invoice_number}</code></td>
+                    <td><code>${inv.invoice_number || inv.mr_id}</code></td>
                     <td>${visitDate}</td>
                     <td>
                         <strong>${inv.patient_name || '-'}</strong><br>
-                        <small class="text-muted">${inv.patient_id}</small>
+                        <small class="text-muted">${inv.patient_id || ''}</small>
                     </td>
-                    <td>${inv.visit_type || '-'}</td>
+                    <td>${location}</td>
                     <td class="text-right font-weight-bold">${amount}</td>
-                    <td>${statusBadge}</td>
+                    <td>${statusBadge}${confirmedBy}</td>
                     <td class="text-center">
-                        ${inv.invoice_url ? `<a href="${inv.invoice_url}" target="_blank" class="btn btn-xs btn-info" title="Lihat Invoice"><i class="fas fa-eye"></i></a>` : ''}
-                        ${inv.etiket_url ? `<a href="${inv.etiket_url}" target="_blank" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket"><i class="fas fa-tag"></i></a>` : ''}
+                        ${invoiceBtn}${etiketBtn}
+                        ${!invoiceBtn && !etiketBtn ? '<span class="text-muted small">Belum dicetak</span>' : ''}
                     </td>
                 </tr>
             `;

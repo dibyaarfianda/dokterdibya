@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
+const r2Storage = require('../services/r2Storage');
 
 /**
  * GET /api/invoices/history
- * Get invoice history with filters
+ * Get invoice history from sunday_clinic_billings (PDF stored in R2)
  */
 router.get('/history', verifyToken, async (req, res) => {
     try {
@@ -13,40 +14,72 @@ router.get('/history', verifyToken, async (req, res) => {
 
         let query = `
             SELECT
-                vi.*,
-                p.full_name as patient_name
-            FROM visit_invoices vi
-            LEFT JOIN patients p ON vi.patient_id = p.id
-            WHERE 1=1
+                b.id,
+                b.mr_id,
+                b.patient_id,
+                b.status,
+                b.total,
+                b.invoice_url,
+                b.etiket_url,
+                b.confirmed_by,
+                b.confirmed_at,
+                b.printed_at,
+                b.printed_by,
+                b.created_at,
+                p.full_name as patient_name,
+                r.visit_date,
+                r.visit_location
+            FROM sunday_clinic_billings b
+            LEFT JOIN patients p ON p.id = b.patient_id
+            LEFT JOIN sunday_clinic_records r ON r.mr_id = b.mr_id
+            WHERE b.invoice_url IS NOT NULL
         `;
         const params = [];
 
-        // Filter by date range
         if (start_date) {
-            query += ' AND vi.visit_date >= ?';
+            query += ' AND DATE(COALESCE(r.visit_date, b.created_at)) >= ?';
             params.push(start_date);
         }
         if (end_date) {
-            query += ' AND vi.visit_date <= ?';
+            query += ' AND DATE(COALESCE(r.visit_date, b.created_at)) <= ?';
             params.push(end_date);
         }
-
-        // Filter by status
         if (status) {
-            query += ' AND vi.invoice_status = ?';
+            query += ' AND b.status = ?';
             params.push(status);
         }
-
-        // Search by patient name or ID
         if (search) {
-            query += ' AND (vi.patient_id LIKE ? OR p.full_name LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
+            query += ' AND (b.patient_id LIKE ? OR p.full_name LIKE ? OR b.mr_id LIKE ?)';
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
 
-        // Order by date descending
-        query += ' ORDER BY vi.visit_date DESC, vi.created_at DESC LIMIT 500';
+        query += ' ORDER BY COALESCE(r.visit_date, b.created_at) DESC LIMIT 500';
 
-        const [invoices] = await db.query(query, params);
+        const [rows] = await db.query(query, params);
+
+        // Generate signed URLs for R2 keys (1 hour expiry)
+        const invoices = await Promise.all(rows.map(async (row) => {
+            let invoiceSignedUrl = null;
+            let etiketSignedUrl = null;
+            try {
+                if (row.invoice_url) {
+                    invoiceSignedUrl = await r2Storage.getSignedDownloadUrl(row.invoice_url, 3600);
+                }
+                if (row.etiket_url) {
+                    etiketSignedUrl = await r2Storage.getSignedDownloadUrl(row.etiket_url, 3600);
+                }
+            } catch (e) {
+                // signed URL generation failed — leave null
+            }
+            return {
+                ...row,
+                invoice_signed_url: invoiceSignedUrl,
+                etiket_signed_url: etiketSignedUrl,
+                invoice_number: row.mr_id,
+                total_amount: row.total,
+                invoice_status: row.status
+            };
+        }));
 
         res.json({
             success: true,
@@ -59,83 +92,6 @@ router.get('/history', verifyToken, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch invoice history',
-            error: error.message
-        });
-    }
-});
-
-/**
- * GET /api/invoices/:id
- * Get single invoice by ID
- */
-router.get('/:id', verifyToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const [invoices] = await db.query(`
-            SELECT
-                vi.*,
-                p.full_name as patient_name,
-                p.phone as patient_phone,
-                p.whatsapp as patient_whatsapp
-            FROM visit_invoices vi
-            LEFT JOIN patients p ON vi.patient_id = p.id
-            WHERE vi.id = ?
-        `, [id]);
-
-        if (invoices.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Invoice not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            invoice: invoices[0]
-        });
-
-    } catch (error) {
-        console.error('Error fetching invoice:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch invoice',
-            error: error.message
-        });
-    }
-});
-
-/**
- * PATCH /api/invoices/:id/status
- * Update invoice status
- */
-router.patch('/:id/status', verifyToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        if (!['pending', 'paid', 'cancelled'].includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid status'
-            });
-        }
-
-        await db.query(
-            'UPDATE visit_invoices SET invoice_status = ? WHERE id = ?',
-            [status, id]
-        );
-
-        res.json({
-            success: true,
-            message: 'Invoice status updated'
-        });
-
-    } catch (error) {
-        console.error('Error updating invoice status:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update invoice status',
             error: error.message
         });
     }
