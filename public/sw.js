@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260606roomthemes'; // 2026-06-06 Ruang Saya relevant settings and themes
+const CACHE_VERSION = '20260606b'; // 2026-06-06 Fix Antrian Live light theme
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
