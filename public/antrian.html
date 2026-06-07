@@ -811,6 +811,158 @@
                 grid-template-columns: 1fr !important;
             }
         }
+
+        body.antrian-page {
+            background:
+                radial-gradient(circle at 12% 0%, rgba(92, 127, 114, 0.12), transparent 28%),
+                linear-gradient(180deg, #fbfbf7 0%, #f3f7f1 100%) !important;
+            color: var(--ink, #111111) !important;
+        }
+
+        body.antrian-page .top-bar {
+            background: rgba(255, 255, 255, 0.88) !important;
+            border-bottom: 1px solid rgba(92, 127, 114, 0.14) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            backdrop-filter: blur(16px) !important;
+        }
+
+        body.antrian-page .top-bar a,
+        body.antrian-page .refresh-btn,
+        body.antrian-page .session-label {
+            color: var(--green, #5c7f72) !important;
+        }
+
+        body.antrian-page .top-bar h1,
+        body.antrian-page .info-date span,
+        body.antrian-page .legend-title,
+        body.antrian-page .queue-name {
+            color: var(--ink, #111111) !important;
+        }
+
+        body.antrian-page .live-badge,
+        body.antrian-page .settings-btn {
+            color: #2d5a42 !important;
+            background: rgba(92, 127, 114, 0.1) !important;
+            border-color: rgba(92, 127, 114, 0.24) !important;
+        }
+
+        body.antrian-page .live-dot {
+            background: #22c55e !important;
+        }
+
+        body.antrian-page .info-date,
+        body.antrian-page .refresh-info,
+        body.antrian-page .legend-item,
+        body.antrian-page .queue-time,
+        body.antrian-page .privacy-note,
+        body.antrian-page .state-card p {
+            color: var(--muted, #717171) !important;
+        }
+
+        body.antrian-page .refresh-btn {
+            background: rgba(255, 255, 255, 0.74) !important;
+            border-color: rgba(92, 127, 114, 0.22) !important;
+        }
+
+        body.antrian-page .refresh-btn:hover,
+        body.antrian-page .settings-btn:hover {
+            background: rgba(92, 127, 114, 0.12) !important;
+        }
+
+        body.antrian-page .legend-card,
+        body.antrian-page .state-card,
+        body.antrian-page .queue-row {
+            background: rgba(255, 255, 255, 0.82) !important;
+            border: 1px solid rgba(92, 127, 114, 0.16) !important;
+            box-shadow: 0 16px 42px rgba(17, 17, 17, 0.06) !important;
+        }
+
+        body.antrian-page .session-label {
+            border-bottom-color: rgba(92, 127, 114, 0.16) !important;
+        }
+
+        body.antrian-page .queue-row.status-menunggu {
+            background: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        body.antrian-page .queue-row.status-anamnesa,
+        body.antrian-page .queue-row.status-dilayani {
+            background: rgba(92, 127, 114, 0.08) !important;
+            border-color: rgba(92, 127, 114, 0.24) !important;
+        }
+
+        body.antrian-page .queue-row.status-diperiksa {
+            background: rgba(220, 53, 69, 0.06) !important;
+            border-color: rgba(220, 53, 69, 0.24) !important;
+        }
+
+        body.antrian-page .queue-row.status-selesai_periksa {
+            background: rgba(245, 158, 11, 0.08) !important;
+            border-color: rgba(245, 158, 11, 0.24) !important;
+        }
+
+        body.antrian-page .status-menunggu .slot-num {
+            background: rgba(92, 127, 114, 0.12) !important;
+            color: var(--green, #5c7f72) !important;
+        }
+
+        body.antrian-page .status-anamnesa .slot-num,
+        body.antrian-page .status-dilayani .slot-num {
+            background: rgba(92, 127, 114, 0.16) !important;
+            color: #2d5a42 !important;
+        }
+
+        body.antrian-page .status-lunas .slot-num,
+        body.antrian-page .status-selesai .slot-num,
+        body.antrian-page .badge-lunas,
+        body.antrian-page .badge-selesai {
+            background: rgba(17, 17, 17, 0.06) !important;
+            color: #6b7280 !important;
+            border-color: rgba(17, 17, 17, 0.08) !important;
+        }
+
+        body.antrian-page .badge-menunggu {
+            background: rgba(92, 127, 114, 0.09) !important;
+            color: var(--green, #5c7f72) !important;
+            border-color: rgba(92, 127, 114, 0.2) !important;
+        }
+
+        body.antrian-page .badge-anamnesa,
+        body.antrian-page .badge-dilayani {
+            background: rgba(92, 127, 114, 0.12) !important;
+            color: #2d5a42 !important;
+            border-color: rgba(92, 127, 114, 0.24) !important;
+        }
+
+        body.antrian-page .state-card i,
+        body.antrian-page .state-card.loading i {
+            color: var(--green, #5c7f72) !important;
+        }
+
+        body.antrian-page .queue-reminder-popup-card {
+            background: rgba(255, 255, 255, 0.97) !important;
+            border-color: rgba(92, 127, 114, 0.2) !important;
+            color: var(--ink, #111111) !important;
+        }
+
+        body.antrian-page .queue-reminder-popup-card h3 {
+            color: var(--ink, #111111) !important;
+        }
+
+        body.antrian-page .queue-reminder-popup-card p {
+            color: var(--muted, #717171) !important;
+        }
+
+        body.antrian-page .bottom-nav {
+            background: rgba(255, 255, 255, 0.88) !important;
+            border-top: 1px solid rgba(92, 127, 114, 0.14) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            backdrop-filter: blur(16px) !important;
+        }
+
+        body.antrian-page .nav-home {
+            color: var(--green, #5c7f72) !important;
+        }
     </style>
     <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>

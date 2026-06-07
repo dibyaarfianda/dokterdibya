@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260606b'; // 2026-06-06 Fix Antrian Live light theme
+const CACHE_VERSION = '20260607a'; // 2026-06-07 Fix Antrian page light theme
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
