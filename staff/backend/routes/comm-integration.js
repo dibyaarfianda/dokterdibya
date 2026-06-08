@@ -4,6 +4,8 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const apiKeyAuth = require('../middleware/apiKeyAuth');
 const commOperationSync = require('../services/CommOperationSyncService');
+const CommScheduleIntentService = require('../services/CommScheduleIntentService');
+const commScheduleIntent = new CommScheduleIntentService();
 
 // All routes require API key authentication
 router.use(apiKeyAuth);
@@ -298,6 +300,38 @@ router.post('/operation-sync', async (req, res) => {
         res.status(isClientError ? 400 : 500).json({
             success: false,
             message: isClientError ? error.message : 'Failed to sync operations'
+        });
+    }
+});
+
+/**
+ * POST /schedule-intent
+ * Receive a deliberate manual surgery schedule command from COMM.
+ *
+ * This is separate from the daily operation snapshot sync. COMM sends the
+ * user's explicit date/time/tindakan choice, and DocBoard immediately creates
+ * an active surgery schedule when required fields are valid.
+ */
+router.post('/schedule-intent', async (req, res) => {
+    try {
+        const result = await commScheduleIntent.createFromIntent(req.body || {}, 'COMM manual');
+
+        res.status(result.action === 'existing' ? 200 : 201).json({
+            success: true,
+            message: result.action === 'existing'
+                ? 'Schedule intent already exists'
+                : 'Schedule intent created',
+            ...result
+        });
+    } catch (error) {
+        logger.error('COMM integration - schedule intent error:', error);
+
+        const isClientError = /missing|required|invalid|facility|case_id|patient_name|hospital_mr_id|schedule_date|operation_name/i
+            .test(error.message || '');
+
+        res.status(isClientError ? 400 : 500).json({
+            success: false,
+            message: isClientError ? error.message : 'Failed to create schedule intent'
         });
     }
 });
