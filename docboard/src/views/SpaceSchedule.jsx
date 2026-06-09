@@ -7,7 +7,10 @@ import {
   updateSpaceSchedule,
   updateSpaceScheduleStatus,
 } from '../services/api';
+import { user } from '../stores/auth';
 import { formatDateDisplay, getDayName, today } from '../utils/date';
+
+const SCHEDULE_COMPLETION_ADMIN_EMAIL = 'nanda.arfianda@gmail.com';
 
 const spaces = {
   ilmiah: {
@@ -122,6 +125,7 @@ function sortSchedules(schedules) {
 
 export default function SpaceSchedule({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
+  const canFinalizeSchedule = user.value?.email === SCHEDULE_COMPLETION_ADMIN_EMAIL;
   const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState(() => createEmptyForm(config));
   const [showForm, setShowForm] = useState(false);
@@ -229,6 +233,10 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleDelete = async (event, item) => {
     event.stopPropagation();
+    if (!canFinalizeSchedule) {
+      window.alert('Hanya nanda.arfianda@gmail.com yang bisa menghapus jadwal.');
+      return;
+    }
     if (!window.confirm(`Hapus jadwal "${item.agenda}"?`)) return;
     await deleteSpaceSchedule(space, item.id);
     await reloadSchedules();
@@ -242,6 +250,10 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleStatus = async (event, id, status) => {
     event.stopPropagation();
+    if (status === 'done' && !canFinalizeSchedule) {
+      window.alert('Hanya nanda.arfianda@gmail.com yang bisa menyelesaikan jadwal.');
+      return;
+    }
     await updateSpaceScheduleStatus(space, id, status);
     await reloadSchedules();
   };
@@ -383,9 +395,13 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
                         <div class="space-status-actions">
                           <button type="button" onClick={(event) => handleEdit(event, item)}>Edit</button>
                           <button type="button" onClick={(event) => handleStatus(event, item.id, 'confirmed')}>Konfirmasi</button>
-                          <button type="button" onClick={(event) => handleStatus(event, item.id, 'done')}>Selesai</button>
+                          {canFinalizeSchedule && (
+                            <button type="button" onClick={(event) => handleStatus(event, item.id, 'done')}>Selesai</button>
+                          )}
                           <button type="button" onClick={(event) => handleStatus(event, item.id, 'cancelled')}>Batal</button>
-                          <button type="button" class="danger" onClick={(event) => handleDelete(event, item)}>Hapus</button>
+                          {canFinalizeSchedule && (
+                            <button type="button" class="danger" onClick={(event) => handleDelete(event, item)}>Hapus</button>
+                          )}
                         </div>
                       )}
                     </div>
