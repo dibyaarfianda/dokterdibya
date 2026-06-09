@@ -3,6 +3,13 @@ import { LOCATIONS } from '../utils/constants';
 
 const DAY_HEADERS = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
+const EVENT_BARS = [
+  { key: 'operasi', label: 'Operasi', className: 'operasi' },
+  { key: 'tindakan', label: 'Tindakan', className: 'tindakan' },
+  { key: 'ilmiah', label: 'Ilmiah', className: 'ilmiah' },
+  { key: 'pribadi', label: 'Pribadi', className: 'pribadi' },
+];
+
 export default function CalendarGrid({ year, month, events, surgeryEvents, spaceEvents, onDayClick }) {
   const days = getCalendarDays(year, month);
   const surgData = surgeryEvents || {};
@@ -24,6 +31,10 @@ export default function CalendarGrid({ year, month, events, surgeryEvents, space
           const surgTotal = daySurg.total || 0;
           const daySpace = spaceData[day.date] || {};
           const spaceTotal = daySpace.total || 0;
+          const eventBars = EVENT_BARS.filter(bar => {
+            if (bar.key === 'operasi') return surgTotal > 0;
+            return (daySpace.spaces?.[bar.key] || 0) > 0;
+          });
           const todayClass = isToday(day.date) ? ' is-today' : '';
           const currentClass = day.isCurrentMonth ? '' : ' other-month';
           const hasEvents = locations.length > 0;
@@ -49,17 +60,15 @@ export default function CalendarGrid({ year, month, events, surgeryEvents, space
                   ))}
                 </div>
               )}
-              {hasSurgery && (
-                <div class="calendar-surgery-badge" title={`${surgTotal} tindakan`}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M7.2 14.4l-2.8 2.8c-1 1-1 2.6 0 3.6s2.6 1 3.6 0l2.8-2.8M16.8 9.6l2.8-2.8c1-1 1-2.6 0-3.6s-2.6-1-3.6 0l-2.8 2.8M8 16l8-8" />
-                  </svg>
-                  <span>{surgTotal}</span>
-                </div>
-              )}
-              {hasSpaceSchedule && (
-                <div class="calendar-space-badge" title={`${spaceTotal} agenda`}>
-                  <span>{spaceTotal}</span>
+              {eventBars.length > 0 && (
+                <div class="calendar-event-bars" aria-label={eventBars.map(bar => bar.label).join(', ')}>
+                  {eventBars.map(bar => (
+                    <span
+                      key={bar.key}
+                      class={`calendar-event-bar ${bar.className}`}
+                      title={bar.label}
+                    />
+                  ))}
                 </div>
               )}
               {dayEvents.totalPatients > 0 && (

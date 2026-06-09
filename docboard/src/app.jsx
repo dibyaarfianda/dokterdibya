@@ -14,15 +14,21 @@ import Analytics from './views/Analytics';
 import SpaceSchedule from './views/SpaceSchedule';
 import CommandDashboard from './views/CommandDashboard';
 import Login from './views/Login';
-import { initAuth, isLoggedIn, isLoading } from './stores/auth';
+import Confidential from './views/Confidential';
+import { initAuth, isLoggedIn, isLoading, user } from './stores/auth';
 import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
 import { queueCount, syncState } from './services/api';
+import { isNandaUser } from './utils/access';
 import { signal } from '@preact/signals';
 
 export const currentUrl = signal(typeof window !== 'undefined' ? window.location.pathname : '/docboard/');
 
 function handleRoute(e) {
   currentUrl.value = e.url;
+}
+
+function NandaOnlyRoute({ component: Component, ...props }) {
+  return isNandaUser(user.value) ? <Component {...props} /> : <Confidential />;
 }
 
 export default function App() {
@@ -69,15 +75,16 @@ export default function App() {
           <SurgeryForm path="/docboard/surgery/new" />
           <SurgeryForm path="/docboard/surgery/edit/:id" />
           <SurgeryDetail path="/docboard/surgery/:id" />
-          <OperationDataList path="/docboard/data" />
-          <OperationDataDetail path="/docboard/data/:id" />
+          <NandaOnlyRoute path="/docboard/data" component={OperationDataList} />
+          <NandaOnlyRoute path="/docboard/data/:id" component={OperationDataDetail} />
           <Notifications path="/docboard/notifications" />
           <CommandDashboard path="/docboard/command" />
-          <SpaceSchedule path="/docboard/scientific" space="ilmiah" />
+          <NandaOnlyRoute path="/docboard/scientific" component={SpaceSchedule} space="ilmiah" />
           <SpaceSchedule path="/docboard/procedures" space="tindakan" />
-          <SpaceSchedule path="/docboard/personal" space="pribadi" />
+          <NandaOnlyRoute path="/docboard/personal" component={SpaceSchedule} space="pribadi" />
           <Analytics path="/docboard/analytics" />
           <Settings path="/docboard/settings" />
+          <Settings path="/docboard/settings/preferences" mode="preferences" />
           <Calendar default />
         </Router>
       </main>
