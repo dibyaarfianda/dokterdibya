@@ -99,6 +99,21 @@ function getToken() {
   return localStorage.getItem('docboard_token');
 }
 
+function getTokenPayload() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
+
+function getCurrentUserDisplayName() {
+  const payload = getTokenPayload();
+  return payload?.name || payload?.email || '';
+}
+
 export function setToken(token) {
   localStorage.setItem('docboard_token', token);
 }
@@ -194,6 +209,8 @@ function localAddSpaceSchedule(space, data) {
     participants: data.participants,
     status: data.status || 'scheduled',
     notes: data.notes,
+    creator_name: getCurrentUserDisplayName(),
+    creator_display_name: getCurrentUserDisplayName(),
     updatedAt: new Date().toISOString(),
   };
 

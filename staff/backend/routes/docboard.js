@@ -10,8 +10,7 @@ const logger = require('../utils/logger');
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
 const SCHEDULE_COMPLETION_ALLOWED_USER_IDS = ['UDZAQUCQWZ'];
-const PRIVATE_SCHEDULE_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com', 'fo@melinda.co.id'];
-const PRIVATE_SCHEDULE_ALLOWED_USER_IDS = ['UDZAQUCQWZ', 'FO20260609'];
+const RESTRICTED_SPACE_KEYS = new Set(['ilmiah', 'pribadi']);
 
 function hasAllowedEmail(user, allowedEmails) {
   return allowedEmails.includes(String(user?.email || '').toLowerCase());
@@ -26,19 +25,18 @@ function canFinalizeSpaceSchedule(user) {
     || hasAllowedUserId(user, SCHEDULE_COMPLETION_ALLOWED_USER_IDS);
 }
 
-function canViewPrivateSchedule(user) {
-  return hasAllowedEmail(user, PRIVATE_SCHEDULE_ALLOWED_EMAILS)
-    || hasAllowedUserId(user, PRIVATE_SCHEDULE_ALLOWED_USER_IDS);
+function canViewRestrictedDocBoard(user) {
+  return canFinalizeSpaceSchedule(user);
 }
 
-function blocksPrivateScheduleAccess(user, source = {}) {
-  return source.space === 'pribadi' && !canViewPrivateSchedule(user);
+function blocksRestrictedSpaceAccess(user, source = {}) {
+  return RESTRICTED_SPACE_KEYS.has(source.space) && !canViewRestrictedDocBoard(user);
 }
 
-function privateScheduleForbidden(res) {
+function restrictedDocBoardForbidden(res) {
   return res.status(403).json({
     success: false,
-    message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com dan fo@melinda.co.id'
+    message: 'Confidential'
   });
 }
 
@@ -55,6 +53,10 @@ router.use(verifyStaffToken);
 
 // Mount surgery sub-routes
 router.use('/surgery', surgeryRoutes);
+router.use('/operation-data', (req, res, next) => {
+  if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+  next();
+});
 router.use('/operation-data', operationDataRoutes);
 
 /**
@@ -68,7 +70,7 @@ router.get('/space-schedules/calendar/:year/:month', async (req, res) => {
       req.user?.id,
       parseInt(year),
       parseInt(month),
-      { excludePrivate: !canViewPrivateSchedule(req.user) }
+      { excludeRestrictedSpaces: !canViewRestrictedDocBoard(req.user) }
     );
     res.json({ success: true, days });
   } catch (error) {
@@ -83,12 +85,12 @@ router.get('/space-schedules/calendar/:year/:month', async (req, res) => {
  */
 router.get('/space-schedules', async (req, res) => {
   try {
-    if (blocksPrivateScheduleAccess(req.user, req.query || {})) {
-      return privateScheduleForbidden(res);
+    if (blocksRestrictedSpaceAccess(req.user, req.query || {})) {
+      return restrictedDocBoardForbidden(res);
     }
     const schedules = await docboardService.getSpaceSchedules(req.user?.id, {
       ...(req.query || {}),
-      excludePrivate: !canViewPrivateSchedule(req.user)
+      excludeRestrictedSpaces: !canViewRestrictedDocBoard(req.user)
     });
     res.json({ success: true, schedules });
   } catch (error) {
@@ -106,8 +108,8 @@ router.post('/space-schedules', async (req, res) => {
     if (!space || !agenda || !category || !schedule_date) {
       return res.status(400).json({ success: false, message: 'space, agenda, category, dan schedule_date diperlukan' });
     }
-    if (blocksPrivateScheduleAccess(req.user, req.body || {})) {
-      return privateScheduleForbidden(res);
+    if (blocksRestrictedSpaceAccess(req.user, req.body || {})) {
+      return restrictedDocBoardForbidden(res);
     }
     const schedule = await docboardService.createSpaceSchedule(req.user?.id, req.body);
     res.json({ success: true, schedule });
@@ -126,12 +128,12 @@ router.put('/space-schedules/:id', async (req, res) => {
     if (!agenda || !category || !schedule_date) {
       return res.status(400).json({ success: false, message: 'agenda, category, dan schedule_date diperlukan' });
     }
-    if (blocksPrivateScheduleAccess(req.user, req.body || {})) {
-      return privateScheduleForbidden(res);
+    if (blocksRestrictedSpaceAccess(req.user, req.body || {})) {
+      return restrictedDocBoardForbidden(res);
     }
     const existing = await docboardService.getSpaceSchedule(req.user?.id, req.params.id);
-    if (existing?.space === 'pribadi' && !canViewPrivateSchedule(req.user)) {
-      return privateScheduleForbidden(res);
+    if (RESTRICTED_SPACE_KEYS.has(existing?.space) && !canViewRestrictedDocBoard(req.user)) {
+      return restrictedDocBoardForbidden(res);
     }
     const schedule = await docboardService.updateSpaceSchedule(req.user?.id, req.params.id, req.body);
     if (!schedule) return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan' });
@@ -150,8 +152,8 @@ router.patch('/space-schedules/:id/status', async (req, res) => {
     const { status } = req.body || {};
     if (!status) return res.status(400).json({ success: false, message: 'Status diperlukan' });
     const existing = await docboardService.getSpaceSchedule(req.user?.id, req.params.id);
-    if (existing?.space === 'pribadi' && !canViewPrivateSchedule(req.user)) {
-      return privateScheduleForbidden(res);
+    if (RESTRICTED_SPACE_KEYS.has(existing?.space) && !canViewRestrictedDocBoard(req.user)) {
+      return restrictedDocBoardForbidden(res);
     }
     if (status === 'done' && !canFinalizeSpaceSchedule(req.user)) {
       return res.status(403).json({

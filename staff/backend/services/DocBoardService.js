@@ -78,6 +78,8 @@ class DocBoardService {
       participants: row.participants || '',
       notes: row.notes || '',
       status: row.status || 'scheduled',
+      creator_name: row.creator_name || '',
+      creator_display_name: row.creator_display_name || row.creator_name || '',
       updatedAt: row.updated_at,
       createdAt: row.created_at
     };
@@ -88,7 +90,9 @@ class DocBoardService {
     const clauses = ['user_id = ?'];
     const params = [String(userId || '')];
 
-    if (filters.excludePrivate) {
+    if (filters.excludeRestrictedSpaces) {
+      clauses.push("space NOT IN ('ilmiah', 'pribadi')");
+    } else if (filters.excludePrivate) {
       clauses.push('space <> ?');
       params.push('pribadi');
     }
@@ -106,9 +110,11 @@ class DocBoardService {
     }
 
     const [rows] = await pool.query(
-      `SELECT * FROM docboard_space_schedules
+      `SELECT s.*, u.name AS creator_name, u.display_name AS creator_display_name
+       FROM docboard_space_schedules s
+       LEFT JOIN users u ON u.new_id = s.user_id
        WHERE ${clauses.join(' AND ')}
-       ORDER BY schedule_date, COALESCE(start_time, '00:00:00'), id`,
+       ORDER BY s.schedule_date, COALESCE(s.start_time, '00:00:00'), s.id`,
       params
     );
 
@@ -118,7 +124,10 @@ class DocBoardService {
   async getSpaceSchedule(userId, id) {
     await this.ensureSpaceScheduleTable();
     const [rows] = await pool.query(
-      'SELECT * FROM docboard_space_schedules WHERE id = ? AND user_id = ?',
+      `SELECT s.*, u.name AS creator_name, u.display_name AS creator_display_name
+       FROM docboard_space_schedules s
+       LEFT JOIN users u ON u.new_id = s.user_id
+       WHERE s.id = ? AND s.user_id = ?`,
       [id, String(userId || '')]
     );
     return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
@@ -131,7 +140,8 @@ class DocBoardService {
     const schedules = await this.getSpaceSchedules(userId, {
       start: startDate,
       end: endStr,
-      excludePrivate: options.excludePrivate
+      excludePrivate: options.excludePrivate,
+      excludeRestrictedSpaces: options.excludeRestrictedSpaces
     });
     const days = {};
 
@@ -161,8 +171,7 @@ class DocBoardService {
         data.participants || null, data.notes || null, data.status || 'scheduled'
       ]
     );
-    const [rows] = await pool.query('SELECT * FROM docboard_space_schedules WHERE id = ?', [result.insertId]);
-    return this.mapSpaceSchedule(rows[0]);
+    return this.getSpaceSchedule(userId, result.insertId);
   }
 
   async updateSpaceSchedule(userId, id, data) {
@@ -177,8 +186,7 @@ class DocBoardService {
         data.notes || null, id, String(userId || '')
       ]
     );
-    const [rows] = await pool.query('SELECT * FROM docboard_space_schedules WHERE id = ? AND user_id = ?', [id, String(userId || '')]);
-    return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
+    return this.getSpaceSchedule(userId, id);
   }
 
   async updateSpaceScheduleStatus(userId, id, status) {
@@ -187,8 +195,7 @@ class DocBoardService {
       `UPDATE docboard_space_schedules SET status = ? WHERE id = ? AND user_id = ?`,
       [status || 'scheduled', id, String(userId || '')]
     );
-    const [rows] = await pool.query('SELECT * FROM docboard_space_schedules WHERE id = ? AND user_id = ?', [id, String(userId || '')]);
-    return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
+    return this.getSpaceSchedule(userId, id);
   }
 
   async deleteSpaceSchedule(userId, id) {

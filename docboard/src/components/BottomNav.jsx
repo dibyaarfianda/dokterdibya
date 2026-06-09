@@ -5,7 +5,6 @@ const tabs = [
   { path: '/docboard/', icon: 'calendar', label: 'Jadwal' },
   { path: '/docboard/procedures', icon: 'procedure', label: 'Tindakan' },
   { path: '/docboard/surgery', icon: 'surgery', label: 'Operasi' },
-  { path: '/docboard/data', icon: 'data', label: 'Data' },
   { path: '/docboard/notifications', icon: 'bell', label: 'Notif', badge: true },
   { path: '/docboard/settings', icon: 'menu', label: 'Lainnya' }
 ];

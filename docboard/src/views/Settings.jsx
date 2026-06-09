@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { LOCATIONS, SYNC_STATUS } from '../utils/constants';
 import { relativeTime } from '../utils/date';
 import { isPushSupported, isPushSubscribed, subscribeToPush, unsubscribeFromPush } from '../utils/push';
+import { isNandaUser } from '../utils/access';
 
 const NOTIF_PREFS = [
   { key: 'notify_new_booking', label: 'Operasi Baru', desc: 'Saat operasi dijadwalkan' },
@@ -13,16 +14,63 @@ const NOTIF_PREFS = [
   { key: 'notify_sync_failure', label: 'Sync Gagal', desc: 'Saat sinkronisasi data gagal' }
 ];
 
-const PRIVATE_SCHEDULE_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com', 'fo@melinda.co.id'];
-const PRIVATE_SCHEDULE_ALLOWED_USER_IDS = ['UDZAQUCQWZ', 'FO20260609'];
-
-function canAccessPrivateSchedule(currentUser) {
-  const email = String(currentUser?.email || '').toLowerCase();
-  return PRIVATE_SCHEDULE_ALLOWED_EMAILS.includes(email)
-    || PRIVATE_SCHEDULE_ALLOWED_USER_IDS.includes(String(currentUser?.id || ''));
+function MoreMenuItem({ title, desc, icon, color, bg, onClick }) {
+  return (
+    <div class="settings-card settings-card-link" onClick={onClick}>
+      <div class="settings-link-row">
+        <div class="settings-link-icon" style={{ background: bg, color }}>
+          {icon}
+        </div>
+        <div class="settings-link-info">
+          <div class="settings-link-title">{title}</div>
+          {desc && <div class="settings-link-desc">{desc}</div>}
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
+          <polyline points="9,18 15,12 9,6" />
+        </svg>
+      </div>
+    </div>
+  );
 }
 
-export default function Settings() {
+const icons = {
+  data: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <ellipse cx="12" cy="5" rx="8" ry="3" />
+      <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+      <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+    </svg>
+  ),
+  calendar: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M8 2v4M16 2v4M3 10h18" />
+      <path d="M8 14h5M8 18h8" />
+    </svg>
+  ),
+  private: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M8 2v4M16 2v4M3 10h18" />
+      <path d="M12 17.5c-1.8-1.2-3-2.2-3-3.5a1.7 1.7 0 0 1 3-1.1A1.7 1.7 0 0 1 15 14c0 1.3-1.2 2.3-3 3.5z" />
+    </svg>
+  ),
+  chart: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
+  settings: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7A2 2 0 1 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z" />
+    </svg>
+  ),
+};
+
+export default function Settings({ mode = 'menu' }) {
   const [syncData, setSyncData] = useState({});
   const [syncing, setSyncing] = useState({});
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -30,7 +78,7 @@ export default function Settings() {
   const [pushSupported] = useState(isPushSupported());
   const [prefs, setPrefs] = useState({ notify_new_booking: true, notify_status_change: true, notify_reminder: true, notify_sync_failure: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
-  const canViewPrivateSchedule = canAccessPrivateSchedule(user.value);
+  const isNanda = isNandaUser(user.value);
 
   useEffect(() => {
     loadSyncStatus();
@@ -134,10 +182,50 @@ export default function Settings() {
     }
   }
 
+  if (mode === 'menu') {
+    return (
+      <div class="view-settings">
+        <div class="page-header">
+          <h1 class="page-title">Lainnya</h1>
+        </div>
+
+        <div class="settings-card">
+          <div class="profile-row">
+            <div class="profile-avatar">
+              {(user.value?.name || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div class="profile-info">
+              <div class="profile-name">{user.value?.name || 'User'}</div>
+              <div class="profile-role">{user.value?.role || ''}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Sub-menu</h3>
+          <MoreMenuItem title="Data" desc={isNanda ? 'Data operasi rumah sakit' : 'Confidential'} icon={icons.data} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/data')} />
+          <MoreMenuItem title="Ilmiah" desc={isNanda ? 'Agenda ilmiah dan diskusi kasus' : 'Confidential'} icon={icons.calendar} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/scientific')} />
+          <MoreMenuItem title="Pribadi" desc={isNanda ? 'Agenda pribadi' : 'Confidential'} icon={icons.private} color="#EA580C" bg="#FFF7ED" onClick={() => route('/docboard/personal')} />
+          <MoreMenuItem title="Statistik Operasi" desc="Lihat data dan tren operasi" icon={icons.chart} color="#3B82F6" bg="#EEF2FF" onClick={() => route('/docboard/analytics')} />
+          <MoreMenuItem title="Setting" desc="Notifikasi, sinkronisasi, dan pengaturan DocBoard" icon={icons.settings} color="#64748B" bg="#F1F5F9" onClick={() => route('/docboard/settings/preferences')} />
+        </div>
+
+        <button class="btn-logout" onClick={handleLogout}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16,17 21,12 16,7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Logout
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div class="view-settings">
       <div class="page-header">
-        <h1 class="page-title">Lainnya</h1>
+        <h1 class="page-title">Setting</h1>
       </div>
 
       {/* Profile card */}
@@ -192,7 +280,7 @@ export default function Settings() {
             </svg>
           </div>
         </div>
-        {canViewPrivateSchedule && (
+        {isNanda && (
           <div class="settings-card settings-card-link" onClick={() => route('/docboard/personal')}>
             <div class="settings-link-row">
               <div class="settings-link-icon" style={{ background: '#FFF7ED', color: '#EA580C' }}>

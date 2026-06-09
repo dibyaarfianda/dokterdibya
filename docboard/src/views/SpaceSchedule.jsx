@@ -9,19 +9,13 @@ import {
 } from '../services/api';
 import { user } from '../stores/auth';
 import { formatDateDisplay, getDayName, today } from '../utils/date';
+import { isNandaUser } from '../utils/access';
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
-const PRIVATE_SCHEDULE_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com', 'fo@melinda.co.id'];
-const PRIVATE_SCHEDULE_ALLOWED_USER_IDS = ['UDZAQUCQWZ', 'FO20260609'];
 
 function hasAllowedEmail(currentUser, allowedEmails) {
   const email = String(currentUser?.email || '').toLowerCase();
   return allowedEmails.includes(email);
-}
-
-function canAccessPrivateSchedule(currentUser) {
-  return hasAllowedEmail(currentUser, PRIVATE_SCHEDULE_ALLOWED_EMAILS)
-    || PRIVATE_SCHEDULE_ALLOWED_USER_IDS.includes(String(currentUser?.id || ''));
 }
 
 const spaces = {
@@ -139,7 +133,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
   const canFinalizeSchedule = hasAllowedEmail(user.value, SCHEDULE_COMPLETION_ALLOWED_EMAILS)
     || String(user.value?.id || '') === 'UDZAQUCQWZ';
-  const canViewPrivateSchedule = canAccessPrivateSchedule(user.value);
+  const canViewPrivateSchedule = isNandaUser(user.value);
   const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState(() => createEmptyForm(config));
   const [showForm, setShowForm] = useState(false);
@@ -410,6 +404,9 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
                         {formatEndTime(item) && <span>{formatEndTime(item)}</span>}
                         {item.location && <span>{item.location}</span>}
                       </div>
+                      {(item.creator_display_name || item.creator_name) && (
+                        <div class="space-agenda-submeta">Entry oleh {item.creator_display_name || item.creator_name}</div>
+                      )}
                       {item.participants && <div class="space-agenda-submeta">{item.participants}</div>}
                       {isExpanded && item.notes && <div class="space-agenda-notes">{item.notes}</div>}
                       {isExpanded && (
