@@ -3,6 +3,7 @@ import { unreadCount } from '../stores/notifications';
 
 const tabs = [
   { path: '/docboard/', icon: 'calendar', label: 'Jadwal' },
+  { path: '/docboard/procedures', icon: 'procedure', label: 'Tindakan' },
   { path: '/docboard/surgery', icon: 'surgery', label: 'Operasi' },
   { path: '/docboard/data', icon: 'data', label: 'Data' },
   { path: '/docboard/notifications', icon: 'bell', label: 'Notif', badge: true },
@@ -24,6 +25,13 @@ const icons = {
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M3 10h18" />
       <path d="M12 14v4M10 16h4" />
+    </svg>
+  ),
+  procedure: (
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M8 2v4M16 2v4M3 10h18" />
+      <path d="M12 14v5M9.5 16.5h5" />
     </svg>
   ),
   bell: (
