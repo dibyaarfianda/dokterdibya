@@ -10,7 +10,19 @@ import {
 import { user } from '../stores/auth';
 import { formatDateDisplay, getDayName, today } from '../utils/date';
 
-const SCHEDULE_COMPLETION_ADMIN_EMAIL = 'nanda.arfianda@gmail.com';
+const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
+const PRIVATE_SCHEDULE_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com', 'fo@melinda.co.id'];
+const PRIVATE_SCHEDULE_ALLOWED_USER_IDS = ['UDZAQUCQWZ', 'FO20260609'];
+
+function hasAllowedEmail(currentUser, allowedEmails) {
+  const email = String(currentUser?.email || '').toLowerCase();
+  return allowedEmails.includes(email);
+}
+
+function canAccessPrivateSchedule(currentUser) {
+  return hasAllowedEmail(currentUser, PRIVATE_SCHEDULE_ALLOWED_EMAILS)
+    || PRIVATE_SCHEDULE_ALLOWED_USER_IDS.includes(String(currentUser?.id || ''));
+}
 
 const spaces = {
   ilmiah: {
@@ -125,8 +137,9 @@ function sortSchedules(schedules) {
 
 export default function SpaceSchedule({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
-  const canFinalizeSchedule = user.value?.email === SCHEDULE_COMPLETION_ADMIN_EMAIL;
-  const canViewPrivateSchedule = canFinalizeSchedule;
+  const canFinalizeSchedule = hasAllowedEmail(user.value, SCHEDULE_COMPLETION_ALLOWED_EMAILS)
+    || String(user.value?.id || '') === 'UDZAQUCQWZ';
+  const canViewPrivateSchedule = canAccessPrivateSchedule(user.value);
   const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState(() => createEmptyForm(config));
   const [showForm, setShowForm] = useState(false);
