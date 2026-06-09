@@ -160,6 +160,10 @@
   background: var(--blue);
 }
 
+.space-agenda-dot.tindakan {
+  background: var(--green);
+}
+
 .space-agenda-dot.pribadi {
   background: var(--amber);
 }
@@ -1259,6 +1263,10 @@ input { font-family: inherit; }
   color: #B45309;
 }
 
+.day-space-label.tindakan {
+  color: #047857;
+}
+
 .day-space-dot {
   width: 10px;
   height: 10px;
@@ -1270,6 +1278,10 @@ input { font-family: inherit; }
 
 .day-space-dot.pribadi {
   background: var(--amber);
+}
+
+.day-space-dot.tindakan {
+  background: var(--green);
 }
 
 .day-surgery-diag {

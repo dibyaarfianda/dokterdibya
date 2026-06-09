@@ -21,6 +21,29 @@ const spaces = {
     participantPlaceholder: 'Staff Obgyn, dokter, bidan, tim terkait',
     categories: ['Pertemuan Staff', 'Journal Club', 'Diskusi Kasus', 'Webinar', 'Simposium', 'Audit Klinik', 'Riset'],
   },
+  tindakan: {
+    title: 'Jadwal Tindakan',
+    subtitle: 'Jadwal tindakan klinik dan poli seperti IUD, implan, pap smear/IVA, USG, dan tindakan VK.',
+    action: 'Tambah tindakan',
+    categoryLabel: 'Jenis tindakan',
+    participantLabel: 'Pasien / pendamping',
+    agendaPlaceholder: 'Nama pasien atau ringkasan tindakan',
+    locationPlaceholder: 'Klinik, VK, poli, atau rumah sakit',
+    participantPlaceholder: 'Nama pasien, pendamping, atau staff terkait',
+    categories: [
+      'Pasang IUD',
+      'Lepas Pasang IUD',
+      'Lepas IUD',
+      'Pasang Implan',
+      'Lepas Pasang Implan',
+      'Lepas Implan',
+      'Cuci Vagina',
+      'Pap Smear/IVA',
+      'Stripping Membrane',
+      'USG VK',
+      'USG Poli',
+    ],
+  },
   pribadi: {
     title: 'Jadwal Pribadi',
     subtitle: 'Janji keluarga, agenda rumah, pengingat penting, dan blok waktu di luar jadwal klinik.',
@@ -224,7 +247,12 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   };
 
   const openSpace = (targetSpace) => {
-    route(targetSpace === 'ilmiah' ? '/docboard/scientific' : '/docboard/personal');
+    const routes = {
+      ilmiah: '/docboard/scientific',
+      tindakan: '/docboard/procedures',
+      pribadi: '/docboard/personal',
+    };
+    route(routes[targetSpace] || routes.ilmiah);
   };
 
   return (
@@ -243,6 +271,9 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
       <div class="view-toggle space-toggle" role="tablist" aria-label="Pilih ruang jadwal">
         <button class={`view-toggle-btn${space === 'ilmiah' ? ' active' : ''}`} onClick={() => openSpace('ilmiah')}>
           Ilmiah
+        </button>
+        <button class={`view-toggle-btn${space === 'tindakan' ? ' active' : ''}`} onClick={() => openSpace('tindakan')}>
+          Tindakan
         </button>
         <button class={`view-toggle-btn${space === 'pribadi' ? ' active' : ''}`} onClick={() => openSpace('pribadi')}>
           Pribadi

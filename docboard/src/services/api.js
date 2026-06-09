@@ -66,6 +66,20 @@ const defaultSpaceSchedules = [
     notes: 'Pastikan tidak berbenturan dengan jadwal operasi atau praktik.',
     updatedAt: new Date(Date.now() - 172800000).toISOString(),
   },
+  {
+    id: 'tindakan-001',
+    space: 'tindakan',
+    agenda: 'Kontrol tindakan klinik',
+    category: 'Pasang IUD',
+    schedule_date: formatDateOffset(2),
+    start_time: '10:00',
+    end_time: '10:30',
+    location: 'Klinik private',
+    participants: 'Pasien tindakan',
+    status: 'scheduled',
+    notes: 'Contoh jadwal tindakan. Ubah atau hapus sesuai kebutuhan.',
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 function loadSpaceSchedules() {
@@ -278,7 +292,7 @@ export async function getSpaceScheduleCalendar(year, month) {
     loadSpaceSchedules().forEach((schedule) => {
       if (schedule.status === 'cancelled') return;
       const date = schedule.schedule_date;
-      if (!days[date]) days[date] = { total: 0, spaces: { ilmiah: 0, pribadi: 0 } };
+      if (!days[date]) days[date] = { total: 0, spaces: { ilmiah: 0, tindakan: 0, pribadi: 0 } };
       days[date].total += 1;
       days[date].spaces[schedule.space] = (days[date].spaces[schedule.space] || 0) + 1;
     });

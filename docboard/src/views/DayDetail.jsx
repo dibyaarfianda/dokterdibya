@@ -6,6 +6,12 @@ import { api, listDaySpaceSchedules } from '../services/api';
 import { formatDateDisplay, getDayName, formatTime } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
 
+const SPACE_META = {
+  ilmiah: { label: 'Ilmiah', route: '/docboard/scientific' },
+  tindakan: { label: 'Tindakan', route: '/docboard/procedures' },
+  pribadi: { label: 'Pribadi', route: '/docboard/personal' },
+};
+
 export default function DayDetail({ date }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -151,30 +157,30 @@ export default function DayDetail({ date }) {
         </div>
       )}
 
-      {/* Ilmiah & Pribadi section */}
+      {/* Ilmiah, Tindakan & Pribadi section */}
       {spaceLoading ? (
         <div class="day-surgery-section">
-          <div class="day-section-title">Agenda Ilmiah & Pribadi</div>
+          <div class="day-section-title">Agenda Ilmiah, Tindakan & Pribadi</div>
           <SkeletonList count={1} />
         </div>
       ) : spaceSchedules.length > 0 && (
         <div class="day-surgery-section">
           <div class="day-section-title">
-            Agenda Ilmiah & Pribadi
+            Agenda Ilmiah, Tindakan & Pribadi
             <span class="day-section-count">{spaceSchedules.length}</span>
           </div>
           {spaceSchedules.map(item => (
             <div
               key={item.id}
               class="day-space-card"
-              onClick={() => route(item.space === 'pribadi' ? '/docboard/personal' : '/docboard/scientific')}
+              onClick={() => route((SPACE_META[item.space] || SPACE_META.ilmiah).route)}
             >
               <div class="day-surgery-time">{item.start_time || item.end_time || '--:--'}</div>
               <div class="day-surgery-info">
                 <div class="day-surgery-patient">{item.agenda}</div>
                 <div class="day-surgery-op">{item.category}</div>
                 <div class="day-surgery-meta">
-                  <span class={`day-space-label ${item.space}`}>{item.space === 'pribadi' ? 'Pribadi' : 'Ilmiah'}</span>
+                  <span class={`day-space-label ${item.space}`}>{(SPACE_META[item.space] || SPACE_META.ilmiah).label}</span>
                   {item.location && <span class="day-surgery-diag">• {item.location}</span>}
                 </div>
               </div>

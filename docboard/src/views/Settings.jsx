@@ -164,6 +164,24 @@ export default function Settings() {
             </svg>
           </div>
         </div>
+        <div class="settings-card settings-card-link" onClick={() => route('/docboard/procedures')}>
+          <div class="settings-link-row">
+            <div class="settings-link-icon" style={{ background: '#ECFDF5', color: '#059669' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M8 2v4M16 2v4M3 10h18" />
+                <path d="M12 14v5M9.5 16.5h5" />
+              </svg>
+            </div>
+            <div class="settings-link-info">
+              <div class="settings-link-title">Tindakan</div>
+              <div class="settings-link-desc">IUD, implan, pap smear/IVA, stripping membrane, USG VK, dan USG Poli</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
+              <polyline points="9,18 15,12 9,6" />
+            </svg>
+          </div>
+        </div>
         <div class="settings-card settings-card-link" onClick={() => route('/docboard/personal')}>
           <div class="settings-link-row">
             <div class="settings-link-icon" style={{ background: '#FFF7ED', color: '#EA580C' }}>

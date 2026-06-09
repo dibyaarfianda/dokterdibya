@@ -74,6 +74,7 @@ export default function App() {
           <Notifications path="/docboard/notifications" />
           <CommandDashboard path="/docboard/command" />
           <SpaceSchedule path="/docboard/scientific" space="ilmiah" />
+          <SpaceSchedule path="/docboard/procedures" space="tindakan" />
           <SpaceSchedule path="/docboard/personal" space="pribadi" />
           <Analytics path="/docboard/analytics" />
           <Settings path="/docboard/settings" />
