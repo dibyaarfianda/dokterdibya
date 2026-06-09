@@ -13,6 +13,8 @@ const NOTIF_PREFS = [
   { key: 'notify_sync_failure', label: 'Sync Gagal', desc: 'Saat sinkronisasi data gagal' }
 ];
 
+const PRIVATE_SCHEDULE_EMAIL = 'nanda.arfianda@gmail.com';
+
 export default function Settings() {
   const [syncData, setSyncData] = useState({});
   const [syncing, setSyncing] = useState({});
@@ -21,6 +23,7 @@ export default function Settings() {
   const [pushSupported] = useState(isPushSupported());
   const [prefs, setPrefs] = useState({ notify_new_booking: true, notify_status_change: true, notify_reminder: true, notify_sync_failure: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
+  const canViewPrivateSchedule = user.value?.email === PRIVATE_SCHEDULE_EMAIL;
 
   useEffect(() => {
     loadSyncStatus();
@@ -182,24 +185,26 @@ export default function Settings() {
             </svg>
           </div>
         </div>
-        <div class="settings-card settings-card-link" onClick={() => route('/docboard/personal')}>
-          <div class="settings-link-row">
-            <div class="settings-link-icon" style={{ background: '#FFF7ED', color: '#EA580C' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M8 2v4M16 2v4M3 10h18" />
-                <path d="M12 17.5c-1.8-1.2-3-2.2-3-3.5a1.7 1.7 0 0 1 3-1.1A1.7 1.7 0 0 1 15 14c0 1.3-1.2 2.3-3 3.5z" />
+        {canViewPrivateSchedule && (
+          <div class="settings-card settings-card-link" onClick={() => route('/docboard/personal')}>
+            <div class="settings-link-row">
+              <div class="settings-link-icon" style={{ background: '#FFF7ED', color: '#EA580C' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M8 2v4M16 2v4M3 10h18" />
+                  <path d="M12 17.5c-1.8-1.2-3-2.2-3-3.5a1.7 1.7 0 0 1 3-1.1A1.7 1.7 0 0 1 15 14c0 1.3-1.2 2.3-3 3.5z" />
+                </svg>
+              </div>
+              <div class="settings-link-info">
+                <div class="settings-link-title">Pribadi</div>
+                <div class="settings-link-desc">Janji keluarga, agenda rumah, dan urusan pribadi</div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
+                <polyline points="9,18 15,12 9,6" />
               </svg>
             </div>
-            <div class="settings-link-info">
-              <div class="settings-link-title">Pribadi</div>
-              <div class="settings-link-desc">Janji keluarga, agenda rumah, dan urusan pribadi</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2">
-              <polyline points="9,18 15,12 9,6" />
-            </svg>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Push Notifications */}
