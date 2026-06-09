@@ -340,8 +340,9 @@ input { font-family: inherit; }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 8px 10px;
-  min-width: 56px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 4px;
   color: var(--text-tertiary);
   transition: color 0.2s;
 }
