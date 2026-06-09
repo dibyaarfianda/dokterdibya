@@ -126,6 +126,7 @@ function sortSchedules(schedules) {
 export default function SpaceSchedule({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
   const canFinalizeSchedule = user.value?.email === SCHEDULE_COMPLETION_ADMIN_EMAIL;
+  const canViewPrivateSchedule = canFinalizeSchedule;
   const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState(() => createEmptyForm(config));
   const [showForm, setShowForm] = useState(false);
@@ -135,6 +136,10 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   useEffect(() => {
     let active = true;
+    if (space === 'pribadi' && !canViewPrivateSchedule) {
+      route('/docboard/procedures');
+      return () => { active = false; };
+    }
     setLoading(true);
     listSpaceSchedules(space).then((items) => {
       if (active) setSchedules(items);
@@ -259,6 +264,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   };
 
   const openSpace = (targetSpace) => {
+    if (targetSpace === 'pribadi' && !canViewPrivateSchedule) return;
     const routes = {
       ilmiah: '/docboard/scientific',
       tindakan: '/docboard/procedures',
@@ -287,9 +293,11 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
         <button class={`view-toggle-btn${space === 'tindakan' ? ' active' : ''}`} onClick={() => openSpace('tindakan')}>
           Tindakan
         </button>
-        <button class={`view-toggle-btn${space === 'pribadi' ? ' active' : ''}`} onClick={() => openSpace('pribadi')}>
-          Pribadi
-        </button>
+        {canViewPrivateSchedule && (
+          <button class={`view-toggle-btn${space === 'pribadi' ? ' active' : ''}`} onClick={() => openSpace('pribadi')}>
+            Pribadi
+          </button>
+        )}
       </div>
 
       <div class="space-summary-card">

@@ -14,6 +14,14 @@ function canFinalizeSpaceSchedule(user) {
   return String(user?.email || '').toLowerCase() === SCHEDULE_COMPLETION_ADMIN_EMAIL;
 }
 
+function canViewPrivateSchedule(user) {
+  return canFinalizeSpaceSchedule(user);
+}
+
+function blocksPrivateScheduleAccess(user, source = {}) {
+  return source.space === 'pribadi' && !canViewPrivateSchedule(user);
+}
+
 // Allow token from query string for PDF downloads (window.open can't set headers)
 router.use((req, res, next) => {
   if (req.query.token && !req.headers['authorization']) {
@@ -36,7 +44,12 @@ router.use('/operation-data', operationDataRoutes);
 router.get('/space-schedules/calendar/:year/:month', async (req, res) => {
   try {
     const { year, month } = req.params;
-    const days = await docboardService.getSpaceScheduleCalendar(req.user?.id, parseInt(year), parseInt(month));
+    const days = await docboardService.getSpaceScheduleCalendar(
+      req.user?.id,
+      parseInt(year),
+      parseInt(month),
+      { excludePrivate: !canViewPrivateSchedule(req.user) }
+    );
     res.json({ success: true, days });
   } catch (error) {
     logger.error('DocBoard space schedule calendar error:', error);
@@ -50,7 +63,13 @@ router.get('/space-schedules/calendar/:year/:month', async (req, res) => {
  */
 router.get('/space-schedules', async (req, res) => {
   try {
-    const schedules = await docboardService.getSpaceSchedules(req.user?.id, req.query || {});
+    if (blocksPrivateScheduleAccess(req.user, req.query || {})) {
+      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+    }
+    const schedules = await docboardService.getSpaceSchedules(req.user?.id, {
+      ...(req.query || {}),
+      excludePrivate: !canViewPrivateSchedule(req.user)
+    });
     res.json({ success: true, schedules });
   } catch (error) {
     logger.error('DocBoard space schedule list error:', error);
@@ -66,6 +85,9 @@ router.post('/space-schedules', async (req, res) => {
     const { space, agenda, category, schedule_date } = req.body || {};
     if (!space || !agenda || !category || !schedule_date) {
       return res.status(400).json({ success: false, message: 'space, agenda, category, dan schedule_date diperlukan' });
+    }
+    if (blocksPrivateScheduleAccess(req.user, req.body || {})) {
+      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
     }
     const schedule = await docboardService.createSpaceSchedule(req.user?.id, req.body);
     res.json({ success: true, schedule });
@@ -84,6 +106,13 @@ router.put('/space-schedules/:id', async (req, res) => {
     if (!agenda || !category || !schedule_date) {
       return res.status(400).json({ success: false, message: 'agenda, category, dan schedule_date diperlukan' });
     }
+    if (blocksPrivateScheduleAccess(req.user, req.body || {})) {
+      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+    }
+    const existing = await docboardService.getSpaceSchedule(req.user?.id, req.params.id);
+    if (existing?.space === 'pribadi' && !canViewPrivateSchedule(req.user)) {
+      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+    }
     const schedule = await docboardService.updateSpaceSchedule(req.user?.id, req.params.id, req.body);
     if (!schedule) return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan' });
     res.json({ success: true, schedule });
@@ -100,6 +129,10 @@ router.patch('/space-schedules/:id/status', async (req, res) => {
   try {
     const { status } = req.body || {};
     if (!status) return res.status(400).json({ success: false, message: 'Status diperlukan' });
+    const existing = await docboardService.getSpaceSchedule(req.user?.id, req.params.id);
+    if (existing?.space === 'pribadi' && !canViewPrivateSchedule(req.user)) {
+      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+    }
     if (status === 'done' && !canFinalizeSpaceSchedule(req.user)) {
       return res.status(403).json({
         success: false,

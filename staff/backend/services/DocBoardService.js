@@ -88,6 +88,10 @@ class DocBoardService {
     const clauses = ['user_id = ?'];
     const params = [String(userId || '')];
 
+    if (filters.excludePrivate) {
+      clauses.push('space <> ?');
+      params.push('pribadi');
+    }
     if (filters.space) {
       clauses.push('space = ?');
       params.push(normalizeSpace(filters.space));
@@ -111,11 +115,24 @@ class DocBoardService {
     return rows.map(row => this.mapSpaceSchedule(row));
   }
 
-  async getSpaceScheduleCalendar(userId, year, month) {
+  async getSpaceSchedule(userId, id) {
+    await this.ensureSpaceScheduleTable();
+    const [rows] = await pool.query(
+      'SELECT * FROM docboard_space_schedules WHERE id = ? AND user_id = ?',
+      [id, String(userId || '')]
+    );
+    return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
+  }
+
+  async getSpaceScheduleCalendar(userId, year, month, options = {}) {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = new Date(year, month, 0);
     const endStr = `${year}-${String(month).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-    const schedules = await this.getSpaceSchedules(userId, { start: startDate, end: endStr });
+    const schedules = await this.getSpaceSchedules(userId, {
+      start: startDate,
+      end: endStr,
+      excludePrivate: options.excludePrivate
+    });
     const days = {};
 
     for (const schedule of schedules) {
