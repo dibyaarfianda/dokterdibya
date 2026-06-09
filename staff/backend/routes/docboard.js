@@ -8,6 +8,12 @@ const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
 const logger = require('../utils/logger');
 
+const SCHEDULE_COMPLETION_ADMIN_EMAIL = 'nanda.arfianda@gmail.com';
+
+function canFinalizeSpaceSchedule(user) {
+  return String(user?.email || '').toLowerCase() === SCHEDULE_COMPLETION_ADMIN_EMAIL;
+}
+
 // Allow token from query string for PDF downloads (window.open can't set headers)
 router.use((req, res, next) => {
   if (req.query.token && !req.headers['authorization']) {
@@ -94,6 +100,12 @@ router.patch('/space-schedules/:id/status', async (req, res) => {
   try {
     const { status } = req.body || {};
     if (!status) return res.status(400).json({ success: false, message: 'Status diperlukan' });
+    if (status === 'done' && !canFinalizeSpaceSchedule(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Hanya nanda.arfianda@gmail.com yang bisa menyelesaikan jadwal'
+      });
+    }
     const schedule = await docboardService.updateSpaceScheduleStatus(req.user?.id, req.params.id, status);
     if (!schedule) return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan' });
     res.json({ success: true, schedule });
@@ -108,6 +120,12 @@ router.patch('/space-schedules/:id/status', async (req, res) => {
  */
 router.delete('/space-schedules/:id', async (req, res) => {
   try {
+    if (!canFinalizeSpaceSchedule(req.user)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Hanya nanda.arfianda@gmail.com yang bisa menghapus jadwal'
+      });
+    }
     await docboardService.deleteSpaceSchedule(req.user?.id, req.params.id);
     res.json({ success: true });
   } catch (error) {

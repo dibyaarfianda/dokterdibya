@@ -45,7 +45,9 @@ function formatTimeValue(time) {
 }
 
 function normalizeSpace(space) {
-  return space === 'pribadi' ? 'pribadi' : 'ilmiah';
+  if (space === 'pribadi') return 'pribadi';
+  if (space === 'tindakan') return 'tindakan';
+  return 'ilmiah';
 }
 
 function normalizeLoc(loc) {
@@ -120,7 +122,7 @@ class DocBoardService {
       if (schedule.status === 'cancelled') continue;
       const date = schedule.schedule_date;
       if (!days[date]) {
-        days[date] = { total: 0, spaces: { ilmiah: 0, pribadi: 0 } };
+        days[date] = { total: 0, spaces: { ilmiah: 0, tindakan: 0, pribadi: 0 } };
       }
       days[date].total += 1;
       days[date].spaces[schedule.space] = (days[date].spaces[schedule.space] || 0) + 1;
