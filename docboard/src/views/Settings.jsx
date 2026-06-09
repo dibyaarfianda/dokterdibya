@@ -13,7 +13,14 @@ const NOTIF_PREFS = [
   { key: 'notify_sync_failure', label: 'Sync Gagal', desc: 'Saat sinkronisasi data gagal' }
 ];
 
-const PRIVATE_SCHEDULE_EMAIL = 'nanda.arfianda@gmail.com';
+const PRIVATE_SCHEDULE_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com', 'fo@melinda.co.id'];
+const PRIVATE_SCHEDULE_ALLOWED_USER_IDS = ['UDZAQUCQWZ', 'FO20260609'];
+
+function canAccessPrivateSchedule(currentUser) {
+  const email = String(currentUser?.email || '').toLowerCase();
+  return PRIVATE_SCHEDULE_ALLOWED_EMAILS.includes(email)
+    || PRIVATE_SCHEDULE_ALLOWED_USER_IDS.includes(String(currentUser?.id || ''));
+}
 
 export default function Settings() {
   const [syncData, setSyncData] = useState({});
@@ -23,7 +30,7 @@ export default function Settings() {
   const [pushSupported] = useState(isPushSupported());
   const [prefs, setPrefs] = useState({ notify_new_booking: true, notify_status_change: true, notify_reminder: true, notify_sync_failure: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
-  const canViewPrivateSchedule = user.value?.email === PRIVATE_SCHEDULE_EMAIL;
+  const canViewPrivateSchedule = canAccessPrivateSchedule(user.value);
 
   useEffect(() => {
     loadSyncStatus();

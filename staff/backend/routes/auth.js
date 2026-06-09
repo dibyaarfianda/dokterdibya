@@ -109,6 +109,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
         {
             id: userId,
             name: user.name || 'Staff',
+            email: user.email,
             role: roleForToken,
             role_id: user.role_id || null,
             user_type: user.user_type || 'patient',

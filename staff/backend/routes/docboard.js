@@ -8,18 +8,38 @@ const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
 const logger = require('../utils/logger');
 
-const SCHEDULE_COMPLETION_ADMIN_EMAIL = 'nanda.arfianda@gmail.com';
+const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
+const SCHEDULE_COMPLETION_ALLOWED_USER_IDS = ['UDZAQUCQWZ'];
+const PRIVATE_SCHEDULE_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com', 'fo@melinda.co.id'];
+const PRIVATE_SCHEDULE_ALLOWED_USER_IDS = ['UDZAQUCQWZ', 'FO20260609'];
+
+function hasAllowedEmail(user, allowedEmails) {
+  return allowedEmails.includes(String(user?.email || '').toLowerCase());
+}
+
+function hasAllowedUserId(user, allowedUserIds) {
+  return allowedUserIds.includes(String(user?.id || ''));
+}
 
 function canFinalizeSpaceSchedule(user) {
-  return String(user?.email || '').toLowerCase() === SCHEDULE_COMPLETION_ADMIN_EMAIL;
+  return hasAllowedEmail(user, SCHEDULE_COMPLETION_ALLOWED_EMAILS)
+    || hasAllowedUserId(user, SCHEDULE_COMPLETION_ALLOWED_USER_IDS);
 }
 
 function canViewPrivateSchedule(user) {
-  return canFinalizeSpaceSchedule(user);
+  return hasAllowedEmail(user, PRIVATE_SCHEDULE_ALLOWED_EMAILS)
+    || hasAllowedUserId(user, PRIVATE_SCHEDULE_ALLOWED_USER_IDS);
 }
 
 function blocksPrivateScheduleAccess(user, source = {}) {
   return source.space === 'pribadi' && !canViewPrivateSchedule(user);
+}
+
+function privateScheduleForbidden(res) {
+  return res.status(403).json({
+    success: false,
+    message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com dan fo@melinda.co.id'
+  });
 }
 
 // Allow token from query string for PDF downloads (window.open can't set headers)
@@ -64,7 +84,7 @@ router.get('/space-schedules/calendar/:year/:month', async (req, res) => {
 router.get('/space-schedules', async (req, res) => {
   try {
     if (blocksPrivateScheduleAccess(req.user, req.query || {})) {
-      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+      return privateScheduleForbidden(res);
     }
     const schedules = await docboardService.getSpaceSchedules(req.user?.id, {
       ...(req.query || {}),
@@ -87,7 +107,7 @@ router.post('/space-schedules', async (req, res) => {
       return res.status(400).json({ success: false, message: 'space, agenda, category, dan schedule_date diperlukan' });
     }
     if (blocksPrivateScheduleAccess(req.user, req.body || {})) {
-      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+      return privateScheduleForbidden(res);
     }
     const schedule = await docboardService.createSpaceSchedule(req.user?.id, req.body);
     res.json({ success: true, schedule });
@@ -107,11 +127,11 @@ router.put('/space-schedules/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'agenda, category, dan schedule_date diperlukan' });
     }
     if (blocksPrivateScheduleAccess(req.user, req.body || {})) {
-      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+      return privateScheduleForbidden(res);
     }
     const existing = await docboardService.getSpaceSchedule(req.user?.id, req.params.id);
     if (existing?.space === 'pribadi' && !canViewPrivateSchedule(req.user)) {
-      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+      return privateScheduleForbidden(res);
     }
     const schedule = await docboardService.updateSpaceSchedule(req.user?.id, req.params.id, req.body);
     if (!schedule) return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan' });
@@ -131,7 +151,7 @@ router.patch('/space-schedules/:id/status', async (req, res) => {
     if (!status) return res.status(400).json({ success: false, message: 'Status diperlukan' });
     const existing = await docboardService.getSpaceSchedule(req.user?.id, req.params.id);
     if (existing?.space === 'pribadi' && !canViewPrivateSchedule(req.user)) {
-      return res.status(403).json({ success: false, message: 'Jadwal pribadi hanya untuk nanda.arfianda@gmail.com' });
+      return privateScheduleForbidden(res);
     }
     if (status === 'done' && !canFinalizeSpaceSchedule(req.user)) {
       return res.status(403).json({
