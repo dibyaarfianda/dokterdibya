@@ -4538,6 +4538,10 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
  */
 router.get('/patient-visits/:patientId', verifyToken, async (req, res, next) => {
     try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
         const patientId = req.params.patientId;
         const isPatient = req.user?.user_type === 'patient' || req.user?.role === 'patient';
 

@@ -1,6 +1,7 @@
 $(document).ready(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
+    const email = urlParams.get('email');
 
     const requestView = $('#request-view');
     const resetView = $('#reset-view');
@@ -68,7 +69,7 @@ $(document).ready(function() {
             url: '/api/auth/reset-password',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ token: resetToken, newPassword: newPassword }),
+            data: JSON.stringify({ token: resetToken, email: email, newPassword: newPassword }),
             success: function(response) {
                 resetSuccessAlert.text('Password berhasil diubah! Anda akan diarahkan ke halaman login...').show();
                 resetForm.hide();

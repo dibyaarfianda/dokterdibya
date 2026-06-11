@@ -14,6 +14,7 @@ const { deletePatientWithRelations, deletePatientByEmail } = require('../service
 const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
 const PatientPasswordService = require('../services/PatientPasswordService');
+const PatientPasswordResetService = require('../services/PatientPasswordResetService');
 const {
     BLOCKED_PATIENT_MESSAGE,
     isPatientIdentityBlocked,
@@ -776,120 +777,33 @@ router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (re
 // POST /api/auth/forgot-password
 router.post('/api/auth/forgot-password', asyncHandler(async (req, res) => {
     const { email } = req.body;
-    if (!email) {
-        throw new AppError('Email is required', HTTP_STATUS.BAD_REQUEST);
-    }
-
-    // 1. Check if patient exists
-    const [patients] = await db.query('SELECT id, email, full_name FROM patients WHERE email = ?', [email]);
-    if (patients.length === 0) {
-        // We don't want to reveal if an email exists or not for security reasons
-        logger.warn(`Password reset requested for non-existent email: ${email}`);
-        return sendSuccess(res, null, 'If an account with that email exists, a password reset link has been sent.');
-    }
-    const patient = patients[0];
-
-    // 2. Generate a secure random token
-    const token = require('crypto').randomBytes(3).toString('hex').toUpperCase(); // 6-digit hex token
-    const expires = new Date(Date.now() + 3600000); // 1 hour expiry
-
-    // 3. Hash the token before storing
-    const hashedToken = await bcrypt.hash(token, 10);
-
-    // 4. Store the hashed token in the database
-    try {
-        await db.query(
-            'INSERT INTO patient_password_reset_tokens (patient_id, token_hash, expires_at) VALUES (?, ?, ?)',
-            [patient.id, hashedToken, expires]
-        );
-    } catch (dbError) {
-        handleDatabaseError(dbError);
-    }
-
-    // 5. Send the email with the plain token
-    const notification = require('../utils/notification');
-    const emailResult = await notification.sendPasswordResetEmail(patient.email, token, {
-        patientName: patient.full_name,
-        email: patient.email
+    const result = await PatientPasswordResetService.requestReset({
+        email,
+        revealMissingEmail: false
     });
 
-    if (!emailResult.success) {
-        logger.error(`Failed to send password reset email to ${email}`, { error: emailResult.error });
-        // Even if email fails, we don't want to leak info. The user can try again.
-    } else {
-        logger.info(`Password reset email sent to ${email}`);
+    if (!result.success) {
+        throw new AppError(result.message, result.status || HTTP_STATUS.BAD_REQUEST);
     }
 
-    sendSuccess(res, null, 'If an account with that email exists, a password reset link has been sent.');
+    sendSuccess(res, null, result.message);
 }));
 
 
 // POST /api/auth/reset-password
 router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
-    const { token, newPassword } = req.body;
+    const { email, token, newPassword } = req.body;
+    const result = await PatientPasswordResetService.resetPassword({
+        email,
+        token,
+        newPassword
+    });
 
-    if (!token || !newPassword) {
-        throw new AppError('Token and new password are required', HTTP_STATUS.BAD_REQUEST);
-    }
-    
-    if (newPassword.length < 8) {
-        throw new AppError('Password must be at least 8 characters long', HTTP_STATUS.BAD_REQUEST);
-    }
-
-    // 1. Find all non-expired tokens
-    const [tokens] = await db.query(
-        'SELECT id, patient_id, token_hash FROM patient_password_reset_tokens WHERE expires_at > NOW() AND used = 0'
-    );
-
-    if (tokens.length === 0) {
-        throw new AppError('Invalid or expired token.', HTTP_STATUS.BAD_REQUEST);
+    if (!result.success) {
+        throw new AppError(result.message, result.status || HTTP_STATUS.BAD_REQUEST);
     }
 
-    let validTokenRecord = null;
-    let patientId = null;
-
-    // 2. Find the matching token by comparing hashes
-    for (const record of tokens) {
-        const isMatch = await bcrypt.compare(token, record.token_hash);
-        if (isMatch) {
-            validTokenRecord = record;
-            patientId = record.patient_id;
-            break;
-        }
-    }
-
-    if (!validTokenRecord) {
-        throw new AppError('Invalid or expired token.', HTTP_STATUS.BAD_REQUEST);
-    }
-
-    // 3. Update patient password in BOTH tables using centralized service
-    try {
-        await PatientPasswordService.hashAndUpdatePassword({
-            patientId: patientId,
-            plainPassword: newPassword
-        });
-    } catch (dbError) {
-        handleDatabaseError(dbError);
-    }
-
-    // 5. Mark the token as used
-    try {
-        await db.query('UPDATE patient_password_reset_tokens SET used = 1 WHERE id = ?', [validTokenRecord.id]);
-    } catch (dbError) {
-        // Log this error but don't fail the request, as the password has been updated.
-        logger.error(`Failed to mark reset token as used: ${validTokenRecord.id}`, { error: dbError.message });
-    }
-    
-    // Optionally, invalidate all other tokens for this user
-    try {
-        await db.query('UPDATE patient_password_reset_tokens SET used = 1 WHERE patient_id = ?', [patientId]);
-    } catch (dbError) {
-        logger.error(`Failed to invalidate other tokens for patient: ${patientId}`, { error: dbError.message });
-    }
-
-
-    logger.info(`Password has been reset for patient ID: ${patientId}`);
-    sendSuccess(res, null, 'Password has been reset successfully. You can now log in with your new password.');
+    sendSuccess(res, null, result.message);
 }));
 
 // POST /api/auth/register - Patient registration with email verification
