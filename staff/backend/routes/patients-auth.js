@@ -12,6 +12,7 @@ const { deletePatientWithRelations } = require('../services/patientDeletion');
 const r2Storage = require('../services/r2Storage');
 const logger = require('../utils/logger');
 const PatientPasswordService = require('../services/PatientPasswordService');
+const PatientPasswordResetService = require('../services/PatientPasswordResetService');
 const PatientPortalSettingsService = require('../services/PatientPortalSettingsService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
@@ -2133,64 +2134,15 @@ router.post('/update-birthdate', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
+        const result = await PatientPasswordResetService.requestReset({
+            email,
+            revealMissingEmail: true
+        });
 
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email harus diisi'
-            });
-        }
-
-        // Check if email exists
-        const [patients] = await db.query(
-            'SELECT id, full_name, email FROM patients WHERE email = ?',
-            [email]
-        );
-
-        if (patients.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Email tidak terdaftar dalam sistem kami'
-            });
-        }
-
-        const patient = patients[0];
-
-        // Generate reset token (6 digit code)
-        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-        // Save reset token to database
-        await db.query(
-            'UPDATE patients SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
-            [resetToken, tokenExpires, patient.id]
-        );
-
-        // Send reset password email
-        try {
-            const emailResult = await getNotificationService().sendPasswordResetEmail(email, resetToken, {
-                patientName: patient.full_name,
-                email
-            });
-
-            if (!emailResult?.success) {
-                console.warn('Password reset email dispatch did not succeed', { email, error: emailResult?.error });
-            } else {
-                console.log(`Password reset email sent to ${email} with token: ${resetToken}`);
-            }
-
-            res.json({
-                success: true,
-                message: 'Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.'
-            });
-
-        } catch (emailError) {
-            console.error('Failed to send reset password email:', emailError);
-            res.status(500).json({
-                success: false,
-                message: 'Gagal mengirim email reset password. Silakan coba lagi.'
-            });
-        }
+        res.status(result.status || (result.success ? 200 : 400)).json({
+            success: result.success,
+            message: result.message
+        });
 
     } catch (error) {
         console.error('Forgot password error:', error);
@@ -2269,17 +2221,17 @@ router.post('/reset-password', async (req, res) => {
         const { email, token, password, confirm_password } = req.body;
 
         // Validation
-        if (!email || !token || !password) {
+        if (!token || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Email, kode verifikasi, dan password baru harus diisi'
+                message: 'Kode verifikasi dan password baru harus diisi'
             });
         }
 
-        if (password.length < 6) {
+        if (password.length < 8) {
             return res.status(400).json({
                 success: false,
-                message: 'Password minimal 6 karakter'
+                message: 'Password minimal 8 karakter'
             });
         }
 
@@ -2290,66 +2242,15 @@ router.post('/reset-password', async (req, res) => {
             });
         }
 
-        // Find patient with valid reset token
-        const [patients] = await db.query(
-            `SELECT id, full_name, email, reset_token, reset_token_expires
-             FROM patients
-             WHERE email = ?`,
-            [email]
-        );
+        const result = await PatientPasswordResetService.resetPassword({
+            email,
+            token,
+            newPassword: password
+        });
 
-        if (patients.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Email tidak ditemukan'
-            });
-        }
-
-        const patient = patients[0];
-
-        // Check token
-        if (patient.reset_token !== token) {
-            return res.status(400).json({
-                success: false,
-                message: 'Kode verifikasi tidak valid'
-            });
-        }
-
-        // Check expiry
-        const now = new Date();
-        const expires = new Date(patient.reset_token_expires);
-        if (now > expires) {
-            return res.status(400).json({
-                success: false,
-                message: 'Kode verifikasi sudah kadaluarsa. Silakan minta kode baru.'
-            });
-        }
-
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Update password in BOTH tables (patients AND users)
-        // IMPORTANT: Login checks users.password_hash, not patients.password!
-        await db.query(
-            `UPDATE patients
-             SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = NOW()
-             WHERE id = ?`,
-            [hashedPassword, patient.id]
-        );
-
-        // Also update users table - this is what login actually checks!
-        await db.query(
-            `UPDATE users
-             SET password_hash = ?, updated_at = NOW()
-             WHERE email = ? AND user_type = 'patient'`,
-            [hashedPassword, email]
-        );
-
-        console.log(`Password reset successful for patient: ${patient.email} (ID: ${patient.id}) - Updated both patients and users tables`);
-
-        res.json({
-            success: true,
-            message: 'Password berhasil diubah! Silakan login dengan password baru Anda.'
+        res.status(result.status || (result.success ? 200 : 400)).json({
+            success: result.success,
+            message: result.message
         });
 
     } catch (error) {

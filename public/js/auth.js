@@ -21,27 +21,7 @@ window.addEventListener('error', function(event) {
 
 // Initialize Google Sign-In
 function initializeGoogleSignIn() {
-    // Only initialize if Google Sign-In API is loaded AND client ID is configured
-    if (typeof google !== 'undefined' && google.accounts && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
-        try {
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleGoogleSignIn,
-                // Add configuration to handle third-party cookie issues
-                ux_mode: 'redirect', // Use redirect instead of popup for better compatibility
-                redirect_uri: window.location.origin + '/google-callback.html'
-            });
-            console.log('Google Sign-In initialized successfully');
-        } catch (error) {
-            console.error('Google Sign-In initialization error:', error);
-            // Disable Google Sign-In buttons if initialization fails
-            disableGoogleSignInButtons('Google Sign-In tidak tersedia di browser ini.');
-        }
-    } else if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-        console.log('Google Sign-In: Client ID not configured. See GOOGLE_OAUTH_SETUP.md');
-    } else {
-        console.log('Google Sign-In: API not loaded yet, will retry...');
-    }
+    console.log('Legacy Google buttons use patient-login.html as the canonical auth flow.');
 }
 
 // Disable Google Sign-In buttons with message
@@ -61,52 +41,27 @@ function disableGoogleSignInButtons(message) {
     });
 }
 
-// Handle Google Sign-In prompt with proper error handling
-function triggerGooglePrompt() {
-    if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-        showMessage('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password.', 'error');
-        return;
-    }
-    
-    if (typeof google === 'undefined' || !google.accounts) {
-        showMessage('Google Sign-In tidak tersedia saat ini. Silakan gunakan email dan password.', 'warning');
-        return;
-    }
-    
-    try {
-        google.accounts.id.prompt((notification) => {
-            // Handle prompt notification with null check
-            if (!notification) {
-                console.warn('[Google Sign-In] Notification callback received null/undefined');
-                showMessage('Google Sign-In tidak dapat ditampilkan. Silakan gunakan email dan password.', 'warning');
-                return;
-            }
-            
-            // Check if prompt was not displayed
-            if (typeof notification.isNotDisplayed === 'function' && notification.isNotDisplayed()) {
-                const reason = typeof notification.getNotDisplayedReason === 'function' 
-                    ? notification.getNotDisplayedReason() 
-                    : 'unknown';
-                
-                console.log('[Google Sign-In] Prompt not displayed. Reason:', reason);
-                
-                // User-friendly error messages based on reason
-                if (reason === 'opt_out_or_no_session' || reason === 'suppressed_by_user') {
-                    showMessage('Google Sign-In dinonaktifkan. Silakan gunakan email dan password.', 'warning');
-                } else if (reason === 'browser_not_supported') {
-                    showMessage('Browser Anda tidak mendukung Google Sign-In. Silakan gunakan email dan password.', 'warning');
-                } else {
-                    showMessage('Google Sign-In tidak dapat ditampilkan. Aktifkan third-party cookies atau gunakan email dan password.', 'warning');
-                }
-            } else if (typeof notification.isSkippedMoment === 'function' && notification.isSkippedMoment()) {
-                console.log('[Google Sign-In] Prompt skipped by user');
-                // Don't show message if user explicitly closed the prompt
-            }
-        });
-    } catch (error) {
-        console.error('[Google Sign-In] Prompt error:', error);
-        showMessage('Google Sign-In tidak tersedia di browser ini. Silakan gunakan email dan password.', 'warning');
-    }
+function storePatientSession(data, provider) {
+    localStorage.removeItem('patient_token');
+    localStorage.removeItem('vps_auth_token');
+    sessionStorage.removeItem('vps_auth_token');
+    localStorage.removeItem('patient_user');
+    localStorage.removeItem('patient_intake_draft_v3');
+
+    localStorage.setItem('patient_token', data.token);
+    localStorage.setItem('vps_auth_token', data.token);
+    localStorage.setItem('patient_user', JSON.stringify(data.user || {}));
+    localStorage.setItem('patient_name', data.user?.full_name || data.user?.name || '');
+    localStorage.setItem('patient_email', data.user?.email || '');
+    localStorage.setItem('auth_provider', provider);
+}
+
+// Legacy Google buttons should enter the canonical patient-login.html flow.
+function triggerGooglePrompt(mode = 'login') {
+    const params = new URLSearchParams();
+    params.set('mode', mode === 'register' ? 'register' : 'login');
+    if (mode !== 'register') params.set('autoGoogle', '1');
+    window.location.href = '/patient-login.html?' + params.toString();
 }
 
 // Handle Google Sign-In Response
@@ -129,18 +84,7 @@ async function handleGoogleSignIn(response) {
 
         const data = await res.json();
 
-        // Clear old data first to prevent cache issues when switching accounts
-        localStorage.removeItem('patient_token');
-        localStorage.removeItem('vps_auth_token');
-        sessionStorage.removeItem('vps_auth_token');
-        localStorage.removeItem('patient_user');
-        localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
-
-        // Store JWT token
-        localStorage.setItem('patient_token', data.token);
-        localStorage.setItem('vps_auth_token', data.token); // Also set vps_auth_token for consistency
-        localStorage.setItem('patient_user', JSON.stringify(data.user));
-        localStorage.setItem('auth_provider', 'google'); // Set auth_provider to google
+        storePatientSession(data, 'google');
         
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
@@ -184,18 +128,7 @@ async function signInWithEmail(email, password) {
             throw new Error(data.message || 'Login gagal');
         }
 
-        // Clear old data first to prevent cache issues when switching accounts
-        localStorage.removeItem('patient_token');
-        localStorage.removeItem('vps_auth_token');
-        sessionStorage.removeItem('vps_auth_token');
-        localStorage.removeItem('patient_user');
-        localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
-
-        // Store JWT token
-        localStorage.setItem('patient_token', data.token);
-        localStorage.setItem('vps_auth_token', data.token); // Also set vps_auth_token for consistency
-        localStorage.setItem('patient_user', JSON.stringify(data.user));
-        localStorage.setItem('auth_provider', 'email'); // Set auth_provider to email
+        storePatientSession(data, 'email');
 
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
@@ -391,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
         googleSignUpBtn.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('[Google Sign-In] Sign-up button clicked');
-            triggerGooglePrompt();
+            triggerGooglePrompt('register');
         });
     } else {
         console.log('Google signup button not found');
@@ -403,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
         googleSigninBtn.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('[Google Sign-In] Navbar sign-in button clicked');
-            triggerGooglePrompt();
+            triggerGooglePrompt('login');
         });
     } else {
         console.log('Google signin button (navbar) not found');
@@ -570,8 +503,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // Function to check login status and update UI
 function checkLoginStatus() {
     const token = localStorage.getItem('patient_token');
-    const userFullName = localStorage.getItem('patient_name');
-    const userEmail = localStorage.getItem('patient_email');
+    let storedUser = {};
+    try {
+        storedUser = JSON.parse(localStorage.getItem('patient_user') || '{}');
+    } catch (error) {
+        storedUser = {};
+    }
+    const userFullName = storedUser.full_name || storedUser.name || localStorage.getItem('patient_name');
+    const userEmail = storedUser.email || localStorage.getItem('patient_email');
     const authProvider = localStorage.getItem('auth_provider');
 
     if (token && userFullName && userEmail) {
@@ -599,10 +538,7 @@ checkLoginStatus();
 // ... existing code ...
 function onLoginSuccess(data) {
     if (data.token) {
-        localStorage.setItem('patient_token', data.token);
-        localStorage.setItem('patient_name', data.user.full_name);
-        localStorage.setItem('patient_email', data.user.email);
-        localStorage.setItem('auth_provider', data.user.provider || 'email'); // Store auth provider
+        storePatientSession(data, data.user?.provider || 'email');
         window.location.href = REDIRECT_AFTER_LOGIN;
     } else {
         showMessage('Login gagal. Silakan coba lagi.', 'error');

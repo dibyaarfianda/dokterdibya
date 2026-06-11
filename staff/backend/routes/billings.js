@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requireMenuAccess } = require('../middleware/auth');
+const { verifyToken, verifyPatientToken, requireMenuAccess } = require('../middleware/auth');
 
 // Helper function to generate billing number
 // Uses SELECT FOR UPDATE inside a transaction to prevent duplicate numbers under concurrent requests
@@ -183,37 +183,14 @@ router.post('/', verifyToken, requireMenuAccess('keuangan'), async (req, res) =>
   }
 });
 
-// GET /api/billings/my-billings - Get billings for authenticated patient (public access)
-router.get('/my-billings', async (req, res) => {
+// GET /api/billings/my-billings - Get billings for authenticated patient
+router.get('/my-billings', verifyPatientToken, async (req, res) => {
   try {
-    // Get patient ID from token or session
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    
-    const token = authHeader.substring(7);
-    
-    // Verify token (basic verification for patient)
-    const jwt = require('jsonwebtoken');
-    const { JWT_SECRET } = require('../middleware/auth');
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch (error) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid token' 
-      });
-    }
-    
-    // Get patient ID from decoded token
-    const patientId = decoded.id || decoded.patientId;
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    const patientId = req.user.id || req.user.patientId;
     
     if (!patientId) {
       return res.status(400).json({ 
@@ -247,34 +224,14 @@ router.get('/my-billings', async (req, res) => {
   }
 });
 
-// GET /api/billings/:id/details - Get billing details for patient (public access)
-router.get('/:id/details', async (req, res) => {
+// GET /api/billings/:id/details - Get billing details for authenticated patient
+router.get('/:id/details', verifyPatientToken, async (req, res) => {
   try {
-    // Get patient ID from token
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required' 
-      });
-    }
-    
-    const token = authHeader.substring(7);
-    const jwt = require('jsonwebtoken');
-    const { JWT_SECRET } = require('../middleware/auth');
-    
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET);
-    } catch (error) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid token' 
-      });
-    }
-    
-    const patientId = decoded.id || decoded.patientId;
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    const patientId = req.user.id || req.user.patientId;
     
     if (!patientId) {
       return res.status(400).json({ 

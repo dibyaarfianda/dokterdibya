@@ -451,28 +451,19 @@
         async function loadAllData() {
             try {
                 // Load bookings (upcoming appointments) and visits (completed) in parallel
-                const [bookingsRes, visitsRes] = await Promise.all([
-                    fetch('/api/sunday-appointments/my-bookings', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }),
-                    fetch('/api/patients/profile', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(async res => {
-                        const profile = await res.json();
-                        if (profile.success && profile.patient?.id) {
-                            return fetch(`/api/sunday-clinic/patient-visits/${profile.patient.id}`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
+                const [bookingsData, visitsData] = await Promise.all([
+                    apiRequest('/api/sunday-appointments/my-bookings'),
+                    apiRequest('/api/patients/profile').then(async profile => {
+                        if (profile && profile.success && profile.patient?.id) {
+                            return apiRequest(`/api/sunday-clinic/patient-visits/${profile.patient.id}`);
                         }
                         return null;
                     })
                 ]);
 
-                const bookingsData = await bookingsRes.json();
-                allData.bookings = bookingsData.success && bookingsData.bookings ? bookingsData.bookings : [];
+                allData.bookings = bookingsData && bookingsData.success && bookingsData.bookings ? bookingsData.bookings : [];
 
-                if (visitsRes) {
-                    const visitsData = await visitsRes.json();
+                if (visitsData) {
                     allData.visits = visitsData.data || [];
                 }
 
