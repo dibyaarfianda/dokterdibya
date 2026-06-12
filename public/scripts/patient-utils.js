@@ -206,6 +206,26 @@ function showToast(message, type = 'info', duration = 3000) {
 }
 
 /**
+ * Parse date-only strings as local dates so calendar weekdays do not shift
+ * when the browser timezone differs from the clinic timezone.
+ * @param {string|Date} dateStr - Date string or Date object
+ * @returns {Date}
+ */
+function parseDateOnlyLocal(dateStr) {
+    if (dateStr instanceof Date) return dateStr;
+
+    const match = typeof dateStr === 'string'
+        ? dateStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T|\s)/)
+        : null;
+
+    if (match) {
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    return new Date(dateStr);
+}
+
+/**
  * Format date to Indonesian locale
  * @param {string|Date} dateStr - Date string or Date object
  * @param {Object} options - Intl.DateTimeFormat options
@@ -214,7 +234,7 @@ function showToast(message, type = 'info', duration = 3000) {
 function formatDate(dateStr, options = {}) {
     if (!dateStr) return '-';
 
-    const date = new Date(dateStr);
+    const date = parseDateOnlyLocal(dateStr);
     if (isNaN(date.getTime())) return '-';
 
     return date.toLocaleDateString('id-ID', {
@@ -233,7 +253,7 @@ function formatDate(dateStr, options = {}) {
 function formatDateTime(dateStr) {
     if (!dateStr) return '-';
 
-    const date = new Date(dateStr);
+    const date = parseDateOnlyLocal(dateStr);
     if (isNaN(date.getTime())) return '-';
 
     return date.toLocaleDateString('id-ID', {
@@ -568,6 +588,7 @@ export {
     logout,
     apiRequest,
     showToast,
+    parseDateOnlyLocal,
     formatDate,
     formatDateTime,
     formatTime,
@@ -605,6 +626,7 @@ window.PatientUtils = {
     logout,
     apiRequest,
     showToast,
+    parseDateOnlyLocal,
     formatDate,
     formatDateTime,
     formatTime,

@@ -7,6 +7,18 @@ function getDisplayDayName(entry) {
     return entry?.dayName || entry?.day_name || 'Hari Praktik';
 }
 
+function parseDateOnlyLocal(dateStr) {
+    const match = typeof dateStr === 'string'
+        ? dateStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T|\s)/)
+        : null;
+
+    if (match) {
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    return new Date(dateStr);
+}
+
 // Booking state
 let currentStep = 1;
 const bookingData = {
@@ -87,7 +99,7 @@ function renderSundays(sundays) {
     const html = sundays.map(sunday => `
         <div class="date-card" data-date="${sunday.date}" data-formatted="${sunday.formatted}">
             <div class="day">${getDisplayDayName(sunday)}</div>
-            <div class="date">${new Date(sunday.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</div>
+            <div class="date">${parseDateOnlyLocal(sunday.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</div>
         </div>
     `).join('');
     
