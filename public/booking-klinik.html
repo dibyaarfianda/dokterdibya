@@ -1247,7 +1247,7 @@
             }
 
             grid.innerHTML = sundays.map(sunday => {
-                const date = new Date(sunday.date);
+                const date = parseDateOnlyLocal(sunday.date);
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
                 return `
                     <div class="date-card" data-date="${sunday.date}" data-formatted="${sunday.formatted}">
@@ -1266,6 +1266,18 @@
                     validateStep(1);
                 });
             });
+        }
+
+        function parseDateOnlyLocal(dateStr) {
+            const match = typeof dateStr === 'string'
+                ? dateStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T|\s)/)
+                : null;
+
+            if (match) {
+                return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+            }
+
+            return new Date(dateStr);
         }
 
         // Load available slots

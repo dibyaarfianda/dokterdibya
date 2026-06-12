@@ -421,7 +421,7 @@
     <div id="toast-container"></div>
 
     <script type="module">
-        import { getToken, checkAuth, showToast, formatDate } from '/scripts/patient-utils.js';
+        import { getToken, checkAuth, showToast, parseDateOnlyLocal, formatDate } from '/scripts/patient-utils.js';
 
         // Check auth
         if (!checkAuth()) {
@@ -487,7 +487,7 @@
             // Filter and prepare data
             const upcomingBookings = allData.bookings.filter(b =>
                 b.status === 'confirmed' || b.status === 'pending' || b.status === 'pending_confirmation'
-            ).sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+            ).sort((a, b) => parseDateOnlyLocal(a.appointment_date) - parseDateOnlyLocal(b.appointment_date));
 
             const completedVisits = allData.visits.sort((a, b) =>
                 new Date(b.visit_date) - new Date(a.visit_date)
@@ -545,7 +545,7 @@
         }
 
         function renderBookingCard(booking) {
-            const date = new Date(booking.appointment_date);
+            const date = parseDateOnlyLocal(booking.appointment_date);
             const dateStr = date.toLocaleDateString('id-ID', {
                 weekday: 'long',
                 day: 'numeric',
