@@ -21,7 +21,7 @@
         '/jadwal-vitamin.html': 'SISIwanita - Jadwal Vitamin',
         '/pregnancy-tracker.html': 'SISIwanita - Monitoring Kehamilan',
         '/kick-counter.html': 'SISIwanita - Kick Counter',
-        '/contraction-timer.html': 'SISIwanita - Penghitung Kontraksi',
+        '/contraction-timer.html': 'SISIwanita - Hitung Kontraksi',
         '/hasil-lab.html': 'SISIwanita - Hasil Lab',
         '/jadwal-rs.html': 'SISIwanita - Jadwal RS',
         '/riwayat-kunjungan.html': 'SISIwanita - Riwayat Kunjungan',

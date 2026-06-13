@@ -13,8 +13,10 @@ describe('Contraction timer portal integration', () => {
         expect(page).toContain('/api/contraction-timer/event');
         expect(page).toContain('Mulai kontraksi');
         expect(page).toContain('Selesai kontraksi');
+        expect(page).toContain('Hitung Kontraksi');
         expect(page).toContain('segera ke unit persalinan/IGD');
         expect(page).toContain('Braxton Hicks');
+        expect(page).not.toContain('Penghitung aktif mulai 28 minggu');
         expect(page).not.toMatch(/fase aktif pasti/i);
     });
 
@@ -28,6 +30,9 @@ describe('Contraction timer portal integration', () => {
 
         for (const source of [patientMenu, pageTracker, shell, bottomNav, retrofit, sw]) {
             expect(source).toContain('contraction-timer.html');
+        }
+        for (const source of [patientMenu, shell, bottomNav, retrofit]) {
+            expect(source).toContain('Hitung Kontraksi');
         }
     });
 

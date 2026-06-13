@@ -39,7 +39,7 @@
             ['fa-solid fa-comments', 'Tanya Dokter', '/tanya-dokter.html'],
             ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
             ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
-            ['fa-solid fa-wave-square', 'Kontraksi', '/contraction-timer.html'],
+            ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
             ['fa-solid fa-kit-medical', 'Jadwal Vitamin', '/jadwal-vitamin.html']
         ],
