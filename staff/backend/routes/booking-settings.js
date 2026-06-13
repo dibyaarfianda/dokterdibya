@@ -148,8 +148,8 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Durasi slot harus antara 5-60 menit' });
         }
 
-        if (slots < 1 || slots > 30) {
-            return res.status(400).json({ success: false, message: 'Jumlah slot harus antara 1-30' });
+        if (slots < 1 || slots > 50) {
+            return res.status(400).json({ success: false, message: 'Jumlah slot harus antara 1-50' });
         }
 
         // Update the setting
@@ -198,6 +198,14 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
 
         const duration = parseInt(slot_duration) || 15;
         const slots = parseInt(max_slots) || 10;
+
+        if (duration < 5 || duration > 60) {
+            return res.status(400).json({ success: false, message: 'Durasi slot harus antara 5-60 menit' });
+        }
+
+        if (slots < 1 || slots > 50) {
+            return res.status(400).json({ success: false, message: 'Jumlah slot harus antara 1-50' });
+        }
 
         await db.query(
             `INSERT INTO booking_settings (session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active)
