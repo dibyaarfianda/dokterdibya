@@ -7,6 +7,9 @@
     <title>dokterDIBYA | Administrator</title>
 
     <!-- Favicon -->
+    <script>
+        window.STAFF_CACHE_VERSION = 'v251';
+    </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
     <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v222">
@@ -1508,7 +1511,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v222">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v251">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -1841,7 +1844,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v241'; // Move Booking Settings to Sistem menu
+            const CACHE_VERSION = window.STAFF_CACHE_VERSION;
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -8249,9 +8252,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
 <!-- Core app modules -->
 <script>
-    // Stable version string for cache busting - bump when deploying new code
-    // Synced with CACHE_VERSION from cache clear script above
-    window.__assetVersion = 'v250';
+    // Stable version string for cache busting - bump STAFF_CACHE_VERSION when deploying new code
+    window.__assetVersion = window.STAFF_CACHE_VERSION;
     window.__chatPopupVersion = 'v229';
     // Polyfill requestIdleCallback for Safari
     window.requestIdleCallback = window.requestIdleCallback || function(cb) { return setTimeout(cb, 1); };
