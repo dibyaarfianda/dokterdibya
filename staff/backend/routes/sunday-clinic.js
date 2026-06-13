@@ -2424,7 +2424,9 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
             });
         }
 
-        const { items = [], status = 'draft', billingData = {} } = req.body;
+        const { items = [], billingData = {} } = req.body;
+        const requestedStatus = req.body.status || 'draft';
+        const hasRequestedStatus = Object.prototype.hasOwnProperty.call(req.body, 'status');
 
         const connection = await db.getConnection();
         try {
@@ -2439,6 +2441,7 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
             let billingId;
             let beforeSnapshot = null;
             let auditAction = 'billing_created';
+            let statusToPersist = requestedStatus;
 
             if (existingRows.length > 0) {
                 // Update existing billing
@@ -2446,6 +2449,7 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
                 billingId = existingBilling.id;
                 beforeSnapshot = await getBillingSnapshot(connection, billingId);
                 auditAction = 'billing_saved';
+                statusToPersist = hasRequestedStatus ? requestedStatus : existingBilling.status;
 
                 // Guard: paid billing cannot be edited
                 if (existingBilling.status === 'paid') {
@@ -2474,7 +2478,7 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
                 const [result] = await connection.query(
                     `INSERT INTO sunday_clinic_billings (mr_id, patient_id, subtotal, total, status, billing_data, created_at, updated_at)
                      VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW())`,
-                    [normalizedMrId, recordRow.patient_id, status, JSON.stringify(billingData)]
+                    [normalizedMrId, recordRow.patient_id, statusToPersist, JSON.stringify(billingData)]
                 );
                 billingId = result.insertId;
             }
@@ -2595,7 +2599,7 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
                      pending_changes = FALSE,
                      last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
                  WHERE id = ?`,
-                [subtotal, total, status, JSON.stringify(billingData), actorName, billingId]
+                [subtotal, total, statusToPersist, JSON.stringify(billingData), actorName, billingId]
             );
 
             const afterSnapshot = await getBillingSnapshot(connection, billingId);

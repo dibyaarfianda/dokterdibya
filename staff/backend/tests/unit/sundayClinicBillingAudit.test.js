@@ -46,4 +46,13 @@ describe('Sunday Clinic billing audit implementation', () => {
         expect(route).toContain("action: 'billing_marked_paid'");
         expect(route).toContain("router.get('/billing/:mrId/audit'");
     });
+
+    test('billing save preserves confirmed status when the UI omits status', () => {
+        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+
+        expect(route).toContain('const hasRequestedStatus = Object.prototype.hasOwnProperty.call(req.body,');
+        expect(route).toContain('statusToPersist = hasRequestedStatus ? requestedStatus : existingBilling.status;');
+        expect(route).toContain('[normalizedMrId, recordRow.patient_id, statusToPersist, JSON.stringify(billingData)]');
+        expect(route).toContain('[subtotal, total, statusToPersist, JSON.stringify(billingData), actorName, billingId]');
+    });
 });
