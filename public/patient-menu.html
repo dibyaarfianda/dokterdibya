@@ -726,6 +726,10 @@
 
         .birth-congrats-home {
             --birth-photo-size: 104px;
+            --birth-accent: var(--rose);
+            --birth-accent-soft: rgba(179,95,123,0.11);
+            --birth-accent-line: rgba(179,95,123,0.22);
+            --birth-accent-bg: rgba(250,239,244,0.88);
             display: none;
             width: min(100%, 390px);
             max-width: 390px;
@@ -754,9 +758,22 @@
             right: -80px;
             top: -90px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(179,95,123,0.18), transparent 70%);
+            background: radial-gradient(circle, var(--birth-accent-soft), transparent 70%);
             pointer-events: none;
         }
+        .birth-corner-accent {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border-color: var(--birth-accent);
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.72;
+        }
+        .birth-corner-accent.tl { top: 10px; left: 10px; border-top: 2px solid; border-left: 2px solid; border-top-left-radius: 13px; }
+        .birth-corner-accent.tr { top: 10px; right: 10px; border-top: 2px solid; border-right: 2px solid; border-top-right-radius: 13px; }
+        .birth-corner-accent.bl { bottom: 10px; left: 10px; border-bottom: 2px solid; border-left: 2px solid; border-bottom-left-radius: 13px; }
+        .birth-corner-accent.br { bottom: 10px; right: 10px; border-bottom: 2px solid; border-right: 2px solid; border-bottom-right-radius: 13px; }
         .birth-congrats-head {
             display: flex;
             align-items: flex-start;
@@ -775,7 +792,7 @@
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: var(--rose);
+            color: var(--birth-accent);
             margin-bottom: 4px;
         }
         .birth-congrats-kicker i {
@@ -795,9 +812,9 @@
             margin-top: 4px;
         }
         .birth-congrats-badge {
-            border: 1px solid rgba(179,95,123,0.22);
-            background: rgba(179,95,123,0.11);
-            color: var(--rose);
+            border: 1px solid var(--birth-accent-line);
+            background: var(--birth-accent-soft);
+            color: var(--birth-accent);
             border-radius: 999px;
             padding: 6px 10px;
             font-size: 10px;
@@ -813,10 +830,10 @@
         .birth-congrats-close {
             width: 32px;
             height: 32px;
-            border: 1px solid rgba(179,95,123,0.18);
+            border: 1px solid var(--birth-accent-line);
             border-radius: 999px;
             background: rgba(255,255,255,0.76);
-            color: var(--rose);
+            color: var(--birth-accent);
             display: grid;
             place-items: center;
             font-size: 13px;
@@ -839,11 +856,14 @@
             width: var(--birth-photo-size);
             height: var(--birth-photo-size);
             border-radius: 18px;
-            border: 1px solid var(--line);
+            border: 1px solid var(--birth-accent-line);
             background: rgba(255,255,255,0.74);
             overflow: hidden;
-            box-shadow: 0 10px 22px rgba(17,17,17,0.08);
+            box-shadow: 0 10px 22px var(--birth-accent-soft);
             flex-shrink: 0;
+            cursor: pointer;
+            padding: 0;
+            display: block;
         }
         .birth-congrats-photo-wrap img {
             width: 100%;
@@ -859,8 +879,8 @@
             height: 100%;
             display: grid;
             place-items: center;
-            background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(248,232,240,0.92));
-            color: var(--rose);
+            background: linear-gradient(145deg, rgba(255,255,255,0.94), var(--birth-accent-bg));
+            color: var(--birth-accent);
             font-size: 32px;
         }
         .birth-congrats-copy h3 {
@@ -924,7 +944,7 @@
             align-items: center;
             gap: 6px;
             font-size: 10px;
-            color: var(--rose);
+            color: var(--birth-accent);
             text-transform: uppercase;
             letter-spacing: 0.08em;
             font-weight: 900;
@@ -936,6 +956,101 @@
             line-height: 1.5;
             color: var(--ink);
         }
+        .birth-congrats-card-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .birth-congrats-card-action {
+            border: 1px solid var(--birth-accent-line);
+            border-radius: 11px;
+            background: rgba(255,255,255,0.78);
+            color: var(--ink);
+            min-width: 0;
+            padding: 6px 4px;
+            font: inherit;
+            font-size: 9.5px;
+            line-height: 1.15;
+            font-weight: 900;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .birth-congrats-card-action.primary {
+            background: var(--birth-accent);
+            color: #fff;
+            border-color: var(--birth-accent);
+        }
+        .birth-congrats-card-action:disabled {
+            opacity: 0.58;
+            cursor: default;
+        }
+        .birth-congrats-card-action[hidden] { display: none !important; }
+        .birth-photo-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 10030;
+            align-items: center;
+            justify-content: center;
+            padding: calc(18px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px));
+        }
+        .birth-photo-modal.active { display: flex; }
+        .birth-photo-modal img {
+            max-width: min(92vw, 720px);
+            max-height: 82vh;
+            object-fit: contain;
+            border-radius: 14px;
+            box-shadow: 0 18px 60px rgba(0,0,0,0.45);
+        }
+        .birth-photo-modal-close {
+            position: absolute;
+            top: calc(18px + env(safe-area-inset-top, 0px));
+            right: 18px;
+            width: 44px;
+            height: 44px;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .birth-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .birth-form-grid .settings-field.full,
+        .birth-testimonial-field { grid-column: 1 / -1; }
+        .birth-file-box {
+            grid-column: 1 / -1;
+            border: 1px dashed var(--line-strong);
+            border-radius: 16px;
+            padding: 12px;
+            background: #fbfbf8;
+            display: grid;
+            gap: 8px;
+        }
+        .birth-file-box strong { font-size: 12px; font-weight: 900; color: var(--ink); }
+        .birth-file-box span { font-size: 11px; line-height: 1.4; color: var(--muted); font-weight: 700; }
+        .birth-file-box input { width: 100%; font-size: 11px; }
+        .birth-modal-note {
+            padding: 11px 12px;
+            border-radius: 16px;
+            background: var(--green-soft);
+            color: var(--green);
+            font-size: 11px;
+            line-height: 1.45;
+            font-weight: 750;
+        }
+        body.has-birth-congrats #tracker-panel { display: none; }
+        body.has-birth-congrats #tracker-panel + .announcement-panel { grid-column: 1 / -1; }
         #primary-actions-section {
             margin-top: var(--home-action-gap, clamp(36px, 16svh, 132px));
             min-height: 0;
@@ -1585,6 +1700,7 @@
             cursor: pointer;
         }
         .settings-birth-action.secondary { background: rgba(255,255,255,0.76); color: var(--ink); }
+        .settings-birth-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
         .settings-field { display: grid; gap: 6px; }
         .settings-field label { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
         .settings-input, .settings-select {
@@ -1954,7 +2070,9 @@
             .birth-congrats-metric { padding: 6px; }
             .birth-congrats-message { max-height: 66px; }
             .settings-birth-item { grid-template-columns: 1fr; }
+            .settings-birth-actions { justify-content: flex-start; }
             .settings-birth-action { justify-self: start; }
+            .birth-form-grid { grid-template-columns: 1fr; }
             .modal-card {
                 width: calc(100% - 18px);
                 padding: 14px;
@@ -2256,6 +2374,10 @@
             </section>
 
             <section class="birth-congrats-home" id="birth-congrats-home" aria-live="polite">
+                <span class="birth-corner-accent tl" aria-hidden="true"></span>
+                <span class="birth-corner-accent tr" aria-hidden="true"></span>
+                <span class="birth-corner-accent bl" aria-hidden="true"></span>
+                <span class="birth-corner-accent br" aria-hidden="true"></span>
                 <div class="birth-congrats-head">
                     <div>
                         <div class="birth-congrats-kicker"><i class="fa-solid fa-heart"></i> Ucapan Kelahiran</div>
@@ -2268,10 +2390,10 @@
                     </div>
                 </div>
                 <div class="birth-congrats-body">
-                    <div class="birth-congrats-photo-wrap" id="birth-congrats-photo-wrap">
+                    <button type="button" class="birth-congrats-photo-wrap soundable" id="birth-congrats-photo-wrap" onclick="openBirthPhotoModal(event)" aria-label="Lihat foto kelahiran">
                         <img id="birth-congrats-photo" alt="Foto kelahiran">
                         <div class="birth-congrats-photo-fallback"><i class="fa-solid fa-baby"></i></div>
-                    </div>
+                    </button>
                     <div class="birth-congrats-copy">
                         <h3 id="birth-congrats-baby-name">Buah Hati Tercinta</h3>
                         <p id="birth-congrats-subtitle">Buah hati Anda telah lahir dengan selamat.</p>
@@ -2284,6 +2406,11 @@
                         <div class="birth-congrats-message">
                             <div class="birth-congrats-message-label"><i class="fa-solid fa-quote-left"></i> Pesan dari Dokter</div>
                             <p id="birth-congrats-message">Selamat atas kelahiran buah hati Anda!</p>
+                        </div>
+                        <div class="birth-congrats-card-actions">
+                            <button type="button" class="birth-congrats-card-action primary soundable" id="birth-photo-action" onclick="openBirthPhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload foto bayi</button>
+                            <button type="button" class="birth-congrats-card-action soundable" id="birth-extra-action" onclick="openBirthExtraModal(event)"><i class="fa-solid fa-pen"></i> Edit detail</button>
+                            <button type="button" class="birth-congrats-card-action soundable" id="birth-testimonial-action" onclick="openBirthTestimonialModal(event)"><i class="fa-regular fa-comment-dots"></i> Kirim testimoni</button>
                         </div>
                     </div>
                 </div>
@@ -2451,6 +2578,11 @@
         </div>
     </section>
 
+    <div class="birth-photo-modal" id="birth-photo-modal" onclick="closeBirthPhotoModal(event)" aria-hidden="true">
+        <button type="button" class="birth-photo-modal-close soundable" onclick="closeBirthPhotoModal(event)" aria-label="Tutup foto kelahiran">&times;</button>
+        <img id="birth-photo-modal-img" src="" alt="Foto kelahiran" onclick="event.stopPropagation()">
+    </div>
+
     <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
         <div class="bottom-inner" id="home-bottom-inner">
             <button class="nav-item active soundable" onclick="scrollTopHome()"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
@@ -2461,6 +2593,7 @@
         </div>
     </nav>
 
+    <input type="file" id="birth-photo-input" class="hidden-file-input" accept="image/*" onchange="handleBirthPhotoUpload(event)">
     <input type="file" id="profile-photo-camera-input" class="hidden-file-input" accept="image/*">
     <input type="file" id="profile-photo-input" class="hidden-file-input" accept="image/*">
     <script src="/scripts/profile-photo-cropper.js?v=20260601crop1"></script>
@@ -2542,6 +2675,8 @@
         let liveQueueHomeTimer = null;
         let topbarNotifications = [];
         let currentBirthCongratsId = '';
+        let currentBirthCongratsData = null;
+        let currentBirthPending = null;
         let birthCongratsSettingsRecords = [];
         let birthCongratsSettingsLoaded = false;
         let birthCongratsSettingsLoading = false;
@@ -3069,12 +3204,22 @@
                     const babyName = String(item.baby_name || 'Buah Hati').trim();
                     const published = Number(item.is_published || 0) === 1;
                     const dismissed = Number(item.patient_dismissed || 0) === 1;
+                    const submitted = Number(item.patient_data_submitted || 0) === 1;
+                    const hasTestimonial = !!String(item.patient_testimonial || '').trim();
                     const dateValue = item.birth_date ? formatDateLong(item.birth_date) : '-';
-                    const statusIcon = dismissed ? 'fa-eye-slash' : 'fa-eye';
-                    const statusText = published ? (dismissed ? 'Sedang disembunyikan' : 'Sedang tampil di beranda') : 'Menunggu publikasi';
-                    const action = published
-                        ? '<button type="button" class="settings-birth-action soundable ' + (dismissed ? '' : 'secondary') + '" data-birth-id="' + id + '" onclick="toggleBirthCongratsFromSettings(this.dataset.birthId, ' + (dismissed ? 'true' : 'false') + ', event)">' + (dismissed ? 'Tampilkan lagi' : 'Sembunyikan') + '</button>'
-                        : '';
+                    const statusIcon = !submitted ? 'fa-clipboard-list' : (dismissed ? 'fa-eye-slash' : 'fa-eye');
+                    const statusText = !submitted ? 'Data kelahiran belum dilengkapi' : (published ? (dismissed ? 'Sedang disembunyikan' : 'Sedang tampil di beranda') : 'Menunggu publikasi');
+                    const actions = [];
+                    if (!submitted) {
+                        actions.push('<button type="button" class="settings-birth-action soundable" data-birth-id="' + id + '" onclick="openBirthDataModal(event, this.dataset.birthId)">Lengkapi data kelahiran</button>');
+                    } else if (published) {
+                        actions.push('<button type="button" class="settings-birth-action soundable ' + (dismissed ? '' : 'secondary') + '" data-birth-id="' + id + '" onclick="toggleBirthCongratsFromSettings(this.dataset.birthId, ' + (dismissed ? 'true' : 'false') + ', event)">' + (dismissed ? 'Tampilkan lagi' : 'Sembunyikan') + '</button>');
+                        actions.push('<button type="button" class="settings-birth-action soundable secondary" data-birth-id="' + id + '" onclick="openBirthPhotoPicker(event, this.dataset.birthId)">Upload foto bayi</button>');
+                        if (!hasTestimonial) {
+                            actions.push('<button type="button" class="settings-birth-action soundable secondary" data-birth-id="' + id + '" onclick="openBirthTestimonialModal(event, this.dataset.birthId)">Kirim testimoni</button>');
+                        }
+                    }
+                    const action = actions.length ? '<div class="settings-birth-actions">' + actions.join('') + '</div>' : '';
                     return '<div class="settings-birth-item">' +
                         '<div>' +
                             '<strong>' + escapeHtml(babyName) + '</strong>' +
@@ -4677,6 +4822,7 @@
         async function loadPregnancyTrackerHome() {
             const big = document.getElementById('tracker-big');
             const desc = document.getElementById('tracker-desc');
+            if (document.body.classList.contains('has-birth-congrats')) return;
             try {
                 const response = await fetch('/api/patients/pregnancy-tracker?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 const result = await response.json();
@@ -4694,6 +4840,391 @@
             }
         }
 
+        function hidePregnancyTrackerHome() {
+            document.body.classList.add('has-birth-congrats');
+        }
+
+        function showPregnancyTrackerHome() {
+            document.body.classList.remove('has-birth-congrats');
+        }
+
+        function normalizeBirthDateInput(value) {
+            const raw = String(value || '').trim();
+            const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (match) return match[1];
+            if (!raw) return '';
+            const date = new Date(raw);
+            if (Number.isNaN(date.getTime())) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function normalizeBirthTimeInput(value) {
+            const raw = String(value || '').trim();
+            return raw ? raw.slice(0, 5) : '';
+        }
+
+        function getBirthTheme(themeColor) {
+            const themes = {
+                pink: { accent: '#ec4899', soft: 'rgba(236,72,153,0.12)', line: 'rgba(236,72,153,0.28)', bg: 'rgba(253,242,248,0.92)' },
+                blue: { accent: '#3b82f6', soft: 'rgba(59,130,246,0.12)', line: 'rgba(59,130,246,0.28)', bg: 'rgba(239,246,255,0.92)' },
+                green: { accent: '#22c55e', soft: 'rgba(34,197,94,0.12)', line: 'rgba(34,197,94,0.28)', bg: 'rgba(240,253,244,0.92)' },
+                purple: { accent: '#a855f7', soft: 'rgba(168,85,247,0.12)', line: 'rgba(168,85,247,0.28)', bg: 'rgba(250,245,255,0.92)' },
+                gold: { accent: '#f59e0b', soft: 'rgba(245,158,11,0.14)', line: 'rgba(245,158,11,0.3)', bg: 'rgba(255,251,235,0.94)' },
+                peach: { accent: '#fb923c', soft: 'rgba(251,146,60,0.14)', line: 'rgba(251,146,60,0.3)', bg: 'rgba(255,247,237,0.94)' }
+            };
+            return themes[String(themeColor || '').trim().toLowerCase()] || {
+                accent: '#b35f7b',
+                soft: 'rgba(179,95,123,0.11)',
+                line: 'rgba(179,95,123,0.22)',
+                bg: 'rgba(250,239,244,0.88)'
+            };
+        }
+
+        function applyBirthCongratsTheme(themeColor) {
+            const card = document.getElementById('birth-congrats-home');
+            if (!card) return;
+            const theme = getBirthTheme(themeColor);
+            card.style.setProperty('--birth-accent', theme.accent);
+            card.style.setProperty('--birth-accent-soft', theme.soft);
+            card.style.setProperty('--birth-accent-line', theme.line);
+            card.style.setProperty('--birth-accent-bg', theme.bg);
+        }
+
+        function getCurrentBirthRecord() {
+            if (currentBirthCongratsData && currentBirthCongratsData.id) return currentBirthCongratsData;
+            const id = currentBirthCongratsId || document.getElementById('birth-congrats-home')?.dataset.birthId || '';
+            return id ? { id } : null;
+        }
+
+        function updateBirthCongratsActions(data) {
+            const record = data || {};
+            const hasId = !!record.id;
+            const photoAction = document.getElementById('birth-photo-action');
+            const extraAction = document.getElementById('birth-extra-action');
+            const testimonialAction = document.getElementById('birth-testimonial-action');
+            if (photoAction) {
+                photoAction.disabled = !hasId;
+                photoAction.innerHTML = '<i class="fa-solid fa-upload"></i> ' + (record.photo_url ? 'Ganti foto bayi' : 'Upload foto bayi');
+            }
+            if (extraAction) extraAction.disabled = !hasId;
+            if (testimonialAction) {
+                const submitted = !!String(record.patient_testimonial || '').trim();
+                testimonialAction.disabled = !hasId || submitted;
+                testimonialAction.innerHTML = submitted
+                    ? '<i class="fa-solid fa-check"></i> Testimoni terkirim'
+                    : '<i class="fa-regular fa-comment-dots"></i> Kirim testimoni';
+            }
+        }
+
+        function renderBirthDataModal(record) {
+            record = record || {};
+            const id = escapeHtml(record.id || '');
+            const gender = String(record.gender || '').trim().toLowerCase();
+            const option = function(value, label) {
+                const selected = gender === value || (value === 'male' && gender === 'laki-laki') || (value === 'female' && gender === 'perempuan');
+                return '<option value="' + value + '"' + (selected ? ' selected' : '') + '>' + label + '</option>';
+            };
+            return '<div class="birth-modal-note"><i class="fa-solid fa-baby"></i> Lengkapi data kelahiran agar kartu ucapan dari dokter tampil di beranda.</div>' +
+                '<div class="birth-form-grid" data-birth-id="' + id + '">' +
+                    '<div class="settings-field full"><label for="birth-data-baby-name">Nama Bayi</label><input id="birth-data-baby-name" class="settings-input" value="' + escapeHtml(record.baby_name || '') + '" placeholder="Contoh: Baby Ananda"></div>' +
+                    '<div class="settings-field"><label for="birth-data-gender">Jenis Kelamin</label><select id="birth-data-gender" class="settings-select">' +
+                        '<option value="">Pilih</option>' + option('male', 'Laki-laki') + option('female', 'Perempuan') +
+                    '</select></div>' +
+                    '<div class="settings-field"><label for="birth-data-date">Tanggal Lahir</label><input id="birth-data-date" type="date" class="settings-input" value="' + escapeHtml(normalizeBirthDateInput(record.birth_date)) + '"></div>' +
+                    '<div class="settings-field"><label for="birth-data-time">Jam Lahir</label><input id="birth-data-time" type="time" class="settings-input" value="' + escapeHtml(normalizeBirthTimeInput(record.birth_time)) + '"></div>' +
+                    '<div class="settings-field"><label for="birth-data-weight">Berat Badan</label><input id="birth-data-weight" class="settings-input" value="' + escapeHtml(record.birth_weight || '') + '" placeholder="Contoh: 3.2 kg"></div>' +
+                    '<div class="settings-field"><label for="birth-data-length">Panjang Badan</label><input id="birth-data-length" class="settings-input" value="' + escapeHtml(record.birth_length || '') + '" placeholder="Contoh: 50 cm"></div>' +
+                    '<label class="birth-file-box" for="birth-data-photo"><strong><i class="fa-solid fa-upload"></i> Upload foto bayi</strong><span>Opsional. Bisa diisi sekarang atau nanti dari kartu ucapan.</span><input id="birth-data-photo" type="file" accept="image/*"></label>' +
+                '</div>' +
+                '<div class="modal-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="closeTopbarModal(event)">Nanti</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="submitBirthData(event, \'' + id + '\')"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                '</div>';
+        }
+
+        function renderBirthExtraModal(record) {
+            record = record || getCurrentBirthRecord() || {};
+            const id = escapeHtml(record.id || '');
+            return '<div class="birth-modal-note">Edit keterangan tambahan yang dulu tersedia di portal lama.</div>' +
+                '<div class="birth-form-grid" data-birth-id="' + id + '">' +
+                    '<div class="settings-field"><label for="birth-extra-time">Jam Lahir</label><input id="birth-extra-time" type="time" class="settings-input" value="' + escapeHtml(normalizeBirthTimeInput(record.birth_time)) + '"></div>' +
+                    '<div class="settings-field"><label for="birth-extra-length">Panjang Badan</label><input id="birth-extra-length" class="settings-input" value="' + escapeHtml(record.birth_length || record.length || '') + '" placeholder="Contoh: 50 cm"></div>' +
+                '</div>' +
+                '<div class="modal-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="closeTopbarModal(event)">Batal</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="submitBirthExtra(event, \'' + id + '\')"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                '</div>';
+        }
+
+        function renderBirthTestimonialModal(record) {
+            record = record || getCurrentBirthRecord() || {};
+            const id = escapeHtml(record.id || '');
+            const existing = String(record.patient_testimonial || '').trim();
+            if (existing) {
+                return '<div class="modal-empty"><i class="fa-solid fa-check"></i><p>Testimoni sudah pernah dikirim.</p></div>';
+            }
+            return '<div class="birth-modal-note">Kesan dan pesan ini akan muncul di halaman testimoni staff setelah dikirim.</div>' +
+                '<div class="settings-field birth-testimonial-field"><label for="birth-testimonial-text">Kesan dan Pesan</label><textarea id="birth-testimonial-text" class="settings-input" maxlength="2000" placeholder="Tuliskan pengalaman persalinan atau pesan untuk dr. Dibya dan tim"></textarea></div>' +
+                '<div class="modal-actions">' +
+                    '<button type="button" class="ghost-action soundable" onclick="closeTopbarModal(event)">Batal</button>' +
+                    '<button type="button" class="primary-action soundable" onclick="submitBirthTestimonial(event, \'' + id + '\')"><i class="fa-solid fa-paper-plane"></i> Kirim testimoni</button>' +
+                '</div>';
+        }
+
+        async function checkBirthPending(options) {
+            options = options || {};
+            try {
+                const response = await fetch('/api/patient/birth-pending?_t=' + Date.now(), {
+                    headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                    cache: 'no-store'
+                });
+                if (response.status === 401) throw new Error('unauthorized');
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success || !data.pending) {
+                    currentBirthPending = null;
+                    return null;
+                }
+                currentBirthPending = data.pending;
+                hidePregnancyTrackerHome();
+                if (!options.silent) {
+                    openTopbarModal('Lengkapi Data Kelahiran', 'Ucapan Kelahiran', renderBirthDataModal(currentBirthPending));
+                }
+                return currentBirthPending;
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return null; }
+                return null;
+            }
+        }
+
+        function openBirthDataModal(event, birthId) {
+            stopTopbarEvent(event);
+            const id = String(birthId || currentBirthPending?.id || '').trim();
+            const record = birthCongratsSettingsRecords.find(function(item) { return String(item.id || '') === id; }) || currentBirthPending || { id: id };
+            openTopbarModal('Lengkapi Data Kelahiran', 'Ucapan Kelahiran', renderBirthDataModal(record));
+        }
+
+        function openBirthExtraModal(event) {
+            stopTopbarEvent(event);
+            const record = getCurrentBirthRecord();
+            if (!record || !record.id) {
+                showToast('Data kelahiran belum tersedia');
+                return;
+            }
+            openTopbarModal('Edit Detail Kelahiran', 'Ucapan Kelahiran', renderBirthExtraModal(record));
+        }
+
+        function openBirthTestimonialModal(event, birthId) {
+            stopTopbarEvent(event);
+            const id = String(birthId || '').trim();
+            const record = birthCongratsSettingsRecords.find(function(item) { return String(item.id || '') === id; }) || getCurrentBirthRecord();
+            if (!record || !record.id) {
+                showToast('Data kelahiran belum tersedia');
+                return;
+            }
+            openTopbarModal('Kirim Testimoni', 'Ucapan Kelahiran', renderBirthTestimonialModal(record));
+        }
+
+        async function submitBirthData(event, birthId) {
+            stopTopbarEvent(event);
+            const id = String(birthId || currentBirthPending?.id || '').trim();
+            if (!id) return;
+            const payload = {
+                baby_name: document.getElementById('birth-data-baby-name')?.value || '',
+                gender: document.getElementById('birth-data-gender')?.value || '',
+                birth_date: document.getElementById('birth-data-date')?.value || '',
+                birth_time: document.getElementById('birth-data-time')?.value || '',
+                birth_weight: document.getElementById('birth-data-weight')?.value || '',
+                birth_length: document.getElementById('birth-data-length')?.value || ''
+            };
+            try {
+                const response = await fetch('/api/patient/birth-data/' + encodeURIComponent(id), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    cache: 'no-store',
+                    body: JSON.stringify(payload)
+                });
+                if (response.status === 401) throw new Error('unauthorized');
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || 'Data kelahiran gagal disimpan');
+                const photoInput = document.getElementById('birth-data-photo');
+                let photoError = null;
+                if (photoInput?.files?.[0]) {
+                    try {
+                        await uploadBirthPhotoFile(id, photoInput.files[0], { silent: true });
+                    } catch (error) {
+                        photoError = error;
+                    }
+                }
+                currentBirthPending = null;
+                closeTopbarModal(event);
+                birthCongratsSettingsLoaded = false;
+                await loadBirthCongratsHome();
+                showToast(photoError ? 'Data tersimpan, foto bisa diupload ulang' : 'Data kelahiran disimpan');
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                showToast(error.message || 'Data kelahiran gagal disimpan');
+            }
+        }
+
+        async function submitBirthExtra(event, birthId) {
+            stopTopbarEvent(event);
+            const id = String(birthId || getCurrentBirthRecord()?.id || '').trim();
+            if (!id) return;
+            try {
+                const response = await fetch('/api/patient/birth-extra/' + encodeURIComponent(id), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    cache: 'no-store',
+                    body: JSON.stringify({
+                        birth_time: document.getElementById('birth-extra-time')?.value || '',
+                        birth_length: document.getElementById('birth-extra-length')?.value || ''
+                    })
+                });
+                if (response.status === 401) throw new Error('unauthorized');
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || 'Detail kelahiran gagal disimpan');
+                closeTopbarModal(event);
+                await loadBirthCongratsHome();
+                showToast('Detail kelahiran disimpan');
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                showToast(error.message || 'Detail kelahiran gagal disimpan');
+            }
+        }
+
+        async function submitBirthTestimonial(event, birthId) {
+            stopTopbarEvent(event);
+            const id = String(birthId || getCurrentBirthRecord()?.id || '').trim();
+            if (!id) {
+                showToast('Data kelahiran belum tersedia');
+                return;
+            }
+            const testimonial = String(document.getElementById('birth-testimonial-text')?.value || '').trim();
+            if (!testimonial) {
+                showToast('Kesan dan pesan wajib diisi');
+                return;
+            }
+            try {
+                const response = await fetch('/api/patient/birth-testimonial/' + encodeURIComponent(id), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getToken(),
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    },
+                    cache: 'no-store',
+                    body: JSON.stringify({ testimonial: testimonial })
+                });
+                if (response.status === 401) throw new Error('unauthorized');
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) throw new Error(data.message || 'Testimoni gagal dikirim');
+                if (currentBirthCongratsData) currentBirthCongratsData.patient_testimonial = testimonial;
+                updateBirthCongratsActions(currentBirthCongratsData || {});
+                closeTopbarModal(event);
+                showToast('Testimoni berhasil dikirim');
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                showToast(error.message || 'Testimoni gagal dikirim');
+            }
+        }
+
+        function openBirthPhotoPicker(event, birthId) {
+            stopTopbarEvent(event);
+            const id = String(birthId || getCurrentBirthRecord()?.id || '').trim();
+            if (!id) {
+                showToast('Data kelahiran belum tersedia');
+                return;
+            }
+            const input = document.getElementById('birth-photo-input');
+            if (!input) return;
+            input.dataset.birthId = id;
+            input.value = '';
+            input.click();
+        }
+
+        async function handleBirthPhotoUpload(event) {
+            const input = event?.target;
+            const birthId = String(input?.dataset.birthId || getCurrentBirthRecord()?.id || '').trim();
+            const file = input?.files?.[0];
+            if (!birthId || !file) return;
+            try {
+                await uploadBirthPhotoFile(birthId, file);
+            } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
+                showToast(error.message || 'Foto bayi gagal diupload');
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
+        async function uploadBirthPhotoFile(birthId, file, options) {
+            options = options || {};
+            if (!file.type || !file.type.startsWith('image/')) throw new Error('Pilih file gambar untuk foto bayi');
+            if (file.size > 10 * 1024 * 1024) throw new Error('Ukuran foto bayi maksimal 10MB');
+            if (!options.silent) showToast('Mengupload foto bayi...');
+            const formData = new FormData();
+            formData.append('photo', file);
+            const response = await fetch('/api/patient/birth-photo/' + encodeURIComponent(birthId), {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                cache: 'no-store',
+                body: formData
+            });
+            if (response.status === 401) throw new Error('unauthorized');
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) throw new Error(data.message || 'Foto bayi gagal diupload');
+            if (currentBirthCongratsData && String(currentBirthCongratsData.id || '') === String(birthId)) {
+                currentBirthCongratsData.photo_url = data.photo_url || currentBirthCongratsData.photo_url;
+                renderBirthCongratsHome(currentBirthCongratsData);
+            } else {
+                await loadBirthCongratsHome();
+            }
+            if (!options.silent) showToast('Foto bayi disimpan');
+            return data;
+        }
+
+        function openBirthPhotoModal(event) {
+            stopTopbarEvent(event);
+            const photo = document.getElementById('birth-congrats-photo');
+            const src = photo?.getAttribute('src') || currentBirthCongratsData?.photo_url || '';
+            if (!src) {
+                showToast('Foto kelahiran belum tersedia');
+                return;
+            }
+            const modal = document.getElementById('birth-photo-modal');
+            const modalImg = document.getElementById('birth-photo-modal-img');
+            if (!modal || !modalImg) return;
+            modalImg.src = src;
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBirthPhotoModal(event) {
+            stopTopbarEvent(event);
+            const modal = document.getElementById('birth-photo-modal');
+            const modalImg = document.getElementById('birth-photo-modal-img');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            if (modalImg) modalImg.removeAttribute('src');
+            if (!document.querySelector('.modal-card.active, .bottom-sheet.active')) {
+                document.body.style.overflow = '';
+            }
+        }
+
         function getBirthGenderLabel(value) {
             const normalized = String(value || '').trim().toLowerCase();
             if (normalized === 'male' || normalized === 'laki-laki' || normalized === 'lakilaki') return 'Putra';
@@ -4705,14 +5236,20 @@
             const card = document.getElementById('birth-congrats-home');
             if (!card) return;
             currentBirthCongratsId = '';
+            currentBirthCongratsData = null;
             card.removeAttribute('data-birth-id');
             card.classList.remove('show');
+            updateBirthCongratsActions({});
+            showPregnancyTrackerHome();
             requestAnimationFrame(updateHomeActionGap);
         }
 
         function renderBirthCongratsHome(data) {
             const card = document.getElementById('birth-congrats-home');
             if (!card || !data) return;
+            currentBirthCongratsData = data;
+            applyBirthCongratsTheme(data.theme_color);
+            hidePregnancyTrackerHome();
 
             const babyName = String(data.baby_name || 'Buah Hati Tercinta').trim();
             const doctorName = String(data.doctor_name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.').trim();
@@ -4751,6 +5288,7 @@
                 }
             }
 
+            updateBirthCongratsActions(data);
             card.classList.add('show');
             requestAnimationFrame(updateHomeActionGap);
         }
@@ -4769,13 +5307,25 @@
                 if (response.status === 401) throw new Error('unauthorized');
                 const result = await response.json().catch(function() { return {}; });
                 if (!response.ok || !result.success || !result.data) {
-                    hideBirthCongratsHome();
-                    return;
+                    if (currentBirthPending) {
+                        currentBirthCongratsId = '';
+                        currentBirthCongratsData = null;
+                        card.removeAttribute('data-birth-id');
+                        card.classList.remove('show');
+                        updateBirthCongratsActions({});
+                        hidePregnancyTrackerHome();
+                        requestAnimationFrame(updateHomeActionGap);
+                    } else {
+                        hideBirthCongratsHome();
+                    }
+                    return null;
                 }
                 renderBirthCongratsHome(result.data);
+                return result.data;
             } catch (error) {
                 if (error.message === 'unauthorized') { logout(); return; }
                 hideBirthCongratsHome();
+                return null;
             }
         }
 
@@ -5245,8 +5795,9 @@
             initializeLiveQueueHome();
             checkActiveBooking();
             checkAttendanceConfirmation();
-            loadBirthCongratsHome();
-            loadPregnancyTrackerHome();
+            const pendingBirth = await checkBirthPending();
+            const publishedBirth = await loadBirthCongratsHome();
+            if (!pendingBirth && !publishedBirth) loadPregnancyTrackerHome();
             autoShowPatientInstallPrompt();
         }
 
@@ -5264,6 +5815,16 @@
         window.openSettingsNotifications = openSettingsNotifications;
         window.dismissBirthCongratsHome = dismissBirthCongratsHome;
         window.toggleBirthCongratsFromSettings = toggleBirthCongratsFromSettings;
+        window.openBirthDataModal = openBirthDataModal;
+        window.submitBirthData = submitBirthData;
+        window.openBirthExtraModal = openBirthExtraModal;
+        window.submitBirthExtra = submitBirthExtra;
+        window.openBirthPhotoPicker = openBirthPhotoPicker;
+        window.handleBirthPhotoUpload = handleBirthPhotoUpload;
+        window.openBirthPhotoModal = openBirthPhotoModal;
+        window.closeBirthPhotoModal = closeBirthPhotoModal;
+        window.openBirthTestimonialModal = openBirthTestimonialModal;
+        window.submitBirthTestimonial = submitBirthTestimonial;
         window.savePortalSettings = savePortalSettings;
         window.playPortalNotificationSound = playPortalNotificationSound;
         window.openNotificationModal = openNotificationModal;
@@ -5307,6 +5868,11 @@
         });
 
         document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('birth-photo-modal')?.classList.contains('active')) {
+                closeBirthPhotoModal(event);
+            }
+        });
         window.addEventListener('scroll', handleHomeScrollReveal, { passive: true });
         window.addEventListener('wheel', handleHomeWheelReveal, { passive: true });
         window.addEventListener('wheel', preventHomeScrollDuringBrake, { passive: false, capture: true });
@@ -5327,12 +5893,13 @@
             if (isGuestMode()) return;
             if (event.persisted) {
                 loadNotificationCount();
-                loadHomeAnnouncements();
-                loadUnreadDocCounts();
-                checkActiveBooking();
-                loadBirthCongratsHome();
-            }
-        });
+                    loadHomeAnnouncements();
+                    loadUnreadDocCounts();
+                    checkActiveBooking();
+                    checkBirthPending({ silent: true });
+                    loadBirthCongratsHome();
+                }
+            });
     </script>
     <script src="/scripts/patient-my-corner.js?v=20260606roomthemes"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>

@@ -2054,10 +2054,12 @@ router.get('/api/patient/birth-all', verifyPatientToken, async (req, res) => {
     res.set('Pragma', 'no-cache');
     res.set('Expires', '0');
     try {
+        await ensureBirthTestimonialColumns();
         const patientId = req.patient.id;
         const [rows] = await db.query(`
-            SELECT id, child_number, baby_name, gender, birth_date, birth_weight, birth_length,
-                   is_published, patient_dismissed, patient_data_submitted
+            SELECT id, child_number, baby_name, gender, birth_date, birth_time, birth_weight, birth_length,
+                   photo_url, theme_color, is_published, patient_dismissed, patient_data_submitted,
+                   patient_testimonial
             FROM birth_congratulations WHERE patient_id = ?
             ORDER BY child_number ASC`, [patientId]);
         res.json({ success: true, data: rows });
@@ -2075,6 +2077,7 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
     res.set('Expires', '0');
 
     try {
+        await ensureBirthTestimonialColumns();
         const patientId = req.patient.id;
 
         const [rows] = await db.query(`
@@ -2093,6 +2096,8 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
                 theme_color,
                 child_number,
                 patient_dismissed,
+                patient_data_submitted,
+                patient_testimonial,
                 created_at
             FROM birth_congratulations
             WHERE patient_id = ? AND is_published = 1 AND patient_dismissed = 0
