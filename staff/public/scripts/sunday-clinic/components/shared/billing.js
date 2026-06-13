@@ -16,6 +16,27 @@ function formatRupiah(amount) {
     return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
+function escapeHtml(value) {
+    if (!value) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function formatDateTime(value) {
+    if (!value) return '';
+    return new Date(value).toLocaleString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
 export default {
     /**
      * Render the Billing form
@@ -734,8 +755,8 @@ export default {
 
         const items = billing.items || [];
         const status = billing.status || 'draft';
-        const userRole = window.currentStaffIdentity?.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+        const hasPendingPayment = !!billing.has_pending_payment;
+        const canEditBilling = status !== 'paid' && !(status === 'confirmed' && hasPendingPayment);
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -758,8 +779,8 @@ export default {
             const itemTotal = (item.quantity || 1) * (item.price || 0);
             subtotal += itemTotal;
 
-            // Show delete button for obat items when draft or confirmed (not paid)
-            const showDeleteBtn = item.item_type === 'obat' && (status === 'draft' || status === 'confirmed');
+            // Show delete button for editable obat items.
+            const showDeleteBtn = item.item_type === 'obat' && canEditBilling;
             const deleteBtn = showDeleteBtn
                 ? `<button type="button" class="btn btn-sm btn-outline-danger ml-2 delete-obat-btn"
                            data-item-id="${item.id}"
@@ -785,6 +806,8 @@ export default {
         // Status badge + who confirmed
         const confirmedBy = billing.confirmed_by || '';
         const confirmedAt = billing.confirmed_at ? new Date(billing.confirmed_at).toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        const lastModifiedBy = billing.last_modified_by || '';
+        const lastModifiedAt = billing.last_modified_at ? formatDateTime(billing.last_modified_at) : '';
         let statusBadge = '<span class="badge badge-warning">Draft</span>';
         if (status === 'confirmed') {
             statusBadge = `<span class="badge badge-success">Dikonfirmasi</span>`;
@@ -797,6 +820,18 @@ export default {
                    <strong>Dikonfirmasi oleh: ${escapeHtml(confirmedBy)}</strong>
                    ${confirmedAt ? `<span class="text-muted ml-2">${confirmedAt}</span>` : ''}
                </div>`
+            : '';
+        const lastModifiedHtml = (lastModifiedBy || lastModifiedAt)
+            ? `<div class="mt-2 p-2 rounded" style="background:#f8f9fa;border:1px solid #dee2e6;font-size:13px;">
+                   <i class="fas fa-history text-muted mr-1"></i>
+                   <strong>Terakhir diubah: ${escapeHtml(lastModifiedBy || 'Staff')}</strong>
+                   ${lastModifiedAt ? `<span class="text-muted ml-2">${lastModifiedAt}</span>` : ''}
+               </div>`
+            : '';
+        const historyButtonHtml = billing.id
+            ? `<button type="button" class="btn btn-outline-secondary btn-sm flex-fill" id="btn-billing-audit-history">
+                   <i class="fas fa-history mr-1"></i>Riwayat Perubahan
+               </button>`
             : '';
 
         // Action buttons
@@ -813,12 +848,9 @@ export default {
                     <button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-invoice" disabled>
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
+                    ${historyButtonHtml}
                 </div>`;
         } else if (status === 'confirmed') {
-            const extraBtn = isDokter ? '' : `
-                <button type="button" class="btn btn-warning btn-sm flex-fill" id="btn-request-revision">
-                    <i class="fas fa-edit mr-1"></i>Ajukan Perubahan
-                </button>`;
             actionsHtml = `
                 <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
                     <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
@@ -827,13 +859,13 @@ export default {
                     <button type="button" class="btn btn-info btn-sm flex-fill" id="btn-pay-online">
                         <i class="fas fa-qrcode mr-1"></i>Bayar Online
                     </button>
-                    ${extraBtn}
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
                         <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
+                    ${historyButtonHtml}
                     ${billing.printed_at ? '<span class="small text-muted align-self-center">Telah dicetak</span>' : ''}
                 </div>`;
         } else if (status === 'paid') {
@@ -848,6 +880,7 @@ export default {
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
+                    ${historyButtonHtml}
                     ${billing.printed_at ? '<span class="small text-muted align-self-center">Telah dicetak</span>' : ''}
                 </div>`;
         }
@@ -876,7 +909,7 @@ export default {
                                data-name="${escapeHtml(item.name)}"
                                data-price="${item.price}"
                                ${isChecked ? 'checked' : ''}
-                               ${(status === 'confirmed' && !isDokter) || status === 'paid' ? 'disabled' : ''}>
+                               ${!canEditBilling ? 'disabled' : ''}>
                         <label class="custom-control-label" for="admin-${item.code}">
                             ${escapeHtml(item.name)}
                             <small class="text-muted d-block">${formatRupiahLocal(item.price)}</small>
@@ -900,8 +933,8 @@ export default {
                         <div class="row">
                             ${adminCheckboxesHtml}
                         </div>
-                        ${status === 'confirmed' && !isDokter ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dikonfirmasi, tidak dapat diubah.</small>' : ''}
-                        ${status === 'confirmed' && isDokter ? '<small class="text-info"><i class="fas fa-edit mr-1"></i>Dokter dapat mengubah item tagihan.</small>' : ''}
+                        ${status === 'confirmed' && hasPendingPayment ? '<small class="text-warning"><i class="fas fa-lock mr-1"></i>Ada pembayaran online pending. Batalkan link pembayaran terlebih dahulu sebelum mengubah tagihan.</small>' : ''}
+                        ${status === 'confirmed' && !hasPendingPayment ? '<small class="text-info"><i class="fas fa-edit mr-1"></i>Tagihan sudah dikonfirmasi. Perubahan akan dicatat di riwayat.</small>' : ''}
                         ${status === 'paid' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dibayar.</small>' : ''}
                     </div>
 
@@ -933,6 +966,7 @@ export default {
                     </table>
 
                     ${confirmedByHtml}
+                    ${lastModifiedHtml}
 
                     <div class="mt-3">
                         ${actionsHtml}
@@ -1271,45 +1305,98 @@ export default {
                         });
                     }
 
-                    // 4. Request revision button (non-dokter only)
-                    const revisionBtn = document.getElementById('btn-request-revision');
-                    if (revisionBtn) {
-                        revisionBtn.addEventListener('click', async function() {
-                            const message = prompt('Masukkan usulan revisi untuk dokter:');
-                            if (!message || message.trim() === '') return;
+                    // 4. Billing audit history
+                    const auditHistoryBtn = document.getElementById('btn-billing-audit-history');
+                    if (auditHistoryBtn && auditHistoryBtn.dataset.bound !== '1') {
+                        auditHistoryBtn.dataset.bound = '1';
+                        auditHistoryBtn.addEventListener('click', async function() {
+                            const token = window.getToken?.();
+                            const mrId = window.routeMrSlug;
+
+                            if (!token || !mrId) {
+                                window.showToast?.('error', 'MR ID tidak ditemukan');
+                                return;
+                            }
+
+                            let modal = document.getElementById('billing-audit-modal');
+                            if (!modal) {
+                                document.body.insertAdjacentHTML('beforeend', `
+                                    <div class="modal fade" id="billing-audit-modal" tabindex="-1" role="dialog" aria-labelledby="billingAuditModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="billingAuditModalLabel">
+                                                        <i class="fas fa-history mr-2"></i>Riwayat Perubahan Tagihan
+                                                    </h5>
+                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body" id="billing-audit-modal-content"></div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `);
+                                modal = document.getElementById('billing-audit-modal');
+                            }
+
+                            const content = document.getElementById('billing-audit-modal-content');
+                            content.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin mr-1"></i>Memuat riwayat...</div>';
+
+                            if (window.$ && window.$.fn && window.$.fn.modal) {
+                                window.$(modal).modal('show');
+                            } else {
+                                modal.style.display = 'block';
+                                modal.classList.add('show');
+                            }
 
                             try {
-                                const token = window.getToken?.();
-                                const mrId = window.routeMrSlug;
-                                const userName = window.currentStaffIdentity?.name || 'Staff';
-
-                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/request-revision`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `Bearer ${token}`,
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        message: message.trim(),
-                                        requestedBy: userName
-                                    })
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/audit`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
                                 });
 
-                                if (!response.ok) throw new Error('Gagal mengirim usulan');
+                                if (!response.ok) {
+                                    const errorData = await response.json().catch(() => ({}));
+                                    throw new Error(errorData.message || 'Gagal memuat riwayat perubahan');
+                                }
 
                                 const result = await response.json();
+                                const history = Array.isArray(result.data) ? result.data : [];
+                                const actionLabels = {
+                                    billing_created: 'Tagihan dibuat',
+                                    billing_saved: 'Tagihan disimpan',
+                                    billing_confirmed: 'Tagihan dikonfirmasi',
+                                    item_added: 'Item ditambahkan',
+                                    item_removed: 'Item dihapus',
+                                    billing_marked_paid: 'Tagihan lunas'
+                                };
 
-                                if (window.showSuccess) {
-                                    window.showSuccess('Usulan berhasil dikirim ke dokter!');
+                                if (history.length === 0) {
+                                    content.innerHTML = '<div class="text-muted text-center py-3">Belum ada riwayat perubahan.</div>';
+                                    return;
                                 }
 
-                                // Backend will broadcast via Socket.IO
-                                console.log('[Billing] Revision request sent, server will broadcast to dokter');
+                                content.innerHTML = history.map(entry => `
+                                    <div class="border-bottom py-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>${escapeHtml(actionLabels[entry.action] || entry.action)}</strong>
+                                                <div class="text-muted small">
+                                                    ${escapeHtml(entry.actor_name || 'Staff')}
+                                                    ${entry.actor_role ? `&middot; ${escapeHtml(entry.actor_role)}` : ''}
+                                                </div>
+                                            </div>
+                                            <span class="text-muted small">${escapeHtml(formatDateTime(entry.created_at))}</span>
+                                        </div>
+                                        ${entry.summary ? `<div class="mt-1">${escapeHtml(entry.summary)}</div>` : ''}
+                                    </div>
+                                `).join('');
                             } catch (error) {
-                                console.error('Error requesting revision:', error);
-                                if (window.showError) {
-                                    window.showError(error.message);
-                                }
+                                console.error('Error loading billing audit history:', error);
+                                content.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(error.message || 'Gagal memuat riwayat perubahan')}</div>`;
                             }
                         });
                     }

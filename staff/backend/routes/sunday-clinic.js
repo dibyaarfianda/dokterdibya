@@ -11,6 +11,11 @@ const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
 const sundayClinicMedifySyncQueue = require('../services/sundayClinicMedifySyncQueue');
 const patientNotifications = require('./patient-notifications');
+const {
+    getActorFromRequest,
+    getBillingSnapshot,
+    logBillingAudit
+} = require('../services/SundayClinicBillingAuditService');
 
 const createPatientNotification = patientNotifications.createPatientNotification;
 
@@ -52,7 +57,11 @@ async function ensureBillingTables() {
         await db.query(`
             ALTER TABLE sunday_clinic_billings
             ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP NULL,
-            ADD COLUMN IF NOT EXISTS paid_by VARCHAR(255) NULL
+            ADD COLUMN IF NOT EXISTS paid_by VARCHAR(255) NULL,
+            ADD COLUMN IF NOT EXISTS pending_changes BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS change_requests JSON NULL,
+            ADD COLUMN IF NOT EXISTS last_modified_by VARCHAR(255) NULL,
+            ADD COLUMN IF NOT EXISTS last_modified_at TIMESTAMP NULL
         `);
 
         // Create sunday_clinic_billing_items table
@@ -68,6 +77,27 @@ async function ensureBillingTables() {
                 total DECIMAL(12, 2) NOT NULL DEFAULT 0,
                 item_data JSON,
                 INDEX idx_billing_id (billing_id),
+                FOREIGN KEY (billing_id) REFERENCES sunday_clinic_billings(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS sunday_clinic_billing_audit_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                billing_id INT NOT NULL,
+                mr_id VARCHAR(50) NOT NULL,
+                action VARCHAR(50) NOT NULL,
+                actor_user_id VARCHAR(64) NULL,
+                actor_name VARCHAR(255) NOT NULL,
+                actor_role VARCHAR(100) NULL,
+                summary TEXT NULL,
+                before_snapshot JSON NULL,
+                after_snapshot JSON NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_billing_id (billing_id),
+                INDEX idx_mr_id (mr_id),
+                INDEX idx_action (action),
+                INDEX idx_created_at (created_at),
                 FOREIGN KEY (billing_id) REFERENCES sunday_clinic_billings(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         `);
@@ -221,6 +251,30 @@ function parseJson(value, context) {
         });
         return null;
     }
+}
+
+function isPatientUser(req) {
+    return req.user?.user_type === 'patient' || req.user?.role === 'patient';
+}
+
+async function writeBillingAudit(client, req, payload) {
+    const actor = getActorFromRequest(req);
+    return logBillingAudit(client, {
+        ...payload,
+        ...actor
+    });
+}
+
+function parseAuditSnapshot(value) {
+    if (!value) {
+        return null;
+    }
+
+    if (typeof value === 'object') {
+        return value;
+    }
+
+    return parseJson(value, 'billing_audit_snapshot');
 }
 
 async function getPatient(patientId) {
@@ -2315,9 +2369,19 @@ router.get('/billing/:mrId', verifyToken, async (req, res, next) => {
                 `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ? ORDER BY id`,
                 [billingRow.id]
             );
+            const [[pendingPayment]] = await db.query(
+                `SELECT id, payment_method, amount, expires_at
+                 FROM tagihan_payments
+                 WHERE billing_id = ? AND status = 'pending'
+                 ORDER BY created_at DESC
+                 LIMIT 1`,
+                [billingRow.id]
+            );
 
             billing = {
                 ...billingRow,
+                has_pending_payment: !!pendingPayment,
+                pending_payment: pendingPayment || null,
                 items: itemRows.map(item => ({
                     ...item,
                     item_data: parseJson(item.item_data, {})
@@ -2373,11 +2437,15 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
             );
 
             let billingId;
+            let beforeSnapshot = null;
+            let auditAction = 'billing_created';
 
             if (existingRows.length > 0) {
                 // Update existing billing
                 const existingBilling = existingRows[0];
                 billingId = existingBilling.id;
+                beforeSnapshot = await getBillingSnapshot(connection, billingId);
+                auditAction = 'billing_saved';
 
                 // Guard: paid billing cannot be edited
                 if (existingBilling.status === 'paid') {
@@ -2520,12 +2588,27 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
 
             // Update billing totals
             const total = subtotal;
+            const actorName = getActorFromRequest(req).actorName;
             await connection.query(
                 `UPDATE sunday_clinic_billings
-                 SET subtotal = ?, total = ?, status = ?, billing_data = ?, updated_at = NOW()
+                 SET subtotal = ?, total = ?, status = ?, billing_data = ?,
+                     pending_changes = FALSE,
+                     last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
                  WHERE id = ?`,
-                [subtotal, total, status, JSON.stringify(billingData), billingId]
+                [subtotal, total, status, JSON.stringify(billingData), actorName, billingId]
             );
+
+            const afterSnapshot = await getBillingSnapshot(connection, billingId);
+            await writeBillingAudit(connection, req, {
+                billingId,
+                mrId: normalizedMrId,
+                action: auditAction,
+                summary: auditAction === 'billing_created'
+                    ? 'Tagihan dibuat'
+                    : 'Tagihan disimpan dan total diperbarui',
+                beforeSnapshot,
+                afterSnapshot
+            });
 
             await connection.commit();
 
@@ -2592,6 +2675,7 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
         );
 
         let billingId;
+        let beforeSnapshot = null;
 
         if (billingRows.length === 0) {
             const [insertResult] = await connection.query(
@@ -2620,6 +2704,8 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
                     return res.status(400).json({ success: false, message: 'Ada pembayaran pending. Batalkan pembayaran terlebih dahulu.' });
                 }
             }
+
+            beforeSnapshot = await getBillingSnapshot(connection, billingId);
         }
 
         // NOTE: No longer deleting existing items - now APPENDING new items
@@ -2702,6 +2788,16 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
             ]
         );
 
+        const afterSnapshot = await getBillingSnapshot(connection, billingId);
+        await writeBillingAudit(connection, req, {
+            billingId,
+            mrId: normalizedMrId,
+            action: 'item_added',
+            summary: `${items.length} item obat ditambahkan ke tagihan`,
+            beforeSnapshot,
+            afterSnapshot
+        });
+
         await connection.commit();
 
         if (recordRow.visit_location === 'rsia_melinda') {
@@ -2762,35 +2858,71 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
 // Confirm billing (all staff)
 router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
+    let connection;
 
     try {
         // Block patient users from confirming
-        if (req.user.user_type === 'patient') {
+        if (isPatientUser(req)) {
             return res.status(403).json({
                 success: false,
                 message: 'Akses ditolak'
             });
         }
 
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
         // Get billing ID first
-        const [[billing]] = await db.query(
-            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ?`,
+        const [[billing]] = await connection.query(
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
             [normalizedMrId]
         );
 
         if (!billing) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: 'Billing tidak ditemukan'
             });
         }
 
-        const [result] = await db.query(
+        if (billing.status === 'paid') {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Billing sudah dibayar'
+            });
+        }
+
+        const beforeSnapshot = await getBillingSnapshot(connection, billing.id);
+        const staffName = getActorFromRequest(req).actorName;
+
+        await connection.query(
             `UPDATE sunday_clinic_billings
-             SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
+             SET status = 'confirmed',
+                 confirmed_at = NOW(),
+                 confirmed_by = ?,
+                 pending_changes = FALSE,
+                 last_modified_by = ?,
+                 last_modified_at = NOW(),
+                 updated_at = NOW()
              WHERE mr_id = ?`,
-            [req.user.name || req.user.id || 'Staff', normalizedMrId]
+            [staffName, staffName, normalizedMrId]
         );
+
+        const afterSnapshot = await getBillingSnapshot(connection, billing.id);
+        await writeBillingAudit(connection, req, {
+            billingId: billing.id,
+            mrId: normalizedMrId,
+            action: 'billing_confirmed',
+            summary: 'Tagihan dikonfirmasi',
+            beforeSnapshot,
+            afterSnapshot
+        });
+
+        await connection.commit();
+        connection.release();
+        connection = null;
 
         // NOTE: Stock deduction moved to payment completion endpoint
         // Stock will be deducted when billing is marked as 'paid'
@@ -2805,7 +2937,6 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
         );
 
         const patientName = record?.patient_name || 'Pasien';
-        const staffName = req.user.name || req.user.id || 'Staff';
 
         // Broadcast notification to all connected clients
         if (realtimeSync && realtimeSync.broadcast) {
@@ -2828,8 +2959,19 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             patientName
         });
     } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback billing confirmation', { error: rollbackError.message });
+            }
+        }
         logger.error('Failed to confirm billing', { error: error.message });
         next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
@@ -2891,6 +3033,8 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
                 message: 'Billing harus dikonfirmasi terlebih dahulu sebelum pembayaran'
             });
         }
+
+        const beforeSnapshot = await getBillingSnapshot(db, billingLocked.id);
 
         const InventoryService = require('../services/InventoryService');
 
@@ -3037,6 +3181,16 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
               WHERE mr_id = ?`,
             [paidBy, paidBy, normalizedMrId]
         );
+
+        const afterSnapshot = await getBillingSnapshot(db, billingLocked.id);
+        await writeBillingAudit(db, req, {
+            billingId: billingLocked.id,
+            mrId: normalizedMrId,
+            action: 'billing_marked_paid',
+            summary: `Tagihan ditandai lunas (${payment_method || 'metode tidak dicatat'})`,
+            beforeSnapshot,
+            afterSnapshot
+        });
 
         // Auto-finalize the medical record when billing is paid
         try {
@@ -3468,8 +3622,10 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
             }
         }
 
+        const beforeSnapshot = await getBillingSnapshot(connection, billingId);
+
         // Delete items of specified type
-        await connection.query(
+        const [deleteResult] = await connection.query(
             `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_type = ?`,
             [billingId, itemType]
         );
@@ -3480,12 +3636,24 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
             [billingId]
         );
 
+        const actorName = getActorFromRequest(req).actorName;
         await connection.query(
             `UPDATE sunday_clinic_billings
-             SET subtotal = ?, total = ?, updated_at = NOW()
+             SET subtotal = ?, total = ?,
+                 last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
              WHERE id = ?`,
-            [totals.subtotal, totals.subtotal, billingId]
+            [totals.subtotal, totals.subtotal, actorName, billingId]
         );
+
+        const afterSnapshot = await getBillingSnapshot(connection, billingId);
+        await writeBillingAudit(connection, req, {
+            billingId,
+            mrId: normalizedMrId,
+            action: 'item_removed',
+            summary: `${deleteResult.affectedRows || 0} item ${itemType} dihapus dari tagihan`,
+            beforeSnapshot,
+            afterSnapshot
+        });
 
         await connection.commit();
 
@@ -3573,6 +3741,8 @@ router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, n
             }
         }
 
+        const beforeSnapshot = await getBillingSnapshot(connection, billingId);
+
         // Delete item by code
         const [deleteResult] = await connection.query(
             `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_code = ?`,
@@ -3585,12 +3755,24 @@ router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, n
             [billingId]
         );
 
+        const actorName = getActorFromRequest(req).actorName;
         await connection.query(
             `UPDATE sunday_clinic_billings
-             SET subtotal = ?, total = ?, updated_at = NOW()
+             SET subtotal = ?, total = ?,
+                 last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
              WHERE id = ?`,
-            [totals.subtotal, totals.subtotal, billingId]
+            [totals.subtotal, totals.subtotal, actorName, billingId]
         );
+
+        const afterSnapshot = await getBillingSnapshot(connection, billingId);
+        await writeBillingAudit(connection, req, {
+            billingId,
+            mrId: normalizedMrId,
+            action: 'item_removed',
+            summary: `${deleteResult.affectedRows || 0} item kode ${itemCode} dihapus dari tagihan`,
+            beforeSnapshot,
+            afterSnapshot
+        });
 
         await connection.commit();
 
@@ -3707,6 +3889,7 @@ router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, n
         }
 
         const deletedItem = itemRows[0];
+        const beforeSnapshot = await getBillingSnapshot(connection, billing.id);
 
         // Delete item by ID
         await connection.query(
@@ -3720,12 +3903,24 @@ router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, n
             [billing.id]
         );
 
+        const actorName = getActorFromRequest(req).actorName;
         await connection.query(
             `UPDATE sunday_clinic_billings
-             SET subtotal = ?, total = ?, updated_at = NOW()
+             SET subtotal = ?, total = ?,
+                 last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
              WHERE id = ?`,
-            [totals.subtotal, totals.subtotal, billing.id]
+            [totals.subtotal, totals.subtotal, actorName, billing.id]
         );
+
+        const afterSnapshot = await getBillingSnapshot(connection, billing.id);
+        await writeBillingAudit(connection, req, {
+            billingId: billing.id,
+            mrId: normalizedMrId,
+            action: 'item_removed',
+            summary: `Item "${deletedItem.item_name}" dihapus dari tagihan`,
+            beforeSnapshot,
+            afterSnapshot
+        });
 
         await connection.commit();
 
@@ -3764,6 +3959,44 @@ router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, n
         if (connection) {
             connection.release();
         }
+    }
+});
+
+// Get billing audit history (staff only)
+router.get('/billing/:mrId/audit', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        if (isPatientUser(req)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Akses ditolak'
+            });
+        }
+
+        const [rows] = await db.query(
+            `SELECT id, billing_id, mr_id, action, actor_user_id, actor_name,
+                    actor_role, summary, before_snapshot, after_snapshot, created_at
+             FROM sunday_clinic_billing_audit_logs
+             WHERE mr_id = ?
+             ORDER BY created_at DESC, id DESC`,
+            [normalizedMrId]
+        );
+
+        res.json({
+            success: true,
+            data: rows.map(row => ({
+                ...row,
+                before_snapshot: parseAuditSnapshot(row.before_snapshot),
+                after_snapshot: parseAuditSnapshot(row.after_snapshot)
+            }))
+        });
+    } catch (error) {
+        logger.error('Failed to get billing audit history', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
     }
 });
 
