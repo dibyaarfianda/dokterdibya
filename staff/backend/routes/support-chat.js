@@ -266,7 +266,7 @@ async function seedFAQ() {
         },
         {
             keywords: ['kontraksi', 'penghitung kontraksi', 'timer kontraksi', 'hitung kontraksi', 'braxton hicks', 'fase laten'],
-            answer: '*Penghitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.',
+            answer: '*Hitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Hitung Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.',
             category: 'fitur',
             priority: 6
         },
@@ -299,7 +299,7 @@ async function syncRevisedFaqAnswers() {
     const feeAnswer = '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nPraktek Minggu tidak menerima BPJS.';
 
     const contractionKeywords = ['kontraksi', 'penghitung kontraksi', 'timer kontraksi', 'hitung kontraksi', 'braxton hicks', 'fase laten'];
-    const contractionAnswer = '*Penghitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.';
+    const contractionAnswer = '*Hitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Hitung Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.';
 
     await db.query(
         `UPDATE support_faq

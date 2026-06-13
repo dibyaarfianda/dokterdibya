@@ -13,25 +13,25 @@ describe('ContractionAssessmentService', () => {
         };
     }
 
-    test('blocks contraction timing before 28 weeks', () => {
+    test('allows contraction timing before 28 weeks with conservative warning copy', () => {
         const assessment = assessContractionPattern({
             gestationalAge: { weeks: 27, days: 6 },
             events: [event(70, 240), event(68, 250), event(72, 245)]
         });
 
         expect(assessment.code).toBe('inconclusive');
-        expect(assessment.canUseTimer).toBe(false);
-        expect(assessment.next_action).toMatch(/Monitoring Kehamilan/);
+        expect(assessment.canUseTimer).toBe(true);
+        expect(assessment.next_action).toMatch(/IGD|unit persalinan/i);
     });
 
-    test('requires a gestational age snapshot before timing contractions', () => {
+    test('allows contraction timing without a gestational age snapshot', () => {
         const assessment = assessContractionPattern({
             events: [event(70, 240), event(68, 250), event(72, 245)]
         });
 
         expect(assessment.code).toBe('inconclusive');
-        expect(assessment.canUseTimer).toBe(false);
-        expect(assessment.next_action).toMatch(/Monitoring Kehamilan/);
+        expect(assessment.canUseTimer).toBe(true);
+        expect(assessment.next_action).toMatch(/Catat|tanda bahaya/i);
     });
 
     test('uses preterm warning for persistent contractions before 37 weeks', () => {

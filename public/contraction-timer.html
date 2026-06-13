@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Penghitung Kontraksi - SISIwanita</title>
+    <title>Hitung Kontraksi - SISIwanita</title>
 
     <link rel="manifest" href="/patient-portal.webmanifest?v=20260606installgate">
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
@@ -522,7 +522,7 @@
         </header>
 
         <section class="hero-card reveal">
-            <div class="status-chip"><span class="status-dot"></span><span>Penghitung Kontraksi</span></div>
+            <div class="status-chip"><span class="status-dot"></span><span>Hitung Kontraksi</span></div>
             <h1 class="hero-title">Catat kontraksi.</h1>
             <p class="hero-copy">Tool edukasi + alarm untuk membaca pola kontraksi secara konservatif. Fase aktif tetap perlu pemeriksaan serviks oleh tenaga kesehatan.</p>
             <div class="today-row">
@@ -598,7 +598,6 @@
 
         const HPHT_KEY = 'patient_pregnancy_tracker_hpht_preview';
         const WHATSAPP_SUPPORT_URL = 'https://wa.me/62895320726801';
-        const MIN_TIMER_DAYS = 28 * 7;
         const urlParams = new URLSearchParams(window.location.search);
         const isMockMode = urlParams.has('mockApi') || urlParams.has('mockContraction');
 
@@ -676,7 +675,6 @@
         }
 
         async function loadTodaySessions() {
-            if (!state.gestationalAge || getGestationalTotalDays() < MIN_TIMER_DAYS) return;
             try {
                 const result = await contractionApiRequest('/api/contraction-timer/today');
                 if (result?.success) {
@@ -788,17 +786,6 @@
             const container = document.getElementById('contraction-content');
             if (!container) return;
 
-            if (!state.gestationalAge) {
-                container.innerHTML = renderHphtFallback();
-                bindHphtForm();
-                return;
-            }
-
-            if (getGestationalTotalDays() < MIN_TIMER_DAYS) {
-                container.innerHTML = renderTooEarly();
-                return;
-            }
-
             container.innerHTML = `
                 <section class="section reveal">
                     <div class="timer-grid">
@@ -842,27 +829,8 @@
             `;
         }
 
-        function renderTooEarly() {
-            const gaText = formatGestationalAge(state.gestationalAge);
-            return `
-                <section class="section reveal">
-                    <div class="assessment-panel">
-                        <div class="assessment-icon"><i class="fa-solid fa-circle-info"></i></div>
-                        <div class="panel-kicker">Belum tersedia</div>
-                        <h3 class="panel-title">Penghitung aktif mulai 28 minggu</h3>
-                        <p class="panel-copy">Usia kehamilan saat ini ${escapeHtml(gaText)}. Bila ada nyeri kuat, perdarahan, cairan ketuban, atau keluhan berat sebelum 28 minggu, segera ke unit persalinan/IGD.</p>
-                        <div class="action-row">
-                            <button type="button" class="primary-action soundable" onclick="go('/pregnancy-tracker.html')"><i class="fa-solid fa-chart-line"></i> Monitoring Kehamilan</button>
-                            <a class="ghost-action soundable" href="${WHATSAPP_SUPPORT_URL}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Bantuan WhatsApp</a>
-                        </div>
-                    </div>
-                </section>
-            `;
-        }
-
         function renderTimerPanel() {
             const isRunning = Boolean(state.contractionStartedAt);
-            const disabled = !state.gestationalAge || getGestationalTotalDays() < MIN_TIMER_DAYS;
             return `
                 <div class="timer-panel">
                     <div class="panel-kicker">${state.activeSession ? 'Sesi aktif' : 'Sesi baru'}</div>
@@ -871,7 +839,7 @@
                     <div class="duration-display" id="duration-display">00:00</div>
                     <div class="duration-sub" id="duration-sub">${isRunning ? 'Kontraksi berlangsung' : 'Durasi kontraksi'}</div>
                     <div class="timer-button-wrap">
-                        <button type="button" class="timer-button soundable ${isRunning ? 'active' : ''}" id="timer-button" onclick="toggleContraction()" ${disabled ? 'disabled' : ''}>
+                        <button type="button" class="timer-button soundable ${isRunning ? 'active' : ''}" id="timer-button" onclick="toggleContraction()">
                             <i class="fa-solid ${isRunning ? 'fa-stop' : 'fa-play'}"></i>
                             <span>${isRunning ? 'Selesai kontraksi' : 'Mulai kontraksi'}</span>
                         </button>
@@ -1040,11 +1008,6 @@
         }
 
         async function startContraction() {
-            if (!state.gestationalAge || getGestationalTotalDays() < MIN_TIMER_DAYS) {
-                showToast('Penghitung aktif mulai 28 minggu', 'warning');
-                return;
-            }
-
             if (!state.activeSession) {
                 const started = await startSession();
                 if (!started) return;

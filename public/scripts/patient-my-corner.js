@@ -96,7 +96,7 @@
         'album-usg': { label: 'Album USG', copy: 'Frame USG', icon: 'fa-image', url: '/album-usg.html', className: 'pmc-room-frame' },
         'active-booking': { label: 'Jadwal', copy: 'Kalender klinik', icon: 'fa-calendar-check', url: '/booking-klinik.html', className: 'pmc-room-calendar' },
         'pregnancy-tracker': { label: 'Tracker', copy: 'Kartu kehamilan', icon: 'fa-chart-line', url: '/pregnancy-tracker.html', className: 'pmc-room-tracker' },
-        'contraction-timer': { label: 'Kontraksi', copy: 'Timer aman', icon: 'fa-wave-square', url: '/contraction-timer.html', className: 'pmc-room-contraction' },
+        'contraction-timer': { label: 'Hitung Kontraksi', copy: 'Timer aman', icon: 'fa-wave-square', url: '/contraction-timer.html', className: 'pmc-room-contraction' },
         documents: { label: 'Dokumen', copy: 'Map medis', icon: 'fa-folder-open', url: '/dokumen-medis.html', className: 'pmc-room-documents' },
         'vitamin-reminder': { label: 'Vitamin', copy: 'Kotak reminder', icon: 'fa-pills', url: '/jadwal-vitamin.html', className: 'pmc-room-vitamin' },
         'tanya-dokter': { label: 'Tanya Dokter', copy: 'Chat aman', icon: 'fa-comments', url: '/tanya-dokter.html', className: 'pmc-room-chat' },
@@ -458,7 +458,7 @@
                 widgets: [
                     { id: 'active-booking', label: 'Booking Aktif', visible: true, order: 10 },
                     { id: 'pregnancy-tracker', label: 'Pregnancy Tracker', visible: true, order: 20 },
-                    { id: 'contraction-timer', label: 'Kontraksi', visible: true, order: 30 },
+                    { id: 'contraction-timer', label: 'Hitung Kontraksi', visible: true, order: 30 },
                     { id: 'documents', label: 'Dokumen', visible: true, order: 40 },
                     { id: 'vitamin-reminder', label: 'Vitamin', visible: true, order: 50 },
                     { id: 'tanya-dokter', label: 'Tanya Dokter', visible: true, order: 60 },

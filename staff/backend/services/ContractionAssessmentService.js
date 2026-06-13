@@ -137,18 +137,16 @@ function assessContractionPattern(input = {}) {
 
     if (!gestationalAge) {
         return createAssessment('inconclusive', {
-            canUseTimer: false,
             reasons: ['usia kehamilan belum tersedia'],
-            next_action: 'Buka Monitoring Kehamilan atau isi HPHT lokal agar usia kehamilan tersedia sebelum memakai timer kontraksi.',
+            next_action: 'Catat kontraksi bila perlu, dan segera ke unit persalinan/IGD bila ada tanda bahaya atau nyeri kuat.',
             stats
         });
     }
 
     if (gestationalAge.totalDays < MIN_TIMER_GA_DAYS) {
         return createAssessment('inconclusive', {
-            canUseTimer: false,
             reasons: [`usia kehamilan ${gestationalAge.weeks} minggu ${gestationalAge.days} hari`],
-            next_action: 'Gunakan Monitoring Kehamilan dan hubungi dokter/IGD bila ada nyeri, perdarahan, atau keluhan berat.',
+            next_action: 'Timer boleh dipakai untuk mencatat pola, tetapi kontraksi/nyeri sebelum 28 minggu sebaiknya dievaluasi langsung di unit persalinan/IGD bila menetap atau disertai tanda bahaya.',
             stats
         });
     }

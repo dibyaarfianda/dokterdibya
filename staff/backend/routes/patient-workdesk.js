@@ -11,7 +11,7 @@ let schemaPromise = null;
 const DEFAULT_WIDGETS = [
     { id: 'active-booking', label: 'Booking Aktif', visible: true, order: 10 },
     { id: 'pregnancy-tracker', label: 'Pregnancy Tracker', visible: true, order: 20 },
-    { id: 'contraction-timer', label: 'Kontraksi', visible: true, order: 30 },
+    { id: 'contraction-timer', label: 'Hitung Kontraksi', visible: true, order: 30 },
     { id: 'documents', label: 'Dokumen', visible: true, order: 40 },
     { id: 'vitamin-reminder', label: 'Vitamin', visible: true, order: 50 },
     { id: 'tanya-dokter', label: 'Tanya Dokter', visible: true, order: 60 },
