@@ -17,11 +17,8 @@ describe('Birth congratulations portal layout', () => {
     });
 
     test('new patient portal carries over legacy birth congratulations interactions', () => {
-        expect(patientMenu).toContain('birth-corner-accent');
         expect(patientMenu).toContain('openBirthPhotoModal');
         expect(patientMenu).toContain('birth-photo-modal');
-        expect(patientMenu).toContain('applyBirthCongratsTheme');
-        expect(patientMenu).toContain('theme_color');
         expect(patientMenu).toContain('/api/patient/birth-pending');
         expect(patientMenu).toContain('/api/patient/birth-data/');
         expect(patientMenu).toContain('/api/patient/birth-extra/');
@@ -35,10 +32,19 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('hidePregnancyTrackerHome');
     });
 
+    test('birth congratulations uses the static portal color without decorative corners', () => {
+        expect(patientMenu).not.toContain('birth-corner-accent');
+        expect(patientMenu).not.toContain('applyBirthCongratsTheme');
+        expect(patientMenu).not.toContain('getBirthTheme');
+        expect(patientMenu).not.toContain('theme_color');
+        expect(patientMenu).not.toContain('--birth-accent');
+        expect(patientMenu).toContain('background: radial-gradient(circle, rgba(179,95,123,0.18), transparent 70%)');
+        expect(patientMenu).toContain('color: var(--rose)');
+    });
+
     test('patient birth endpoints return fields needed by the new portal', () => {
         expect(patientRoutes).toContain('patient_testimonial');
         expect(patientRoutes).toContain('patient_data_submitted');
-        expect(patientRoutes).toContain('theme_color');
         expect(patientRoutes).toContain('photo_url');
         expect(patientRoutes).toContain('/api/patient/birth-photo/:id');
         expect(patientRoutes).toContain('/api/patient/birth-testimonial/:id');
