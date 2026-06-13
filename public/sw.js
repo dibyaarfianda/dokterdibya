@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260613a'; // 2026-06-13 Fix Tanya Dokter answered thread rendering
+const CACHE_VERSION = '20260613b'; // 2026-06-13 Add contraction timer
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -19,6 +19,7 @@ const PRECACHE_FILES = [
   '/patient-tool-template.html',
   '/kick-counter.html',
   '/pregnancy-tracker.html',
+  '/contraction-timer.html',
   '/fertility-calendar.html',
   '/jadwal-vitamin.html',
   '/album-usg.html',

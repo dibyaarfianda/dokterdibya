@@ -265,6 +265,12 @@ async function seedFAQ() {
             priority: 5
         },
         {
+            keywords: ['kontraksi', 'penghitung kontraksi', 'timer kontraksi', 'hitung kontraksi', 'braxton hicks', 'fase laten'],
+            answer: '*Penghitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.',
+            category: 'fitur',
+            priority: 6
+        },
+        {
             keywords: ['notifikasi', 'notif', 'aktifkan notif', 'push notification'],
             answer: '🔔 *Cara Mengaktifkan Notifikasi:*\n\n1. Dari menu utama, pilih **Pengingat**\n2. Tekan **Aktifkan Notifikasi**\n3. Izinkan notifikasi di browser/app\n\nNotifikasi akan memberitahu Anda untuk konfirmasi kehadiran dan reminder janji.',
             category: 'fitur',
@@ -291,6 +297,9 @@ async function syncRevisedFaqAnswers() {
     const bookingAnswer = '📋 *Cara Booking*\n\nPilih menu Booking, pilih tanggal, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi.\n\nSelanjutnya akan ada 2x konfirmasi yaitu pukul 18.00 hari Sabtu dan pukul 05.00 WIB hari Minggu.\n\nJika sampai pukul 09.00 hari Minggu tidak ada konfirmasi, booking hangus.';
     const cancelAnswer = '❌ *Batal Booking*\n\nMasuk ke menu **Riwayat Booking**, pilih jadwal yang ingin dibatalkan, lalu tekan **Batalkan**.';
     const feeAnswer = '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nPraktek Minggu tidak menerima BPJS.';
+
+    const contractionKeywords = ['kontraksi', 'penghitung kontraksi', 'timer kontraksi', 'hitung kontraksi', 'braxton hicks', 'fase laten'];
+    const contractionAnswer = '*Penghitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.';
 
     await db.query(
         `UPDATE support_faq
@@ -319,6 +328,30 @@ async function syncRevisedFaqAnswers() {
          WHERE JSON_SEARCH(keywords, 'one', 'biaya') IS NOT NULL`,
         [feeAnswer]
     );
+
+    const [contractionRows] = await db.query(
+        `SELECT id FROM support_faq
+         WHERE JSON_SEARCH(keywords, 'one', 'kontraksi') IS NOT NULL
+         LIMIT 1`
+    );
+    if (contractionRows.length > 0) {
+        await db.query(
+            `UPDATE support_faq
+             SET keywords = ?,
+                 answer = ?,
+                 category = 'fitur',
+                 priority = 6,
+                 is_active = 1
+             WHERE id = ?`,
+            [JSON.stringify(contractionKeywords), contractionAnswer, contractionRows[0].id]
+        );
+    } else {
+        await db.query(
+            `INSERT INTO support_faq (keywords, answer, category, priority, is_active)
+             VALUES (?, ?, 'fitur', 6, 1)`,
+            [JSON.stringify(contractionKeywords), contractionAnswer]
+        );
+    }
 }
 
 // ===================== BOT ENGINE =====================
