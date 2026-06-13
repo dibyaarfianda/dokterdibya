@@ -115,6 +115,7 @@ function isLegacyPatientNativeAppRequest(req) {
         || fullPath.startsWith('/api/hospital-appointments')
         || fullPath.startsWith('/api/fertility-calendar')
         || fullPath.startsWith('/api/kick-counter')
+        || fullPath.startsWith('/api/contraction-timer')
         || fullPath.startsWith('/api/community-chat')
         || fullPath.startsWith('/api/support-chat')
         || fullPath.startsWith('/api/tanya-subscriptions')
@@ -204,6 +205,7 @@ const billingsRoutes = require('./routes/billings');
 const visitInvoicesRoutes = require('./routes/visit-invoices');
 const aiRoutes = require('./routes/ai');
 const kickCounterRoutes = require('./routes/kick-counter');
+const contractionTimerRoutes = require('./routes/contraction-timer');
 const rumRoutes = require('./routes/rum');
 const communityChatRoutes = require('./routes/community-chat');
 const supportChatRoutes = require('./routes/support-chat');
@@ -268,6 +270,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/tanya-subscriptions', // Tanya Dokter - Subscription & payments
     '/api/registration-codes', // Registration code validation (for new patients)
     '/api/kick-counter',       // Kick counter for fetal movement tracking
+    '/api/contraction-timer',   // Contraction timing for patient labor education
     '/api/doctors',            // List available doctors for Q&A
     '/api/patient-billing',    // Patient billing & online payment
     '/api/community-chat',     // Community profile + chat rooms
@@ -496,6 +499,9 @@ app.use('/', aiRoutes);
 
 // Kick Counter routes (fetal movement tracking)
 app.use('/api/kick-counter', kickCounterRoutes);
+
+// Contraction Timer routes (labor education and alarm)
+app.use('/api/contraction-timer', contractionTimerRoutes);
 
 // Role Management routes
 const rolesRoutes = require('./routes/roles');

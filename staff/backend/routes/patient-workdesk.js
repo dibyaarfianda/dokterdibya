@@ -11,11 +11,12 @@ let schemaPromise = null;
 const DEFAULT_WIDGETS = [
     { id: 'active-booking', label: 'Booking Aktif', visible: true, order: 10 },
     { id: 'pregnancy-tracker', label: 'Pregnancy Tracker', visible: true, order: 20 },
-    { id: 'documents', label: 'Dokumen', visible: true, order: 30 },
-    { id: 'vitamin-reminder', label: 'Vitamin', visible: true, order: 40 },
-    { id: 'tanya-dokter', label: 'Tanya Dokter', visible: true, order: 50 },
-    { id: 'personal-note', label: 'Catatan Pribadi', visible: true, order: 60 },
-    { id: 'favorites', label: 'Favorit', visible: true, order: 70 }
+    { id: 'contraction-timer', label: 'Kontraksi', visible: true, order: 30 },
+    { id: 'documents', label: 'Dokumen', visible: true, order: 40 },
+    { id: 'vitamin-reminder', label: 'Vitamin', visible: true, order: 50 },
+    { id: 'tanya-dokter', label: 'Tanya Dokter', visible: true, order: 60 },
+    { id: 'personal-note', label: 'Catatan Pribadi', visible: true, order: 70 },
+    { id: 'favorites', label: 'Favorit', visible: true, order: 80 }
 ];
 
 const PUBLIC_WIDGET_ALLOWLIST = new Set(['intro', 'favorites', 'journey-note', 'public-links']);
@@ -23,6 +24,7 @@ const ROOM_ITEM_IDS = new Set([
     'album-usg',
     'active-booking',
     'pregnancy-tracker',
+    'contraction-timer',
     'documents',
     'vitamin-reminder',
     'tanya-dokter',

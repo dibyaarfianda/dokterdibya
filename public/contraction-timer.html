@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="id" data-portal-nav="off">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Penghitung Kontraksi - SISIwanita</title>
+
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260606installgate">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script>
+        try { sessionStorage.setItem('patient_portal_mode', 'newdesign'); } catch (error) {}
+        window.__patientPortalHeaderInstalled = true;
+    </script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+
+    <style>
+        body.contraction-timer-page .hero-title {
+            max-width: 11ch;
+        }
+
+        body.contraction-timer-page .hero-copy {
+            max-width: 58ch;
+        }
+
+        body.contraction-timer-page .contraction-source {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        body.contraction-timer-page .timer-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        body.contraction-timer-page .timer-panel,
+        body.contraction-timer-page .assessment-panel,
+        body.contraction-timer-page .summary-panel,
+        body.contraction-timer-page .red-flag-panel,
+        body.contraction-timer-page .history-panel,
+        body.contraction-timer-page .hpht-card {
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            background: rgba(255,255,255,0.86);
+            box-shadow: var(--shadow-soft);
+            padding: 16px;
+        }
+
+        body.contraction-timer-page .panel-kicker {
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+            margin-bottom: 7px;
+        }
+
+        body.contraction-timer-page .panel-title {
+            font-family: var(--display);
+            font-size: 20px;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            margin: 0 0 8px;
+        }
+
+        body.contraction-timer-page .panel-copy {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        body.contraction-timer-page .duration-display {
+            font-family: var(--display);
+            font-size: clamp(56px, 17vw, 98px);
+            font-weight: 800;
+            line-height: 0.98;
+            letter-spacing: -0.055em;
+            color: var(--ink);
+            margin: 18px 0 6px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        body.contraction-timer-page .duration-sub {
+            text-align: center;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 18px;
+        }
+
+        body.contraction-timer-page .timer-button-wrap {
+            display: flex;
+            justify-content: center;
+        }
+
+        body.contraction-timer-page .timer-button {
+            width: min(220px, 72vw);
+            aspect-ratio: 1 / 1;
+            border: 0;
+            border-radius: 50%;
+            background: #111;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 900;
+            box-shadow: 0 18px 40px rgba(17,17,17,0.18);
+            cursor: pointer;
+            transition: transform 0.18s ease, background 0.18s ease;
+        }
+
+        body.contraction-timer-page .timer-button i {
+            font-size: 25px;
+        }
+
+        body.contraction-timer-page .timer-button.active {
+            background: #7f1d1d;
+        }
+
+        body.contraction-timer-page .timer-button:active {
+            transform: scale(0.97);
+        }
+
+        body.contraction-timer-page .timer-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        body.contraction-timer-page .action-row,
+        body.contraction-timer-page .recheck-row,
+        body.contraction-timer-page .hpht-form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 14px;
+        }
+
+        body.contraction-timer-page .portal-button,
+        body.contraction-timer-page .portal-button-ghost,
+        body.contraction-timer-page .primary-action,
+        body.contraction-timer-page .ghost-action {
+            min-height: 42px;
+            border-radius: 999px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            border: 1px solid var(--line);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        body.contraction-timer-page .portal-button,
+        body.contraction-timer-page .primary-action {
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink);
+        }
+
+        body.contraction-timer-page .portal-button-ghost,
+        body.contraction-timer-page .ghost-action {
+            background: rgba(255,255,255,0.75);
+            color: var(--ink);
+        }
+
+        body.contraction-timer-page .assessment-panel {
+            border-color: rgba(17,17,17,0.1);
+        }
+
+        body.contraction-timer-page .assessment-panel.emergency_now,
+        body.contraction-timer-page .assessment-panel.preterm_warning,
+        body.contraction-timer-page .assessment-panel.urgent_evaluation {
+            border-color: rgba(127, 29, 29, 0.36);
+            background: rgba(254, 242, 242, 0.92);
+        }
+
+        body.contraction-timer-page .assessment-panel.braxton_hicks_like {
+            border-color: rgba(92, 127, 114, 0.26);
+            background: rgba(240, 253, 244, 0.82);
+        }
+
+        body.contraction-timer-page .assessment-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 15px;
+            display: grid;
+            place-items: center;
+            background: var(--green-soft);
+            color: var(--green);
+            margin-bottom: 10px;
+        }
+
+        body.contraction-timer-page .assessment-panel.emergency_now .assessment-icon,
+        body.contraction-timer-page .assessment-panel.preterm_warning .assessment-icon,
+        body.contraction-timer-page .assessment-panel.urgent_evaluation .assessment-icon {
+            background: rgba(127, 29, 29, 0.12);
+            color: #7f1d1d;
+        }
+
+        body.contraction-timer-page .reason-list {
+            list-style: none;
+            display: grid;
+            gap: 7px;
+            margin: 12px 0 0;
+            padding: 0;
+        }
+
+        body.contraction-timer-page .reason-list li {
+            display: flex;
+            gap: 8px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        body.contraction-timer-page .reason-list i {
+            color: var(--green);
+            margin-top: 3px;
+            flex: 0 0 auto;
+        }
+
+        body.contraction-timer-page .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 9px;
+        }
+
+        body.contraction-timer-page .summary-stat {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.62);
+            border-radius: 16px;
+            padding: 12px 8px;
+            min-height: 84px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        body.contraction-timer-page .summary-stat .value {
+            font-family: var(--display);
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+            line-height: 1;
+        }
+
+        body.contraction-timer-page .summary-stat .label {
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        body.contraction-timer-page .red-flag-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        body.contraction-timer-page .flag-option {
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.74);
+            color: var(--ink);
+            border-radius: 16px;
+            padding: 11px;
+            display: flex;
+            gap: 9px;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        body.contraction-timer-page .flag-option input {
+            width: 17px;
+            height: 17px;
+            accent-color: #7f1d1d;
+            flex: 0 0 auto;
+        }
+
+        body.contraction-timer-page .flag-option:has(input:checked) {
+            border-color: rgba(127, 29, 29, 0.35);
+            background: rgba(254, 242, 242, 0.9);
+        }
+
+        body.contraction-timer-page .event-list,
+        body.contraction-timer-page .history-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        body.contraction-timer-page .event-row,
+        body.contraction-timer-page .history-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--line);
+            padding: 10px 2px;
+        }
+
+        body.contraction-timer-page .event-row:last-child,
+        body.contraction-timer-page .history-row:last-child {
+            border-bottom: 0;
+        }
+
+        body.contraction-timer-page .row-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: var(--ink);
+        }
+
+        body.contraction-timer-page .row-sub {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.35;
+            margin-top: 3px;
+        }
+
+        body.contraction-timer-page .row-pill {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 7px 10px;
+            color: var(--ink);
+            background: rgba(255,255,255,0.7);
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        body.contraction-timer-page .portal-field {
+            flex: 1 1 180px;
+        }
+
+        body.contraction-timer-page .portal-field label {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        body.contraction-timer-page .portal-input {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.74);
+            color: var(--ink);
+            padding: 11px 12px;
+            font: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+
+        body.contraction-timer-page .empty-state {
+            text-align: center;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 22px 12px;
+        }
+
+        body.contraction-timer-page .history-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            background: rgba(17,17,17,0.38);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            display: none;
+            padding: 18px;
+            align-items: flex-end;
+        }
+
+        body.contraction-timer-page .history-modal.active {
+            display: flex;
+        }
+
+        body.contraction-timer-page .history-modal-panel {
+            width: min(100%, 620px);
+            max-height: min(620px, calc(100vh - 56px));
+            margin: 0 auto;
+            border-radius: 24px;
+            background: #fff;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.contraction-timer-page .history-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        body.contraction-timer-page .history-modal-head h3 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        body.contraction-timer-page .history-modal-close {
+            border: 1px solid var(--line);
+            background: #fff;
+            width: 34px;
+            height: 34px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+        }
+
+        body.contraction-timer-page .history-modal-body {
+            overflow-y: auto;
+            padding: 12px 16px 16px;
+        }
+
+        body.contraction-timer-page .history-pagination {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        @media (max-width: 720px) {
+            body.contraction-timer-page .timer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            body.contraction-timer-page .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            body.contraction-timer-page .hero-title {
+                max-width: 10ch;
+            }
+
+            body.contraction-timer-page .red-flag-grid {
+                grid-template-columns: 1fr;
+            }
+
+            body.contraction-timer-page .action-row > *,
+            body.contraction-timer-page .recheck-row > *,
+            body.contraction-timer-page .hpht-form-row > * {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+<body class="home-sections-locked patient-tool-shell contraction-timer-page" data-tool-shell-active="aplikasi">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
+    </div>
+
+    <main class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Wanita Sehat</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </button>
+                    <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
+                        <img id="user-avatar-img" alt="">
+                        <span id="user-avatar-initials">--</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-card reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Penghitung Kontraksi</span></div>
+            <h1 class="hero-title">Catat kontraksi.</h1>
+            <p class="hero-copy">Tool edukasi + alarm untuk membaca pola kontraksi secara konservatif. Fase aktif tetap perlu pemeriksaan serviks oleh tenaga kesehatan.</p>
+            <div class="today-row">
+                <div>
+                    <div class="today-label">Usia Kehamilan</div>
+                    <div class="today-value contraction-source" id="gestational-source"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="go('/pregnancy-tracker.html')">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Monitoring</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="loading" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Memuat penghitung kontraksi...</span>
+        </div>
+
+        <div id="content-wrapper">
+            <div id="contraction-content"></div>
+        </div>
+    </main>
+
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
+
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu.html')" aria-label="Beranda">
+                <i class="fa-solid fa-house"></i><span>Beranda</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen">
+                <i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span>
+            </button>
+            <button class="nav-item active soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi">
+                <i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal">
+                <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
+            </button>
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang">
+                <i class="fa-solid fa-door-open"></i><span>Ruang</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="history-modal" id="history-modal" aria-label="Riwayat kontraksi">
+        <div class="history-modal-panel">
+            <div class="history-modal-head">
+                <h3>Riwayat Kontraksi</h3>
+                <button class="history-modal-close soundable" type="button" onclick="closeHistoryModal()" aria-label="Tutup">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="history-modal-body" id="history-modal-body"></div>
+            <div class="history-pagination" id="history-pagination">
+                <button type="button" class="portal-button-ghost soundable" id="prev-page-btn" onclick="changeHistoryPage(-1)">Sebelumnya</button>
+                <span class="row-sub" id="page-info">Halaman 1</span>
+                <button type="button" class="portal-button-ghost soundable" id="next-page-btn" onclick="changeHistoryPage(1)">Berikutnya</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="/scripts/patient-tool-shell.js?v=20260605ruangsaya"></script>
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, escapeHtml } from '/scripts/patient-utils.js';
+
+        const HPHT_KEY = 'patient_pregnancy_tracker_hpht_preview';
+        const WHATSAPP_SUPPORT_URL = 'https://wa.me/62895320726801';
+        const MIN_TIMER_DAYS = 28 * 7;
+        const urlParams = new URLSearchParams(window.location.search);
+        const isMockMode = urlParams.has('mockApi') || urlParams.has('mockContraction');
+
+        const state = {
+            gestationalAge: null,
+            gestationalSource: 'unknown',
+            activeSession: null,
+            todaySessions: [],
+            contractionStartedAt: null,
+            timerInterval: null,
+            currentHistoryPage: 1,
+            totalHistoryPages: 1,
+            redFlags: []
+        };
+
+        const mockState = {
+            session: null,
+            sessions: []
+        };
+
+        if (isMockMode && !getToken()) {
+            localStorage.setItem('vps_auth_token', 'mock-contraction-token');
+            localStorage.setItem('patient_user', JSON.stringify({ fullname: 'Nanda Ananda' }));
+        }
+
+        window.PatientToolShell?.init({ activeNav: 'aplikasi' });
+
+        if (checkAuth()) {
+            initContractionTimer();
+        }
+
+        async function initContractionTimer() {
+            window.PatientToolShell?.updateAvatarInitials();
+            await loadGestationalAge();
+            await loadTodaySessions();
+            render();
+            window.PatientToolShell?.showContent({ loadingId: 'loading-state', contentId: 'content-wrapper' });
+        }
+
+        async function loadGestationalAge() {
+            try {
+                const tracker = await pregnancyApiRequest();
+                if (tracker?.success && tracker.data) {
+                    const data = normalizeTrackerData(tracker.data);
+                    state.gestationalAge = { weeks: Number(data.weeksPregnant || 0), days: Number(data.daysExtra || 0) };
+                    state.gestationalSource = data.source === 'local' ? 'HPHT lokal' : data.source === 'mock' ? 'Mock data' : 'USG terakhir';
+                    setGestationalSource();
+                    return;
+                }
+            } catch (error) {
+                console.warn('Pregnancy tracker unavailable:', error);
+            }
+
+            const localHpht = localStorage.getItem(HPHT_KEY);
+            if (localHpht && isValidLocalDate(localHpht)) {
+                const data = createTrackerDataFromHpht(localHpht, 'local');
+                state.gestationalAge = { weeks: data.weeksPregnant, days: data.daysExtra };
+                state.gestationalSource = 'HPHT lokal';
+                setGestationalSource();
+                return;
+            }
+
+            state.gestationalAge = null;
+            state.gestationalSource = 'Belum tersedia';
+            setGestationalSource();
+        }
+
+        async function pregnancyApiRequest() {
+            if (isMockMode) {
+                await wait(90);
+                const hpht = localStorage.getItem(HPHT_KEY) || getMockHpht(39, 1);
+                return { success: true, data: createTrackerDataFromHpht(hpht, 'mock') };
+            }
+            return apiRequest('/api/patients/pregnancy-tracker?_t=' + Date.now());
+        }
+
+        async function loadTodaySessions() {
+            if (!state.gestationalAge || getGestationalTotalDays() < MIN_TIMER_DAYS) return;
+            try {
+                const result = await contractionApiRequest('/api/contraction-timer/today');
+                if (result?.success) {
+                    state.todaySessions = result.sessions || [];
+                    state.activeSession = result.active_session || state.todaySessions.find(session => session.status === 'active') || null;
+                    state.redFlags = Array.isArray(state.activeSession?.red_flags) ? state.activeSession.red_flags : [];
+                }
+            } catch (error) {
+                console.error('Contraction today error:', error);
+                showToast('Gagal memuat sesi kontraksi', 'error');
+            }
+        }
+
+        async function contractionApiRequest(url, options = {}) {
+            if (!isMockMode) return apiRequest(url, options);
+            const method = String(options.method || 'GET').toUpperCase();
+            const body = options.body ? JSON.parse(options.body) : {};
+            await wait(90);
+
+            if (url.startsWith('/api/contraction-timer/today')) {
+                return {
+                    success: true,
+                    sessions: [mockState.session, ...mockState.sessions].filter(Boolean),
+                    active_session: mockState.session,
+                    summary: {
+                        total_sessions: mockState.sessions.length + (mockState.session ? 1 : 0),
+                        total_contractions: getMockEvents(mockState.session).length
+                    }
+                };
+            }
+
+            if (url.startsWith('/api/contraction-timer/session') && method === 'POST') {
+                mockState.session = {
+                    id: Date.now(),
+                    session_date: formatLocalDate(new Date()),
+                    gestational_age_weeks: body.gestational_age?.weeks ?? body.gestationalAge?.weeks ?? 39,
+                    gestational_age_days: body.gestational_age?.days ?? body.gestationalAge?.days ?? 0,
+                    status: 'active',
+                    started_at: new Date().toISOString(),
+                    ended_at: null,
+                    contraction_count: 0,
+                    rest_hydration_result: 'unknown',
+                    red_flags: [],
+                    events: [],
+                    assessment: createClientAssessment([], { weeks: 39, days: 0 }, 'unknown', [])
+                };
+                return { success: true, session: mockState.session };
+            }
+
+            if (url.startsWith('/api/contraction-timer/event') && method === 'POST') {
+                if (!mockState.session) return { success: false, message: 'Belum ada sesi aktif' };
+                const startedAt = new Date(body.started_at_client || body.startedAtClient);
+                const endedAt = new Date(body.ended_at_client || body.endedAtClient);
+                const previous = mockState.session.events[mockState.session.events.length - 1];
+                const interval = previous ? Math.max(0, Math.round((startedAt.getTime() - new Date(previous.started_at_client).getTime()) / 1000)) : null;
+                const event = {
+                    id: Date.now(),
+                    started_at_client: startedAt.toISOString(),
+                    ended_at_client: endedAt.toISOString(),
+                    duration_seconds: Math.max(1, Math.round((endedAt.getTime() - startedAt.getTime()) / 1000)),
+                    interval_from_previous_seconds: interval
+                };
+                mockState.session.events.push(event);
+                mockState.session.contraction_count = mockState.session.events.length;
+                mockState.session.assessment = createClientAssessment(
+                    mockState.session.events,
+                    { weeks: mockState.session.gestational_age_weeks, days: mockState.session.gestational_age_days },
+                    mockState.session.rest_hydration_result,
+                    mockState.session.red_flags
+                );
+                return { success: true, event, session: mockState.session };
+            }
+
+            if (/\/api\/contraction-timer\/session\/\d+\/assessment/.test(url) && method === 'PUT') {
+                if (!mockState.session) return { success: false, message: 'Sesi tidak ditemukan' };
+                mockState.session.rest_hydration_result = body.rest_hydration_result || body.restHydrationResult || 'unknown';
+                mockState.session.red_flags = body.red_flags || body.redFlags || [];
+                mockState.session.assessment = createClientAssessment(
+                    mockState.session.events,
+                    { weeks: mockState.session.gestational_age_weeks, days: mockState.session.gestational_age_days },
+                    mockState.session.rest_hydration_result,
+                    mockState.session.red_flags
+                );
+                return { success: true, session: mockState.session };
+            }
+
+            if (/\/api\/contraction-timer\/session\/\d+\/end/.test(url) && method === 'PUT') {
+                if (!mockState.session) return { success: false, message: 'Sesi tidak ditemukan' };
+                mockState.session.status = 'completed';
+                mockState.session.ended_at = new Date().toISOString();
+                mockState.sessions.unshift(mockState.session);
+                const completed = mockState.session;
+                mockState.session = null;
+                return { success: true, session: completed };
+            }
+
+            if (url.startsWith('/api/contraction-timer/history')) {
+                return {
+                    success: true,
+                    sessions: [mockState.session, ...mockState.sessions].filter(Boolean),
+                    pagination: { page: 1, limit: 10, total: mockState.sessions.length + (mockState.session ? 1 : 0), totalPages: 1 }
+                };
+            }
+
+            return { success: false, message: 'Mock endpoint tidak tersedia' };
+        }
+
+        function render() {
+            const container = document.getElementById('contraction-content');
+            if (!container) return;
+
+            if (!state.gestationalAge) {
+                container.innerHTML = renderHphtFallback();
+                bindHphtForm();
+                return;
+            }
+
+            if (getGestationalTotalDays() < MIN_TIMER_DAYS) {
+                container.innerHTML = renderTooEarly();
+                return;
+            }
+
+            container.innerHTML = `
+                <section class="section reveal">
+                    <div class="timer-grid">
+                        ${renderTimerPanel()}
+                        ${renderAssessmentPanel()}
+                    </div>
+                </section>
+
+                <section class="section reveal">
+                    ${renderSummaryPanel()}
+                </section>
+
+                <section class="section reveal">
+                    ${renderRedFlagPanel()}
+                </section>
+
+                <section class="section reveal">
+                    ${renderRecentPanel()}
+                </section>
+            `;
+            syncRedFlagInputs();
+            updateTimerVisual();
+        }
+
+        function renderHphtFallback() {
+            return `
+                <section class="section reveal">
+                    <div class="hpht-card">
+                        <div class="panel-kicker">Data Kehamilan</div>
+                        <h3 class="panel-title">Usia kehamilan belum tersedia</h3>
+                        <p class="panel-copy">Isi HPHT untuk pratinjau lokal. Data resmi tetap mengikuti catatan USG dokter di Monitoring Kehamilan.</p>
+                        <form class="hpht-form-row" id="hpht-form">
+                            <div class="portal-field">
+                                <label for="hphtInput">Tanggal HPHT</label>
+                                <input type="date" id="hphtInput" class="portal-input" required>
+                            </div>
+                            <button type="submit" class="portal-button soundable"><i class="fa-solid fa-calculator"></i> Hitung</button>
+                        </form>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderTooEarly() {
+            const gaText = formatGestationalAge(state.gestationalAge);
+            return `
+                <section class="section reveal">
+                    <div class="assessment-panel">
+                        <div class="assessment-icon"><i class="fa-solid fa-circle-info"></i></div>
+                        <div class="panel-kicker">Belum tersedia</div>
+                        <h3 class="panel-title">Penghitung aktif mulai 28 minggu</h3>
+                        <p class="panel-copy">Usia kehamilan saat ini ${escapeHtml(gaText)}. Bila ada nyeri kuat, perdarahan, cairan ketuban, atau keluhan berat sebelum 28 minggu, segera ke unit persalinan/IGD.</p>
+                        <div class="action-row">
+                            <button type="button" class="primary-action soundable" onclick="go('/pregnancy-tracker.html')"><i class="fa-solid fa-chart-line"></i> Monitoring Kehamilan</button>
+                            <a class="ghost-action soundable" href="${WHATSAPP_SUPPORT_URL}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Bantuan WhatsApp</a>
+                        </div>
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderTimerPanel() {
+            const isRunning = Boolean(state.contractionStartedAt);
+            const disabled = !state.gestationalAge || getGestationalTotalDays() < MIN_TIMER_DAYS;
+            return `
+                <div class="timer-panel">
+                    <div class="panel-kicker">${state.activeSession ? 'Sesi aktif' : 'Sesi baru'}</div>
+                    <h3 class="panel-title">${state.activeSession ? 'Catatan hari ini' : 'Mulai saat kontraksi terasa'}</h3>
+                    <p class="panel-copy">${state.activeSession ? 'Sesi tersimpan di akun pasien dan akan muncul lagi setelah refresh.' : 'Tekan mulai saat kontraksi dimulai, lalu selesai saat kontraksi berhenti.'}</p>
+                    <div class="duration-display" id="duration-display">00:00</div>
+                    <div class="duration-sub" id="duration-sub">${isRunning ? 'Kontraksi berlangsung' : 'Durasi kontraksi'}</div>
+                    <div class="timer-button-wrap">
+                        <button type="button" class="timer-button soundable ${isRunning ? 'active' : ''}" id="timer-button" onclick="toggleContraction()" ${disabled ? 'disabled' : ''}>
+                            <i class="fa-solid ${isRunning ? 'fa-stop' : 'fa-play'}"></i>
+                            <span>${isRunning ? 'Selesai kontraksi' : 'Mulai kontraksi'}</span>
+                        </button>
+                    </div>
+                    <div class="action-row">
+                        <button type="button" class="portal-button-ghost soundable" onclick="openHistoryModal()"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</button>
+                        ${state.activeSession ? '<button type="button" class="portal-button-ghost soundable" onclick="endSession()"><i class="fa-solid fa-check"></i> Selesai sesi</button>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAssessmentPanel() {
+            const assessment = getAssessment();
+            const code = assessment.code || 'inconclusive';
+            const urgent = ['emergency_now', 'preterm_warning', 'urgent_evaluation'].includes(code);
+            const actionText = urgent ? 'segera ke unit persalinan/IGD' : assessment.next_action;
+            return `
+                <div class="assessment-panel ${escapeHtml(code)}">
+                    <div class="assessment-icon"><i class="fa-solid ${urgent ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i></div>
+                    <div class="panel-kicker">Hasil sementara</div>
+                    <h3 class="panel-title">${escapeHtml(assessment.label || 'Belum cukup data')}</h3>
+                    <p class="panel-copy">${escapeHtml(assessment.copy || 'Catat beberapa kontraksi lagi agar pola lebih mudah dibaca.')}</p>
+                    <ul class="reason-list">
+                        ${(assessment.reasons || []).slice(0, 4).map(reason => `<li><i class="fa-solid fa-check"></i><span>${escapeHtml(reason)}</span></li>`).join('') || '<li><i class="fa-solid fa-clock"></i><span>Butuh minimal 3 kontraksi untuk membaca pola.</span></li>'}
+                    </ul>
+                    <div class="action-row">
+                        ${urgent ? `
+                            <button type="button" class="primary-action soundable" onclick="showUrgentInstruction()"><i class="fa-solid fa-triangle-exclamation"></i> Segera ke unit persalinan/IGD</button>
+                            <a class="ghost-action soundable" href="${WHATSAPP_SUPPORT_URL}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Bantuan WhatsApp</a>
+                        ` : ''}
+                        <button type="button" class="${urgent ? 'portal-button-ghost' : 'portal-button'} soundable" onclick="go('/pregnancy-tracker.html')"><i class="fa-solid fa-chart-line"></i> Monitoring</button>
+                    </div>
+                    <p class="panel-copy" style="margin-top:10px;font-weight:800;color:${urgent ? '#7f1d1d' : 'var(--muted)'}">${escapeHtml(actionText || '')}</p>
+                </div>
+            `;
+        }
+
+        function renderSummaryPanel() {
+            const events = getEvents();
+            const stats = summarizeEvents(events);
+            return `
+                <div class="summary-panel">
+                    <div class="panel-kicker">Ringkasan Sesi</div>
+                    <div class="summary-grid">
+                        <div class="summary-stat">
+                            <div class="value">${events.length}</div>
+                            <div class="label">Kontraksi</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="value">${stats.avgDuration ? Math.round(stats.avgDuration) : '-'}</div>
+                            <div class="label">Detik rata-rata</div>
+                        </div>
+                        <div class="summary-stat">
+                            <div class="value">${stats.avgInterval ? Math.round(stats.avgInterval / 60) : '-'}</div>
+                            <div class="label">Menit jarak</div>
+                        </div>
+                    </div>
+                    ${events.length >= 3 ? `
+                        <div class="recheck-row">
+                            <button type="button" class="portal-button-ghost soundable" onclick="setRestHydrationResult('improved')"><i class="fa-solid fa-mug-hot"></i> Mereda setelah istirahat/minum/ganti posisi</button>
+                            <button type="button" class="portal-button-ghost soundable" onclick="setRestHydrationResult('not_improved')"><i class="fa-solid fa-wave-square"></i> Tidak mereda</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderRedFlagPanel() {
+            const flags = [
+                ['bleeding', 'Perdarahan'],
+                ['ketuban_pecah', 'Air ketuban keluar'],
+                ['constant_pain', 'Nyeri menetap di luar kontraksi'],
+                ['reduced_fetal_movement', 'Gerak bayi berkurang'],
+                ['severe_symptoms', 'Gejala berat lain']
+            ];
+            return `
+                <div class="red-flag-panel">
+                    <div class="panel-kicker">Tanda Bahaya</div>
+                    <h3 class="panel-title">Utamakan alarm klinis</h3>
+                    <p class="panel-copy">Jika salah satu muncul, hasil pola kontraksi tidak dipakai sebagai penentu. Arah utama: segera ke unit persalinan/IGD.</p>
+                    <div class="red-flag-grid">
+                        ${flags.map(([value, label]) => `
+                            <label class="flag-option">
+                                <input type="checkbox" value="${value}" onchange="toggleRedFlag(this)">
+                                <span>${label}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRecentPanel() {
+            const events = getEvents();
+            const todayCompleted = state.todaySessions.filter(session => session.status !== 'active').slice(0, 3);
+            return `
+                <div class="history-panel">
+                    <div class="panel-kicker">Catatan Terakhir</div>
+                    <h3 class="panel-title">Kontraksi hari ini</h3>
+                    <div class="event-list">
+                        ${events.length ? events.slice(-5).reverse().map((event, index) => renderEventRow(event, events.length - index)).join('') : '<div class="empty-state">Belum ada kontraksi tercatat.</div>'}
+                    </div>
+                    ${todayCompleted.length ? `
+                        <div class="history-list">
+                            ${todayCompleted.map(session => renderHistoryRow(session)).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderEventRow(event, number) {
+            const interval = event.interval_from_previous_seconds ? `${Math.round(event.interval_from_previous_seconds / 60)} menit dari sebelumnya` : 'Kontraksi pertama';
+            return `
+                <div class="event-row">
+                    <div>
+                        <div class="row-title">Kontraksi ${number}</div>
+                        <div class="row-sub">${formatTime(event.started_at_client)} - ${interval}</div>
+                    </div>
+                    <div class="row-pill">${Math.round(Number(event.duration_seconds || 0))} detik</div>
+                </div>
+            `;
+        }
+
+        function renderHistoryRow(session) {
+            const assessment = session.assessment || {};
+            const events = Array.isArray(session.events) ? session.events : [];
+            return `
+                <div class="history-row">
+                    <div>
+                        <div class="row-title">${formatDate(session.started_at || session.session_date)} - ${escapeHtml(assessment.label || 'Sesi kontraksi')}</div>
+                        <div class="row-sub">${events.length || Number(session.contraction_count || 0)} kontraksi - ${escapeHtml(formatGestationalAge({ weeks: session.gestational_age_weeks, days: session.gestational_age_days }))}</div>
+                    </div>
+                    <div class="row-pill">${escapeHtml(session.status === 'active' ? 'Aktif' : 'Selesai')}</div>
+                </div>
+            `;
+        }
+
+        function getAssessment() {
+            if (state.activeSession?.assessment) return state.activeSession.assessment;
+            if (state.redFlags.length) {
+                return {
+                    code: 'emergency_now',
+                    label: 'Tanda bahaya',
+                    copy: 'Ada tanda bahaya yang perlu dinilai langsung, terlepas dari pola kontraksi.',
+                    reasons: state.redFlags.map(flag => getFlagLabel(flag)),
+                    next_action: 'Segera ke IGD/unit persalinan terdekat.'
+                };
+            }
+            return {
+                code: 'inconclusive',
+                label: 'Belum cukup data',
+                copy: 'Catat beberapa kontraksi lagi agar pola lebih mudah dibaca.',
+                reasons: [],
+                next_action: 'Lanjutkan pencatatan dan perhatikan tanda bahaya.'
+            };
+        }
+
+        async function toggleContraction() {
+            if (state.contractionStartedAt) {
+                await finishContraction();
+                return;
+            }
+            await startContraction();
+        }
+
+        async function startContraction() {
+            if (!state.gestationalAge || getGestationalTotalDays() < MIN_TIMER_DAYS) {
+                showToast('Penghitung aktif mulai 28 minggu', 'warning');
+                return;
+            }
+
+            if (!state.activeSession) {
+                const started = await startSession();
+                if (!started) return;
+            }
+
+            state.contractionStartedAt = new Date();
+            startTimerInterval();
+            render();
+        }
+
+        async function startSession() {
+            try {
+                const result = await contractionApiRequest('/api/contraction-timer/session', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        gestational_age: state.gestationalAge,
+                        source: state.gestationalSource || 'unknown'
+                    })
+                });
+                if (!result?.success || !result.session) {
+                    showToast(result?.message || 'Gagal memulai sesi kontraksi', 'error');
+                    return false;
+                }
+                state.activeSession = result.session;
+                state.todaySessions = [result.session, ...state.todaySessions.filter(session => session.id !== result.session.id)];
+                if (state.redFlags.length) await updateAssessment();
+                showToast('Sesi kontraksi dimulai', 'success');
+                return true;
+            } catch (error) {
+                console.error('Start session error:', error);
+                showToast('Gagal memulai sesi kontraksi', 'error');
+                return false;
+            }
+        }
+
+        async function finishContraction() {
+            if (!state.activeSession || !state.contractionStartedAt) return;
+            const startedAt = state.contractionStartedAt;
+            const endedAt = new Date();
+            stopTimerInterval();
+            state.contractionStartedAt = null;
+
+            try {
+                const result = await contractionApiRequest('/api/contraction-timer/event', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        session_id: state.activeSession.id,
+                        started_at_client: startedAt.toISOString(),
+                        ended_at_client: endedAt.toISOString()
+                    })
+                });
+                if (result?.success && result.session) {
+                    state.activeSession = result.session;
+                    state.todaySessions = [result.session, ...state.todaySessions.filter(session => session.id !== result.session.id)];
+                    state.redFlags = Array.isArray(result.session.red_flags) ? result.session.red_flags : state.redFlags;
+                    showToast('Kontraksi tercatat', 'success');
+                    render();
+                    return;
+                }
+                showToast(result?.message || 'Gagal mencatat kontraksi', 'error');
+            } catch (error) {
+                console.error('Finish contraction error:', error);
+                showToast('Gagal mencatat kontraksi', 'error');
+            }
+            render();
+        }
+
+        async function endSession() {
+            if (!state.activeSession) return;
+            if (state.contractionStartedAt) {
+                showToast('Selesaikan kontraksi yang sedang berjalan dulu', 'warning');
+                return;
+            }
+            try {
+                const result = await contractionApiRequest(`/api/contraction-timer/session/${state.activeSession.id}/end`, { method: 'PUT' });
+                if (result?.success) {
+                    state.todaySessions = [result.session, ...state.todaySessions.filter(session => session.id !== result.session.id)];
+                    state.activeSession = null;
+                    state.redFlags = [];
+                    showToast('Sesi kontraksi selesai', 'success');
+                    render();
+                    return;
+                }
+                showToast(result?.message || 'Gagal menyelesaikan sesi', 'error');
+            } catch (error) {
+                console.error('End session error:', error);
+                showToast('Gagal menyelesaikan sesi', 'error');
+            }
+        }
+
+        async function setRestHydrationResult(value) {
+            if (!state.activeSession) {
+                showToast('Mulai sesi dulu untuk menyimpan hasil reassessment', 'warning');
+                return;
+            }
+            state.activeSession.rest_hydration_result = value;
+            await updateAssessment();
+        }
+
+        async function toggleRedFlag(input) {
+            const value = input.value;
+            state.redFlags = input.checked
+                ? Array.from(new Set([...state.redFlags, value]))
+                : state.redFlags.filter(flag => flag !== value);
+            if (state.activeSession) await updateAssessment();
+            else render();
+        }
+
+        async function updateAssessment() {
+            if (!state.activeSession) return;
+            try {
+                const result = await contractionApiRequest(`/api/contraction-timer/session/${state.activeSession.id}/assessment`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        rest_hydration_result: state.activeSession.rest_hydration_result || 'unknown',
+                        red_flags: state.redFlags
+                    })
+                });
+                if (result?.success && result.session) {
+                    state.activeSession = result.session;
+                    state.redFlags = Array.isArray(result.session.red_flags) ? result.session.red_flags : state.redFlags;
+                    state.todaySessions = [result.session, ...state.todaySessions.filter(session => session.id !== result.session.id)];
+                    render();
+                    return;
+                }
+                showToast(result?.message || 'Gagal memperbarui asesmen', 'error');
+            } catch (error) {
+                console.error('Assessment update error:', error);
+                showToast('Gagal memperbarui asesmen', 'error');
+            }
+        }
+
+        function bindHphtForm() {
+            const form = document.getElementById('hpht-form');
+            const input = document.getElementById('hphtInput');
+            if (!form || !input) return;
+            input.value = localStorage.getItem(HPHT_KEY) || '';
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const hpht = input.value;
+                if (!hpht || !isValidLocalDate(hpht)) {
+                    showToast('Tanggal HPHT belum valid', 'warning');
+                    return;
+                }
+                localStorage.setItem(HPHT_KEY, hpht);
+                const data = createTrackerDataFromHpht(hpht, 'local');
+                state.gestationalAge = { weeks: data.weeksPregnant, days: data.daysExtra };
+                state.gestationalSource = 'HPHT lokal';
+                setGestationalSource();
+                await loadTodaySessions();
+                render();
+                showToast('Usia kehamilan dihitung dari HPHT lokal', 'success');
+            });
+        }
+
+        function startTimerInterval() {
+            stopTimerInterval();
+            state.timerInterval = window.setInterval(updateTimerVisual, 250);
+        }
+
+        function stopTimerInterval() {
+            if (state.timerInterval) window.clearInterval(state.timerInterval);
+            state.timerInterval = null;
+        }
+
+        function updateTimerVisual() {
+            const display = document.getElementById('duration-display');
+            const sub = document.getElementById('duration-sub');
+            if (!display) return;
+            if (!state.contractionStartedAt) {
+                display.textContent = '00:00';
+                if (sub) sub.textContent = 'Durasi kontraksi';
+                return;
+            }
+            const seconds = Math.max(0, Math.floor((Date.now() - state.contractionStartedAt.getTime()) / 1000));
+            display.textContent = formatDuration(seconds);
+            if (sub) sub.textContent = 'Kontraksi berlangsung';
+        }
+
+        function openHistoryModal() {
+            document.getElementById('history-modal')?.classList.add('active');
+            loadHistory(1);
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal')?.classList.remove('active');
+        }
+
+        function changeHistoryPage(delta) {
+            const nextPage = Math.max(1, Math.min(state.totalHistoryPages, state.currentHistoryPage + delta));
+            if (nextPage !== state.currentHistoryPage) loadHistory(nextPage);
+        }
+
+        function showUrgentInstruction() {
+            showToast('Segera ke unit persalinan/IGD terdekat', 'warning', 4200);
+        }
+
+        async function loadHistory(page) {
+            const container = document.getElementById('history-modal-body');
+            if (!container) return;
+            container.innerHTML = '<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Memuat riwayat...</div>';
+            try {
+                const result = await contractionApiRequest(`/api/contraction-timer/history?page=${page}&limit=10`);
+                if (!result?.success) {
+                    container.innerHTML = '<div class="empty-state">Gagal memuat riwayat.</div>';
+                    return;
+                }
+                const sessions = result.sessions || [];
+                container.innerHTML = sessions.length
+                    ? `<div class="history-list">${sessions.map(session => renderHistoryRow(session)).join('')}</div>`
+                    : '<div class="empty-state">Belum ada riwayat kontraksi.</div>';
+                state.currentHistoryPage = page;
+                state.totalHistoryPages = result.pagination?.totalPages || 1;
+                const pager = document.getElementById('history-pagination');
+                if (pager) pager.style.display = state.totalHistoryPages > 1 ? 'flex' : 'none';
+                document.getElementById('page-info').textContent = `Halaman ${state.currentHistoryPage} dari ${state.totalHistoryPages}`;
+                document.getElementById('prev-page-btn').disabled = state.currentHistoryPage <= 1;
+                document.getElementById('next-page-btn').disabled = state.currentHistoryPage >= state.totalHistoryPages;
+            } catch (error) {
+                console.error('History error:', error);
+                container.innerHTML = '<div class="empty-state">Gagal memuat riwayat.</div>';
+            }
+        }
+
+        function syncRedFlagInputs() {
+            document.querySelectorAll('.flag-option input').forEach(input => {
+                input.checked = state.redFlags.includes(input.value);
+            });
+        }
+
+        function setGestationalSource() {
+            const source = document.getElementById('gestational-source');
+            const text = state.gestationalAge
+                ? `${formatGestationalAge(state.gestationalAge)} - ${state.gestationalSource}`
+                : state.gestationalSource;
+            if (source) source.innerHTML = `<i class="fa-solid fa-baby"></i> ${escapeHtml(text)}`;
+        }
+
+        function getEvents() {
+            return Array.isArray(state.activeSession?.events) ? state.activeSession.events : [];
+        }
+
+        function getMockEvents(session) {
+            return Array.isArray(session?.events) ? session.events : [];
+        }
+
+        function summarizeEvents(events) {
+            const durations = events.map(event => Number(event.duration_seconds || 0)).filter(value => Number.isFinite(value) && value > 0);
+            const intervals = events.map(event => Number(event.interval_from_previous_seconds || 0)).filter(value => Number.isFinite(value) && value > 0);
+            return {
+                avgDuration: durations.length ? durations.reduce((sum, value) => sum + value, 0) / durations.length : 0,
+                avgInterval: intervals.length ? intervals.reduce((sum, value) => sum + value, 0) / intervals.length : 0
+            };
+        }
+
+        function getGestationalTotalDays() {
+            if (!state.gestationalAge) return 0;
+            return Number(state.gestationalAge.weeks || 0) * 7 + Number(state.gestationalAge.days || 0);
+        }
+
+        function normalizeTrackerData(data) {
+            return {
+                ...data,
+                source: data.source || 'server',
+                weeksPregnant: data.weeksPregnant ?? data.weeks_pregnant ?? data.weeks ?? 0,
+                daysExtra: data.daysExtra ?? data.days_extra ?? data.days ?? 0
+            };
+        }
+
+        function createTrackerDataFromHpht(hpht, source) {
+            const hphtDate = parseLocalDate(hpht);
+            const today = startOfLocalDay(new Date());
+            const daysPregnant = Math.max(0, Math.floor((today.getTime() - hphtDate.getTime()) / 86400000));
+            return {
+                source,
+                hpht,
+                weeksPregnant: Math.floor(daysPregnant / 7),
+                daysExtra: daysPregnant % 7
+            };
+        }
+
+        function createClientAssessment(events, gestationalAge, restHydrationResult, redFlags) {
+            const stats = summarizeEvents(events);
+            const totalDays = Number(gestationalAge.weeks || 0) * 7 + Number(gestationalAge.days || 0);
+            if (redFlags?.length) return {
+                code: 'emergency_now',
+                label: 'Tanda bahaya',
+                copy: 'Ada tanda bahaya yang perlu dinilai langsung, terlepas dari pola kontraksi.',
+                reasons: redFlags.map(flag => getFlagLabel(flag)),
+                next_action: 'Segera ke IGD/unit persalinan terdekat.',
+                stats
+            };
+            if (events.length < 3) return {
+                code: 'inconclusive',
+                label: 'Belum cukup data',
+                copy: 'Catat beberapa kontraksi lagi agar pola lebih mudah dibaca.',
+                reasons: [],
+                next_action: 'Lanjutkan pencatatan dan perhatikan tanda bahaya.',
+                stats
+            };
+            if (restHydrationResult === 'improved') return {
+                code: 'braxton_hicks_like',
+                label: 'Lebih mirip Braxton Hicks',
+                copy: 'Pola kontraksi tidak teratur atau mereda setelah istirahat, minum, dan ganti posisi.',
+                reasons: ['kontraksi mereda setelah istirahat, hidrasi, atau ganti posisi'],
+                next_action: 'Istirahat, cukup minum, dan ulangi pencatatan bila kontraksi muncul lagi.',
+                stats
+            };
+            if (totalDays < 37 * 7) return {
+                code: 'preterm_warning',
+                label: 'Kontraksi sebelum 37 minggu',
+                copy: 'Kontraksi teratur sebelum 37 minggu perlu dievaluasi karena bisa terkait persalinan prematur.',
+                reasons: [`${events.length} kontraksi tercatat`],
+                next_action: 'Segera hubungi unit persalinan/IGD atau datang ke fasilitas kesehatan.',
+                stats
+            };
+            if (stats.avgInterval > 0 && stats.avgInterval <= 300 && stats.avgDuration >= 60) return {
+                code: 'urgent_evaluation',
+                label: 'Perlu evaluasi persalinan',
+                copy: 'pola kontraksi sudah teratur dan perlu evaluasi persalinan. Fase aktif hanya bisa dipastikan lewat pemeriksaan serviks.',
+                reasons: [`${events.length} kontraksi tercatat`],
+                next_action: 'Segera hubungi unit persalinan/IGD atau datang ke fasilitas kesehatan.',
+                stats
+            };
+            return {
+                code: stats.avgDuration < 40 ? 'braxton_hicks_like' : 'latent_like',
+                label: stats.avgDuration < 40 ? 'Lebih mirip Braxton Hicks' : 'Lebih mirip fase laten',
+                copy: stats.avgDuration < 40
+                    ? 'Pola kontraksi tidak teratur atau durasinya masih pendek.'
+                    : 'Pola ini lebih mirip fase laten: kontraksi menetap, tetapi belum cukup rapat dan lama untuk evaluasi persalinan aktif.',
+                reasons: [`${events.length} kontraksi tercatat`],
+                next_action: 'Tetap pantau. Ke fasilitas kesehatan bila makin teratur, makin kuat, atau ada tanda bahaya.',
+                stats
+            };
+        }
+
+        function getFlagLabel(value) {
+            const map = {
+                bleeding: 'perdarahan',
+                ketuban_pecah: 'air ketuban keluar',
+                constant_pain: 'nyeri menetap di luar kontraksi',
+                reduced_fetal_movement: 'gerak bayi berkurang',
+                severe_symptoms: 'gejala berat'
+            };
+            return map[value] || value;
+        }
+
+        function getMockHpht(weeks, days) {
+            const date = startOfLocalDay(new Date());
+            date.setDate(date.getDate() - ((Number(weeks || 39) * 7) + Number(days || 0)));
+            return formatLocalDate(date);
+        }
+
+        function parseLocalDate(value) {
+            const parts = String(value || '').split('-').map(Number);
+            return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+        }
+
+        function isValidLocalDate(value) {
+            const date = parseLocalDate(value);
+            return value && !Number.isNaN(date.getTime()) && date <= startOfLocalDay(new Date());
+        }
+
+        function startOfLocalDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function formatLocalDate(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function formatDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        }
+
+        function formatTime(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatDuration(seconds) {
+            const safeSeconds = Math.max(0, Number(seconds || 0));
+            const minutes = Math.floor(safeSeconds / 60);
+            const rest = Math.floor(safeSeconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+        }
+
+        function formatGestationalAge(value) {
+            if (!value || value.weeks == null) return '-';
+            return `${Number(value.weeks || 0)} minggu ${Number(value.days || 0)} hari`;
+        }
+
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        window.toggleContraction = toggleContraction;
+        window.endSession = endSession;
+        window.setRestHydrationResult = setRestHydrationResult;
+        window.toggleRedFlag = toggleRedFlag;
+        window.openHistoryModal = openHistoryModal;
+        window.closeHistoryModal = closeHistoryModal;
+        window.changeHistoryPage = changeHistoryPage;
+        window.showUrgentInstruction = showUrgentInstruction;
+    </script>
+    <script src="/js/patient-tracker.js?v=20260613b"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+</body>
+</html>
