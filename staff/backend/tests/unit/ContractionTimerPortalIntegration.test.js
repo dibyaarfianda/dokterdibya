@@ -20,16 +20,21 @@ describe('Contraction timer portal integration', () => {
 
     test('portal entry points include contraction timer', () => {
         const patientMenu = readRepoFile('public', 'patient-menu.html');
-        const tracker = readRepoFile('public', 'pregnancy-tracker.html');
         const pageTracker = readRepoFile('public', 'js', 'patient-tracker.js');
         const shell = readRepoFile('public', 'scripts', 'patient-tool-shell.js');
         const bottomNav = readRepoFile('public', 'scripts', 'portal-bottom-nav.js');
         const retrofit = readRepoFile('public', 'scripts', 'patient-tool-retrofit.js');
         const sw = readRepoFile('public', 'sw.js');
 
-        for (const source of [patientMenu, tracker, pageTracker, shell, bottomNav, retrofit, sw]) {
+        for (const source of [patientMenu, pageTracker, shell, bottomNav, retrofit, sw]) {
             expect(source).toContain('contraction-timer.html');
         }
+    });
+
+    test('monitoring kehamilan does not show contraction timer CTA', () => {
+        const tracker = readRepoFile('public', 'pregnancy-tracker.html');
+
+        expect(tracker).not.toContain('contraction-timer.html');
     });
 
     test('help surfaces mention contraction timer', () => {
