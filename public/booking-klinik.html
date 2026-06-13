@@ -1161,6 +1161,7 @@
             date: null,
             dateFormatted: null,
             session: null,
+            bookingSessionTemplateId: null,
             sessionLabel: null,
             slot: null,
             slotTime: null,
@@ -1220,8 +1221,8 @@
         // Load available Sundays
         async function loadSundays() {
             try {
-                const response = await fetch(`${API_BASE}/sundays`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`${API_BASE}/sundays?_t=${Date.now()}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
                 });
 
                 if (handle401(response)) return;
@@ -1287,8 +1288,8 @@
             container.style.display = 'none';
 
             try {
-                const response = await fetch(`${API_BASE}/available?date=${bookingData.date}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`${API_BASE}/available?date=${bookingData.date}&_t=${Date.now()}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
                 });
 
                 if (handle401(response)) return;
@@ -1325,6 +1326,7 @@
                 const slotsHtml = session.slots.map(slot => `
                     <button class="slot-btn ${slot.available ? '' : 'disabled'}"
                             data-session="${session.session}"
+                            data-template-id="${session.booking_session_template_id || ''}"
                             data-session-label="${session.label}"
                             data-slot="${slot.number}"
                             data-time="${slot.time}"
@@ -1355,6 +1357,7 @@
                     btn.closest('.session-card').classList.add('selected');
 
                     bookingData.session = btn.dataset.session;
+                    bookingData.bookingSessionTemplateId = btn.dataset.templateId || null;
                     bookingData.sessionLabel = btn.dataset.sessionLabel;
                     bookingData.slot = parseInt(btn.dataset.slot);
                     bookingData.slotTime = btn.dataset.time;
@@ -1460,6 +1463,7 @@
                     body: JSON.stringify({
                         appointment_date: bookingData.date,
                         session: bookingData.session,
+                        booking_session_template_id: bookingData.bookingSessionTemplateId,
                         slot_number: bookingData.slot,
                         chief_complaint: bookingData.chiefComplaint,
                         consultation_category: bookingData.consultationCategory
@@ -1474,6 +1478,7 @@
                         showAlert(`<strong><i class="fa-solid fa-triangle-exclamation"></i> Slot Sudah Terisi</strong><br>${data.message}`, 'warning');
 
                         bookingData.session = null;
+                        bookingData.bookingSessionTemplateId = null;
                         bookingData.sessionLabel = null;
                         bookingData.slot = null;
                         bookingData.slotTime = null;

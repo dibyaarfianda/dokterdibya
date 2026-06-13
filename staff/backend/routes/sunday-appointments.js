@@ -6,6 +6,7 @@ const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
+const BookingSessionService = require('../services/BookingSessionService');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 let bookingSettingsDaySchemaReady = false;
@@ -34,7 +35,7 @@ const verifyToken = (req, res, next) => {
 };
 
 function getDayName(dayOfWeek) {
-    return DAY_NAMES[dayOfWeek] || 'Tidak diketahui';
+    return BookingSessionService.getDayName(dayOfWeek) || 'Tidak diketahui';
 }
 
 async function ensureBookingSettingsDayColumn() {
@@ -145,30 +146,10 @@ const CACHE_TTL = 60000; // 1 minute cache
 
 // Helper function to get session settings from database
 async function getSessionSettings() {
-    await ensureBookingSettingsDayColumn();
-    const now = Date.now();
-    if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
-        return sessionSettingsCache;
-    }
-
     try {
-        const [settings] = await db.query(
-            `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time, slot_duration, max_slots
-             FROM booking_settings WHERE is_active = 1 ORDER BY session_number ASC`
-        );
-
-        sessionSettingsCache = settings.map(s => ({
-            session: s.session_number,
-            name: s.session_name,
-            dayOfWeek: Number.parseInt(s.day_of_week, 10) || 0,
-            dayName: getDayName(Number.parseInt(s.day_of_week, 10) || 0),
-            startTime: s.start_time.substring(0, 5),
-            endTime: s.end_time.substring(0, 5),
-            slotDuration: s.slot_duration,
-            maxSlots: s.max_slots,
-            label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
-        }));
-        sessionSettingsCacheTime = now;
+        await ensureBookingSettingsDayColumn();
+        sessionSettingsCache = await BookingSessionService.getActiveSessionSettings();
+        sessionSettingsCacheTime = Date.now();
         return sessionSettingsCache;
     } catch (error) {
         console.error('Error fetching session settings:', error);
@@ -182,22 +163,20 @@ async function getSessionSettings() {
 }
 
 async function getConfiguredPracticeDays() {
-    const settings = await getSessionSettings();
-    const days = Array.from(new Set(settings.map(setting => setting.dayOfWeek))).sort((left, right) => left - right);
-    return days.length ? days : [0];
+    return BookingSessionService.getConfiguredPracticeDays();
 }
 
 // Helper function to get session time label (async version with fallback)
 async function getSessionLabelAsync(session) {
     const settings = await getSessionSettings();
-    const found = settings.find(s => s.session === parseInt(session));
+    const found = BookingSessionService.findSession(settings, { session });
     return found ? found.label : 'Unknown';
 }
 
 // Sync version for backward compatibility (uses cache)
 function getSessionLabel(session) {
     if (sessionSettingsCache) {
-        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
+        const found = BookingSessionService.findSession(sessionSettingsCache, { session });
         return found ? found.label : 'Unknown';
     }
     // Fallback to hardcoded if cache not loaded
@@ -212,7 +191,7 @@ function getSessionLabel(session) {
 // Helper function to calculate slot time (async version)
 async function getSlotTimeAsync(session, slotNumber) {
     const settings = await getSessionSettings();
-    const found = settings.find(s => s.session === parseInt(session));
+    const found = BookingSessionService.findSession(settings, { session });
 
     if (!found) {
         // Fallback
@@ -224,23 +203,15 @@ async function getSlotTimeAsync(session, slotNumber) {
         return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     }
 
-    const [hours, mins] = found.startTime.split(':').map(Number);
-    const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
-    const hour = Math.floor(totalMinutes / 60);
-    const minute = totalMinutes % 60;
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return BookingSessionService.getSlotTime(found, slotNumber);
 }
 
 // Sync version for backward compatibility
 function getSlotTime(session, slotNumber) {
     if (sessionSettingsCache) {
-        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
+        const found = BookingSessionService.findSession(sessionSettingsCache, { session });
         if (found) {
-            const [hours, mins] = found.startTime.split(':').map(Number);
-            const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
-            const hour = Math.floor(totalMinutes / 60);
-            const minute = totalMinutes % 60;
-            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            return BookingSessionService.getSlotTime(found, slotNumber);
         }
     }
     // Fallback to hardcoded
@@ -281,6 +252,10 @@ function calculateAge(birthDate) {
  */
 router.get('/available', verifyToken, async (req, res) => {
     try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
         const { date } = req.query;
         
         if (!date) {
@@ -324,6 +299,10 @@ router.get('/available', verifyToken, async (req, res) => {
         // Build available slots structure from dynamic settings
         const sessions = availableSessions.map(setting => ({
             session: setting.session,
+            booking_session_template_id: setting.templateId,
+            templateId: setting.templateId,
+            dayOfWeek: setting.dayOfWeek,
+            dayName: setting.dayName,
             label: setting.label,
             slots: []
         }));
@@ -364,6 +343,10 @@ router.get('/available', verifyToken, async (req, res) => {
  */
 router.get('/sundays', verifyToken, async (req, res) => {
     try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
         const configuredDays = await getConfiguredPracticeDays();
         const practiceDates = getNextPracticeDates(configuredDays, 8);
         const formattedSundays = practiceDates.map(date => ({
@@ -413,7 +396,7 @@ router.get('/sundays', verifyToken, async (req, res) => {
  */
 router.post('/book', verifyToken, async (req, res) => {
     try {
-        const { appointment_date, session, slot_number, chief_complaint, consultation_category } = req.body;
+        const { appointment_date, session, slot_number, chief_complaint, consultation_category, booking_session_template_id } = req.body;
         
         // Validation
         if (!appointment_date || !session || !slot_number || !chief_complaint) {
@@ -422,13 +405,18 @@ router.post('/book', verifyToken, async (req, res) => {
 
         // Get dynamic session settings for validation
         const sessionSettings = await getSessionSettings();
-        const sessionSetting = sessionSettings.find(s => s.session === parseInt(session));
         const appointmentDate = new Date(appointment_date + 'T00:00:00Z');
         const appointmentDayOfWeek = appointmentDate.getUTCDay();
 
         const validSessions = sessionSettings
             .filter(s => s.dayOfWeek === appointmentDayOfWeek)
             .map(s => s.session);
+        const availableSessions = sessionSettings.filter(s => s.dayOfWeek === appointmentDayOfWeek);
+        const sessionSetting = BookingSessionService.findSession(availableSessions, {
+            session,
+            templateId: booking_session_template_id,
+            dayOfWeek: appointmentDayOfWeek
+        });
 
         if (!sessionSetting || !validSessions.includes(parseInt(session))) {
             return res.status(400).json({ message: `Sesi tidak valid (pilihan: ${validSessions.join(', ')})` });
@@ -521,12 +509,20 @@ router.post('/book', verifyToken, async (req, res) => {
         const bookingStatus = requiresConfirmation ? 'pending_confirmation' : 'confirmed';
 
         // Create appointment
-        const [result] = await db.query(
-            `INSERT INTO sunday_appointments
-             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category, bookingStatus, confirmationToken]
-        );
+        const useV2Template = BookingSessionService.isV2Enabled() && sessionSetting.templateId;
+        const [result] = useV2Template
+            ? await db.query(
+                `INSERT INTO sunday_appointments
+                 (patient_id, patient_name, patient_phone, appointment_date, session, booking_session_template_id, slot_number, chief_complaint, consultation_category, status, confirmation_token)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [patient.id, patient.full_name, patient.phone, appointment_date, session, sessionSetting.templateId, slot_number, chief_complaint, category, bookingStatus, confirmationToken]
+            )
+            : await db.query(
+                `INSERT INTO sunday_appointments
+                 (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category, bookingStatus, confirmationToken]
+            );
 
         // Broadcast new booking to all connected staff
         realtimeSync.broadcastNewBooking({
@@ -535,6 +531,7 @@ router.post('/book', verifyToken, async (req, res) => {
             appointment_date: appointment_date,
             session: session,
             session_label: getSessionLabel(session),
+            booking_session_template_id: useV2Template ? sessionSetting.templateId : null,
             slot_number: slot_number,
             status: bookingStatus
         });
@@ -558,8 +555,9 @@ router.post('/book', verifyToken, async (req, res) => {
                     month: 'long',
                     day: 'numeric'
                 }),
-                session: getSessionLabel(session),
-                time: getSlotTime(session, slot_number),
+                session: sessionSetting.label,
+                time: BookingSessionService.getSlotTime(sessionSetting, slot_number),
+                booking_session_template_id: useV2Template ? sessionSetting.templateId : null,
                 slot: slot_number
             }
         });
@@ -580,7 +578,15 @@ router.post('/book', verifyToken, async (req, res) => {
  */
 router.get('/my-bookings', verifyToken, async (req, res) => {
     try {
-        let query = `SELECT id, appointment_date, session, slot_number, chief_complaint,
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
+        const templateSelect = BookingSessionService.isV2Enabled()
+            ? 'booking_session_template_id'
+            : 'NULL AS booking_session_template_id';
+
+        let query = `SELECT id, appointment_date, session, ${templateSelect}, slot_number, chief_complaint,
                             consultation_category, status, notes, created_at
                      FROM sunday_appointments
                      WHERE patient_id = ?`;
@@ -597,15 +603,22 @@ router.get('/my-bookings', verifyToken, async (req, res) => {
 
         const [bookings] = await db.query(query, params);
 
-        const formatted = bookings.map(b => ({
-            ...b,
-            appointment_date: b.appointment_date,
-            slot_time: getSlotTime(b.session, b.slot_number),
-            sessionLabel: getSessionLabel(b.session),
-            categoryLabel: getCategoryLabel(b.consultation_category),
-            dateFormatted: new Date(b.appointment_date).toLocaleDateString('id-ID', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-            })
+        const settings = await getSessionSettings();
+        const formatted = await Promise.all(bookings.map(async b => {
+            const resolved = await BookingSessionService.resolveAppointmentSession({
+                appointment: b,
+                settings
+            });
+            return {
+                ...b,
+                appointment_date: b.appointment_date,
+                slot_time: resolved.slotTime || getSlotTime(b.session, b.slot_number),
+                sessionLabel: resolved.sessionLabel || getSessionLabel(b.session),
+                categoryLabel: getCategoryLabel(b.consultation_category),
+                dateFormatted: new Date(b.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                })
+            };
         }));
 
         res.json({ success: true, bookings: formatted });
@@ -622,8 +635,16 @@ router.get('/my-bookings', verifyToken, async (req, res) => {
  */
 router.get('/patient', verifyToken, async (req, res) => {
     try {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
+        const templateSelect = BookingSessionService.isV2Enabled()
+            ? 'booking_session_template_id'
+            : 'NULL AS booking_session_template_id';
+
         const [appointments] = await db.query(
-            `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status, notes,
+            `SELECT id, appointment_date, session, ${templateSelect}, slot_number, chief_complaint, consultation_category, status, notes,
                     cancellation_reason, cancelled_by, cancelled_at, created_at
              FROM sunday_appointments
              WHERE patient_id = ?
@@ -631,8 +652,13 @@ router.get('/patient', verifyToken, async (req, res) => {
             [req.user.id]
         );
 
-        const formatted = appointments.map(apt => {
-            const slotTime = getSlotTime(apt.session, apt.slot_number);
+        const settings = await getSessionSettings();
+        const formatted = await Promise.all(appointments.map(async apt => {
+            const resolved = await BookingSessionService.resolveAppointmentSession({
+                appointment: apt,
+                settings
+            });
+            const slotTime = resolved.slotTime || getSlotTime(apt.session, apt.slot_number);
 
             let startDateTime = null;
             let arrivalTime = null;
@@ -664,7 +690,7 @@ router.get('/patient', verifyToken, async (req, res) => {
                     month: 'long',
                     day: 'numeric'
                 }),
-                sessionLabel: getSessionLabel(apt.session),
+                sessionLabel: resolved.sessionLabel || getSessionLabel(apt.session),
                 time: slotTime,
                 startDateTime,
                 arrivalTime,
@@ -672,7 +698,7 @@ router.get('/patient', verifyToken, async (req, res) => {
                 isPast,
                 categoryLabel: getCategoryLabel(apt.consultation_category)
             };
-        });
+        }));
 
         res.json({ appointments: formatted });
 

@@ -25,6 +25,7 @@ const bookingData = {
     date: null,
     dateFormatted: null,
     session: null,
+    bookingSessionTemplateId: null,
     sessionLabel: null,
     slot: null,
     slotTime: null,
@@ -77,8 +78,8 @@ function showAlert(message, type = 'info') {
 async function loadSundays() {
     try {
         $('#date-loading').show();
-        const response = await fetch(`${API_BASE}/sundays`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${API_BASE}/sundays?_t=${Date.now()}`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
         });
         
         if (!response.ok) throw new Error('Failed to load dates');
@@ -120,8 +121,8 @@ async function loadSlots() {
         $('#session-loading').show();
         $('#session-container').hide();
         
-        const response = await fetch(`${API_BASE}/available?date=${bookingData.date}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${API_BASE}/available?date=${bookingData.date}&_t=${Date.now()}`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
         });
         
         if (!response.ok) {
@@ -161,6 +162,7 @@ function renderSessions(sessions) {
         const slotsHtml = session.slots.map(slot => `
             <button class="slot-btn ${slot.available ? '' : 'disabled'}" 
                     data-session="${session.session}"
+                    data-template-id="${session.booking_session_template_id || ''}"
                     data-session-label="${session.label}"
                     data-slot="${slot.number}"
                     data-time="${slot.time}"
@@ -194,6 +196,7 @@ function renderSessions(sessions) {
         $(this).closest('.session-card').addClass('selected');
         
         bookingData.session = $(this).data('session');
+        bookingData.bookingSessionTemplateId = $(this).data('template-id') || null;
         bookingData.sessionLabel = $(this).data('session-label');
         bookingData.slot = $(this).data('slot');
         bookingData.slotTime = $(this).data('time');
@@ -298,6 +301,7 @@ async function submitBooking() {
             body: JSON.stringify({
                 appointment_date: bookingData.date,
                 session: bookingData.session,
+                booking_session_template_id: bookingData.bookingSessionTemplateId,
                 slot_number: bookingData.slot,
                 chief_complaint: bookingData.chiefComplaint,
                 consultation_category: bookingData.consultationCategory
@@ -317,6 +321,7 @@ async function submitBooking() {
 
                 // Reset slot selection
                 bookingData.session = null;
+                bookingData.bookingSessionTemplateId = null;
                 bookingData.sessionLabel = null;
                 bookingData.slot = null;
                 bookingData.slotTime = null;

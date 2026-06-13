@@ -4,6 +4,7 @@ const db = require('../db');
 const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
+const BookingSessionService = require('../services/BookingSessionService');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 let bookingSettingsSchemaReady = false;
@@ -37,6 +38,63 @@ async function ensureBookingSettingsSchema() {
     bookingSettingsSchemaReady = true;
 }
 
+function clearBookingSettingsCaches() {
+    cache.delPattern('booking-settings:');
+    BookingSessionService.clearCache();
+}
+
+function formatSessionForResponse(session) {
+    return {
+        id: session.id,
+        template_id: session.templateId,
+        source: session.source,
+        session_number: session.session_number,
+        session_name: session.session_name,
+        day_of_week: session.day_of_week,
+        day_name: session.day_name,
+        start_time: session.start_time,
+        end_time: session.end_time,
+        slot_duration: session.slot_duration,
+        max_slots: session.max_slots,
+        is_active: session.is_active,
+        label: session.label
+    };
+}
+
+function validateSessionPayload(payload, { requireSessionNumber = true } = {}) {
+    const { session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots } = payload;
+
+    if ((requireSessionNumber && !session_number) || !session_name || day_of_week === undefined || !start_time || !end_time) {
+        return { valid: false, message: 'Semua field harus diisi' };
+    }
+
+    const normalizedDay = normalizeDayOfWeek(day_of_week);
+    if (Number.parseInt(day_of_week, 10) !== normalizedDay) {
+        return { valid: false, message: 'Hari praktik tidak valid' };
+    }
+
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(start_time) || !timeRegex.test(end_time)) {
+        return { valid: false, message: 'Format waktu tidak valid (gunakan HH:MM)' };
+    }
+
+    const duration = parseInt(slot_duration, 10) || 15;
+    const slots = parseInt(max_slots, 10) || 10;
+    if (duration < 5 || duration > 60) {
+        return { valid: false, message: 'Durasi slot harus antara 5-60 menit' };
+    }
+    if (slots < 1 || slots > 30) {
+        return { valid: false, message: 'Jumlah slot harus antara 1-30' };
+    }
+
+    return {
+        valid: true,
+        normalizedDay,
+        duration,
+        slots
+    };
+}
+
 /**
  * GET /api/booking-settings
  * Get all booking session settings
@@ -44,6 +102,11 @@ async function ensureBookingSettingsSchema() {
 router.get('/', verifyToken, async (req, res) => {
     try {
         await ensureBookingSettingsSchema();
+        if (BookingSessionService.isV2Enabled()) {
+            const settings = await BookingSessionService.getStaffSessionSettings({ preferV2: true, allowFallback: false });
+            return res.json({ success: true, settings: settings.map(formatSessionForResponse), mode: 'v2' });
+        }
+
         const cached = cache.get('booking-settings:staff', 'long');
         if (cached) return res.json(cached);
 
@@ -64,7 +127,7 @@ router.get('/', verifyToken, async (req, res) => {
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
         }));
 
-        const response = { success: true, settings: formatted };
+        const response = { success: true, settings: formatted, mode: 'legacy' };
         cache.set('booking-settings:staff', response, 'long');
         res.json(response);
     } catch (error) {
@@ -80,6 +143,24 @@ router.get('/', verifyToken, async (req, res) => {
 router.get('/public', async (req, res) => {
     try {
         await ensureBookingSettingsSchema();
+        if (BookingSessionService.isV2Enabled()) {
+            const settings = await BookingSessionService.getActiveSessionSettings({ preferV2: true, allowFallback: false });
+            const sessions = settings.map(session => ({
+                session: session.session,
+                booking_session_template_id: session.templateId,
+                templateId: session.templateId,
+                name: session.name,
+                dayOfWeek: session.dayOfWeek,
+                dayName: session.dayName,
+                startTime: session.startTime,
+                endTime: session.endTime,
+                label: session.label,
+                slotDuration: session.slotDuration,
+                maxSlots: session.maxSlots
+            }));
+            return res.json({ success: true, sessions, mode: 'v2' });
+        }
+
         const cached = cache.get('booking-settings:public', 'long');
         if (cached) return res.json(cached);
 
@@ -123,6 +204,44 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
         const { id } = req.params;
         const { session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
 
+        if (BookingSessionService.isV2Enabled()) {
+            const validation = validateSessionPayload({ ...req.body, session_number: req.body.session_number || 1 }, { requireSessionNumber: false });
+            if (!validation.valid) {
+                return res.status(400).json({ success: false, message: validation.message });
+            }
+
+            const [currentRows] = await db.query(
+                'SELECT session_number FROM booking_session_templates WHERE id = ? LIMIT 1',
+                [id]
+            );
+            if (currentRows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
+            }
+
+            const sessionNumber = Number.parseInt(req.body.session_number || currentRows[0].session_number, 10);
+            const [duplicateRows] = await db.query(
+                `SELECT id FROM booking_session_templates
+                 WHERE session_number = ? AND day_of_week = ? AND id <> ?
+                 LIMIT 1`,
+                [sessionNumber, validation.normalizedDay, id]
+            );
+            if (duplicateRows.length > 0) {
+                return res.status(400).json({ success: false, message: 'Nomor sesi sudah ada untuk hari praktik ini' });
+            }
+
+            await db.query(
+                `UPDATE booking_session_templates
+                 SET session_name = ?, day_of_week = ?, start_time = ?, end_time = ?,
+                     slot_duration = ?, max_slots = ?, is_active = ?,
+                     updated_at = NOW()
+                 WHERE id = ?`,
+                [session_name, validation.normalizedDay, start_time + ':00', end_time + ':00', validation.duration, validation.slots, is_active ? 1 : 0, id]
+            );
+
+            clearBookingSettingsCaches();
+            return res.json({ success: true, message: 'Pengaturan sesi berhasil diupdate' });
+        }
+
         // Validate required fields
         if (!session_name || !start_time || !end_time) {
             return res.status(400).json({ success: false, message: 'Nama sesi, waktu mulai, dan waktu selesai harus diisi' });
@@ -162,7 +281,7 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
             [session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0, id]
         );
 
-        cache.delPattern('booking-settings:');
+        clearBookingSettingsCaches();
         res.json({ success: true, message: 'Pengaturan sesi berhasil diupdate' });
     } catch (error) {
         console.error('Error updating booking setting:', error);
@@ -178,6 +297,33 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         await ensureBookingSettingsSchema();
         const { session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
+
+        if (BookingSessionService.isV2Enabled()) {
+            const validation = validateSessionPayload(req.body);
+            if (!validation.valid) {
+                return res.status(400).json({ success: false, message: validation.message });
+            }
+
+            const [existing] = await db.query(
+                `SELECT id FROM booking_session_templates
+                 WHERE session_number = ? AND day_of_week = ?
+                 LIMIT 1`,
+                [session_number, validation.normalizedDay]
+            );
+            if (existing.length > 0) {
+                return res.status(400).json({ success: false, message: 'Nomor sesi sudah ada untuk hari praktik ini' });
+            }
+
+            await db.query(
+                `INSERT INTO booking_session_templates
+                 (session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [session_number, session_name, validation.normalizedDay, start_time + ':00', end_time + ':00', validation.duration, validation.slots, is_active ? 1 : 0]
+            );
+
+            clearBookingSettingsCaches();
+            return res.status(201).json({ success: true, message: 'Sesi baru berhasil ditambahkan' });
+        }
 
         // Validate required fields
         if (!session_number || !session_name || day_of_week === undefined || !start_time || !end_time) {
@@ -205,7 +351,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
             [session_number, session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0]
         );
 
-        cache.delPattern('booking-settings:');
+        clearBookingSettingsCaches();
         res.status(201).json({ success: true, message: 'Sesi baru berhasil ditambahkan' });
     } catch (error) {
         console.error('Error creating booking setting:', error);
@@ -221,6 +367,31 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         await ensureBookingSettingsSchema();
         const { id } = req.params;
+
+        if (BookingSessionService.isV2Enabled()) {
+            const [session] = await db.query('SELECT id, session_number FROM booking_session_templates WHERE id = ?', [id]);
+            if (session.length === 0) {
+                return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
+            }
+
+            const [appointments] = await db.query(
+                `SELECT COUNT(*) as count FROM sunday_appointments
+                 WHERE booking_session_template_id = ?
+                   AND status NOT IN ('cancelled', 'completed')`,
+                [id]
+            );
+
+            if (appointments[0].count > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Tidak dapat menghapus sesi ini karena masih ada ${appointments[0].count} appointment aktif`
+                });
+            }
+
+            await db.query('DELETE FROM booking_session_templates WHERE id = ?', [id]);
+            clearBookingSettingsCaches();
+            return res.json({ success: true, message: 'Sesi berhasil dihapus' });
+        }
 
         // Check if there are existing appointments using this session
         const [session] = await db.query('SELECT session_number FROM booking_settings WHERE id = ?', [id]);
@@ -243,7 +414,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
 
         await db.query('DELETE FROM booking_settings WHERE id = ?', [id]);
 
-        cache.delPattern('booking-settings:');
+        clearBookingSettingsCaches();
         res.json({ success: true, message: 'Sesi berhasil dihapus' });
     } catch (error) {
         console.error('Error deleting booking setting:', error);
@@ -259,6 +430,15 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         await ensureBookingSettingsSchema();
         const { date, session, status } = req.query;
+        const v2Enabled = BookingSessionService.isV2Enabled();
+        const templateSelect = v2Enabled ? 'sa.booking_session_template_id,' : 'NULL AS booking_session_template_id,';
+        const templateJoin = v2Enabled
+            ? 'LEFT JOIN booking_session_templates bst ON sa.booking_session_template_id = bst.id'
+            : '';
+        const sessionNameSelect = v2Enabled ? 'COALESCE(bst.session_name, bs.session_name)' : 'bs.session_name';
+        const startTimeSelect = v2Enabled ? 'COALESCE(bst.start_time, bs.start_time)' : 'bs.start_time';
+        const endTimeSelect = v2Enabled ? 'COALESCE(bst.end_time, bs.end_time)' : 'bs.end_time';
+        const slotDurationSelect = v2Enabled ? 'COALESCE(bst.slot_duration, bs.slot_duration)' : 'bs.slot_duration';
 
         let query = `
             SELECT
@@ -268,16 +448,18 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
                 sa.patient_phone,
                 sa.appointment_date,
                 sa.session,
+                ${templateSelect}
                 sa.slot_number,
                 sa.chief_complaint,
                 sa.consultation_category,
                 sa.status,
                 sa.created_at,
-                bs.session_name,
-                bs.start_time,
-                bs.end_time,
-                bs.slot_duration
+                ${sessionNameSelect} AS session_name,
+                ${startTimeSelect} AS start_time,
+                ${endTimeSelect} AS end_time,
+                ${slotDurationSelect} AS slot_duration
             FROM sunday_appointments sa
+            ${templateJoin}
             LEFT JOIN booking_settings bs ON sa.session = bs.session_number
             WHERE sa.appointment_date >= CURDATE()
         `;
@@ -335,6 +517,13 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
     try {
         const { id } = req.params;
         const { reason, notify_patient } = req.body;
+        const v2Enabled = BookingSessionService.isV2Enabled();
+        const templateJoin = v2Enabled
+            ? 'LEFT JOIN booking_session_templates bst ON sa.booking_session_template_id = bst.id'
+            : '';
+        const sessionNameSelect = v2Enabled ? 'COALESCE(bst.session_name, bs.session_name)' : 'bs.session_name';
+        const startTimeSelect = v2Enabled ? 'COALESCE(bst.start_time, bs.start_time)' : 'bs.start_time';
+        const slotDurationSelect = v2Enabled ? 'COALESCE(bst.slot_duration, bs.slot_duration)' : 'bs.slot_duration';
 
         if (!reason) {
             return res.status(400).json({ success: false, message: 'Alasan pembatalan harus diisi' });
@@ -342,9 +531,13 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
 
         // Get booking details first
         const [bookings] = await db.query(
-            `SELECT sa.*, p.email as patient_email, bs.session_name, bs.start_time, bs.slot_duration
+            `SELECT sa.*, p.email as patient_email,
+                    ${sessionNameSelect} AS session_name,
+                    ${startTimeSelect} AS start_time,
+                    ${slotDurationSelect} AS slot_duration
              FROM sunday_appointments sa
              LEFT JOIN patients p ON sa.patient_id = p.id
+             ${templateJoin}
              LEFT JOIN booking_settings bs ON sa.session = bs.session_number
              WHERE sa.id = ?`,
             [id]
