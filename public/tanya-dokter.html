@@ -338,8 +338,10 @@
             background: var(--portal-bg, #f5f3ef);
             z-index: 9999;
             flex-direction: column;
+            min-height: 0;
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            overflow: hidden;
         }
         .thread-modal.active { display: flex; }
 
@@ -347,6 +349,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex: 0 0 auto;
             padding: 16px 20px;
             padding-top: calc(16px + env(safe-area-inset-top, 0px));
             background: var(--portal-bg, #f5f3ef);
@@ -371,7 +374,10 @@
         }
         .thread-modal-body {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
             padding: 22px 20px;
             max-width: 720px;
             width: 100%;
@@ -379,6 +385,7 @@
             box-sizing: border-box;
         }
         .thread-modal-footer {
+            flex: 0 0 auto;
             padding: 14px 20px;
             padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
             background: var(--portal-bg, #f5f3ef);
@@ -1379,7 +1386,7 @@
                 const data = await apiRequest(`/api/patient-questions/${questionId}`);
                 if (data && data.success) {
                     const q = data.question;
-                    const replies = data.replies || [];
+                    const replies = Array.isArray(q.replies) ? q.replies : [];
                     const doctorName = q.doctor_name || 'dr. Dibya';
 
                     let messagesHtml = replies.map(r => {

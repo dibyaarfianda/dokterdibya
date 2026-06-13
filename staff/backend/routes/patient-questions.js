@@ -22,6 +22,12 @@ const TANYA_WA_DOCTOR_USER_ID = process.env.TANYA_WA_DOCTOR_USER_ID || '';
 const TANYA_WA_WEBHOOK_SECRET = process.env.TANYA_WA_WEBHOOK_SECRET || '';
 const STAFF_PANEL_URL = process.env.STAFF_PANEL_URL || 'https://dokterdibya.com/staff/public/index-adminlte.html';
 
+function setPatientNoCacheHeaders(res) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+}
+
 // Multer setup for image upload
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -149,6 +155,7 @@ async function canAskNewQuestion(patientId) {
  */
 router.get('/can-ask', verifyPatientToken, async (req, res) => {
     try {
+        setPatientNoCacheHeaders(res);
         const result = await canAskNewQuestion(req.patient.id);
         res.json({ success: true, ...result });
     } catch (error) {
@@ -163,6 +170,7 @@ router.get('/can-ask', verifyPatientToken, async (req, res) => {
  */
 router.get('/', verifyPatientToken, async (req, res) => {
     try {
+        setPatientNoCacheHeaders(res);
         const patientId = req.patient.id;
 
         // Get all questions for this patient with doctor info
@@ -363,6 +371,7 @@ router.post('/', verifyPatientToken, upload.single('image'), async (req, res) =>
  */
 router.get('/:id', verifyPatientToken, async (req, res) => {
     try {
+        setPatientNoCacheHeaders(res);
         const questionId = req.params.id;
         const patientId = req.patient.id;
 
