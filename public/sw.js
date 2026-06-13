@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260613c'; // 2026-06-13 Rename contraction timer and allow anytime
+const CACHE_VERSION = '20260613d'; // 2026-06-13 Square birth congratulations card
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

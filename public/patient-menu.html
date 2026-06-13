@@ -725,8 +725,13 @@
         .section { margin-top: 18px; }
 
         .birth-congrats-home {
+            --birth-photo-size: 104px;
             display: none;
-            margin-top: 14px;
+            width: min(100%, 390px);
+            max-width: 390px;
+            height: min(calc(100vw - 28px), 390px);
+            aspect-ratio: 1 / 1;
+            margin: 14px auto 0;
             border: 1px solid rgba(179,95,123,0.22);
             border-radius: 24px;
             background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(250,239,244,0.88));
@@ -734,9 +739,11 @@
             padding: 14px;
             overflow: hidden;
             position: relative;
+            box-sizing: border-box;
         }
         .birth-congrats-home.show {
-            display: block;
+            display: flex;
+            flex-direction: column;
             animation: cardIn 0.52s ease both;
         }
         .birth-congrats-home::before {
@@ -757,7 +764,8 @@
             gap: 12px;
             position: relative;
             z-index: 1;
-            margin-bottom: 10px;
+            margin-bottom: 9px;
+            flex-shrink: 0;
         }
         .birth-congrats-kicker {
             display: inline-flex;
@@ -818,15 +826,18 @@
         .birth-congrats-close:active { transform: scale(0.96); }
         .birth-congrats-body {
             display: grid;
-            grid-template-columns: 112px 1fr;
+            grid-template-columns: var(--birth-photo-size) minmax(0, 1fr);
             gap: 12px;
             align-items: start;
             position: relative;
             z-index: 1;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
         .birth-congrats-photo-wrap {
-            width: 112px;
-            height: 112px;
+            width: var(--birth-photo-size);
+            height: var(--birth-photo-size);
             border-radius: 18px;
             border: 1px solid var(--line);
             background: rgba(255,255,255,0.74);
@@ -859,6 +870,10 @@
             font-weight: 900;
             color: var(--ink);
         }
+        .birth-congrats-copy {
+            min-width: 0;
+            overflow: hidden;
+        }
         .birth-congrats-copy p {
             margin-top: 5px;
             color: var(--muted);
@@ -867,15 +882,15 @@
         }
         .birth-congrats-metrics {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 9px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 7px;
+            margin-top: 8px;
         }
         .birth-congrats-metric {
             border: 1px solid var(--line);
             border-radius: 13px;
             background: rgba(255,255,255,0.76);
-            padding: 8px;
+            padding: 7px;
             min-width: 0;
         }
         .birth-congrats-metric span {
@@ -896,11 +911,13 @@
             text-overflow: ellipsis;
         }
         .birth-congrats-message {
-            margin-top: 9px;
+            margin-top: 8px;
             border: 1px solid rgba(179,95,123,0.14);
             border-radius: 13px;
             background: rgba(255,255,255,0.74);
-            padding: 9px;
+            padding: 8px;
+            max-height: 78px;
+            overflow: auto;
         }
         .birth-congrats-message-label {
             display: inline-flex;
@@ -1918,13 +1935,24 @@
             .app { padding-left: 14px; padding-right: 14px; }
             .hero-card { --sound-toggle-right-shift: 126px; padding: 18px 156px 18px 18px; border-radius: 24px; }
             .home-hero-photo { top: 14px; right: 14px; width: 132px; height: 132px; border-radius: 28px; }
-            .birth-congrats-home { border-radius: 20px; padding: 12px; }
-            .birth-congrats-head { flex-direction: column; gap: 6px; }
-            .birth-congrats-actions { width: 100%; justify-content: space-between; }
-            .birth-congrats-badge { align-self: flex-start; }
-            .birth-congrats-heading { font-size: 19px; }
-            .birth-congrats-body { grid-template-columns: 1fr; }
-            .birth-congrats-photo-wrap { width: 100%; height: 150px; }
+            .birth-congrats-home {
+                --birth-photo-size: 92px;
+                width: min(100%, 360px);
+                max-width: 360px;
+                height: min(calc(100vw - 28px), 360px);
+                border-radius: 20px;
+                padding: 12px;
+            }
+            .birth-congrats-head { gap: 8px; margin-bottom: 8px; }
+            .birth-congrats-actions { justify-content: flex-end; }
+            .birth-congrats-heading { font-size: 17px; line-height: 1.1; }
+            .birth-congrats-body { gap: 10px; }
+            .birth-congrats-copy h3 { font-size: 15px; }
+            .birth-congrats-copy p,
+            .birth-congrats-message p { font-size: 11px; line-height: 1.38; }
+            .birth-congrats-metrics { gap: 6px; }
+            .birth-congrats-metric { padding: 6px; }
+            .birth-congrats-message { max-height: 66px; }
             .settings-birth-item { grid-template-columns: 1fr; }
             .settings-birth-action { justify-self: start; }
             .modal-card {
