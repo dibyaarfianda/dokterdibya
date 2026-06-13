@@ -726,10 +726,6 @@
 
         .birth-congrats-home {
             --birth-photo-size: 104px;
-            --birth-accent: var(--rose);
-            --birth-accent-soft: rgba(179,95,123,0.11);
-            --birth-accent-line: rgba(179,95,123,0.22);
-            --birth-accent-bg: rgba(250,239,244,0.88);
             display: none;
             width: min(100%, 390px);
             max-width: 390px;
@@ -758,22 +754,9 @@
             right: -80px;
             top: -90px;
             border-radius: 50%;
-            background: radial-gradient(circle, var(--birth-accent-soft), transparent 70%);
+            background: radial-gradient(circle, rgba(179,95,123,0.18), transparent 70%);
             pointer-events: none;
         }
-        .birth-corner-accent {
-            position: absolute;
-            width: 34px;
-            height: 34px;
-            border-color: var(--birth-accent);
-            pointer-events: none;
-            z-index: 2;
-            opacity: 0.72;
-        }
-        .birth-corner-accent.tl { top: 10px; left: 10px; border-top: 2px solid; border-left: 2px solid; border-top-left-radius: 13px; }
-        .birth-corner-accent.tr { top: 10px; right: 10px; border-top: 2px solid; border-right: 2px solid; border-top-right-radius: 13px; }
-        .birth-corner-accent.bl { bottom: 10px; left: 10px; border-bottom: 2px solid; border-left: 2px solid; border-bottom-left-radius: 13px; }
-        .birth-corner-accent.br { bottom: 10px; right: 10px; border-bottom: 2px solid; border-right: 2px solid; border-bottom-right-radius: 13px; }
         .birth-congrats-head {
             display: flex;
             align-items: flex-start;
@@ -792,7 +775,7 @@
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            color: var(--birth-accent);
+            color: var(--rose);
             margin-bottom: 4px;
         }
         .birth-congrats-kicker i {
@@ -812,9 +795,9 @@
             margin-top: 4px;
         }
         .birth-congrats-badge {
-            border: 1px solid var(--birth-accent-line);
-            background: var(--birth-accent-soft);
-            color: var(--birth-accent);
+            border: 1px solid rgba(179,95,123,0.22);
+            background: rgba(179,95,123,0.11);
+            color: var(--rose);
             border-radius: 999px;
             padding: 6px 10px;
             font-size: 10px;
@@ -830,10 +813,10 @@
         .birth-congrats-close {
             width: 32px;
             height: 32px;
-            border: 1px solid var(--birth-accent-line);
+            border: 1px solid rgba(179,95,123,0.18);
             border-radius: 999px;
             background: rgba(255,255,255,0.76);
-            color: var(--birth-accent);
+            color: var(--rose);
             display: grid;
             place-items: center;
             font-size: 13px;
@@ -856,10 +839,10 @@
             width: var(--birth-photo-size);
             height: var(--birth-photo-size);
             border-radius: 18px;
-            border: 1px solid var(--birth-accent-line);
+            border: 1px solid var(--line);
             background: rgba(255,255,255,0.74);
             overflow: hidden;
-            box-shadow: 0 10px 22px var(--birth-accent-soft);
+            box-shadow: 0 10px 22px rgba(17,17,17,0.08);
             flex-shrink: 0;
             cursor: pointer;
             padding: 0;
@@ -879,8 +862,8 @@
             height: 100%;
             display: grid;
             place-items: center;
-            background: linear-gradient(145deg, rgba(255,255,255,0.94), var(--birth-accent-bg));
-            color: var(--birth-accent);
+            background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(248,232,240,0.92));
+            color: var(--rose);
             font-size: 32px;
         }
         .birth-congrats-copy h3 {
@@ -944,7 +927,7 @@
             align-items: center;
             gap: 6px;
             font-size: 10px;
-            color: var(--birth-accent);
+            color: var(--rose);
             text-transform: uppercase;
             letter-spacing: 0.08em;
             font-weight: 900;
@@ -963,7 +946,7 @@
             margin-top: 8px;
         }
         .birth-congrats-card-action {
-            border: 1px solid var(--birth-accent-line);
+            border: 1px solid rgba(179,95,123,0.18);
             border-radius: 11px;
             background: rgba(255,255,255,0.78);
             color: var(--ink);
@@ -980,9 +963,9 @@
             gap: 5px;
         }
         .birth-congrats-card-action.primary {
-            background: var(--birth-accent);
+            background: var(--rose);
             color: #fff;
-            border-color: var(--birth-accent);
+            border-color: var(--rose);
         }
         .birth-congrats-card-action:disabled {
             opacity: 0.58;
@@ -2374,10 +2357,6 @@
             </section>
 
             <section class="birth-congrats-home" id="birth-congrats-home" aria-live="polite">
-                <span class="birth-corner-accent tl" aria-hidden="true"></span>
-                <span class="birth-corner-accent tr" aria-hidden="true"></span>
-                <span class="birth-corner-accent bl" aria-hidden="true"></span>
-                <span class="birth-corner-accent br" aria-hidden="true"></span>
                 <div class="birth-congrats-head">
                     <div>
                         <div class="birth-congrats-kicker"><i class="fa-solid fa-heart"></i> Ucapan Kelahiran</div>
@@ -4866,33 +4845,6 @@
             return raw ? raw.slice(0, 5) : '';
         }
 
-        function getBirthTheme(themeColor) {
-            const themes = {
-                pink: { accent: '#ec4899', soft: 'rgba(236,72,153,0.12)', line: 'rgba(236,72,153,0.28)', bg: 'rgba(253,242,248,0.92)' },
-                blue: { accent: '#3b82f6', soft: 'rgba(59,130,246,0.12)', line: 'rgba(59,130,246,0.28)', bg: 'rgba(239,246,255,0.92)' },
-                green: { accent: '#22c55e', soft: 'rgba(34,197,94,0.12)', line: 'rgba(34,197,94,0.28)', bg: 'rgba(240,253,244,0.92)' },
-                purple: { accent: '#a855f7', soft: 'rgba(168,85,247,0.12)', line: 'rgba(168,85,247,0.28)', bg: 'rgba(250,245,255,0.92)' },
-                gold: { accent: '#f59e0b', soft: 'rgba(245,158,11,0.14)', line: 'rgba(245,158,11,0.3)', bg: 'rgba(255,251,235,0.94)' },
-                peach: { accent: '#fb923c', soft: 'rgba(251,146,60,0.14)', line: 'rgba(251,146,60,0.3)', bg: 'rgba(255,247,237,0.94)' }
-            };
-            return themes[String(themeColor || '').trim().toLowerCase()] || {
-                accent: '#b35f7b',
-                soft: 'rgba(179,95,123,0.11)',
-                line: 'rgba(179,95,123,0.22)',
-                bg: 'rgba(250,239,244,0.88)'
-            };
-        }
-
-        function applyBirthCongratsTheme(themeColor) {
-            const card = document.getElementById('birth-congrats-home');
-            if (!card) return;
-            const theme = getBirthTheme(themeColor);
-            card.style.setProperty('--birth-accent', theme.accent);
-            card.style.setProperty('--birth-accent-soft', theme.soft);
-            card.style.setProperty('--birth-accent-line', theme.line);
-            card.style.setProperty('--birth-accent-bg', theme.bg);
-        }
-
         function getCurrentBirthRecord() {
             if (currentBirthCongratsData && currentBirthCongratsData.id) return currentBirthCongratsData;
             const id = currentBirthCongratsId || document.getElementById('birth-congrats-home')?.dataset.birthId || '';
@@ -5248,7 +5200,6 @@
             const card = document.getElementById('birth-congrats-home');
             if (!card || !data) return;
             currentBirthCongratsData = data;
-            applyBirthCongratsTheme(data.theme_color);
             hidePregnancyTrackerHome();
 
             const babyName = String(data.baby_name || 'Buah Hati Tercinta').trim();

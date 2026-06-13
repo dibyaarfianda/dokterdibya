@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260613e'; // 2026-06-13 Restore full birth congratulations flow
+const CACHE_VERSION = '20260613f'; // 2026-06-13 Restore static birth congratulations styling
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
