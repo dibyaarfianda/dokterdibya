@@ -776,26 +776,29 @@ io.emit = function (...args) {
     return _origIoEmit(...args);
 };
 
+const USER_DISCONNECT_GRACE_MS = Number.parseInt(process.env.SOCKET_DISCONNECT_GRACE_MS || '30000', 10);
+const userSocketIds = new Map();
+const userProfiles = new Map();
+const userDisconnectTimers = new Map();
+
+function getOnlineUsersList() {
+    const list = [];
+    for (const [userId, profile] of userProfiles) {
+        const socketIds = userSocketIds.get(userId);
+        if ((socketIds && socketIds.size > 0) || userDisconnectTimers.has(userId)) {
+            list.push(profile);
+        }
+    }
+    return list;
+}
+
 // Debounced users:list broadcast — coalesces rapid connect/disconnect events
 let _usersListTimer = null;
 function broadcastUsersList() {
     if (_usersListTimer) return; // already scheduled
     _usersListTimer = setTimeout(() => {
         _usersListTimer = null;
-        const list = [];
-        for (const [, client] of io.sockets.sockets) {
-            if (client.userName) {
-                list.push({
-                    userId: client.userId,
-                    name: client.userName,
-                    role: client.userRole,
-                    photo: client.userPhoto,
-                    activity: client.userActivity || 'Idle',
-                    timestamp: client.activityTimestamp || new Date().toISOString()
-                });
-            }
-        }
-        io.emit('users:list', list);
+        io.emit('users:list', getOnlineUsersList());
     }, 500);
 }
 
@@ -812,22 +815,44 @@ io.on('connection', (socket) => {
             return;
         }
 
+        const userKey = String(data.userId);
+        const existingDisconnectTimer = userDisconnectTimers.get(userKey);
+        const wasPendingDisconnect = Boolean(existingDisconnectTimer);
+        if (existingDisconnectTimer) {
+            clearTimeout(existingDisconnectTimer);
+            userDisconnectTimers.delete(userKey);
+        }
+
+        let socketIds = userSocketIds.get(userKey);
+        const wasOffline = !wasPendingDisconnect && (!socketIds || socketIds.size === 0);
+        if (!socketIds) {
+            socketIds = new Set();
+            userSocketIds.set(userKey, socketIds);
+        }
+        socketIds.add(socket.id);
+
         socket.userId = data.userId;
+        socket.userKey = userKey;
         socket.userName = data.name;
         socket.userRole = data.role;
         socket.userActivity = 'Baru bergabung';
         socket.userPhoto = data.photo || null;
         socket.activityTimestamp = new Date().toISOString();
 
-        // Broadcast to others that a new user connected
-        socket.broadcast.emit('user:connected', {
+        const userProfile = {
             userId: data.userId,
             name: data.name,
             role: data.role,
             photo: socket.userPhoto,
             activity: 'Baru bergabung',
             timestamp: socket.activityTimestamp
-        });
+        };
+        userProfiles.set(userKey, userProfile);
+
+        // Broadcast to others that a new user connected
+        if (wasOffline) {
+            socket.broadcast.emit('user:connected', userProfile);
+        }
         
         // Debounced broadcast of online users list
         broadcastUsersList();
@@ -842,6 +867,14 @@ io.on('connection', (socket) => {
     socket.on('activity:update', (data) => {
         socket.userActivity = data.activity;
         socket.activityTimestamp = data.timestamp;
+        const userKey = String(data.userId || socket.userId || '');
+        if (userKey && userProfiles.has(userKey)) {
+            userProfiles.set(userKey, {
+                ...userProfiles.get(userKey),
+                activity: data.activity,
+                timestamp: data.timestamp
+            });
+        }
 
         const now = Date.now();
         if (!socket._lastActivityBroadcast || now - socket._lastActivityBroadcast > 2000) {
@@ -969,33 +1002,46 @@ io.on('connection', (socket) => {
     
     // Get online users list
     socket.on('users:get-list', () => {
-        const onlineUsers = [];
-        for (const [id, client] of io.sockets.sockets) {
-            if (client.userName) {
-                onlineUsers.push({
-                    userId: client.userId,
-                    name: client.userName,
-                    role: client.userRole,
-                    photo: client.userPhoto
-                });
-            }
-        }
-        socket.emit('users:list', onlineUsers);
+        socket.emit('users:list', getOnlineUsersList());
     });
     
     socket.on('disconnect', (reason) => {
         logger.info(`Client disconnected: ${socket.id} (${socket.userName || 'unknown'}) reason: ${reason}`);
 
-        // Broadcast to others that user disconnected
         if (socket.userId) {
-            socket.broadcast.emit('user:disconnected', {
-                userId: socket.userId,
-                name: socket.userName
-            });
+            const userKey = socket.userKey || String(socket.userId);
+            const socketIds = userSocketIds.get(userKey);
+            if (socketIds) {
+                socketIds.delete(socket.id);
+                if (socketIds.size > 0) {
+                    broadcastUsersList();
+                    return;
+                }
+            }
+
+            if (userDisconnectTimers.has(userKey)) {
+                clearTimeout(userDisconnectTimers.get(userKey));
+            }
+
+            const userId = socket.userId;
+            const userName = socket.userName;
+            const disconnectTimer = setTimeout(() => {
+                const currentSocketIds = userSocketIds.get(userKey);
+                if (currentSocketIds && currentSocketIds.size > 0) {
+                    return;
+                }
+
+                userSocketIds.delete(userKey);
+                userProfiles.delete(userKey);
+                userDisconnectTimers.delete(userKey);
+                io.emit('user:disconnected', {
+                    userId,
+                    name: userName
+                });
+                broadcastUsersList();
+            }, USER_DISCONNECT_GRACE_MS);
+            userDisconnectTimers.set(userKey, disconnectTimer);
         }
-        
-        // Debounced broadcast of updated users list
-        broadcastUsersList();
     });
 });
 
