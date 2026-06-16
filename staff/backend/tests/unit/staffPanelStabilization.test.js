@@ -37,4 +37,28 @@ describe('staff panel stabilization sources', () => {
         expect(longUrlMigration).toMatch(/ALTER\s+TABLE\s+patients/i);
         expect(longUrlMigration).toMatch(/MODIFY\s+COLUMN\s+photo_url\s+TEXT\s+NULL/i);
     });
+
+    test('staff sidebar exposes patient engagement menus', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+
+        expect(html).toContain('id="nav-voting"');
+        expect(html).toContain('showVotingPage(); return false;');
+        expect(html).toContain('<p>Voting Pasien</p>');
+
+        expect(html).toContain('id="nav-birth-class"');
+        expect(html).toContain('showBirthClassPage(); return false;');
+        expect(html).toContain('<p>Kelas Dr. Dibya</p>');
+
+        expect(html).toContain('id="nav-birth-congrats"');
+        expect(html).toContain('showBirthCongratsPage(); return false;');
+        expect(html).toContain('<p>Ucapan Kelahiran</p>');
+
+        expect(html).toContain('id="nav-birth-testimonials"');
+        expect(html).toContain('showBirthTestimonialsPage(); return false;');
+        expect(html).toContain('<p>Testimoni Pasien</p>');
+
+        expect(mainJs).toContain("'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class']");
+        expect(mainJs).toContain("'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials']");
+    });
 });
