@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260616a'; // 2026-06-16 Keep birth testimonial actions visible
+const CACHE_VERSION = '20260616b'; // 2026-06-16 Add birth date and weight edit fields
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
