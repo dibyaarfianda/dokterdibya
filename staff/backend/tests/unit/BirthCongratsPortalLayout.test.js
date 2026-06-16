@@ -40,16 +40,22 @@ describe('Birth congratulations portal layout', () => {
     });
 
     test('edit detail birth modal can update date, time, weight, and length', () => {
-        expect(patientMenu).toContain('id="birth-extra-date" class="settings-input" inputmode="numeric"');
-        expect(patientMenu).toContain('placeholder="27/04/2026"');
-        expect(patientMenu).toContain('for="birth-extra-date">Tanggal Lahir');
+        expect(patientMenu).toContain('renderBirthDateNumberInputs(\'birth-extra\', record.birth_date)');
+        expect(patientMenu).toContain('function renderBirthDateNumberInputs(prefix, value)');
+        expect(patientMenu).toContain('prefix + \'-day" type="number"');
+        expect(patientMenu).toContain('prefix + \'-day">Tanggal');
+        expect(patientMenu).toContain('prefix + \'-month" type="number"');
+        expect(patientMenu).toContain('prefix + \'-month">Bulan');
+        expect(patientMenu).toContain('prefix + \'-year" type="number"');
+        expect(patientMenu).toContain('prefix + \'-year">Tahun');
+        expect(patientMenu).not.toContain('id="birth-extra-date"');
         expect(patientMenu).toContain('id="birth-extra-time" type="time"');
         expect(patientMenu).toContain('for="birth-extra-time">Jam Lahir');
         expect(patientMenu).toContain('id="birth-extra-weight"');
         expect(patientMenu).toContain('for="birth-extra-weight">Berat Lahir');
         expect(patientMenu).toContain('id="birth-extra-length"');
         expect(patientMenu).not.toContain('showPicker');
-        expect(patientMenu).toContain('const birthDateValue = normalizeBirthDateSubmitInput(document.getElementById(\'birth-extra-date\')?.value || \'\');');
+        expect(patientMenu).toContain('const birthDateValue = normalizeBirthDatePartsSubmitInput(\'birth-extra\');');
         expect(patientMenu).toContain('birth_date: birthDateValue');
         expect(patientMenu).toContain('birth_weight: birthWeightDigits');
         expect(patientRoutes).toContain('const { birth_date, birth_time, birth_weight, birth_length } = req.body;');
