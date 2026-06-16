@@ -47,11 +47,26 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('id="birth-extra-weight"');
         expect(patientMenu).toContain('for="birth-extra-weight">Berat Lahir');
         expect(patientMenu).toContain('id="birth-extra-length"');
+        expect(patientMenu).toContain('onclick="this.showPicker && this.showPicker()"');
         expect(patientMenu).toContain('birth_date: document.getElementById(\'birth-extra-date\')?.value || \'\'');
-        expect(patientMenu).toContain('birth_weight: document.getElementById(\'birth-extra-weight\')?.value || \'\'');
+        expect(patientMenu).toContain('birth_weight: birthWeightDigits');
         expect(patientRoutes).toContain('const { birth_date, birth_time, birth_weight, birth_length } = req.body;');
         expect(patientRoutes).toContain('birth_date = COALESCE(?, birth_date)');
         expect(patientRoutes).toContain('birth_weight = COALESCE(?, birth_weight)');
+    });
+
+    test('edit detail birth weight accepts exactly four gram digits', () => {
+        expect(patientMenu).toContain('inputmode="numeric"');
+        expect(patientMenu).toContain('maxlength="4"');
+        expect(patientMenu).toContain(String.raw`pattern="\\d{4}"`);
+        expect(patientMenu).toContain('placeholder="3400"');
+        expect(patientMenu).toContain('normalizeBirthWeightGramsInput(record.birth_weight || record.weight || \'\')');
+        expect(patientMenu).toContain('const birthWeightDigits = normalizeBirthWeightGramsInput(document.getElementById(\'birth-extra-weight\')?.value || \'\');');
+        expect(patientMenu).toContain(String.raw`if (!/^\d{4}$/.test(birthWeightDigits))`);
+        expect(patientMenu).toContain('birth_weight: birthWeightDigits');
+        expect(patientRoutes).toContain(String.raw`const normalizedBirthWeight = String(birth_weight || '').replace(/\D/g, '');`);
+        expect(patientRoutes).toContain(String.raw`if (!/^\d{4}$/.test(normalizedBirthWeight))`);
+        expect(patientRoutes).toContain("const storedBirthWeight = `${normalizedBirthWeight} gram`;");
     });
 
     test('birth congratulations uses the static portal color without decorative corners', () => {

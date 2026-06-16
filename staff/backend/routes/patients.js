@@ -1800,13 +1800,17 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
         const { baby_name, gender, birth_date, birth_time, birth_weight, birth_length } = req.body;
 
         const normalizedBabyName = (baby_name || '').trim();
-        const normalizedBirthWeight = (birth_weight || '').trim();
+        const normalizedBirthWeight = String(birth_weight || '').replace(/\D/g, '');
 
         if (!normalizedBabyName || !birth_date || !gender || !normalizedBirthWeight) {
             return res.status(400).json({
                 success: false,
                 message: 'Nama bayi, tanggal persalinan, jenis kelamin, dan berat badan wajib diisi'
             });
+        }
+
+        if (!/^\d{4}$/.test(normalizedBirthWeight)) {
+            return res.status(400).json({ success: false, message: 'Berat lahir wajib 4 digit angka dalam gram' });
         }
 
         let normalizedGender = null;
@@ -1837,7 +1841,7 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
                 normalizedGender,
                 birth_date,
                 birth_time || null,
-                normalizedBirthWeight,
+                `${normalizedBirthWeight} gram`,
                 birth_length || null,
                 hardcodedMessage
             ]
@@ -1884,10 +1888,15 @@ router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) 
         const patientId = req.patient.id;
         const patientName = req.patient.full_name || req.patient.name || '';
         const { baby_name, gender, birth_date, birth_time, birth_weight, birth_length } = req.body;
+        const normalizedBirthWeight = String(birth_weight || '').replace(/\D/g, '');
 
         let normalizedGender = null;
         if (gender === 'Laki-laki' || gender === 'male') normalizedGender = 'male';
         if (gender === 'Perempuan' || gender === 'female') normalizedGender = 'female';
+
+        if (!/^\d{4}$/.test(normalizedBirthWeight)) {
+            return res.status(400).json({ success: false, message: 'Berat lahir wajib 4 digit angka dalam gram' });
+        }
 
         // Ensure this entry belongs to this patient and is still pending
         const [rows] = await db.query(
@@ -1908,7 +1917,7 @@ router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) 
                 is_published = 1, patient_data_submitted = 1, patient_dismissed = 0
             WHERE id = ? AND patient_id = ?`,
             [baby_name || null, normalizedGender, birth_date || null, birth_time || null,
-             birth_weight || null, birth_length || null,
+             `${normalizedBirthWeight} gram`, birth_length || null,
              hardcodedMessage, entryId, patientId]
         );
 
@@ -1925,6 +1934,11 @@ router.post('/api/patient/birth-extra/:id', verifyPatientToken, async (req, res)
         const entryId = req.params.id;
         const patientId = req.patient.id;
         const { birth_date, birth_time, birth_weight, birth_length } = req.body;
+        const normalizedBirthWeight = String(birth_weight || '').replace(/\D/g, '');
+        if (!/^\d{4}$/.test(normalizedBirthWeight)) {
+            return res.status(400).json({ success: false, message: 'Berat lahir wajib 4 digit angka dalam gram' });
+        }
+        const storedBirthWeight = `${normalizedBirthWeight} gram`;
 
         const [rows] = await db.query(
             'SELECT id FROM birth_congratulations WHERE id = ? AND patient_id = ? LIMIT 1',
@@ -1942,7 +1956,7 @@ router.post('/api/patient/birth-extra/:id', verifyPatientToken, async (req, res)
                  birth_weight = COALESCE(?, birth_weight),
                  birth_length = COALESCE(?, birth_length)
              WHERE id = ? AND patient_id = ?`,
-            [birth_date || null, birth_time || null, birth_weight || null, birth_length || null, entryId, patientId]
+            [birth_date || null, birth_time || null, storedBirthWeight, birth_length || null, entryId, patientId]
         );
 
         res.json({ success: true, message: 'Keterangan tambahan berhasil disimpan' });
