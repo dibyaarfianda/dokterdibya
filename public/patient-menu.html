@@ -4865,6 +4865,34 @@
             return year + '-' + month + '-' + day;
         }
 
+        function getBirthDateParts(value) {
+            const normalized = normalizeBirthDateInput(value);
+            if (!normalized) return { day: '', month: '', year: '' };
+            const parts = normalized.split('-');
+            return {
+                day: String(Number(parts[2]) || ''),
+                month: String(Number(parts[1]) || ''),
+                year: parts[0] || ''
+            };
+        }
+
+        function renderBirthDateNumberInputs(prefix, value) {
+            const parts = getBirthDateParts(value);
+            return '<div class="settings-field"><label for="' + prefix + '-day">Tanggal</label><input id="' + prefix + '-day" type="number" class="settings-input" inputmode="numeric" min="1" max="31" step="1" value="' + escapeHtml(parts.day) + '" placeholder="27"></div>' +
+                '<div class="settings-field"><label for="' + prefix + '-month">Bulan</label><input id="' + prefix + '-month" type="number" class="settings-input" inputmode="numeric" min="1" max="12" step="1" value="' + escapeHtml(parts.month) + '" placeholder="4"></div>' +
+                '<div class="settings-field"><label for="' + prefix + '-year">Tahun</label><input id="' + prefix + '-year" type="number" class="settings-input" inputmode="numeric" min="1900" max="2100" step="1" value="' + escapeHtml(parts.year) + '" placeholder="2026"></div>';
+        }
+
+        function normalizeBirthDatePartsSubmitInput(prefix) {
+            const day = Number(document.getElementById(prefix + '-day')?.value || '');
+            const month = Number(document.getElementById(prefix + '-month')?.value || '');
+            const year = Number(document.getElementById(prefix + '-year')?.value || '');
+            if (!day || !month || !year) return '';
+            const date = new Date(year, month - 1, day);
+            if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
+            return String(year).padStart(4, '0') + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        }
+
         function normalizeBirthTimeInput(value) {
             const raw = String(value || '').trim();
             return raw ? raw.slice(0, 5) : '';
@@ -4919,7 +4947,7 @@
                     '<div class="settings-field"><label for="birth-data-gender">Jenis Kelamin</label><select id="birth-data-gender" class="settings-select">' +
                         '<option value="">Pilih</option>' + option('male', 'Laki-laki') + option('female', 'Perempuan') +
                     '</select></div>' +
-                    '<div class="settings-field"><label for="birth-data-date">Tanggal Lahir</label><input id="birth-data-date" class="settings-input" inputmode="numeric" maxlength="10" value="' + escapeHtml(formatBirthDateTextInput(record.birth_date)) + '" placeholder="27/04/2026"></div>' +
+                    renderBirthDateNumberInputs('birth-data', record.birth_date) +
                     '<div class="settings-field"><label for="birth-data-time">Jam Lahir</label><input id="birth-data-time" type="time" class="settings-input" value="' + escapeHtml(normalizeBirthTimeInput(record.birth_time)) + '"></div>' +
                     '<div class="settings-field"><label for="birth-data-weight">Berat Lahir</label><input id="birth-data-weight" class="settings-input" inputmode="numeric" maxlength="4" pattern="\\d{4}" value="' + escapeHtml(normalizeBirthWeightGramsInput(record.birth_weight || '')) + '" placeholder="3400"></div>' +
                     '<div class="settings-field"><label for="birth-data-length">Panjang Badan</label><input id="birth-data-length" class="settings-input" value="' + escapeHtml(record.birth_length || '') + '" placeholder="Contoh: 50 cm"></div>' +
@@ -4936,7 +4964,7 @@
             const id = escapeHtml(record.id || '');
             return '<div class="birth-modal-note">Edit keterangan tambahan yang dulu tersedia di portal lama.</div>' +
                 '<div class="birth-form-grid" data-birth-id="' + id + '">' +
-                    '<div class="settings-field"><label for="birth-extra-date">Tanggal Lahir</label><input id="birth-extra-date" class="settings-input" inputmode="numeric" maxlength="10" value="' + escapeHtml(formatBirthDateTextInput(record.birth_date)) + '" placeholder="27/04/2026"></div>' +
+                    renderBirthDateNumberInputs('birth-extra', record.birth_date) +
                     '<div class="settings-field"><label for="birth-extra-time">Jam Lahir</label><input id="birth-extra-time" type="time" class="settings-input" value="' + escapeHtml(normalizeBirthTimeInput(record.birth_time)) + '"></div>' +
                     '<div class="settings-field"><label for="birth-extra-weight">Berat Lahir</label><input id="birth-extra-weight" class="settings-input" inputmode="numeric" maxlength="4" pattern="\\d{4}" value="' + escapeHtml(normalizeBirthWeightGramsInput(record.birth_weight || record.weight || '')) + '" placeholder="3400"></div>' +
                     '<div class="settings-field"><label for="birth-extra-length">Panjang Badan</label><input id="birth-extra-length" class="settings-input" value="' + escapeHtml(record.birth_length || record.length || '') + '" placeholder="Contoh: 50 cm"></div>' +
@@ -5019,9 +5047,9 @@
             stopTopbarEvent(event);
             const id = String(birthId || currentBirthPending?.id || '').trim();
             if (!id) return;
-            const birthDataDateValue = normalizeBirthDateSubmitInput(document.getElementById('birth-data-date')?.value || '');
+            const birthDataDateValue = normalizeBirthDatePartsSubmitInput('birth-data');
             if (!birthDataDateValue) {
-                showToast('Tanggal lahir isi format dd/mm/yyyy. Contoh: 27/04/2026');
+                showToast('Tanggal lahir wajib diisi dengan tanggal, bulan, dan tahun yang valid');
                 return;
             }
             const birthDataWeightDigits = normalizeBirthWeightGramsInput(document.getElementById('birth-data-weight')?.value || '');
@@ -5075,9 +5103,9 @@
             stopTopbarEvent(event);
             const id = String(birthId || getCurrentBirthRecord()?.id || '').trim();
             if (!id) return;
-            const birthDateValue = normalizeBirthDateSubmitInput(document.getElementById('birth-extra-date')?.value || '');
+            const birthDateValue = normalizeBirthDatePartsSubmitInput('birth-extra');
             if (!birthDateValue) {
-                showToast('Tanggal lahir isi format dd/mm/yyyy. Contoh: 27/04/2026');
+                showToast('Tanggal lahir wajib diisi dengan tanggal, bulan, dan tahun yang valid');
                 return;
             }
             const birthWeightDigits = normalizeBirthWeightGramsInput(document.getElementById('birth-extra-weight')?.value || '');
