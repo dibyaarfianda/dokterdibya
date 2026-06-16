@@ -1919,12 +1919,12 @@ router.post('/api/patient/birth-data/:id', verifyPatientToken, async (req, res) 
     }
 });
 
-// POST patient edits additional birth details after publish (time and length)
+// POST patient edits additional birth details after publish
 router.post('/api/patient/birth-extra/:id', verifyPatientToken, async (req, res) => {
     try {
         const entryId = req.params.id;
         const patientId = req.patient.id;
-        const { birth_time, birth_length } = req.body;
+        const { birth_date, birth_time, birth_weight, birth_length } = req.body;
 
         const [rows] = await db.query(
             'SELECT id FROM birth_congratulations WHERE id = ? AND patient_id = ? LIMIT 1',
@@ -1937,10 +1937,12 @@ router.post('/api/patient/birth-extra/:id', verifyPatientToken, async (req, res)
 
         await db.query(
             `UPDATE birth_congratulations
-             SET birth_time = COALESCE(?, birth_time),
+             SET birth_date = COALESCE(?, birth_date),
+                 birth_time = COALESCE(?, birth_time),
+                 birth_weight = COALESCE(?, birth_weight),
                  birth_length = COALESCE(?, birth_length)
              WHERE id = ? AND patient_id = ?`,
-            [birth_time || null, birth_length || null, entryId, patientId]
+            [birth_date || null, birth_time || null, birth_weight || null, birth_length || null, entryId, patientId]
         );
 
         res.json({ success: true, message: 'Keterangan tambahan berhasil disimpan' });

@@ -39,6 +39,21 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('hidePregnancyTrackerHome');
     });
 
+    test('edit detail birth modal can update date, time, weight, and length', () => {
+        expect(patientMenu).toContain('id="birth-extra-date" type="date"');
+        expect(patientMenu).toContain('for="birth-extra-date">Tanggal Lahir');
+        expect(patientMenu).toContain('id="birth-extra-time" type="time"');
+        expect(patientMenu).toContain('for="birth-extra-time">Jam Lahir');
+        expect(patientMenu).toContain('id="birth-extra-weight"');
+        expect(patientMenu).toContain('for="birth-extra-weight">Berat Lahir');
+        expect(patientMenu).toContain('id="birth-extra-length"');
+        expect(patientMenu).toContain('birth_date: document.getElementById(\'birth-extra-date\')?.value || \'\'');
+        expect(patientMenu).toContain('birth_weight: document.getElementById(\'birth-extra-weight\')?.value || \'\'');
+        expect(patientRoutes).toContain('const { birth_date, birth_time, birth_weight, birth_length } = req.body;');
+        expect(patientRoutes).toContain('birth_date = COALESCE(?, birth_date)');
+        expect(patientRoutes).toContain('birth_weight = COALESCE(?, birth_weight)');
+    });
+
     test('birth congratulations uses the static portal color without decorative corners', () => {
         expect(patientMenu).not.toContain('birth-corner-accent');
         expect(patientMenu).not.toContain('applyBirthCongratsTheme');
