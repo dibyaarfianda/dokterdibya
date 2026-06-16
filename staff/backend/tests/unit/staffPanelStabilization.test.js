@@ -5,21 +5,21 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v251 cache version source for staff assets', () => {
+    test('uses one v252 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v251';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v252';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v251');
+        expect(html).toContain('styles/mobile-responsive.css?v=v252');
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v251 precache does not include missing chat panel css', () => {
+    test('service worker v252 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v251';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v252';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
