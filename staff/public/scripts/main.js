@@ -4419,7 +4419,7 @@ async function applyMenuVisibility(user) {
         'dashboard': null, // Dashboard always visible
         'kelola_pasien': ['nav-kelola-pasien', 'nav-record-history'],
         'pasien_baru': ['nav-pasien-baru'],
-        'klinik_privat': ['nav-klinik-private'],
+        'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class'],
         'rsia_melinda': ['nav-rsia-melinda'],
         'rsud_gambiran': ['nav-rsud-gambiran'],
         'rs_bhayangkara': ['nav-rs-bhayangkara'],
