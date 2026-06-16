@@ -729,8 +729,8 @@
             display: none;
             width: min(100%, 390px);
             max-width: 390px;
-            height: min(calc(100vw - 28px), 390px);
-            aspect-ratio: 1 / 1;
+            min-height: min(calc(100vw - 28px), 390px);
+            height: auto;
             margin: 14px auto 0;
             border: 1px solid rgba(179,95,123,0.22);
             border-radius: 24px;
@@ -831,9 +831,8 @@
             align-items: start;
             position: relative;
             z-index: 1;
-            flex: 1;
-            min-height: 0;
-            overflow: hidden;
+            flex: 0 0 auto;
+            overflow: visible;
         }
         .birth-congrats-photo-wrap {
             width: var(--birth-photo-size);
@@ -2038,7 +2037,8 @@
                 --birth-photo-size: 92px;
                 width: min(100%, 360px);
                 max-width: 360px;
-                height: min(calc(100vw - 28px), 360px);
+                min-height: min(calc(100vw - 28px), 360px);
+                height: auto;
                 border-radius: 20px;
                 padding: 12px;
             }
@@ -2386,12 +2386,12 @@
                             <div class="birth-congrats-message-label"><i class="fa-solid fa-quote-left"></i> Pesan dari Dokter</div>
                             <p id="birth-congrats-message">Selamat atas kelahiran buah hati Anda!</p>
                         </div>
-                        <div class="birth-congrats-card-actions">
-                            <button type="button" class="birth-congrats-card-action primary soundable" id="birth-photo-action" onclick="openBirthPhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload foto bayi</button>
-                            <button type="button" class="birth-congrats-card-action soundable" id="birth-extra-action" onclick="openBirthExtraModal(event)"><i class="fa-solid fa-pen"></i> Edit detail</button>
-                            <button type="button" class="birth-congrats-card-action soundable" id="birth-testimonial-action" onclick="openBirthTestimonialModal(event)"><i class="fa-regular fa-comment-dots"></i> Kirim testimoni</button>
-                        </div>
                     </div>
+                </div>
+                <div class="birth-congrats-card-actions">
+                    <button type="button" class="birth-congrats-card-action primary soundable" id="birth-photo-action" onclick="openBirthPhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload foto bayi</button>
+                    <button type="button" class="birth-congrats-card-action soundable" id="birth-extra-action" onclick="openBirthExtraModal(event)"><i class="fa-solid fa-pen"></i> Edit detail</button>
+                    <button type="button" class="birth-congrats-card-action soundable" id="birth-testimonial-action" onclick="openBirthTestimonialModal(event)"><i class="fa-regular fa-comment-dots"></i> Kirim testimoni</button>
                 </div>
             </section>
 
