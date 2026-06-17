@@ -165,6 +165,33 @@ describe('PatientDocumentSyncService', () => {
             expect.anything()
         );
     });
+
+    it('can sync historical penunjang files without creating patient notifications', async () => {
+        expect(typeof PatientDocumentSyncService.syncPenunjangLabResults).toBe('function');
+
+        db.query
+            .mockResolvedValueOnce([[]])
+            .mockResolvedValueOnce([{ insertId: 92 }]);
+
+        const result = await PatientDocumentSyncService.syncPenunjangLabResults({
+            patientId: 'P002',
+            mrId: 'DRD0002',
+            files: [
+                {
+                    name: 'lab-b.pdf',
+                    url: '/api/lab-results/file/lab-b.pdf',
+                    key: 'lab-results/lab-b.pdf',
+                    type: 'application/pdf',
+                    size: 4096
+                }
+            ],
+            actorUserId: 'USR002',
+            suppressNotification: true
+        });
+
+        expect(result).toEqual({ added: 1, removed: 0 });
+        expect(createPatientNotification).not.toHaveBeenCalled();
+    });
 });
 
 describe('DRD penunjang portal sync wiring', () => {
@@ -225,5 +252,18 @@ describe('DRD penunjang portal sync wiring', () => {
         expect(penunjangComponent).toContain('const existingPenunjang = state?.medicalRecords?.byType?.penunjang?.data || state?.recordData?.penunjang || {};');
         expect(penunjangComponent).toContain('await this.savePenunjangToDatabase(data.files, data.interpretation, recordDatetime);');
         expect(penunjangComponent).toContain("return { success: true, skipped: true };");
+    });
+
+    test('backfill script scans penunjang records and syncs them without notifications', () => {
+        const backfillScript = readRepoFile(
+            'staff',
+            'backend',
+            'scripts',
+            'backfill-penunjang-portal-sync.js'
+        );
+
+        expect(backfillScript).toContain("record_type = 'penunjang'");
+        expect(backfillScript).toContain('syncPenunjangLabResults({');
+        expect(backfillScript).toContain('suppressNotification: true');
     });
 });

@@ -2,7 +2,13 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const { createPatientNotification } = require('../routes/patient-notifications');
 
-async function syncPenunjangLabResults({ patientId, mrId, files = [], actorUserId = null }) {
+async function syncPenunjangLabResults({
+    patientId,
+    mrId,
+    files = [],
+    actorUserId = null,
+    suppressNotification = false
+}) {
     if (!patientId || !mrId) {
         return { added: 0, removed: 0 };
     }
@@ -50,7 +56,7 @@ async function syncPenunjangLabResults({ patientId, mrId, files = [], actorUserI
         );
     }
 
-    if (toInsert.length > 0) {
+    if (!suppressNotification && toInsert.length > 0) {
         await createPatientNotification({
             patient_id: patientId,
             type: 'document',
