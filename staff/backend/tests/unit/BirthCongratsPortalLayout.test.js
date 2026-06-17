@@ -161,4 +161,11 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain("const doctorAvatar = document.getElementById('birth-congrats-doctor-avatar-img');");
         expect(patientMenu).toContain("const doctorAvatarFallback = document.getElementById('birth-congrats-doctor-avatar-fallback');");
     });
+
+    test('birth congratulations hides the birth-status subtitle and doubles the baby name size', () => {
+        expect(patientMenu).toMatch(/\.birth-congrats-baby-block h3\s*\{[\s\S]*font-size:\s*30px/);
+        expect(patientMenu).not.toContain("document.getElementById('birth-congrats-subtitle').textContent = genderLabel + ' Anda telah lahir dengan selamat.';");
+        expect(patientMenu).not.toContain('Putra Anda telah lahir dengan selamat.');
+        expect(patientMenu).not.toContain('Putri Anda telah lahir dengan selamat.');
+    });
 });
