@@ -5,7 +5,7 @@
  * Features:
  * - Upload lab result images/PDFs
  * - AI interpretation using OpenAI GPT-4o Vision
- * - Professional display with clinic logo
+ * - Professional display with doctor profile branding
  */
 
 import stateManager from '../../utils/state-manager.js';
@@ -165,13 +165,15 @@ export default {
      * Render AI interpretation with professional formatting
      */
     renderInterpretation(interpretation) {
+        const doctorProfileImage = this.resolveDoctorProfileImage();
+
         return `
             <div class="interpretation-result border rounded p-3 bg-light">
                 <div class="d-flex align-items-center mb-3">
                     <img
-                        src="/staff/public/images/db-black.svg"
+                        src="${doctorProfileImage}"
                         alt="Dokter Dibya"
-                        style="height: 40px;"
+                        style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%;"
                         class="mr-3"
                     >
                     <div>
@@ -189,6 +191,12 @@ ${interpretation}
                 </small>
             </div>
         `;
+    },
+
+    resolveDoctorProfileImage() {
+        return window.auth?.currentUser?.photo_url ||
+            window.currentStaffIdentity?.photo_url ||
+            '/staff/public/images/db-black.svg';
     },
 
     /**
