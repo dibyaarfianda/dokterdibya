@@ -771,21 +771,13 @@
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            font-size: 10px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--rose);
             margin-bottom: 4px;
         }
         .birth-congrats-kicker i {
             font-size: 11px;
+            color: var(--rose);
         }
         .birth-congrats-heading {
-            font-family: var(--display);
-            font-size: 21px;
-            line-height: 1.05;
-            letter-spacing: -0.03em;
             margin: 0;
         }
         .birth-congrats-doctor {
@@ -1322,6 +1314,7 @@
         .tracker-panel .big { font-family: var(--display); font-size: 28px; letter-spacing: -0.04em; color: var(--ink); margin: 4px 0; }
         .announcement-panel { min-height: 162px; display: flex; flex-direction: column; }
         .announcement-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .announcement-panel-kicker { margin-bottom: 5px; }
         .announcement-count-pill {
             border: 1px solid rgba(92,127,114,0.18);
             background: var(--green-soft);
@@ -2199,7 +2192,6 @@
             }
             .birth-congrats-head { gap: 8px; margin-bottom: 8px; }
             .birth-congrats-actions { justify-content: flex-end; }
-            .birth-congrats-heading { font-size: 17px; line-height: 1.1; }
             .birth-congrats-body { gap: 10px; }
             .birth-congrats-copy h3 { font-size: 15px; }
             .birth-congrats-copy p,
@@ -2514,8 +2506,8 @@
             <section class="birth-congrats-home" id="birth-congrats-home" aria-live="polite">
                 <div class="birth-congrats-head">
                     <div>
-                        <div class="birth-congrats-kicker"><i class="fa-solid fa-heart"></i> Ucapan Kelahiran</div>
-                        <h2 class="birth-congrats-heading">Selamat atas kelahiran buah hati Anda</h2>
+                        <div class="section-kicker birth-congrats-kicker"><i class="fa-solid fa-heart"></i> Ucapan Kelahiran</div>
+                        <h2 class="section-title birth-congrats-heading">Selamat atas kelahiran buah hati Anda</h2>
                         <p class="birth-congrats-doctor" id="birth-congrats-doctor">Dari tim SISIwanita</p>
                     </div>
                     <div class="birth-congrats-actions">
@@ -2621,7 +2613,7 @@
                     <div class="announcement-panel">
                         <div class="announcement-panel-head">
                             <div>
-                                <h3>Info Terbaru</h3>
+                                <div class="section-kicker announcement-panel-kicker">Info Terbaru</div>
                                 <p id="announcement-preview">Memuat kabar klinik...</p>
                             </div>
                             <span class="announcement-count-pill" id="announcement-count-pill">0</span>
@@ -4814,8 +4806,7 @@
                 return;
             }
 
-            const first = safeItems[0];
-            preview.textContent = truncatePreviewText(first.message || first.title, 86);
+            preview.textContent = 'UPDATE DARI SISIWANITA';
             list.innerHTML = safeItems.map(function(item, index) {
                 const tone = getInfoTone(item);
                 const title = cleanPreviewText(item.title, item.source === 'announcement' ? 'Pengumuman Klinik' : 'Notifikasi');
