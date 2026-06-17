@@ -209,4 +209,21 @@ describe('DRD penunjang portal sync wiring', () => {
         expect(resumeComponent).not.toContain("sentItems.push('Hasil Lab')");
         expect(resumeComponent).toContain('documentsSent.lab');
     });
+
+    test('penunjang component can resave existing files through the global save flow', () => {
+        const penunjangComponent = readRepoFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'components',
+            'shared',
+            'penunjang.js'
+        );
+
+        expect(penunjangComponent).toContain('async save(state)');
+        expect(penunjangComponent).toContain('const existingPenunjang = state?.medicalRecords?.byType?.penunjang?.data || state?.recordData?.penunjang || {};');
+        expect(penunjangComponent).toContain('await this.savePenunjangToDatabase(data.files, data.interpretation, recordDatetime);');
+        expect(penunjangComponent).toContain("return { success: true, skipped: true };");
+    });
 });
