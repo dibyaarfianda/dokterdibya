@@ -1122,7 +1122,7 @@
             left: 8px;
             right: 8px;
             top: 50%;
-            height: 44px;
+            height: 48px;
             transform: translateY(-50%);
             border-radius: 14px;
             background: rgba(179,95,123,0.11);
@@ -1145,11 +1145,11 @@
             margin-bottom: 6px;
         }
         .birth-date-wheel-list {
-            height: 168px;
+            height: 176px;
             overflow-y: auto;
             overscroll-behavior: contain;
             scroll-snap-type: y mandatory;
-            padding: 62px 0;
+            padding: 64px 0;
             scrollbar-width: none;
             -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 26%, #000 74%, transparent 100%);
             mask-image: linear-gradient(180deg, transparent 0%, #000 26%, #000 74%, transparent 100%);
@@ -1157,13 +1157,13 @@
         .birth-date-wheel-list::-webkit-scrollbar { display: none; }
         .birth-date-wheel-option {
             width: 100%;
-            height: 44px;
+            height: 48px;
             border: 0;
             border-radius: 13px;
             background: transparent;
             color: rgba(17,17,17,0.52);
             font: inherit;
-            font-size: 16px;
+            font-size: 18px;
             line-height: 1.1;
             font-weight: 800;
             cursor: pointer;
@@ -1171,17 +1171,9 @@
             place-items: center;
             scroll-snap-align: center;
         }
-        .birth-date-wheel-option small {
-            display: block;
-            margin-top: 2px;
-            font-size: 9px;
-            line-height: 1;
-            color: var(--muted);
-            font-weight: 850;
-        }
         .birth-date-wheel-option.active {
             color: var(--ink);
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 950;
         }
         .birth-date-wheel-actions {
@@ -5110,11 +5102,11 @@
             '</div>';
         }
 
-        function renderBirthDateWheelOption(type, value, label, subLabel) {
+        function renderBirthDateWheelOption(type, value, label) {
             const activeValue = Number(birthDateWheelState[type]);
             const isActive = activeValue === Number(value);
             return '<button type="button" class="birth-date-wheel-option soundable' + (isActive ? ' active' : '') + '" data-wheel-value="' + value + '" onclick="selectBirthDateWheelValue(\'' + type + '\', ' + value + ')">' +
-                escapeHtml(label) + (subLabel ? '<small>' + escapeHtml(subLabel) + '</small>' : '') +
+                escapeHtml(label) +
             '</button>';
         }
 
@@ -5127,15 +5119,15 @@
             const maxDay = getBirthDateDaysInMonth(birthDateWheelState.month, birthDateWheelState.year);
             dayList.innerHTML = Array.from({ length: maxDay }, function(_, index) {
                 const day = index + 1;
-                return renderBirthDateWheelOption('day', day, String(day), 'Tanggal');
+                return renderBirthDateWheelOption('day', day, String(day));
             }).join('');
             monthList.innerHTML = BIRTH_DATE_MONTHS.map(function(name, index) {
                 const month = index + 1;
-                return renderBirthDateWheelOption('month', month, String(month), name);
+                return renderBirthDateWheelOption('month', month, String(month));
             }).join('');
             yearList.innerHTML = Array.from({ length: 201 }, function(_, index) {
                 const year = 1900 + index;
-                return renderBirthDateWheelOption('year', year, String(year), 'Tahun');
+                return renderBirthDateWheelOption('year', year, String(year));
             }).join('');
             [dayList, monthList, yearList].forEach(function(list) {
                 if (list.dataset.birthDateWheelBound) return;

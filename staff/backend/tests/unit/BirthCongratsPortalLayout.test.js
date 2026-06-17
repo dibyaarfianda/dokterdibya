@@ -54,6 +54,14 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('window.openBirthDateWheelPicker = openBirthDateWheelPicker;');
         expect(patientMenu).toContain('window.selectBirthDateWheelValue = selectBirthDateWheelValue;');
         expect(patientMenu).toContain('window.applyBirthDateWheelPicker = applyBirthDateWheelPicker;');
+        expect(patientMenu).toContain("return renderBirthDateWheelOption('day', day, String(day));");
+        expect(patientMenu).toContain("return renderBirthDateWheelOption('month', month, String(month));");
+        expect(patientMenu).toContain("return renderBirthDateWheelOption('year', year, String(year));");
+        expect(patientMenu).not.toContain("renderBirthDateWheelOption('day', day, String(day), 'Tanggal')");
+        expect(patientMenu).not.toContain("renderBirthDateWheelOption('year', year, String(year), 'Tahun')");
+        expect(patientMenu).not.toContain('.birth-date-wheel-option small');
+        expect(patientMenu).toMatch(/\.birth-date-wheel-option\s*\{[\s\S]*font-size:\s*18px/);
+        expect(patientMenu).toMatch(/\.birth-date-wheel-option\.active\s*\{[\s\S]*font-size:\s*22px/);
         expect(patientMenu).not.toContain('id="birth-extra-date"');
         expect(patientMenu).not.toContain('type="number" class="settings-input" inputmode="numeric" min="1" max="31"');
         expect(patientMenu).toContain('id="birth-extra-time" type="time"');
