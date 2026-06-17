@@ -153,6 +153,14 @@ describe('Birth congratulations portal layout', () => {
         expect(patientRoutes).not.toContain('photo_url: signedUrl');
     });
 
+    test('birth congratulations home route prefers the latest child record when multiple births exist', () => {
+        const routeSection = patientRoutes.match(/router\.get\('\/api\/patient\/birth-congratulations'[\s\S]*?const doctorProfile = await findBirthDoctorProfile/);
+        expect(routeSection).not.toBeNull();
+        expect(routeSection[0]).toMatch(/ORDER BY child_number DESC,\s*created_at DESC/);
+        expect(routeSection[0]).not.toMatch(/ORDER BY child_number ASC/);
+        expect(routeSection[0]).toContain('const data = rows[0];');
+    });
+
     test('birth congratulations response and card bind doctor avatar from staff profile', () => {
         expect(patientRoutes).toContain('doctor_photo_url');
         expect(patientRoutes).toContain('/api/users/${doctorProfile.new_id}/photo');
