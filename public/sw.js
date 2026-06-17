@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260616e'; // 2026-06-16 Use day month year birth date inputs
+const CACHE_VERSION = '20260617a'; // 2026-06-17 Use birth date wheel picker modal
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

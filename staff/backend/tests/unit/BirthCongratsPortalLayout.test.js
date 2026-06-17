@@ -40,15 +40,22 @@ describe('Birth congratulations portal layout', () => {
     });
 
     test('edit detail birth modal can update date, time, weight, and length', () => {
-        expect(patientMenu).toContain('renderBirthDateNumberInputs(\'birth-extra\', record.birth_date)');
-        expect(patientMenu).toContain('function renderBirthDateNumberInputs(prefix, value)');
-        expect(patientMenu).toContain('prefix + \'-day" type="number"');
-        expect(patientMenu).toContain('prefix + \'-day">Tanggal');
-        expect(patientMenu).toContain('prefix + \'-month" type="number"');
-        expect(patientMenu).toContain('prefix + \'-month">Bulan');
-        expect(patientMenu).toContain('prefix + \'-year" type="number"');
-        expect(patientMenu).toContain('prefix + \'-year">Tahun');
+        expect(patientMenu).toContain('renderBirthDateWheelInput(\'birth-extra\', record.birth_date)');
+        expect(patientMenu).toContain('function renderBirthDateWheelInput(prefix, value)');
+        expect(patientMenu).toContain('birth-date-trigger');
+        expect(patientMenu).toContain("onclick=\"openBirthDateWheelPicker(event, \\'' + prefix + '\\')\"");
+        expect(patientMenu).toContain('id="\' + prefix + \'-day" type="hidden"');
+        expect(patientMenu).toContain('id="\' + prefix + \'-month" type="hidden"');
+        expect(patientMenu).toContain('id="\' + prefix + \'-year" type="hidden"');
+        expect(patientMenu).toContain('birth-date-wheel-modal');
+        expect(patientMenu).toContain('function openBirthDateWheelPicker(event, prefix)');
+        expect(patientMenu).toContain('function selectBirthDateWheelValue(type, value)');
+        expect(patientMenu).toContain('function applyBirthDateWheelPicker(event)');
+        expect(patientMenu).toContain('window.openBirthDateWheelPicker = openBirthDateWheelPicker;');
+        expect(patientMenu).toContain('window.selectBirthDateWheelValue = selectBirthDateWheelValue;');
+        expect(patientMenu).toContain('window.applyBirthDateWheelPicker = applyBirthDateWheelPicker;');
         expect(patientMenu).not.toContain('id="birth-extra-date"');
+        expect(patientMenu).not.toContain('type="number" class="settings-input" inputmode="numeric" min="1" max="31"');
         expect(patientMenu).toContain('id="birth-extra-time" type="time"');
         expect(patientMenu).toContain('for="birth-extra-time">Jam Lahir');
         expect(patientMenu).toContain('id="birth-extra-weight"');
