@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260617j'; // 2026-06-17 Align birth congratulations card closer to approved photo-first reference
+const CACHE_VERSION = '20260617k'; // 2026-06-17 Sync birth congratulations doctor avatar with staff profile photo
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

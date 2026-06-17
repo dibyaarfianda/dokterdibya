@@ -70,6 +70,45 @@ function getR2ProxyUrl(key) {
     return key ? `/api/r2/${key}` : '';
 }
 
+function normalizeBirthDoctorKey(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z]/g, '');
+}
+
+async function findBirthDoctorProfile(doctorName) {
+    const normalizedDoctorName = normalizeBirthDoctorKey(doctorName);
+    if (!normalizedDoctorName) return null;
+
+    const [rows] = await db.query(
+        `SELECT new_id, name, email, is_superadmin
+         FROM users
+         WHERE user_type = 'staff'
+           AND (
+                LOWER(name) LIKE '%dibya%'
+                OR LOWER(name) LIKE '%arfianda%'
+                OR LOWER(email) = 'nanda.arfianda@gmail.com'
+           )
+         ORDER BY is_superadmin DESC, new_id DESC
+         LIMIT 10`
+    );
+
+    if (!rows.length) return null;
+
+    const doctorProfile = rows.find((row) => {
+        const normalizedStaffName = normalizeBirthDoctorKey(row.name);
+        return normalizedStaffName
+            && (normalizedDoctorName.includes(normalizedStaffName) || normalizedStaffName.includes(normalizedDoctorName));
+    }) || rows[0];
+
+    if (!doctorProfile?.new_id) return null;
+
+    return {
+        userId: doctorProfile.new_id,
+        photoUrl: `/api/users/${doctorProfile.new_id}/photo`
+    };
+}
+
 // Configure multer for birth photo upload
 const birthPhotoUpload = multer({
     storage: multer.memoryStorage(),
@@ -2125,11 +2164,13 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
         }
 
         const data = rows[0];
+        const doctorProfile = await findBirthDoctorProfile(data.doctor_name);
 
         // Use backend proxy URL to avoid direct R2 connectivity issues on patient devices
         if (data.photo_r2_key) {
             data.photo_url = getR2ProxyUrl(data.photo_r2_key);
         }
+        data.doctor_photo_url = doctorProfile ? doctorProfile.photoUrl : '';
 
         // Remove r2_key from response
         delete data.photo_r2_key;

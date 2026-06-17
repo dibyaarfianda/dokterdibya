@@ -128,6 +128,8 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toMatch(/\.birth-congrats-photo-wrap\s*\{[\s\S]*border-radius:\s*28px/);
         expect(patientMenu).toContain('class="birth-congrats-message-card"');
         expect(patientMenu).toContain('class="birth-congrats-message-avatar"');
+        expect(patientMenu).toContain('id="birth-congrats-doctor-avatar-img"');
+        expect(patientMenu).toContain('id="birth-congrats-doctor-avatar-fallback"');
         expect(patientMenu).toContain('id="birth-congrats-doctor-detail"');
         expect(patientMenu).toContain('id="birth-congrats-doctor-specialty"');
         expect(patientMenu).toContain('class="birth-congrats-metric-icon"');
@@ -149,5 +151,14 @@ describe('Birth congratulations portal layout', () => {
         expect(patientRoutes).toContain('const proxyUrl = getR2ProxyUrl(uploadResult.key);');
         expect(patientRoutes).toContain('photo_url: proxyUrl');
         expect(patientRoutes).not.toContain('photo_url: signedUrl');
+    });
+
+    test('birth congratulations response and card bind doctor avatar from staff profile', () => {
+        expect(patientRoutes).toContain('doctor_photo_url');
+        expect(patientRoutes).toContain('/api/users/${doctorProfile.new_id}/photo');
+        expect(patientRoutes).toContain('function findBirthDoctorProfile');
+        expect(patientMenu).toContain("const doctorAvatarUrl = String(data.doctor_photo_url || '').trim();");
+        expect(patientMenu).toContain("const doctorAvatar = document.getElementById('birth-congrats-doctor-avatar-img');");
+        expect(patientMenu).toContain("const doctorAvatarFallback = document.getElementById('birth-congrats-doctor-avatar-fallback');");
     });
 });
