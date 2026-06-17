@@ -105,6 +105,16 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('color: var(--rose)');
     });
 
+    test('birth congratulations and info panel reuse portal heading typography', () => {
+        expect(patientMenu).toContain('class="section-kicker birth-congrats-kicker"');
+        expect(patientMenu).toContain('class="section-title birth-congrats-heading"');
+        expect(patientMenu).toContain('class="section-kicker announcement-panel-kicker">Info Terbaru</div>');
+        expect(patientMenu).toContain("preview.textContent = 'UPDATE DARI SISIWANITA';");
+        expect(patientMenu).not.toContain("preview.textContent = truncatePreviewText(first.message || first.title, 86);");
+        expect(patientMenu).not.toMatch(/\.birth-congrats-kicker\s*\{[^}]*color:\s*var\(--rose\)/);
+        expect(patientMenu).not.toMatch(/\.birth-congrats-heading\s*\{[^}]*font-size:\s*21px/);
+    });
+
     test('patient birth endpoints return fields needed by the new portal', () => {
         expect(patientRoutes).toContain('patient_testimonial');
         expect(patientRoutes).toContain('patient_data_submitted');
