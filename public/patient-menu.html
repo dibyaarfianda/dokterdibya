@@ -1031,6 +1031,169 @@
             line-height: 1.45;
             font-weight: 750;
         }
+        .birth-date-field { grid-column: 1 / -1; }
+        .birth-date-trigger {
+            width: 100%;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            text-align: left;
+            cursor: pointer;
+            color: var(--ink);
+            font-weight: 850;
+        }
+        .birth-date-trigger span {
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .birth-date-trigger i {
+            color: var(--rose);
+            flex: 0 0 auto;
+        }
+        .birth-date-wheel-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10040;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 18px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+            background: rgba(17,17,17,0.32);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .birth-date-wheel-modal.active { display: flex; }
+        .birth-date-wheel-card {
+            width: min(430px, 100%);
+            border: 1px solid rgba(17,17,17,0.1);
+            border-radius: 26px;
+            background: rgba(255,255,255,0.97);
+            box-shadow: 0 -18px 60px rgba(17,17,17,0.2);
+            padding: 16px;
+        }
+        .birth-date-wheel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .birth-date-wheel-head h3 {
+            font-family: var(--display);
+            font-size: 20px;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+        }
+        .birth-date-wheel-head p {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.45;
+            margin-top: 4px;
+            font-weight: 700;
+        }
+        .birth-date-wheel-close {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: #f7f7f4;
+            color: var(--ink);
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+        .birth-date-wheel-grid {
+            position: relative;
+            display: grid;
+            grid-template-columns: 0.82fr 1.08fr 1fr;
+            gap: 8px;
+            padding: 8px;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            background: linear-gradient(180deg, #fbfbf8, #fff);
+        }
+        .birth-date-wheel-grid::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            top: 50%;
+            height: 44px;
+            transform: translateY(-50%);
+            border-radius: 14px;
+            background: rgba(179,95,123,0.11);
+            border: 1px solid rgba(179,95,123,0.16);
+            pointer-events: none;
+        }
+        .birth-date-wheel-column {
+            position: relative;
+            min-width: 0;
+            z-index: 1;
+        }
+        .birth-date-wheel-label {
+            display: block;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .birth-date-wheel-list {
+            height: 168px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scroll-snap-type: y mandatory;
+            padding: 62px 0;
+            scrollbar-width: none;
+            -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 26%, #000 74%, transparent 100%);
+            mask-image: linear-gradient(180deg, transparent 0%, #000 26%, #000 74%, transparent 100%);
+        }
+        .birth-date-wheel-list::-webkit-scrollbar { display: none; }
+        .birth-date-wheel-option {
+            width: 100%;
+            height: 44px;
+            border: 0;
+            border-radius: 13px;
+            background: transparent;
+            color: rgba(17,17,17,0.52);
+            font: inherit;
+            font-size: 16px;
+            line-height: 1.1;
+            font-weight: 800;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            scroll-snap-align: center;
+        }
+        .birth-date-wheel-option small {
+            display: block;
+            margin-top: 2px;
+            font-size: 9px;
+            line-height: 1;
+            color: var(--muted);
+            font-weight: 850;
+        }
+        .birth-date-wheel-option.active {
+            color: var(--ink);
+            font-size: 18px;
+            font-weight: 950;
+        }
+        .birth-date-wheel-actions {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .birth-date-wheel-actions button {
+            justify-content: center;
+            min-height: 46px;
+        }
         body.has-birth-congrats #tracker-panel { display: none; }
         body.has-birth-congrats #tracker-panel + .announcement-panel { grid-column: 1 / -1; }
         #primary-actions-section {
@@ -2560,6 +2723,37 @@
     <div class="birth-photo-modal" id="birth-photo-modal" onclick="closeBirthPhotoModal(event)" aria-hidden="true">
         <button type="button" class="birth-photo-modal-close soundable" onclick="closeBirthPhotoModal(event)" aria-label="Tutup foto kelahiran">&times;</button>
         <img id="birth-photo-modal-img" src="" alt="Foto kelahiran" onclick="event.stopPropagation()">
+    </div>
+
+    <div class="birth-date-wheel-modal" id="birth-date-wheel-modal" onclick="closeBirthDateWheelPicker(event)" aria-hidden="true">
+        <section class="birth-date-wheel-card" role="dialog" aria-modal="true" aria-labelledby="birth-date-wheel-title" onclick="event.stopPropagation()">
+            <div class="birth-date-wheel-head">
+                <div>
+                    <div class="section-kicker">Tanggal Lahir</div>
+                    <h3 id="birth-date-wheel-title">Pilih tanggal bayi</h3>
+                    <p>Geser tanggal, bulan, dan tahun lalu tekan pilih.</p>
+                </div>
+                <button type="button" class="birth-date-wheel-close soundable" onclick="closeBirthDateWheelPicker(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="birth-date-wheel-grid">
+                <div class="birth-date-wheel-column">
+                    <span class="birth-date-wheel-label">Tanggal</span>
+                    <div class="birth-date-wheel-list" id="birth-date-wheel-day" data-wheel-type="day"></div>
+                </div>
+                <div class="birth-date-wheel-column">
+                    <span class="birth-date-wheel-label">Bulan</span>
+                    <div class="birth-date-wheel-list" id="birth-date-wheel-month" data-wheel-type="month"></div>
+                </div>
+                <div class="birth-date-wheel-column">
+                    <span class="birth-date-wheel-label">Tahun</span>
+                    <div class="birth-date-wheel-list" id="birth-date-wheel-year" data-wheel-type="year"></div>
+                </div>
+            </div>
+            <div class="birth-date-wheel-actions">
+                <button type="button" class="ghost-action soundable" onclick="closeBirthDateWheelPicker(event)">Batal</button>
+                <button type="button" class="primary-action soundable" onclick="applyBirthDateWheelPicker(event)"><i class="fa-solid fa-check"></i> Pilih Tanggal</button>
+            </div>
+        </section>
     </div>
 
     <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
@@ -4876,11 +5070,172 @@
             };
         }
 
-        function renderBirthDateNumberInputs(prefix, value) {
+        const BIRTH_DATE_MONTHS = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const birthDateWheelState = { target: '', day: 1, month: 1, year: new Date().getFullYear(), timers: {} };
+
+        function getBirthDateDaysInMonth(month, year) {
+            const safeMonth = Math.max(1, Math.min(12, Number(month) || 1));
+            const safeYear = Math.max(1900, Math.min(2100, Number(year) || new Date().getFullYear()));
+            return new Date(safeYear, safeMonth, 0).getDate();
+        }
+
+        function clampBirthDateWheelState() {
+            birthDateWheelState.month = Math.max(1, Math.min(12, Number(birthDateWheelState.month) || 1));
+            birthDateWheelState.year = Math.max(1900, Math.min(2100, Number(birthDateWheelState.year) || new Date().getFullYear()));
+            birthDateWheelState.day = Math.max(1, Math.min(getBirthDateDaysInMonth(birthDateWheelState.month, birthDateWheelState.year), Number(birthDateWheelState.day) || 1));
+        }
+
+        function formatBirthDateWheelDisplay(parts) {
+            const day = Number(parts && parts.day);
+            const month = Number(parts && parts.month);
+            const year = Number(parts && parts.year);
+            if (!day || !month || !year) return 'Pilih tanggal lahir';
+            return day + ' ' + (BIRTH_DATE_MONTHS[month - 1] || 'Bulan') + ' ' + year;
+        }
+
+        function renderBirthDateWheelInput(prefix, value) {
             const parts = getBirthDateParts(value);
-            return '<div class="settings-field"><label for="' + prefix + '-day">Tanggal</label><input id="' + prefix + '-day" type="number" class="settings-input" inputmode="numeric" min="1" max="31" step="1" value="' + escapeHtml(parts.day) + '" placeholder="27"></div>' +
-                '<div class="settings-field"><label for="' + prefix + '-month">Bulan</label><input id="' + prefix + '-month" type="number" class="settings-input" inputmode="numeric" min="1" max="12" step="1" value="' + escapeHtml(parts.month) + '" placeholder="4"></div>' +
-                '<div class="settings-field"><label for="' + prefix + '-year">Tahun</label><input id="' + prefix + '-year" type="number" class="settings-input" inputmode="numeric" min="1900" max="2100" step="1" value="' + escapeHtml(parts.year) + '" placeholder="2026"></div>';
+            return '<div class="settings-field birth-date-field">' +
+                '<label for="' + prefix + '-date-trigger">Tanggal Lahir</label>' +
+                '<button id="' + prefix + '-date-trigger" type="button" class="settings-input birth-date-trigger soundable" onclick="openBirthDateWheelPicker(event, \'' + prefix + '\')">' +
+                    '<span id="' + prefix + '-date-display">' + escapeHtml(formatBirthDateWheelDisplay(parts)) + '</span>' +
+                    '<i class="fa-solid fa-calendar-days"></i>' +
+                '</button>' +
+                '<input id="' + prefix + '-day" type="hidden" value="' + escapeHtml(parts.day) + '">' +
+                '<input id="' + prefix + '-month" type="hidden" value="' + escapeHtml(parts.month) + '">' +
+                '<input id="' + prefix + '-year" type="hidden" value="' + escapeHtml(parts.year) + '">' +
+            '</div>';
+        }
+
+        function renderBirthDateWheelOption(type, value, label, subLabel) {
+            const activeValue = Number(birthDateWheelState[type]);
+            const isActive = activeValue === Number(value);
+            return '<button type="button" class="birth-date-wheel-option soundable' + (isActive ? ' active' : '') + '" data-wheel-value="' + value + '" onclick="selectBirthDateWheelValue(\'' + type + '\', ' + value + ')">' +
+                escapeHtml(label) + (subLabel ? '<small>' + escapeHtml(subLabel) + '</small>' : '') +
+            '</button>';
+        }
+
+        function renderBirthDateWheelOptions() {
+            clampBirthDateWheelState();
+            const dayList = document.getElementById('birth-date-wheel-day');
+            const monthList = document.getElementById('birth-date-wheel-month');
+            const yearList = document.getElementById('birth-date-wheel-year');
+            if (!dayList || !monthList || !yearList) return;
+            const maxDay = getBirthDateDaysInMonth(birthDateWheelState.month, birthDateWheelState.year);
+            dayList.innerHTML = Array.from({ length: maxDay }, function(_, index) {
+                const day = index + 1;
+                return renderBirthDateWheelOption('day', day, String(day), 'Tanggal');
+            }).join('');
+            monthList.innerHTML = BIRTH_DATE_MONTHS.map(function(name, index) {
+                const month = index + 1;
+                return renderBirthDateWheelOption('month', month, String(month), name);
+            }).join('');
+            yearList.innerHTML = Array.from({ length: 201 }, function(_, index) {
+                const year = 1900 + index;
+                return renderBirthDateWheelOption('year', year, String(year), 'Tahun');
+            }).join('');
+            [dayList, monthList, yearList].forEach(function(list) {
+                if (list.dataset.birthDateWheelBound) return;
+                list.dataset.birthDateWheelBound = '1';
+                list.addEventListener('scroll', handleBirthDateWheelScroll, { passive: true });
+            });
+            requestAnimationFrame(function() {
+                scrollBirthDateWheelToValue('day', birthDateWheelState.day);
+                scrollBirthDateWheelToValue('month', birthDateWheelState.month);
+                scrollBirthDateWheelToValue('year', birthDateWheelState.year);
+            });
+        }
+
+        function scrollBirthDateWheelToValue(type, value) {
+            const list = document.getElementById('birth-date-wheel-' + type);
+            if (!list) return;
+            const option = list.querySelector('[data-wheel-value="' + value + '"]');
+            if (!option) return;
+            const top = option.offsetTop - ((list.clientHeight - option.offsetHeight) / 2);
+            list.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+        }
+
+        function handleBirthDateWheelScroll(event) {
+            const list = event.target;
+            const type = list && list.dataset ? list.dataset.wheelType : '';
+            if (!type) return;
+            clearTimeout(birthDateWheelState.timers[type]);
+            birthDateWheelState.timers[type] = setTimeout(function() {
+                const rect = list.getBoundingClientRect();
+                const center = rect.top + (rect.height / 2);
+                const options = Array.from(list.querySelectorAll('.birth-date-wheel-option'));
+                let closest = null;
+                let closestDistance = Infinity;
+                options.forEach(function(option) {
+                    const optionRect = option.getBoundingClientRect();
+                    const optionCenter = optionRect.top + (optionRect.height / 2);
+                    const distance = Math.abs(optionCenter - center);
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        closest = option;
+                    }
+                });
+                if (!closest) return;
+                const value = Number(closest.dataset.wheelValue || '');
+                if (value && Number(birthDateWheelState[type]) !== value) {
+                    selectBirthDateWheelValue(type, value);
+                } else {
+                    scrollBirthDateWheelToValue(type, birthDateWheelState[type]);
+                }
+            }, 90);
+        }
+
+        function openBirthDateWheelPicker(event, prefix) {
+            stopTopbarEvent(event);
+            const now = new Date();
+            birthDateWheelState.target = String(prefix || '').trim();
+            birthDateWheelState.day = Number(document.getElementById(birthDateWheelState.target + '-day')?.value || now.getDate());
+            birthDateWheelState.month = Number(document.getElementById(birthDateWheelState.target + '-month')?.value || (now.getMonth() + 1));
+            birthDateWheelState.year = Number(document.getElementById(birthDateWheelState.target + '-year')?.value || now.getFullYear());
+            renderBirthDateWheelOptions();
+            const modal = document.getElementById('birth-date-wheel-modal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBirthDateWheelPicker(event) {
+            stopTopbarEvent(event);
+            const modal = document.getElementById('birth-date-wheel-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            if (!document.querySelector('.modal-card.active, .bottom-sheet.active, .birth-photo-modal.active')) {
+                document.body.style.overflow = '';
+            }
+        }
+
+        function selectBirthDateWheelValue(type, value) {
+            if (!['day', 'month', 'year'].includes(type)) return;
+            birthDateWheelState[type] = Number(value) || birthDateWheelState[type];
+            renderBirthDateWheelOptions();
+        }
+
+        function applyBirthDateWheelPicker(event) {
+            stopTopbarEvent(event);
+            clampBirthDateWheelState();
+            const prefix = birthDateWheelState.target;
+            if (!prefix) return;
+            const dayInput = document.getElementById(prefix + '-day');
+            const monthInput = document.getElementById(prefix + '-month');
+            const yearInput = document.getElementById(prefix + '-year');
+            if (dayInput) dayInput.value = String(birthDateWheelState.day);
+            if (monthInput) monthInput.value = String(birthDateWheelState.month);
+            if (yearInput) yearInput.value = String(birthDateWheelState.year);
+            const display = document.getElementById(prefix + '-date-display');
+            if (display) display.textContent = formatBirthDateWheelDisplay(birthDateWheelState);
+            closeBirthDateWheelPicker(event);
         }
 
         function normalizeBirthDatePartsSubmitInput(prefix) {
@@ -4947,7 +5302,7 @@
                     '<div class="settings-field"><label for="birth-data-gender">Jenis Kelamin</label><select id="birth-data-gender" class="settings-select">' +
                         '<option value="">Pilih</option>' + option('male', 'Laki-laki') + option('female', 'Perempuan') +
                     '</select></div>' +
-                    renderBirthDateNumberInputs('birth-data', record.birth_date) +
+                    renderBirthDateWheelInput('birth-data', record.birth_date) +
                     '<div class="settings-field"><label for="birth-data-time">Jam Lahir</label><input id="birth-data-time" type="time" class="settings-input" value="' + escapeHtml(normalizeBirthTimeInput(record.birth_time)) + '"></div>' +
                     '<div class="settings-field"><label for="birth-data-weight">Berat Lahir</label><input id="birth-data-weight" class="settings-input" inputmode="numeric" maxlength="4" pattern="\\d{4}" value="' + escapeHtml(normalizeBirthWeightGramsInput(record.birth_weight || '')) + '" placeholder="3400"></div>' +
                     '<div class="settings-field"><label for="birth-data-length">Panjang Badan</label><input id="birth-data-length" class="settings-input" value="' + escapeHtml(record.birth_length || '') + '" placeholder="Contoh: 50 cm"></div>' +
@@ -4964,7 +5319,7 @@
             const id = escapeHtml(record.id || '');
             return '<div class="birth-modal-note">Edit keterangan tambahan yang dulu tersedia di portal lama.</div>' +
                 '<div class="birth-form-grid" data-birth-id="' + id + '">' +
-                    renderBirthDateNumberInputs('birth-extra', record.birth_date) +
+                    renderBirthDateWheelInput('birth-extra', record.birth_date) +
                     '<div class="settings-field"><label for="birth-extra-time">Jam Lahir</label><input id="birth-extra-time" type="time" class="settings-input" value="' + escapeHtml(normalizeBirthTimeInput(record.birth_time)) + '"></div>' +
                     '<div class="settings-field"><label for="birth-extra-weight">Berat Lahir</label><input id="birth-extra-weight" class="settings-input" inputmode="numeric" maxlength="4" pattern="\\d{4}" value="' + escapeHtml(normalizeBirthWeightGramsInput(record.birth_weight || record.weight || '')) + '" placeholder="3400"></div>' +
                     '<div class="settings-field"><label for="birth-extra-length">Panjang Badan</label><input id="birth-extra-length" class="settings-input" value="' + escapeHtml(record.birth_length || record.length || '') + '" placeholder="Contoh: 50 cm"></div>' +
@@ -5854,6 +6209,10 @@
         window.toggleBirthCongratsFromSettings = toggleBirthCongratsFromSettings;
         window.openBirthDataModal = openBirthDataModal;
         window.submitBirthData = submitBirthData;
+        window.openBirthDateWheelPicker = openBirthDateWheelPicker;
+        window.closeBirthDateWheelPicker = closeBirthDateWheelPicker;
+        window.selectBirthDateWheelValue = selectBirthDateWheelValue;
+        window.applyBirthDateWheelPicker = applyBirthDateWheelPicker;
         window.openBirthExtraModal = openBirthExtraModal;
         window.submitBirthExtra = submitBirthExtra;
         window.openBirthPhotoPicker = openBirthPhotoPicker;
@@ -5906,6 +6265,10 @@
 
         document.addEventListener('DOMContentLoaded', init);
         document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('birth-date-wheel-modal')?.classList.contains('active')) {
+                closeBirthDateWheelPicker(event);
+                return;
+            }
             if (event.key === 'Escape' && document.getElementById('birth-photo-modal')?.classList.contains('active')) {
                 closeBirthPhotoModal(event);
             }
