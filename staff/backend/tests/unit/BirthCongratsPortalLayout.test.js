@@ -110,7 +110,7 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('class="section-title birth-congrats-heading"');
         expect(patientMenu).toContain('class="section-kicker announcement-panel-kicker">Info Terbaru</div>');
         expect(patientMenu).toContain('id="announcement-preview" class="section-title announcement-preview-title"');
-        expect(patientMenu).toContain("preview.textContent = 'UPDATE DARI SISIWANITA';");
+        expect(patientMenu).toContain("preview.textContent = 'Update dari SisiWanita';");
         expect(patientMenu).not.toContain("preview.textContent = truncatePreviewText(first.message || first.title, 86);");
         expect(patientMenu).not.toMatch(/\.birth-congrats-kicker\s*\{[^}]*color:\s*var\(--rose\)/);
         expect(patientMenu).not.toMatch(/\.birth-congrats-heading\s*\{[^}]*font-size:\s*21px/);
