@@ -164,7 +164,9 @@ describe('Birth congratulations portal layout', () => {
 
     test('birth congratulations hides the birth-status subtitle and doubles the baby name size', () => {
         expect(patientMenu).toMatch(/\.birth-congrats-baby-block h3\s*\{[\s\S]*font-size:\s*30px/);
+        expect(patientMenu).toContain('<p id="birth-congrats-subtitle"></p>');
         expect(patientMenu).not.toContain("document.getElementById('birth-congrats-subtitle').textContent = genderLabel + ' Anda telah lahir dengan selamat.';");
+        expect(patientMenu).not.toContain('Buah hati Anda telah lahir dengan selamat.');
         expect(patientMenu).not.toContain('Putra Anda telah lahir dengan selamat.');
         expect(patientMenu).not.toContain('Putri Anda telah lahir dengan selamat.');
     });
