@@ -1315,6 +1315,10 @@
         .announcement-panel { min-height: 162px; display: flex; flex-direction: column; }
         .announcement-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
         .announcement-panel-kicker { margin-bottom: 5px; }
+        .announcement-preview-title {
+            margin: 0 0 8px;
+            color: var(--ink);
+        }
         .announcement-count-pill {
             border: 1px solid rgba(92,127,114,0.18);
             background: var(--green-soft);
@@ -2614,7 +2618,7 @@
                         <div class="announcement-panel-head">
                             <div>
                                 <div class="section-kicker announcement-panel-kicker">Info Terbaru</div>
-                                <p id="announcement-preview">Memuat kabar klinik...</p>
+                                <div id="announcement-preview" class="section-title announcement-preview-title">Memuat kabar klinik...</div>
                             </div>
                             <span class="announcement-count-pill" id="announcement-count-pill">0</span>
                         </div>
