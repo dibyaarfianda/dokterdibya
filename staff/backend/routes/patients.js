@@ -2156,7 +2156,7 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
                 created_at
             FROM birth_congratulations
             WHERE patient_id = ? AND is_published = 1 AND patient_dismissed = 0
-            ORDER BY child_number ASC
+            ORDER BY child_number DESC, created_at DESC
         `, [patientId]);
 
         if (rows.length === 0) {
