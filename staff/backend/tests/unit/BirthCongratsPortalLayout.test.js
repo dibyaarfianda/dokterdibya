@@ -10,8 +10,12 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).toContain('.birth-congrats-home');
         expect(patientMenu).toMatch(/\.birth-congrats-home\s*\{[\s\S]*max-width:\s*390px/);
         expect(patientMenu).toContain('min-height: min(calc(100vw - 28px), 390px)');
-        expect(patientMenu).toContain('grid-template-columns: var(--birth-photo-size) minmax(0, 1fr)');
-        expect(patientMenu).not.toContain('.birth-congrats-body { grid-template-columns: 1fr; }');
+        expect(patientMenu).toContain('.birth-congrats-hero');
+        expect(patientMenu).toContain('--birth-photo-size: 128px;');
+        expect(patientMenu).toMatch(/\.birth-congrats-body\s*\{[^}]*display:\s*flex/);
+        expect(patientMenu).toMatch(/\.birth-congrats-body\s*\{[^}]*flex-direction:\s*column/);
+        expect(patientMenu).toMatch(/\.birth-congrats-hero\s*\{[^}]*grid-template-columns:\s*var\(--birth-photo-size\) minmax\(0,\s*1fr\)/);
+        expect(patientMenu).not.toMatch(/\.birth-congrats-body\s*\{[^}]*grid-template-columns:\s*var\(--birth-photo-size\) minmax\(0,\s*1fr\)/);
         expect(patientMenu).not.toContain('.birth-congrats-photo-wrap { width: 100%; height: 150px; }');
     });
 
@@ -20,7 +24,7 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).not.toMatch(/^\s+height:\s*min\(calc\(100vw - 28px\), 390px\);/m);
         expect(patientMenu).not.toMatch(/^\s+height:\s*min\(calc\(100vw - 28px\), 360px\);/m);
         expect(patientMenu).toMatch(/\.birth-congrats-body\s*\{[\s\S]*overflow:\s*visible/);
-        expect(patientMenu).toMatch(/<div class="birth-congrats-body">[\s\S]*<\/div>\s*<div class="birth-congrats-card-actions">/);
+        expect(patientMenu).toMatch(/<div class="birth-congrats-body">\s*<div class="birth-congrats-hero">[\s\S]*<\/div>\s*<div class="birth-congrats-message">[\s\S]*<\/div>\s*<\/div>\s*<div class="birth-congrats-card-actions">/);
     });
 
     test('new patient portal carries over legacy birth congratulations interactions', () => {
@@ -114,6 +118,14 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).not.toContain("preview.textContent = truncatePreviewText(first.message || first.title, 86);");
         expect(patientMenu).not.toMatch(/\.birth-congrats-kicker\s*\{[^}]*color:\s*var\(--rose\)/);
         expect(patientMenu).not.toMatch(/\.birth-congrats-heading\s*\{[^}]*font-size:\s*21px/);
+    });
+
+    test('birth congratulations now uses a photo-first hierarchy with lighter metrics', () => {
+        expect(patientMenu).toContain('class="birth-congrats-identity"');
+        expect(patientMenu).toMatch(/\.birth-congrats-photo-wrap\s*\{[\s\S]*border-radius:\s*22px/);
+        expect(patientMenu).toMatch(/\.birth-congrats-metric\s*\{[\s\S]*background:\s*rgba\(255,255,255,0\.58\)/);
+        expect(patientMenu).toMatch(/\.birth-congrats-message\s*\{[\s\S]*margin-top:\s*0/);
+        expect(patientMenu).toMatch(/@media \(max-width: 520px\) \{[\s\S]*--birth-photo-size:\s*108px/);
     });
 
     test('patient birth endpoints return fields needed by the new portal', () => {
