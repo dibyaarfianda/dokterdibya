@@ -5,6 +5,7 @@ const { verifyToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
 const activityLogger = require('../services/activityLogger');
+const PatientDocumentSyncService = require('../services/PatientDocumentSyncService');
 
 // Create medical_records table if not exists
 async function ensureMedicalRecordsTable() {
@@ -185,6 +186,7 @@ router.post('/api/medical-records', verifyToken, requirePermission('medical_reco
         }
 
         let result;
+        let persistedRecordData = recordData;
         if (existingRecordId) {
             // Update existing record (merge data to preserve existing fields)
             const [currentRecord] = await db.query(
@@ -211,6 +213,7 @@ router.post('/api/medical-records', verifyToken, requirePermission('medical_reco
                  WHERE id = ?`,
                 [JSON.stringify(mergedData), finalDoctorId, finalDoctorName, mysqlTimestamp, existingRecordId]
             );
+            persistedRecordData = mergedData;
             result = { insertId: existingRecordId, updated: true };
             logger.info(`Medical record updated: ID ${existingRecordId}, Patient ${patientId}, Visit ${mrId}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
         } else {
@@ -228,9 +231,23 @@ router.post('/api/medical-records', verifyToken, requirePermission('medical_reco
                     JSON.stringify(recordData),
                     mysqlTimestamp
                 ]
-            );
-            result = insertResult;
-            logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
+                );
+                result = insertResult;
+                persistedRecordData = recordData;
+                logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
+        }
+
+        if (recordType === 'penunjang' && mrId) {
+            try {
+                await PatientDocumentSyncService.syncPenunjangLabResults({
+                    patientId,
+                    mrId,
+                    files: persistedRecordData.files || [],
+                    actorUserId: finalDoctorId
+                });
+            } catch (syncError) {
+                logger.warn('Penunjang portal sync warning:', syncError.message);
+            }
         }
 
         // Log activity
