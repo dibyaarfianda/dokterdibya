@@ -18,16 +18,20 @@ export default {
 
         // Check if documents have been sent to patient
         const documentsSent = state.documentsSent;
-        const hasSentDocuments = documentsSent?.resume || documentsSent?.usg || documentsSent?.lab;
+        const sentItems = [];
+        const portalItems = [];
+        if (documentsSent && documentsSent.resume) sentItems.push('Resume Medis');
+        if (documentsSent && documentsSent.usg) sentItems.push('Foto USG');
+        if (documentsSent && documentsSent.lab) portalItems.push('Hasil Lab');
 
-        // Build sent status text
+        const hasSentDocuments = sentItems.length > 0 || portalItems.length > 0;
+
         let sentStatusText = '';
-        if (hasSentDocuments) {
-            const sentItems = [];
-            if (documentsSent.resume) sentItems.push('Resume Medis');
-            if (documentsSent.usg) sentItems.push('Foto USG');
-            if (documentsSent.lab) sentItems.push('Hasil Lab');
+        if (sentItems.length > 0) {
             sentStatusText = sentItems.join(' dan ') + ' telah dikirim ke pasien';
+        }
+        if (portalItems.length > 0) {
+            sentStatusText += `${sentStatusText ? '. ' : ''}${portalItems.join(' dan ')} sudah tersedia di portal pasien`;
         }
 
         return `

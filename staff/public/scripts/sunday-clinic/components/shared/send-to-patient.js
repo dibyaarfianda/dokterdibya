@@ -1,6 +1,6 @@
 /**
  * Send to Patient Component
- * Handles sending documents (Resume Medis, USG Photos, Lab Results) to patient portal
+ * Handles sending documents (Resume Medis, USG Photos) to patient portal
  */
 
 import stateManager from '../../utils/state-manager.js';
@@ -48,16 +48,6 @@ const SendToPatient = {
                                         <i class="fas fa-file-medical-alt text-primary"></i>
                                         <strong>Resume Medis</strong>
                                         <small class="text-muted d-block">Ringkasan pemeriksaan yang di-generate AI</small>
-                                    </label>
-                                </div>
-
-                                <!-- Lab Results -->
-                                <div class="custom-control custom-checkbox mb-3" id="send-lab-container" style="display: none;">
-                                    <input type="checkbox" class="custom-control-input" id="send-lab-results">
-                                    <label class="custom-control-label" for="send-lab-results">
-                                        <i class="fas fa-flask text-success"></i>
-                                        <strong>Hasil Laboratorium</strong>
-                                        <small class="text-muted d-block" id="send-lab-count">0 file</small>
                                     </label>
                                 </div>
 
@@ -146,20 +136,6 @@ const SendToPatient = {
         if (resumeCheckbox) {
             resumeCheckbox.disabled = !resumeExists;
             resumeCheckbox.checked = resumeExists;
-        }
-
-        // Check if lab results exist (check both recordData and medicalRecords)
-        const labFilesFromState = state.recordData?.penunjang?.files || [];
-        const labFilesFromDb = state.medicalRecords?.byType?.penunjang?.data?.files || [];
-        const labFiles = labFilesFromState.length > 0 ? labFilesFromState : labFilesFromDb;
-        const labContainer = document.getElementById('send-lab-container');
-        const labCount = document.getElementById('send-lab-count');
-        if (labFiles.length > 0) {
-            labContainer.style.display = 'block';
-            labCount.textContent = `${labFiles.length} file`;
-            document.getElementById('send-lab-results').checked = true;
-        } else {
-            labContainer.style.display = 'none';
         }
 
         // Check if USG photos exist (check both recordData and medicalRecords)
@@ -267,36 +243,6 @@ const SendToPatient = {
                         content: resumeContent,
                         generatedAt: new Date().toISOString()
                     }
-                });
-            }
-        }
-
-        // Lab Results (check both recordData and medicalRecords)
-        const sendLab = document.getElementById('send-lab-results')?.checked;
-        if (sendLab) {
-            const labFilesFromState = state.recordData?.penunjang?.files || [];
-            const labFilesFromDb = state.medicalRecords?.byType?.penunjang?.data?.files || [];
-            const labFiles = labFilesFromState.length > 0 ? labFilesFromState : labFilesFromDb;
-            for (const file of labFiles) {
-                documents.push({
-                    type: 'lab_result',
-                    title: file.name || 'Hasil Lab',
-                    filePath: file.key || file.filename,
-                    fileUrl: file.url,
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileSize: file.size
-                });
-            }
-
-            // Lab interpretation (check both sources)
-            const labInterpretation = state.recordData?.penunjang?.interpretation ||
-                                      state.medicalRecords?.byType?.penunjang?.data?.interpretation;
-            if (labInterpretation) {
-                documents.push({
-                    type: 'lab_interpretation',
-                    title: 'Interpretasi Hasil Lab',
-                    sourceData: { content: labInterpretation }
                 });
             }
         }
@@ -448,13 +394,9 @@ const SendToPatient = {
         // Check what was sent
         const sentResume = documents.some(d => d.type === 'resume_medis');
         const sentUSG = documents.some(d => d.type === 'usg_photo');
-        const sentLab = documents.some(d => d.type === 'lab_result' || d.type === 'lab_interpretation');
-
-        // Build status text
         const sentItems = [];
         if (sentResume) sentItems.push('Resume Medis');
         if (sentUSG) sentItems.push('Foto USG');
-        if (sentLab) sentItems.push('Hasil Lab');
 
         const statusText = sentItems.join(' dan ') + ' telah dikirim ke pasien';
 
@@ -477,12 +419,13 @@ const SendToPatient = {
         // Store in state for persistence during session
         try {
             const state = stateManager.getState();
+            const existingDocumentsSent = state.documentsSent || {};
             stateManager.setState({
                 ...state,
                 documentsSent: {
-                    resume: sentResume,
-                    usg: sentUSG,
-                    lab: sentLab,
+                    resume: Boolean(existingDocumentsSent.resume || sentResume),
+                    usg: Boolean(existingDocumentsSent.usg || sentUSG),
+                    lab: Boolean(existingDocumentsSent.lab),
                     timestamp: new Date().toISOString()
                 }
             });
