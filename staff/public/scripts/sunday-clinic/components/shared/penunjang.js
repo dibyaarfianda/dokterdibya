@@ -513,8 +513,12 @@ ${interpretation}
         const interpretation = document.getElementById('penunjang-interpretation')?.value || '';
         const filesJson = document.getElementById('penunjang-files')?.value || '[]';
         const files = JSON.parse(filesJson.replace(/&quot;/g, '"'));
+        const recordDatetime = document.getElementById('penunjang-datetime')?.value || '';
 
         return {
+            record_datetime: recordDatetime,
+            record_date: recordDatetime ? (recordDatetime.split('T')[0] || '') : '',
+            record_time: recordDatetime ? (recordDatetime.split('T')[1] || '') : '',
             interpretation,
             files
         };
@@ -526,6 +530,43 @@ ${interpretation}
     async validate() {
         // Penunjang is optional
         return { valid: true, errors: [] };
+    },
+
+    /**
+     * Save current penunjang state, including existing uploaded files.
+     * This lets "buka lalu simpan" re-trigger portal sync for legacy data.
+     */
+    async save(state) {
+        try {
+            const data = await this.collectData();
+            const existingPenunjang = state?.medicalRecords?.byType?.penunjang?.data || state?.recordData?.penunjang || {};
+            const hasFiles = Array.isArray(data.files) && data.files.length > 0;
+            const hasInterpretation = Boolean((data.interpretation || '').trim());
+            const hadExistingFiles = Array.isArray(existingPenunjang.files) && existingPenunjang.files.length > 0;
+            const hadExistingInterpretation = Boolean((existingPenunjang.interpretation || '').trim());
+
+            if (!hasFiles && !hasInterpretation && !hadExistingFiles && !hadExistingInterpretation) {
+                return { success: true, skipped: true };
+            }
+
+            const recordDatetime = data.record_datetime || existingPenunjang.record_datetime || null;
+            const saveResult = await this.savePenunjangToDatabase(data.files, data.interpretation, recordDatetime);
+
+            if (saveResult === false) {
+                return { success: false, error: 'Penunjang save returned false' };
+            }
+
+            return {
+                success: true,
+                data
+            };
+        } catch (error) {
+            console.error('[Penunjang] Save failed:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     },
 
     /**
