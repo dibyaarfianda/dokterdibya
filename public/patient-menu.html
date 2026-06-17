@@ -908,13 +908,16 @@
         }
         .birth-congrats-baby-block h3 {
             margin: 0;
-            font-size: 15px;
+            font-size: 30px;
             line-height: 1.25;
             color: var(--ink);
             font-weight: 900;
         }
         .birth-congrats-baby-block p {
             margin: 6px 0 0;
+        }
+        .birth-congrats-baby-block p:empty {
+            display: none;
         }
         .birth-congrats-copy p {
             color: var(--muted);
@@ -5905,7 +5908,6 @@
             const babyName = String(data.baby_name || 'Buah Hati Tercinta').trim();
             const doctorProfile = getBirthDoctorProfile(data.doctor_name);
             const childNumber = Number(data.child_number || 1);
-            const genderLabel = getBirthGenderLabel(data.gender);
             const dateValue = data.birth_date ? formatDateLong(data.birth_date) : '-';
             const dateMetaValue = data.birth_date ? formatDateWeekday(data.birth_date) : '';
             const rawTime = String(data.birth_time || '').trim();
@@ -5921,7 +5923,7 @@
             document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + doctorProfile.doctorDetail;
             document.getElementById('birth-congrats-child-badge').textContent = 'Anak ke-' + (Number.isFinite(childNumber) && childNumber > 0 ? childNumber : 1);
             document.getElementById('birth-congrats-baby-name').textContent = babyName;
-            document.getElementById('birth-congrats-subtitle').textContent = genderLabel + ' Anda telah lahir dengan selamat.';
+            document.getElementById('birth-congrats-subtitle').textContent = '';
             document.getElementById('birth-congrats-date').textContent = dateValue;
             document.getElementById('birth-congrats-date-meta').textContent = dateMetaValue;
             document.getElementById('birth-congrats-time').textContent = timeValue;
