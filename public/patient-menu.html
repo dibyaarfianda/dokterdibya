@@ -725,7 +725,7 @@
         .section { margin-top: 18px; }
 
         .birth-congrats-home {
-            --birth-photo-size: 104px;
+            --birth-photo-size: 128px;
             display: none;
             width: min(100%, 390px);
             max-width: 390px;
@@ -735,8 +735,8 @@
             border: 1px solid rgba(179,95,123,0.22);
             border-radius: 24px;
             background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(250,239,244,0.88));
-            box-shadow: var(--shadow-soft);
-            padding: 14px;
+            box-shadow: 0 18px 38px rgba(17,17,17,0.08);
+            padding: 16px;
             overflow: hidden;
             position: relative;
             box-sizing: border-box;
@@ -761,17 +761,17 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
             position: relative;
             z-index: 1;
-            margin-bottom: 9px;
+            margin-bottom: 12px;
             flex-shrink: 0;
         }
         .birth-congrats-kicker {
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
         .birth-congrats-kicker i {
             font-size: 11px;
@@ -779,61 +779,67 @@
         }
         .birth-congrats-heading {
             margin: 0;
+            line-height: 1.18;
         }
         .birth-congrats-doctor {
             font-size: 11px;
             color: var(--muted);
             font-weight: 700;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .birth-congrats-badge {
             border: 1px solid rgba(179,95,123,0.22);
             background: rgba(179,95,123,0.11);
             color: var(--rose);
             border-radius: 999px;
-            padding: 6px 10px;
+            padding: 6px 11px;
             font-size: 10px;
             font-weight: 900;
             white-space: nowrap;
         }
         .birth-congrats-actions {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
             flex-shrink: 0;
         }
         .birth-congrats-close {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border: 1px solid rgba(179,95,123,0.18);
             border-radius: 999px;
             background: rgba(255,255,255,0.76);
             color: var(--rose);
             display: grid;
             place-items: center;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             box-shadow: 0 8px 18px rgba(17,17,17,0.06);
         }
         .birth-congrats-close:active { transform: scale(0.96); }
         .birth-congrats-body {
-            display: grid;
-            grid-template-columns: var(--birth-photo-size) minmax(0, 1fr);
+            display: flex;
+            flex-direction: column;
             gap: 12px;
-            align-items: start;
             position: relative;
             z-index: 1;
             flex: 0 0 auto;
             overflow: visible;
         }
+        .birth-congrats-hero {
+            display: grid;
+            grid-template-columns: var(--birth-photo-size) minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
         .birth-congrats-photo-wrap {
             width: var(--birth-photo-size);
             height: var(--birth-photo-size);
-            border-radius: 18px;
-            border: 1px solid var(--line);
-            background: rgba(255,255,255,0.74);
+            border-radius: 22px;
+            border: 1px solid rgba(179,95,123,0.16);
+            background: rgba(255,255,255,0.82);
             overflow: hidden;
-            box-shadow: 0 10px 22px rgba(17,17,17,0.08);
+            box-shadow: 0 16px 32px rgba(179,95,123,0.14);
             flex-shrink: 0;
             cursor: pointer;
             padding: 0;
@@ -855,36 +861,43 @@
             place-items: center;
             background: linear-gradient(145deg, rgba(255,255,255,0.94), rgba(248,232,240,0.92));
             color: var(--rose);
-            font-size: 32px;
+            font-size: 38px;
         }
         .birth-congrats-copy h3 {
             margin: 0;
-            font-size: 17px;
-            line-height: 1.2;
+            font-size: 18px;
+            line-height: 1.16;
             font-weight: 900;
             color: var(--ink);
         }
         .birth-congrats-copy {
             min-width: 0;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .birth-congrats-identity {
+            display: flex;
+            flex-direction: column;
         }
         .birth-congrats-copy p {
-            margin-top: 5px;
+            margin-top: 4px;
             color: var(--muted);
             font-size: 12px;
-            line-height: 1.45;
+            line-height: 1.42;
         }
         .birth-congrats-metrics {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 7px;
-            margin-top: 8px;
+            gap: 8px;
+            margin-top: 0;
         }
         .birth-congrats-metric {
-            border: 1px solid var(--line);
-            border-radius: 13px;
-            background: rgba(255,255,255,0.76);
-            padding: 7px;
+            border: 1px solid rgba(179,95,123,0.12);
+            border-radius: 15px;
+            background: rgba(255,255,255,0.58);
+            padding: 8px 9px;
             min-width: 0;
         }
         .birth-congrats-metric span {
@@ -905,12 +918,12 @@
             text-overflow: ellipsis;
         }
         .birth-congrats-message {
-            margin-top: 8px;
+            margin-top: 0;
             border: 1px solid rgba(179,95,123,0.14);
-            border-radius: 13px;
-            background: rgba(255,255,255,0.74);
-            padding: 8px;
-            max-height: 78px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.78);
+            padding: 10px 11px;
+            max-height: 94px;
             overflow: auto;
         }
         .birth-congrats-message-label {
@@ -933,19 +946,19 @@
         .birth-congrats-card-actions {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 6px;
-            margin-top: 8px;
+            gap: 8px;
+            margin-top: 10px;
         }
         .birth-congrats-card-action {
             border: 1px solid rgba(179,95,123,0.18);
-            border-radius: 11px;
-            background: rgba(255,255,255,0.78);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.84);
             color: var(--ink);
             min-width: 0;
-            padding: 6px 4px;
+            padding: 8px 6px;
             font: inherit;
-            font-size: 9.5px;
-            line-height: 1.15;
+            font-size: 10px;
+            line-height: 1.2;
             font-weight: 900;
             cursor: pointer;
             display: inline-flex;
@@ -2186,7 +2199,7 @@
             .hero-card { --sound-toggle-right-shift: 126px; padding: 18px 156px 18px 18px; border-radius: 24px; }
             .home-hero-photo { top: 14px; right: 14px; width: 132px; height: 132px; border-radius: 28px; }
             .birth-congrats-home {
-                --birth-photo-size: 92px;
+                --birth-photo-size: 108px;
                 width: min(100%, 360px);
                 max-width: 360px;
                 min-height: min(calc(100vw - 28px), 360px);
@@ -2197,12 +2210,15 @@
             .birth-congrats-head { gap: 8px; margin-bottom: 8px; }
             .birth-congrats-actions { justify-content: flex-end; }
             .birth-congrats-body { gap: 10px; }
+            .birth-congrats-hero { gap: 10px; }
             .birth-congrats-copy h3 { font-size: 15px; }
             .birth-congrats-copy p,
             .birth-congrats-message p { font-size: 11px; line-height: 1.38; }
             .birth-congrats-metrics { gap: 6px; }
             .birth-congrats-metric { padding: 6px; }
-            .birth-congrats-message { max-height: 66px; }
+            .birth-congrats-message { max-height: 72px; padding: 9px; }
+            .birth-congrats-card-actions { gap: 6px; }
+            .birth-congrats-card-action { padding: 7px 5px; font-size: 9.5px; }
             .settings-birth-item { grid-template-columns: 1fr; }
             .settings-birth-actions { justify-content: flex-start; }
             .settings-birth-action { justify-self: start; }
@@ -2520,23 +2536,27 @@
                     </div>
                 </div>
                 <div class="birth-congrats-body">
-                    <button type="button" class="birth-congrats-photo-wrap soundable" id="birth-congrats-photo-wrap" onclick="openBirthPhotoModal(event)" aria-label="Lihat foto kelahiran">
-                        <img id="birth-congrats-photo" alt="Foto kelahiran">
-                        <div class="birth-congrats-photo-fallback"><i class="fa-solid fa-baby"></i></div>
-                    </button>
-                    <div class="birth-congrats-copy">
-                        <h3 id="birth-congrats-baby-name">Buah Hati Tercinta</h3>
-                        <p id="birth-congrats-subtitle">Buah hati Anda telah lahir dengan selamat.</p>
-                        <div class="birth-congrats-metrics">
-                            <div class="birth-congrats-metric"><span>Tanggal Lahir</span><strong id="birth-congrats-date">-</strong></div>
-                            <div class="birth-congrats-metric"><span>Jam Lahir</span><strong id="birth-congrats-time">-</strong></div>
-                            <div class="birth-congrats-metric"><span>Berat Badan</span><strong id="birth-congrats-weight">-</strong></div>
-                            <div class="birth-congrats-metric"><span>Panjang Badan</span><strong id="birth-congrats-length">-</strong></div>
+                    <div class="birth-congrats-hero">
+                        <button type="button" class="birth-congrats-photo-wrap soundable" id="birth-congrats-photo-wrap" onclick="openBirthPhotoModal(event)" aria-label="Lihat foto kelahiran">
+                            <img id="birth-congrats-photo" alt="Foto kelahiran">
+                            <div class="birth-congrats-photo-fallback"><i class="fa-solid fa-baby"></i></div>
+                        </button>
+                        <div class="birth-congrats-copy">
+                            <div class="birth-congrats-identity">
+                                <h3 id="birth-congrats-baby-name">Buah Hati Tercinta</h3>
+                                <p id="birth-congrats-subtitle">Buah hati Anda telah lahir dengan selamat.</p>
+                            </div>
+                            <div class="birth-congrats-metrics">
+                                <div class="birth-congrats-metric"><span>Tanggal Lahir</span><strong id="birth-congrats-date">-</strong></div>
+                                <div class="birth-congrats-metric"><span>Jam Lahir</span><strong id="birth-congrats-time">-</strong></div>
+                                <div class="birth-congrats-metric"><span>Berat Badan</span><strong id="birth-congrats-weight">-</strong></div>
+                                <div class="birth-congrats-metric"><span>Panjang Badan</span><strong id="birth-congrats-length">-</strong></div>
+                            </div>
                         </div>
-                        <div class="birth-congrats-message">
-                            <div class="birth-congrats-message-label"><i class="fa-solid fa-quote-left"></i> Pesan dari Dokter</div>
-                            <p id="birth-congrats-message">Selamat atas kelahiran buah hati Anda!</p>
-                        </div>
+                    </div>
+                    <div class="birth-congrats-message">
+                        <div class="birth-congrats-message-label"><i class="fa-solid fa-quote-left"></i> Pesan dari Dokter</div>
+                        <p id="birth-congrats-message">Selamat atas kelahiran buah hati Anda!</p>
                     </div>
                 </div>
                 <div class="birth-congrats-card-actions">
