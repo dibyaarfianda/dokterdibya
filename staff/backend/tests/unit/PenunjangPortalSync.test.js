@@ -209,20 +209,4 @@ describe('DRD penunjang portal sync wiring', () => {
         expect(resumeComponent).not.toContain("sentItems.push('Hasil Lab')");
         expect(resumeComponent).toContain('documentsSent.lab');
     });
-
-    test('penunjang interpretation header uses active staff profile photo instead of a hardcoded clinic logo', () => {
-        const penunjangComponent = readRepoFile(
-            'staff',
-            'public',
-            'scripts',
-            'sunday-clinic',
-            'components',
-            'shared',
-            'penunjang.js'
-        );
-
-        expect(penunjangComponent).toContain('resolveDoctorProfileImage()');
-        expect(penunjangComponent).toContain('window.auth?.currentUser?.photo_url');
-        expect(penunjangComponent).not.toContain('src="/staff/public/images/db-black.svg"');
-    });
 });
