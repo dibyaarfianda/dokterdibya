@@ -66,9 +66,12 @@ describe('Birth congratulations portal layout', () => {
         expect(patientMenu).not.toContain('type="number" class="settings-input" inputmode="numeric" min="1" max="31"');
         expect(patientMenu).toContain('id="birth-extra-time" type="time"');
         expect(patientMenu).toContain('for="birth-extra-time">Jam Lahir');
+        expect(patientMenu).toContain('Silhkan isi data bayi Ibu');
+        expect(patientMenu).not.toContain('Edit keterangan tambahan yang dulu tersedia di portal lama.');
         expect(patientMenu).toContain('id="birth-extra-weight"');
-        expect(patientMenu).toContain('for="birth-extra-weight">Berat Lahir');
+        expect(patientMenu).toContain('for="birth-extra-weight">BERAT LAHIR (GRAM)');
         expect(patientMenu).toContain('id="birth-extra-length"');
+        expect(patientMenu).toContain('for="birth-extra-length">PANJANG BADAN (CM)');
         expect(patientMenu).not.toContain('showPicker');
         expect(patientMenu).toContain('const birthDateValue = normalizeBirthDatePartsSubmitInput(\'birth-extra\');');
         expect(patientMenu).toContain('birth_date: birthDateValue');
