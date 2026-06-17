@@ -66,6 +66,10 @@ function appendVisiblePatientCondition(query, alias = 'p', hasOuterWhere = true)
     return query + (hasOuterWhere ? ' AND ' : ' WHERE ') + visiblePatientCondition(alias);
 }
 
+function getR2ProxyUrl(key) {
+    return key ? `/api/r2/${key}` : '';
+}
+
 // Configure multer for birth photo upload
 const birthPhotoUpload = multer({
     storage: multer.memoryStorage(),
@@ -1235,14 +1239,10 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
             const birth = birthRows[0];
             console.log('[BIRTH_DEBUG] Found birth data for patient:', patientId, 'baby_name:', birth.baby_name);
 
-            // Regenerate signed URL if R2 key exists
+            // Use backend proxy URL to avoid direct R2 connectivity issues on patient devices
             let photoUrl = birth.photo_url;
             if (birth.photo_r2_key) {
-                try {
-                    photoUrl = await r2Storage.getSignedDownloadUrl(birth.photo_r2_key, 3600);
-                } catch (r2Error) {
-                    console.error('Error generating signed URL:', r2Error);
-                }
+                photoUrl = getR2ProxyUrl(birth.photo_r2_key);
             }
 
             return res.json({
@@ -2126,13 +2126,9 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
 
         const data = rows[0];
 
-        // Regenerate signed URL if R2 key exists
+        // Use backend proxy URL to avoid direct R2 connectivity issues on patient devices
         if (data.photo_r2_key) {
-            try {
-                data.photo_url = await r2Storage.getSignedDownloadUrl(data.photo_r2_key, 3600);
-            } catch (r2Error) {
-                console.error('Error generating signed URL:', r2Error);
-            }
+            data.photo_url = getR2ProxyUrl(data.photo_r2_key);
         }
 
         // Remove r2_key from response
@@ -2229,20 +2225,18 @@ router.post('/api/patients/:patientId/birth-congratulations/photo', verifyToken,
             folder
         );
 
-        // Get signed URL for the photo (7 days = 604800 seconds, max allowed)
-        const signedUrl = await r2Storage.getSignedDownloadUrl(uploadResult.key, 604800);
+        const proxyUrl = getR2ProxyUrl(uploadResult.key);
 
-        // Update database - store both the signed URL and R2 key
-        // The signed URL will be regenerated when needed via the GET endpoint
+        // Store proxy URL plus R2 key so the image stays reachable on patient networks
         await db.query(
             'UPDATE birth_congratulations SET photo_url = ?, photo_r2_key = ? WHERE patient_id = ?',
-            [signedUrl, uploadResult.key, patientId]
+            [proxyUrl, uploadResult.key, patientId]
         );
 
         res.json({
             success: true,
             message: 'Photo uploaded successfully',
-            photo_url: signedUrl
+            photo_url: proxyUrl
         });
     } catch (error) {
         console.error('Error uploading birth photo:', error);
@@ -2304,18 +2298,17 @@ router.post('/api/patient/birth-photo/:id', verifyPatientToken, birthPhotoUpload
             }
         }
 
-        // Get signed URL for the photo (7 days)
-        const signedUrl = await r2Storage.getSignedDownloadUrl(uploadResult.key, 604800);
+        const proxyUrl = getR2ProxyUrl(uploadResult.key);
 
         await db.query(
             'UPDATE birth_congratulations SET photo_url = ?, photo_r2_key = ? WHERE id = ? AND patient_id = ?',
-            [signedUrl, uploadResult.key, birthId, patientId]
+            [proxyUrl, uploadResult.key, birthId, patientId]
         );
 
         res.json({
             success: true,
             message: 'Photo uploaded successfully',
-            photo_url: signedUrl
+            photo_url: proxyUrl
         });
     } catch (error) {
         console.error('Error uploading patient birth photo:', error);

@@ -141,4 +141,13 @@ describe('Birth congratulations portal layout', () => {
         expect(patientRoutes).toContain('/api/patient/birth-photo/:id');
         expect(patientRoutes).toContain('/api/patient/birth-testimonial/:id');
     });
+
+    test('patient birth photo routes use backend proxy urls instead of direct R2 signed links', () => {
+        expect(patientRoutes).toContain("function getR2ProxyUrl(key)");
+        expect(patientRoutes).toContain('photoUrl = getR2ProxyUrl(birth.photo_r2_key);');
+        expect(patientRoutes).toContain('data.photo_url = getR2ProxyUrl(data.photo_r2_key);');
+        expect(patientRoutes).toContain('const proxyUrl = getR2ProxyUrl(uploadResult.key);');
+        expect(patientRoutes).toContain('photo_url: proxyUrl');
+        expect(patientRoutes).not.toContain('photo_url: signedUrl');
+    });
 });
