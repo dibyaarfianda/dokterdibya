@@ -1020,6 +1020,7 @@
             pointer-events: none;
         }
         .birth-congrats-message-avatar {
+            position: relative;
             width: 82px;
             height: 82px;
             border-radius: 50%;
@@ -1029,8 +1030,27 @@
             color: #8b9a7b;
             font-size: 34px;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+            overflow: hidden;
         }
-        .birth-congrats-message-avatar span {
+        .birth-congrats-message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .birth-congrats-message-avatar.has-photo img {
+            display: block;
+        }
+        .birth-congrats-message-avatar.has-photo .birth-congrats-message-avatar-fallback {
+            display: none;
+        }
+        .birth-congrats-message-avatar-fallback {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+        }
+        .birth-congrats-message-avatar-fallback span {
             font-size: 24px;
             line-height: 1;
             font-weight: 900;
@@ -2740,7 +2760,10 @@
                         </div>
                     </div>
                     <div class="birth-congrats-message-card">
-                        <div class="birth-congrats-message-avatar" aria-hidden="true"><span id="birth-congrats-doctor-initials">Dr</span></div>
+                        <div class="birth-congrats-message-avatar" id="birth-congrats-message-avatar" aria-hidden="true">
+                            <img id="birth-congrats-doctor-avatar-img" alt="Foto dokter">
+                            <span class="birth-congrats-message-avatar-fallback" id="birth-congrats-doctor-avatar-fallback"><span id="birth-congrats-doctor-initials">Dr</span></span>
+                        </div>
                         <div class="birth-congrats-message-content">
                             <div class="birth-congrats-message-label"><i class="fa-regular fa-message"></i> Pesan dari Dokter</div>
                             <div class="birth-congrats-message">
@@ -5909,6 +5932,19 @@
             document.getElementById('birth-congrats-doctor-initials').textContent = doctorProfile.doctorInitials;
             document.getElementById('birth-congrats-doctor-detail').textContent = doctorProfile.doctorDetail;
             document.getElementById('birth-congrats-doctor-specialty').textContent = doctorProfile.doctorSpecialty;
+            const doctorAvatarUrl = String(data.doctor_photo_url || '').trim();
+            const doctorAvatarWrap = document.getElementById('birth-congrats-message-avatar');
+            const doctorAvatar = document.getElementById('birth-congrats-doctor-avatar-img');
+            const doctorAvatarFallback = document.getElementById('birth-congrats-doctor-avatar-fallback');
+            if (doctorAvatarWrap && doctorAvatar && doctorAvatarFallback) {
+                if (doctorAvatarUrl) {
+                    doctorAvatar.src = doctorAvatarUrl;
+                    doctorAvatarWrap.classList.add('has-photo');
+                } else {
+                    doctorAvatar.removeAttribute('src');
+                    doctorAvatarWrap.classList.remove('has-photo');
+                }
+            }
 
             const photoWrap = document.getElementById('birth-congrats-photo-wrap');
             const photo = document.getElementById('birth-congrats-photo');
