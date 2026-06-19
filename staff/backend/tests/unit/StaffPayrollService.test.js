@@ -1,0 +1,66 @@
+const {
+    PAYROLL_CONFIG,
+    calculatePayroll,
+    validateEmployeePayrollInput,
+    sumPayrollItems
+} = require('../../services/StaffPayrollService');
+
+describe('StaffPayrollService', () => {
+    test('uses configured integer payroll rates', () => {
+        expect(PAYROLL_CONFIG.BASE_AMOUNT).toBe(150000);
+        expect(PAYROLL_CONFIG.ADDITIONAL_RATE).toBe(100000);
+    });
+
+    test.each([
+        [1, 0, 150000],
+        [2, 0, 250000],
+        [3, 0, 350000],
+        [2, 100000, 350000],
+        [4, 0, 450000]
+    ])('attendance %i adjustment %i produces %i', (attendance, adjustment, expected) => {
+        expect(calculatePayroll(attendance, adjustment).total_amount).toBe(expected);
+    });
+
+    test('zero attendance is not paid', () => {
+        expect(calculatePayroll(0, 0)).toMatchObject({
+            attendance_count: 0,
+            base_amount: 0,
+            additional_amount: 0,
+            total_amount: 0
+        });
+    });
+
+    test('negative adjustment is allowed when final total remains non-negative', () => {
+        expect(calculatePayroll(2, -50000).total_amount).toBe(200000);
+    });
+
+    test('rejects invalid attendance and negative final totals', () => {
+        expect(() => calculatePayroll(0.5, 0)).toThrow(/jumlah_hadir/);
+        expect(() => calculatePayroll(-1, 0)).toThrow(/jumlah_hadir/);
+        expect(() => calculatePayroll(1, -200000)).toThrow(/Pendapatan akhir/);
+        expect(() => calculatePayroll(0, 100000)).toThrow(/jumlah_hadir 0/);
+    });
+
+    test('rejects empty employee name', () => {
+        expect(() => validateEmployeePayrollInput({
+            name: '',
+            attendance_count: 1,
+            adjustment_amount: 0
+        })).toThrow(/nama wajib/);
+    });
+
+    test('prompt examples total 2300000', () => {
+        const examples = [
+            calculatePayroll(3, 0),
+            calculatePayroll(2, 0),
+            calculatePayroll(2, 100000),
+            calculatePayroll(1, 100000),
+            calculatePayroll(1, 0),
+            calculatePayroll(2, 100000),
+            calculatePayroll(4, 0),
+            calculatePayroll(1, 0)
+        ];
+
+        expect(sumPayrollItems(examples)).toBe(2300000);
+    });
+});

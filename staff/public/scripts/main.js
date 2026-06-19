@@ -146,6 +146,7 @@ function initPages() {
     pages.supportChat = grab('content-support-chat-page') || grab('content-support-chat');
     pages.staffPoints = grab('content-staff-points');
     pages.staffBriefing = grab('content-staff-briefing');
+    pages.staffPayroll = grab('content-staff-payroll');
     pages.kantorSaya = grab('content-kantor-saya');
     pages.docboard = grab('docboard-frame-page');
 }
@@ -4475,7 +4476,8 @@ async function applyMenuVisibility(user) {
         'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
         'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials'],
         'staff_points': ['nav-staff-points'],
-        'staff_briefing': ['nav-staff-briefing']
+        'staff_briefing': ['nav-staff-briefing'],
+        'staff_payroll': ['nav-staff-payroll']
     };
 
     // Superadmin/dokter sees everything - show all hidden menus
@@ -4966,6 +4968,7 @@ function restoreLastPage() {
             'nav-staff-activity':                   () => showStaffActivityPage(),
             'nav-staff-points':                     () => showStaffPointsPage(),
             'nav-staff-briefing':                   () => showStaffBriefingPage(),
+            'nav-staff-payroll':                    () => showStaffPayrollPage(),
             'finance-analysis-nav':                 () => showFinanceAnalysisPage(),
             'nav-birth-congrats':                   () => showBirthCongratsPage(),
             'nav-birth-testimonials':               () => showBirthTestimonialsPage(),

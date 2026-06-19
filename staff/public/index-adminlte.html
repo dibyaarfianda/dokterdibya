@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v255';
+        window.STAFF_CACHE_VERSION = 'v256';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1537,7 +1537,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v255">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v256">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2202,6 +2202,12 @@
                         <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
                             <i class="nav-icon fas fa-chart-line text-success"></i>
                             <p>Analisa Keuangan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item dokter-only d-none" id="nav-staff-payroll">
+                        <a href="#" class="nav-link" onclick="showStaffPayrollPage(); return false;">
+                            <i class="nav-icon fas fa-money-check-alt text-warning"></i>
+                            <p>Gajian</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
@@ -7593,6 +7599,101 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- STAFF PAYROLL PAGE -->
+                <div id="content-staff-payroll" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #16a34a, #15803d); color: white;">
+                                    <h3 class="card-title mb-0"><i class="fas fa-money-check-alt mr-2"></i>Gajian</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-sm btn-light" data-payroll-action="refresh" onclick="if(window.staffPayroll) window.staffPayroll.refresh()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-lg-8">
+                                            <div class="card card-outline card-success">
+                                                <div class="card-header compact">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-calendar-week mr-2"></i>Siklus 4 Praktik</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row" id="staff-payroll-cycle-dates">
+                                                        <div class="col-12 text-muted small">Memuat tanggal praktik...</div>
+                                                    </div>
+                                                    <div class="form-row align-items-end mt-2">
+                                                        <div class="col-md-4 col-8">
+                                                            <label class="small text-muted mb-1">Tanggal Gajian</label>
+                                                            <input type="date" id="staff-payroll-date" class="form-control form-control-sm">
+                                                        </div>
+                                                        <div class="col-md-3 col-4">
+                                                            <button type="button" class="btn btn-sm btn-success btn-block" data-payroll-action="create" onclick="if(window.staffPayroll) window.staffPayroll.createDraft()">
+                                                                <i class="fas fa-plus mr-1"></i>Buat Draft
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-md-5 mt-2 mt-md-0">
+                                                            <div class="small text-muted">Draft mengambil data hadir awal dari Briefing, lalu dapat dikoreksi sebelum finalize.</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <div class="card card-outline card-secondary">
+                                                <div class="card-header compact">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-history mr-2"></i>Batch Gaji</h5>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <div class="list-group list-group-flush" id="staff-payroll-batches">
+                                                        <div class="p-3 text-muted small">Memuat batch...</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="staff-payroll-summary" class="mb-3"></div>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="small text-muted">
+                                            Rumus: hadir pertama Rp150.000, hadir berikutnya Rp100.000 per hadir, penyesuaian opsional.
+                                        </div>
+                                        <div id="staff-payroll-actions" class="text-right"></div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped table-hover" id="staff-payroll-table">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th rowspan="2">Nama</th>
+                                                    <th rowspan="2">Role</th>
+                                                    <th colspan="4" class="text-center">Hadir</th>
+                                                    <th rowspan="2" class="text-right">Jumlah</th>
+                                                    <th rowspan="2" class="text-right">Dasar</th>
+                                                    <th rowspan="2" class="text-right">Tambahan</th>
+                                                    <th rowspan="2" class="text-right">Bonus/Penyesuaian</th>
+                                                    <th rowspan="2" class="text-right">Total</th>
+                                                    <th rowspan="2">Catatan</th>
+                                                </tr>
+                                                <tr id="staff-payroll-date-head"></tr>
+                                            </thead>
+                                            <tbody id="staff-payroll-tbody">
+                                                <tr>
+                                                    <td colspan="12" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Memuat payroll...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- (placeholder kept for following sections) -->
                 <div id="content-after-briefing-placeholder" class="d-none"></div>
 
@@ -12191,13 +12292,14 @@ Apakah Anda yakin ingin melanjutkan?`;
  <!-- Staff Points + Briefing -->
  <script src="./scripts/staff-points.js?v=20260531a"></script>
  <script src="./scripts/staff-briefing.js?v=20260531a"></script>
+ <script src="./scripts/staff-payroll.js?v=v256"></script>
  <script>
  function _scHideAllStaffPages() {
      document.documentElement.classList.remove('kantor-saya-active');
      document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
-     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-kantor-saya'].forEach(function(id) {
+     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-staff-payroll','content-kantor-saya'].forEach(function(id) {
          var el = document.getElementById(id);
          if (el) el.classList.add('d-none');
      });
@@ -12226,8 +12328,21 @@ Apakah Anda yakin ingin melanjutkan?`;
      try { sessionStorage.setItem('lastStaffNavId', 'nav-staff-briefing'); } catch (e) {}
      if (window.staffBriefing && typeof window.staffBriefing.init === 'function') window.staffBriefing.init();
  }
+ function showStaffPayrollPage() {
+     _scHideAllStaffPages();
+     var pg = document.getElementById('content-staff-payroll');
+     if (pg) pg.classList.remove('d-none');
+     var links = document.querySelectorAll('.nav-sidebar .nav-link');
+     links.forEach(function(link) { link.classList.remove('active'); });
+     var navLink = document.querySelector('#nav-staff-payroll .nav-link');
+     if (navLink) navLink.classList.add('active');
+     if (typeof window.setPageTitle === 'function') window.setPageTitle('Gajian');
+     try { sessionStorage.setItem('lastStaffNavId', 'nav-staff-payroll'); } catch (e) {}
+     if (window.staffPayroll && typeof window.staffPayroll.init === 'function') window.staffPayroll.init();
+ }
  window.showStaffPointsPage = showStaffPointsPage;
  window.showStaffBriefingPage = showStaffBriefingPage;
+ window.showStaffPayrollPage = showStaffPayrollPage;
  </script>
 
 </div><!-- /.wrapper -->
@@ -12974,7 +13089,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         const month = monthSelect ? monthSelect.value : '';
 
         try {
-            const response = await fetch(`/api/analytics/private-clinic?month=${month}&staffCount=3`, {
+            const response = await fetch(`/api/analytics/private-clinic?month=${month}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -12999,6 +13114,11 @@ Apakah Anda yakin ingin melanjutkan?`;
             document.getElementById('pc-laba-per-hari').textContent = formatRp(data.netProfit.labaPerHari);
             document.getElementById('pc-laba-per-kunjungan').textContent = formatRp(data.netProfit.labaPerKunjungan);
 
+            const staffCost = data.staffCost || {};
+            const payrollLabel = staffCost.batchCount > 0
+                ? `Gaji Staff (${staffCost.batchCount} batch, ${staffCost.paidStaffCount || 0} staff dibayar, ${staffCost.totalKehadiran || 0} hadir)`
+                : 'Gaji Staff (belum ada payroll finalized)';
+
             // Update Profit Loss Table
             const plTable = document.getElementById('pc-profit-loss-table');
             plTable.innerHTML = `
@@ -13011,7 +13131,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 <tr class="font-weight-bold border-top"><td>Laba Kotor</td><td class="text-right text-info">${formatRp(data.summary.labaKotor)}</td></tr>
                 <tr class="bg-light"><td colspan="2"><strong>BIAYA OPERASIONAL</strong></td></tr>
                 <tr><td class="pl-4">Sewa, Listrik, Air</td><td class="text-right text-muted">Rp 0 <small>(ditanggung RS)</small></td></tr>
-                <tr><td class="pl-4">Gaji Staff (${data.staffCost.jumlahStaff} org x ${data.staffCost.kehadiranPerStaff} hari)</td><td class="text-right text-danger">(${formatRp(data.staffCost.totalGaji)})</td></tr>
+                <tr><td class="pl-4">${payrollLabel}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGaji)})</td></tr>
                 <tr class="font-weight-bold bg-success text-white"><td>LABA BERSIH</td><td class="text-right">${formatRp(data.netProfit.labaBersih)}</td></tr>
                 <tr><td class="text-muted">Margin Laba Bersih</td><td class="text-right text-success font-weight-bold">${formatPercent(data.netProfit.marginLabaBersih)}</td></tr>
             `;

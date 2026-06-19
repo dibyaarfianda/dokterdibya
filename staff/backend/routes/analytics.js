@@ -375,14 +375,35 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
         const totalHariKerja = parseInt(summary.total_hari_kerja) || 0;
         const totalKunjungan = parseInt(summary.total_kunjungan) || 0;
 
-        // Staff cost: 8 staff, base 150k + bonus 100k per additional attendance day
-        // Formula: gaji = 150000 + max(0, (hari_kerja - 1)) × 100000
-        // Example: 4 hari Minggu = 150,000 + (3 × 100,000) = 450,000 per staff
-        const numStaff = 8;
-        const attendancePerStaff = totalHariKerja; // Jumlah hari Minggu dalam bulan
-        const bonusPerStaff = Math.max(0, attendancePerStaff - 1) * 100000;
-        const gajiPerStaff = 150000 + bonusPerStaff;
-        const totalGajiStaff = numStaff * gajiPerStaff;
+        // 6. Get finalized staff payroll paid in this month.
+        // Payroll is cash-based here: cross-month 4-practice batches reduce the month of payroll_date.
+        const [payrollRows] = await pool.query(`
+            SELECT
+                COUNT(*) AS batch_count,
+                COALESCE(SUM(total_amount), 0) AS total_gaji
+            FROM staff_payroll_batches
+            WHERE status = 'finalized'
+              AND payroll_date >= ? AND payroll_date < ?
+        `, [startDate, nextMonthStart]);
+
+        const [payrollItemRows] = await pool.query(`
+            SELECT
+                COUNT(*) AS item_count,
+                COALESCE(SUM(CASE WHEN i.total_amount > 0 THEN 1 ELSE 0 END), 0) AS paid_staff_count,
+                COALESCE(SUM(i.attendance_count), 0) AS total_kehadiran
+            FROM staff_payroll_items i
+            JOIN staff_payroll_batches b ON b.id = i.batch_id
+            WHERE b.status = 'finalized'
+              AND b.payroll_date >= ? AND b.payroll_date < ?
+        `, [startDate, nextMonthStart]);
+
+        const payrollSummary = payrollRows[0] || {};
+        const payrollItems = payrollItemRows[0] || {};
+        const totalGajiStaff = parseFloat(payrollSummary.total_gaji) || 0;
+        const payrollBatchCount = parseInt(payrollSummary.batch_count, 10) || 0;
+        const payrollItemCount = parseInt(payrollItems.item_count, 10) || 0;
+        const paidStaffCount = parseInt(payrollItems.paid_staff_count, 10) || 0;
+        const totalPayrollAttendance = parseInt(payrollItems.total_kehadiran, 10) || 0;
 
         // Net profit calculation
         const labaBersih = labaKotor - totalGajiStaff;
@@ -407,9 +428,11 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
                 marginLabaKotor: pendapatanKotor > 0 ? (labaKotor / pendapatanKotor * 100) : 0
             },
             staffCost: {
-                jumlahStaff: numStaff,
-                kehadiranPerStaff: attendancePerStaff,
-                gajiPerStaff,
+                source: 'staff_payroll_batches',
+                batchCount: payrollBatchCount,
+                itemCount: payrollItemCount,
+                paidStaffCount,
+                totalKehadiran: totalPayrollAttendance,
                 totalGaji: totalGajiStaff
             },
             netProfit: {

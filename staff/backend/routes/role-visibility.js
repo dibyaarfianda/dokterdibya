@@ -25,7 +25,8 @@ const MENUS = [
     { key: 'kelola_roles', label: 'Kelola Roles', icon: 'fa-user-shield' },
     { key: 'ucapan_kelahiran', label: 'Ucapan Kelahiran', icon: 'fa-baby' },
     { key: 'staff_points', label: 'Point Staff', icon: 'fa-star' },
-    { key: 'staff_briefing', label: 'Briefing Poli Minggu', icon: 'fa-clipboard-check' }
+    { key: 'staff_briefing', label: 'Briefing Poli Minggu', icon: 'fa-clipboard-check' },
+    { key: 'staff_payroll', label: 'Gajian', icon: 'fa-money-check-alt' }
 ];
 
 /**
