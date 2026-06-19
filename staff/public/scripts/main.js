@@ -85,6 +85,15 @@ function setSundayClinicStylesActive(active) {
             link.disabled = true;
         }
         document.body.classList.remove('sunday-clinic-embedded-active');
+        document.body.classList.remove('patient-sidebar-open');
+        const patientSidebar = document.getElementById('patient-history-sidebar');
+        if (patientSidebar) {
+            patientSidebar.classList.remove('open');
+        }
+        const patientSidebarToggle = document.getElementById('btn-toggle-patient-sidebar');
+        if (patientSidebarToggle) {
+            patientSidebarToggle.classList.remove('active');
+        }
     }
 }
 function grab(id) { return document.getElementById(id); }
