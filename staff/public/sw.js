@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v252'; // Staff patient engagement sidebar menu refresh
+const STAFF_PWA_VERSION = 'v253'; // Embedded Sunday Clinic staff panel refresh
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
@@ -13,6 +13,7 @@ const versionedStaffAsset = (path) => `${path}?v=${STAFF_PWA_VERSION}`;
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
   versionedStaffAsset('/staff/public/styles/mobile-responsive.css'),
+  versionedStaffAsset('/staff/public/styles/sunday-clinic.css'),
   versionedStaffAsset('/staff/public/sounds/send.mp3'),
   versionedStaffAsset('/staff/public/sounds/incoming.mp3'),
   // External CDN assets
