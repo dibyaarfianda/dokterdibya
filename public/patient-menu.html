@@ -1404,6 +1404,174 @@
             display: none;
         }
 
+        .birth-class-home-card {
+            display: none;
+            position: relative;
+            overflow: hidden;
+            margin-top: 12px;
+            border: 1px solid rgba(179, 95, 123, 0.2);
+            border-radius: 22px;
+            background:
+                radial-gradient(circle at 84% 18%, rgba(179, 95, 123, 0.16), transparent 30%),
+                radial-gradient(circle at 8% 88%, rgba(92, 127, 114, 0.15), transparent 34%),
+                linear-gradient(135deg, rgba(255, 246, 249, 0.94), rgba(242, 249, 245, 0.93));
+            box-shadow: 0 16px 40px rgba(17, 17, 17, 0.09);
+            padding: 15px;
+            color: var(--ink);
+            isolation: isolate;
+        }
+        .birth-class-home-card.show {
+            display: block;
+            animation: cardIn 0.42s ease both;
+        }
+        .birth-class-home-card::before {
+            content: '';
+            position: absolute;
+            width: 116px;
+            height: 116px;
+            right: -36px;
+            top: -38px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.46);
+            z-index: -1;
+        }
+        .birth-class-home-link {
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
+            gap: 12px;
+            align-items: start;
+        }
+        .birth-class-home-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,0.76);
+            color: var(--rose);
+            box-shadow: inset 0 0 0 1px rgba(179, 95, 123, 0.12);
+            font-size: 21px;
+        }
+        .birth-class-home-content {
+            min-width: 0;
+            display: grid;
+            gap: 10px;
+        }
+        .birth-class-home-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .birth-class-home-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: fit-content;
+            border: 1px solid rgba(92, 127, 114, 0.18);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.68);
+            color: var(--green);
+            padding: 5px 8px;
+            font-size: 9.5px;
+            line-height: 1;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .birth-class-home-title {
+            display: block;
+            margin-top: 7px;
+            font-family: var(--display);
+            font-size: 20px;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+        .birth-class-home-session {
+            display: block;
+            margin-top: 4px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            line-height: 1.35;
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+        .birth-class-home-price {
+            flex: 0 0 auto;
+            border-radius: 13px;
+            background: rgba(17,17,17,0.9);
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
+            box-shadow: 0 8px 18px rgba(17,17,17,0.13);
+        }
+        .birth-class-home-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .birth-class-home-stat {
+            min-width: 0;
+            border: 1px solid rgba(17,17,17,0.07);
+            border-radius: 15px;
+            background: rgba(255,255,255,0.66);
+            padding: 9px 10px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px;
+            align-items: center;
+        }
+        .birth-class-home-stat i {
+            color: var(--rose);
+            font-size: 13px;
+        }
+        .birth-class-home-stat-label {
+            display: block;
+            color: var(--muted);
+            font-size: 9px;
+            line-height: 1.1;
+            font-weight: 850;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+        }
+        .birth-class-home-stat-value {
+            display: block;
+            margin-top: 2px;
+            color: var(--ink);
+            font-size: 11px;
+            line-height: 1.2;
+            font-weight: 900;
+            overflow-wrap: anywhere;
+        }
+        .birth-class-home-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+        .birth-class-home-cta {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border-radius: 999px;
+            background: var(--rose);
+            color: #fff;
+            padding: 9px 12px;
+            font-size: 11px;
+            line-height: 1;
+            font-weight: 900;
+            box-shadow: 0 10px 20px rgba(179,95,123,0.22);
+            white-space: nowrap;
+        }
+
         .action-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -2454,6 +2622,15 @@
                 font-size: 13px;
             }
             .today-row { margin-right: calc(-1 * var(--sound-toggle-right-shift, 0px)); align-items: flex-end; }
+            .birth-class-home-card { padding: 13px; border-radius: 20px; }
+            .birth-class-home-link { grid-template-columns: 42px minmax(0, 1fr); gap: 10px; }
+            .birth-class-home-icon { width: 42px; height: 42px; border-radius: 14px; font-size: 19px; }
+            .birth-class-home-top { display: grid; grid-template-columns: 1fr; gap: 8px; }
+            .birth-class-home-title { font-size: 18px; }
+            .birth-class-home-price { width: fit-content; }
+            .birth-class-home-meta { grid-template-columns: 1fr; }
+            .birth-class-home-footer { align-items: flex-start; flex-direction: column; }
+            .birth-class-home-cta { width: 100%; min-height: 38px; }
             .action-grid { grid-template-columns: repeat(2, 1fr); }
             .tap-card { min-height: 104px; }
             .profile-photo-preview { height: 170px; }
@@ -2795,6 +2972,38 @@
                     </div>
                     <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
                 </div>
+            </section>
+
+            <section class="section" id="birth-class-home-section">
+                <article class="birth-class-home-card" id="birth-class-home-card" aria-label="Kelas Dr. Dibya">
+                    <a class="birth-class-home-link soundable" href="/kelas-persalinan.html">
+                        <span class="birth-class-home-icon" aria-hidden="true"><i class="fa-solid fa-baby-carriage"></i></span>
+                        <span class="birth-class-home-content">
+                            <span class="birth-class-home-top">
+                                <span>
+                                    <span class="birth-class-home-kicker"><i class="fa-solid fa-circle-check"></i> Kelas Aktif</span>
+                                    <span class="birth-class-home-title">Kelas Dr. Dibya</span>
+                                    <span class="birth-class-home-session" id="birth-class-home-session-title">-</span>
+                                </span>
+                                <span class="birth-class-home-price" id="birth-class-home-price">-</span>
+                            </span>
+                            <span class="birth-class-home-meta">
+                                <span class="birth-class-home-stat">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    <span><span class="birth-class-home-stat-label">Tanggal</span><strong class="birth-class-home-stat-value" id="birth-class-home-date">-</strong></span>
+                                </span>
+                                <span class="birth-class-home-stat">
+                                    <i class="fa-solid fa-chair"></i>
+                                    <span><span class="birth-class-home-stat-label">Kuota</span><strong class="birth-class-home-stat-value" id="birth-class-home-quota">-</strong></span>
+                                </span>
+                            </span>
+                            <span class="birth-class-home-footer">
+                                <span id="birth-class-home-location">-</span>
+                                <span class="birth-class-home-cta">Daftar Kelas <i class="fa-solid fa-arrow-right"></i></span>
+                            </span>
+                        </span>
+                    </a>
+                </article>
             </section>
 
             <section class="section reveal" id="primary-actions-section">
@@ -3844,6 +4053,99 @@
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '';
             return date.toLocaleDateString('id-ID', { weekday: 'long' });
+        }
+
+        function parseLocalDateOnly(value) {
+            const raw = String(value || '').slice(0, 10);
+            const parts = raw.split('-').map(Number);
+            if (parts.length === 3 && parts.every(Number.isFinite)) {
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+            const fallback = new Date(value);
+            return Number.isNaN(fallback.getTime()) ? null : fallback;
+        }
+
+        function formatBirthClassHomeDate(value) {
+            const date = parseLocalDateOnly(value);
+            if (!date) return '-';
+            return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+
+        function formatBirthClassHomeTime(value) {
+            if (!value) return '';
+            return String(value).slice(0, 5);
+        }
+
+        function formatBirthClassHomePrice(value) {
+            const amount = Number(value || 0);
+            if (!amount) return 'Gratis';
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function hideBirthClassHomeCard() {
+            const card = document.getElementById('birth-class-home-card');
+            if (!card) return;
+            card.classList.remove('show');
+        }
+
+        function renderBirthClassHomeCard(session) {
+            const card = document.getElementById('birth-class-home-card');
+            if (!card || !session) return;
+            const titleEl = document.getElementById('birth-class-home-session-title');
+            const priceEl = document.getElementById('birth-class-home-price');
+            const dateEl = document.getElementById('birth-class-home-date');
+            const quotaEl = document.getElementById('birth-class-home-quota');
+            const locationEl = document.getElementById('birth-class-home-location');
+
+            const startTime = formatBirthClassHomeTime(session.start_time);
+            const endTime = formatBirthClassHomeTime(session.end_time);
+            const timeText = startTime ? startTime + (endTime ? ' - ' + endTime : '') : '-';
+            const availableSlots = Number(session.available_slots ?? Math.max(Number(session.quota || 0) - Number(session.registered_count || 0), 0));
+
+            if (titleEl) titleEl.textContent = session.class_title || 'Kelas persiapan persalinan';
+            if (priceEl) priceEl.textContent = formatBirthClassHomePrice(session.price);
+            if (dateEl) dateEl.textContent = formatBirthClassHomeDate(session.session_date) + ' • ' + timeText;
+            if (quotaEl) quotaEl.textContent = availableSlots > 0 ? 'Sisa ' + availableSlots + ' kursi' : 'Kuota penuh';
+            if (locationEl) locationEl.textContent = session.location || 'Lokasi menyusul';
+
+            card.classList.add('show');
+            requestAnimationFrame(updateHomeActionGap);
+        }
+
+        async function loadBirthClassHomeCard() {
+            hideBirthClassHomeCard();
+            try {
+                const response = await fetch('/api/birth-classes/sessions/public?_t=' + Date.now(), {
+                    headers: { 'Cache-Control': 'no-cache' },
+                    cache: 'no-store'
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success || !Array.isArray(data.data)) return;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const sessions = data.data
+                    .filter(function(session) {
+                        const sessionDate = parseLocalDateOnly(session.session_date);
+                        return sessionDate && sessionDate >= today;
+                    })
+                    .sort(function(a, b) {
+                        const dateA = parseLocalDateOnly(a.session_date);
+                        const dateB = parseLocalDateOnly(b.session_date);
+                        const timeA = String(a.start_time || '');
+                        const timeB = String(b.start_time || '');
+                        return (dateA - dateB) || timeA.localeCompare(timeB);
+                    });
+
+                if (!sessions.length) return;
+                renderBirthClassHomeCard(sessions[0]);
+            } catch (error) {
+                hideBirthClassHomeCard();
+            }
         }
 
         function getProfilePhotoUrl(profile) {
@@ -6172,7 +6474,10 @@
             document.documentElement.style.setProperty('--home-viewport-height', Math.ceil(viewportHeight) + 'px');
             if (homeActionGapFrozen || window.scrollY > 4 || document.body.classList.contains('home-actions-revealed')) return;
             const statusPanel = document.getElementById('quick-status');
-            const anchor = statusPanel && statusPanel.classList.contains('show') ? statusPanel : hero;
+            const birthClassCard = document.getElementById('birth-class-home-card');
+            const anchor = birthClassCard && birthClassCard.classList.contains('show')
+                ? birthClassCard
+                : (statusPanel && statusPanel.classList.contains('show') ? statusPanel : hero);
             const anchorBottom = anchor.getBoundingClientRect().bottom;
             const targetTop = viewportHeight * 0.78;
             const gap = Math.max(32, Math.min(168, Math.ceil(targetTop - anchorBottom)));
@@ -6418,6 +6723,7 @@
                 revealPrimaryActionsIfReady();
             });
             triggerHomeIntroAnimation();
+            loadBirthClassHomeCard();
         }
 
         async function init() {
@@ -6467,6 +6773,7 @@
             loadUnreadDocCounts();
             initializeLiveQueueHome();
             checkActiveBooking();
+            loadBirthClassHomeCard();
             checkAttendanceConfirmation();
             const pendingBirth = await checkBirthPending();
             const publishedBirth = await loadBirthCongratsHome();
