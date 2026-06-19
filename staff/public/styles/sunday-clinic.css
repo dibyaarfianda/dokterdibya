@@ -1664,6 +1664,138 @@ body.mobile-app-mode #chat-box[style*="flex"] {
     opacity: 1 !important;
 }
 
+/* Embedded staff-panel PWA mobile section navigation
+   Replaces the global staff bottom nav only while Sunday Clinic is active in mobile app mode. */
+@media (max-width: 991.98px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active #mobile-action-bar,
+    body.mobile-app-mode.sunday-clinic-embedded-active #mobile-action-bar.mobile-action-bar-force {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {
+        padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child {
+        margin-bottom: 6px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-body {
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        overflow: visible !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        z-index: 999999 !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        gap: 4px !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        min-height: 74px !important;
+        margin: 0 !important;
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x proximity !important;
+        touch-action: pan-x !important;
+        background: #ffffff !important;
+        border-top: 1px solid rgba(15, 23, 42, 0.1) !important;
+        box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.14) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
+        scrollbar-width: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item {
+        flex: 0 0 86px !important;
+        width: 86px !important;
+        max-width: 86px !important;
+        min-width: 86px !important;
+        margin: 0 !important;
+        scroll-snap-align: start !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item[style*="display: none"] {
+        display: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link {
+        width: 100% !important;
+        height: 58px !important;
+        min-height: 58px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px !important;
+        margin: 0 !important;
+        padding: 6px 4px !important;
+        border-radius: 12px !important;
+        color: #5f6673 !important;
+        background: transparent !important;
+        text-align: center !important;
+        letter-spacing: 0 !important;
+        line-height: 1.1 !important;
+        white-space: normal !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link.active {
+        color: #ffffff !important;
+        background: #0d6efd !important;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link .nav-icon {
+        width: auto !important;
+        margin: 0 !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+        color: inherit !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link p {
+        max-width: 78px !important;
+        margin: 0 !important;
+        color: inherit !important;
+        font-size: 10px !important;
+        line-height: 1.12 !important;
+        font-weight: 600 !important;
+        letter-spacing: 0 !important;
+        overflow: hidden !important;
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container {
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn,
+    body.mobile-app-mode.sunday-clinic-embedded-active .chat-toggle-btn {
+        bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
 /* Chat box elements must be interactive */
 body.mobile-app-mode #chat-box *,
 body.mobile-app-mode .chat-box * {
