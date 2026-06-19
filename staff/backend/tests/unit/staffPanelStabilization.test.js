@@ -5,21 +5,21 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v255 cache version source for staff assets', () => {
+    test('uses one v256 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v255';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v256';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v255');
+        expect(html).toContain('styles/mobile-responsive.css?v=v256');
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v255 precache does not include missing chat panel css', () => {
+    test('service worker v256 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v255';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v256';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
@@ -97,5 +97,27 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('position: fixed !important;');
         expect(sundayClinicCss).toContain('overflow-x: auto !important;');
         expect(sundayClinicCss).toContain('scroll-snap-type: x proximity !important;');
+    });
+
+    test('staff panel exposes Gajian payroll menu and script', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+        const roleVisibility = readRepoFile('staff', 'backend', 'routes', 'role-visibility.js');
+        const server = readRepoFile('staff', 'backend', 'server.js');
+
+        expect(html).toContain('id="nav-staff-payroll"');
+        expect(html).toContain('showStaffPayrollPage(); return false;');
+        expect(html).toContain('<p>Gajian</p>');
+        expect(html).toContain('id="content-staff-payroll"');
+        expect(html).toContain('./scripts/staff-payroll.js?v=v256');
+        expect(html).toContain('window.showStaffPayrollPage = showStaffPayrollPage;');
+
+        expect(mainJs).toContain("pages.staffPayroll = grab('content-staff-payroll');");
+        expect(mainJs).toContain("'staff_payroll': ['nav-staff-payroll']");
+        expect(mainJs).toContain("'nav-staff-payroll':                    () => showStaffPayrollPage()");
+
+        expect(roleVisibility).toContain("{ key: 'staff_payroll', label: 'Gajian'");
+        expect(server).toContain("const staffPayrollRoutes = require('./routes/staff-payroll');");
+        expect(server).toContain("app.use('/api/staff-payroll', staffPayrollRoutes);");
     });
 });

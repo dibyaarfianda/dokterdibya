@@ -613,6 +613,10 @@ app.use('/api/staff-points', staffPointsRoutes);
 const staffBriefingRoutes = require('./routes/staff-briefing');
 app.use('/api/staff-briefing', staffBriefingRoutes);
 
+// Staff Payroll (Gajian - 4-practice attendance payroll)
+const staffPayrollRoutes = require('./routes/staff-payroll');
+app.use('/api/staff-payroll', staffPayrollRoutes);
+
 // Staff Workdesk (Kantor Saya) routes
 const staffWorkdeskRoutes = require('./routes/staff-workdesk');
 app.use('/api/staff-workdesk', staffWorkdeskRoutes);
@@ -1103,4 +1107,3 @@ process.on('unhandledRejection', (err) => {
     logger.error('Unhandled Rejection:', err);
     process.exit(1);
 });
-
