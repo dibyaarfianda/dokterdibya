@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v254';
+        window.STAFF_CACHE_VERSION = 'v255';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -29,14 +29,18 @@
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
         if(window.innerWidth<=991){
-            document.body.classList.add('sidebar-collapse');
-            // Inline style override - bypasses CSS cache
-            document.addEventListener('DOMContentLoaded', function(){
+            function applyMobileSidebarCollapse(){
+                if(document.body){ document.body.classList.add('sidebar-collapse'); }
                 var cw = document.querySelector('.content-wrapper');
                 if(cw){ cw.style.setProperty('padding-top','0','important'); cw.style.setProperty('margin-top','0','important'); }
                 var ct = document.querySelector('.content-wrapper > .content, .content-wrapper > section.content');
                 if(ct){ ct.style.setProperty('padding-top','0','important'); ct.style.setProperty('margin-top','0','important'); }
-            });
+            }
+            if(document.body){
+                applyMobileSidebarCollapse();
+            } else {
+                document.addEventListener('DOMContentLoaded', applyMobileSidebarCollapse, { once: true });
+            }
         }
     </script>
     <!-- Error Handler (load first) -->
@@ -1533,7 +1537,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v254">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v255">
     
     <!-- Mobile App Mode Detection -->
     <script>
