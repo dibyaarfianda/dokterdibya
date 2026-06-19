@@ -543,9 +543,10 @@ async function importMedicalApply() {
                     resetImportModal();
 
                     // Navigate to existing MR
+                    const embeddedMrUrl = `/staff/public/index-adminlte.html?page=sunday-clinic&mr=${encodeURIComponent(checkResult.existingMrId)}&section=identity`;
                     const mrUrl = window.buildSundayClinicAppUrl
                         ? window.buildSundayClinicAppUrl(checkResult.existingMrId, 'identity')
-                        : `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(checkResult.existingMrId)}&section=identity`;
+                        : (window.buildMobileUrl ? window.buildMobileUrl(embeddedMrUrl) : embeddedMrUrl);
 
                     if (window.Swal) {
                         await Swal.fire({

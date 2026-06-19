@@ -5,21 +5,21 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v253 cache version source for staff assets', () => {
+    test('uses one v254 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v253';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v254';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v253');
+        expect(html).toContain('styles/mobile-responsive.css?v=v254');
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v253 precache does not include missing chat panel css', () => {
+    test('service worker v254 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v253';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v254';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
@@ -66,6 +66,8 @@ describe('staff panel stabilization sources', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
         const sundayClinicEntry = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic.js');
+        const medicalImport = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'medical-import.js');
+        const patientSidebar = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'patient-history-sidebar.js');
 
         expect(html).toContain('id="nav-sunday-clinic"');
         expect(html).toContain('onclick="showSundayClinicPage(); return false;"');
@@ -85,5 +87,10 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicEntry).toContain('window.__sundayClinicEmbedded = appState.embedded;');
         expect(sundayClinicEntry).toContain('window.initSundayClinicPage = initSundayClinicPage;');
         expect(sundayClinicEntry).toContain("nextUrl.pathname = '/staff/public/index-adminlte.html';");
+
+        expect(medicalImport).toContain('/staff/public/index-adminlte.html?page=sunday-clinic&mr=');
+        expect(medicalImport).not.toContain('/staff/public/sunday-clinic.html?mr=');
+        expect(patientSidebar).toContain('/staff/public/index-adminlte.html?page=sunday-clinic&mr=');
+        expect(patientSidebar).not.toContain('/staff/public/sunday-clinic.html?mr=');
     });
 });
