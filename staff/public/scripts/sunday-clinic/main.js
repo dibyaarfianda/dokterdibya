@@ -10,7 +10,7 @@ import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
-import patientSidebar from './components/patient-history-sidebar.js?v=2.0.4';
+import patientSidebar from './components/patient-history-sidebar.js?v=2.0.5';
 
 // Expose stateManager to window for cross-module access (used by medical-import.js)
 window.stateManager = stateManager;
@@ -891,62 +891,64 @@ class SundayClinicApp {
 
         const config = locationConfig[this.currentLocation] || locationConfig['klinik_private'];
 
-        // Update sidebar logo container
-        const sidebarLogo = document.getElementById('sidebar-logo');
-        const logoContainer = sidebarLogo?.parentElement;
+        if (!window.__sundayClinicEmbedded) {
+            // Update sidebar logo container in standalone Sunday Clinic only.
+            const sidebarLogo = document.getElementById('sidebar-logo');
+            const logoContainer = sidebarLogo?.parentElement;
 
-        if (logoContainer) {
-            if (isPrivateClinic) {
-                // Show original logo for private clinic
-                if (sidebarLogo) {
-                    sidebarLogo.style.display = '';
-                    sidebarLogo.src = config.logo;
-                }
-                // Remove hospital badge if exists
-                const hospitalBadge = logoContainer.querySelector('.hospital-brand-badge');
-                if (hospitalBadge) hospitalBadge.remove();
-            } else {
-                // Hide logo and show hospital brand badge
-                if (sidebarLogo) {
-                    sidebarLogo.style.display = 'none';
-                }
-                // Remove existing badge
-                const existingBadge = logoContainer.querySelector('.hospital-brand-badge');
-                if (existingBadge) existingBadge.remove();
-
-                // Add hospital brand badge
-                let badgeContent;
-                if (config.logo) {
-                    // Use logo image
-                    badgeContent = `
-                        <img src="${config.logo}" alt="${config.name}" style="max-width: 120px; max-height: 80px; object-fit: contain;">
-                    `;
+            if (logoContainer) {
+                if (isPrivateClinic) {
+                    // Show original logo for private clinic
+                    if (sidebarLogo) {
+                        sidebarLogo.style.display = '';
+                        sidebarLogo.src = config.logo;
+                    }
+                    // Remove hospital badge if exists
+                    const hospitalBadge = logoContainer.querySelector('.hospital-brand-badge');
+                    if (hospitalBadge) hospitalBadge.remove();
                 } else {
-                    // Icon-based badge (fallback)
-                    badgeContent = `
-                        <div style="background: ${config.color}; color: white; padding: 15px; border-radius: 10px;">
-                            <i class="${config.icon}" style="font-size: 2rem;"></i>
-                            <div style="font-weight: bold; margin-top: 8px; font-size: 0.85rem;">${config.shortName}</div>
+                    // Hide logo and show hospital brand badge
+                    if (sidebarLogo) {
+                        sidebarLogo.style.display = 'none';
+                    }
+                    // Remove existing badge
+                    const existingBadge = logoContainer.querySelector('.hospital-brand-badge');
+                    if (existingBadge) existingBadge.remove();
+
+                    // Add hospital brand badge
+                    let badgeContent;
+                    if (config.logo) {
+                        // Use logo image
+                        badgeContent = `
+                            <img src="${config.logo}" alt="${config.name}" style="max-width: 120px; max-height: 80px; object-fit: contain;">
+                        `;
+                    } else {
+                        // Icon-based badge (fallback)
+                        badgeContent = `
+                            <div style="background: ${config.color}; color: white; padding: 15px; border-radius: 10px;">
+                                <i class="${config.icon}" style="font-size: 2rem;"></i>
+                                <div style="font-weight: bold; margin-top: 8px; font-size: 0.85rem;">${config.shortName}</div>
+                            </div>
+                        `;
+                    }
+
+                    const badgeHtml = `
+                        <div class="hospital-brand-badge text-center" style="padding: 10px; cursor: pointer;" data-tooltip="${config.tooltip}">
+                            ${badgeContent}
                         </div>
                     `;
+                    logoContainer.insertAdjacentHTML('beforeend', badgeHtml);
+
+                    // Add click handler for navigation to main admin page
+                    const badge = logoContainer.querySelector('.hospital-brand-badge');
+                    if (badge) {
+                        badge.addEventListener('click', () => {
+                            window.location.href = '/staff/public/index-adminlte.html';
+                        });
+                    }
+
+                    console.log('[SundayClinic] Hospital brand badge shown for:', config.name);
                 }
-
-                const badgeHtml = `
-                    <div class="hospital-brand-badge text-center" style="padding: 10px; cursor: pointer;" data-tooltip="${config.tooltip}">
-                        ${badgeContent}
-                    </div>
-                `;
-                logoContainer.insertAdjacentHTML('beforeend', badgeHtml);
-
-                // Add click handler for navigation to main admin page
-                const badge = logoContainer.querySelector('.hospital-brand-badge');
-                if (badge) {
-                    badge.addEventListener('click', () => {
-                        window.location.href = '/staff/public/index-adminlte.html';
-                    });
-                }
-
-                console.log('[SundayClinic] Hospital brand badge shown for:', config.name);
             }
         }
 

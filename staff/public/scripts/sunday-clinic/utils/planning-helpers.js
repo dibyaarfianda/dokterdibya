@@ -142,7 +142,8 @@ function showTindakanModal(tindakanList) {
 
     const modal = document.getElementById('tindakan-modal');
     const container = document.getElementById('tindakan-modal-body');
-    const searchInput = document.getElementById('tindakan-search');
+    const searchInput = document.querySelector('#tindakan-modal #sc-tindakan-search')
+        || document.querySelector('#tindakan-modal #tindakan-search');
 
     console.log('[Planning v11] Elements found:', { modal: !!modal, container: !!container, searchInput: !!searchInput });
 
@@ -759,7 +760,7 @@ function showTerapiModal(obatList) {
 
     const modal = document.getElementById('terapi-modal');
     const tbody = document.getElementById('terapi-modal-body');
-    const searchInput = document.getElementById('obat-search');
+    const searchInput = document.querySelector('#terapi-modal #obat-search');
 
     console.log('[Planning v11] Elements check - modal:', !!modal, 'tbody:', !!tbody, 'searchInput:', !!searchInput);
 

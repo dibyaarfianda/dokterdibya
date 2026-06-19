@@ -34,14 +34,10 @@ function getSimrsSourceLabel(source, visitLocation) {
  */
 function initMedicalImport() {
     const fileInput = document.getElementById('import-file');
-    if (fileInput) {
+    if (fileInput && fileInput.dataset.medicalImportBound !== 'true') {
+        fileInput.dataset.medicalImportBound = 'true';
         fileInput.addEventListener('change', handleFileSelect);
-    }
-
-    // Update custom file label when file is selected
-    const customFileInput = document.querySelector('.custom-file-input');
-    if (customFileInput) {
-        customFileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function(e) {
             const fileName = e.target.files[0]?.name || 'Pilih file...';
             const label = this.nextElementSibling;
             if (label) label.textContent = fileName;
@@ -1668,15 +1664,33 @@ function fillFormFieldsDirect(template, checkedFields) {
  * Reset modal to initial state
  */
 function resetImportModal() {
-    document.getElementById('import-category').value = '';
-    document.getElementById('import-text').value = '';
-    document.getElementById('import-file').value = '';
-    document.querySelector('.custom-file-label').textContent = 'Pilih file...';
-    document.getElementById('import-step-1').style.display = 'block';
-    document.getElementById('import-step-2').style.display = 'none';
-    document.getElementById('btn-import-parse').style.display = 'inline-block';
-    document.getElementById('btn-import-back').style.display = 'none';
-    document.getElementById('btn-import-apply').style.display = 'none';
+    const modal = document.getElementById('import-medical-modal') || document;
+    const category = modal.querySelector('#import-category');
+    const text = modal.querySelector('#import-text');
+    const file = modal.querySelector('#import-file');
+    const fileLabel = modal.querySelector('.custom-file-label');
+    const warningContainer = modal.querySelector('#import-warning-container');
+    const step1 = modal.querySelector('#import-step-1');
+    const step2 = modal.querySelector('#import-step-2');
+    const parseBtn = modal.querySelector('#btn-import-parse');
+    const backBtn = modal.querySelector('#btn-import-back');
+    const applyBtn = modal.querySelector('#btn-import-apply');
+    const applyBtnText = modal.querySelector('#btn-import-apply-text');
+
+    if (category) category.value = '';
+    if (text) text.value = '';
+    if (file) file.value = '';
+    if (fileLabel) fileLabel.textContent = 'Pilih file...';
+    if (warningContainer) {
+        warningContainer.innerHTML = '';
+        warningContainer.style.display = 'none';
+    }
+    if (step1) step1.style.display = 'block';
+    if (step2) step2.style.display = 'none';
+    if (parseBtn) parseBtn.style.display = 'inline-block';
+    if (backBtn) backBtn.style.display = 'none';
+    if (applyBtn) applyBtn.style.display = 'none';
+    if (applyBtnText) applyBtnText.textContent = 'Terapkan ke Form';
     parsedImportData = null;
 }
 
@@ -2121,13 +2135,25 @@ window.applyBulkImport = applyBulkImport;
 window.applyPendingImportData = applyPendingImportData;
 window.checkUrlImportParam = checkUrlImportParam;
 
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+function bootstrapMedicalImport({ applyPending = false } = {}) {
     initMedicalImport();
     // Check for import data in URL first (from Chrome extension)
     checkUrlImportParam();
-    // Then check for pending import data after page navigation
-    applyPendingImportData();
-});
+    if (applyPending) {
+        // Then check for pending import data after page navigation
+        applyPendingImportData();
+    }
+}
+
+// Initialize on DOM ready. When this module is dynamically imported after DOM
+// ready by the embedded staff panel, bind handlers immediately but let
+// SundayClinicApp.init() apply pending data after the MR has rendered.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        bootstrapMedicalImport({ applyPending: true });
+    });
+} else {
+    bootstrapMedicalImport();
+}
 
 export { openImportModal, importMedicalParse, importMedicalBack, importMedicalApply, applyPendingImportData };

@@ -51,6 +51,24 @@ class PatientHistorySidebar {
             .replace(/\n/g, ' ');
     }
 
+    openMedicalRecord(mrId, section = 'identitas') {
+        if (!mrId) return;
+
+        if (window.__sundayClinicEmbedded && typeof window.initSundayClinicPage === 'function') {
+            window.initSundayClinicPage({
+                mrId,
+                section,
+                embedded: true
+            });
+            return;
+        }
+
+        const url = window.buildSundayClinicAppUrl
+            ? window.buildSundayClinicAppUrl(mrId, section)
+            : `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(mrId)}&section=${encodeURIComponent(section)}`;
+        window.location.href = window.buildMobileUrl ? window.buildMobileUrl(url) : url;
+    }
+
     /**
      * Initialize sidebar
      */
@@ -517,8 +535,7 @@ class PatientHistorySidebar {
             }
 
             if (response.existingMrId) {
-                const existingMrUrl = `/staff/public/sunday-clinic.html?_v=v20260515chat2&mr=${encodeURIComponent(response.existingMrId)}`;
-                window.location.href = window.buildMobileUrl ? window.buildMobileUrl(existingMrUrl) : existingMrUrl;
+                this.openMedicalRecord(response.existingMrId);
                 return;
             }
 
@@ -531,8 +548,8 @@ class PatientHistorySidebar {
                 location: location || this.currentLocation || 'klinik_private'
             });
 
-            query.set('_v', 'v20260515chat2');
-            const patientUrl = `/staff/public/sunday-clinic.html?${query.toString()}`;
+            query.set('page', 'sunday-clinic');
+            const patientUrl = `/staff/public/index-adminlte.html?${query.toString()}`;
             window.location.href = window.buildMobileUrl ? window.buildMobileUrl(patientUrl) : patientUrl;
         } catch (error) {
             console.error('[PatientSidebar] Failed to open Medify queue patient:', error);
@@ -804,9 +821,7 @@ class PatientHistorySidebar {
         }
 
         if (mrId) {
-            // Navigate to existing MR (with cache-bust for mobile)
-            const existingMrUrl = `/staff/public/sunday-clinic.html?_v=v20260515chat2&mr=${mrId}`;
-            window.location.href = window.buildMobileUrl ? window.buildMobileUrl(existingMrUrl) : existingMrUrl;
+            this.openMedicalRecord(mrId);
         } else if (appointmentId) {
             // Need to create MR from appointment - open directory
             this.openDirectory(patientId);
@@ -821,8 +836,7 @@ class PatientHistorySidebar {
      */
     openPatientFromSearch(patientId, mrId) {
         if (mrId) {
-            const mrUrl = `/staff/public/sunday-clinic.html?_v=v20260515chat2&mr=${mrId}`;
-            window.location.href = window.buildMobileUrl ? window.buildMobileUrl(mrUrl) : mrUrl;
+            this.openMedicalRecord(mrId);
         } else {
             this.openDirectory(patientId);
         }
@@ -836,6 +850,7 @@ class PatientHistorySidebar {
         if (overlay) {
             overlay.hidden = false;
             overlay.setAttribute('aria-hidden', 'false');
+            overlay.classList.add('is-visible');
 
             // Pre-fill search if patient ID provided
             if (patientId) {

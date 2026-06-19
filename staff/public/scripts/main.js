@@ -53,6 +53,7 @@ const moduleCache = new Map();
 // so we reuse the same evaluated instance across the app.
 const skipVersionModules = new Set(['./billing.js', './billing-obat.js', './medical-exam.js']);
 const PUBLIC_ASSET_ROOT = new URL('../', import.meta.url).pathname;
+const SUNDAY_CLINIC_STYLESHEET_ID = 'sunday-clinic-stylesheet';
 function importWithVersion(path) {
     if (moduleCache.has(path)) {
         return moduleCache.get(path);
@@ -67,10 +68,30 @@ function importWithVersion(path) {
     moduleCache.set(path, promise);
     return promise;
 }
+function setSundayClinicStylesActive(active) {
+    let link = document.getElementById(SUNDAY_CLINIC_STYLESHEET_ID);
+    if (active) {
+        if (!link) {
+            link = document.createElement('link');
+            link.id = SUNDAY_CLINIC_STYLESHEET_ID;
+            link.rel = 'stylesheet';
+            link.href = `/staff/public/styles/sunday-clinic.css?v=${encodeURIComponent(window.__assetVersion || '20260619staff1')}`;
+            document.head.appendChild(link);
+        }
+        link.disabled = false;
+        document.body.classList.add('sunday-clinic-embedded-active');
+    } else {
+        if (link) {
+            link.disabled = true;
+        }
+        document.body.classList.remove('sunday-clinic-embedded-active');
+    }
+}
 function grab(id) { return document.getElementById(id); }
 function initPages() {
     pages.dashboard = grab('dashboard-page');
     pages.klinikPrivate = grab('klinik-private-page');
+    pages.sundayClinic = grab('sunday-clinic-page');
     pages.patient = grab('patient-page');
     pages.anamnesa = grab('anamnesa-page');
     pages.physical = grab('physical-exam-page');
@@ -233,6 +254,7 @@ function executeLoadedScripts(doc, baseUrl) {
     });
 }
 function hideAllPages() {
+    setSundayClinicStylesActive(false);
     document.documentElement.classList.remove('kantor-saya-active');
     document.body.classList.remove('kantor-saya-active');
     document.body.classList.remove('community-chat-active');
@@ -601,6 +623,44 @@ function showKlinikPrivatePage() {
     }).catch(error => {
         console.error('Failed to load klinik-private.js:', error);
     });
+}
+
+let sundayClinicModulePromise = null;
+function ensureSundayClinicModule() {
+    if (!sundayClinicModulePromise) {
+        sundayClinicModulePromise = importWithVersion('./sunday-clinic.js');
+    }
+    return sundayClinicModulePromise;
+}
+
+async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas') {
+    const options = typeof mrIdOrOptions === 'object' && mrIdOrOptions !== null
+        ? mrIdOrOptions
+        : { mrId: mrIdOrOptions, section };
+    hideAllPages();
+    setSundayClinicStylesActive(true);
+    pages.sundayClinic?.classList.remove('d-none');
+    setTitleAndActive('Sunday Clinic', 'nav-sunday-clinic', 'sunday-clinic');
+
+    const normalizedMrId = normalizeMrSlug(options.mrId);
+    try {
+        await ensureSundayClinicModule();
+        if (typeof window.initSundayClinicPage === 'function') {
+            await window.initSundayClinicPage({
+                mrId: normalizedMrId || null,
+                section: options.section || 'identitas',
+                patientId: options.patientId || null,
+                appointmentId: options.appointmentId || null,
+                location: options.location || null,
+                embedded: true
+            });
+        } else {
+            throw new Error('Sunday Clinic module belum siap');
+        }
+    } catch (error) {
+        console.error('Failed to load Sunday Clinic page:', error);
+        showError('Gagal memuat Sunday Clinic: ' + error.message);
+    }
 }
 
 // Hospital Appointments Page
@@ -3951,7 +4011,7 @@ function buildSundayClinicAppUrl(mrId, section = 'identity') {
         return '';
     }
 
-    let targetUrl = `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(slug)}&section=${encodeURIComponent(section)}`;
+    let targetUrl = `/staff/public/index-adminlte.html?page=sunday-clinic&mr=${encodeURIComponent(slug)}&section=${encodeURIComponent(section)}`;
     targetUrl = window.buildMobileUrl ? window.buildMobileUrl(targetUrl) : targetUrl;
     return targetUrl;
 }
@@ -3972,14 +4032,7 @@ function openSundayClinicViewer() {
         return;
     }
 
-    const targetUrl = buildSundayClinicAppUrl(slug, 'identitas');
-
-    // In mobile app mode, navigate in same window (WebView doesn't handle new tabs well)
-    if (window.isMobileAppMode && window.isMobileAppMode()) {
-        window.location.href = targetUrl;
-    } else {
-        window.open(targetUrl, '_blank', 'noopener');
-    }
+    showSundayClinicPage(slug, 'identitas');
 }
 
 function openSundayClinicWithMrId(mrId) {
@@ -3994,14 +4047,7 @@ function openSundayClinicWithMrId(mrId) {
         return;
     }
 
-    const targetUrl = buildSundayClinicAppUrl(slug, 'identitas');
-
-    // In mobile app mode, navigate in same window
-    if (window.isMobileAppMode && window.isMobileAppMode()) {
-        window.location.href = targetUrl;
-    } else {
-        window.open(targetUrl, '_blank', 'noopener');
-    }
+    showSundayClinicPage(slug, 'identitas');
 }
 
 function bindSundayClinicLauncher() {
@@ -4419,7 +4465,7 @@ async function applyMenuVisibility(user) {
         'dashboard': null, // Dashboard always visible
         'kelola_pasien': ['nav-kelola-pasien', 'nav-record-history'],
         'pasien_baru': ['nav-pasien-baru'],
-        'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class'],
+        'klinik_privat': ['nav-klinik-private', 'nav-sunday-clinic', 'nav-voting', 'nav-birth-class'],
         'rsia_melinda': ['nav-rsia-melinda'],
         'rsud_gambiran': ['nav-rsud-gambiran'],
         'rs_bhayangkara': ['nav-rs-bhayangkara'],
@@ -4864,12 +4910,25 @@ function initMain() {
 
 function restoreLastPage() {
     try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('page') === 'sunday-clinic') {
+            showSundayClinicPage({
+                mrId: params.get('mr'),
+                section: params.get('section') || 'identitas',
+                patientId: params.get('patient'),
+                appointmentId: params.get('appointment'),
+                location: params.get('location')
+            });
+            return;
+        }
+
         const navId = sessionStorage.getItem('lastStaffNavId');
         if (!navId) { showDashboardPage(); return; }
         const pageMap = {
             'nav-dashboard':                        () => showDashboardPage(),
             'nav-kantor-saya':                      () => showKantorSayaPage(),
             'nav-klinik-private':                   () => showKlinikPrivatePage(),
+            'nav-sunday-clinic':                    () => showSundayClinicPage(),
             'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
             'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
             'nav-rs-bhayangkara':                   () => showHospitalAppointmentsPage('rs_bhayangkara'),
@@ -6134,6 +6193,7 @@ window.openCommunityChatPopup = openCommunityChatPopup;
 window.showTroubleshootingPage = showTroubleshootingPage;
 window.loadTroubleshootingReports = loadTroubleshootingReports;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
+window.showSundayClinicPage = showSundayClinicPage;
 window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
 window.showTindakanPage = showTindakanPage;
 window.showObatPage = showObatPage;

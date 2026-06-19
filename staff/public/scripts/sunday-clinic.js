@@ -8,8 +8,8 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.22 - fix live queue exam action bar visibility for klinik private visits
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.22';
+// Version 2.1.23 - support embedded staff-panel Sunday Clinic initialization
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.23';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';
@@ -33,6 +33,9 @@ const SECTION_DEFS = [
 const SECTION_LOOKUP = new Map(SECTION_DEFS.map(section => [section.id, section]));
 
 function getAuthToken() {
+    if (typeof window.getAuthToken === 'function') {
+        return window.getAuthToken();
+    }
     return localStorage.getItem('vps_auth_token')
         || sessionStorage.getItem('vps_auth_token')
         || localStorage.getItem('token')
@@ -97,7 +100,12 @@ const appState = {
         name: null,
         role: null
     },
-    isInitialized: false
+    isInitialized: false,
+    isInitializing: false,
+    embedded: false,
+    realtimeInitialized: false,
+    eventListenersBound: false,
+    dateTimeIntervalId: null
 };
 
 // Directory state
@@ -259,8 +267,15 @@ function escapeHtml(text) {
 // INITIALIZATION
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[SundayClinic] Initializing application...');
+async function initSundayClinicPage(options = {}) {
+    if (appState.isInitializing) {
+        return false;
+    }
+
+    appState.isInitializing = true;
+    appState.embedded = Boolean(options.embedded || document.getElementById('sunday-clinic-page'));
+    window.__sundayClinicEmbedded = appState.embedded;
+    console.log('[SundayClinic] Initializing application...', appState.embedded ? 'embedded' : 'standalone');
 
     try {
         // Initialize DOM references early so auth UI can be populated without another API call.
@@ -268,17 +283,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Check authentication
         if (!await checkAuthentication()) {
-            return;
+            return false;
         }
 
         applyStaffIdentityToUI();
 
         // Initialize real-time sync for chat and online status once identity is known.
-        initRealtimeSync({
-            id: appState.staffIdentity.id,
-            name: appState.staffIdentity.name,
-            role: appState.staffIdentity.role
-        });
+        if (!appState.realtimeInitialized) {
+            initRealtimeSync({
+                id: appState.staffIdentity.id,
+                name: appState.staffIdentity.name,
+                role: appState.staffIdentity.role
+            });
+            appState.realtimeInitialized = true;
+        }
 
         // Setup event listeners
         setupEventListeners();
@@ -288,35 +306,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Directory data is loaded lazily when the picker/search is opened.
 
-        // Check for initial MR ID in URL (support both path-based and query params)
+        // Check for initial MR ID in explicit options, URL path, or query params.
         const initialRoute = parseRoute();
         const urlParams = new URLSearchParams(window.location.search);
         const mrIdFromQuery = urlParams.get('mr');
-        const patientIdFromQuery = urlParams.get('patient');
-        const appointmentIdFromQuery = urlParams.get('appointment');
-        const locationFromQuery = urlParams.get('location');
+        const patientIdFromQuery = options.patientId || urlParams.get('patient');
+        const appointmentIdFromQuery = options.appointmentId || urlParams.get('appointment');
+        const locationFromQuery = options.location || urlParams.get('location');
+        const optionMrId = options.mrId || null;
+        const optionSection = options.section || null;
+        const rawTargetSection = optionSection || initialRoute.section || 'identity';
+        const targetSection = SECTION_NAME_MAP[String(rawTargetSection).toLowerCase()] || rawTargetSection;
 
-        if (initialRoute.mrId) {
+        if (optionMrId) {
+            await loadMedicalRecord(optionMrId, targetSection);
+        } else if (initialRoute.mrId) {
             // Path-based: /sunday-clinic/{mrId}/{section}
-            await loadMedicalRecord(initialRoute.mrId, initialRoute.section);
+            await loadMedicalRecord(initialRoute.mrId, targetSection);
         } else if (mrIdFromQuery) {
             // Query param: ?mr=xxx&section=yyy
-            await loadMedicalRecord(mrIdFromQuery, initialRoute.section || 'identity');
+            await loadMedicalRecord(mrIdFromQuery, targetSection);
         } else if (patientIdFromQuery) {
             // Query param: ?patient=xxx&appointment=yyy&location=zzz (from PERIKSA button)
             await handlePatientFromUrl(patientIdFromQuery, appointmentIdFromQuery, locationFromQuery);
-        } else {
+        } else if (!appState.currentMrId) {
             showWelcomeScreen();
+        } else {
+            hideLoading();
         }
 
         appState.isInitialized = true;
         console.log('[SundayClinic] Application initialized successfully');
+        return true;
 
     } catch (error) {
         console.error('[SundayClinic] Initialization failed:', error);
         showError('Gagal menginisialisasi aplikasi. Silakan refresh halaman.');
+        return false;
+    } finally {
+        appState.isInitializing = false;
     }
-});
+}
+
+window.initSundayClinicPage = initSundayClinicPage;
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initSundayClinicPage());
+} else if (!document.getElementById('sunday-clinic-page')) {
+    initSundayClinicPage();
+}
 
 // ============================================================================
 // AUTHENTICATION
@@ -471,6 +509,11 @@ function initializeDOMReferences() {
 }
 
 function setupEventListeners() {
+    if (appState.eventListenersBound) {
+        return;
+    }
+    appState.eventListenersBound = true;
+
     // Directory open/close
     if (DOM.openDirectoryBtn) {
         DOM.openDirectoryBtn.addEventListener('click', openDirectory);
@@ -504,6 +547,16 @@ function setupEventListeners() {
 
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
+
+    const navScope = document.getElementById('sunday-clinic-page') || document;
+    navScope.addEventListener('click', (event) => {
+        const target = event.target.closest('.sc-nav-link');
+        if (!target || !navScope.contains(target) || !target.dataset.section) {
+            return;
+        }
+        event.preventDefault();
+        window.handleSectionChange(target.dataset.section);
+    });
 }
 
 function setupDateTimeDisplay() {
@@ -511,6 +564,7 @@ function setupDateTimeDisplay() {
     const timeDisplay = document.getElementById('time-display');
 
     if (!dateDisplay || !timeDisplay) return;
+    if (appState.dateTimeIntervalId) return;
 
     function updateDateTime() {
         const now = new Date();
@@ -525,7 +579,7 @@ function setupDateTimeDisplay() {
     }
 
     updateDateTime();
-    setInterval(updateDateTime, 1000);
+    appState.dateTimeIntervalId = setInterval(updateDateTime, 1000);
 }
 
 // ============================================================================
@@ -586,12 +640,23 @@ function parseRoute(pathname = window.location.pathname) {
     };
 }
 
-function updateRoute(mrId, section = 'identity') {
+function updateRoute(mrId, section = 'identity', options = {}) {
     const nextUrl = new URL(window.location.href);
-    nextUrl.pathname = '/staff/public/sunday-clinic.html';
+    if (appState.embedded) {
+        nextUrl.pathname = '/staff/public/index-adminlte.html';
+        nextUrl.searchParams.set('page', 'sunday-clinic');
+    } else {
+        nextUrl.pathname = '/staff/public/sunday-clinic.html';
+        nextUrl.searchParams.delete('page');
+    }
     nextUrl.searchParams.set('mr', mrId);
     nextUrl.searchParams.set('section', section);
-    window.history.pushState({ mrId, section }, '', nextUrl.toString());
+    const state = { mrId, section };
+    if (options.replace) {
+        window.history.replaceState(state, '', nextUrl.toString());
+    } else {
+        window.history.pushState(state, '', nextUrl.toString());
+    }
 }
 
 // ============================================================================
@@ -636,7 +701,7 @@ async function loadMedicalRecord(mrId, section = 'identity') {
 // SECTION NAVIGATION
 // ============================================================================
 
-window.handleSectionChange = async function(section) {
+window.handleSectionChange = async function(section, options = {}) {
     console.log('[SundayClinic] Section changed:', section);
 
     if (!appState.currentMrId) {
@@ -649,7 +714,7 @@ window.handleSectionChange = async function(section) {
     console.log('[SundayClinic] Mapped section:', section, '->', mappedSection);
 
     appState.currentSection = mappedSection;
-    updateRoute(appState.currentMrId, mappedSection);
+    updateRoute(appState.currentMrId, mappedSection, { replace: options?.pushHistory === false });
     updateSectionNavigation(section); // Keep original for sidebar active state
 
     // Navigate to section (show only that section)
@@ -657,9 +722,11 @@ window.handleSectionChange = async function(section) {
 };
 
 function updateSectionNavigation(activeSection) {
+    const normalizedActiveSection = SECTION_NAME_MAP[String(activeSection || '').toLowerCase()] || activeSection;
     // Update active state in sidebar
     document.querySelectorAll('.sc-nav-link').forEach(link => {
-        if (link.dataset.section === activeSection) {
+        const normalizedLinkSection = SECTION_NAME_MAP[String(link.dataset.section || '').toLowerCase()] || link.dataset.section;
+        if (normalizedLinkSection === normalizedActiveSection) {
             link.classList.add('active');
         } else {
             link.classList.remove('active');
