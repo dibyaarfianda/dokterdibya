@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v256';
+        window.STAFF_CACHE_VERSION = 'v257';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -85,6 +85,16 @@
         html.mobile-app-mode,
         body.mobile-app-mode {
             zoom: 1 !important;
+        }
+
+        /* Sunday Clinic patient history markup lives outside the page container.
+           Keep it hidden when the Sunday Clinic stylesheet is disabled on other menus. */
+        .patient-history-sidebar {
+            display: none !important;
+        }
+
+        body.sunday-clinic-embedded-active .patient-history-sidebar {
+            display: flex !important;
         }
 
         @media print {
@@ -1537,7 +1547,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v256">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v257">
     
     <!-- Mobile App Mode Detection -->
     <script>
