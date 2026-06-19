@@ -1,591 +1,574 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-trial-nav="off">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a1a">
-    <title>Pendaftaran Kelas Dr. Dibya - Dokter Dibya</title>
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
-    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#f7f7f4">
+    <title>Kelas Dr. Dibya - SISIwanita</title>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260606installgate">
+    <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        try { sessionStorage.setItem('patient_portal_theme_mode', 'newdesign'); } catch (error) {}
+        window.__patientTrialHeaderInstalled = true;
+    </script>
+    <script src="/scripts/patient-theme.js?v=20260528kickui1"></script>
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
     <style>
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+        body.kelas-persalinan-page {
+            --class-rose-soft: rgba(179, 95, 123, 0.12);
+            --class-amber-soft: rgba(183, 121, 46, 0.12);
+            --class-blue-soft: rgba(74, 111, 157, 0.11);
         }
 
-        :root {
-            --bg-main: #000000;
-            --text-main: #ffffff;
-            --text-muted: rgba(255, 255, 255, 0.72);
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --accent: #28a7e9;
-            --accent-strong: #0066ff;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+        body.kelas-persalinan-page .app {
+            padding-bottom: 18px !important;
         }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--bg-main);
-            min-height: 100vh;
-            color: var(--text-main);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
-        }
-
-        .safe-area-top {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-top, 0px);
-            background: var(--bg-main);
-            z-index: 9999;
-        }
-
-        .safe-area-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-bottom, 0px);
-            background: var(--bg-main);
-            z-index: 9999;
-        }
-
-        .app-wrapper {
-            position: relative;
-            min-height: 100vh;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+        body.kelas-persalinan-page .hero-card {
             background:
-                radial-gradient(circle at 15% 10%, rgba(0, 102, 255, 0.22), transparent 40%),
-                radial-gradient(circle at 90% 0%, rgba(40, 167, 233, 0.18), transparent 32%),
-                radial-gradient(circle at 70% 88%, rgba(245, 158, 11, 0.12), transparent 35%),
-                var(--bg-main);
+                linear-gradient(145deg, rgba(255,255,255,0.94), rgba(244,245,240,0.88)) !important;
         }
 
-        .nav-bar {
-            background: rgba(0, 0, 0, 0.85);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            position: fixed;
-            top: env(safe-area-inset-top, 0px);
-            left: 0;
-            right: 0;
-            z-index: 1000;
+        body.kelas-persalinan-page .hero-card::before {
+            background: radial-gradient(circle, rgba(179,95,123,0.18), transparent 68%) !important;
         }
 
-        .nav-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .brand-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
+        body.kelas-persalinan-page .class-hero-meta {
+            margin-top: 14px;
             display: grid;
-            place-items: center;
-            background: linear-gradient(135deg, var(--accent-strong), var(--accent));
-            box-shadow: 0 10px 24px rgba(0, 102, 255, 0.4);
-            color: #fff;
-            font-size: 16px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
         }
 
-        .brand-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            line-height: 1.2;
+        body.kelas-persalinan-page .class-hero-pill {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255,255,255,0.66);
+            padding: 10px;
+            min-width: 0;
         }
 
-        .brand-subtitle {
+        body.kelas-persalinan-page .class-hero-pill span {
+            display: block;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            line-height: 1.15;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        body.kelas-persalinan-page .class-hero-pill strong {
+            display: block;
+            color: var(--ink);
             font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.2;
+            font-weight: 900;
+            line-height: 1.18;
+            overflow-wrap: anywhere;
         }
 
-        .back-btn {
-            border: 1px solid rgba(255, 255, 255, 0.28);
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            border-radius: 999px;
-            padding: 8px 14px;
-            font-size: 13px;
-            text-decoration: none;
-            transition: all 0.25s ease;
-        }
-
-        .back-btn:hover {
-            color: #fff;
-            text-decoration: none;
-            border-color: rgba(40, 167, 233, 0.8);
-            background: rgba(40, 167, 233, 0.16);
-            transform: translateY(-1px);
-        }
-
-        .content-container {
-            max-width: 920px;
-            margin: 0 auto;
-            padding: 106px 16px 42px;
-        }
-
-        .hero-card {
-            background: linear-gradient(135deg, rgba(40, 167, 233, 0.14), rgba(0, 102, 255, 0.14));
-            border: 1px solid rgba(40, 167, 233, 0.45);
-            box-shadow: 0 0 16px rgba(40, 167, 233, 0.14);
-            border-radius: 16px;
-            padding: 22px 20px;
-            margin-bottom: 16px;
-            animation: fadeUp 0.45s ease both;
-        }
-
-        .hero-card h1 {
-            margin: 0;
-            font-size: 1.55rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #fff;
-        }
-
-        .hero-card p {
-            margin: 11px 0 0;
-            color: var(--text-muted);
-            line-height: 1.65;
-            font-size: 0.94rem;
-        }
-
-        .form-card {
-            background: var(--glass-bg);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
+        body.kelas-persalinan-page .birth-class-panel {
+            padding: 0 !important;
             overflow: hidden;
-            animation: fadeUp 0.5s ease both;
-            animation-delay: 0.06s;
         }
 
-        .form-card-header {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 18px 20px;
+        body.kelas-persalinan-page .birth-class-panel-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            background: rgba(0, 0, 0, 0.34);
+            padding: 15px;
+            border-bottom: 1px solid var(--line);
+            background: rgba(255,255,255,0.54);
         }
 
-        .form-card-title {
-            color: #fff;
-            font-size: 1.05rem;
-            font-weight: 600;
+        body.kelas-persalinan-page .birth-class-panel-title {
             margin: 0;
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1.08;
         }
 
-        .form-card-subtitle {
-            color: var(--text-muted);
-            font-size: 12px;
-            margin-top: 2px;
+        body.kelas-persalinan-page .birth-class-panel-subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.35;
         }
 
-        .refresh-btn {
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            border-radius: 10px;
-            width: 38px;
-            height: 38px;
-            display: grid;
+        body.kelas-persalinan-page .refresh-btn {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: rgba(255,255,255,0.76);
+            color: var(--green);
+            display: inline-grid;
             place-items: center;
-            transition: all 0.25s ease;
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
         }
 
-        .refresh-btn:hover {
-            border-color: rgba(40, 167, 233, 0.9);
-            color: #fff;
-            background: rgba(40, 167, 233, 0.16);
-            transform: rotate(22deg);
+        body.kelas-persalinan-page .refresh-btn:active {
+            transform: scale(0.96) rotate(18deg);
         }
 
-        .form-section {
-            padding: 22px 20px;
-        }
-
-        .form-group label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 7px;
-        }
-
-        .form-control {
-            height: auto;
-            min-height: 44px;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            color: #fff;
-            border-radius: 11px;
-            font-size: 14px;
-            padding: 10px 12px;
-            transition: all 0.25s ease;
-        }
-
-        .form-control:focus {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(40, 167, 233, 0.95);
-            box-shadow: 0 0 0 0.2rem rgba(40, 167, 233, 0.2);
-            color: #fff;
-        }
-
-        .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.42);
-        }
-
-        select.form-control option {
-            color: #fff;
-            background: #1e1e23;
-        }
-
-        textarea.form-control {
-            min-height: 102px;
-        }
-
-        .quick-note {
-            border-left: 4px solid var(--warning);
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.32);
-            border-radius: 12px;
-            padding: 12px 14px;
-            font-size: 0.92rem;
-            color: #f8d27a;
-            line-height: 1.6;
-        }
-
-        .submit-btn {
-            border: 0;
-            border-radius: 12px;
-            min-height: 48px;
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-            color: #fff;
-            box-shadow: 0 12px 28px rgba(0, 102, 255, 0.36);
-            transition: all 0.25s ease;
-        }
-
-        .submit-btn:hover {
-            color: #fff;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 30px rgba(0, 102, 255, 0.42);
-        }
-
-        .alert {
-            border-radius: 10px;
-            border-width: 1px;
-            font-size: 13px;
-            margin-bottom: 16px;
-        }
-
-        .alert.is-hidden {
-            display: none;
-        }
-
-        .alert-success {
-            color: #89f3b0;
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.45);
-        }
-
-        .alert-danger {
-            color: #fecaca;
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.45);
-        }
-
-        .alert-warning {
-            color: #fde68a;
-            background: rgba(245, 158, 11, 0.15);
-            border-color: rgba(245, 158, 11, 0.45);
-        }
-
-        .alert-info {
-            color: #bfdbfe;
-            background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.45);
-        }
-
-        .profile-card {
-            border: 1px solid rgba(40, 167, 233, 0.45);
-            background: rgba(40, 167, 233, 0.1);
-            border-radius: 12px;
-            padding: 12px 14px;
-            margin-bottom: 14px;
-            line-height: 1.6;
-            font-size: 13px;
-        }
-
-        .profile-card strong {
-            color: #fff;
-        }
-
-        .session-list {
+        body.kelas-persalinan-page .birth-class-panel-body {
             display: grid;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 14px;
+            padding: 15px;
         }
 
-        .session-card {
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 12px;
-            padding: 14px;
-        }
-
-        .session-card-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .session-title {
-            font-size: 15px;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 2px;
-        }
-
-        .session-meta {
+        body.kelas-persalinan-page .alert {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 11px 12px;
             font-size: 12px;
-            color: var(--text-muted);
+            font-weight: 800;
             line-height: 1.45;
         }
 
-        .session-price {
-            white-space: nowrap;
-            border: 1px solid rgba(16, 185, 129, 0.45);
-            background: rgba(16, 185, 129, 0.14);
-            color: #89f3b0;
-            border-radius: 999px;
-            padding: 4px 9px;
-            font-size: 12px;
-            font-weight: 600;
+        body.kelas-persalinan-page .alert.is-hidden {
+            display: none;
         }
 
-        .session-chip {
+        body.kelas-persalinan-page .alert-success {
+            color: #166534;
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.22);
+        }
+
+        body.kelas-persalinan-page .alert-danger {
+            color: #b91c1c;
+            background: rgba(239, 68, 68, 0.09);
+            border-color: rgba(239, 68, 68, 0.22);
+        }
+
+        body.kelas-persalinan-page .alert-warning {
+            color: #92400e;
+            background: var(--class-amber-soft);
+            border-color: rgba(183, 121, 46, 0.24);
+        }
+
+        body.kelas-persalinan-page .alert-info {
+            color: var(--blue);
+            background: var(--class-blue-soft);
+            border-color: rgba(74, 111, 157, 0.2);
+        }
+
+        body.kelas-persalinan-page .profile-card {
+            border: 1px solid rgba(92, 127, 114, 0.2);
+            background: var(--green-soft);
+            border-radius: 18px;
+            padding: 13px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.55;
+        }
+
+        body.kelas-persalinan-page .profile-card strong {
             display: inline-block;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 999px;
-            padding: 3px 8px;
-            font-size: 11px;
-            color: #fff;
-            margin-bottom: 8px;
-        }
-
-        .session-section-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.88);
-            margin-bottom: 4px;
-            margin-top: 8px;
-        }
-
-        .session-list-items {
-            margin: 0;
-            padding-left: 16px;
-            color: var(--text-muted);
-            font-size: 12px;
-            line-height: 1.5;
-        }
-
-        .session-list-empty {
-            border: 1px dashed rgba(255, 255, 255, 0.28);
-            border-radius: 12px;
-            padding: 14px;
-            text-align: center;
+            color: var(--ink);
             font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 16px;
+            font-weight: 900;
+            margin-bottom: 3px;
         }
 
-        .register-box {
-            border-top: 1px dashed rgba(255, 255, 255, 0.22);
-            padding-top: 14px;
+        body.kelas-persalinan-page .profile-card.is-ready {
+            border-color: rgba(92, 127, 114, 0.26);
+            background: var(--green-soft);
         }
 
-        .register-title {
-            font-size: 14px;
+        body.kelas-persalinan-page .profile-card.is-warning {
+            border-color: rgba(183, 121, 46, 0.24);
+            background: var(--class-amber-soft);
+        }
+
+        body.kelas-persalinan-page .profile-card .profile-muted {
+            color: var(--muted);
+        }
+
+        body.kelas-persalinan-page .session-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        body.kelas-persalinan-page .session-card {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: rgba(255,255,255,0.76);
+            box-shadow: var(--shadow-soft);
+            padding: 13px;
+        }
+
+        body.kelas-persalinan-page .session-card-head {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: start;
+            gap: 10px;
             margin-bottom: 10px;
         }
 
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        body.kelas-persalinan-page .session-title {
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            line-height: 1.12;
+            margin-bottom: 5px;
         }
 
-        @media (max-width: 768px) {
-            .nav-container {
-                padding: 10px 12px;
+        body.kelas-persalinan-page .session-meta {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        body.kelas-persalinan-page .session-price {
+            white-space: nowrap;
+            border: 1px solid rgba(92, 127, 114, 0.22);
+            background: var(--green-soft);
+            color: var(--green);
+            border-radius: 999px;
+            padding: 6px 9px;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        body.kelas-persalinan-page .session-chip {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            border: 1px solid rgba(179, 95, 123, 0.22);
+            background: var(--class-rose-soft);
+            border-radius: 999px;
+            color: var(--rose);
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1;
+            padding: 6px 9px;
+            margin-bottom: 9px;
+        }
+
+        body.kelas-persalinan-page .session-section-title {
+            color: var(--ink);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+            margin: 11px 0 5px;
+        }
+
+        body.kelas-persalinan-page .session-list-items {
+            margin: 0;
+            padding-left: 17px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            font-weight: 650;
+            line-height: 1.55;
+        }
+
+        body.kelas-persalinan-page .session-list-empty {
+            min-height: 92px;
+            border: 1px dashed var(--line-strong);
+            border-radius: 18px;
+            background: rgba(255,255,255,0.58);
+            color: var(--muted);
+            display: grid;
+            place-items: center;
+            padding: 18px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        body.kelas-persalinan-page .register-box {
+            border-top: 1px solid var(--line);
+            padding-top: 14px;
+        }
+
+        body.kelas-persalinan-page .register-title {
+            margin: 0 0 12px;
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+        }
+
+        body.kelas-persalinan-page .form-group {
+            display: grid;
+            gap: 7px;
+            margin-bottom: 12px;
+        }
+
+        body.kelas-persalinan-page .form-group label {
+            color: var(--ink);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        body.kelas-persalinan-page .form-control {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: rgba(255,255,255,0.82);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 750;
+            line-height: 1.4;
+            padding: 11px 12px;
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        body.kelas-persalinan-page .form-control:focus {
+            border-color: rgba(92, 127, 114, 0.42);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(92, 127, 114, 0.1);
+        }
+
+        body.kelas-persalinan-page textarea.form-control {
+            min-height: 104px;
+            resize: vertical;
+        }
+
+        body.kelas-persalinan-page .quick-note {
+            border: 1px solid rgba(183, 121, 46, 0.22);
+            border-radius: 16px;
+            background: var(--class-amber-soft);
+            color: #805115;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.55;
+            margin-bottom: 12px;
+        }
+
+        body.kelas-persalinan-page .submit-btn {
+            width: 100%;
+            min-height: 46px;
+            border: 1px solid var(--ink);
+            border-radius: 16px;
+            background: var(--ink);
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 0;
+            cursor: pointer;
+            transition: transform 0.18s ease, opacity 0.18s ease;
+        }
+
+        body.kelas-persalinan-page .submit-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.52;
+        }
+
+        body.kelas-persalinan-page .submit-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 520px) {
+            body.kelas-persalinan-page .class-hero-meta {
+                grid-template-columns: 1fr;
             }
 
-            .brand-title {
-                font-size: 13px;
+            body.kelas-persalinan-page .session-card-head {
+                grid-template-columns: 1fr;
             }
 
-            .brand-subtitle {
-                font-size: 11px;
-            }
-
-            .back-btn {
-                padding: 7px 11px;
-                font-size: 12px;
-            }
-
-            .content-container {
-                padding: 98px 12px 28px;
-            }
-
-            .hero-card {
-                padding: 16px;
-            }
-
-            .hero-card h1 {
-                font-size: 1.3rem;
-            }
-
-            .hero-card p {
-                font-size: 0.88rem;
-            }
-
-            .form-card-header {
-                padding: 14px 14px;
-            }
-
-            .form-section {
-                padding: 16px 14px;
+            body.kelas-persalinan-page .session-price {
+                width: fit-content;
             }
         }
     </style>
 </head>
-<body>
-    <div class="safe-area-top"></div>
-    <div class="safe-area-bottom"></div>
-
-    <div class="app-wrapper">
-        <nav class="nav-bar">
-            <div class="nav-container">
-                <div class="brand">
-                    <span class="brand-icon"><i class="fa fa-heartbeat"></i></span>
-                    <div>
-                        <div class="brand-title">dokterDIBYA</div>
-                        <div class="brand-subtitle">Pendaftaran Kelas Dr. Dibya</div>
-                    </div>
-                </div>
-                <a href="/patient-menu.html" class="back-btn">
-                    <i class="fa fa-arrow-left"></i> Kembali
-                </a>
-            </div>
-        </nav>
-
-        <main class="content-container">
-            <section class="hero-card">
-                <h1><i class="fa fa-child"></i> Kelas Dr. Dibya</h1>
-                <p>
-                    Ikuti kelas edukasi persalinan bersama tim Dokter Dibya.
-                    Pelajari materi kelas, persiapan yang perlu dibawa, rincian biaya, dan benefit peserta.
-                    Pendaftaran bisa langsung memakai data profil pasien yang sudah login.
-                </p>
-            </section>
-
-            <section class="form-card">
-                <div class="form-card-header">
-                    <div>
-                        <h4 class="form-card-title">Informasi Kelas & Pendaftaran</h4>
-                        <p class="form-card-subtitle">Materi, persiapan, biaya, dan benefit diatur langsung dari panel staff</p>
-                    </div>
-                    <button type="button" class="refresh-btn" id="birth-class-public-refresh" aria-label="Refresh jadwal">
-                        <i class="fa fa-refresh"></i>
-                    </button>
-                </div>
-
-                <div class="form-section">
-                    <div id="birth-class-public-message" class="alert is-hidden"></div>
-
-                    <div id="birth-class-public-profile" class="profile-card">
-                        Memeriksa data profil pasien...
-                    </div>
-
-                    <div id="birth-class-session-list" class="session-list">
-                        <div class="session-list-empty">Memuat detail kelas...</div>
-                    </div>
-
-                    <form id="birth-class-public-form">
-                        <div class="register-box">
-                            <h5 class="form-card-title register-title">Daftar Kelas</h5>
-
-                            <div class="form-group">
-                                <label for="birth-class-public-session-id">Pilih Sesi Kelas</label>
-                                <select id="birth-class-public-session-id" class="form-control" required>
-                                    <option value="">Memuat jadwal...</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="birth-class-public-notes">Catatan Tambahan (Opsional)</label>
-                                <textarea id="birth-class-public-notes" class="form-control" rows="3" placeholder="Contoh: butuh sesi konsultasi tambahan setelah kelas"></textarea>
-                            </div>
-
-                            <div class="quick-note mb-3">
-                                Pendaftaran memakai data profil pasien yang sedang login.
-                                Jika ada data yang belum lengkap, perbarui dulu di menu profil pasien.
-                            </div>
-
-                            <button type="submit" class="submit-btn btn btn-block" id="birth-class-public-submit-btn">
-                                <i class="fa fa-paper-plane"></i> Daftar Dengan Data Profil
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-        </main>
+<body class="portal-themed home-sections-locked patient-tool-shell kelas-persalinan-page" data-tool-shell-active="jadwal">
+    <div class="topbar-blur-fade" aria-hidden="true">
+        <div class="topbar-blur-1"></div>
+        <div class="topbar-blur-2"></div>
+        <div class="topbar-blur-3"></div>
+        <div class="topbar-blur-4"></div>
+        <div class="topbar-blur-5"></div>
+        <div class="topbar-blur-6"></div>
+        <div class="topbar-blur-7"></div>
+        <div class="topbar-blur-8"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <main class="app">
+        <header class="topbar" id="home-topbar">
+            <div class="topbar-inner" id="home-topbar-inner">
+                <div class="brand">
+                    <a class="brand-link soundable" id="home-brand-link" href="/patient-menu.html" aria-label="Beranda SISIwanita">
+                        <div class="brand-title" id="home-brand-title">SISI<span>wanita</span></div>
+                        <div class="brand-sub" id="home-brand-sub">Portal Wanita Sehat</div>
+                    </a>
+                </div>
+                <div class="top-actions" id="home-top-actions">
+                    <button class="icon-btn soundable" id="home-notif-btn" onclick="openNotificationModal(event)" aria-label="Notifikasi">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge" id="notif-badge">0</span>
+                    </button>
+                    <button class="avatar soundable" id="user-avatar" onclick="openProfileModal(event)" aria-label="Profil">
+                        <img id="user-avatar-img" alt="">
+                        <span id="user-avatar-initials">--</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-card reveal">
+            <div class="status-chip"><span class="status-dot"></span><span>Edukasi & Jadwal</span></div>
+            <h1 class="hero-title">Kelas Dr. Dibya</h1>
+            <p class="hero-copy">
+                Ikuti kelas edukasi persalinan bersama tim Dr. Dibya. Lihat materi, persiapan,
+                biaya, benefit peserta, lalu daftar memakai data profil pasien yang sedang login.
+            </p>
+            <div class="class-hero-meta" aria-label="Ringkasan kelas">
+                <div class="class-hero-pill">
+                    <span>Fokus</span>
+                    <strong>Persalinan</strong>
+                </div>
+                <div class="class-hero-pill">
+                    <span>Data</span>
+                    <strong>Profil pasien</strong>
+                </div>
+                <div class="class-hero-pill">
+                    <span>Status</span>
+                    <strong>Jadwal aktif</strong>
+                </div>
+            </div>
+            <div class="today-row">
+                <div>
+                    <div class="today-label">Pendaftaran</div>
+                    <div class="today-value">Pilih sesi yang tersedia</div>
+                </div>
+                <button class="sound-toggle soundable" type="button" onclick="openSheet('jadwal')">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Jadwal</span>
+                </button>
+            </div>
+        </section>
+
+        <div class="loading" id="loading-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Menyiapkan jadwal kelas...</span>
+        </div>
+
+        <div id="content-wrapper">
+            <section class="section reveal">
+                <div class="section-head">
+                    <div>
+                        <div class="section-kicker">Kelas Persalinan</div>
+                        <h2 class="section-title">Informasi & Pendaftaran</h2>
+                    </div>
+                    <div class="section-note">Data dari panel staff</div>
+                </div>
+
+                <div class="tool-panel birth-class-panel">
+                    <div class="birth-class-panel-head">
+                        <div>
+                            <h3 class="birth-class-panel-title">Sesi Kelas Dr. Dibya</h3>
+                            <p class="birth-class-panel-subtitle">Materi, persiapan, biaya, dan benefit diatur langsung dari panel staff.</p>
+                        </div>
+                        <button type="button" class="refresh-btn soundable" id="birth-class-public-refresh" aria-label="Refresh jadwal">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="birth-class-panel-body">
+                        <div id="birth-class-public-message" class="alert is-hidden"></div>
+
+                        <div id="birth-class-public-profile" class="profile-card">
+                            Memeriksa data profil pasien...
+                        </div>
+
+                        <div id="birth-class-session-list" class="session-list">
+                            <div class="session-list-empty">Memuat detail kelas...</div>
+                        </div>
+
+                        <form id="birth-class-public-form">
+                            <div class="register-box">
+                                <h4 class="register-title">Daftar Kelas</h4>
+
+                                <div class="form-group">
+                                    <label for="birth-class-public-session-id">Pilih Sesi Kelas</label>
+                                    <select id="birth-class-public-session-id" class="form-control" required>
+                                        <option value="">Memuat jadwal...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="birth-class-public-notes">Catatan Tambahan (Opsional)</label>
+                                    <textarea id="birth-class-public-notes" class="form-control" rows="3" placeholder="Contoh: butuh sesi konsultasi tambahan setelah kelas"></textarea>
+                                </div>
+
+                                <div class="quick-note">
+                                    Pendaftaran memakai data profil pasien yang sedang login.
+                                    Jika ada data yang belum lengkap, perbarui dulu di menu profil pasien.
+                                </div>
+
+                                <button type="submit" class="submit-btn soundable" id="birth-class-public-submit-btn">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Daftar Dengan Data Profil</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
+        <div class="sheet-title" id="sheet-title">Menu</div>
+        <div class="sheet-menu" id="sheet-menu"></div>
+    </aside>
+
+    <nav class="bottom-nav" id="home-bottom-nav" aria-label="Navigasi bawah">
+        <div class="bottom-inner" id="home-bottom-inner">
+            <button class="nav-item soundable" data-tool-nav="beranda" onclick="go('/patient-menu.html')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>
+            <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
+            <button class="nav-item soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
+            <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
+            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang"><i class="fa-solid fa-door-open"></i><span>Ruang</span></button>
+        </div>
+    </nav>
+
+    <div id="toast-container"></div>
+
+    <script src="/scripts/patient-tool-shell.js?v=20260605ruangsaya"></script>
     <script src="/scripts/kelas-persalinan-public.js"></script>
+    <script>
+        PatientToolShell.init({ activeNav: 'jadwal', unlockOnReady: true });
+    </script>
 </body>
 </html>

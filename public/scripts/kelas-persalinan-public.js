@@ -87,24 +87,22 @@
         if (!profileEl) return;
 
         if (!currentProfile) {
+            profileEl.className = 'profile-card is-warning';
             profileEl.innerHTML = `
                 <strong>Anda belum login.</strong><br>
-                <span style="color: var(--text-muted);">Silakan login dulu agar pendaftaran otomatis menggunakan data profil pasien.</span>
+                <span class="profile-muted">Silakan login dulu agar pendaftaran otomatis menggunakan data profil pasien.</span>
             `;
-            profileEl.style.borderColor = 'rgba(239, 68, 68, 0.45)';
-            profileEl.style.background = 'rgba(239, 68, 68, 0.12)';
             setSubmitEnabled(false);
             return;
         }
 
+        profileEl.className = 'profile-card is-ready';
         profileEl.innerHTML = `
             <strong>Data Profil Untuk Pendaftaran</strong><br>
             Nama: ${escapeHtml(currentProfile.full_name || currentProfile.fullname || '-')}<br>
             HP: ${escapeHtml(currentProfile.phone || '-')}<br>
             Email: ${escapeHtml(currentProfile.email || '-')}
         `;
-        profileEl.style.borderColor = 'rgba(40, 167, 233, 0.45)';
-        profileEl.style.background = 'rgba(40, 167, 233, 0.1)';
         setSubmitEnabled(true);
     }
 
@@ -230,7 +228,7 @@
         const submitBtn = document.getElementById('birth-class-public-submit-btn');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mengirim...</span>';
         }
 
         const token = getToken();
@@ -238,7 +236,7 @@
             setMessage('Silakan login terlebih dahulu untuk mendaftar kelas.', 'warning');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Daftar Dengan Data Profil';
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i><span>Daftar Dengan Data Profil</span>';
             }
             return;
         }
@@ -252,7 +250,7 @@
             setMessage('Pilih sesi kelas terlebih dahulu.', 'warning');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Daftar Dengan Data Profil';
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i><span>Daftar Dengan Data Profil</span>';
             }
             return;
         }
@@ -282,7 +280,7 @@
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Daftar Dengan Data Profil';
+                submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i><span>Daftar Dengan Data Profil</span>';
             }
         }
     }
