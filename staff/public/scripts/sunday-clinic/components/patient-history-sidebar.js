@@ -65,7 +65,7 @@ class PatientHistorySidebar {
 
         const url = window.buildSundayClinicAppUrl
             ? window.buildSundayClinicAppUrl(mrId, section)
-            : `/staff/public/sunday-clinic.html?mr=${encodeURIComponent(mrId)}&section=${encodeURIComponent(section)}`;
+            : `/staff/public/index-adminlte.html?page=sunday-clinic&mr=${encodeURIComponent(mrId)}&section=${encodeURIComponent(section)}`;
         window.location.href = window.buildMobileUrl ? window.buildMobileUrl(url) : url;
     }
 
