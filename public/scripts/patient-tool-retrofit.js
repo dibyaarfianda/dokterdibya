@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260530d';
+    var VERSION = '20260621ruangbaca2';
     var pageDefaults = {
         '/album-usg.html': {
             activeNav: 'dokumen',
@@ -70,7 +70,7 @@
             metaValue: 'Asinkron'
         },
         '/artikel.html': {
-            activeNav: 'beranda',
+            activeNav: 'edukasi',
             kicker: 'Ruang Membaca',
             title: 'Nadi pengetahuan.',
             copy: 'Kurasi artikel seputar kehamilan, program hamil, dan kesehatan kandungan dalam tampilan yang nyaman dibaca.',
@@ -107,7 +107,7 @@
             ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
             ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
         ]},
-        edukasi: { title: 'Edukasi', items: [
+        edukasi: { title: 'Ruang Baca', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
             ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
@@ -265,7 +265,7 @@
                     '<button class="nav-item soundable" data-tool-nav="dokumen" type="button" onclick="openSheet(\'dokumen\')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="aplikasi" type="button" onclick="openSheet(\'aplikasi\')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="jadwal" type="button" onclick="openSheet(\'jadwal\')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="ruang" type="button" onclick="openMyCorner()" aria-label="Ruang"><i class="fa-solid fa-door-open"></i><span>Ruang</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="edukasi" type="button" onclick="openSheet(\'edukasi\')" aria-label="Ruang Baca"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span></button>' +
                 '</div>';
             document.body.appendChild(nav);
         }

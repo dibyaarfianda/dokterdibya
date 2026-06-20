@@ -38,7 +38,9 @@ body.legacy-tool-retrofit main.content,
 body.legacy-tool-retrofit .page-body,
 body.legacy-tool-retrofit main.page-wrap,
 body.legacy-tool-retrofit main.reading-room,
-body.legacy-tool-retrofit .reading-room {
+body.legacy-tool-retrofit .reading-room,
+body.legacy-tool-retrofit main.story-room,
+body.legacy-tool-retrofit .story-room {
     width: min(100vw, 860px) !important;
     max-width: none !important;
     margin: 0 auto !important;
@@ -152,6 +154,7 @@ body.legacy-tool-retrofit .tanya-hero > .section-lead {
 
 body.legacy-tool-retrofit .tanya-tabs,
 body.legacy-tool-retrofit .filter-tabs,
+body.legacy-tool-retrofit .story-toolbar,
 body.legacy-tool-retrofit .step-indicator {
     border: 1px solid var(--line) !important;
     border-radius: 18px !important;

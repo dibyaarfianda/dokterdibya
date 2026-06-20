@@ -9,8 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Crimson+Text:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260621storybadge">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260621ruangbaca2">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260621ruangbaca2">
     <style>
         * { box-sizing: border-box; }
         body.portal-themed {
@@ -274,10 +274,8 @@
         <div class="filter-tabs" role="tablist" aria-label="Filter kategori">
             <button type="button" class="filter-tab active" data-filter="all">Semua</button>
             <button type="button" class="filter-tab" data-filter="kehamilan">Kehamilan</button>
-            <button type="button" class="filter-tab" data-filter="persalinan">Persalinan</button>
-            <button type="button" class="filter-tab" data-filter="program_hamil">Program Hamil</button>
-            <button type="button" class="filter-tab" data-filter="pemulihan">Pemulihan</button>
-            <button type="button" class="filter-tab" data-filter="lainnya">Lainnya</button>
+            <button type="button" class="filter-tab" data-filter="kesuburan">Kesuburan</button>
+            <button type="button" class="filter-tab" data-filter="penyakit_kandungan">Penyakit kandungan</button>
         </div>
 
         <div class="story-grid" id="storiesContainer">
@@ -322,10 +320,8 @@
                         <label for="storyCategory">Kategori</label>
                         <select id="storyCategory">
                             <option value="kehamilan">Kehamilan</option>
-                            <option value="persalinan">Persalinan</option>
-                            <option value="program_hamil">Program Hamil</option>
-                            <option value="pemulihan">Pemulihan</option>
-                            <option value="lainnya">Lainnya</option>
+                            <option value="kesuburan">Kesuburan</option>
+                            <option value="penyakit_kandungan">Penyakit kandungan</option>
                         </select>
                     </div>
                     <div class="form-row">
@@ -358,10 +354,8 @@
 
         const CATEGORY_LABELS = {
             kehamilan: 'Kehamilan',
-            persalinan: 'Persalinan',
-            program_hamil: 'Program Hamil',
-            pemulihan: 'Pemulihan',
-            lainnya: 'Lainnya'
+            kesuburan: 'Kesuburan',
+            penyakit_kandungan: 'Penyakit kandungan'
         };
         const STATUS_LABELS = {
             pending: 'Menunggu Review',
@@ -581,7 +575,7 @@
     </script>
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
-    <script src="/scripts/patient-tool-shell.js?v=20260621storybadge"></script>
-    <script src="/scripts/patient-tool-retrofit.js?v=20260621storybadge"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260621ruangbaca2"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260621ruangbaca2"></script>
 </body>
 </html>
