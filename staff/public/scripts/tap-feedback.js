@@ -29,28 +29,20 @@
             if (!ac) return;
 
             const osc = ac.createOscillator();
-            const clickGain = ac.createGain();
-            const bodyGain = ac.createGain();
+            const gain = ac.createGain();
 
-            osc.connect(clickGain);
-            osc.connect(bodyGain);
-            clickGain.connect(ac.destination);
-            bodyGain.connect(ac.destination);
+            osc.connect(gain);
+            gain.connect(ac.destination);
 
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(1120, ac.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(620, ac.currentTime + 0.016);
-            osc.frequency.exponentialRampToValueAtTime(390, ac.currentTime + 0.038);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, ac.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);
 
-            clickGain.gain.setValueAtTime(0.012, ac.currentTime);
-            clickGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.01);
-
-            bodyGain.gain.setValueAtTime(0.0032, ac.currentTime + 0.003);
-            bodyGain.gain.exponentialRampToValueAtTime(0.0011, ac.currentTime + 0.018);
-            bodyGain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.032);
+            gain.gain.setValueAtTime(0.12, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.06);
 
             osc.start(ac.currentTime);
-            osc.stop(ac.currentTime + 0.032);
+            osc.stop(ac.currentTime + 0.06);
         } catch (error) {
             console.debug('[TapFeedback] Tap sound skipped:', error?.message || error);
         }
@@ -78,7 +70,7 @@
 
         playTap();
         if ('vibrate' in navigator) {
-            navigator.vibrate(8);
+            navigator.vibrate(10);
         }
     }
 
