@@ -276,7 +276,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Google Sign In Button
+            // Google registration button
             Button(
                 onClick = onGoogleSignIn,
                 modifier = Modifier
