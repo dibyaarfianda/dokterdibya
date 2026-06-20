@@ -38,7 +38,7 @@ class AuthViewModel @Inject constructor(
                 onSuccess = { response ->
                     if (response.success) {
                         val patient = response.patientData
-                        val needsCompletion = patient?.isProfileComplete != true
+                        val needsCompletion = patient?.birthDate.isNullOrBlank()
 
                         android.util.Log.d("AuthViewModel", "Email login success - birthDate: ${patient?.birthDate}, needsCompletion: $needsCompletion")
 
@@ -72,9 +72,9 @@ class AuthViewModel @Inject constructor(
             patientRepository.googleLogin(authCode).fold(
                 onSuccess = { response ->
                     if (response.success) {
-                        // Check if profile is complete using backend profile_completed or birthDate fallback.
+                        // Check if profile is complete (birthDate is the indicator)
                         val patient = response.patientData
-                        val needsCompletion = patient?.isProfileComplete != true
+                        val needsCompletion = patient?.birthDate.isNullOrBlank()
 
                         android.util.Log.d("AuthViewModel", "Login success - birthDate: ${patient?.birthDate}, needsCompletion: $needsCompletion")
 
@@ -119,7 +119,7 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             patientRepository.getProfile().fold(
                 onSuccess = { patient ->
-                    val needsCompletion = !patient.isProfileComplete
+                    val needsCompletion = patient.birthDate.isNullOrBlank()
 
                     android.util.Log.d("AuthViewModel", "checkProfileCompletion - birthDate: ${patient.birthDate}, needsCompletion: $needsCompletion")
 
