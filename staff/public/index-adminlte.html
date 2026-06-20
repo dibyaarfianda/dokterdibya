@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v265';
+        window.STAFF_CACHE_VERSION = 'v266';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -71,8 +71,8 @@
             background: transparent !important;
         }
 
-        /* Browser policy: show staff panel at ~80% only in regular browser mode.
-           PWA/mobile-app mode must stay true 100%. */
+        /* Browser policy: show staff panel at ~80% only in regular desktop browser mode.
+           PWA/mobile-app and tablet touch browsers must stay true 100%. */
         html.browser-zoom-80:not(.mobile-app-mode) {
             zoom: 0.8;
         }
@@ -95,6 +95,21 @@
 
         body.sunday-clinic-embedded-active .patient-history-sidebar {
             display: flex !important;
+        }
+
+        @media (min-width: 992px) and (max-width: 1366px) and (hover: none),
+               (min-width: 992px) and (max-width: 1366px) and (pointer: coarse) {
+            body.klinik-private-active .wrapper,
+            body.klinik-private-active .main-header,
+            body.klinik-private-active .main-sidebar,
+            body.klinik-private-active .content-wrapper,
+            body.klinik-private-active section.content,
+            body.klinik-private-active .container-fluid,
+            body.klinik-private-active #klinik-private-page {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+                top: 0 !important;
+            }
         }
 
         .mobile-back-btn {
@@ -1556,7 +1571,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v265">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v266">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -1571,6 +1586,9 @@
             const persistedMobileMode =
                 sessionStorage.getItem('mobileAppMode') === '1' ||
                 localStorage.getItem('mobileAppMode') === '1';
+            const isDesktopFinePointer = window.matchMedia
+                ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                : !/(Mobi|Android|iPad|iPhone|iPod)/i.test(navigator.userAgent);
 
             const isMobileApp = mobileFromUrl || persistedMobileMode || isStandalonePWA || isAndroidWebView;
 
@@ -1605,7 +1623,7 @@
                 // Persist in both storages so mobile mode survives browser/session differences.
                 sessionStorage.setItem('mobileAppMode', '1');
                 localStorage.setItem('mobileAppMode', '1');
-            } else {
+            } else if (isDesktopFinePointer) {
                 applyBrowserZoomClass();
             }
 
@@ -13491,7 +13509,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v265"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v266"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v222"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
     <script src="/staff/public/scripts/chat-popup.js?v=v229"></script>

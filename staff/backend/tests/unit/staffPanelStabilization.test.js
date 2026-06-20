@@ -5,22 +5,22 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v265 cache version source for staff assets', () => {
+    test('uses one v266 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v265';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v266';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v265');
+        expect(html).toContain('styles/mobile-responsive.css?v=v266');
         expect(html).not.toContain("window.STAFF_CACHE_VERSION = 'v264';");
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v265 precache does not include missing chat panel css', () => {
+    test('service worker v266 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v265';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v266';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
@@ -69,8 +69,8 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page,\nbody.mobile-app-mode #sunday-clinic-content,');
         expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page .card,\nbody.mobile-app-mode #sunday-clinic-content .card,');
         expect(sundayClinicCss).toContain('body.mobile-app-mode .content-wrapper {\n    padding-left: 0 !important;\n    padding-right: 0 !important;');
-        expect(sundayClinicHtml).toContain('/staff/public/styles/mobile-responsive.css?v=v265');
-        expect(sundayClinicHtml).toContain('/staff/public/styles/sunday-clinic.css?v=v265');
+        expect(sundayClinicHtml).toContain('/staff/public/styles/mobile-responsive.css?v=v266');
+        expect(sundayClinicHtml).toContain('/staff/public/styles/sunday-clinic.css?v=v266');
     });
 
     test('patient photo_url schema accepts long Google avatar URLs', () => {
@@ -173,8 +173,31 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #save-pemeriksaan-obstetri');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openBulkImportModal"]');
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v265';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v265';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v266';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v266';");
+    });
+
+    test('Klinik Privat tablet browser top-gap fix stays scoped to active page', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js').replace(/\r\n/g, '\n');
+
+        expect(mainJs).toContain("document.body.classList.remove('klinik-private-active');");
+        expect(mainJs).toContain("document.body.classList.add('klinik-private-active');\n    pages.klinikPrivate?.classList.remove('d-none');");
+
+        expect(html).toContain('@media (min-width: 992px) and (max-width: 1366px) and (hover: none),');
+        expect(html).toContain('(min-width: 992px) and (max-width: 1366px) and (pointer: coarse)');
+        expect(html).toContain('body.klinik-private-active .wrapper,\n            body.klinik-private-active .main-header,\n            body.klinik-private-active .main-sidebar,\n            body.klinik-private-active .content-wrapper,');
+        expect(html).toContain('body.klinik-private-active section.content,\n            body.klinik-private-active .container-fluid,\n            body.klinik-private-active #klinik-private-page');
+        expect(html).toContain('margin-top: 0 !important;\n                padding-top: 0 !important;\n                top: 0 !important;');
+    });
+
+    test('browser zoom 80 applies only to desktop fine-pointer staff shell browsers', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+
+        expect(html).toContain('tablet touch browsers must stay true 100%.');
+        expect(html).toContain("const isDesktopFinePointer = window.matchMedia\n                ? window.matchMedia('(hover: hover) and (pointer: fine)').matches");
+        expect(html).toContain("!/(Mobi|Android|iPad|iPhone|iPod)/i.test(navigator.userAgent);");
+        expect(html).toContain('} else if (isDesktopFinePointer) {\n                applyBrowserZoomClass();\n            }');
     });
 
     test('staff panel exposes Gajian payroll menu and script', () => {
@@ -215,8 +238,8 @@ describe('staff panel stabilization sources', () => {
         const sundayClinicHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
         const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
 
-        expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v265');
-        expect(sundayClinicHtml).toContain('/staff/public/scripts/tap-feedback.js?v=v265');
+        expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v266');
+        expect(sundayClinicHtml).toContain('/staff/public/scripts/tap-feedback.js?v=v266');
         expect(tapFeedback).toContain("osc.type = 'sine';");
         expect(tapFeedback).toContain('osc.frequency.setValueAtTime(800, ac.currentTime);');
         expect(tapFeedback).toContain('osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);');
