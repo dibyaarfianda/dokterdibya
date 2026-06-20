@@ -2194,6 +2194,12 @@
                             <p>Artikel Kesehatan <span class="badge badge-success right d-none" id="badge-artikel-likes">0</span></p>
                         </a>
                     </li>
+                    <li class="nav-item dokter-only d-none" id="nav-ruang-cerita">
+                        <a href="#" class="nav-link" onclick="showRuangCeritaPage(); return false;">
+                            <i class="nav-icon fas fa-comment-medical text-info"></i>
+                            <p>Ruang Cerita</p>
+                        </a>
+                    </li>
 
                     <!-- OPERASIONAL -->
                     <li class="nav-header">OPERASIONAL</li>
@@ -5839,6 +5845,87 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RUANG CERITA PAGE (Dokter/Admin Only) -->
+                <div id="ruang-cerita-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-comment-medical mr-2"></i>Moderasi Ruang Cerita</h3>
+                                    <div class="card-tools">
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="loadPatientStoriesAdmin()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <select id="story-filter-status" class="form-control form-control-sm" onchange="loadPatientStoriesAdmin()">
+                                                <option value="">Semua Status</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="published">Published</option>
+                                                <option value="rejected">Rejected</option>
+                                                <option value="archived">Archived</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select id="story-filter-category" class="form-control form-control-sm" onchange="loadPatientStoriesAdmin()">
+                                                <option value="">Semua Kategori</option>
+                                                <option value="kehamilan">Kehamilan</option>
+                                                <option value="persalinan">Persalinan</option>
+                                                <option value="program_hamil">Program Hamil</option>
+                                                <option value="pemulihan">Pemulihan</option>
+                                                <option value="lainnya">Lainnya</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="patient-stories-admin-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 24%">Cerita</th>
+                                                    <th style="width: 12%">Kategori</th>
+                                                    <th style="width: 12%">Penulis</th>
+                                                    <th style="width: 10%">Status</th>
+                                                    <th style="width: 8%">Like</th>
+                                                    <th style="width: 8%">Report</th>
+                                                    <th style="width: 12%">Dikirim</th>
+                                                    <th style="width: 14%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="patient-stories-admin-tbody">
+                                                <tr>
+                                                    <td colspan="8" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin"></i> Memuat cerita...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="patientStoryPreviewModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="patientStoryPreviewTitle">Preview Cerita</h5>
+                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-2 text-muted small" id="patientStoryPreviewMeta"></div>
+                                <div id="patientStoryPreviewBody" style="white-space: pre-line; line-height: 1.7;"></div>
+                            </div>
+                            <div class="modal-footer" id="patientStoryPreviewActions"></div>
                         </div>
                     </div>
                 </div>

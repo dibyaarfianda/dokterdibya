@@ -144,6 +144,7 @@ function initPages() {
     pages.notifications = grab('notifications-page');
     pages.communityChat = grab('community-chat-page');
     pages.artikelKesehatan = grab('artikel-kesehatan-page');
+    pages.ruangCerita = grab('ruang-cerita-page');
     pages.penjualanObat = grab('penjualan-obat-page');
     pages.bulkUploadUSG = grab('bulk-upload-usg-page');
     pages.medifySync = grab('medify-sync-page');
@@ -3389,6 +3390,13 @@ function showArtikelKesehatanPage() {
     loadArticlesAdmin();
 }
 
+function showRuangCeritaPage() {
+    hideAllPages();
+    pages.ruangCerita?.classList.remove('d-none');
+    setTitleAndActive('Ruang Cerita', 'nav-ruang-cerita', 'ruang-cerita');
+    loadPatientStoriesAdmin();
+}
+
 // ==================== ARTIKEL KESEHATAN FUNCTIONS ====================
 
 async function loadArticlesAdmin() {
@@ -3590,6 +3598,154 @@ async function deleteArticle(id) {
     } catch (error) {
         console.error('Error deleting article:', error);
         alert('Gagal menghapus artikel');
+    }
+}
+
+// ==================== RUANG CERITA FUNCTIONS ====================
+
+let patientStoriesAdminCache = [];
+const patientStoryCategoryLabels = {
+    kehamilan: 'Kehamilan',
+    persalinan: 'Persalinan',
+    program_hamil: 'Program Hamil',
+    pemulihan: 'Pemulihan',
+    lainnya: 'Lainnya'
+};
+const patientStoryStatusLabels = {
+    pending: 'Pending',
+    published: 'Published',
+    rejected: 'Rejected',
+    archived: 'Archived'
+};
+
+function getPatientStoryStatusBadge(status) {
+    const classes = {
+        pending: 'badge-warning',
+        published: 'badge-success',
+        rejected: 'badge-danger',
+        archived: 'badge-secondary'
+    };
+    return `<span class="badge ${classes[status] || 'badge-light'}">${escapeHtml(patientStoryStatusLabels[status] || status || '-')}</span>`;
+}
+
+async function loadPatientStoriesAdmin() {
+    const tbody = document.getElementById('patient-stories-admin-tbody');
+    if (!tbody) return;
+
+    const status = document.getElementById('story-filter-status')?.value || '';
+    const category = document.getElementById('story-filter-category')?.value || '';
+    const params = new URLSearchParams({ limit: 100 });
+    if (status) params.append('status', status);
+    if (category) params.append('category', category);
+
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/patient-stories/admin/all?${params}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.message || 'Failed to load stories');
+
+        patientStoriesAdminCache = result.data || [];
+        if (patientStoriesAdminCache.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Belum ada cerita pasien.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = patientStoriesAdminCache.map(story => {
+            const preview = (story.body || '').substring(0, 90);
+            const approveButton = story.status !== 'published'
+                ? `<button class="btn btn-sm btn-success" onclick="moderatePatientStory(${story.id}, 'approve')" title="Approve"><i class="fas fa-check"></i></button>`
+                : '';
+            const rejectButton = story.status !== 'rejected'
+                ? `<button class="btn btn-sm btn-warning" onclick="moderatePatientStory(${story.id}, 'reject')" title="Reject"><i class="fas fa-times"></i></button>`
+                : '';
+            const archiveButton = story.status !== 'archived'
+                ? `<button class="btn btn-sm btn-secondary" onclick="moderatePatientStory(${story.id}, 'archive')" title="Archive"><i class="fas fa-archive"></i></button>`
+                : '';
+
+            return `
+                <tr>
+                    <td>
+                        <strong>${escapeHtml(story.title)}</strong>
+                        <br><small class="text-muted">${escapeHtml(preview)}${story.body && story.body.length > 90 ? '...' : ''}</small>
+                    </td>
+                    <td><span class="badge badge-info">${escapeHtml(patientStoryCategoryLabels[story.category] || story.category || '-')}</span></td>
+                    <td>${escapeHtml(story.author_display_name || '-')}</td>
+                    <td>${getPatientStoryStatusBadge(story.status)}</td>
+                    <td><i class="fas fa-heart text-danger"></i> ${Number(story.like_count || 0)}</td>
+                    <td><i class="fas fa-flag text-warning"></i> ${Number(story.report_count || 0)}</td>
+                    <td><small>${formatDate(story.created_at)}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="previewPatientStory(${story.id})" title="Preview"><i class="fas fa-eye"></i></button>
+                        ${approveButton}
+                        ${rejectButton}
+                        ${archiveButton}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading patient stories:', error);
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Gagal memuat cerita pasien</td></tr>';
+    }
+}
+
+function previewPatientStory(id) {
+    const story = patientStoriesAdminCache.find(item => Number(item.id) === Number(id));
+    if (!story) return;
+
+    document.getElementById('patientStoryPreviewTitle').textContent = story.title || 'Preview Cerita';
+    document.getElementById('patientStoryPreviewMeta').innerHTML =
+        `${escapeHtml(patientStoryCategoryLabels[story.category] || story.category || '-')} &middot; ` +
+        `${escapeHtml(story.author_display_name || '-')} &middot; ` +
+        `${patientStoryStatusLabels[story.status] || story.status || '-'}`;
+    document.getElementById('patientStoryPreviewBody').textContent = story.body || '';
+    document.getElementById('patientStoryPreviewActions').innerHTML = `
+        ${story.status !== 'published' ? `<button type="button" class="btn btn-success" onclick="moderatePatientStory(${story.id}, 'approve')"><i class="fas fa-check mr-1"></i>Approve</button>` : ''}
+        ${story.status !== 'rejected' ? `<button type="button" class="btn btn-warning" onclick="moderatePatientStory(${story.id}, 'reject')"><i class="fas fa-times mr-1"></i>Reject</button>` : ''}
+        ${story.status !== 'archived' ? `<button type="button" class="btn btn-secondary" onclick="moderatePatientStory(${story.id}, 'archive')"><i class="fas fa-archive mr-1"></i>Archive</button>` : ''}
+        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Tutup</button>
+    `;
+    $('#patientStoryPreviewModal').modal('show');
+}
+
+async function moderatePatientStory(id, action) {
+    const actionLabels = {
+        approve: 'approve',
+        reject: 'reject',
+        archive: 'archive'
+    };
+    if (!actionLabels[action]) return;
+
+    let note = '';
+    if (action === 'reject' || action === 'archive') {
+        note = window.prompt('Catatan moderation (opsional, terlihat oleh penulis):') || '';
+    }
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/patient-stories/admin/${id}/${action}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ note })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.message || 'Gagal mengubah status cerita');
+
+        $('#patientStoryPreviewModal').modal('hide');
+        await loadPatientStoriesAdmin();
+        if (typeof toastr !== 'undefined') {
+            toastr.success(result.message || 'Status cerita diperbarui');
+        }
+    } catch (error) {
+        console.error('Error moderating patient story:', error);
+        alert(error.message || 'Gagal mengubah status cerita');
     }
 }
 
@@ -4508,6 +4664,7 @@ async function applyMenuVisibility(user) {
         'kelola_roles': ['management-nav-kelola-roles'],
         'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
         'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials'],
+        'ruang_cerita': ['nav-ruang-cerita'],
         'staff_points': ['nav-staff-points'],
         'staff_briefing': ['nav-staff-briefing'],
         'staff_payroll': ['nav-staff-payroll']
@@ -5010,6 +5167,7 @@ function restoreLastPage() {
             'nav-birth-class':                      () => showBirthClassPage(),
             'nav-import-fields':                    () => showImportFieldsPage(),
             'nav-artikel-kesehatan':                () => showArtikelKesehatanPage(),
+            'nav-ruang-cerita':                     () => showRuangCeritaPage(),
             'nav-profile-settings':                 () => showProfileSettings(),
         };
         const fn = pageMap[navId];
@@ -6278,6 +6436,10 @@ window.editArticle = editArticle;
 window.saveArticle = saveArticle;
 window.togglePublishArticle = togglePublishArticle;
 window.deleteArticle = deleteArticle;
+window.showRuangCeritaPage = showRuangCeritaPage;
+window.loadPatientStoriesAdmin = loadPatientStoriesAdmin;
+window.previewPatientStory = previewPatientStory;
+window.moderatePatientStory = moderatePatientStory;
 window.showProfileSettings = showProfileSettings;
 window.showKantorSayaPage = showKantorSayaPage;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
