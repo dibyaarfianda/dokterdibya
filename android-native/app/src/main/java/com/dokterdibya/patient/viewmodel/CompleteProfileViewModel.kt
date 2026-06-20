@@ -92,6 +92,7 @@ data class CompleteProfileUiState(
 
     // Existing intake info (for update mode)
     val isExistingIntake: Boolean = false,
+    val isGoogleUser: Boolean = false,
     val existingSubmissionId: String? = null,
     val existingQuickId: String? = null,
 
@@ -185,8 +186,8 @@ class CompleteProfileViewModel @Inject constructor(
                     android.util.Log.d("CompleteProfileVM", "Registration code required from API: $required")
                     val current = _uiState.value
                     // Don't require registration code if user already has existing intake (returning patient)
-                    val actuallyRequired = required && !current.isExistingIntake
-                    android.util.Log.d("CompleteProfileVM", "isExistingIntake: ${current.isExistingIntake}, actuallyRequired: $actuallyRequired")
+                    val actuallyRequired = required && !current.isExistingIntake && !current.isGoogleUser
+                    android.util.Log.d("CompleteProfileVM", "isExistingIntake: ${current.isExistingIntake}, isGoogleUser: ${current.isGoogleUser}, actuallyRequired: $actuallyRequired")
                     _uiState.value = current.copy(
                         registrationCodeRequired = actuallyRequired,
                         registrationCodeCheckLoading = false,
@@ -199,9 +200,9 @@ class CompleteProfileViewModel @Inject constructor(
                     val current = _uiState.value
                     // Default to required if can't check, UNLESS user is a returning patient
                     _uiState.value = current.copy(
-                        registrationCodeRequired = !current.isExistingIntake,
+                        registrationCodeRequired = !current.isExistingIntake && !current.isGoogleUser,
                         registrationCodeCheckLoading = false,
-                        registrationCodeValidated = current.isExistingIntake || current.registrationCodeValidated
+                        registrationCodeValidated = current.isExistingIntake || current.isGoogleUser || current.registrationCodeValidated
                     )
                 }
             )
@@ -261,10 +262,15 @@ class CompleteProfileViewModel @Inject constructor(
                 onSuccess = { patient ->
                     // Use current state to preserve registrationCodeRequired from parallel coroutine
                     val current = _uiState.value
+                    val isGoogleUser = !patient.googleId.isNullOrBlank()
                     _uiState.value = current.copy(
                         fullname = patient.name,
                         phone = patient.phone ?: "",
-                        birthDate = patient.birthDate ?: ""
+                        birthDate = patient.birthDate ?: "",
+                        isGoogleUser = isGoogleUser,
+                        registrationCodeRequired = if (isGoogleUser) false else current.registrationCodeRequired,
+                        registrationCodeValidated = if (isGoogleUser) true else current.registrationCodeValidated,
+                        registrationCodeCheckLoading = if (isGoogleUser) false else current.registrationCodeCheckLoading
                     )
                     patient.birthDate?.let { calculateAge(it) }
                 },
