@@ -6,7 +6,7 @@
     <!-- Login Screen -->
     <string name="login_welcome">Selamat Datang</string>
     <string name="login_subtitle">Masuk untuk mengakses portal pasien</string>
-    <string name="login_google">Masuk dengan Google</string>
+    <string name="login_google">Daftar dengan Google</string>
     <string name="login_error">Gagal masuk. Silakan coba lagi.</string>
     <string name="login_not_registered">Email tidak terdaftar sebagai pasien.</string>
 

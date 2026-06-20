@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260620smallerfont3'; // 2026-06-20 Force installed PWA refresh for smaller typography
+const CACHE_VERSION = '20260620googlereg1'; // 2026-06-20 Force Google registration-first login flow
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

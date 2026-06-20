@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260607a'; // 2026-06-07 Fix Antrian page light theme
+const CACHE_VERSION = '20260620googlereg1'; // 2026-06-20 Force Google registration-first login flow
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';

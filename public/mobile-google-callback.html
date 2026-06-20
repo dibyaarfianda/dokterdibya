@@ -148,7 +148,7 @@
         function showError(message) {
             document.getElementById('spinner').style.display = 'none';
             document.getElementById('status').textContent = 'Login Gagal';
-            document.getElementById('message').innerHTML = message + '<br><br><a href="/patient-login.html">Kembali ke halaman login</a>';
+            document.getElementById('message').innerHTML = message + '<br><br><a href="/patient-login.html?mode=register">Kembali ke halaman daftar</a>';
         }
 
         function showRegistrationRequired() {
@@ -193,8 +193,8 @@
                             Untuk mendaftar sebagai pasien baru, Anda memerlukan <strong>kode registrasi</strong> dari klinik. Pilih <strong>"Daftar"</strong> untuk memasukkan kode.
                         </p>
                     </div>
-                    <a href="/patient-login.html" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
-                        Kembali ke Login
+                    <a href="/patient-login.html?mode=register" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
+                        Kembali ke Daftar
                     </a>
                 `;
             }

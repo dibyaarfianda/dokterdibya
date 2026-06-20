@@ -21,6 +21,7 @@ import com.dokterdibya.patient.ui.screens.history.VisitHistoryScreen
 import com.dokterdibya.patient.ui.screens.home.HomeScreen
 import com.dokterdibya.patient.ui.screens.login.LoginScreen
 import com.dokterdibya.patient.ui.screens.profile.ProfileScreen
+import com.dokterdibya.patient.ui.screens.registrationcode.RegistrationCodeScreen
 import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
 import com.dokterdibya.patient.ui.screens.lab.LabResultsScreen
@@ -40,6 +41,7 @@ import java.nio.charset.StandardCharsets
 sealed class Screen(val route: String) {
     object Intro : Screen("intro")
     object Login : Screen("login")
+    object RegistrationCode : Screen("registration_code")
     object CompleteProfile : Screen("complete_profile")
     object Home : Screen("home")
     object Schedule : Screen("schedule")
@@ -94,7 +96,9 @@ fun NavGraph(
 
         composable(Screen.Login.route) {
             LoginScreen(
-                onGoogleSignIn = onGoogleSignIn,
+                onGoogleSignIn = {
+                    navController.navigate(Screen.RegistrationCode.route)
+                },
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
@@ -104,6 +108,15 @@ fun NavGraph(
                     navController.navigate(Screen.CompleteProfile.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(Screen.RegistrationCode.route) {
+            RegistrationCodeScreen(
+                onCodeValidated = {
+                    navController.popBackStack(Screen.Login.route, false)
+                    onGoogleSignIn()
                 }
             )
         }
