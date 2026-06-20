@@ -474,6 +474,7 @@ body.patient-tool-shell .sheet-title { font-weight: 900 !important; font-size: 1
 body.patient-tool-shell .sheet-menu { display: grid !important; gap: 6px !important; }
 body.patient-tool-shell .sheet-item { display: flex !important; align-items: center !important; gap: 10px !important; padding: 12px !important; border-radius: 15px !important; color: var(--ink) !important; background: rgba(17,17,17,0.035) !important; font-size: 13px !important; font-weight: 700 !important; text-decoration: none !important; }
 body.patient-tool-shell .sheet-item i { width: 20px !important; color: var(--green) !important; }
+body.patient-tool-shell .feature-new-badge { margin-left: auto !important; border-radius: 999px !important; background: #e9f8ef !important; color: #0f6b3d !important; border: 1px solid rgba(15,107,61,0.18) !important; padding: 3px 8px !important; font-size: 10px !important; font-style: normal !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
 
 body.patient-tool-shell.shell-modal-open { overflow: hidden !important; }
 

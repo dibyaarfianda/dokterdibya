@@ -1800,6 +1800,19 @@
             font-weight: 700;
         }
         .sheet-item i { width: 20px; color: var(--green); }
+        .feature-new-badge {
+            margin-left: auto;
+            border-radius: 999px;
+            background: #e9f8ef;
+            color: #0f6b3d;
+            border: 1px solid rgba(15, 107, 61, 0.18);
+            padding: 3px 8px;
+            font-size: 10px;
+            font-style: normal;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
 
         .modal-card {
             position: fixed;
@@ -6517,7 +6530,7 @@
             edukasi: { title: 'Ruang Baca', items: [
                 ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
                 ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-                ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
+                ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
             ]}
         };
 
@@ -6525,7 +6538,7 @@
             const data = menuData[category];
             if (!data) return;
             document.getElementById('sheet-title').textContent = data.title;
-            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" onclick="return handleSheetNavigation(event, \'' + item[2] + '\')"><i class="' + item[0] + '"></i><span>' + item[1] + '</span></a>').join('');
+            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" onclick="return handleSheetNavigation(event, \'' + item[2] + '\')"><i class="' + item[0] + '"></i><span>' + item[1] + '</span>' + (item[3] ? '<em class="feature-new-badge">' + item[3] + '</em>' : '') + '</a>').join('');
             document.getElementById('sheet-overlay').classList.add('active');
             document.getElementById('bottom-sheet').classList.add('active');
         }

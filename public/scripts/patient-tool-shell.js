@@ -47,7 +47,7 @@
         edukasi: { title: 'Edukasi', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
         ]}
     };
 
@@ -668,6 +668,7 @@
             return '<a class="sheet-item soundable" href="' + item[2] + '">' +
                 '<i class="' + item[0] + '"></i>' +
                 '<span>' + escapeHtml(item[1]) + '</span>' +
+                (item[3] ? '<em class="feature-new-badge">' + escapeHtml(item[3]) + '</em>' : '') +
                 '</a>';
         }).join('');
 
