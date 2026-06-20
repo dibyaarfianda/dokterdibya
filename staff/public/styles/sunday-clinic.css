@@ -1310,15 +1310,18 @@ body.mobile-app-mode .wrapper,
 body.mobile-app-mode .content-wrapper,
 body.mobile-app-mode .content,
 body.mobile-app-mode .container-fluid,
-body.mobile-app-mode .card,
-body.mobile-app-mode .card-body {
+body.mobile-app-mode #sunday-clinic-page,
+body.mobile-app-mode #sunday-clinic-content,
+body.mobile-app-mode #sunday-clinic-page .card,
+body.mobile-app-mode #sunday-clinic-content .card,
+body.mobile-app-mode .sc-card,
+body.mobile-app-mode .sc-section {
+    width: 100% !important;
     overflow-x: hidden !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     box-sizing: border-box !important;
-}
-
-body.mobile-app-mode * {
-    max-width: 100vw !important;
 }
 
 /* Hide sidebars in mobile mode */
@@ -2680,18 +2683,24 @@ body.mobile-app-mode .sc-card-header {
 
 /* Content wrapper padding - don't override padding-top! */
 body.mobile-app-mode .content-wrapper {
-    padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
     /* padding-top is set to 110px above for header space */
 }
 
 /* Prevent any overflow */
-body.mobile-app-mode .sc-form-section,
-body.mobile-app-mode .card,
+body.mobile-app-mode #sunday-clinic-page,
+body.mobile-app-mode #sunday-clinic-content,
+body.mobile-app-mode #sunday-clinic-page .card,
+body.mobile-app-mode #sunday-clinic-content .card,
+body.mobile-app-mode #sunday-clinic-content .sc-form-section,
 body.mobile-app-mode .sc-card,
 body.mobile-app-mode .sc-section {
+    width: 100% !important;
     max-width: 100% !important;
     overflow-x: hidden !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     box-sizing: border-box !important;
 }
 
