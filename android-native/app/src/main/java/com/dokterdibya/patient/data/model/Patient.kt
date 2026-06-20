@@ -23,8 +23,6 @@ data class Patient(
     val expectedDueDate: String?,
     @SerializedName("email_verified")
     val emailVerified: Int = 0,
-    @SerializedName("google_id")
-    val googleId: String? = null,
     @SerializedName("profile_completed")
     val profileCompleted: Int = 0,
     @SerializedName("created_at")
