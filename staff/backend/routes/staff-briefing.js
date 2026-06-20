@@ -5,7 +5,8 @@
 
 const express = require('express');
 const db = require('../db');
-const { verifyToken, verifyStaffToken } = require('../middleware/auth');
+const { verifyToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
+const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 const router = express.Router();
 
@@ -34,6 +35,13 @@ async function loadActiveStaff() {
         role: r.role,
         role_display: r.role_display || r.role || ''
     }));
+}
+
+function canStartBriefing(user) {
+    return Boolean(
+        user &&
+        (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id))
+    );
 }
 
 // GET /api/staff-briefing/today
@@ -81,7 +89,8 @@ router.get('/today', verifyToken, verifyStaffToken, async (req, res) => {
             active_staff,
             checked_staff_ids,
             started_staff_ids,
-            started
+            started,
+            can_start: canStartBriefing(req.user)
         });
 
     } catch (err) {
@@ -136,7 +145,7 @@ router.post('/today/checklist', verifyToken, verifyStaffToken, async (req, res) 
 });
 
 // POST /api/staff-briefing/today/start  body: { staff_ids: [] }
-router.post('/today/start', verifyToken, verifyStaffToken, async (req, res) => {
+router.post('/today/start', verifyToken, verifyStaffToken, requireSuperadmin, async (req, res) => {
     try {
         const today = todayLocalDate();
         const ids = Array.isArray(req.body && req.body.staff_ids) ? req.body.staff_ids : [];

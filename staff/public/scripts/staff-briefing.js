@@ -94,7 +94,12 @@
         // Update start button state
         var btn = document.getElementById('staff-briefing-start-btn');
         if (btn) {
-            if (d.started) {
+            if (d.can_start !== true) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-lock mr-1"></i> Hanya dokter';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-secondary');
+            } else if (d.started) {
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-check mr-1"></i> Sudah dimulai';
                 btn.classList.remove('btn-success');
@@ -136,6 +141,10 @@
 
     async function start() {
         if (!state.data) return;
+        if (state.data.can_start !== true) {
+            alert('Hanya dokter yang dapat memulai briefing.');
+            return;
+        }
         var checked = state.data.checked_staff_ids || [];
         if (checked.length === 0) {
             alert('Tandai minimal satu staff sebelum memulai briefing.');
