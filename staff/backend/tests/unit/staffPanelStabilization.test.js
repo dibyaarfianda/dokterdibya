@@ -5,21 +5,22 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v264 cache version source for staff assets', () => {
+    test('uses one v265 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v264';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v265';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v264');
+        expect(html).toContain('styles/mobile-responsive.css?v=v265');
+        expect(html).not.toContain("window.STAFF_CACHE_VERSION = 'v264';");
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v264 precache does not include missing chat panel css', () => {
+    test('service worker v265 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v264';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v265';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
@@ -68,8 +69,8 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page,\nbody.mobile-app-mode #sunday-clinic-content,');
         expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page .card,\nbody.mobile-app-mode #sunday-clinic-content .card,');
         expect(sundayClinicCss).toContain('body.mobile-app-mode .content-wrapper {\n    padding-left: 0 !important;\n    padding-right: 0 !important;');
-        expect(sundayClinicHtml).toContain('/staff/public/styles/mobile-responsive.css?v=v264');
-        expect(sundayClinicHtml).toContain('/staff/public/styles/sunday-clinic.css?v=v264');
+        expect(sundayClinicHtml).toContain('/staff/public/styles/mobile-responsive.css?v=v265');
+        expect(sundayClinicHtml).toContain('/staff/public/styles/sunday-clinic.css?v=v265');
     });
 
     test('patient photo_url schema accepts long Google avatar URLs', () => {
@@ -160,6 +161,22 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('scroll-snap-type: x proximity !important;');
     });
 
+    test('Klinik Privat embedded mobile polish stays scoped to Staff PWA mode', () => {
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css').replace(/\r\n/g, '\n');
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const sw = readRepoFile('staff', 'public', 'sw.js');
+
+        expect(sundayClinicCss).toContain('Klinik Privat mobile embedded polish.');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #staff-name-display');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #save-pemeriksaan-obstetri');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openBulkImportModal"]');
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v265';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v265';");
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
@@ -198,8 +215,8 @@ describe('staff panel stabilization sources', () => {
         const sundayClinicHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
         const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
 
-        expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v264');
-        expect(sundayClinicHtml).toContain('/staff/public/scripts/tap-feedback.js?v=v264');
+        expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v265');
+        expect(sundayClinicHtml).toContain('/staff/public/scripts/tap-feedback.js?v=v265');
         expect(tapFeedback).toContain("osc.type = 'sine';");
         expect(tapFeedback).toContain('osc.frequency.setValueAtTime(800, ac.currentTime);');
         expect(tapFeedback).toContain('osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);');
