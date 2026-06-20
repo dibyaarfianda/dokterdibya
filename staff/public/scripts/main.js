@@ -268,6 +268,7 @@ function hideAllPages() {
     document.documentElement.classList.remove('kantor-saya-active');
     document.body.classList.remove('kantor-saya-active');
     document.body.classList.remove('community-chat-active');
+    document.body.classList.remove('klinik-private-active');
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
     document.querySelectorAll('[id$="-page"]').forEach(function (p) {
         if (p.closest('#content-kantor-saya')) {
@@ -623,6 +624,7 @@ window.loadDashboardNewPatients = loadDashboardNewPatients;
 window.dashboardNewPatientsPage = dashboardNewPatientsPage;
 function showKlinikPrivatePage() {
     hideAllPages();
+    document.body.classList.add('klinik-private-active');
     pages.klinikPrivate?.classList.remove('d-none');
     setTitleAndActive('Klinik Privat', 'nav-klinik-private', 'klinik-private');
 
