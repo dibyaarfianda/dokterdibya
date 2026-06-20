@@ -366,6 +366,114 @@
             margin-bottom: 12px;
         }
 
+        body.kelas-persalinan-page .payment-panel {
+            display: none;
+            border: 1px solid rgba(92, 127, 114, 0.22);
+            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.74));
+            box-shadow: var(--shadow-soft);
+            padding: 14px;
+        }
+
+        body.kelas-persalinan-page .payment-panel.is-visible {
+            display: grid;
+            gap: 13px;
+        }
+
+        body.kelas-persalinan-page .payment-head {
+            display: grid;
+            gap: 5px;
+        }
+
+        body.kelas-persalinan-page .payment-kicker {
+            color: var(--green);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
+        body.kelas-persalinan-page .payment-title {
+            margin: 0;
+            color: var(--ink);
+            font-family: var(--display);
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            line-height: 1.08;
+        }
+
+        body.kelas-persalinan-page .payment-copy {
+            margin: 0;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        body.kelas-persalinan-page .payment-amount {
+            border: 1px solid rgba(179, 95, 123, 0.22);
+            border-radius: 17px;
+            background: var(--class-rose-soft);
+            color: var(--rose);
+            padding: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        body.kelas-persalinan-page .payment-amount strong {
+            color: var(--ink);
+            font-size: 20px;
+            font-family: var(--display);
+            letter-spacing: -0.03em;
+            white-space: nowrap;
+        }
+
+        body.kelas-persalinan-page .qris-card {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: #ffffff;
+            padding: 12px;
+            display: grid;
+            place-items: center;
+        }
+
+        body.kelas-persalinan-page .qris-card img {
+            width: min(100%, 280px);
+            height: auto;
+            border-radius: 12px;
+            display: block;
+        }
+
+        body.kelas-persalinan-page .payment-steps {
+            margin: 0;
+            padding-left: 18px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            font-weight: 750;
+            line-height: 1.55;
+        }
+
+        body.kelas-persalinan-page .payment-action {
+            min-height: 42px;
+            border-radius: 15px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.76);
+            color: var(--ink);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            font-weight: 900;
+            text-decoration: none;
+        }
+
         body.kelas-persalinan-page .submit-btn {
             width: 100%;
             min-height: 46px;
@@ -541,6 +649,8 @@
                                 </button>
                             </div>
                         </form>
+
+                        <div id="birth-class-payment-panel" class="payment-panel" aria-live="polite"></div>
                     </div>
                 </div>
             </section>

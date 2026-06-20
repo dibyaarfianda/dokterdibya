@@ -82,6 +82,63 @@
         submitBtn.disabled = !enabled;
     }
 
+    function hidePaymentPanel() {
+        const panel = document.getElementById('birth-class-payment-panel');
+        if (!panel) return;
+        panel.className = 'payment-panel';
+        panel.innerHTML = '';
+    }
+
+    function renderPaymentPanel(payment, registration) {
+        const panel = document.getElementById('birth-class-payment-panel');
+        if (!panel || !payment || !Number(payment.amount || 0)) {
+            hidePaymentPanel();
+            return;
+        }
+
+        const instructions = Array.isArray(payment.instructions) && payment.instructions.length
+            ? payment.instructions
+            : [
+                'Scan QRIS dengan aplikasi bank atau e-wallet.',
+                'Pastikan nominal pembayaran sesuai dengan jumlah yang tertera.',
+                'Staff akan memverifikasi pembayaran sebelum status kelas dikonfirmasi.'
+            ];
+
+        panel.className = 'payment-panel is-visible';
+        panel.innerHTML = `
+            <div class="payment-head">
+                <div class="payment-kicker">Pembayaran QRIS</div>
+                <h4 class="payment-title">Selesaikan pembayaran kelas</h4>
+                <p class="payment-copy">
+                    Pendaftaran Anda sudah tercatat${registration?.class_title ? ` untuk ${escapeHtml(registration.class_title)}` : ''}.
+                    Lanjutkan pembayaran dengan nominal yang sama persis.
+                </p>
+            </div>
+
+            <div class="payment-amount">
+                <span>Total bayar</span>
+                <strong>${formatRupiah(payment.amount)}</strong>
+            </div>
+
+            <div class="qris-card">
+                <img src="${escapeHtml(payment.qris_url || '')}" alt="QRIS pembayaran Kelas Dr. Dibya">
+            </div>
+
+            <ol class="payment-steps">
+                ${instructions.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ol>
+
+            <a class="payment-action soundable" href="${escapeHtml(payment.qris_url || '')}" download target="_blank" rel="noopener">
+                <i class="fa-solid fa-download"></i>
+                <span>Simpan QRIS</span>
+            </a>
+        `;
+
+        window.setTimeout(() => {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+    }
+
     function renderProfileCard() {
         const profileEl = document.getElementById('birth-class-public-profile');
         if (!profileEl) return;
@@ -224,6 +281,7 @@
     async function submitRegistration(event) {
         event.preventDefault();
         setMessage('', 'info');
+        hidePaymentPanel();
 
         const submitBtn = document.getElementById('birth-class-public-submit-btn');
         if (submitBtn) {
@@ -270,10 +328,11 @@
                 throw new Error(result.message || 'Pendaftaran gagal');
             }
 
-            setMessage(result.message || 'Pendaftaran berhasil.', 'success');
+            setMessage(result.message || 'Pendaftaran berhasil. Silakan lanjutkan pembayaran.', 'success');
             document.getElementById('birth-class-public-form')?.reset();
             await loadProfile();
             await fetchSessions();
+            renderPaymentPanel(result.payment, result.data);
         } catch (error) {
             console.error('Error submitting registration:', error);
             setMessage(error.message, 'danger');

@@ -4,6 +4,7 @@ const db = require('../db');
 const { verifyToken, optionalAuth, requireMenuAccess } = require('../middleware/auth');
 
 let tablesReady = false;
+const BIRTH_CLASS_QRIS_URL = '/images/payment/kelas-dr-dibya-qris.jpg';
 
 async function ensureColumn(tableName, columnName, alterSql) {
     const [rows] = await db.query(
@@ -78,6 +79,10 @@ async function ensureTables() {
             notes TEXT NULL,
             admin_notes TEXT NULL,
             status ENUM('registered','confirmed','attended','cancelled') NOT NULL DEFAULT 'registered',
+            payment_status ENUM('pending','paid','waived') NOT NULL DEFAULT 'pending',
+            payment_method VARCHAR(50) NULL,
+            payment_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+            paid_at TIMESTAMP NULL,
             registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             created_by VARCHAR(120) NULL,
@@ -90,6 +95,27 @@ async function ensureTables() {
                 ON DELETE RESTRICT ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    await ensureColumn(
+        'birth_class_registrations',
+        'payment_status',
+        "ALTER TABLE birth_class_registrations ADD COLUMN payment_status ENUM('pending','paid','waived') NOT NULL DEFAULT 'pending' AFTER status"
+    );
+    await ensureColumn(
+        'birth_class_registrations',
+        'payment_method',
+        'ALTER TABLE birth_class_registrations ADD COLUMN payment_method VARCHAR(50) NULL AFTER payment_status'
+    );
+    await ensureColumn(
+        'birth_class_registrations',
+        'payment_amount',
+        'ALTER TABLE birth_class_registrations ADD COLUMN payment_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER payment_method'
+    );
+    await ensureColumn(
+        'birth_class_registrations',
+        'paid_at',
+        'ALTER TABLE birth_class_registrations ADD COLUMN paid_at TIMESTAMP NULL AFTER payment_amount'
+    );
 
     tablesReady = true;
 }
@@ -221,6 +247,7 @@ router.post('/register', optionalAuth, async (req, res) => {
                 s.id,
                 s.class_title,
                 s.quota,
+                s.price,
                 s.is_active,
                 s.session_date,
                 COALESCE(r.registered_count, 0) AS registered_count
@@ -267,10 +294,12 @@ router.post('/register', optionalAuth, async (req, res) => {
             });
         }
 
-        await db.query(`
+        const paymentAmount = normalizeDecimal(session.price, 0);
+        const paymentStatus = paymentAmount > 0 ? 'pending' : 'waived';
+        const [insertResult] = await db.query(`
             INSERT INTO birth_class_registrations
-            (session_id, patient_id, patient_name, phone, email, notes, status, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, 'registered', ?)
+            (session_id, patient_id, patient_name, phone, email, notes, status, payment_status, payment_method, payment_amount, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, 'registered', ?, ?, ?, ?)
         `, [
             sessionId,
             patientId,
@@ -278,12 +307,34 @@ router.post('/register', optionalAuth, async (req, res) => {
             normalizedPhone,
             normalizedEmail || null,
             normalizedNotes || null,
+            paymentStatus,
+            paymentAmount > 0 ? 'qris_static' : null,
+            paymentAmount,
             registrationSource
         ]);
 
         res.status(201).json({
             success: true,
-            message: `Pendaftaran berhasil. Anda terdaftar di kelas ${session.class_title}`
+            message: paymentAmount > 0
+                ? `Pendaftaran berhasil. Silakan lanjutkan pembayaran kelas ${session.class_title}`
+                : `Pendaftaran berhasil. Anda terdaftar di kelas ${session.class_title}`,
+            data: {
+                registration_id: insertResult.insertId,
+                session_id: sessionId,
+                class_title: session.class_title,
+                payment_status: paymentStatus
+            },
+            payment: paymentAmount > 0 ? {
+                method: 'qris_static',
+                method_label: 'QRIS',
+                amount: paymentAmount,
+                qris_url: BIRTH_CLASS_QRIS_URL,
+                instructions: [
+                    'Scan QRIS dengan aplikasi bank atau e-wallet.',
+                    'Pastikan nominal pembayaran sesuai dengan jumlah yang tertera.',
+                    'Staff akan memverifikasi pembayaran sebelum status kelas dikonfirmasi.'
+                ]
+            } : null
         });
     } catch (error) {
         console.error('Error registering Kelas Dr. Dibya:', error);
@@ -643,6 +694,51 @@ router.patch('/registrations/:id/status', verifyToken, requireMenuAccess('klinik
         res.status(500).json({
             success: false,
             message: 'Gagal memperbarui status pendaftaran'
+        });
+    }
+});
+
+// Staff: update registration payment status
+router.patch('/registrations/:id/payment-status', verifyToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+    try {
+        await ensureTables();
+
+        const registrationId = Number(req.params.id);
+        const paymentStatus = String(req.body?.payment_status || '').trim();
+        const allowedStatus = ['pending', 'paid', 'waived'];
+
+        if (!allowedStatus.includes(paymentStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status pembayaran tidak valid'
+            });
+        }
+
+        const paymentMethod = paymentStatus === 'waived' ? null : (req.body?.payment_method || 'qris_static');
+        const [result] = await db.query(`
+            UPDATE birth_class_registrations
+            SET payment_status = ?,
+                payment_method = ?,
+                paid_at = CASE WHEN ? = 'paid' THEN NOW() ELSE NULL END
+            WHERE id = ?
+        `, [paymentStatus, paymentMethod, paymentStatus, registrationId]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Data pendaftaran tidak ditemukan'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Status pembayaran berhasil diperbarui'
+        });
+    } catch (error) {
+        console.error('Error updating Kelas Dr. Dibya payment status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memperbarui status pembayaran'
         });
     }
 });

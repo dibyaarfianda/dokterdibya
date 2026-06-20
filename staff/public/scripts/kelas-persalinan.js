@@ -88,6 +88,24 @@ function getStatusBadge(status) {
     return `<span class="${cssClass}">${label}</span>`;
 }
 
+function getPaymentStatusBadge(status) {
+    const statusMap = {
+        pending: 'badge badge-warning',
+        paid: 'badge badge-success',
+        waived: 'badge badge-secondary'
+    };
+
+    const labelMap = {
+        pending: 'Menunggu Bayar',
+        paid: 'Lunas',
+        waived: 'Gratis'
+    };
+
+    const cssClass = statusMap[status] || 'badge badge-light';
+    const label = labelMap[status] || status || '-';
+    return `<span class="${cssClass}">${label}</span>`;
+}
+
 async function apiRequest(path, options = {}) {
     const token = getToken();
     const response = await fetch(`${API_BASE}${path}`, {
@@ -250,12 +268,13 @@ function renderSkeleton() {
                                         <th>Peserta</th>
                                         <th>Sesi</th>
                                         <th>Catatan</th>
+                                        <th>Pembayaran</th>
                                         <th>Status</th>
                                         <th>Ubah Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
-                                    <tr><td colspan="5" class="text-center py-4">Memuat data...</td></tr>
+                                    <tr><td colspan="6" class="text-center py-4">Memuat data...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -409,14 +428,14 @@ async function loadRegistrations() {
     if (sessionId) params.set('session_id', sessionId);
     const query = params.toString() ? `?${params.toString()}` : '';
 
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat pendaftar...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat pendaftar...</td></tr>';
 
     try {
         const result = await apiRequest(`/registrations${query}`);
         const registrations = result.data || [];
 
         if (!registrations.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada pendaftar.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada pendaftar.</td></tr>';
             return;
         }
 
@@ -433,6 +452,22 @@ async function loadRegistrations() {
                 </td>
                 <td>
                     <small>${escapeHtml(row.notes || '-')}</small>
+                </td>
+                <td>
+                    <strong>${formatRupiah(row.payment_amount || 0)}</strong><br>
+                    ${getPaymentStatusBadge(row.payment_status || 'pending')}<br>
+                    <div class="input-group input-group-sm mt-1">
+                        <select class="form-control" id="registration-payment-status-${row.id}">
+                            <option value="pending" ${(row.payment_status || 'pending') === 'pending' ? 'selected' : ''}>Menunggu</option>
+                            <option value="paid" ${row.payment_status === 'paid' ? 'selected' : ''}>Lunas</option>
+                            <option value="waived" ${row.payment_status === 'waived' ? 'selected' : ''}>Gratis</option>
+                        </select>
+                        <div class="input-group-append">
+                            <button class="btn btn-success" data-action="save-payment-status" data-id="${row.id}" title="Simpan status pembayaran">
+                                <i class="fas fa-money-check-alt"></i>
+                            </button>
+                        </div>
+                    </div>
                 </td>
                 <td>${getStatusBadge(row.status)}</td>
                 <td>
@@ -539,6 +574,26 @@ async function updateRegistrationStatus(registrationId) {
     }
 }
 
+async function updatePaymentStatus(registrationId) {
+    const statusEl = document.getElementById(`registration-payment-status-${registrationId}`);
+    if (!statusEl) return;
+
+    try {
+        await apiRequest(`/registrations/${registrationId}/payment-status`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                payment_status: statusEl.value,
+                payment_method: statusEl.value === 'waived' ? null : 'qris_static'
+            })
+        });
+
+        await loadRegistrations();
+    } catch (error) {
+        console.error('Error updating payment status:', error);
+        alert(error.message);
+    }
+}
+
 function handleRootClick(event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
@@ -561,6 +616,11 @@ function handleRootClick(event) {
 
     if (action === 'save-registration-status') {
         updateRegistrationStatus(id);
+        return;
+    }
+
+    if (action === 'save-payment-status') {
+        updatePaymentStatus(id);
     }
 }
 
