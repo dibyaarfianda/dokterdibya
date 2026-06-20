@@ -635,6 +635,19 @@ function showKlinikPrivatePage() {
     });
 }
 
+function clearSundayClinicRouteQuery() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    url.searchParams.delete('mr');
+    url.searchParams.delete('section');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
+function backToSundayClinicLanding() {
+    clearSundayClinicRouteQuery();
+    showKlinikPrivatePage();
+}
+
 let sundayClinicModulePromise = null;
 function ensureSundayClinicModule() {
     if (!sundayClinicModulePromise) {
@@ -647,12 +660,17 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
     const options = typeof mrIdOrOptions === 'object' && mrIdOrOptions !== null
         ? mrIdOrOptions
         : { mrId: mrIdOrOptions, section };
+    const normalizedMrId = normalizeMrSlug(options.mrId);
+    if (!normalizedMrId) {
+        backToSundayClinicLanding();
+        return;
+    }
+
     hideAllPages();
     setSundayClinicStylesActive(true);
     pages.sundayClinic?.classList.remove('d-none');
-    setTitleAndActive('Sunday Clinic', 'nav-sunday-clinic', 'sunday-clinic');
+    setTitleAndActive('Sunday Clinic', null, 'sunday-clinic');
 
-    const normalizedMrId = normalizeMrSlug(options.mrId);
     try {
         await ensureSundayClinicModule();
         if (typeof window.initSundayClinicPage === 'function') {
@@ -4475,7 +4493,7 @@ async function applyMenuVisibility(user) {
         'dashboard': null, // Dashboard always visible
         'kelola_pasien': ['nav-kelola-pasien', 'nav-record-history'],
         'pasien_baru': ['nav-pasien-baru'],
-        'klinik_privat': ['nav-klinik-private', 'nav-sunday-clinic', 'nav-voting', 'nav-birth-class'],
+        'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class'],
         'rsia_melinda': ['nav-rsia-melinda'],
         'rsud_gambiran': ['nav-rsud-gambiran'],
         'rs_bhayangkara': ['nav-rs-bhayangkara'],
@@ -4939,7 +4957,7 @@ function restoreLastPage() {
             'nav-dashboard':                        () => showDashboardPage(),
             'nav-kantor-saya':                      () => showKantorSayaPage(),
             'nav-klinik-private':                   () => showKlinikPrivatePage(),
-            'nav-sunday-clinic':                    () => showSundayClinicPage(),
+            'nav-sunday-clinic':                    () => showKlinikPrivatePage(),
             'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
             'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
             'nav-rs-bhayangkara':                   () => showHospitalAppointmentsPage('rs_bhayangkara'),
@@ -6205,6 +6223,7 @@ window.openCommunityChatPopup = openCommunityChatPopup;
 window.showTroubleshootingPage = showTroubleshootingPage;
 window.loadTroubleshootingReports = loadTroubleshootingReports;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
+window.backToSundayClinicLanding = backToSundayClinicLanding;
 window.showSundayClinicPage = showSundayClinicPage;
 window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
 window.showTindakanPage = showTindakanPage;

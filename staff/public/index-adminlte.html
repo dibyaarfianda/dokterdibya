@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v257';
+        window.STAFF_CACHE_VERSION = 'v258';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -95,6 +95,15 @@
 
         body.sunday-clinic-embedded-active .patient-history-sidebar {
             display: flex !important;
+        }
+
+        .mobile-back-btn {
+            display: none !important;
+        }
+
+        body.mobile-app-mode .mobile-back-btn {
+            display: inline-flex !important;
+            align-items: center;
         }
 
         @media print {
@@ -1547,7 +1556,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v257">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v258">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2056,12 +2065,6 @@
                             <p>Klinik Privat <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span></p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-sunday-clinic">
-                        <a href="#" class="nav-link" onclick="showSundayClinicPage(); return false;">
-                            <i class="nav-icon fas fa-clinic-medical text-primary"></i>
-                            <p>Sunday Clinic</p>
-                        </a>
-                    </li>
                     <li class="nav-item dokter-only d-none" id="nav-rsia-melinda">
                         <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); markBadgeRead('rsia_melinda'); return false;">
                             <i class="nav-icon fas fa-calendar-check text-danger"></i>
@@ -2440,7 +2443,7 @@
                                         <button type="button" class="btn btn-tool" onclick="window.refreshDashboardLiveQueue && window.refreshDashboardLiveQueue()" title="Refresh antrian">
                                             <i class="fas fa-sync-alt"></i>
                                         </button>
-                                        <a class="btn btn-tool" href="#" onclick="showSundayClinicPage(); return false;" title="Buka Sunday Clinic">
+                                        <a class="btn btn-tool" href="#" onclick="showKlinikPrivatePage(); return false;" title="Buka Klinik Privat">
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     </div>
@@ -2544,6 +2547,9 @@
                                 </div>
                             </div>
                             <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                                <button type="button" class="btn btn-outline-secondary btn-sm mobile-back-btn" onclick="window.backToSundayClinicLanding && window.backToSundayClinicLanding()" title="Kembali ke Klinik Privat">
+                                    <i class="fas fa-arrow-left mr-1"></i>Back
+                                </button>
                                 <div class="dropdown">
                                     <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" id="btn-header-queue" title="Antrian Hari Ini">
                                         <i class="fas fa-users mr-1"></i>Antrian
@@ -2579,9 +2585,6 @@
                                 <button type="button" class="btn btn-outline-success btn-sm" onclick="window.openBulkImportModal && window.openBulkImportModal()" title="Bulk import multiple file">
                                     <i class="fas fa-file-upload mr-1"></i>Bulk
                                 </button>
-                                <a class="btn btn-outline-secondary btn-sm" href="/staff/public/sunday-clinic.html" target="_blank" rel="noopener" title="Fallback halaman lama">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
                             </div>
                         </div>
                         <div class="card-body p-2">
