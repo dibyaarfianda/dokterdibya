@@ -200,6 +200,28 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('} else if (isDesktopFinePointer) {\n                applyBrowserZoomClass();\n            }');
     });
 
+    test('staff queue and doctor arrival toggles use concise clinic labels', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+
+        expect(html).toContain('<span id="lbl-doctor-toggle">Belum dimulai</span>');
+        expect(html).toContain("if (lbl) lbl.textContent = 'Antrian';");
+        expect(html).toContain("if (lbl) lbl.textContent = 'Dokter hadir';");
+        expect(html).toContain("if (lbl) lbl.textContent = 'Belum dimulai';");
+        expect(html).toContain("isArrived ? 'Status: Dokter hadir' : 'Status: Belum dimulai'");
+        expect(html).not.toContain('Antrian: ON');
+        expect(html).not.toContain('Antrian: OFF');
+        expect(html).not.toContain('dr. Dibya datang');
+        expect(html).not.toContain('dr. Dibya belum datang');
+    });
+
+    test('Kantor Saya sidebar menu uses concise title', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+
+        expect(html).toContain('<p>Kantor Saya</p>');
+        expect(html).not.toContain('Kantor Saya / Workspace');
+        expect(html).not.toContain('Kantor Saya / Workdesk');
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
