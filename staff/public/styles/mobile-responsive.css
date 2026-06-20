@@ -111,7 +111,7 @@
         border: none;
         background: transparent;
         color: #6b7280;
-        font-size: 0.6rem;
+        font-size: 10px;
         font-weight: 500;
         padding: 0.25rem 0.1rem;
         border-radius: 10px;
@@ -132,7 +132,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.9rem;
+        font-size: 16px;
         color: inherit;
         transition: all 0.2s ease;
     }
@@ -159,6 +159,7 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        font-size: 10px;
         max-width: 100%;
     }
 
@@ -253,7 +254,7 @@
 
 @media (max-width: 991.98px) {
     body {
-        font-size: 14px;
+        font-size: 12px;
         overflow-x: hidden;
     }
 
@@ -284,7 +285,7 @@
 
     .card-header {
         padding: 0.75rem 1rem;
-        font-size: 0.95rem;
+        font-size: 13px;
     }
 
     .card-body {
@@ -293,12 +294,12 @@
 
     /* Forms */
     .form-control {
-        font-size: 16px; /* Prevents zoom on iOS */
+        font-size: 12px;
         padding: 0.5rem 0.75rem;
     }
 
     select.form-control {
-        font-size: 16px;
+        font-size: 12px;
         height: auto;
         padding: 0.5rem 0.75rem;
     }
@@ -306,12 +307,16 @@
     /* Buttons */
     .btn {
         padding: 0.5rem 1rem;
-        font-size: 0.875rem;
+        font-size: 12px;
+    }
+
+    .btn-sm {
+        font-size: 11px;
     }
 
     .btn-lg {
         padding: 0.75rem 1.5rem;
-        font-size: 1rem;
+        font-size: 14px;
         width: 100%;
     }
 
@@ -322,17 +327,24 @@
     }
 
     .table {
-        font-size: 0.875rem;
+        font-size: 11px;
     }
 
     .table thead th {
-        font-size: 0.75rem;
+        font-size: 11px;
         padding: 0.5rem;
         white-space: nowrap;
     }
 
     .table tbody td {
         padding: 0.5rem;
+        font-size: 11px;
+    }
+
+    .table .badge,
+    .table .btn,
+    .table .btn-sm {
+        font-size: 10px;
     }
 
     /* Info boxes */
@@ -343,7 +355,7 @@
 
     .info-box-icon {
         width: 65px;
-        font-size: 1.75rem;
+        font-size: 20px;
     }
 
     .info-box-content {
@@ -351,11 +363,11 @@
     }
 
     .info-box-text {
-        font-size: 0.8rem;
+        font-size: 12px;
     }
 
     .info-box-number {
-        font-size: 1.25rem;
+        font-size: 14px;
     }
 
     /* Small boxes */
@@ -364,11 +376,11 @@
     }
 
     .small-box .inner h3 {
-        font-size: 1.5rem;
+        font-size: 14px;
     }
 
     .small-box .inner p {
-        font-size: 0.8rem;
+        font-size: 12px;
     }
 
     /* Charts */
@@ -430,13 +442,13 @@
 
 @media (max-width: 374px) {
     #mobile-action-bar button span:last-child {
-        font-size: 0.5rem;
+        font-size: 10px;
     }
 
     #mobile-action-bar button .icon-wrapper {
         width: 28px;
         height: 28px;
-        font-size: 0.8rem;
+        font-size: 16px;
         border-radius: 8px;
     }
 
@@ -516,13 +528,13 @@
     /* Slightly larger nav on tablets */
     #mobile-action-bar button {
         max-width: 90px;
-        font-size: 0.65rem;
+        font-size: 10px;
     }
 
     #mobile-action-bar button .icon-wrapper {
         width: 36px;
         height: 36px;
-        font-size: 1rem;
+        font-size: 16px;
     }
 
     /* Chat larger on tablets */
@@ -864,7 +876,7 @@ body.mobile-app-mode .main-header {
 
 /* Base font size for mobile app mode - use rem scaling instead of wildcard */
 body.mobile-app-mode {
-    font-size: 11px !important;
+    font-size: 12px !important;
 }
 
 /* Reduced vertical spacing */
@@ -873,7 +885,7 @@ body.mobile-app-mode .card {
 }
 
 body.mobile-app-mode .card-header {
-    font-size: 11px !important;
+    font-size: 13px !important;
     padding: 6px 10px !important;
 }
 
@@ -926,44 +938,35 @@ body.mobile-app-mode textarea.form-control {
 
 body.mobile-app-mode .btn {
     min-height: 28px;
-    font-size: 11px !important;
+    font-size: 12px !important;
     padding: 4px 8px !important;
 }
 
 body.mobile-app-mode .btn-sm {
     min-height: 24px;
-    font-size: 10px !important;
+    font-size: 11px !important;
     padding: 3px 6px !important;
 }
 
 body.mobile-app-mode h2,
 body.mobile-app-mode h3 {
-    font-size: 13px !important;
+    font-size: 14px !important;
     margin-bottom: 5px !important;
 }
 
 body.mobile-app-mode h4,
 body.mobile-app-mode h5,
 body.mobile-app-mode h6 {
-    font-size: 12px !important;
+    font-size: 13px !important;
     margin-bottom: 4px !important;
 }
 
 /* Placeholder text */
 body.mobile-app-mode ::placeholder {
-    font-size: 11px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode ::-webkit-input-placeholder {
-    font-size: 11px !important;
-}
-
-/* Icons */
-body.mobile-app-mode .fas,
-body.mobile-app-mode .far,
-body.mobile-app-mode .fab,
-body.mobile-app-mode i.fa,
-body.mobile-app-mode i[class*="fa-"] {
     font-size: 12px !important;
 }
 
@@ -983,13 +986,13 @@ body.mobile-app-mode .table {
     table-layout: auto !important;
     width: auto !important;
     min-width: 100%;
-    font-size: 10px !important;
+    font-size: 11px !important;
 }
 
 body.mobile-app-mode .table td,
 body.mobile-app-mode .table th {
     padding: 4px 6px !important;
-    font-size: 10px !important;
+    font-size: 11px !important;
     white-space: nowrap !important;
     vertical-align: middle;
     font-weight: 400 !important;
@@ -1002,14 +1005,14 @@ body.mobile-app-mode .table th {
 
 /* Badges in tables */
 body.mobile-app-mode .table .badge {
-    font-size: 9px !important;
+    font-size: 10px !important;
     font-weight: 400 !important;
     padding: 2px 5px !important;
 }
 
 /* Buttons in tables */
 body.mobile-app-mode .table .btn {
-    font-size: 9px !important;
+    font-size: 10px !important;
     font-weight: 400 !important;
     padding: 2px 6px !important;
     min-height: 22px !important;
@@ -1020,7 +1023,7 @@ body.mobile-app-mode .badge-info,
 body.mobile-app-mode .badge-primary,
 body.mobile-app-mode .badge-success,
 body.mobile-app-mode .badge-warning {
-    font-size: 9px !important;
+    font-size: 10px !important;
     font-weight: 400 !important;
 }
 
@@ -1069,11 +1072,11 @@ body.mobile-app-mode .info-box {
 }
 
 body.mobile-app-mode .info-box-text {
-    font-size: 10px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode .info-box-number {
-    font-size: 13px !important;
+    font-size: 14px !important;
 }
 
 body.mobile-app-mode .info-box-icon {
@@ -1292,15 +1295,15 @@ body.mobile-app-mode .chat-box {
 }
 
 body.mobile-app-mode .chat-header {
-    font-size: 14px !important;
-}
-
-body.mobile-app-mode .chat-messages {
     font-size: 13px !important;
 }
 
+body.mobile-app-mode .chat-messages {
+    font-size: 12px !important;
+}
+
 body.mobile-app-mode .chat-input {
-    font-size: 14px !important;
+    font-size: 12px !important;
     flex: 0 1 auto !important;
     width: calc(100% - 60px) !important;
     max-width: calc(100% - 60px) !important;
@@ -1327,4 +1330,50 @@ body.mobile-app-mode .chat-send-btn i,
 body.mobile-app-mode #chat-send-btn i {
     font-size: 16px !important;
     line-height: 1 !important;
+}
+
+/* ============================================
+   MOBILE TYPOGRAPHY ALLOWLIST
+   Keep component-specific icons and dense UI from compact text rules.
+   ============================================ */
+@media (max-width: 991.98px) {
+    body.mobile-app-mode .fa,
+    body.mobile-app-mode .fas,
+    body.mobile-app-mode .far,
+    body.mobile-app-mode .fab,
+    body.mobile-app-mode [class*="fa-"] {
+        font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
+        line-height: 1 !important;
+    }
+
+    body.mobile-app-mode #mobile-action-bar button .icon-wrapper,
+    body.mobile-app-mode #mobile-action-bar button .icon-wrapper i,
+    body.mobile-app-mode #mobile-action-bar .mobile-profile-btn .icon-wrapper.profile-avatar i {
+        font-size: 16px !important;
+    }
+
+    body.mobile-app-mode #mobile-action-bar button,
+    body.mobile-app-mode #mobile-action-bar button span {
+        font-size: 10px !important;
+    }
+
+    body.mobile-app-mode .info-box-icon,
+    body.mobile-app-mode .info-box-icon i {
+        font-size: 20px !important;
+    }
+
+    body.mobile-app-mode #chat-toggle-btn i,
+    body.mobile-app-mode .chat-toggle-btn i {
+        font-size: 24px !important;
+    }
+
+    body.mobile-app-mode .table .badge,
+    body.mobile-app-mode .table .btn,
+    body.mobile-app-mode .billing-dense-table,
+    body.mobile-app-mode .billing-dense-table td,
+    body.mobile-app-mode .billing-dense-table th,
+    body.mobile-app-mode .table-action,
+    body.mobile-app-mode .table-action i {
+        font-size: 10px !important;
+    }
 }
