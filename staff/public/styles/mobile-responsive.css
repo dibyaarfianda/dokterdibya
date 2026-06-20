@@ -1334,9 +1334,58 @@ body.mobile-app-mode #chat-send-btn i {
 
 /* ============================================
    MOBILE TYPOGRAPHY ALLOWLIST
-   Keep component-specific icons and dense UI from compact text rules.
+   Compact 11 text scale with component-specific icon exceptions.
    ============================================ */
 @media (max-width: 991.98px) {
+    body.mobile-app-mode {
+        font-size: 11px !important;
+    }
+
+    body.mobile-app-mode .card-header,
+    body.mobile-app-mode #mobile-more-menu .mobile-menu-header {
+        font-size: 12px !important;
+    }
+
+    body.mobile-app-mode input,
+    body.mobile-app-mode textarea,
+    body.mobile-app-mode select,
+    body.mobile-app-mode .form-control,
+    body.mobile-app-mode ::placeholder,
+    body.mobile-app-mode ::-webkit-input-placeholder,
+    body.mobile-app-mode .btn,
+    body.mobile-app-mode .info-box-text,
+    body.mobile-app-mode .small-box .inner p,
+    body.mobile-app-mode .chat-messages,
+    body.mobile-app-mode .chat-input {
+        font-size: 11px !important;
+    }
+
+    body.mobile-app-mode .btn-sm,
+    body.mobile-app-mode .small,
+    body.mobile-app-mode small {
+        font-size: 10px !important;
+    }
+
+    body.mobile-app-mode h2,
+    body.mobile-app-mode h3,
+    body.mobile-app-mode .info-box-number {
+        font-size: 13px !important;
+    }
+
+    body.mobile-app-mode h4,
+    body.mobile-app-mode h5,
+    body.mobile-app-mode h6,
+    body.mobile-app-mode .chat-header,
+    body.mobile-app-mode #mobile-more-menu .mobile-menu-items a {
+        font-size: 12px !important;
+    }
+
+    body.mobile-app-mode .table,
+    body.mobile-app-mode .table td,
+    body.mobile-app-mode .table th {
+        font-size: 10px !important;
+    }
+
     body.mobile-app-mode .fa,
     body.mobile-app-mode .fas,
     body.mobile-app-mode .far,
@@ -1354,7 +1403,7 @@ body.mobile-app-mode #chat-send-btn i {
 
     body.mobile-app-mode #mobile-action-bar button,
     body.mobile-app-mode #mobile-action-bar button span {
-        font-size: 10px !important;
+        font-size: 9px !important;
     }
 
     body.mobile-app-mode .info-box-icon,
@@ -1374,6 +1423,6 @@ body.mobile-app-mode #chat-send-btn i {
     body.mobile-app-mode .billing-dense-table th,
     body.mobile-app-mode .table-action,
     body.mobile-app-mode .table-action i {
-        font-size: 10px !important;
+        font-size: 9px !important;
     }
 }

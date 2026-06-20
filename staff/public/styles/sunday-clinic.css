@@ -2738,7 +2738,7 @@ body.mobile-app-mode [class*="fa-"] {
 
 body.mobile-app-mode .section-btn,
 body.mobile-app-mode .sc-staff-section-nav .sc-nav-link p {
-    font-size: 10px !important;
+    font-size: 9px !important;
 }
 
 body.mobile-app-mode .section-btn i,
@@ -2764,18 +2764,135 @@ body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,
 body.mobile-app-mode #sunday-clinic-content .billing-dense-table th,
 body.mobile-app-mode #sunday-clinic-content .table-action,
 body.mobile-app-mode #sunday-clinic-content .table-action i {
-    font-size: 10px !important;
+    font-size: 9px !important;
 }
 
 body.mobile-app-mode #patientSearchModal .form-control-lg {
-    font-size: 14px !important;
+    font-size: 13px !important;
 }
 
 body.mobile-app-mode .clinic-header-title,
 body.mobile-app-mode .current-patient-info .patient-name,
 body.mobile-app-mode .search-result-item .patient-name,
 body.mobile-app-mode .sc-directory-patient-name {
-    font-size: 14px !important;
+    font-size: 13px !important;
+}
+
+/* Compact 11 final pass for Sunday Clinic PWA/mobile. */
+body.mobile-app-mode #sunday-clinic-content,
+body.mobile-app-mode #sunday-clinic-content p,
+body.mobile-app-mode #sunday-clinic-content label,
+body.mobile-app-mode #sunday-clinic-content .form-text,
+body.mobile-app-mode #sunday-clinic-content .sc-note,
+body.mobile-app-mode #sunday-clinic-content .alert,
+body.mobile-app-mode .current-patient-info,
+body.mobile-app-mode .current-patient-info strong,
+body.mobile-app-mode .current-patient-info .patient-meta,
+body.mobile-app-mode .visit-date,
+body.mobile-app-mode .location-badge,
+body.mobile-app-mode .mobile-back-btn,
+body.mobile-app-mode label,
+body.mobile-app-mode .sc-note,
+body.mobile-app-mode .input-group-text,
+body.mobile-app-mode .input-group-prepend,
+body.mobile-app-mode .input-group-append,
+body.mobile-app-mode .alert,
+body.mobile-app-mode .custom-control-label,
+body.mobile-app-mode .form-check-label,
+body.mobile-app-mode .list-group-item {
+    font-size: 11px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content input,
+body.mobile-app-mode #sunday-clinic-content select,
+body.mobile-app-mode #sunday-clinic-content .form-control,
+body.mobile-app-mode #sunday-clinic-content textarea,
+body.mobile-app-mode #sunday-clinic-content textarea.form-control,
+body.mobile-app-mode #sunday-clinic-content input::placeholder,
+body.mobile-app-mode #sunday-clinic-content select::placeholder,
+body.mobile-app-mode #sunday-clinic-content .form-control::placeholder,
+body.mobile-app-mode #sunday-clinic-content textarea::placeholder,
+body.mobile-app-mode input,
+body.mobile-app-mode textarea,
+body.mobile-app-mode select,
+body.mobile-app-mode .form-control,
+body.mobile-app-mode [contenteditable],
+body.mobile-app-mode textarea#planning-tindakan,
+body.mobile-app-mode textarea#planning-terapi,
+body.mobile-app-mode textarea#planning-rencana,
+body.mobile-app-mode ::placeholder,
+body.mobile-app-mode ::-webkit-input-placeholder {
+    font-size: 11px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content h2,
+body.mobile-app-mode #sunday-clinic-content h3,
+body.mobile-app-mode #sunday-clinic-content .sc-section-inline-title,
+body.mobile-app-mode .clinic-header-title,
+body.mobile-app-mode .current-patient-info .patient-name,
+body.mobile-app-mode .visit-mr,
+body.mobile-app-mode #patientSearchModal .form-control-lg,
+body.mobile-app-mode .search-result-item .patient-name,
+body.mobile-app-mode .sc-directory-patient-name {
+    font-size: 13px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content h4,
+body.mobile-app-mode #sunday-clinic-content h5,
+body.mobile-app-mode #sunday-clinic-content h6,
+body.mobile-app-mode #sunday-clinic-content .card-title,
+body.mobile-app-mode #sunday-clinic-content .section-header,
+body.mobile-app-mode .patient-sidebar-header,
+body.mobile-app-mode .patient-sidebar-header h5,
+body.mobile-app-mode .patient-sidebar-section .section-header,
+body.mobile-app-mode .summary-card h6,
+body.mobile-app-mode .sc-summary-card h6,
+body.mobile-app-mode .section-header,
+body.mobile-app-mode .sc-card-header {
+    font-size: 12px !important;
+}
+
+body.mobile-app-mode .btn,
+body.mobile-app-mode .patient-sidebar-header .btn,
+body.mobile-app-mode .patient-sidebar-footer .btn,
+body.mobile-app-mode #sunday-clinic-content .sc-section .btn,
+body.mobile-app-mode .trimester-selector .btn-group .btn {
+    font-size: 11px !important;
+}
+
+body.mobile-app-mode .btn-sm,
+body.mobile-app-mode .small,
+body.mobile-app-mode small,
+body.mobile-app-mode .badge,
+body.mobile-app-mode .patient-sidebar-footer small,
+body.mobile-app-mode #sunday-clinic-content .sc-badge-category,
+body.mobile-app-mode #sunday-clinic-content .sc-section .badge-lg,
+body.mobile-app-mode .sc-mobile-badge-right .badge,
+body.mobile-app-mode .button-group .btn,
+body.mobile-app-mode #resume-button-group .btn {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode .table,
+body.mobile-app-mode .table td,
+body.mobile-app-mode .table th,
+body.mobile-app-mode #sunday-clinic-content .table td,
+body.mobile-app-mode #sunday-clinic-content .table th,
+body.mobile-app-mode #sunday-clinic-content .identity-table td,
+body.mobile-app-mode #sunday-clinic-content .identity-table th,
+body.mobile-app-mode .identity-table .identity-label,
+body.mobile-app-mode .identity-table .identity-value {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content .table .badge,
+body.mobile-app-mode #sunday-clinic-content .table .btn,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table th,
+body.mobile-app-mode #sunday-clinic-content .table-action,
+body.mobile-app-mode #sunday-clinic-content .table-action i {
+    font-size: 9px !important;
 }
 
 /* ==================== HIDE UI ELEMENTS ==================== */

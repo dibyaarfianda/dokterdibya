@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v261'; // Mobile typography update
+const STAFF_PWA_VERSION = 'v262'; // Mobile typography update
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
