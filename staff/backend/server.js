@@ -278,6 +278,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/sunday-clinic/queue/settings', // Queue visibility toggle (patients need to check)
     '/api/sunday-clinic/patient-visits/', // Patient visit history
     '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
+    '/api/patient-stories',    // Ruang Cerita patient stories
     '/api/patient-workdesk',   // Patient My Corner / workdesk sync
     '/api/support-chat',       // Support chat (bot + staff escalation)
     '/api/guest-activity',     // Guest/demo portal activity tracking
@@ -569,6 +570,10 @@ app.use('/api/obat-sales', obatSalesRoutes);
 // Health articles routes (public + admin)
 const articlesRoutes = require('./routes/articles');
 app.use('/api/articles', articlesRoutes);
+
+// Patient stories routes (patient UGC + staff moderation)
+const patientStoriesRoutes = require('./routes/patient-stories');
+app.use('/api/patient-stories', patientStoriesRoutes);
 
 // Invoice history routes
 const invoicesRoutes = require('./routes/invoices');

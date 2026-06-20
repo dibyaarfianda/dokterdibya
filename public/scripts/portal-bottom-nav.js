@@ -22,6 +22,7 @@
         '/perjalanan-ibu.html': 'edukasi',
         '/artikel.html': 'edukasi',
         '/artikel-kesehatan.html': 'edukasi',
+        '/ruang-cerita.html': 'edukasi',
         '/booking-klinik.html': 'jadwal',
         '/jadwal-rs.html': 'jadwal',
         '/riwayat-kunjungan.html': 'jadwal',
@@ -45,7 +46,8 @@
         ],
         edukasi: [
             ['fa-solid fa-heart', 'Langkah Awal Ibu', '/perjalanan-ibu.html'],
-            ['fa-solid fa-book-open', 'Nadi Pengetahuan', '/artikel.html']
+            ['fa-solid fa-book-open', 'Nadi Pengetahuan', '/artikel.html'],
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
         ],
         jadwal: [
             ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],

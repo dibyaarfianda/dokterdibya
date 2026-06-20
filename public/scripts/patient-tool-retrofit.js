@@ -76,6 +76,14 @@
             copy: 'Kurasi artikel seputar kehamilan, program hamil, dan kesehatan kandungan dalam tampilan yang nyaman dibaca.',
             metaLabel: 'Konten',
             metaValue: 'Artikel'
+        },
+        '/ruang-cerita.html': {
+            activeNav: 'edukasi',
+            kicker: 'Ruang Cerita',
+            title: 'Cerita sesama pasien.',
+            copy: 'Baca pengalaman pasien lain yang sudah direview, atau kirim cerita Anda secara aman dengan pilihan anonim.',
+            metaLabel: 'Mode',
+            metaValue: 'Review Dulu'
         }
     };
 
@@ -101,7 +109,8 @@
         ]},
         edukasi: { title: 'Edukasi', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
-            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html']
+            ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
         ]}
     };
 

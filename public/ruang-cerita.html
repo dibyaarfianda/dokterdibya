@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id" data-portal-nav="off">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Ruang Cerita - SISIwanita</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Crimson+Text:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260530a">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260529gap1">
+    <style>
+        * { box-sizing: border-box; }
+        body.portal-themed {
+            background: var(--bg-page, #ffffff);
+            color: var(--text-primary, #0a0a0a);
+            font-family: var(--font-main, 'Inter', sans-serif);
+            min-height: 100%;
+            padding-bottom: 88px;
+            -webkit-font-smoothing: antialiased;
+        }
+        .page-hero {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px 24px;
+        }
+        .story-room {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 8px 24px 52px;
+        }
+        .story-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin: 6px 0 22px;
+        }
+        .tabs, .filter-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .tab-btn, .filter-tab, .primary-btn, .ghost-btn {
+            border: 1px solid var(--line-soft, #e5e5e5);
+            border-radius: 999px;
+            background: transparent;
+            color: var(--text-primary, #0a0a0a);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 15px;
+            cursor: pointer;
+        }
+        .tab-btn.active, .filter-tab.active, .primary-btn {
+            background: var(--text-primary, #0a0a0a);
+            border-color: var(--text-primary, #0a0a0a);
+            color: #ffffff;
+        }
+        .primary-btn, .ghost-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .story-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+        .story-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 218px;
+            cursor: pointer;
+            transition: transform .2s ease, border-color .2s ease;
+        }
+        .story-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--line-strong, #0a0a0a);
+        }
+        .story-card-top, .story-card-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .story-title {
+            font-family: var(--font-display, 'Plus Jakarta Sans', sans-serif);
+            font-size: 20px;
+            line-height: 1.3;
+            margin: 0;
+        }
+        .story-excerpt {
+            color: var(--text-muted, #6b6b6b);
+            font-size: 14px;
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            white-space: pre-line;
+        }
+        .story-card-foot {
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid var(--line-soft, #e5e5e5);
+            color: var(--text-muted, #6b6b6b);
+            font-size: 12px;
+        }
+        .metric-row {
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .status-badge {
+            border: 1px solid var(--line-soft, #e5e5e5);
+            border-radius: 999px;
+            padding: 4px 9px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-pending { color: #9a6700; border-color: #f0d98c; background: #fff8d8; }
+        .status-published { color: #0f6b3d; border-color: #9bd7b2; background: #e9f8ef; }
+        .status-rejected, .status-archived { color: #9b1c1c; border-color: #f1b7b7; background: #fff0f0; }
+        .state-block {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 54px 18px;
+            color: var(--text-muted, #6b6b6b);
+        }
+        .state-block i {
+            display: block;
+            font-size: 34px;
+            margin-bottom: 12px;
+            color: var(--text-primary, #0a0a0a);
+            opacity: .65;
+        }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .story-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: none;
+            background: rgba(255,255,255,.98);
+            overflow-y: auto;
+            padding: 18px;
+        }
+        .story-modal-overlay.active { display: block; }
+        .story-modal {
+            width: min(720px, 100%);
+            margin: 18px auto 40px;
+            background: var(--bg-page, #ffffff);
+            border: 1px solid var(--line-soft, #e5e5e5);
+            border-radius: 8px;
+            box-shadow: 0 22px 80px rgba(0,0,0,.12);
+        }
+        .story-modal-header {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--line-soft, #e5e5e5);
+        }
+        .story-modal-body {
+            padding: 20px;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+        .story-modal-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 16px 20px 20px;
+            border-top: 1px solid var(--line-soft, #e5e5e5);
+        }
+        .modal-close {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            border: 1px solid var(--line-soft, #e5e5e5);
+            background: transparent;
+            margin-bottom: 14px;
+            cursor: pointer;
+        }
+        .story-body-text {
+            white-space: pre-line;
+            line-height: 1.75;
+            color: var(--text-body, #333333);
+        }
+        .story-form {
+            display: grid;
+            gap: 14px;
+        }
+        .form-row {
+            display: grid;
+            gap: 7px;
+        }
+        .form-row label {
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .form-row input, .form-row textarea, .form-row select {
+            width: 100%;
+            border: 1px solid var(--line-soft, #e5e5e5);
+            border-radius: 8px;
+            padding: 11px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            background: #ffffff;
+            color: var(--text-primary, #0a0a0a);
+        }
+        .form-row textarea {
+            min-height: 240px;
+            max-height: 420px;
+            resize: vertical;
+            line-height: 1.55;
+        }
+        .form-help {
+            color: var(--text-muted, #6b6b6b);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .radio-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .radio-row label {
+            display: inline-flex;
+            gap: 7px;
+            align-items: center;
+            font-weight: 600;
+        }
+        @media (max-width: 760px) {
+            .page-hero { padding: 28px 20px 20px; }
+            .story-room { padding: 4px 20px 34px; }
+            .story-grid { grid-template-columns: 1fr; }
+            .story-toolbar { align-items: stretch; }
+            .story-toolbar .primary-btn { justify-content: center; width: 100%; }
+            .story-modal-overlay { padding: 12px; }
+            .story-modal-body { max-height: 430px; }
+        }
+    </style>
+    <script>window.__patientPortalHeaderInstalled = true;</script>
+</head>
+<body class="portal-themed home-sections-locked patient-tool-shell legacy-tool-retrofit ruang-cerita-page" data-tool-shell-active="edukasi" data-tool-kicker="Ruang Cerita" data-tool-title="Cerita sesama pasien." data-tool-copy="Baca pengalaman pasien lain yang sudah direview, atau kirim cerita Anda secara aman dengan pilihan anonim." data-tool-meta-label="Mode" data-tool-meta-value="Review Dulu">
+    <section class="page-hero" aria-label="Ruang Cerita">
+        <div class="section-heading">
+            <span class="section-kicker">
+                <span class="green-light" aria-hidden="true">
+                    <span class="green-light-core"></span>
+                    <span class="green-light-glow"></span>
+                </span>
+                Ruang Cerita
+            </span>
+            <h1 class="section-title">Pengalaman pasien, <span class="serif">dibaca dengan tenang</span>.</h1>
+            <p class="section-lead">Cerita baru akan direview sebelum tampil untuk pasien lain. Anda dapat memakai nickname portal atau tampil anonim.</p>
+        </div>
+    </section>
+
+    <main class="story-room">
+        <div class="story-toolbar">
+            <div class="tabs" role="tablist" aria-label="Pilihan tampilan cerita">
+                <button type="button" class="tab-btn active" data-view="published">Cerita Pasien</button>
+                <button type="button" class="tab-btn" data-view="mine">Cerita Saya</button>
+            </div>
+            <button type="button" class="primary-btn" id="openSubmitBtn"><i class="fa-solid fa-pen"></i> Tulis Cerita</button>
+        </div>
+
+        <div class="filter-tabs" role="tablist" aria-label="Filter kategori">
+            <button type="button" class="filter-tab active" data-filter="all">Semua</button>
+            <button type="button" class="filter-tab" data-filter="kehamilan">Kehamilan</button>
+            <button type="button" class="filter-tab" data-filter="persalinan">Persalinan</button>
+            <button type="button" class="filter-tab" data-filter="program_hamil">Program Hamil</button>
+            <button type="button" class="filter-tab" data-filter="pemulihan">Pemulihan</button>
+            <button type="button" class="filter-tab" data-filter="lainnya">Lainnya</button>
+        </div>
+
+        <div class="story-grid" id="storiesContainer">
+            <div class="state-block"><i class="fa-solid fa-spinner spin"></i><p>Memuat cerita...</p></div>
+        </div>
+    </main>
+
+    <div class="story-modal-overlay" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+        <article class="story-modal">
+            <div class="story-modal-header">
+                <button type="button" class="modal-close" onclick="closeDetailModal()" aria-label="Tutup"><i class="fa-solid fa-arrow-left"></i></button>
+                <div class="story-card-top">
+                    <span class="portal-card-kicker" id="detailCategory">Kategori</span>
+                    <span class="portal-card-kicker" id="detailDate">-</span>
+                </div>
+                <h2 class="story-title" id="detailTitle"></h2>
+                <p class="form-help" id="detailMeta"></p>
+            </div>
+            <div class="story-modal-body">
+                <div class="story-body-text" id="detailBody"></div>
+            </div>
+            <div class="story-modal-actions" id="detailActions"></div>
+        </article>
+    </div>
+
+    <div class="story-modal-overlay" id="submitModal" role="dialog" aria-modal="true" aria-labelledby="submitTitle">
+        <section class="story-modal">
+            <div class="story-modal-header">
+                <button type="button" class="modal-close" onclick="closeSubmitModal()" aria-label="Tutup"><i class="fa-solid fa-arrow-left"></i></button>
+                <span class="portal-card-kicker">Kirim Cerita</span>
+                <h2 class="story-title" id="submitTitle">Tulis pengalaman Anda</h2>
+                <p class="form-help">Hindari menulis nomor HP, email, alamat, MR/DRD, atau data medis internal. Cerita akan tampil setelah review.</p>
+            </div>
+            <div class="story-modal-body">
+                <form class="story-form" id="storyForm">
+                    <div class="form-row">
+                        <label for="storyTitle">Judul</label>
+                        <input id="storyTitle" maxlength="100" required placeholder="Contoh: Hal kecil yang membantu saya lebih tenang">
+                        <div class="form-help"><span id="titleCount">0</span>/100 karakter</div>
+                    </div>
+                    <div class="form-row">
+                        <label for="storyCategory">Kategori</label>
+                        <select id="storyCategory">
+                            <option value="kehamilan">Kehamilan</option>
+                            <option value="persalinan">Persalinan</option>
+                            <option value="program_hamil">Program Hamil</option>
+                            <option value="pemulihan">Pemulihan</option>
+                            <option value="lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Identitas tampilan</label>
+                        <div class="radio-row">
+                            <label><input type="radio" name="authorMode" value="nickname" checked> Pakai nickname</label>
+                            <label><input type="radio" name="authorMode" value="anonim"> Anonim</label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <label for="storyBody">Isi cerita</label>
+                        <textarea id="storyBody" maxlength="3000" required placeholder="Tulis cerita Anda di sini. HTML tidak akan diproses."></textarea>
+                        <div class="form-help"><span id="bodyCount">0</span>/3000 karakter</div>
+                    </div>
+                </form>
+            </div>
+            <div class="story-modal-actions">
+                <button type="submit" form="storyForm" class="primary-btn" id="submitStoryBtn"><i class="fa-solid fa-paper-plane"></i> Kirim untuk Review</button>
+                <button type="button" class="ghost-btn" onclick="closeSubmitModal()">Batal</button>
+            </div>
+        </section>
+    </div>
+
+    <script type="module">
+        import { checkAuth, apiRequest, showToast, escapeHtml, formatRelativeTime } from '/scripts/patient-utils.js';
+
+        if (!checkAuth()) {
+            // Redirect handled by checkAuth.
+        }
+
+        const CATEGORY_LABELS = {
+            kehamilan: 'Kehamilan',
+            persalinan: 'Persalinan',
+            program_hamil: 'Program Hamil',
+            pemulihan: 'Pemulihan',
+            lainnya: 'Lainnya'
+        };
+        const STATUS_LABELS = {
+            pending: 'Menunggu Review',
+            published: 'Published',
+            rejected: 'Ditolak',
+            archived: 'Diarsipkan'
+        };
+
+        let currentView = 'published';
+        let currentFilter = 'all';
+        let stories = [];
+        let activeStory = null;
+
+        const container = document.getElementById('storiesContainer');
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(item => item.classList.remove('active'));
+                btn.classList.add('active');
+                currentView = btn.dataset.view;
+                loadStories();
+            });
+        });
+
+        document.querySelectorAll('.filter-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(item => item.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                loadStories();
+            });
+        });
+
+        document.getElementById('openSubmitBtn').addEventListener('click', openSubmitModal);
+        document.getElementById('storyTitle').addEventListener('input', updateCounts);
+        document.getElementById('storyBody').addEventListener('input', updateCounts);
+        document.getElementById('storyForm').addEventListener('submit', submitStory);
+
+        loadStories();
+
+        async function loadStories() {
+            container.innerHTML = '<div class="state-block"><i class="fa-solid fa-spinner spin"></i><p>Memuat cerita...</p></div>';
+            try {
+                let endpoint = currentView === 'mine' ? '/api/patient-stories/my?limit=50' : '/api/patient-stories?limit=50';
+                if (currentFilter !== 'all') endpoint += '&category=' + encodeURIComponent(currentFilter);
+                const result = await apiRequest(endpoint);
+                if (!result || !result.success) throw new Error(result?.message || 'Gagal memuat cerita');
+                stories = result.data || [];
+                renderStories();
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<div class="state-block"><i class="fa-solid fa-circle-exclamation"></i><p>Gagal memuat cerita</p></div>';
+            }
+        }
+
+        function renderStories() {
+            if (!stories.length) {
+                const text = currentView === 'mine' ? 'Belum ada cerita yang Anda kirim.' : 'Belum ada cerita published untuk kategori ini.';
+                container.innerHTML = '<div class="state-block"><i class="fa-regular fa-message"></i><p>' + text + '</p></div>';
+                return;
+            }
+
+            container.innerHTML = stories.map(story => {
+                const statusHtml = currentView === 'mine'
+                    ? '<span class="status-badge status-' + escapeHtml(story.status) + '">' + escapeHtml(STATUS_LABELS[story.status] || story.status) + '</span>'
+                    : '';
+                return '' +
+                    '<article class="portal-card story-card" role="button" tabindex="0" onclick="openStoryDetail(' + Number(story.id) + ')">' +
+                        '<div class="story-card-top">' +
+                            '<span class="portal-card-kicker">' + escapeHtml(CATEGORY_LABELS[story.category] || story.category) + '</span>' +
+                            statusHtml +
+                        '</div>' +
+                        '<h3 class="story-title">' + escapeHtml(story.title) + '</h3>' +
+                        '<div class="story-excerpt">' + escapeHtml(story.body || '') + '</div>' +
+                        '<div class="story-card-foot">' +
+                            '<span><i class="fa-regular fa-user"></i> ' + escapeHtml(story.author_display_name || 'Pasien') + '</span>' +
+                            '<span class="metric-row"><span><i class="fa-regular fa-heart"></i> ' + Number(story.like_count || 0) + '</span><span><i class="fa-regular fa-eye"></i> ' + Number(story.view_count || 0) + '</span></span>' +
+                        '</div>' +
+                    '</article>';
+            }).join('');
+        }
+
+        window.openStoryDetail = async function(id) {
+            const story = stories.find(item => Number(item.id) === Number(id));
+            activeStory = story || null;
+            if (!activeStory) return;
+
+            document.getElementById('detailCategory').textContent = CATEGORY_LABELS[activeStory.category] || activeStory.category;
+            document.getElementById('detailDate').textContent = formatRelativeTime(activeStory.created_at);
+            document.getElementById('detailTitle').textContent = activeStory.title || '';
+            document.getElementById('detailMeta').textContent = (activeStory.author_display_name || 'Pasien') + ' · ' + (STATUS_LABELS[activeStory.status] || activeStory.status);
+            document.getElementById('detailBody').textContent = activeStory.body || '';
+            renderDetailActions(activeStory);
+            document.getElementById('detailModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            if (activeStory.status === 'published' && !activeStory.is_mine) {
+                try {
+                    const result = await apiRequest('/api/patient-stories/' + activeStory.id);
+                    if (result?.success && result.data) {
+                        activeStory = result.data;
+                        const idx = stories.findIndex(item => Number(item.id) === Number(activeStory.id));
+                        if (idx >= 0) stories[idx] = activeStory;
+                        renderDetailActions(activeStory);
+                        renderStories();
+                    }
+                } catch (error) {
+                    console.warn('Failed to refresh story detail', error);
+                }
+            }
+        };
+
+        function renderDetailActions(story) {
+            const actions = document.getElementById('detailActions');
+            if (story.status !== 'published') {
+                const note = story.status === 'pending'
+                    ? 'Cerita ini sedang menunggu review sebelum bisa dibaca pasien lain.'
+                    : (story.moderation_note || 'Cerita ini belum tersedia untuk publik.');
+                actions.innerHTML = '<span class="form-help">' + escapeHtml(note) + '</span>';
+                return;
+            }
+
+            actions.innerHTML = '' +
+                '<button type="button" class="primary-btn" onclick="toggleLikeActiveStory()"><i class="' + (story.liked_by_me ? 'fa-solid' : 'fa-regular') + ' fa-heart"></i> ' + (story.liked_by_me ? 'Didukung' : 'Dukung') + ' (' + Number(story.like_count || 0) + ')</button>' +
+                '<button type="button" class="ghost-btn" onclick="reportActiveStory()"><i class="fa-regular fa-flag"></i> Laporkan</button>';
+        }
+
+        window.toggleLikeActiveStory = async function() {
+            if (!activeStory) return;
+            try {
+                const result = await apiRequest('/api/patient-stories/' + activeStory.id + '/reaction', { method: 'POST' });
+                if (!result?.success) throw new Error(result?.message || 'Gagal memproses dukungan');
+                activeStory.liked_by_me = result.liked;
+                activeStory.like_count = result.like_count;
+                const idx = stories.findIndex(item => Number(item.id) === Number(activeStory.id));
+                if (idx >= 0) stories[idx] = activeStory;
+                renderDetailActions(activeStory);
+                renderStories();
+            } catch (error) {
+                showToast(error.message || 'Gagal memproses dukungan', 'error');
+            }
+        };
+
+        window.reportActiveStory = async function() {
+            if (!activeStory) return;
+            const reason = window.prompt('Tulis alasan singkat laporan:');
+            if (!reason) return;
+            try {
+                const result = await apiRequest('/api/patient-stories/' + activeStory.id + '/report', {
+                    method: 'POST',
+                    body: JSON.stringify({ reason: reason.trim() })
+                });
+                if (!result?.success) throw new Error(result?.message || 'Gagal mengirim laporan');
+                showToast(result.message || 'Laporan terkirim', 'success');
+            } catch (error) {
+                showToast(error.message || 'Gagal mengirim laporan', 'error');
+            }
+        };
+
+        window.closeDetailModal = function() {
+            document.getElementById('detailModal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        window.openSubmitModal = openSubmitModal;
+        function openSubmitModal() {
+            document.getElementById('storyForm').reset();
+            updateCounts();
+            document.getElementById('submitModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeSubmitModal = function() {
+            document.getElementById('submitModal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        function updateCounts() {
+            document.getElementById('titleCount').textContent = document.getElementById('storyTitle').value.length;
+            document.getElementById('bodyCount').textContent = document.getElementById('storyBody').value.length;
+        }
+
+        async function submitStory(event) {
+            event.preventDefault();
+            const btn = document.getElementById('submitStoryBtn');
+            const payload = {
+                title: document.getElementById('storyTitle').value.trim(),
+                category: document.getElementById('storyCategory').value,
+                author_mode: document.querySelector('input[name="authorMode"]:checked')?.value || 'nickname',
+                body: document.getElementById('storyBody').value.trim()
+            };
+            if (!payload.title || !payload.body) {
+                showToast('Judul dan isi cerita wajib diisi', 'warning');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner spin"></i> Mengirim...';
+                const result = await apiRequest('/api/patient-stories', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                if (!result?.success) throw new Error(result?.message || 'Gagal mengirim cerita');
+                showToast('Cerita terkirim dan menunggu review', 'success');
+                closeSubmitModal();
+                currentView = 'mine';
+                document.querySelectorAll('.tab-btn').forEach(item => item.classList.toggle('active', item.dataset.view === 'mine'));
+                await loadStories();
+            } catch (error) {
+                showToast(error.message || 'Gagal mengirim cerita', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim untuk Review';
+            }
+        }
+    </script>
+    <script src="/js/patient-tracker.js?v=20260209"></script>
+    <script src="/js/push-subscribe.js?v=20260209"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260621stories"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260621stories"></script>
+</body>
+</html>
