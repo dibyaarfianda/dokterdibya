@@ -1,6 +1,6 @@
 /**
  * Staff Points Route — Aggregate support-chat ratings + duty logs per active staff per month.
- * Formula v1: total_points = SUM(rating) for sessions owned by staff in given month (WIB).
+ * Formula v2: total_points = SUM(rating) + duty days in given month (WIB).
  * Default period: current month in GMT+7 (WIB).
  */
 
@@ -97,17 +97,21 @@ router.get('/', verifyToken, verifyStaffToken, async (req, res) => {
         const data = staffRows.map(s => {
             const sid = String(s.staff_id);
             const rating = ratingMap.get(sid);
+            const ratingPoints = rating ? Number(rating.total_points) : 0;
+            const dutyCount = Number(dutyMap.get(sid) || 0);
             return {
                 staff_id: s.staff_id,
                 name: s.name,
                 email: s.email,
                 role: s.role,
                 role_display: s.role_display || s.role || '',
-                total_points: rating ? Number(rating.total_points) : 0,
+                total_points: ratingPoints + dutyCount,
+                rating_points: ratingPoints,
+                duty_points: dutyCount,
                 rated_sessions: rating ? Number(rating.rated_sessions) : 0,
                 avg_rating: rating ? Number(rating.avg_rating) : 0,
                 resolved_sessions: Number(resolvedMap.get(sid) || 0),
-                duty_count: Number(dutyMap.get(sid) || 0)
+                duty_count: dutyCount
             };
         });
 

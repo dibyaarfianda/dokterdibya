@@ -62,13 +62,14 @@
 
         var rows = (data && data.staff) || [];
         if (rows.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada data untuk bulan ini.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Belum ada data untuk bulan ini.</td></tr>';
         } else {
             tbody.innerHTML = rows.map(function (r) {
                 return '<tr>' +
                     '<td>' + escapeHtml(r.name) + '</td>' +
                     '<td>' + escapeHtml(r.role_display || r.role || '-') + '</td>' +
                     '<td class="text-right"><strong>' + fmtNum(r.total_points) + '</strong></td>' +
+                    '<td class="text-right">' + fmtNum(r.duty_points || r.duty_count) + '</td>' +
                     '<td class="text-right">' + fmtNum(r.rated_sessions) + '</td>' +
                     '<td class="text-right">' + fmtAvg(r.avg_rating) + '</td>' +
                     '<td class="text-right">' + fmtNum(r.resolved_sessions) + '</td>' +
@@ -94,7 +95,7 @@
         if (state.loading) return;
         state.loading = true;
         var tbody = document.getElementById('staff-points-tbody');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Memuat...</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Memuat...</td></tr>';
         try {
             var data = await fetchPoints(state.currentMonth);
             render(data);

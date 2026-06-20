@@ -255,6 +255,8 @@ describe('staff panel stabilization sources', () => {
     test('staff panel exposes Briefing menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+        const staffBriefingJs = readRepoFile('staff', 'public', 'scripts', 'staff-briefing.js');
+        const staffBriefingRoute = readRepoFile('staff', 'backend', 'routes', 'staff-briefing.js');
         const roleVisibility = readRepoFile('staff', 'backend', 'routes', 'role-visibility.js');
         const server = readRepoFile('staff', 'backend', 'server.js');
 
@@ -269,9 +271,31 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("'staff_briefing': ['nav-staff-briefing']");
         expect(mainJs).toContain("'nav-staff-briefing':                   () => showStaffBriefingPage()");
 
+        expect(staffBriefingJs).toContain("if (d.can_start !== true) {");
+        expect(staffBriefingJs).toContain("btn.innerHTML = '<i class=\"fas fa-lock mr-1\"></i> Hanya dokter';");
+        expect(staffBriefingJs).toContain("alert('Hanya dokter yang dapat memulai briefing.');");
+        expect(staffBriefingRoute).toContain('can_start: canStartBriefing(req.user)');
+        expect(staffBriefingRoute).toContain("router.post('/today/start', verifyToken, verifyStaffToken, requireSuperadmin");
+
         expect(roleVisibility).toContain("{ key: 'staff_briefing', label: 'Briefing Poli Minggu'");
         expect(server).toContain("const staffBriefingRoutes = require('./routes/staff-briefing');");
         expect(server).toContain("app.use('/api/staff-briefing', staffBriefingRoutes);");
+    });
+
+    test('staff points include one point per duty day', () => {
+        const route = readRepoFile('staff', 'backend', 'routes', 'staff-points.js');
+        const script = readRepoFile('staff', 'public', 'scripts', 'staff-points.js');
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+
+        expect(route).toContain('Formula v2: total_points = SUM(rating) + duty days');
+        expect(route).toContain('const ratingPoints = rating ? Number(rating.total_points) : 0;');
+        expect(route).toContain('const dutyCount = Number(dutyMap.get(sid) || 0);');
+        expect(route).toContain('total_points: ratingPoints + dutyCount');
+        expect(route).toContain('duty_points: dutyCount');
+
+        expect(html).toContain('<th class="text-right">Point Bertugas</th>');
+        expect(script).toContain("'<td class=\"text-right\">' + fmtNum(r.duty_points || r.duty_count) + '</td>'");
+        expect(script).toContain("colspan=\"8\"");
     });
 
     test('Sunday Clinic patient history sidebar is hidden outside Sunday Clinic', () => {
