@@ -260,6 +260,50 @@ async function fillDobFromPatientProfile(payload, patientId) {
     }
 }
 
+async function syncAuthenticatedPatientProfileFromIntake(patientId, payload) {
+    if (!patientId || !payload || typeof payload !== 'object') {
+        return;
+    }
+
+    const fullName = trimToNull(payload.full_name);
+    const phone = trimToNull(payload.phone);
+    const birthDate = trimToNull(payload.dob || payload.birth_date);
+    const parsedAge = payload.age === undefined || payload.age === null || payload.age === ''
+        ? null
+        : Number.parseInt(payload.age, 10);
+    const age = Number.isNaN(parsedAge) ? null : parsedAge;
+
+    await db.query(
+        `UPDATE patients
+         SET full_name = COALESCE(?, full_name),
+             phone = COALESCE(?, phone),
+             whatsapp = COALESCE(?, whatsapp),
+             birth_date = COALESCE(?, birth_date),
+             age = COALESCE(?, age),
+             profile_completed = CASE
+                 WHEN COALESCE(?, full_name) IS NOT NULL
+                  AND COALESCE(?, phone) IS NOT NULL
+                  AND COALESCE(?, birth_date) IS NOT NULL
+                 THEN 1
+                 ELSE profile_completed
+             END,
+             intake_completed = 1,
+             updated_at = NOW()
+         WHERE id = ?`,
+        [
+            fullName,
+            phone,
+            phone,
+            birthDate,
+            age,
+            fullName,
+            phone,
+            birthDate,
+            patientId
+        ]
+    );
+}
+
 function deriveEncryptionKey() {
     if (!ENCRYPTION_KEY) {
         if (!encryptionWarningLogged) {
@@ -688,12 +732,8 @@ router.post('/api/patient-intake', async (req, res, next) => {
                     );
                     logger.info(`Linked intake submission ${submissionId} to authenticated patient: ${decoded.id}`);
 
-                    // Mark intake as completed for the patient
-                    await db.query(
-                        'UPDATE patients SET intake_completed = 1 WHERE id = ?',
-                        [decoded.id]
-                    );
-                    logger.info(`Marked intake_completed=1 for authenticated patient: ${decoded.id}`);
+                    await syncAuthenticatedPatientProfileFromIntake(decoded.id, payload);
+                    logger.info(`Synced profile and marked intake_completed=1 for authenticated patient: ${decoded.id}`);
                 }
             }
         } catch (tokenError) {
@@ -979,6 +1019,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
 
         // Save to database (primary storage)
         await saveRecord(existingRecord);
+        await syncAuthenticatedPatientProfileFromIntake(patientId, payload);
 
         logger.info('Patient intake updated', { submissionId: existingRecord.submissionId, patientId });
 

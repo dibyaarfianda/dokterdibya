@@ -121,6 +121,14 @@ async function generateUniqueMedicalRecordId() {
     return patientId;
 }
 
+function formatDateOnlyLocal(value) {
+    if (!value) return null;
+    if (typeof value === 'string') return value.split('T')[0];
+    const date = new Date(value);
+    if (Number.isNaN(date.valueOf())) return null;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -778,11 +786,13 @@ router.post('/auth/google', async (req, res) => {
                 fullname: patient.full_name,
                 email: patient.email,
                 phone: patient.phone,
+                birth_date: formatDateOnlyLocal(patient.birth_date),
                 photo_url: patient.photo_url,
                 home_photo_url: patient.home_photo_url || null,
                 email_verified: 1,
                 google_id: patient.google_id || googleId,
                 intake_completed: intakeCompleted,
+                profile_completed: patient.profile_completed || 0,
                 role: 'patient'
             }
         });
@@ -985,11 +995,13 @@ router.post('/google-auth-code', async (req, res) => {
                 fullname: patient.full_name,
                 email: patient.email,
                 phone: patient.phone,
+                birth_date: formatDateOnlyLocal(patient.birth_date),
                 photo_url: patient.photo_url,
                 home_photo_url: patient.home_photo_url || null,
                 email_verified: 1,
                 google_id: patient.google_id || googleId,
                 intake_completed: intakeCompleted,
+                profile_completed: patient.profile_completed || 0,
                 role: 'patient'
             }
         });
