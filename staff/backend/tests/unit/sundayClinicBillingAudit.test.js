@@ -38,6 +38,25 @@ describe('Sunday Clinic billing audit implementation', () => {
         expect(billingJs).toContain('btn-billing-audit-history');
     });
 
+    test('billing UI uses current Sunday Clinic book item labels and prices', () => {
+        const billingJs = readRepoFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'components',
+            'shared',
+            'billing.js'
+        );
+        const sundayClinicMain = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+
+        expect(billingJs).toContain("{ code: 'S03', name: 'Buku Ginekologi', price: 25000 }");
+        expect(billingJs).toContain("{ code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }");
+        expect(billingJs).not.toContain('Buku Kontrol');
+        expect(billingJs).not.toContain('Buku Panduan Lengkap & ANC');
+        expect(sundayClinicMain).toContain("const COMPONENT_VERSION = '3.0.11';");
+    });
+
     test('Sunday Clinic route writes billing audit logs on key mutations', () => {
         const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic.js');
 

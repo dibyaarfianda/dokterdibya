@@ -893,8 +893,8 @@ export default {
         // Admin items with their codes and prices
         const adminItems = [
             { code: 'S01', name: 'Biaya Admin', price: 5000 },
-            { code: 'S03', name: 'Buku Kontrol', price: 25000 },
-            { code: 'S04', name: 'Buku Panduan Lengkap & ANC', price: 50000 },
+            { code: 'S03', name: 'Buku Ginekologi', price: 25000 },
+            { code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 },
             { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 }
         ];
 
