@@ -222,6 +222,14 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toContain('Kantor Saya / Workdesk');
     });
 
+    test('staff navbar notification bell stays hidden', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+
+        expect(html).toContain('#notification-dropdown {\n            display: none !important;\n        }');
+        expect(html).toContain('id="notification-dropdown"');
+        expect(html).toContain('class="far fa-bell"');
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
