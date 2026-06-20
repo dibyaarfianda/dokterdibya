@@ -633,6 +633,10 @@ function showKlinikPrivatePage() {
     }).catch(error => {
         console.error('Failed to load klinik-private.js:', error);
     });
+
+    ensureSundayClinicModule().catch(error => {
+        console.warn('Failed to preload Sunday Clinic module:', error);
+    });
 }
 
 function clearSundayClinicRouteQuery() {

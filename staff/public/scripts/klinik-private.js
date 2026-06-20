@@ -476,6 +476,20 @@ async function startClinicRecord(appointment, category) {
                 ? window.buildSundayClinicAppUrl(mrSlug, 'identitas')
                 : `/staff/public/index-adminlte.html?page=sunday-clinic&mr=${encodeURIComponent(mrSlug)}&section=identitas`)
             : `/${record.folderPath}/identitas/index.html`;
+
+        if (mrSlug && typeof window.showSundayClinicPage === 'function') {
+            if (targetUrl) {
+                window.history.pushState({}, '', targetUrl);
+            }
+            await window.showSundayClinicPage({
+                mrId: mrSlug,
+                section: 'identitas',
+                appointmentId: record.appointmentId || appointment.id,
+                location: 'klinik_private'
+            });
+            return;
+        }
+
         window.location.href = targetUrl;
 
     } catch (error) {
