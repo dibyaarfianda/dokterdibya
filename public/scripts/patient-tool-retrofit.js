@@ -110,7 +110,7 @@
         edukasi: { title: 'Edukasi', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
         ]}
     };
 
