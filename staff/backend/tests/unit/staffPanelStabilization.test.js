@@ -252,6 +252,28 @@ describe('staff panel stabilization sources', () => {
         expect(server).toContain("app.use('/api/staff-payroll', staffPayrollRoutes);");
     });
 
+    test('staff panel exposes Briefing menu and script', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+        const roleVisibility = readRepoFile('staff', 'backend', 'routes', 'role-visibility.js');
+        const server = readRepoFile('staff', 'backend', 'server.js');
+
+        expect(html).toContain('id="nav-staff-briefing"');
+        expect(html).toContain('showStaffBriefingPage(); return false;');
+        expect(html).toContain('<p>Briefing</p>');
+        expect(html).toContain('id="content-staff-briefing"');
+        expect(html).toContain('./scripts/staff-briefing.js?v=20260531a');
+        expect(html).toContain('window.showStaffBriefingPage = showStaffBriefingPage;');
+
+        expect(mainJs).toContain("pages.staffBriefing = grab('content-staff-briefing');");
+        expect(mainJs).toContain("'staff_briefing': ['nav-staff-briefing']");
+        expect(mainJs).toContain("'nav-staff-briefing':                   () => showStaffBriefingPage()");
+
+        expect(roleVisibility).toContain("{ key: 'staff_briefing', label: 'Briefing Poli Minggu'");
+        expect(server).toContain("const staffBriefingRoutes = require('./routes/staff-briefing');");
+        expect(server).toContain("app.use('/api/staff-briefing', staffBriefingRoutes);");
+    });
+
     test('Sunday Clinic patient history sidebar is hidden outside Sunday Clinic', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
