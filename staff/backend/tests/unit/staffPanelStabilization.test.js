@@ -5,21 +5,21 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v259 cache version source for staff assets', () => {
+    test('uses one v260 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v259';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v260';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v259');
+        expect(html).toContain('styles/mobile-responsive.css?v=v260');
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v259 precache does not include missing chat panel css', () => {
+    test('service worker v260 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v259';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v260';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
@@ -142,5 +142,21 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("document.body.classList.remove('patient-sidebar-open');");
         expect(mainJs).toContain("patientSidebar.classList.remove('open');");
         expect(mainJs).toContain("patientSidebarToggle.classList.remove('active');");
+    });
+
+    test('staff mobile tap feedback uses COMM tap sound parameters', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const sundayClinicHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
+        const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
+
+        expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v260');
+        expect(sundayClinicHtml).toContain('/staff/public/scripts/tap-feedback.js?v=v260');
+        expect(tapFeedback).toContain("osc.type = 'sine';");
+        expect(tapFeedback).toContain('osc.frequency.setValueAtTime(800, ac.currentTime);');
+        expect(tapFeedback).toContain('osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);');
+        expect(tapFeedback).toContain('gain.gain.setValueAtTime(0.12, ac.currentTime);');
+        expect(tapFeedback).toContain('gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.06);');
+        expect(tapFeedback).toContain('osc.stop(ac.currentTime + 0.06);');
+        expect(tapFeedback).toContain('navigator.vibrate(10);');
     });
 });
