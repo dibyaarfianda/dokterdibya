@@ -1373,13 +1373,38 @@ body.mobile-app-mode .card {
 body.mobile-app-mode #sunday-clinic-content {
     font-size: 12px !important;
 }
-body.mobile-app-mode #sunday-clinic-content *,
-body.mobile-app-mode #sunday-clinic-content *::placeholder {
-    font-size: inherit !important;
+
+body.mobile-app-mode #sunday-clinic-content p,
+body.mobile-app-mode #sunday-clinic-content label,
+body.mobile-app-mode #sunday-clinic-content .form-text,
+body.mobile-app-mode #sunday-clinic-content .sc-note,
+body.mobile-app-mode #sunday-clinic-content .alert {
+    font-size: 12px !important;
 }
+
+body.mobile-app-mode #sunday-clinic-content h2,
+body.mobile-app-mode #sunday-clinic-content h3,
+body.mobile-app-mode #sunday-clinic-content .sc-section-inline-title {
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content h4,
+body.mobile-app-mode #sunday-clinic-content h5,
+body.mobile-app-mode #sunday-clinic-content h6,
+body.mobile-app-mode #sunday-clinic-content .card-title,
+body.mobile-app-mode #sunday-clinic-content .section-header {
+    font-size: 13px !important;
+}
+
 /* Explicit override for form elements (Bootstrap resets these) */
+body.mobile-app-mode #sunday-clinic-content input,
+body.mobile-app-mode #sunday-clinic-content select,
+body.mobile-app-mode #sunday-clinic-content .form-control,
 body.mobile-app-mode #sunday-clinic-content textarea,
 body.mobile-app-mode #sunday-clinic-content textarea.form-control,
+body.mobile-app-mode #sunday-clinic-content input::placeholder,
+body.mobile-app-mode #sunday-clinic-content select::placeholder,
+body.mobile-app-mode #sunday-clinic-content .form-control::placeholder,
 body.mobile-app-mode #sunday-clinic-content textarea::placeholder {
     font-size: 12px !important;
 }
@@ -1431,7 +1456,7 @@ body.mobile-app-mode .main-header #btn-header-queue .badge {
     position: absolute !important;
     top: -3px !important;
     right: -3px !important;
-    font-size: 8px !important;
+    font-size: 10px !important;
     padding: 1px 3px !important;
     min-width: 14px !important;
     border-radius: 7px !important;
@@ -1767,7 +1792,7 @@ body.mobile-app-mode #chat-box[style*="flex"] {
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link .nav-icon {
         width: auto !important;
         margin: 0 !important;
-        font-size: 18px !important;
+        font-size: 16px !important;
         line-height: 1 !important;
         color: inherit !important;
     }
@@ -1895,7 +1920,7 @@ body.mobile-app-mode .patient-sidebar-body {
 
 /* Current patient info mobile */
 body.mobile-app-mode .current-patient-info {
-    font-size: 9px !important;
+    font-size: 12px !important;
     padding: 8px 10px !important;
     overflow: hidden !important;
 }
@@ -1907,15 +1932,15 @@ body.mobile-app-mode .current-patient-info * {
 }
 
 body.mobile-app-mode .current-patient-info strong {
-    font-size: 10px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode .current-patient-info .patient-name {
-    font-size: 11px !important;
+    font-size: 14px !important;
 }
 
 body.mobile-app-mode .current-patient-info .patient-meta {
-    font-size: 9px !important;
+    font-size: 12px !important;
 }
 
 /* Visit cards mobile */
@@ -2034,7 +2059,7 @@ body.mobile-app-mode .patient-sidebar-section .section-header > span:first-of-ty
 }
 
 body.mobile-app-mode .patient-sidebar-section .section-header .badge {
-    font-size: 9px !important;
+    font-size: 10px !important;
     padding: 2px 5px !important;
     flex-shrink: 0 !important;
 }
@@ -2051,26 +2076,26 @@ body.mobile-app-mode .patient-sidebar-footer {
 }
 
 body.mobile-app-mode .patient-sidebar-footer .btn {
-    font-size: 9px !important;
+    font-size: 11px !important;
     padding: 5px 8px !important;
     white-space: normal !important;
     line-height: 1.2 !important;
 }
 
 body.mobile-app-mode .patient-sidebar-footer small {
-    font-size: 8px !important;
+    font-size: 10px !important;
     display: block !important;
     overflow-wrap: break-word !important;
 }
 
 /* Identity table mobile styles */
 body.mobile-app-mode .identity-table .identity-label {
-    font-size: 9px !important;
+    font-size: 12px !important;
     padding: 4px 6px !important;
 }
 
 body.mobile-app-mode .identity-table .identity-value {
-    font-size: 9px !important;
+    font-size: 12px !important;
     padding: 4px 6px !important;
     word-break: break-word !important;
 }
@@ -2113,7 +2138,7 @@ body.mobile-app-mode .patient-sidebar-section.flex-grow-1 {
     border: none;
     background: transparent;
     color: #6c757d;
-    font-size: 9px;
+    font-size: 10px;
     border-radius: 8px;
     min-width: 56px;
     transition: all 0.2s;
@@ -2163,7 +2188,7 @@ body.mobile-app-mode .form-group {
 }
 
 body.mobile-app-mode label {
-    font-size: 9px;
+    font-size: 12px;
     margin-bottom: 2px;
     font-weight: 500;
 }
@@ -2218,7 +2243,7 @@ body.mobile-app-mode .sc-mobile-badge-right {
 }
 body.mobile-app-mode .sc-section-inline-title {
     display: block !important;
-    font-size: 15px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
     color: #212529 !important;
     line-height: 1.2 !important;
@@ -2255,11 +2280,18 @@ body.mobile-app-mode #sunday-clinic-content .sc-section .badge-lg {
     font-size: 11px !important;
     padding: 3px 8px !important;
 }
-/* Mobile: billing table - 9px font */
+/* Mobile: billing/table dense areas stay compact */
 body.mobile-app-mode #sunday-clinic-content .table td,
 body.mobile-app-mode #sunday-clinic-content .table th {
-    font-size: 9px !important;
+    font-size: 11px !important;
     padding: 3px 5px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table th,
+body.mobile-app-mode #sunday-clinic-content .table .badge,
+body.mobile-app-mode #sunday-clinic-content .table .btn {
+    font-size: 10px !important;
 }
 /* Mobile: Identitas table - tetap 12px (ikut font konten, bukan 9px billing) */
 body.mobile-app-mode #sunday-clinic-content .identity-table td,
@@ -2308,13 +2340,13 @@ body.mobile-app-mode p {
 body.mobile-app-mode input,
 body.mobile-app-mode textarea,
 body.mobile-app-mode select {
-    font-size: 9px !important;
+    font-size: 12px !important;
     padding: 4px 6px !important;
     line-height: 1.3 !important;
 }
 
 body.mobile-app-mode .form-control {
-    font-size: 9px !important;
+    font-size: 12px !important;
     padding: 4px 6px !important;
     height: auto;
     min-height: 24px;
@@ -2323,7 +2355,7 @@ body.mobile-app-mode .form-control {
 
 body.mobile-app-mode textarea.form-control {
     min-height: 32px;
-    font-size: 9px !important;
+    font-size: 12px !important;
     line-height: 1.3 !important;
 }
 
@@ -2334,76 +2366,72 @@ body.mobile-app-mode .card-body textarea,
 body.mobile-app-mode textarea#planning-tindakan,
 body.mobile-app-mode textarea#planning-terapi,
 body.mobile-app-mode textarea#planning-rencana {
-    font-size: 9px !important;
+    font-size: 12px !important;
     line-height: 1.3 !important;
 }
 
 body.mobile-app-mode .btn {
     min-height: 28px;
-    font-size: 9px;
+    font-size: 12px;
     padding: 4px 8px;
 }
 
 body.mobile-app-mode .btn-sm {
     min-height: 24px;
-    font-size: 8px;
+    font-size: 11px;
     padding: 3px 6px;
 }
 
 body.mobile-app-mode h2,
 body.mobile-app-mode h3 {
-    font-size: 9px !important;
+    font-size: 14px !important;
     margin-bottom: 5px;
 }
 
 body.mobile-app-mode h4,
 body.mobile-app-mode h5 {
-    font-size: 9px !important;
+    font-size: 13px !important;
     margin-bottom: 5px;
 }
 
 body.mobile-app-mode h6 {
-    font-size: 9px !important;
+    font-size: 13px !important;
     margin-bottom: 4px;
-}
-
-/* Force 9px on ALL elements in mobile mode */
-body.mobile-app-mode * {
-    font-size: 9px !important;
 }
 
 /* Placeholder text */
 body.mobile-app-mode ::placeholder {
-    font-size: 9px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode ::-webkit-input-placeholder {
-    font-size: 9px !important;
+    font-size: 12px !important;
 }
 
-/* Force input/textarea/select values to 9px */
+/* Form values follow Compact 12 */
 body.mobile-app-mode input,
 body.mobile-app-mode textarea,
 body.mobile-app-mode select,
 body.mobile-app-mode .form-control,
 body.mobile-app-mode [contenteditable] {
-    font-size: 9px !important;
+    font-size: 12px !important;
     line-height: 1.3 !important;
 }
 
-/* Exceptions - icons stay at 12px */
+/* Icon allowlist: preserve icon font and let component-specific rules size icons */
 body.mobile-app-mode .section-btn i,
 body.mobile-app-mode .fas,
 body.mobile-app-mode .far,
 body.mobile-app-mode .fab,
 body.mobile-app-mode i.fa,
 body.mobile-app-mode i[class*="fa-"] {
-    font-size: 12px !important;
+    font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
+    line-height: 1 !important;
 }
 
 body.mobile-app-mode .small,
 body.mobile-app-mode small {
-    font-size: 8px !important;
+    font-size: 10px !important;
 }
 
 body.mobile-app-mode .table {
@@ -2414,7 +2442,7 @@ body.mobile-app-mode .table {
 body.mobile-app-mode .table td,
 body.mobile-app-mode .table th {
     padding: 4px 6px;
-    font-size: 9px;
+    font-size: 11px;
     word-wrap: break-word !important;
     overflow-wrap: break-word !important;
     word-break: break-word !important;
@@ -2454,18 +2482,18 @@ body.mobile-app-mode .table-responsive {
 body.mobile-app-mode .summary-card,
 body.mobile-app-mode .sc-summary-card {
     padding: 6px 10px;
-    font-size: 9px;
+    font-size: 12px;
 }
 
 body.mobile-app-mode .summary-card h6,
 body.mobile-app-mode .sc-summary-card h6 {
-    font-size: 9px;
+    font-size: 13px;
 }
 
 /* Section headers compact */
 body.mobile-app-mode .section-header {
     padding: 6px 8px;
-    font-size: 9px;
+    font-size: 13px;
 }
 
 /* Hide pushmenu toggle (hamburger) in mobile mode */
@@ -2516,7 +2544,7 @@ body.mobile-app-mode .trimester-selector .btn-group {
 
 body.mobile-app-mode .trimester-selector .btn-group .btn {
     border-radius: 6px !important;
-    font-size: 9px !important;
+    font-size: 11px !important;
     padding: 6px 4px !important;
     white-space: normal;
     line-height: 1.2;
@@ -2531,13 +2559,13 @@ body.mobile-app-mode .trimester-selector .btn-group .btn.active {
 
 /* Input groups compact */
 body.mobile-app-mode .input-group-text {
-    font-size: 9px;
+    font-size: 12px;
     padding: 4px 6px;
 }
 
 body.mobile-app-mode .input-group-prepend,
 body.mobile-app-mode .input-group-append {
-    font-size: 9px;
+    font-size: 12px;
 }
 
 /* Resume medis button group - grid layout */
@@ -2553,7 +2581,7 @@ body.mobile-app-mode .button-group .btn,
 body.mobile-app-mode #resume-button-group .btn {
     margin: 0 !important;
     padding: 6px 4px !important;
-    font-size: 8px !important;
+    font-size: 10px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -2567,12 +2595,12 @@ body.mobile-app-mode #resume-button-group .btn i {
 
 /* Badges and alerts */
 body.mobile-app-mode .badge {
-    font-size: 8px;
+    font-size: 10px;
     padding: 2px 5px;
 }
 
 body.mobile-app-mode .alert {
-    font-size: 9px;
+    font-size: 12px;
     padding: 6px 8px;
 }
 
@@ -2585,7 +2613,7 @@ body.mobile-app-mode .custom-control {
 }
 
 body.mobile-app-mode .custom-control-label {
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.3 !important;
     padding-top: 0 !important;
     margin-bottom: 0 !important;
@@ -2619,7 +2647,7 @@ body.mobile-app-mode .form-check-input {
 }
 
 body.mobile-app-mode .form-check-label {
-    font-size: 9px;
+    font-size: 12px;
     line-height: 1.3 !important;
     margin-left: 4px !important;
     margin-bottom: 0 !important;
@@ -2636,7 +2664,7 @@ body.mobile-app-mode .form-check-inline {
 /* List groups */
 body.mobile-app-mode .list-group-item {
     padding: 5px 8px;
-    font-size: 9px;
+    font-size: 12px;
 }
 
 /* SC card specific */
@@ -2646,7 +2674,7 @@ body.mobile-app-mode .sc-card {
 }
 
 body.mobile-app-mode .sc-card-header {
-    font-size: 9px;
+    font-size: 13px;
     padding: 5px 6px;
 }
 
@@ -2696,6 +2724,58 @@ body.mobile-app-mode [class*="resume"] {
     word-break: break-all !important;
     max-width: 100% !important;
     overflow-x: hidden !important;
+}
+
+/* Mobile typography allowlist: placed after compact rules so icons and intentional exceptions survive. */
+body.mobile-app-mode .fa,
+body.mobile-app-mode .fas,
+body.mobile-app-mode .far,
+body.mobile-app-mode .fab,
+body.mobile-app-mode [class*="fa-"] {
+    font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
+    line-height: 1 !important;
+}
+
+body.mobile-app-mode .section-btn,
+body.mobile-app-mode .sc-staff-section-nav .sc-nav-link p {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode .section-btn i,
+body.mobile-app-mode .sc-staff-section-nav .sc-nav-link .nav-icon,
+body.mobile-app-mode #mobile-action-bar button .icon-wrapper i {
+    font-size: 16px !important;
+}
+
+body.mobile-app-mode .info-box-icon,
+body.mobile-app-mode .info-box-icon i {
+    font-size: 20px !important;
+}
+
+body.mobile-app-mode #chat-toggle-btn i,
+body.mobile-app-mode .chat-toggle-btn i {
+    font-size: 24px !important;
+}
+
+body.mobile-app-mode #sunday-clinic-content .table .badge,
+body.mobile-app-mode #sunday-clinic-content .table .btn,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,
+body.mobile-app-mode #sunday-clinic-content .billing-dense-table th,
+body.mobile-app-mode #sunday-clinic-content .table-action,
+body.mobile-app-mode #sunday-clinic-content .table-action i {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode #patientSearchModal .form-control-lg {
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode .clinic-header-title,
+body.mobile-app-mode .current-patient-info .patient-name,
+body.mobile-app-mode .search-result-item .patient-name,
+body.mobile-app-mode .sc-directory-patient-name {
+    font-size: 14px !important;
 }
 
 /* ==================== HIDE UI ELEMENTS ==================== */
