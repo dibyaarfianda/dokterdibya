@@ -2738,7 +2738,7 @@ body.mobile-app-mode [class*="fa-"] {
 
 body.mobile-app-mode .section-btn,
 body.mobile-app-mode .sc-staff-section-nav .sc-nav-link p {
-    font-size: 9px !important;
+    font-size: 8px !important;
 }
 
 body.mobile-app-mode .section-btn i,
@@ -2764,21 +2764,21 @@ body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,
 body.mobile-app-mode #sunday-clinic-content .billing-dense-table th,
 body.mobile-app-mode #sunday-clinic-content .table-action,
 body.mobile-app-mode #sunday-clinic-content .table-action i {
-    font-size: 9px !important;
+    font-size: 8px !important;
 }
 
 body.mobile-app-mode #patientSearchModal .form-control-lg {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode .clinic-header-title,
 body.mobile-app-mode .current-patient-info .patient-name,
 body.mobile-app-mode .search-result-item .patient-name,
 body.mobile-app-mode .sc-directory-patient-name {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
-/* Compact 11 final pass for Sunday Clinic PWA/mobile. */
+/* Compact 10 final pass for Sunday Clinic PWA/mobile. */
 body.mobile-app-mode #sunday-clinic-content,
 body.mobile-app-mode #sunday-clinic-content p,
 body.mobile-app-mode #sunday-clinic-content label,
@@ -2800,6 +2800,17 @@ body.mobile-app-mode .alert,
 body.mobile-app-mode .custom-control-label,
 body.mobile-app-mode .form-check-label,
 body.mobile-app-mode .list-group-item {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode #chat-box,
+body.mobile-app-mode .chat-box,
+body.mobile-app-mode .chat-messages,
+body.mobile-app-mode .chat-input {
+    font-size: 10px !important;
+}
+
+body.mobile-app-mode .chat-header {
     font-size: 11px !important;
 }
 
@@ -2822,7 +2833,7 @@ body.mobile-app-mode textarea#planning-terapi,
 body.mobile-app-mode textarea#planning-rencana,
 body.mobile-app-mode ::placeholder,
 body.mobile-app-mode ::-webkit-input-placeholder {
-    font-size: 11px !important;
+    font-size: 10px !important;
 }
 
 body.mobile-app-mode #sunday-clinic-content h2,
@@ -2834,7 +2845,7 @@ body.mobile-app-mode .visit-mr,
 body.mobile-app-mode #patientSearchModal .form-control-lg,
 body.mobile-app-mode .search-result-item .patient-name,
 body.mobile-app-mode .sc-directory-patient-name {
-    font-size: 13px !important;
+    font-size: 12px !important;
 }
 
 body.mobile-app-mode #sunday-clinic-content h4,
@@ -2849,7 +2860,7 @@ body.mobile-app-mode .summary-card h6,
 body.mobile-app-mode .sc-summary-card h6,
 body.mobile-app-mode .section-header,
 body.mobile-app-mode .sc-card-header {
-    font-size: 12px !important;
+    font-size: 11px !important;
 }
 
 body.mobile-app-mode .btn,
@@ -2857,7 +2868,7 @@ body.mobile-app-mode .patient-sidebar-header .btn,
 body.mobile-app-mode .patient-sidebar-footer .btn,
 body.mobile-app-mode #sunday-clinic-content .sc-section .btn,
 body.mobile-app-mode .trimester-selector .btn-group .btn {
-    font-size: 11px !important;
+    font-size: 10px !important;
 }
 
 body.mobile-app-mode .btn-sm,
@@ -2870,7 +2881,7 @@ body.mobile-app-mode #sunday-clinic-content .sc-section .badge-lg,
 body.mobile-app-mode .sc-mobile-badge-right .badge,
 body.mobile-app-mode .button-group .btn,
 body.mobile-app-mode #resume-button-group .btn {
-    font-size: 10px !important;
+    font-size: 9px !important;
 }
 
 body.mobile-app-mode .table,
@@ -2882,7 +2893,7 @@ body.mobile-app-mode #sunday-clinic-content .identity-table td,
 body.mobile-app-mode #sunday-clinic-content .identity-table th,
 body.mobile-app-mode .identity-table .identity-label,
 body.mobile-app-mode .identity-table .identity-value {
-    font-size: 10px !important;
+    font-size: 9px !important;
 }
 
 body.mobile-app-mode #sunday-clinic-content .table .badge,
@@ -2892,7 +2903,7 @@ body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,
 body.mobile-app-mode #sunday-clinic-content .billing-dense-table th,
 body.mobile-app-mode #sunday-clinic-content .table-action,
 body.mobile-app-mode #sunday-clinic-content .table-action i {
-    font-size: 9px !important;
+    font-size: 8px !important;
 }
 
 /* ==================== HIDE UI ELEMENTS ==================== */
