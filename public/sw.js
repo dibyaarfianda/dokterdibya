@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260620smallerfont1'; // 2026-06-20 Reduce mobile PWA typography scale
+const CACHE_VERSION = '20260620smallerfont2'; // 2026-06-20 Further reduce mobile PWA typography scale
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

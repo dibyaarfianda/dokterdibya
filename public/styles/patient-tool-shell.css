@@ -847,29 +847,29 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
     body.patient-tool-shell .app { padding-left: 14px !important; padding-right: 14px !important; }
     body.patient-tool-shell .hero-card { padding: 16px !important; border-radius: 24px !important; }
     body.patient-tool-shell #home-brand-title,
-    body.patient-tool-shell .brand-title { font-size: 14.5px !important; }
+    body.patient-tool-shell .brand-title { font-size: 13px !important; }
     body.patient-tool-shell #home-brand-sub,
-    body.patient-tool-shell .brand-sub { font-size: 6.5px !important; }
-    body.patient-tool-shell .status-chip { font-size: 9px !important; }
+    body.patient-tool-shell .brand-sub { font-size: 5.8px !important; }
+    body.patient-tool-shell .status-chip { font-size: 8px !important; }
     body.patient-tool-shell .hero-title,
-    body.patient-tool-shell .hero-title:not(#pmc-root *) { font-size: clamp(24px, 6.8vw, 40px) !important; line-height: 0.96 !important; }
+    body.patient-tool-shell .hero-title:not(#pmc-root *) { font-size: clamp(21px, 6vw, 34px) !important; line-height: 0.96 !important; }
     body.patient-tool-shell .hero-copy,
-    body.patient-tool-shell .hero-copy:not(#pmc-root *) { font-size: 12px !important; line-height: 1.42 !important; }
+    body.patient-tool-shell .hero-copy:not(#pmc-root *) { font-size: 10.8px !important; line-height: 1.42 !important; }
     body.patient-tool-shell .section-title,
-    body.patient-tool-shell .section-title:not(#pmc-root *) { font-size: 17px !important; line-height: 1.08 !important; }
+    body.patient-tool-shell .section-title:not(#pmc-root *) { font-size: 15px !important; line-height: 1.08 !important; }
     body.patient-tool-shell .section-kicker,
-    body.patient-tool-shell .section-kicker:not(#pmc-root *) { font-size: 9px !important; }
+    body.patient-tool-shell .section-kicker:not(#pmc-root *) { font-size: 8px !important; }
     body.patient-tool-shell .status-body h3,
-    body.patient-tool-shell .status-body h3:not(#pmc-root *) { font-size: 11.5px !important; line-height: 1.18 !important; }
+    body.patient-tool-shell .status-body h3:not(#pmc-root *) { font-size: 10px !important; line-height: 1.18 !important; }
     body.patient-tool-shell .status-body p,
-    body.patient-tool-shell .status-body p:not(#pmc-root *) { font-size: 10.5px !important; line-height: 1.36 !important; }
+    body.patient-tool-shell .status-body p:not(#pmc-root *) { font-size: 9.5px !important; line-height: 1.36 !important; }
     body.patient-tool-shell .portal-button,
     body.patient-tool-shell .portal-button-ghost,
     body.patient-tool-shell .primary-action,
-    body.patient-tool-shell .ghost-action { font-size: 11px !important; }
-    body.patient-tool-shell #home-bottom-nav .nav-item { font-size: 7.5px !important; }
-    body.patient-tool-shell #home-bottom-nav .nav-item i { font-size: 11px !important; }
-    body.patient-tool-shell #home-bottom-nav .nav-badge { min-width: 11px !important; height: 11px !important; font-size: 6.5px !important; }
+    body.patient-tool-shell .ghost-action { font-size: 10px !important; }
+    body.patient-tool-shell #home-bottom-nav .nav-item { font-size: 6.75px !important; }
+    body.patient-tool-shell #home-bottom-nav .nav-item i { font-size: 10px !important; }
+    body.patient-tool-shell #home-bottom-nav .nav-badge { min-width: 11px !important; height: 11px !important; font-size: 5.8px !important; }
     body.patient-tool-shell .today-row { grid-template-columns: 1fr auto !important; align-items: end !important; }
     body.patient-tool-shell .section-note { display: none !important; }
 }
