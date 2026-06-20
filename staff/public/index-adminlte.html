@@ -2025,7 +2025,7 @@
             <!-- Doctor Arrival Toggle -->
             <li class="nav-item" style="display: flex; align-items: center; margin-right: 8px;">
                 <button id="btn-doctor-toggle" class="btn btn-sm btn-outline-secondary" onclick="window.toggleDoctorArrivalStatus()" title="Toggle status kehadiran dokter" style="font-size:12px; padding:4px 10px;">
-                    <i class="fas fa-user-md mr-1"></i><span id="lbl-doctor-toggle">dr. Dibya belum datang</span>
+                    <i class="fas fa-user-md mr-1"></i><span id="lbl-doctor-toggle">Belum dimulai</span>
                 </button>
             </li>
             <li class="nav-item dropdown user-menu" style="display: flex; align-items: center; height: 100%;">
@@ -2071,7 +2071,7 @@
                     <li class="nav-item" id="nav-kantor-saya">
                         <a href="#" class="nav-link" onclick="showKantorSayaPage(); return false;">
                             <i class="nav-icon fas fa-briefcase"></i>
-                            <p>Kantor Saya / Workdesk</p>
+                            <p>Kantor Saya</p>
                         </a>
                     </li>
 
@@ -8651,12 +8651,12 @@ body.mobile-app-mode .mobile-action-bar-force button {
             if (!btn) return;
             if (isVisible) {
                 btn.className = 'btn btn-sm btn-success';
-                if (ico) ico.className = 'fas fa-tv mr-1';
-                if (lbl) lbl.textContent = 'Antrian: ON';
+                if (ico) ico.className = 'fas fa-users mr-1';
+                if (lbl) lbl.textContent = 'Antrian';
             } else {
                 btn.className = 'btn btn-sm btn-outline-secondary';
-                if (ico) ico.className = 'fas fa-tv mr-1';
-                if (lbl) lbl.textContent = 'Antrian: OFF';
+                if (ico) ico.className = 'fas fa-users mr-1';
+                if (lbl) lbl.textContent = 'Antrian';
             }
         }
         function _updateDoctorArrivedBtn(isArrived) {
@@ -8665,10 +8665,10 @@ body.mobile-app-mode .mobile-action-bar-force button {
             if (!btn) return;
             if (isArrived) {
                 btn.className = 'btn btn-sm btn-success';
-                if (lbl) lbl.textContent = 'dr. Dibya datang';
+                if (lbl) lbl.textContent = 'Dokter hadir';
             } else {
                 btn.className = 'btn btn-sm btn-outline-secondary';
-                if (lbl) lbl.textContent = 'dr. Dibya belum datang';
+                if (lbl) lbl.textContent = 'Belum dimulai';
             }
         }
         window.toggleDoctorArrivalStatus = function() {
@@ -8728,7 +8728,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                     _updateDoctorArrivedBtn(Boolean(d.doctor_arrived));
                     if (window.showToast) window.showToast(
                         isArrived ? 'success' : 'info',
-                        isArrived ? 'Status: dr. Dibya sudah datang' : 'Status: dr. Dibya belum datang'
+                        isArrived ? 'Status: Dokter hadir' : 'Status: Belum dimulai'
                     );
                 } else {
                     if (window.showToast) window.showToast('error', d.message || 'Gagal update status dokter');
