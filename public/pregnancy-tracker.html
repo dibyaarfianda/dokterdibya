@@ -21,7 +21,7 @@
         window.__patientPortalHeaderInstalled = true;
     </script>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260621storybadge">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260621ruangbaca2">
 
     <style>
         body.pregnancy-tracker-page .hero-title {
@@ -384,15 +384,16 @@
             <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal">
                 <i class="fa-solid fa-calendar-check"></i><span>Jadwal</span>
             </button>
-            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang">
-                <i class="fa-solid fa-door-open"></i><span>Ruang</span>
+            <button class="nav-item soundable" data-tool-nav="edukasi" onclick="openSheet('edukasi')" aria-label="Ruang Baca">
+                <i class="fa-solid fa-book-open"></i><span>Ruang Baca</span>
+                <span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span>
             </button>
         </div>
     </nav>
 
     <div id="toast-container"></div>
 
-    <script src="/scripts/patient-tool-shell.js?v=20260621storybadge"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260621ruangbaca2"></script>
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, escapeHtml } from '/scripts/patient-utils.js';
 

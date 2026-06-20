@@ -5,7 +5,7 @@ const { verifyPatientToken, verifyStaffToken, requireRoles } = require('../middl
 const { ROLE_NAMES } = require('../constants/roles');
 const logger = require('../utils/logger');
 
-const CATEGORY_VALUES = new Set(['kehamilan', 'persalinan', 'program_hamil', 'pemulihan', 'lainnya']);
+const CATEGORY_VALUES = new Set(['kehamilan', 'kesuburan', 'penyakit_kandungan']);
 const STATUS_VALUES = new Set(['pending', 'published', 'rejected', 'archived']);
 const AUTHOR_MODE_VALUES = new Set(['nickname', 'anonim']);
 const MAX_TITLE_LENGTH = 100;
@@ -78,7 +78,7 @@ function mapStaffStory(row) {
 function validateStoryInput(body) {
     const title = normalizeText(body.title);
     const storyBody = normalizeText(body.body);
-    const category = CATEGORY_VALUES.has(body.category) ? body.category : 'lainnya';
+    const category = CATEGORY_VALUES.has(body.category) ? body.category : 'kehamilan';
     const authorMode = AUTHOR_MODE_VALUES.has(body.author_mode) ? body.author_mode : 'nickname';
 
     if (!title) return { valid: false, message: 'Judul wajib diisi' };

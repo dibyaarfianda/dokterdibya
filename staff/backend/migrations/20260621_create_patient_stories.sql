@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS patient_stories (
     patient_id VARCHAR(10) NOT NULL,
     title VARCHAR(100) NOT NULL,
     body TEXT NOT NULL,
-    category ENUM('kehamilan', 'persalinan', 'program_hamil', 'pemulihan', 'lainnya') NOT NULL DEFAULT 'lainnya',
+    category ENUM('kehamilan', 'kesuburan', 'penyakit_kandungan') NOT NULL DEFAULT 'kehamilan',
     author_mode ENUM('nickname', 'anonim') NOT NULL DEFAULT 'nickname',
     status ENUM('pending', 'published', 'rejected', 'archived') NOT NULL DEFAULT 'pending',
     moderation_note VARCHAR(500) NULL,

@@ -3606,10 +3606,8 @@ async function deleteArticle(id) {
 let patientStoriesAdminCache = [];
 const patientStoryCategoryLabels = {
     kehamilan: 'Kehamilan',
-    persalinan: 'Persalinan',
-    program_hamil: 'Program Hamil',
-    pemulihan: 'Pemulihan',
-    lainnya: 'Lainnya'
+    kesuburan: 'Kesuburan',
+    penyakit_kandungan: 'Penyakit kandungan'
 };
 const patientStoryStatusLabels = {
     pending: 'Pending',

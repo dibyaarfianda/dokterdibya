@@ -1606,6 +1606,26 @@
         }
         .tap-card h3 { font-size: 13px; margin-bottom: 2px; }
         .tap-card p { color: var(--muted); font-size: 10.5px; line-height: 1.35; font-weight: 500; }
+        .ruang-baca-red-badge {
+            background: #dc2626 !important;
+            color: #fff !important;
+            border: 1px solid rgba(255,255,255,0.86) !important;
+            box-shadow: 0 8px 18px rgba(220,38,38,0.22) !important;
+        }
+        .tap-card-new-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 9px;
+            line-height: 1;
+            font-style: normal;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: none;
+        }
         .doc-color { color: var(--blue); background: rgba(74,111,157,0.11) !important; }
         .app-color { color: var(--rose); background: rgba(179,95,123,0.12) !important; }
         .schedule-color { color: var(--green); background: rgba(92,127,114,0.13) !important; }
@@ -3126,6 +3146,7 @@
                         <span><h3>Jadwal</h3><p>Buat janji temu</p></span>
                     </button>
                     <button class="tap-card soundable" onclick="openSheet('edukasi')">
+                        <em class="tap-card-new-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</em>
                         <span class="icon edu-color"><i class="fa-solid fa-book-open"></i></span>
                         <span><h3>Ruang Baca</h3><p>Artikel dan cerita</p></span>
                     </button>
@@ -3298,7 +3319,7 @@
             <button class="nav-item soundable" onclick="openSheet('dokumen')"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
             <button class="nav-item soundable" onclick="openSheet('aplikasi')"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
             <button class="nav-item soundable" onclick="openSheet('jadwal')"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
-            <button class="nav-item soundable" onclick="openMyCorner()"><i class="fa-solid fa-door-open"></i><span>Ruang</span></button>
+            <button class="nav-item soundable" onclick="openSheet('edukasi')"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span></button>
         </div>
     </nav>
 
@@ -6508,6 +6529,7 @@
             }
         }
 
+        const RUANG_BACA_BADGE_KEY = 'patient_ruang_baca_opened_v1';
         const menuData = {
             dokumen: { title: 'Dokumen', items: [
                 ['fa-solid fa-image', 'Album USG', '/album-usg.html'],
@@ -6534,9 +6556,26 @@
             ]}
         };
 
+        function hasOpenedRuangBaca() {
+            try { return localStorage.getItem(RUANG_BACA_BADGE_KEY) === '1'; } catch (error) { return false; }
+        }
+
+        function updateRuangBacaBadges() {
+            const isOpened = hasOpenedRuangBaca();
+            document.querySelectorAll('[data-ruang-baca-badge]').forEach(badge => {
+                badge.style.display = isOpened ? 'none' : 'grid';
+            });
+        }
+
+        function markRuangBacaOpened() {
+            try { localStorage.setItem(RUANG_BACA_BADGE_KEY, '1'); } catch (error) {}
+            updateRuangBacaBadges();
+        }
+
         function openSheet(category) {
             const data = menuData[category];
             if (!data) return;
+            if (category === 'edukasi') markRuangBacaOpened();
             document.getElementById('sheet-title').textContent = data.title;
             document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" onclick="return handleSheetNavigation(event, \'' + item[2] + '\')"><i class="' + item[0] + '"></i><span>' + item[1] + '</span>' + (item[3] ? '<em class="feature-new-badge">' + item[3] + '</em>' : '') + '</a>').join('');
             document.getElementById('sheet-overlay').classList.add('active');
@@ -6872,6 +6911,7 @@
             loadHomeAnnouncements();
             loadUnreadDocCounts();
             initializeLiveQueueHome();
+            updateRuangBacaBadges();
             checkActiveBooking();
             loadBirthClassHomeCard();
             checkAttendanceConfirmation();

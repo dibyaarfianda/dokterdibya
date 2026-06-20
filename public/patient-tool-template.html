@@ -19,7 +19,7 @@
     </script>
     <script src="/scripts/patient-theme.js?v=20260528kickui1"></script>
     <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260621storybadge">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260621ruangbaca2">
 </head>
 <body class="home-sections-locked patient-tool-shell" data-tool-shell-active="aplikasi">
     <div class="topbar-blur-fade" aria-hidden="true">
@@ -108,12 +108,12 @@
             <button class="nav-item soundable" data-tool-nav="dokumen" onclick="openSheet('dokumen')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>
             <button class="nav-item soundable" data-tool-nav="aplikasi" onclick="openSheet('aplikasi')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>
             <button class="nav-item soundable" data-tool-nav="jadwal" onclick="openSheet('jadwal')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>
-            <button class="nav-item soundable" data-tool-nav="ruang" onclick="openMyCorner()" aria-label="Ruang"><i class="fa-solid fa-door-open"></i><span>Ruang</span></button>
+            <button class="nav-item soundable" data-tool-nav="edukasi" onclick="openSheet('edukasi')" aria-label="Ruang Baca"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span></button>
         </div>
     </nav>
 
     <div id="toast-container"></div>
-    <script src="/scripts/patient-tool-shell.js?v=20260621storybadge"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260621ruangbaca2"></script>
     <script>
         PatientToolShell.init({ activeNav: 'aplikasi', unlockOnReady: true });
     </script>

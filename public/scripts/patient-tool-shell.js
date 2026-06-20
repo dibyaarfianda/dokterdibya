@@ -5,6 +5,7 @@
 
     var DEFAULT_ACTIVE_NAV = 'beranda';
     var DEFAULT_HOME_URL = '/patient-menu.html';
+    var RUANG_BACA_BADGE_KEY = 'patient_ruang_baca_opened_v1';
     var state = window.__patientToolShellState || {
         initialized: false,
         activeNav: DEFAULT_ACTIVE_NAV,
@@ -44,7 +45,7 @@
             ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
             ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
         ]},
-        edukasi: { title: 'Edukasi', items: [
+        edukasi: { title: 'Ruang Baca', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
             ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
@@ -655,6 +656,22 @@
         if (sheet) sheet.classList.remove('active');
     }
 
+    function hasOpenedRuangBaca() {
+        try { return localStorage.getItem(RUANG_BACA_BADGE_KEY) === '1'; } catch (error) { return false; }
+    }
+
+    function updateRuangBacaBadges() {
+        var isOpened = hasOpenedRuangBaca();
+        Array.prototype.forEach.call(document.querySelectorAll('[data-ruang-baca-badge]'), function (badge) {
+            badge.style.display = isOpened ? 'none' : 'grid';
+        });
+    }
+
+    function markRuangBacaOpened() {
+        try { localStorage.setItem(RUANG_BACA_BADGE_KEY, '1'); } catch (error) {}
+        updateRuangBacaBadges();
+    }
+
     function openSheet(category) {
         var data = (state.menuData || defaultMenuData)[category];
         var overlay = document.getElementById('sheet-overlay');
@@ -662,6 +679,7 @@
         var title = document.getElementById('sheet-title');
         var menu = document.getElementById('sheet-menu');
         if (!data || !overlay || !sheet || !title || !menu) return;
+        if (category === 'edukasi') markRuangBacaOpened();
 
         title.textContent = data.title;
         menu.innerHTML = data.items.map(function (item) {
@@ -762,6 +780,7 @@
             updateAvatarInitials(options.profile);
             bindTopbarModalActions();
             setActiveNav(state.activeNav);
+            updateRuangBacaBadges();
             fetchNotifications().then(function (notifications) {
                 state.notifications = notifications;
                 updateNotificationBadge(notifications.filter(function (notification) { return !notification.read_at; }).length);
