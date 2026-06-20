@@ -5,21 +5,21 @@ const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v258 cache version source for staff assets', () => {
+    test('uses one v259 cache version source for staff assets', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v258';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v259';");
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v258');
+        expect(html).toContain('styles/mobile-responsive.css?v=v259');
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v258 precache does not include missing chat panel css', () => {
+    test('service worker v259 precache does not include missing chat panel css', () => {
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v258';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v259';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
@@ -89,7 +89,13 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("window.backToSundayClinicLanding = backToSundayClinicLanding;");
         expect(mainJs).toContain("if (!normalizedMrId) {\n        backToSundayClinicLanding();");
         expect(mainJs).toContain("'nav-sunday-clinic':                    () => showKlinikPrivatePage()");
+        expect(mainJs).toContain("ensureSundayClinicModule().catch(error => {");
         expect(mainJs).toContain('/staff/public/index-adminlte.html?page=sunday-clinic&mr=');
+
+        const klinikPrivate = readRepoFile('staff', 'public', 'scripts', 'klinik-private.js');
+        expect(klinikPrivate).toContain("typeof window.showSundayClinicPage === 'function'");
+        expect(klinikPrivate).toContain("window.history.pushState({}, '', targetUrl);");
+        expect(klinikPrivate).toContain("await window.showSundayClinicPage({");
 
         expect(sundayClinicEntry).toContain('window.__sundayClinicEmbedded = appState.embedded;');
         expect(sundayClinicEntry).toContain('window.initSundayClinicPage = initSundayClinicPage;');
