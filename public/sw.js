@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260620googlereg1'; // 2026-06-20 Force Google registration-first login flow
+const CACHE_VERSION = '20260621headerhome1'; // 2026-06-21 Sync portal tool header with home
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
