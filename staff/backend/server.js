@@ -71,8 +71,6 @@ app.set('io', io);
 
 const PORT = process.env.PORT || 3000;
 
-const sundayClinicPagePath = path.join(__dirname, '../public/sunday-clinic.html');
-
 // Trust proxy (for Nginx reverse proxy)
 app.set('trust proxy', 1);
 
@@ -100,6 +98,40 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const LEGACY_PATIENT_NATIVE_APP_MESSAGE = 'Aplikasi mobile dokterDIBYA versi lama sudah dinonaktifkan. Silakan akses Portal Pasien melalui PWA SISIwanita di https://sisiwanita.id';
+
+function buildEmbeddedSundayClinicUrl(req) {
+    const params = new URLSearchParams();
+
+    Object.entries(req.query || {}).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+            value.forEach(item => params.append(key, String(item)));
+            return;
+        }
+
+        if (value !== undefined && value !== null) {
+            params.set(key, String(value));
+        }
+    });
+
+    const legacyMatch = String(req.path || '').match(/^\/sunday-clinic\/([^/]+)(?:\/([^/]+))?/);
+    const legacyMrId = legacyMatch?.[1] ? decodeURIComponent(legacyMatch[1]) : '';
+    const legacySection = legacyMatch?.[2] ? decodeURIComponent(legacyMatch[2]) : '';
+
+    params.set('page', 'sunday-clinic');
+
+    if (!params.get('mr') && legacyMrId) {
+        params.set('mr', legacyMrId);
+    }
+
+    if (!params.get('section') && (params.get('mr') || params.get('patient'))) {
+        params.set('section', legacySection || 'identitas');
+    }
+
+    const queryString = params.toString();
+    return queryString
+        ? `/staff/public/index-adminlte.html?${queryString}`
+        : '/staff/public/index-adminlte.html';
+}
 
 function isLegacyPatientNativeAppRequest(req) {
     const origin = (req.headers.origin || '').toLowerCase();
@@ -217,6 +249,14 @@ statusRoutes.setSocketIO(io);
 
 // Serve static staff assets with cache headers
 // Versioned assets (?v=xxx) get long cache; HTML gets no-cache
+app.get('/staff/public/sunday-clinic.html', (req, res) => {
+    res.redirect(307, buildEmbeddedSundayClinicUrl(req));
+});
+
+app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
+    res.redirect(307, buildEmbeddedSundayClinicUrl(req));
+});
+
 app.use(express.static(path.join(__dirname, '../public'), {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.html')) {
@@ -235,11 +275,6 @@ app.use(express.static(path.join(__dirname, '../public'), {
 app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
     maxAge: '7d'
 }));
-
-// Sunday Clinic dynamic routes (e.g., /sunday-clinic/mr0001/identitas)
-app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
-    res.sendFile(sundayClinicPagePath);
-});
 
 // Use routes
 

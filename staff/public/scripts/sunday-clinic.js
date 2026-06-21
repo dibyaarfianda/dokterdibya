@@ -273,9 +273,9 @@ async function initSundayClinicPage(options = {}) {
     }
 
     appState.isInitializing = true;
-    appState.embedded = Boolean(options.embedded || document.getElementById('sunday-clinic-page'));
+    appState.embedded = true;
     window.__sundayClinicEmbedded = appState.embedded;
-    console.log('[SundayClinic] Initializing application...', appState.embedded ? 'embedded' : 'standalone');
+    console.log('[SundayClinic] Initializing application in embedded mode...');
 
     try {
         // Initialize DOM references early so auth UI can be populated without another API call.
@@ -306,10 +306,9 @@ async function initSundayClinicPage(options = {}) {
 
         // Directory data is loaded lazily when the picker/search is opened.
 
-        // Check for initial MR ID in explicit options, URL path, or query params.
+        // Embedded Sunday Clinic restores state from explicit options or query params.
         const initialRoute = parseRoute();
         const urlParams = new URLSearchParams(window.location.search);
-        const mrIdFromQuery = urlParams.get('mr');
         const patientIdFromQuery = options.patientId || urlParams.get('patient');
         const appointmentIdFromQuery = options.appointmentId || urlParams.get('appointment');
         const locationFromQuery = options.location || urlParams.get('location');
@@ -321,11 +320,7 @@ async function initSundayClinicPage(options = {}) {
         if (optionMrId) {
             await loadMedicalRecord(optionMrId, targetSection);
         } else if (initialRoute.mrId) {
-            // Path-based: /sunday-clinic/{mrId}/{section}
             await loadMedicalRecord(initialRoute.mrId, targetSection);
-        } else if (mrIdFromQuery) {
-            // Query param: ?mr=xxx&section=yyy
-            await loadMedicalRecord(mrIdFromQuery, targetSection);
         } else if (patientIdFromQuery) {
             // Query param: ?patient=xxx&appointment=yyy&location=zzz (from PERIKSA button)
             await handlePatientFromUrl(patientIdFromQuery, appointmentIdFromQuery, locationFromQuery);
@@ -349,12 +344,6 @@ async function initSundayClinicPage(options = {}) {
 }
 
 window.initSundayClinicPage = initSundayClinicPage;
-
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => initSundayClinicPage());
-} else if (!document.getElementById('sunday-clinic-page')) {
-    initSundayClinicPage();
-}
 
 // ============================================================================
 // AUTHENTICATION
@@ -607,48 +596,23 @@ const SECTION_NAME_MAP = {
     'tagihan': 'billing'
 };
 
-function parseRoute(pathname = window.location.pathname) {
+function parseRoute() {
     const searchParams = new URLSearchParams(window.location.search);
     const queryMrId = searchParams.get('mr');
     const querySection = searchParams.get('section');
-
-    if (queryMrId) {
-        const normalizedQuerySection = (querySection || 'identity').toLowerCase();
-        return {
-            mrId: queryMrId,
-            section: SECTION_NAME_MAP[normalizedQuerySection] || 'identity',
-            remainder: ''
-        };
-    }
-
-    const trimmed = pathname.replace(/^\/+|\/+$/g, '');
-    const segments = trimmed.split('/');
-    const [root, rawMrId = '', rawSection = 'identity', ...rest] = segments;
-
-    if (root !== 'sunday-clinic') {
-        return { mrId: null, section: 'identity', remainder: '' };
-    }
-
-    // Map section name to internal format
-    const normalizedSection = (rawSection || 'identity').toLowerCase();
-    const mappedSection = SECTION_NAME_MAP[normalizedSection] || 'identity';
+    const normalizedSection = (querySection || 'identity').toLowerCase();
 
     return {
-        mrId: rawMrId || null,
-        section: mappedSection,
-        remainder: rest.join('/')
+        mrId: queryMrId || null,
+        section: SECTION_NAME_MAP[normalizedSection] || 'identity',
+        remainder: ''
     };
 }
 
 function updateRoute(mrId, section = 'identity', options = {}) {
     const nextUrl = new URL(window.location.href);
-    if (appState.embedded) {
-        nextUrl.pathname = '/staff/public/index-adminlte.html';
-        nextUrl.searchParams.set('page', 'sunday-clinic');
-    } else {
-        nextUrl.pathname = '/staff/public/sunday-clinic.html';
-        nextUrl.searchParams.delete('page');
-    }
+    nextUrl.pathname = '/staff/public/index-adminlte.html';
+    nextUrl.searchParams.set('page', 'sunday-clinic');
     nextUrl.searchParams.set('mr', mrId);
     nextUrl.searchParams.set('section', section);
     const state = { mrId, section };
