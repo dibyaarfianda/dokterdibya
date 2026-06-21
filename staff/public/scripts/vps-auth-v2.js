@@ -207,18 +207,35 @@ export async function fetchUserPermissions() {
 }
 
 export async function hasPermission(permissionName) {
+    if (!auth.currentUser && await getIdToken()) {
+        await initAuth();
+    }
+
     // Superadmin/Dokter has all permissions
     if (auth.currentUser && (auth.currentUser.is_superadmin || auth.currentUser.role === 'dokter' || auth.currentUser.role === 'superadmin')) {
         return true;
     }
-    
+
+    const isStaffUser = auth.currentUser
+        && auth.currentUser.user_type !== 'patient'
+        && auth.currentUser.role !== 'patient';
+
+    // Billing entry is intentionally available to every staff role.
+    if (isStaffUser && ['services.select', 'medications.select'].includes(permissionName)) {
+        return true;
+    }
+
+    if (auth.currentUser?.permissions?.includes(permissionName)) {
+        return true;
+    }
+
     // Fetch permissions if not already loaded
     if (userPermissions === null) {
         await fetchUserPermissions();
     }
     
     // Check if user has the specific permission
-    return userPermissions && userPermissions.includes(permissionName);
+    return !!(userPermissions && userPermissions.includes(permissionName));
 }
 
 export function clearPermissionsCache() {

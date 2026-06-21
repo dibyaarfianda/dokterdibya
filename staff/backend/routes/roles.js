@@ -220,12 +220,11 @@ router.get('/api/permissions', verifyToken, requireMenuAccess('kelola_roles'), a
 // ==========================================
 
 // GET /api/users/:userId/permissions - Get user permissions (aggregated from all roles)
-router.get('/api/users/:userId/permissions', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
+// Users can always read their own permissions. Admin/dokter can read anyone's.
+router.get('/api/users/:userId/permissions', verifyToken, asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    // Users can view their own permissions
-    // Admins can view anyone's permissions
-    const isOwnPermissions = req.user.id === userId;
+    const isOwnPermissions = String(req.user.id) === String(userId);
     const isAdmin = req.user.is_superadmin || isAdminRole(req.user.role_id);
 
     if (!isOwnPermissions && !isAdmin) {
