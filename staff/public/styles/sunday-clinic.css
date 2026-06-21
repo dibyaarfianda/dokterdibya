@@ -2217,39 +2217,66 @@ body.mobile-app-mode .sc-section-header-hide-mobile {
     display: none !important;
 }
 
-/* Mobile badge row: 2-row layout - title+category left, icons right */
+/* Category/action row: hidden by default, shown in staff embed and mobile mode. */
 .sc-mobile-badge-row {
-    display: none; /* hidden on desktop */
+    display: none;
 }
+body.sunday-clinic-embedded-active .sc-mobile-badge-row,
 body.mobile-app-mode .sc-mobile-badge-row {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    padding: 4px 0 4px 0 !important;
-    margin-bottom: 4px !important;
-    gap: 4px !important;
+    padding: 6px 0 8px 0 !important;
+    margin-bottom: 8px !important;
+    gap: 8px !important;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
 }
+body.sunday-clinic-embedded-active .sc-mobile-badge-left,
 body.mobile-app-mode .sc-mobile-badge-left {
     display: flex !important;
     flex-direction: column !important;
-    gap: 3px !important;
+    gap: 4px !important;
+    min-width: 0 !important;
 }
+body.sunday-clinic-embedded-active .sc-mobile-badge-right,
 body.mobile-app-mode .sc-mobile-badge-right {
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
+    gap: 6px !important;
     flex-shrink: 0 !important;
 }
-/* Section title - above category badge */
 .sc-section-inline-title {
     display: none;
 }
+body.sunday-clinic-embedded-active .sc-section-inline-title,
 body.mobile-app-mode .sc-section-inline-title {
     display: block !important;
     font-size: 14px !important;
     font-weight: 700 !important;
     color: #212529 !important;
     line-height: 1.2 !important;
+}
+.sc-category-action-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+}
+body.mobile-app-mode .sc-mobile-badge-row {
+    padding: 4px 0 4px 0 !important;
+    margin-bottom: 4px !important;
+    gap: 4px !important;
+    border-bottom: none !important;
+}
+body.mobile-app-mode .sc-mobile-badge-left {
+    gap: 3px !important;
+}
+body.mobile-app-mode .sc-mobile-badge-right {
+    gap: 4px !important;
+}
+body.mobile-app-mode .sc-section-inline-title {
+    font-size: 14px !important;
 }
 /* Category badge - smaller (higher specificity to beat wildcard inherit rule) */
 body.mobile-app-mode #sunday-clinic-content .sc-badge-category,
@@ -2259,8 +2286,8 @@ body.mobile-app-mode .sc-badge-category {
     font-weight: 600 !important;
     line-height: 1.4 !important;
 }
-/* Pencil/trash icons in badge row */
-body.mobile-app-mode .sc-mobile-badge-right .badge {
+/* Edit/delete actions in category row */
+body.mobile-app-mode .sc-category-action-btn {
     width: 26px !important;
     height: 26px !important;
     display: inline-flex !important;
@@ -2269,6 +2296,9 @@ body.mobile-app-mode .sc-mobile-badge-right .badge {
     font-size: 11px !important;
     padding: 0 !important;
     border-radius: 50% !important;
+}
+body.mobile-app-mode .sc-category-action-label {
+    display: none !important;
 }
 /* "Dicatat oleh..." meta info - 12px */
 body.mobile-app-mode .sc-note {
