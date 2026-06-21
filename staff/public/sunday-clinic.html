@@ -22,7 +22,7 @@
     <!-- VERSION CHECK - Forces reload if cached version is old -->
     <script>
         (function() {
-            var PAGE_VERSION = '20260621categoryedit1';
+            var PAGE_VERSION = '20260621modalreset1';
             window.__sundayClinicChatVersion = 'v229';
             var storedVersion = localStorage.getItem('sunday_clinic_version');
 
@@ -658,7 +658,7 @@
     <script>
         // Targeted cache version invalidation (no full SW unregister)
         (function() {
-            const SC_CACHE_VERSION = 'v20260621categoryedit1';
+            const SC_CACHE_VERSION = 'v20260621modalreset1';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 if (currentVersion && 'caches' in window) {
@@ -1499,7 +1499,7 @@ PLAN
     <!-- Planning helpers for tindakan and terapi modals -->
     <script>
         (function() {
-            var planningHelpersVersion = '20260515v6';
+            var planningHelpersVersion = '20260621modalreset1';
 
             // Global debug function
             window.checkPlanningStatus = function() {
