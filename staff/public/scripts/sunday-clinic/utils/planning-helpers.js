@@ -13,13 +13,35 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-05-15-v12-no-marker';
+window.PLANNING_HELPERS_VERSION = '2026-06-21-v13-reset-modal-selection';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
 
 window.availableTindakanList = null;
 window.selectedObatForPrescription = null;
+
+function resetTindakanModalSelection() {
+    document.querySelectorAll('.tindakan-checkbox').forEach((checkbox) => {
+        checkbox.checked = false;
+    });
+    document.querySelectorAll('.tindakan-item.selected').forEach((item) => {
+        item.classList.remove('selected');
+    });
+    updateTindakanCount();
+}
+
+function resetTerapiModalSelection() {
+    document.querySelectorAll('.obat-checkbox').forEach((checkbox) => {
+        checkbox.checked = false;
+    });
+    const selectAllCheckbox = document.getElementById('select-all-obat');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    }
+    window.selectedObatForPrescription = null;
+}
 
 // Simple loading state helper for modal
 function showLoadingStatus(modalBody, status) {
@@ -43,6 +65,16 @@ async function openTindakanModal() {
     // If content is already loaded (more than 1 child), just show modal without reloading
     if (modalBody && modalBody.children.length > 1) {
         console.log('[Planning v11] Content already loaded, children:', modalBody.children.length, '- just showing modal');
+        resetTindakanModalSelection();
+        const searchInput = document.querySelector('#tindakan-modal #sc-tindakan-search')
+            || document.querySelector('#tindakan-modal #tindakan-search');
+        if (searchInput) {
+            searchInput.value = '';
+            if (typeof searchInput.oninput === 'function') {
+                searchInput.oninput({ target: searchInput });
+                resetTindakanModalSelection();
+            }
+        }
         if (typeof $ !== 'undefined') {
             $('#tindakan-modal').modal('show');
         }
@@ -256,7 +288,7 @@ function showTindakanModal(tindakanList) {
     renderTindakanGrid();
 
     // Reset count
-    updateTindakanCount();
+    resetTindakanModalSelection();
 
     // Show modal using Bootstrap
     $('#tindakan-modal').modal('show');
@@ -660,6 +692,8 @@ async function renderTindakanItemsList() {
 async function openTerapiModal() {
     console.log('[Planning v11] openTerapiModal called');
 
+    resetTerapiModalSelection();
+
     // Prevent multiple concurrent calls
     if (window._terapiModalLoading) {
         console.log('[Planning v11] Already loading terapi, skipping duplicate call');
@@ -836,6 +870,7 @@ function showTerapiModal(obatList) {
     // Initial render
     console.log('[Planning v11] About to call renderObatTable...');
     renderObatTable();
+    resetTerapiModalSelection();
     console.log('[Planning v11] renderObatTable done, tbody.children:', tbody.children.length);
 
     // Add select all functionality
