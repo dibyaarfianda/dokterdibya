@@ -13555,41 +13555,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         cardsContainer.innerHTML = html;
     }
 
-    // Start hospital examination
-    window.startHospitalExam = async function(patientId, appointmentId, hospitalName) {
-        console.log('[INFO] Starting exam for patient:', patientId, 'appointment:', appointmentId);
-
-        try {
-            // Create or get medical record for this patient
-            const token = localStorage.getItem('vps_auth_token');
-
-            // Mark appointment as in-progress
-            await fetch(`/api/appointments/${appointmentId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ status: 'confirmed' })
-            });
-
-            // Load the Sunday Clinic exam page with this patient
-            if (typeof window.loadSundayClinic === 'function') {
-                await window.loadSundayClinic(patientId);
-            } else {
-                showError('Modul pemeriksaan tidak tersedia. Silakan refresh halaman.');
-            }
-
-        } catch (error) {
-            console.error('Error starting hospital exam:', error);
-            if (typeof showError === 'function') {
-                showError('Gagal memulai pemeriksaan: ' + error.message);
-            } else {
-                alert('Gagal memulai pemeriksaan: ' + error.message);
-            }
-        }
-    };
-
  </script>
 
  <!-- Mobile Helper Script -->

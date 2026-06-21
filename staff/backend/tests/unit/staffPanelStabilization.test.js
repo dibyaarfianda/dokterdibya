@@ -3,30 +3,34 @@ const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => fs.readFileSync(path.join(repoRoot, ...segments), 'utf8');
+const readNormalizedFile = (...segments) => readRepoFile(...segments).replace(/\r\n/g, '\n');
 
 describe('staff panel stabilization sources', () => {
-    test('uses one v266 cache version source for staff assets', () => {
-        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+    test('staff assets share one current cache version source', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const sw = readNormalizedFile('staff', 'public', 'sw.js');
+        const htmlVersionMatch = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/);
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v266';");
+        expect(htmlVersionMatch).not.toBeNull();
+
+        const staffVersion = htmlVersionMatch[1];
         expect(html).toContain('const CACHE_VERSION = window.STAFF_CACHE_VERSION;');
         expect(html).toContain('window.__assetVersion = window.STAFF_CACHE_VERSION;');
-        expect(html).toContain('styles/mobile-responsive.css?v=v266');
-        expect(html).not.toContain("window.STAFF_CACHE_VERSION = 'v264';");
+        expect(html).toMatch(/styles\/mobile-responsive\.css\?v=[^"' ]+/);
+        expect(sw).toContain(`const STAFF_PWA_VERSION = '${staffVersion}';`);
         expect(html).not.toMatch(/CACHE_VERSION\s*=\s*'v241'/);
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
-    test('service worker v266 precache does not include missing chat panel css', () => {
-        const sw = readRepoFile('staff', 'public', 'sw.js');
+    test('service worker precache does not include missing chat panel css', () => {
+        const sw = readNormalizedFile('staff', 'public', 'sw.js');
 
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v266';");
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
     test('staff PWA mobile typography uses Compact 10 with explicit allowlisted exceptions', () => {
-        const mobileCss = readRepoFile('staff', 'public', 'styles', 'mobile-responsive.css').replace(/\r\n/g, '\n');
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css').replace(/\r\n/g, '\n');
+        const mobileCss = readNormalizedFile('staff', 'public', 'styles', 'mobile-responsive.css');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
 
         expect(mobileCss).toContain('Compact 10 text scale with component-specific icon exceptions.');
         expect(mobileCss).toContain('body.mobile-app-mode {\n        font-size: 10px !important;');
@@ -55,9 +59,8 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('staff PWA mobile width normalization keeps outer pages full-width', () => {
-        const mobileCss = readRepoFile('staff', 'public', 'styles', 'mobile-responsive.css').replace(/\r\n/g, '\n');
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css').replace(/\r\n/g, '\n');
-        const sundayClinicHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
+        const mobileCss = readNormalizedFile('staff', 'public', 'styles', 'mobile-responsive.css');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
 
         expect(mobileCss).toContain('STAFF PWA WIDTH NORMALIZATION');
         expect(mobileCss).toContain('body.mobile-app-mode .wrapper,\n    body.mobile-app-mode #main-app,\n    body.mobile-app-mode .content-wrapper,\n    body.mobile-app-mode .content,\n    body.mobile-app-mode section.content,\n    body.mobile-app-mode .container-fluid {');
@@ -69,8 +72,6 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page,\nbody.mobile-app-mode #sunday-clinic-content,');
         expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page .card,\nbody.mobile-app-mode #sunday-clinic-content .card,');
         expect(sundayClinicCss).toContain('body.mobile-app-mode .content-wrapper {\n    padding-left: 0 !important;\n    padding-right: 0 !important;');
-        expect(sundayClinicHtml).toContain('/staff/public/styles/mobile-responsive.css?v=v266');
-        expect(sundayClinicHtml).toContain('/staff/public/styles/sunday-clinic.css?v=v266');
     });
 
     test('patient photo_url schema accepts long Google avatar URLs', () => {
@@ -112,13 +113,14 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials']");
     });
 
-    test('staff panel embeds Sunday Clinic inside index-adminlte shell through Klinik Privat landing', () => {
+    test('staff panel canonicalizes Sunday Clinic to the embedded staff route', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
-        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
-        const sundayClinicEntry = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic.js');
+        const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+        const sundayClinicEntry = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic.js');
         const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
         const medicalImport = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'medical-import.js');
         const patientSidebar = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'patient-history-sidebar.js');
+        const klinikPrivate = readRepoFile('staff', 'public', 'scripts', 'klinik-private.js');
 
         expect(html).not.toContain('id="nav-sunday-clinic"');
         expect(html).not.toContain('href="/staff/public/sunday-clinic.html"');
@@ -130,26 +132,30 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('body.mobile-app-mode .mobile-back-btn');
         expect(html).toContain('id="import-warning-container"');
         expect(html).toContain('id="btn-import-apply-text"');
-        expect(html).toContain('/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260619staff1');
-        expect(html).toContain('/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260619staff1');
+        expect(html).toMatch(/\/staff\/public\/scripts\/sunday-clinic\/utils\/planning-helpers\.js\?v=[^"' ]+/);
+        expect(html).toMatch(/\/staff\/public\/scripts\/sunday-clinic\/components\/shared\/payment-modal\.js\?v=[^"' ]+/);
 
         expect(mainJs).toContain("pages.sundayClinic = grab('sunday-clinic-page');");
         expect(mainJs).toContain("importWithVersion('./sunday-clinic.js')");
         expect(mainJs).toContain("window.showSundayClinicPage = showSundayClinicPage;");
         expect(mainJs).toContain("window.backToSundayClinicLanding = backToSundayClinicLanding;");
+        expect(mainJs).toContain("window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;");
         expect(mainJs).toContain("if (!normalizedMrId) {\n        backToSundayClinicLanding();");
         expect(mainJs).toContain("'nav-sunday-clinic':                    () => showKlinikPrivatePage()");
         expect(mainJs).toContain("ensureSundayClinicModule().catch(error => {");
         expect(mainJs).toContain('/staff/public/index-adminlte.html?page=sunday-clinic&mr=');
+        expect(mainJs).not.toContain('/staff/public/sunday-clinic.html?mr=');
 
-        const klinikPrivate = readRepoFile('staff', 'public', 'scripts', 'klinik-private.js');
         expect(klinikPrivate).toContain("typeof window.showSundayClinicPage === 'function'");
         expect(klinikPrivate).toContain("window.history.pushState({}, '', targetUrl);");
         expect(klinikPrivate).toContain("await window.showSundayClinicPage({");
 
         expect(sundayClinicEntry).toContain('window.__sundayClinicEmbedded = appState.embedded;');
+        expect(sundayClinicEntry).toContain('appState.embedded = true;');
         expect(sundayClinicEntry).toContain('window.initSundayClinicPage = initSundayClinicPage;');
         expect(sundayClinicEntry).toContain("nextUrl.pathname = '/staff/public/index-adminlte.html';");
+        expect(sundayClinicEntry).not.toContain('/staff/public/sunday-clinic.html');
+        expect(sundayClinicEntry).not.toContain("else if (!document.getElementById('sunday-clinic-page')) {");
 
         expect(medicalImport).toContain('/staff/public/index-adminlte.html?page=sunday-clinic&mr=');
         expect(medicalImport).not.toContain('/staff/public/sunday-clinic.html?mr=');
@@ -161,10 +167,33 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('scroll-snap-type: x proximity !important;');
     });
 
+    test('standalone Sunday Clinic page is redirect-only compatibility shell', () => {
+        const standaloneHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
+
+        expect(standaloneHtml).toContain('window.location.replace');
+        expect(standaloneHtml).toContain('/staff/public/index-adminlte.html');
+        expect(standaloneHtml).not.toContain('adminlte.min.css');
+        expect(standaloneHtml).not.toContain('id="sunday-clinic-content"');
+        expect(standaloneHtml).not.toContain('/staff/public/scripts/sunday-clinic.js');
+    });
+
+    test('server redirects legacy Sunday Clinic URLs instead of serving a standalone app shell', () => {
+        const server = readRepoFile('staff', 'backend', 'server.js');
+
+        expect(server).toContain('function buildEmbeddedSundayClinicUrl(req)');
+        expect(server).toContain("app.get('/staff/public/sunday-clinic.html', (req, res) => {");
+        expect(server).toContain('res.redirect(307, buildEmbeddedSundayClinicUrl(req));');
+        expect(server).toContain("app.get(/^\\/sunday-clinic\\/[\\w-]+(?:\\/.*)?$/, (req, res) => {");
+        expect(server).not.toContain('res.sendFile(sundayClinicPagePath);');
+    });
+
     test('Klinik Privat embedded mobile polish stays scoped to Staff PWA mode', () => {
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css').replace(/\r\n/g, '\n');
-        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
-        const sw = readRepoFile('staff', 'public', 'sw.js');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const sw = readNormalizedFile('staff', 'public', 'sw.js');
+        const htmlVersionMatch = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/);
+
+        expect(htmlVersionMatch).not.toBeNull();
 
         expect(sundayClinicCss).toContain('Klinik Privat mobile embedded polish.');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header');
@@ -173,8 +202,16 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #save-pemeriksaan-obstetri');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openBulkImportModal"]');
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v266';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v266';");
+        expect(sw).toContain(`const STAFF_PWA_VERSION = '${htmlVersionMatch[1]}';`);
+    });
+
+    test('staff shell owns hospital exam launcher without inline duplicate Sunday Clinic implementation', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+
+        expect(html).not.toContain('window.startHospitalExam = async function');
+        expect(mainJs).toContain('function startHospitalExam(appointmentId, patientId, patientName) {');
+        expect(mainJs).toContain('window.startHospitalExam = startHospitalExam;');
     });
 
     test('Klinik Privat tablet browser top-gap fix stays scoped to active page', () => {
@@ -299,11 +336,11 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Sunday Clinic patient history sidebar is hidden outside Sunday Clinic', () => {
-        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
 
-        expect(html).toContain('.patient-history-sidebar {\n            display: none !important;');
-        expect(html).toContain('body.sunday-clinic-embedded-active .patient-history-sidebar {\n            display: flex !important;');
+        expect(html).toMatch(/\.patient-history-sidebar\s*\{\s*display:\s*none\s*!important;/);
+        expect(html).toMatch(/body\.sunday-clinic-embedded-active\s+\.patient-history-sidebar\s*\{\s*display:\s*flex\s*!important;/);
         expect(mainJs).toContain("document.body.classList.remove('patient-sidebar-open');");
         expect(mainJs).toContain("patientSidebar.classList.remove('open');");
         expect(mainJs).toContain("patientSidebarToggle.classList.remove('active');");
@@ -311,11 +348,9 @@ describe('staff panel stabilization sources', () => {
 
     test('staff mobile tap feedback uses COMM tap sound parameters', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
-        const sundayClinicHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
         const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
 
         expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v266');
-        expect(sundayClinicHtml).toContain('/staff/public/scripts/tap-feedback.js?v=v266');
         expect(tapFeedback).toContain("osc.type = 'sine';");
         expect(tapFeedback).toContain('osc.frequency.setValueAtTime(800, ac.currentTime);');
         expect(tapFeedback).toContain('osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);');
