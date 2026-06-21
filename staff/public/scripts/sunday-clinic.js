@@ -8,8 +8,8 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.24 - keep remaining fallback navigation inside embedded staff panel
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.24';
+// Version 2.1.25 - expose category edit actions in embedded staff panel
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.25';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';

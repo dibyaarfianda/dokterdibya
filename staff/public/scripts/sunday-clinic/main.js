@@ -360,20 +360,24 @@ class SundayClinicApp {
         const state = stateManager.getState();
         const recordId = state.recordData?.record?.id || state.recordData?.id || null;
 
-        // Edit category button (badge style)
+        // Edit category button
         const editCategoryBtn = `
-            <span class="badge badge-secondary badge-lg ml-2" onclick="window.SundayClinicApp.editCategory(${recordId})"
-                  style="cursor: pointer;" title="Ubah Kategori">
+            <button type="button" class="btn btn-outline-secondary btn-sm sc-category-action-btn"
+                    onclick="window.SundayClinicApp.editCategory()" title="Ubah Kategori"
+                    data-record-id="${recordId || ''}">
                 <i class="fas fa-pencil-alt"></i>
-            </span>
+                <span class="sc-category-action-label">Ubah</span>
+            </button>
         `;
 
-        // Delete button (badge style) - only for dokter
+        // Delete button - only for dokter
         const deleteBtn = isDokter ? `
-            <span class="badge badge-danger badge-lg ml-2" onclick="window.SundayClinicApp.deleteMedicalRecord('${this.currentMrId}')"
-                  style="cursor: pointer;" title="Hapus Rekam Medis">
+            <button type="button" class="btn btn-outline-danger btn-sm sc-category-action-btn"
+                    onclick="window.SundayClinicApp.deleteMedicalRecord('${this.currentMrId}')"
+                    title="Hapus Rekam Medis">
                 <i class="fas fa-trash"></i>
-            </span>
+                <span class="sc-category-action-label">Hapus</span>
+            </button>
         ` : '';
 
         // Current section label (shown only on mobile)
@@ -713,8 +717,16 @@ class SundayClinicApp {
     /**
      * Edit category - show dropdown to select new category
      */
-    async editCategory(recordId) {
-        if (!recordId) {
+    async editCategory(recordId = null) {
+        const state = stateManager.getState();
+        const resolvedRecordId = recordId
+            || state.recordData?.record?.id
+            || state.recordData?.id
+            || null;
+
+        console.log('[SundayClinic] editCategory record id:', resolvedRecordId);
+
+        if (!resolvedRecordId) {
             this.showError('Record ID tidak ditemukan');
             return;
         }
@@ -748,7 +760,7 @@ class SundayClinicApp {
             });
 
             if (newCategory && newCategory !== this.currentCategory) {
-                await this.updateCategory(recordId, newCategory);
+                await this.updateCategory(resolvedRecordId, newCategory);
             }
         } else {
             // Fallback to simple prompt
@@ -760,7 +772,7 @@ class SundayClinicApp {
             );
 
             if (input && categoryMap[input] && categoryMap[input] !== this.currentCategory) {
-                await this.updateCategory(recordId, categoryMap[input]);
+                await this.updateCategory(resolvedRecordId, categoryMap[input]);
             }
         }
     }
