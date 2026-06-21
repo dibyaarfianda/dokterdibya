@@ -117,6 +117,10 @@ body.patient-tool-shell .topbar {
     display: block !important;
 }
 
+body.patient-tool-shell #home-topbar {
+    margin-bottom: clamp(22px, 4vh, 42px) !important;
+}
+
 body.patient-tool-shell .topbar-inner {
     width: min(100%, 860px) !important;
     margin: 0 auto !important;
@@ -151,7 +155,7 @@ body.patient-tool-shell .brand-link {
 body.patient-tool-shell #home-brand-title,
 body.patient-tool-shell .brand-title {
     font-family: var(--display) !important;
-    font-size: 16px !important;
+    font-size: 23.04px !important;
     line-height: 1.02 !important;
     font-weight: 800 !important;
     letter-spacing: -0.04em !important;
@@ -169,7 +173,7 @@ body.patient-tool-shell #home-brand-sub,
 body.patient-tool-shell .brand-sub {
     margin-top: 3px !important;
     max-width: none !important;
-    font-size: 7.2px !important;
+    font-size: 10.368px !important;
     line-height: 1.2 !important;
     font-weight: 700 !important;
     letter-spacing: 0.24em !important;
@@ -249,7 +253,7 @@ body.patient-tool-shell #content-wrapper {
 }
 
 body.patient-tool-shell .hero-card {
-    margin-top: 60px !important;
+    margin-top: 0 !important;
     border: 1px solid var(--line) !important;
     border-radius: 28px !important;
     background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,242,236,0.86)) !important;
@@ -863,9 +867,9 @@ body.header-animated.patient-tool-shell .hero-card .today-row { animation: shell
     body.patient-tool-shell .app { padding-left: 14px !important; padding-right: 14px !important; }
     body.patient-tool-shell .hero-card { padding: 16px !important; border-radius: 24px !important; }
     body.patient-tool-shell #home-brand-title,
-    body.patient-tool-shell .brand-title { font-size: 13px !important; }
+    body.patient-tool-shell .brand-title { font-size: 19px !important; }
     body.patient-tool-shell #home-brand-sub,
-    body.patient-tool-shell .brand-sub { font-size: 5.8px !important; }
+    body.patient-tool-shell .brand-sub { font-size: 8.4px !important; }
     body.patient-tool-shell .status-chip { font-size: 8px !important; }
     body.patient-tool-shell .hero-title,
     body.patient-tool-shell .hero-title:not(#pmc-root *) { font-size: clamp(21px, 6vw, 34px) !important; line-height: 0.96 !important; }
