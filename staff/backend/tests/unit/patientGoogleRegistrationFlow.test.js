@@ -36,10 +36,10 @@ describe('patient Google registration flow contract', () => {
         expect(mobileCallback).toContain('/patient-login.html?mode=register');
         expect(mobileDisabled).toContain('patient-login.html?mode=register');
         expect(mobileDisabled).not.toContain('autoGoogle=1');
-        expect(rootSw).toContain("const CACHE_VERSION = '20260621headerhome2';");
-        expect(sisiwanitaSw).toContain("const CACHE_VERSION = '20260621headerhome2';");
-        expect(patientMenu).toContain('/patient-portal.webmanifest?v=20260621headerhome2');
-        expect(patientMenu).toContain("/sw.js?v=20260621headerhome2");
-        expect(manifest).toContain('/patient-menu.html?source=pwa&v=20260621headerhome2');
+        expect(rootSw).toContain("const CACHE_VERSION = '20260622storyhero1';");
+        expect(sisiwanitaSw).toContain("const CACHE_VERSION = '20260622storyhero1';");
+        expect(patientMenu).toContain('/patient-portal.webmanifest?v=20260622storyhero1');
+        expect(patientMenu).toContain("/sw.js?v=20260622storyhero1");
+        expect(manifest).toContain('/patient-menu.html?source=pwa&v=20260622storyhero1');
     });
 });
