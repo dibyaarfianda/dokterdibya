@@ -112,6 +112,24 @@ git commit -m "Clear description of what was done"
 git push origin main
 ```
 
+## CRITICAL: Always Deploy After Changes
+
+**ALWAYS deploy after completing implementation, unless the user explicitly says not to deploy or says the work is local-only.**
+
+- Default assumption for this repo: finished implementation means `git add`, `git commit`, `git push`, **deploy to production**, and verify the live result
+- Do not stop after push if the change is meant for the real app or website
+- For this project, production deploy means the real VPS flow on `root@72.60.78.188`
+- After deploy, verify the live route, page, asset, or API that was changed
+- If deploy is blocked by server state, report the exact blocker and keep the deploy as the next pending step
+
+```bash
+# Expected completion flow for normal implementation tasks:
+git add <files>
+git commit -m "Clear description of what was done"
+git push origin main
+# then deploy to production and verify live behavior
+```
+
 ## Code Standards
 
 ### 1. Authentication Token
