@@ -132,91 +132,19 @@ function renderSkeleton() {
     root.innerHTML = `
         <div class="row">
             <div class="col-12">
-                <div class="card card-primary card-outline">
-                    <div class="card-header">
-                        <h3 class="card-title" id="birth-class-session-form-title">
-                            <i class="fas fa-calendar-plus mr-2"></i>Tambah Sesi Kelas
-                        </h3>
-                    </div>
-                    <form id="birth-class-session-form" class="card-body">
-                        <div class="form-group">
-                            <label for="birth-class-title">Judul Kelas</label>
-                            <input type="text" class="form-control" id="birth-class-title" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col-6">
-                                <label for="birth-class-date">Tanggal</label>
-                                <input type="date" class="form-control" id="birth-class-date" required>
-                            </div>
-                            <div class="form-group col-6">
-                                <label for="birth-class-quota">Kuota</label>
-                                <input type="number" class="form-control" id="birth-class-quota" min="1" max="200" value="20" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group col-6">
-                                <label for="birth-class-start-time">Jam Mulai</label>
-                                <input type="time" class="form-control" id="birth-class-start-time" required>
-                            </div>
-                            <div class="form-group col-6">
-                                <label for="birth-class-end-time">Jam Selesai</label>
-                                <input type="time" class="form-control" id="birth-class-end-time">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-location">Lokasi</label>
-                            <input type="text" class="form-control" id="birth-class-location" placeholder="Contoh: Klinik Private Lt.2" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-instructor">Instruktur</label>
-                            <input type="text" class="form-control" id="birth-class-instructor" placeholder="Nama dokter/bidan">
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-price">Biaya Kelas (Rp)</label>
-                            <input type="number" class="form-control" id="birth-class-price" min="0" step="5000" value="0" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-learning-points">Materi yang Dipelajari</label>
-                            <textarea class="form-control" id="birth-class-learning-points" rows="3" placeholder="Contoh: Tanda persalinan, teknik napas, manajemen nyeri"></textarea>
-                            <small class="text-muted">Pisahkan poin dengan baris baru.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-items-to-bring">Yang Harus Dibawa</label>
-                            <textarea class="form-control" id="birth-class-items-to-bring" rows="2" placeholder="Contoh: Buku KIA, hasil lab terakhir, kartu identitas"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-benefits">Benefit Peserta</label>
-                            <textarea class="form-control" id="birth-class-benefits" rows="2" placeholder="Contoh: Modul kelas, konsultasi singkat, snack"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="birth-class-notes">Catatan</label>
-                            <textarea class="form-control" id="birth-class-notes" rows="2" placeholder="Informasi tambahan kelas"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="birth-class-is-active" checked>
-                                <label class="custom-control-label" for="birth-class-is-active">Sesi Aktif</label>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <button type="button" class="btn btn-secondary" id="birth-class-reset-session-btn">
-                                <i class="fas fa-undo mr-1"></i>Reset
-                            </button>
-                            <button type="submit" class="btn btn-primary" id="birth-class-save-session-btn">
-                                <i class="fas fa-save mr-1"></i>Simpan Sesi
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
                 <div class="card card-info card-outline">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title mb-0">
                             <i class="fas fa-list mr-2"></i>Daftar Sesi Kelas Dr. Dibya
                         </h3>
-                        <button class="btn btn-sm btn-outline-primary" id="birth-class-refresh-btn">
-                            <i class="fas fa-sync-alt mr-1"></i>Refresh
-                        </button>
+                        <div class="d-flex" style="gap: 8px;">
+                            <button class="btn btn-sm btn-primary" id="birth-class-open-session-modal-btn">
+                                <i class="fas fa-plus mr-1"></i>Tambah Sesi
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" id="birth-class-refresh-btn">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -282,7 +210,124 @@ function renderSkeleton() {
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="birth-class-session-modal" tabindex="-1" role="dialog" aria-labelledby="birth-class-session-form-title" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <form id="birth-class-session-form" class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="birth-class-session-form-title">
+                            <i class="fas fa-calendar-plus mr-2"></i>Tambah Sesi Kelas
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="birth-class-title">Judul Kelas</label>
+                            <input type="text" class="form-control" id="birth-class-title" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="birth-class-date">Tanggal</label>
+                                <input type="date" class="form-control" id="birth-class-date" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="birth-class-quota">Kuota</label>
+                                <input type="number" class="form-control" id="birth-class-quota" min="1" max="200" value="20" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="birth-class-start-time">Jam Mulai</label>
+                                <input type="time" class="form-control" id="birth-class-start-time" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="birth-class-end-time">Jam Selesai</label>
+                                <input type="time" class="form-control" id="birth-class-end-time">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-location">Lokasi</label>
+                            <input type="text" class="form-control" id="birth-class-location" placeholder="Contoh: Klinik Private Lt.2" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-instructor">Instruktur</label>
+                            <input type="text" class="form-control" id="birth-class-instructor" placeholder="Nama dokter/bidan">
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-price">Biaya Kelas (Rp)</label>
+                            <input type="number" class="form-control" id="birth-class-price" min="0" step="5000" value="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-learning-points">Materi yang Dipelajari</label>
+                            <textarea class="form-control" id="birth-class-learning-points" rows="3" placeholder="Contoh: Tanda persalinan, teknik napas, manajemen nyeri"></textarea>
+                            <small class="text-muted">Pisahkan poin dengan baris baru.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-items-to-bring">Yang Harus Dibawa</label>
+                            <textarea class="form-control" id="birth-class-items-to-bring" rows="2" placeholder="Contoh: Buku KIA, hasil lab terakhir, kartu identitas"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-benefits">Benefit Peserta</label>
+                            <textarea class="form-control" id="birth-class-benefits" rows="2" placeholder="Contoh: Modul kelas, konsultasi singkat, snack"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="birth-class-notes">Catatan</label>
+                            <textarea class="form-control" id="birth-class-notes" rows="2" placeholder="Informasi tambahan kelas"></textarea>
+                        </div>
+                        <div class="form-group mb-0">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="birth-class-is-active" checked>
+                                <label class="custom-control-label" for="birth-class-is-active">Sesi Aktif</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <button type="button" class="btn btn-secondary" id="birth-class-reset-session-btn">
+                            <i class="fas fa-undo mr-1"></i>Reset
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="birth-class-save-session-btn">
+                            <i class="fas fa-save mr-1"></i>Simpan Sesi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     `;
+}
+
+function showSessionModal() {
+    const modal = document.getElementById('birth-class-session-modal');
+    if (!modal) return;
+
+    if (window.jQuery) {
+        window.jQuery(modal).modal('show');
+        return;
+    }
+
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    modal.removeAttribute('aria-hidden');
+}
+
+function hideSessionModal() {
+    const modal = document.getElementById('birth-class-session-modal');
+    if (!modal) return;
+
+    if (window.jQuery) {
+        window.jQuery(modal).modal('hide');
+        return;
+    }
+
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+function openNewSessionModal() {
+    resetSessionForm();
+    showSessionModal();
 }
 
 function resetSessionForm() {
@@ -344,11 +389,7 @@ function fillSessionForm(session) {
 
     if (title) title.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Sesi Kelas';
     if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Update Sesi';
-
-    const root = document.getElementById('birth-class-root');
-    if (root) {
-        root.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    showSessionModal();
 }
 
 async function loadSessions() {
@@ -541,6 +582,7 @@ async function saveSession(event) {
         }
 
         resetSessionForm();
+        hideSessionModal();
         await Promise.all([loadSessions(), loadRegistrations()]);
     } catch (error) {
         console.error('Error saving Kelas Dr. Dibya session:', error);
@@ -682,12 +724,20 @@ function handleRootClick(event) {
 function bindEvents() {
     document.getElementById('birth-class-session-form')?.addEventListener('submit', saveSession);
     document.getElementById('birth-class-reset-session-btn')?.addEventListener('click', resetSessionForm);
+    document.getElementById('birth-class-open-session-modal-btn')?.addEventListener('click', openNewSessionModal);
     document.getElementById('birth-class-refresh-btn')?.addEventListener('click', () => {
         Promise.all([loadSessions(), loadRegistrations()]);
     });
     document.getElementById('birth-class-registration-filter')?.addEventListener('change', loadRegistrations);
     document.getElementById('birth-class-registration-session-filter')?.addEventListener('change', loadRegistrations);
     document.getElementById('birth-class-root')?.addEventListener('click', handleRootClick);
+
+    const modal = document.getElementById('birth-class-session-modal');
+    if (modal && window.jQuery) {
+        window.jQuery(modal).on('hidden.bs.modal', () => {
+            resetSessionForm();
+        });
+    }
 }
 
 async function loadInitialData() {
