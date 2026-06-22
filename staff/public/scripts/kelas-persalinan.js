@@ -151,14 +151,14 @@ function renderSkeleton() {
                             <table class="table table-sm table-striped mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Tanggal & Jam</th>
-                                        <th>Judul</th>
-                                        <th>Materi / Benefit</th>
-                                        <th>Lokasi</th>
-                                        <th>Biaya</th>
-                                        <th>Kuota</th>
-                                        <th>Status</th>
-                                        <th class="text-right" style="width: 150px; min-width: 150px;">Aksi</th>
+                                        <th class="text-center">Tanggal & Jam</th>
+                                        <th class="text-center">Judul</th>
+                                        <th class="text-center">Materi / Benefit</th>
+                                        <th class="text-center">Lokasi</th>
+                                        <th class="text-center">Biaya</th>
+                                        <th class="text-center">Kuota</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center" style="width: 150px; min-width: 150px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
@@ -192,13 +192,13 @@ function renderSkeleton() {
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Peserta</th>
-                                        <th>Sesi</th>
-                                        <th>Catatan</th>
-                                        <th>Pembayaran</th>
-                                        <th>Status</th>
-                                        <th>Ubah Status</th>
-                                        <th class="text-right" style="width: 120px; min-width: 120px;">Aksi</th>
+                                        <th class="text-center">Peserta</th>
+                                        <th class="text-center">Sesi</th>
+                                        <th class="text-center">Catatan</th>
+                                        <th class="text-center">Pembayaran</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Ubah Status</th>
+                                        <th class="text-center" style="width: 120px; min-width: 120px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
