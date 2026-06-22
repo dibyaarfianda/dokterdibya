@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260621headerhome2';
+    var VERSION = '20260622storyhero1';
     var pageDefaults = {
         '/album-usg.html': {
             activeNav: 'dokumen',
@@ -192,7 +192,9 @@
             document.querySelector('.page-body') ||
             document.querySelector('main.page-wrap') ||
             document.querySelector('main.reading-room') ||
-            document.querySelector('.reading-room');
+            document.querySelector('.reading-room') ||
+            document.querySelector('main.story-room') ||
+            document.querySelector('.story-room');
     }
 
     function injectHero(config) {
