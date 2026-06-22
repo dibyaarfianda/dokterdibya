@@ -270,10 +270,11 @@ function renderSkeleton() {
                                         <th>Pembayaran</th>
                                         <th>Status</th>
                                         <th>Ubah Status</th>
+                                        <th class="text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
-                                    <tr><td colspan="6" class="text-center py-4">Memuat data...</td></tr>
+                                    <tr><td colspan="7" class="text-center py-4">Memuat data...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -401,6 +402,9 @@ async function loadSessions() {
                         <button class="btn btn-xs ${Number(session.is_active) === 1 ? 'btn-warning' : 'btn-success'}" data-action="toggle-session" data-id="${session.id}" data-active="${Number(session.is_active) === 1 ? 0 : 1}">
                             <i class="fas ${Number(session.is_active) === 1 ? 'fa-toggle-off' : 'fa-toggle-on'}"></i>
                         </button>
+                        <button class="btn btn-xs btn-danger" data-action="delete-session" data-id="${session.id}" title="Hapus sesi kelas">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -434,7 +438,7 @@ async function loadRegistrations() {
         const registrations = result.data || [];
 
         if (!registrations.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada pendaftar.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Belum ada pendaftar.</td></tr>';
             return;
         }
 
@@ -484,11 +488,16 @@ async function loadRegistrations() {
                         </div>
                     </div>
                 </td>
+                <td class="text-right">
+                    <button class="btn btn-sm btn-danger" data-action="delete-registration" data-id="${row.id}" title="Hapus peserta">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             </tr>
         `).join('');
     } catch (error) {
         console.error('Error loading Kelas Dr. Dibya registrations:', error);
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
@@ -593,6 +602,43 @@ async function updatePaymentStatus(registrationId) {
     }
 }
 
+async function deleteSession(sessionId) {
+    if (!sessionId) return;
+    if (!confirm('Hapus sesi kelas ini? Jika masih ada peserta, sesi tidak bisa dihapus.')) return;
+
+    try {
+        await apiRequest(`/sessions/${sessionId}`, {
+            method: 'DELETE'
+        });
+
+        if (editingSessionId === sessionId) {
+            resetSessionForm();
+        }
+        await Promise.all([loadSessions(), loadRegistrations()]);
+        alert('Sesi kelas berhasil dihapus.');
+    } catch (error) {
+        console.error('Error deleting Kelas Dr. Dibya session:', error);
+        alert(error.message);
+    }
+}
+
+async function deleteRegistration(registrationId) {
+    if (!registrationId) return;
+    if (!confirm('Hapus peserta ini dari daftar kelas?')) return;
+
+    try {
+        await apiRequest(`/registrations/${registrationId}`, {
+            method: 'DELETE'
+        });
+
+        await Promise.all([loadSessions(), loadRegistrations()]);
+        alert('Peserta berhasil dihapus.');
+    } catch (error) {
+        console.error('Error deleting Kelas Dr. Dibya registration:', error);
+        alert(error.message);
+    }
+}
+
 function handleRootClick(event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
@@ -613,6 +659,11 @@ function handleRootClick(event) {
         return;
     }
 
+    if (action === 'delete-session') {
+        deleteSession(id);
+        return;
+    }
+
     if (action === 'save-registration-status') {
         updateRegistrationStatus(id);
         return;
@@ -620,6 +671,11 @@ function handleRootClick(event) {
 
     if (action === 'save-payment-status') {
         updatePaymentStatus(id);
+        return;
+    }
+
+    if (action === 'delete-registration') {
+        deleteRegistration(id);
     }
 }
 
