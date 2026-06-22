@@ -151,14 +151,14 @@ function renderSkeleton() {
                             <table class="table table-sm table-striped mb-0">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: center;">Tanggal & Jam</th>
-                                        <th style="text-align: center;">Judul</th>
-                                        <th style="text-align: center;">Materi / Benefit</th>
-                                        <th style="text-align: center;">Lokasi</th>
-                                        <th style="text-align: center;">Biaya</th>
-                                        <th style="text-align: center;">Kuota</th>
-                                        <th style="text-align: center;">Status</th>
-                                        <th style="text-align: center; width: 150px; min-width: 150px;">Aksi</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Tanggal & Jam</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Judul</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Materi / Benefit</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Lokasi</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Biaya</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Kuota</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Status</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important; width: 150px; min-width: 150px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
@@ -192,13 +192,13 @@ function renderSkeleton() {
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: center;">Peserta</th>
-                                        <th style="text-align: center;">Sesi</th>
-                                        <th style="text-align: center;">Catatan</th>
-                                        <th style="text-align: center;">Pembayaran</th>
-                                        <th style="text-align: center;">Status</th>
-                                        <th style="text-align: center;">Ubah Status</th>
-                                        <th style="text-align: center; width: 120px; min-width: 120px;">Aksi</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Peserta</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Sesi</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Catatan</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Pembayaran</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Status</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important;">Ubah Status</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important; width: 120px; min-width: 120px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
