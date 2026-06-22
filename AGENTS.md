@@ -301,6 +301,21 @@ AdminLTE memiliki default styles dengan specificity tinggi. **Selalu gunakan `!i
 - Gunakan selector yang spesifik (misal: `.nav-treeview .nav-link .nav-icon`)
 - Selalu tambahkan `!important` untuk override AdminLTE defaults
 
+### 7b. Table Header Alignment
+
+Untuk kasus tabel staff di repo ini, **jangan anggap class alignment seperti `text-center` pasti menang di `<th>`**.
+
+Jika user meminta judul kolom tabel rata tengah dan hasil live belum ikut berubah:
+- gunakan `style="text-align: center;"` langsung pada elemen `<th>`
+- untuk kolom aksi, gabungkan alignment itu dengan `width` / `min-width` inline bila perlu
+- verifikasi asset live yang benar-benar dilayani server, bukan hanya file lokal atau file di disk VPS
+
+**Contoh yang aman:**
+```html
+<th style="text-align: center;">Status</th>
+<th style="text-align: center; width: 150px; min-width: 150px;">Aksi</th>
+```
+
 ### 8. Mobile App (Future Plan)
 
 **Pilihan: Capacitor** untuk membuat APK patient portal yang bisa di-publish ke Google Play Store dan App Store.
