@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260621ruangbaca2';
+    var VERSION = '20260621headerhome2';
     var pageDefaults = {
         '/album-usg.html': {
             activeNav: 'dokumen',
