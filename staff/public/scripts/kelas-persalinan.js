@@ -151,14 +151,14 @@ function renderSkeleton() {
                             <table class="table table-sm table-striped mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="text-center">Tanggal & Jam</th>
-                                        <th class="text-center">Judul</th>
-                                        <th class="text-center">Materi / Benefit</th>
-                                        <th class="text-center">Lokasi</th>
-                                        <th class="text-center">Biaya</th>
-                                        <th class="text-center">Kuota</th>
-                                        <th class="text-center">Status</th>
-                                        <th class="text-center" style="width: 150px; min-width: 150px;">Aksi</th>
+                                        <th style="text-align: center;">Tanggal & Jam</th>
+                                        <th style="text-align: center;">Judul</th>
+                                        <th style="text-align: center;">Materi / Benefit</th>
+                                        <th style="text-align: center;">Lokasi</th>
+                                        <th style="text-align: center;">Biaya</th>
+                                        <th style="text-align: center;">Kuota</th>
+                                        <th style="text-align: center;">Status</th>
+                                        <th style="text-align: center; width: 150px; min-width: 150px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
@@ -192,13 +192,13 @@ function renderSkeleton() {
                             <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="text-center">Peserta</th>
-                                        <th class="text-center">Sesi</th>
-                                        <th class="text-center">Catatan</th>
-                                        <th class="text-center">Pembayaran</th>
-                                        <th class="text-center">Status</th>
-                                        <th class="text-center">Ubah Status</th>
-                                        <th class="text-center" style="width: 120px; min-width: 120px;">Aksi</th>
+                                        <th style="text-align: center;">Peserta</th>
+                                        <th style="text-align: center;">Sesi</th>
+                                        <th style="text-align: center;">Catatan</th>
+                                        <th style="text-align: center;">Pembayaran</th>
+                                        <th style="text-align: center;">Status</th>
+                                        <th style="text-align: center;">Ubah Status</th>
+                                        <th style="text-align: center; width: 120px; min-width: 120px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
