@@ -608,6 +608,57 @@ router.patch('/sessions/:id/status', verifyToken, requireMenuAccess('klinik_priv
     }
 });
 
+// Staff: delete session
+router.delete('/sessions/:id', verifyToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+    try {
+        await ensureTables();
+
+        const sessionId = Number(req.params.id);
+        if (!sessionId) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID sesi kelas tidak valid'
+            });
+        }
+
+        const [registrationRows] = await db.query(
+            'SELECT COUNT(*) AS total FROM birth_class_registrations WHERE session_id = ?',
+            [sessionId]
+        );
+        const registrationCount = Number(registrationRows[0]?.total || 0);
+
+        if (registrationCount > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Sesi kelas masih memiliki peserta. Hapus peserta terlebih dahulu.'
+            });
+        }
+
+        const [result] = await db.query(
+            'DELETE FROM birth_class_sessions WHERE id = ?',
+            [sessionId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Sesi kelas tidak ditemukan'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Sesi kelas berhasil dihapus'
+        });
+    } catch (error) {
+        console.error('Error deleting Kelas Dr. Dibya session:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal menghapus sesi kelas'
+        });
+    }
+});
+
 // Staff: list registrations
 router.get('/registrations', verifyToken, requireMenuAccess('klinik_privat'), async (req, res) => {
     try {
@@ -739,6 +790,44 @@ router.patch('/registrations/:id/payment-status', verifyToken, requireMenuAccess
         res.status(500).json({
             success: false,
             message: 'Gagal memperbarui status pembayaran'
+        });
+    }
+});
+
+// Staff: delete registration
+router.delete('/registrations/:id', verifyToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+    try {
+        await ensureTables();
+
+        const registrationId = Number(req.params.id);
+        if (!registrationId) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID peserta tidak valid'
+            });
+        }
+
+        const [result] = await db.query(
+            'DELETE FROM birth_class_registrations WHERE id = ?',
+            [registrationId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Data pendaftaran tidak ditemukan'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Peserta berhasil dihapus'
+        });
+    } catch (error) {
+        console.error('Error deleting Kelas Dr. Dibya registration:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal menghapus peserta kelas'
         });
     }
 });
