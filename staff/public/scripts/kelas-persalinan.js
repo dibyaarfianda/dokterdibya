@@ -158,7 +158,7 @@ function renderSkeleton() {
                                         <th>Biaya</th>
                                         <th>Kuota</th>
                                         <th>Status</th>
-                                        <th class="text-right">Aksi</th>
+                                        <th class="text-right" style="width: 150px; min-width: 150px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
@@ -198,7 +198,7 @@ function renderSkeleton() {
                                         <th>Pembayaran</th>
                                         <th>Status</th>
                                         <th>Ubah Status</th>
-                                        <th class="text-right">Aksi</th>
+                                        <th class="text-right" style="width: 120px; min-width: 120px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
@@ -436,7 +436,7 @@ async function loadSessions() {
                         <small class="text-muted">Sisa ${session.available_slots}</small>
                     </td>
                     <td>${activeBadge}</td>
-                    <td class="text-right">
+                    <td class="text-right text-nowrap" style="min-width: 150px;">
                         <button class="btn btn-xs btn-info" data-action="edit-session" data-id="${session.id}">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -472,7 +472,7 @@ async function loadRegistrations() {
     if (sessionId) params.set('session_id', sessionId);
     const query = params.toString() ? `?${params.toString()}` : '';
 
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat pendaftar...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat pendaftar...</td></tr>';
 
     try {
         const result = await apiRequest(`/registrations${query}`);
@@ -529,7 +529,7 @@ async function loadRegistrations() {
                         </div>
                     </div>
                 </td>
-                <td class="text-right">
+                <td class="text-right text-nowrap" style="min-width: 120px;">
                     <button class="btn btn-sm btn-danger" data-action="delete-registration" data-id="${row.id}" title="Hapus peserta">
                         <i class="fas fa-trash"></i>
                     </button>
