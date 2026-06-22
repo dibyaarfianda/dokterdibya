@@ -263,10 +263,6 @@ function renderSkeleton() {
                             <small class="text-muted">Pisahkan poin dengan baris baru.</small>
                         </div>
                         <div class="form-group">
-                            <label for="birth-class-items-to-bring">Yang Harus Dibawa</label>
-                            <textarea class="form-control" id="birth-class-items-to-bring" rows="2" placeholder="Contoh: Buku KIA, hasil lab terakhir, kartu identitas"></textarea>
-                        </div>
-                        <div class="form-group">
                             <label for="birth-class-benefits">Benefit Peserta</label>
                             <textarea class="form-control" id="birth-class-benefits" rows="2" placeholder="Contoh: Modul kelas, konsultasi singkat, snack"></textarea>
                         </div>
@@ -342,7 +338,6 @@ function resetSessionForm() {
         'birth-class-location',
         'birth-class-instructor',
         'birth-class-learning-points',
-        'birth-class-items-to-bring',
         'birth-class-benefits',
         'birth-class-notes'
     ];
@@ -380,7 +375,6 @@ function fillSessionForm(session) {
     document.getElementById('birth-class-quota').value = session.quota || 20;
     document.getElementById('birth-class-price').value = Number(session.price || 0);
     document.getElementById('birth-class-learning-points').value = session.learning_points || '';
-    document.getElementById('birth-class-items-to-bring').value = session.items_to_bring || '';
     document.getElementById('birth-class-benefits').value = session.benefits || '';
     document.getElementById('birth-class-notes').value = session.notes || '';
     document.getElementById('birth-class-is-active').checked = Number(session.is_active) === 1;
@@ -546,7 +540,6 @@ async function saveSession(event) {
         quota: Number(document.getElementById('birth-class-quota')?.value || 0),
         price: Number(document.getElementById('birth-class-price')?.value || 0),
         learning_points: document.getElementById('birth-class-learning-points')?.value?.trim() || null,
-        items_to_bring: document.getElementById('birth-class-items-to-bring')?.value?.trim() || null,
         benefits: document.getElementById('birth-class-benefits')?.value?.trim() || null,
         notes: document.getElementById('birth-class-notes')?.value?.trim() || null,
         is_active: document.getElementById('birth-class-is-active')?.checked ? 1 : 0
