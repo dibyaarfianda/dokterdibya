@@ -1932,6 +1932,9 @@
             max-height: min(76vh, 560px);
             transform: translate(-50%, -50%) scale(0.98);
         }
+        #topbar-modal.is-settings-modal {
+            width: min(620px, calc(100% - 30px));
+        }
         #topbar-modal.is-profile-modal.active {
             transform: translate(-50%, -50%) scale(1);
         }
@@ -2177,9 +2180,9 @@
             background: rgba(255,255,255,0.74);
             padding: 14px;
             display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(248px, 286px);
+            grid-template-columns: 1fr;
             align-items: start;
-            gap: 14px;
+            gap: 12px;
         }
         .settings-birth-copy {
             min-width: 0;
@@ -2620,7 +2623,7 @@
             .birth-congrats-message p { font-size: 11px; line-height: 1.42; }
             .birth-congrats-card-actions { gap: 8px; }
             .birth-congrats-card-action { padding: 11px 6px; font-size: 9.5px; }
-            .settings-birth-item { grid-template-columns: 1fr; }
+            .settings-birth-item { gap: 10px; }
             .settings-birth-actions { grid-template-columns: 1fr; }
             .birth-form-grid { grid-template-columns: 1fr; }
             .modal-card {
@@ -2632,6 +2635,9 @@
             #topbar-modal {
                 top: calc(env(safe-area-inset-top, 0px) + 8px);
                 transform: translate(-50%, 0) scale(0.98);
+            }
+            #topbar-modal.is-settings-modal {
+                width: calc(100% - 18px);
             }
             #topbar-modal.active {
                 transform: translate(-50%, 0) scale(1);
@@ -3751,6 +3757,7 @@
             kickerEl.textContent = kicker || 'SISIwanita';
             bodyEl.innerHTML = bodyHtml || '';
             modal.classList.toggle('is-profile-modal', String(title || '').toLowerCase() === 'profil');
+            modal.classList.toggle('is-settings-modal', String(title || '').toLowerCase() === 'pengaturan');
             overlay.classList.add('active');
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
