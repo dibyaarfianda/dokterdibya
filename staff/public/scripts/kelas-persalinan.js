@@ -131,7 +131,7 @@ function renderSkeleton() {
 
     root.innerHTML = `
         <div class="row">
-            <div class="col-lg-4">
+            <div class="col-12">
                 <div class="card card-primary card-outline">
                     <div class="card-header">
                         <h3 class="card-title" id="birth-class-session-form-title">
@@ -208,8 +208,7 @@ function renderSkeleton() {
                         </div>
                     </form>
                 </div>
-            </div>
-            <div class="col-lg-8">
+
                 <div class="card card-info card-outline">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title mb-0">
