@@ -2175,38 +2175,59 @@
             border: 1px solid rgba(179,95,123,0.14);
             border-radius: 14px;
             background: rgba(255,255,255,0.74);
-            padding: 10px;
+            padding: 14px;
             display: grid;
-            grid-template-columns: 1fr auto;
-            align-items: center;
-            gap: 10px;
+            grid-template-columns: minmax(0, 1fr) minmax(248px, 286px);
+            align-items: start;
+            gap: 14px;
         }
-        .settings-birth-item strong { display: block; color: var(--ink); font-size: 12px; line-height: 1.25; font-weight: 900; }
-        .settings-birth-item span { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; line-height: 1.35; font-weight: 750; }
+        .settings-birth-copy {
+            min-width: 0;
+            display: grid;
+            gap: 4px;
+            align-content: start;
+        }
+        .settings-birth-item strong { display: block; color: var(--ink); font-size: 13px; line-height: 1.15; font-weight: 900; letter-spacing: -0.02em; }
+        .settings-birth-item span { display: block; margin-top: 0; color: var(--muted); font-size: 10px; line-height: 1.35; font-weight: 750; }
         .settings-birth-status {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            margin-top: 6px;
+            margin-top: 8px;
             color: var(--green);
             font-size: 10px;
             font-weight: 900;
+            font-style: normal;
+            line-height: 1.35;
         }
         .settings-birth-status.hidden { color: var(--rose); }
         .settings-birth-action {
-            min-height: 34px;
+            min-height: 42px;
             border: 1px solid rgba(92,127,114,0.18);
             border-radius: 999px;
             background: var(--ink);
             color: #fff;
-            padding: 0 12px;
-            font-size: 10px;
+            padding: 0 14px;
+            font-size: 11px;
             font-weight: 900;
-            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.15;
             cursor: pointer;
         }
         .settings-birth-action.secondary { background: rgba(255,255,255,0.76); color: var(--ink); }
-        .settings-birth-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+        .settings-birth-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            align-content: start;
+        }
+        .settings-birth-actions .settings-birth-action:only-child,
+        .settings-birth-actions .settings-birth-action:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+        }
         .settings-field { display: grid; gap: 6px; }
         .settings-field label { color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
         .settings-input, .settings-select {
@@ -2600,8 +2621,7 @@
             .birth-congrats-card-actions { gap: 8px; }
             .birth-congrats-card-action { padding: 11px 6px; font-size: 9.5px; }
             .settings-birth-item { grid-template-columns: 1fr; }
-            .settings-birth-actions { justify-content: flex-start; }
-            .settings-birth-action { justify-self: start; }
+            .settings-birth-actions { grid-template-columns: 1fr; }
             .birth-form-grid { grid-template-columns: 1fr; }
             .modal-card {
                 width: calc(100% - 18px);
@@ -3951,7 +3971,7 @@
                     }
                     const action = actions.length ? '<div class="settings-birth-actions">' + actions.join('') + '</div>' : '';
                     return '<div class="settings-birth-item">' +
-                        '<div>' +
+                        '<div class="settings-birth-copy">' +
                             '<strong>' + escapeHtml(babyName) + '</strong>' +
                             '<span>Anak ke-' + escapeHtml(Number.isFinite(childNumber) && childNumber > 0 ? childNumber : 1) + ' - ' + escapeHtml(dateValue) + '</span>' +
                             '<em class="settings-birth-status ' + (dismissed ? 'hidden' : '') + '"><i class="fa-solid ' + statusIcon + '"></i>' + escapeHtml(statusText) + '</em>' +
