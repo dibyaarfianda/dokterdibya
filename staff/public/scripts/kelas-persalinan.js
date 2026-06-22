@@ -153,8 +153,6 @@ function renderSkeleton() {
                                     <tr>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Tanggal & Jam</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Judul</th>
-                                        <th style="text-align: center !important; vertical-align: middle !important;">Materi / Benefit</th>
-                                        <th style="text-align: center !important; vertical-align: middle !important;">Lokasi</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Biaya</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Kuota</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Status</th>
@@ -162,7 +160,7 @@ function renderSkeleton() {
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
-                                    <tr><td colspan="8" class="text-center py-4">Memuat data...</td></tr>
+                                    <tr><td colspan="6" class="text-center py-4">Memuat data...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -396,14 +394,14 @@ async function loadSessions() {
     const tbody = document.getElementById('birth-class-sessions-tbody');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat sesi...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Memuat sesi...</td></tr>';
 
     try {
         const result = await apiRequest('/sessions');
         const sessions = result.data || [];
 
         if (!sessions.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Belum ada sesi kelas.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada sesi kelas.</td></tr>';
             populateSessionFilterOptions([]);
             return;
         }
@@ -412,11 +410,6 @@ async function loadSessions() {
             const activeBadge = Number(session.is_active) === 1
                 ? '<span class="badge badge-success">Aktif</span>'
                 : '<span class="badge badge-secondary">Nonaktif</span>';
-
-            const contentPreview = [
-                session.learning_points ? `Materi: ${escapeHtml(truncateText(session.learning_points, 52))}` : '',
-                session.benefits ? `Benefit: ${escapeHtml(truncateText(session.benefits, 52))}` : ''
-            ].filter(Boolean).join('<br>') || '-';
 
             return `
                 <tr>
@@ -428,8 +421,6 @@ async function loadSessions() {
                         <div>${escapeHtml(session.class_title)}</div>
                         <small class="text-muted">${escapeHtml(session.instructor_name || '-')}</small>
                     </td>
-                    <td><small>${contentPreview}</small></td>
-                    <td>${escapeHtml(session.location || '-')}</td>
                     <td><strong>${formatRupiah(session.price)}</strong></td>
                     <td>
                         <strong>${session.registered_count}/${session.quota}</strong><br>
@@ -455,7 +446,7 @@ async function loadSessions() {
         populateSessionFilterOptions(sessions);
     } catch (error) {
         console.error('Error loading Kelas Dr. Dibya sessions:', error);
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
