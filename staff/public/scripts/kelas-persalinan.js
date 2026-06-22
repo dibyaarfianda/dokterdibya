@@ -172,7 +172,7 @@ function renderSkeleton() {
                 <div class="card card-success card-outline">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-users mr-2"></i>Daftar Pendaftar
+                            <i class="fas fa-users mr-2"></i>Daftar Peserta
                         </h3>
                         <div class="d-flex" style="gap: 8px;">
                             <select id="birth-class-registration-filter" class="form-control form-control-sm" style="width: 150px;">
