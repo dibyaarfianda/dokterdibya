@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260621headerhome1'; // 2026-06-21 Sync portal tool header with home
+const CACHE_VERSION = '20260621headerhome2'; // 2026-06-21 Sync portal tool header with home
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';

@@ -48,6 +48,18 @@ body.legacy-tool-retrofit .story-room {
     position: relative !important;
 }
 
+body.legacy-tool-retrofit main.main-content:not(#pmc-root *),
+body.legacy-tool-retrofit .main-content:not(#pmc-root *),
+body.legacy-tool-retrofit main.content:not(#pmc-root *),
+body.legacy-tool-retrofit .page-body:not(#pmc-root *),
+body.legacy-tool-retrofit main.page-wrap:not(#pmc-root *),
+body.legacy-tool-retrofit main.reading-room:not(#pmc-root *),
+body.legacy-tool-retrofit .reading-room:not(#pmc-root *),
+body.legacy-tool-retrofit main.story-room:not(#pmc-root *),
+body.legacy-tool-retrofit .story-room:not(#pmc-root *) {
+    padding-top: 0 !important;
+}
+
 body.legacy-tool-retrofit #home-topbar .topbar-inner {
     width: min(100vw, 860px) !important;
 }
@@ -61,7 +73,8 @@ body.legacy-tool-retrofit #home-topbar.topbar {
     justify-content: initial !important;
     gap: 0 !important;
     width: 100vw !important;
-    margin: 0 !important;
+    margin: 0 0 clamp(22px, 4vh, 42px) !important;
+    margin-bottom: clamp(22px, 4vh, 42px) !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
