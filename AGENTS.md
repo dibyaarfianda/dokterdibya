@@ -306,14 +306,16 @@ AdminLTE memiliki default styles dengan specificity tinggi. **Selalu gunakan `!i
 Untuk kasus tabel staff di repo ini, **jangan anggap class alignment seperti `text-center` pasti menang di `<th>`**.
 
 Jika user meminta judul kolom tabel rata tengah dan hasil live belum ikut berubah:
-- gunakan `style="text-align: center;"` langsung pada elemen `<th>`
+- jangan berhenti di class helper; default eskalasinya adalah inline style yang eksplisit
+- gunakan `style="text-align: center !important; vertical-align: middle !important;"` langsung pada elemen `<th>` jika alignment biasa tidak menang
 - untuk kolom aksi, gabungkan alignment itu dengan `width` / `min-width` inline bila perlu
 - verifikasi asset live yang benar-benar dilayani server, bukan hanya file lokal atau file di disk VPS
+- jika source dan asset live sudah benar tetapi tampilan browser masih berbeda, anggap itu belum selesai; lanjutkan ke pemeriksaan computed style / CSS yang aktif di browser
 
 **Contoh yang aman:**
 ```html
-<th style="text-align: center;">Status</th>
-<th style="text-align: center; width: 150px; min-width: 150px;">Aksi</th>
+<th style="text-align: center !important; vertical-align: middle !important;">Status</th>
+<th style="text-align: center !important; vertical-align: middle !important; width: 150px; min-width: 150px;">Aksi</th>
 ```
 
 ### 8. Mobile App (Future Plan)
