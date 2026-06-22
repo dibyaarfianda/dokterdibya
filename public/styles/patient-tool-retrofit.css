@@ -151,6 +151,10 @@ body.legacy-tool-retrofit .tool-retrofit-hero {
     margin-bottom: 18px !important;
 }
 
+body.legacy-tool-retrofit.ruang-cerita-page .tool-retrofit-hero .hero-title {
+    margin-top: 1em !important;
+}
+
 body.legacy-tool-retrofit .tanya-hero {
     padding: 0 !important;
     margin: 0 0 14px !important;

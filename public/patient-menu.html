@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Portal Pasien - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260622storyhero1">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260622storyspace1">
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
@@ -6786,7 +6786,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260622storyhero1', { scope: '/' })
+                navigator.serviceWorker.register('/sw.js?v=20260622storyspace1', { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }
