@@ -158,7 +158,7 @@ function renderSkeleton() {
                                         <th style="text-align: center !important; vertical-align: middle !important;">Biaya</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Kuota</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Status</th>
-                                        <th style="text-align: center !important; vertical-align: middle !important; width: 92px; min-width: 92px;">Aksi</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important; width: 85px; min-width: 85px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-sessions-tbody">
@@ -198,7 +198,7 @@ function renderSkeleton() {
                                         <th style="text-align: center !important; vertical-align: middle !important;">Pembayaran</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Status</th>
                                         <th style="text-align: center !important; vertical-align: middle !important;">Ubah Status</th>
-                                        <th style="text-align: center !important; vertical-align: middle !important; width: 92px; min-width: 92px;">Aksi</th>
+                                        <th style="text-align: center !important; vertical-align: middle !important; width: 85px; min-width: 85px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="birth-class-registrations-tbody">
@@ -436,7 +436,7 @@ async function loadSessions() {
                         <small class="text-muted">Sisa ${session.available_slots}</small>
                     </td>
                     <td>${activeBadge}</td>
-                    <td class="text-right text-nowrap" style="min-width: 92px;">
+                    <td class="text-right text-nowrap" style="min-width: 85px;">
                         <button class="btn btn-xs btn-info" data-action="edit-session" data-id="${session.id}">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -529,7 +529,7 @@ async function loadRegistrations() {
                         </div>
                     </div>
                 </td>
-                <td class="text-right text-nowrap" style="min-width: 92px;">
+                <td class="text-right text-nowrap" style="min-width: 85px;">
                     <button class="btn btn-sm btn-danger" data-action="delete-registration" data-id="${row.id}" title="Hapus peserta">
                         <i class="fas fa-trash"></i>
                     </button>
