@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260622storyhero1'; // 2026-06-21 Sync portal tool header with home
+const CACHE_VERSION = '20260622storyspace1'; // 2026-06-22 Ruang Cerita title spacing
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

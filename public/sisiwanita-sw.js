@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260622storyhero1'; // 2026-06-21 Sync portal tool header with home
+const CACHE_VERSION = '20260622storyspace1'; // 2026-06-22 Ruang Cerita title spacing
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';

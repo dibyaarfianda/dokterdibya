@@ -18,7 +18,7 @@ describe('Patient portal header branding', () => {
         const retrofitJs = readRepoFile('public', 'scripts', 'patient-tool-retrofit.js');
         const sw = readRepoFile('public', 'sw.js');
         const sisiwanitaSw = readRepoFile('public', 'sisiwanita-sw.js');
-        const shellVersion = '20260622storyhero1';
+        const shellVersion = '20260622storyspace1';
         const shellPages = [
             'album-usg.html',
             'antrian.html',
@@ -62,6 +62,7 @@ describe('Patient portal header branding', () => {
         expect(retrofitCss).toMatch(/body\.legacy-tool-retrofit #home-topbar\.topbar\s*\{[\s\S]*margin-bottom:\s*clamp\(22px,\s*4vh,\s*42px\)\s*!important;/);
         expect(retrofitCss).not.toMatch(/body\.legacy-tool-retrofit #home-topbar\.topbar\s*\{[^}]*margin:\s*0\s*!important;/);
         expect(retrofitCss).toMatch(/body\.legacy-tool-retrofit[\s\S]*:not\(#pmc-root \*\)[\s\S]*padding-top:\s*0\s*!important;/);
+        expect(retrofitCss).toMatch(/body\.legacy-tool-retrofit\.ruang-cerita-page \.tool-retrofit-hero \.hero-title\s*\{[\s\S]*margin-top:\s*1em\s*!important;/);
         expect(retrofitCss).toContain('body.legacy-tool-retrofit main.story-room');
         expect(retrofitJs).toContain("document.querySelector('main.story-room')");
         expect(retrofitJs).toContain("document.querySelector('.story-room')");
