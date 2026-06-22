@@ -175,14 +175,14 @@ function renderSkeleton() {
                             <i class="fas fa-users mr-2"></i>Daftar Peserta
                         </h3>
                         <div class="d-flex" style="gap: 8px;">
-                            <select id="birth-class-registration-filter" class="form-control form-control-sm" style="width: 150px;">
+                            <select id="birth-class-registration-filter" class="form-control form-control-sm" style="width: 150px; font-size: 12px;">
                                 <option value="">Semua Status</option>
                                 <option value="registered">Terdaftar</option>
                                 <option value="confirmed">Dikonfirmasi</option>
                                 <option value="attended">Hadir</option>
                                 <option value="cancelled">Batal</option>
                             </select>
-                            <select id="birth-class-registration-session-filter" class="form-control form-control-sm" style="width: 180px;">
+                            <select id="birth-class-registration-session-filter" class="form-control form-control-sm" style="width: 180px; font-size: 12px;">
                                 <option value="">Semua Sesi</option>
                             </select>
                         </div>
