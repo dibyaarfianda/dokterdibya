@@ -64,7 +64,8 @@ describe('staff shell refactor phase 1', () => {
         const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
         const helpers = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'module-helpers.js');
 
-        expect(main).toContain("import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';");
+        expect(main).toMatch(/import \{ getAuthToken, importWithVersion, grab \} from '\.\/shell\/module-helpers\.js\?v=[^']+';/);
+        expect(main).not.toContain("from './shell/module-helpers.js';");
         expect(main).not.toContain('function getAuthToken()');
         expect(main).not.toContain('function importWithVersion(path)');
         expect(main).not.toContain('function grab(id)');
@@ -80,6 +81,20 @@ describe('staff shell refactor phase 1', () => {
         expect(helpers).toContain("const importBaseUrl = options.importBaseUrl || new URL('../', import.meta.url);");
         expect(helpers).toContain('specifier = new URL(specifier, importBaseUrl).href;');
         expect(main).toContain("importWithVersion('./sunday-clinic.js')");
+    });
+
+    test('patient and guest activity launchers are globally callable from sidebar and Kantor Saya widgets', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const kantorSaya = readNormalizedFile('staff', 'public', 'scripts', 'kantor-saya.js');
+
+        expect(html).toMatch(/id="nav-patient-activity"[\s\S]*?onclick="showPatientActivityPage\(\); return false;"/);
+        expect(html).toMatch(/id="nav-guest-activity"[\s\S]*?onclick="showGuestActivityPage\(\); return false;"/);
+        expect(html).toContain('window.showPatientActivityPage = function()');
+        expect(html).toContain('window.showGuestActivityPage = function()');
+        expect(html).toContain('window.loadPatientActivity = async function(page = 0)');
+        expect(html).toContain('window.loadGuestActivity = async function(page = 0)');
+        expect(kantorSaya).toContain("actionName: 'showPatientActivityPage'");
+        expect(kantorSaya).toContain("actionName: 'showGuestActivityPage'");
     });
 
     test('profile settings uses the shared auth token helper instead of hardcoded storage keys', () => {
