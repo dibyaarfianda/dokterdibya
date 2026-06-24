@@ -8,6 +8,7 @@ export function createVersionedImporter(options = {}) {
     const moduleCache = new Map();
     const skipVersionModules = options.skipVersionModules || new Set();
     const getAssetVersion = options.getAssetVersion || (() => window.__assetVersion);
+    const importBaseUrl = options.importBaseUrl || new URL('../', import.meta.url);
 
     return function importWithVersion(path) {
         if (moduleCache.has(path)) {
@@ -21,6 +22,7 @@ export function createVersionedImporter(options = {}) {
             specifier = `${path}${separator}v=${version}`;
         }
 
+        specifier = new URL(specifier, importBaseUrl).href;
         const promise = import(specifier);
         moduleCache.set(path, promise);
         return promise;

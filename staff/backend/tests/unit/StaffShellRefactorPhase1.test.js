@@ -73,6 +73,15 @@ describe('staff shell refactor phase 1', () => {
         expect(helpers).toContain('export function grab(id)');
     });
 
+    test('module helper resolves dynamic imports from the staff scripts root', () => {
+        const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+        const helpers = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'module-helpers.js');
+
+        expect(helpers).toContain("const importBaseUrl = options.importBaseUrl || new URL('../', import.meta.url);");
+        expect(helpers).toContain('specifier = new URL(specifier, importBaseUrl).href;');
+        expect(main).toContain("importWithVersion('./sunday-clinic.js')");
+    });
+
     test('profile settings uses the shared auth token helper instead of hardcoded storage keys', () => {
         const profileSettings = readNormalizedFile('staff', 'public', 'profile-settings.html');
 
@@ -97,5 +106,18 @@ describe('staff shell refactor phase 1', () => {
         expect(patientSearchDetail).toContain('window.staffDebugLog = window.staffDebugLog || function staffDebugLog(scope, ...args)');
         expect(patientSearchDetail).toContain("new URLSearchParams(window.location.search).get('debugStaff') === '1'");
         expect(patientSearchDetail).toContain('window.installPatientViewButtons = function installPatientViewButtons(options = {})');
+    });
+
+    test('QRCode dependency is local and versioned instead of a missing CDN build path', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const qrCodeLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'qrcode-loader.js');
+        const qrCodeBundle = readNormalizedFile('staff', 'public', 'scripts', 'vendor', 'qrcode.esm.js');
+
+        expect(html).not.toContain('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js');
+        expect(html).toMatch(/<script type="module" src="scripts\/shell\/qrcode-loader\.js\?v=[^"' ]+"><\/script>/);
+        expect(qrCodeLoader).toContain("import QRCode from '../vendor/qrcode.esm.js';");
+        expect(qrCodeLoader).toContain('window.QRCode = QRCode;');
+        expect(qrCodeBundle).toContain('export');
+        expect(qrCodeBundle).not.toContain('from"/');
     });
 });
