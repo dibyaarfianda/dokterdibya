@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260624shellphase1';
+    var VERSION = '20260624shellwave1';
     var pageDefaults = {
         '/album-usg.html': {
             activeNav: 'dokumen',
@@ -168,10 +168,10 @@
                     '</a>' +
                 '</div>' +
                 '<div class="top-actions" id="home-top-actions">' +
-                    '<button class="icon-btn soundable" id="home-notif-btn" type="button" onclick="openSettingsModal(event)" aria-label="Pengaturan">' +
+                    '<button class="icon-btn soundable" id="home-notif-btn" type="button" data-shell-action="open-settings" aria-label="Pengaturan">' +
                         '<i class="fa-solid fa-gear"></i><span class="badge" id="notif-badge">0</span>' +
                     '</button>' +
-                    '<button class="avatar soundable" id="user-avatar" type="button" onclick="openProfileModal(event)" aria-label="Profil">' +
+                    '<button class="avatar soundable" id="user-avatar" type="button" data-shell-action="open-profile" aria-label="Profil">' +
                         '<img id="user-avatar-img" alt=""><span id="user-avatar-initials">--</span><span class="vip-badge" id="vip-badge">VIP</span>' +
                     '</button>' +
                 '</div>' +
@@ -213,7 +213,7 @@
                     '<div class="today-label">' + escapeHtml(config.metaLabel) + '</div>' +
                     '<div class="today-value"><i class="fa-solid fa-circle-check"></i> ' + escapeHtml(config.metaValue) + '</div>' +
                 '</div>' +
-                '<button class="sound-toggle soundable" type="button" onclick="scrollTopHome()">' +
+                '<button class="sound-toggle soundable" type="button" data-shell-action="scroll-top-home">' +
                     '<i class="fa-solid fa-arrow-up"></i><span>Ke atas</span>' +
                 '</button>' +
             '</div>';
@@ -245,7 +245,7 @@
             var overlay = document.createElement('div');
             overlay.className = 'sheet-overlay';
             overlay.id = 'sheet-overlay';
-            overlay.setAttribute('onclick', 'closeSheet()');
+            overlay.setAttribute('data-shell-action', 'close-sheet');
             document.body.appendChild(overlay);
         }
         if (!document.getElementById('bottom-sheet')) {
@@ -263,11 +263,11 @@
             nav.setAttribute('aria-label', 'Navigasi bawah');
             nav.innerHTML = '' +
                 '<div class="bottom-inner" id="home-bottom-inner">' +
-                    '<button class="nav-item soundable" data-tool-nav="beranda" type="button" onclick="go(\'/patient-menu.html\')" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="dokumen" type="button" onclick="openSheet(\'dokumen\')" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="aplikasi" type="button" onclick="openSheet(\'aplikasi\')" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="jadwal" type="button" onclick="openSheet(\'jadwal\')" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="edukasi" type="button" onclick="openSheet(\'edukasi\')" aria-label="Ruang Baca"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="beranda" type="button" data-shell-action="go" data-shell-href="/patient-menu.html" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="dokumen" type="button" data-shell-action="open-sheet" data-shell-sheet="dokumen" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="aplikasi" type="button" data-shell-action="open-sheet" data-shell-sheet="aplikasi" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="jadwal" type="button" data-shell-action="open-sheet" data-shell-sheet="jadwal" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="edukasi" type="button" data-shell-action="open-sheet" data-shell-sheet="edukasi" aria-label="Ruang Baca"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span></button>' +
                 '</div>';
             document.body.appendChild(nav);
         }

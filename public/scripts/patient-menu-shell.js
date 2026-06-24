@@ -3424,7 +3424,8 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js?v=20260624shellphase1', { scope: '/' })
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave1';
+                navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
             }

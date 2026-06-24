@@ -52,13 +52,16 @@ describe('staff credential guard sources', () => {
         expect(credentials).toMatch(/user(?:_type|Type)\s*===\s*'patient'/);
     });
 
-    test('staff shell cache version v273 is consistent and bootstrap script tag is valid', () => {
+    test('staff shell cache version is consistent and bootstrap script tag is valid', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const sw = readNormalizedFile('staff', 'public', 'sw.js');
+        const versionMatch = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/);
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v273';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v273';");
-        expect(html).toContain('<script type="module" src="scripts/shell/bootstrap.js?v=v273"></script>');
+        expect(versionMatch).not.toBeNull();
+        const staffVersion = versionMatch[1];
+
+        expect(sw).toContain(`const STAFF_PWA_VERSION = '${staffVersion}';`);
+        expect(html).toContain(`<script type="module" src="scripts/shell/bootstrap.js?v=${staffVersion}"></script>`);
         expect(html).not.toMatch(/<script type="module">\s*<script type="module" src=/);
     });
 

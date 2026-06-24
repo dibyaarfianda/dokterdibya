@@ -607,23 +607,13 @@
         if (notifButton) {
             notifButton.setAttribute('aria-haspopup', 'dialog');
             notifButton.setAttribute('aria-label', 'Pengaturan');
+            notifButton.setAttribute('data-shell-action', 'open-settings');
             var icon = notifButton.querySelector('i');
             if (icon) icon.className = 'fa-solid fa-gear';
-            notifButton.onclick = function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                openSettingsModal(event);
-                return false;
-            };
         }
         if (avatarButton) {
             avatarButton.setAttribute('aria-haspopup', 'dialog');
-            avatarButton.onclick = function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                openProfileModal(event);
-                return false;
-            };
+            avatarButton.setAttribute('data-shell-action', 'open-profile');
         }
     }
 
@@ -639,11 +629,17 @@
         event.preventDefault();
         var actionName = action.getAttribute('data-shell-action');
         if (actionName === 'read-all-notifications') markAllNotificationsRead();
+        if (actionName === 'open-settings') openSettingsModal(event);
+        if (actionName === 'open-profile') openProfileModal(event);
         if (actionName === 'open-notifications') openNotificationModal(event);
         if (actionName === 'save-portal-settings') savePortalSettings();
         if (actionName === 'test-portal-sound') playPortalNotificationSound();
         if (actionName === 'edit-intake') go('/patient-intake.html');
         if (actionName === 'close-modal') closeTopbarModal();
+        if (actionName === 'close-sheet') closeSheet();
+        if (actionName === 'scroll-top-home') scrollTopHome();
+        if (actionName === 'go') go(action.getAttribute('data-shell-href') || state.homeUrl);
+        if (actionName === 'open-sheet') openSheet(action.getAttribute('data-shell-sheet') || '');
         if (actionName === 'logout') logout();
         if (actionName === 'profile-photo-camera') openProfilePhotoPicker(event, 'camera');
         if (actionName === 'profile-photo-gallery') openProfilePhotoPicker(event, 'gallery');
