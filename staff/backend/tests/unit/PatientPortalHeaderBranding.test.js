@@ -18,7 +18,9 @@ describe('Patient portal header branding', () => {
         const retrofitJs = readRepoFile('public', 'scripts', 'patient-tool-retrofit.js');
         const sw = readRepoFile('public', 'sw.js');
         const sisiwanitaSw = readRepoFile('public', 'sisiwanita-sw.js');
-        const shellVersion = '20260622storyspace1';
+        const shellVersionMatch = sw.match(/const CACHE_VERSION = '([^']+)';/);
+        expect(shellVersionMatch).not.toBeNull();
+        const [, shellVersion] = shellVersionMatch;
         const shellPages = [
             'album-usg.html',
             'antrian.html',
@@ -66,7 +68,6 @@ describe('Patient portal header branding', () => {
         expect(retrofitCss).toContain('body.legacy-tool-retrofit main.story-room');
         expect(retrofitJs).toContain("document.querySelector('main.story-room')");
         expect(retrofitJs).toContain("document.querySelector('.story-room')");
-        expect(sw).toContain(`const CACHE_VERSION = '${shellVersion}';`);
         expect(sisiwanitaSw).toContain(`const CACHE_VERSION = '${shellVersion}';`);
 
         shellPages.forEach(fileName => {

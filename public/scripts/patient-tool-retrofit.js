@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260622storyspace1';
+    var VERSION = '20260624shellphase1';
     var pageDefaults = {
         '/album-usg.html': {
             activeNav: 'dokumen',

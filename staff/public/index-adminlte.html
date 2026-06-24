@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v271';
+        window.STAFF_CACHE_VERSION = 'v272';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -2044,11 +2044,11 @@
                     </span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <a href="#" class="dropdown-item" id="navbar-profile-btn" onclick="showProfileSettings(); return false;">
+                    <a href="#" class="dropdown-item" id="navbar-profile-btn" data-shell-action="open-profile-settings">
                         <i class="fas fa-user-cog mr-2"></i> Profile Settings
                     </a>
                     <div class="dropdown-divider" id="navbar-divider"></div>
-                    <button type="button" class="dropdown-item" id="navbar-logout-btn" onclick="localStorage.removeItem('vps_auth_token');sessionStorage.removeItem('vps_auth_token');localStorage.removeItem('cache_version');window.location.replace('/staff/public/login.html');">
+                    <button type="button" class="dropdown-item" id="navbar-logout-btn" data-shell-action="logout">
                         <i class="fas fa-sign-out-alt mr-2"></i> Logout
                     </button>
                 </div>
@@ -2067,13 +2067,13 @@
                     <!-- BERANDA -->
                     <li class="nav-header">BERANDA</li>
                     <li class="nav-item" id="nav-dashboard">
-                        <a href="#" class="nav-link" onclick="showDashboardPage(); return false;">
+                        <a href="#" class="nav-link" data-shell-action="show-dashboard">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>Dashboard</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-kantor-saya">
-                        <a href="#" class="nav-link" onclick="showKantorSayaPage(); return false;">
+                        <a href="#" class="nav-link" data-shell-action="show-kantor-saya">
                             <i class="nav-icon fas fa-briefcase"></i>
                             <p>Kantor Saya</p>
                         </a>
@@ -2082,7 +2082,7 @@
                     <!-- KLINIK -->
                     <li class="nav-header">KLINIK</li>
                     <li class="nav-item" id="nav-klinik-private">
-                        <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); markBadgeRead('klinik_private'); return false;">
+                        <a href="#" class="nav-link" data-shell-action="show-klinik-private">
                             <i class="nav-icon fas fa-calendar-check text-primary"></i>
                             <p>Klinik Privat <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span></p>
                         </a>
@@ -2115,7 +2115,7 @@
                     <!-- PASIEN -->
                     <li class="nav-header">PASIEN</li>
                     <li class="nav-item" id="nav-kelola-pasien">
-                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
+                        <a href="#" class="nav-link" data-shell-action="show-manage-patients">
                             <i class="nav-icon fas fa-users"></i>
                             <p>Kelola Pasien</p>
                         </a>
@@ -2141,7 +2141,7 @@
 
                     <li class="nav-header">KOMUNIKASI</li>
                     <li class="nav-item dokter-only d-none" id="nav-tanya-dokter">
-                        <a href="#" class="nav-link" onclick="showTanyaDokterPage(); return false;">
+                        <a href="#" class="nav-link" data-shell-action="show-tanya-dokter">
                             <i class="nav-icon fas fa-comments text-primary"></i>
                             <p>Tanya Dokter <span class="badge badge-danger right d-none" id="badge-tanya-dokter">0</span></p>
                         </a>
@@ -3457,7 +3457,7 @@
                                                 <div class="input-group">
                                                     <input type="number" step="0.1" id="physical-temp" class="form-control">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text">Â°C</span>
+                                                        <span class="input-group-text">°C</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -3925,7 +3925,7 @@
                                     <div class="info-box bg-light mb-0">
                                         <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
                                         <div class="info-box-content">
-                                            <span class="info-box-text">Stok Kritis (â‰¤5)</span>
+                                            <span class="info-box-text">Stok Kritis (≤5)</span>
                                             <span class="info-box-number" id="summary-stock-low">0</span>
                                         </div>
                                     </div>
@@ -5754,11 +5754,11 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>No. Invoice</th>
-                                                    <th id="invoice-th-date" class="invoice-sort-th" onclick="sortInvoiceTable('date')">Tanggal <span id="invoice-sort-date" class="invoice-sort-icon">⇅</span></th>
-                                                    <th id="invoice-th-patient" class="invoice-sort-th" onclick="sortInvoiceTable('patient')">Pasien <span id="invoice-sort-patient" class="invoice-sort-icon">⇅</span></th>
+                                                    <th id="invoice-th-date" class="invoice-sort-th" onclick="sortInvoiceTable('date')">Tanggal <span id="invoice-sort-date" class="invoice-sort-icon">?</span></th>
+                                                    <th id="invoice-th-patient" class="invoice-sort-th" onclick="sortInvoiceTable('patient')">Pasien <span id="invoice-sort-patient" class="invoice-sort-icon">?</span></th>
                                                     <th>Jenis Kunjungan</th>
-                                                    <th id="invoice-th-total" class="text-right invoice-sort-th" onclick="sortInvoiceTable('total')">Total <span id="invoice-sort-total" class="invoice-sort-icon">⇅</span></th>
-                                                    <th id="invoice-th-status" class="invoice-sort-th" onclick="sortInvoiceTable('status')">Status <span id="invoice-sort-status" class="invoice-sort-icon">⇅</span></th>
+                                                    <th id="invoice-th-total" class="text-right invoice-sort-th" onclick="sortInvoiceTable('total')">Total <span id="invoice-sort-total" class="invoice-sort-icon">?</span></th>
+                                                    <th id="invoice-th-status" class="invoice-sort-th" onclick="sortInvoiceTable('status')">Status <span id="invoice-sort-status" class="invoice-sort-icon">?</span></th>
                                                     <th class="text-center">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -8326,166 +8326,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script>
-function openMobileMenu() {
-    // Remove existing if any
-    var existing = document.getElementById('dynamic-mobile-menu');
-    if(existing) existing.remove();
-
-    // Create container with FLEXBOX to position content at bottom
-    var container = document.createElement('div');
-    container.id = 'dynamic-mobile-menu';
-    container.style.position = 'fixed';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '100%';
-    container.style.height = '100%';
-    container.style.zIndex = '9999999';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.justifyContent = 'flex-end';
-
-    // Create overlay as background
-    var overlay = document.createElement('div');
-    overlay.style.position = 'absolute';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.background = 'rgba(0,0,0,0.5)';
-    overlay.style.zIndex = '1';
-    overlay.onclick = closeMobileMenu;
-
-    // Create content panel - NO position absolute, just flex child
-    var content = document.createElement('div');
-    content.style.position = 'relative';
-    content.style.zIndex = '2';
-    content.style.width = '100%';
-    content.style.backgroundColor = '#ffffff';
-    content.style.borderTopLeftRadius = '20px';
-    content.style.borderTopRightRadius = '20px';
-    content.style.maxHeight = '70%';
-    content.style.overflowY = 'auto';
-    content.style.boxShadow = '0 -4px 20px rgba(0,0,0,0.3)';
-
-    // Header
-    var header = document.createElement('div');
-    header.style.display = 'flex';
-    header.style.justifyContent = 'space-between';
-    header.style.alignItems = 'center';
-    header.style.padding = '16px 20px';
-    header.style.borderBottom = '1px solid #eee';
-
-    var title = document.createElement('span');
-    title.style.fontWeight = '600';
-    title.style.fontSize = '16px';
-    title.style.color = '#333';
-    title.textContent = 'Menu Lainnya';
-
-    var closeBtn = document.createElement('button');
-    closeBtn.style.background = 'none';
-    closeBtn.style.border = 'none';
-    closeBtn.style.fontSize = '24px';
-    closeBtn.style.color = '#666';
-    closeBtn.style.padding = '4px 8px';
-    closeBtn.innerHTML = '&times;';
-    closeBtn.onclick = closeMobileMenu;
-
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-
-    // Menu items container
-    var items = document.createElement('div');
-    items.style.padding = '8px 0 16px 0';
-
-    var menuData = [
-        {icon: 'fa-user-cog', text: 'Profil', fn: 'showProfileSettings', color: '#0d6efd'},
-        {icon: 'fa-capsules', text: 'Obat/Alkes', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
-        {icon: 'fa-hand-holding-medical', text: 'Layanan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
-        {icon: 'fa-calendar-day', text: 'Pengaturan Sesi', fn: 'showBookingSettingsPage', color: '#0d6efd'},
-        {icon: 'fa-pills', text: 'Penjualan', fn: 'showPenjualanObatPage', color: '#0d6efd'},
-        {icon: 'divider'},
-        {icon: 'fa-sync-alt', text: 'Perbarui Aplikasi', fn: 'clearAppCache', color: '#6c757d'},
-        {icon: 'divider'},
-        {icon: 'fa-sign-out-alt', text: 'Logout', fn: 'handleLogout', color: '#dc3545'}
-    ];
-
-    menuData.forEach(function(item) {
-        if (item.icon === 'divider') {
-            var divider = document.createElement('div');
-            divider.style.height = '1px';
-            divider.style.background = '#eee';
-            divider.style.margin = '8px 20px';
-            items.appendChild(divider);
-        } else {
-            var link = document.createElement('a');
-            link.href = '#';
-            link.style.display = 'flex';
-            link.style.alignItems = 'center';
-            link.style.gap = '14px';
-            link.style.padding = '14px 20px';
-            link.style.color = item.color === '#dc3545' ? '#dc3545' : '#333';
-            link.style.textDecoration = 'none';
-            link.style.fontSize = '14px';
-            link.onclick = function(e) {
-                e.preventDefault();
-                closeMobileMenu();
-                if (typeof window[item.fn] === 'function') window[item.fn]();
-            };
-
-            var icon = document.createElement('i');
-            icon.className = 'fas ' + item.icon;
-            icon.style.width = '24px';
-            icon.style.fontSize = '18px';
-            icon.style.color = item.color;
-            icon.style.textAlign = 'center';
-
-            var text = document.createTextNode(' ' + item.text);
-
-            link.appendChild(icon);
-            link.appendChild(text);
-            items.appendChild(link);
-        }
-    });
-
-    content.appendChild(header);
-    content.appendChild(items);
-    container.appendChild(overlay);
-    container.appendChild(content);
-    document.body.appendChild(container);
-    document.body.style.overflow = 'hidden';
-}
-function closeMobileMenu() {
-    var m = document.getElementById('dynamic-mobile-menu');
-    if(m) m.remove();
-    document.body.style.overflow = '';
-}
-function clearAppCache() {
-    if(!confirm('Hapus cache dan muat ulang aplikasi?\nAnda perlu login ulang.')) return;
-    var done = function(){ window.location.reload(true); };
-    var tasks = [];
-    if('serviceWorker' in navigator) {
-        tasks.push(
-            navigator.serviceWorker.getRegistrations().then(function(regs){
-                return Promise.all(regs.map(function(r){ return r.unregister(); }));
-            })
-        );
-    }
-    if('caches' in window) {
-        tasks.push(
-            caches.keys().then(function(keys){
-                return Promise.all(keys.map(function(k){ return caches.delete(k); }));
-            })
-        );
-    }
-    localStorage.removeItem('vps_auth_token');
-    Promise.all(tasks).then(done).catch(done);
-}
-function mobileNavClick(btn, action) {
-    document.querySelectorAll('#mobile-action-bar button').forEach(function(b){b.classList.remove('active');});
-    if(btn && action !== 'more') btn.classList.add('active');
-}
-</script>
+    <script defer src="scripts/shell/actions.js?v=v272"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8530,27 +8371,27 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
 <!-- Mobile bottom navigation bar -->
 <div id="mobile-action-bar" class="d-md-none d-lg-none mobile-action-bar-force">
-    <button type="button" id="mobile-btn-dashboard" class="active" onclick="mobileNavClick(this,'dashboard'); if(typeof showDashboardPage==='function')showDashboardPage();">
+    <button type="button" id="mobile-btn-dashboard" class="active" data-shell-action="mobile-nav" data-mobile-nav="dashboard">
         <span class="icon-wrapper"><i class="fas fa-home"></i></span>
         <span>Dashboard</span>
     </button>
-    <button type="button" id="mobile-btn-klinik" onclick="mobileNavClick(this,'klinik'); if(typeof showKlinikPrivatePage==='function')showKlinikPrivatePage();">
+    <button type="button" id="mobile-btn-klinik" data-shell-action="mobile-nav" data-mobile-nav="klinik">
         <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
         <span>Janji Temu</span>
     </button>
-    <button type="button" id="mobile-btn-docboard" onclick="mobileNavClick(this,'docboard'); if(typeof showDocboardPage==='function')showDocboardPage();">
+    <button type="button" id="mobile-btn-docboard" data-shell-action="mobile-nav" data-mobile-nav="docboard">
         <span class="icon-wrapper"><i class="fas fa-procedures"></i></span>
         <span>DocBoard</span>
     </button>
-    <button type="button" id="mobile-btn-pasien" onclick="mobileNavClick(this,'pasien'); if(typeof showManagePatientsPage==='function')showManagePatientsPage();">
+    <button type="button" id="mobile-btn-pasien" data-shell-action="mobile-nav" data-mobile-nav="pasien">
         <span class="icon-wrapper"><i class="fas fa-users"></i></span>
         <span>Pasien</span>
     </button>
-    <button type="button" id="mobile-btn-tanya" onclick="mobileNavClick(this,'tanya'); if(typeof showTanyaDokterPage==='function')showTanyaDokterPage();">
+    <button type="button" id="mobile-btn-tanya" data-shell-action="mobile-nav" data-mobile-nav="tanya">
         <span class="icon-wrapper"><i class="fas fa-comments"></i></span>
         <span>Tanya Dokter</span>
     </button>
-    <button type="button" id="mobile-btn-more" onclick="openMobileMenu();">
+    <button type="button" id="mobile-btn-more" data-shell-action="open-mobile-menu">
         <span class="icon-wrapper"><i class="fas fa-bars"></i></span>
         <span>Lainnya</span>
     </button>
@@ -8732,7 +8573,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         };
     })();
 
-    // ── Live Queue Toggle (Patient Portal) ──
+    // -- Live Queue Toggle (Patient Portal) --
     (function() {
         function _queueToken() {
             return (window.getAuthToken && window.getAuthToken())
@@ -8858,167 +8699,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
 
 <script type="module">
-    // Use stable version string for cache busting (set above from CACHE_VERSION)
-    const v = window.__assetVersion;
-
-    // Critical startup modules only - auth + shell + dashboard
-    const { auth, getIdToken, initAuth: initAuthLib } = await import('./scripts/vps-auth-v2.js?v=' + v);
-    window.auth = auth;
-    window.getIdToken = getIdToken;
-
-    // Run auth bootstrap in parallel with module loading to reduce startup wait.
-    const authInitPromise = initAuthLib();
-    const [
-        _,
-        mainModule,
-        dashboardModule,
-        authModule,
-        sessionModule
-    ] = await Promise.all([
-        import('./scripts/toast.js?v=' + v),
-        import('./scripts/main.js?v=' + v),
-        import('./scripts/dashboard.js?v=' + v),
-        import('./scripts/auth.js?v=' + v),
-        import('./scripts/session-manager.js?v=' + v)
-    ]);
-
-    const { initMain } = mainModule;
-    const { initDashboard } = dashboardModule;
-    const { initAuth } = authModule;
-    const { initSessionManager, restoreSessionOnLoad } = sessionModule;
-
-    // Ensure auth state is available before route decision.
-    await authInitPromise;
-
-    // Now check authentication
-    const user = auth.currentUser;
-
-    function resolveSafeDisplayName(staffUser) {
-        const candidate = String(staffUser?.name || '').trim();
-        if (candidate && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
-            return candidate;
-        }
-
-        const fallbackId = String(staffUser?.id || '').trim();
-        return fallbackId || 'User';
-    }
-
-    if (!user) {
-        window.location.replace('login.html');
-    } else {
-        // IMMEDIATE navbar update
-        const navName = document.getElementById('navbar-user-name');
-        const navRole = document.getElementById('navbar-user-role');
-        const newName = resolveSafeDisplayName(user);
-        const newRole = user.role_display_name || user.role || 'Staff';
-        if (navName) navName.textContent = newName;
-        if (navRole) navRole.textContent = newRole;
-
-        // Set RUM context
-        window.__userRole = user.role || 'unknown';
-        window.__currentPage = 'dashboard';
-
-        // User is logged in, initialize app
-        initializeApp(user);
-    }
-    
-    function initializeApp(user) {
-        const v = window.__assetVersion;
-
-        // Initialize core UI (pages, clock, navigation)
-        try {
-            initMain();
-        } catch (error) {
-            console.error('[ERROR] Error initializing main:', error);
-        }
-
-        // Initialize feature areas
-        try {
-            initAuth(user);
-        } catch (error) {
-            console.error('[ERROR] Error initializing auth UI:', error);
-        }
-
-        // Direct navbar update
-        if (user) {
-            const navName = document.getElementById('navbar-user-name');
-            const navRole = document.getElementById('navbar-user-role');
-            if (navName) navName.textContent = resolveSafeDisplayName(user);
-            if (navRole) navRole.textContent = user.role_display_name || user.role || 'Staff';
-        }
-
-        try {
-            initDashboard();
-        } catch (error) {
-            console.error('[ERROR] Error initializing dashboard:', error);
-        }
-
-        // Non-critical boot tasks run during idle so first paint can happen sooner.
-        requestIdleCallback(() => {
-            try {
-                initSessionManager();
-            } catch (error) {
-                console.error('[ERROR] Error initializing session manager:', error);
-            }
-
-            try {
-                if (typeof window.loadDashboardCurrentCode === 'function') {
-                    window.loadDashboardCurrentCode();
-                } else {
-                    setTimeout(() => {
-                        if (typeof window.loadDashboardCurrentCode === 'function') {
-                            window.loadDashboardCurrentCode();
-                        }
-                    }, 500);
-                }
-            } catch (error) {
-                console.error('[ERROR] Error loading dashboard code:', error);
-            }
-        }, { timeout: 1500 });
-
-        // Lazy-load non-critical modules after initial render
-        // These modules are loaded in the background and init on first page access
-        requestIdleCallback(() => {
-            // Patients module - needed for search/kelola pasien
-            import('./scripts/patients.js?v=' + v).then(m => {
-                if (m.initPatients) m.initPatients();
-            }).catch(e => console.error('[ERROR] patients.js:', e));
-
-            // Medical exam - needed when opening exam pages
-            import('./scripts/medical-exam.js?v=' + v).catch(e => console.error('[ERROR] medical-exam.js:', e));
-
-            // Finance & Analytics - superadmin only
-            if (user.role === 'superadmin') {
-                import('./scripts/finance-dashboard.js?v=' + v).then(m => {
-                    if (m.initFinanceDashboard) m.initFinanceDashboard();
-                }).catch(e => console.error('[ERROR] finance-dashboard.js:', e));
-
-                import('./scripts/analytics.js?v=' + v).then(m => {
-                    if (m.initAnalyticsDashboard) m.initAnalyticsDashboard();
-                }).catch(e => console.error('[ERROR] analytics.js:', e));
-            }
-        }, { timeout: 3000 });
-
-        // Real-time sync initialized in main.js via onAuthStateChanged
-
-        // Restore session if exists
-        requestIdleCallback(() => {
-            try {
-                restoreSessionOnLoad().then(session => {
-                    if (session && session.patient) {
-                        console.log('[OK] Session restored for patient:', session.patient.name);
-                    }
-                }).catch(error => {
-                    console.warn('[WARN] Session restore failed (non-critical):', error);
-                });
-            } catch (error) {
-                console.error('[WARN] Session restoration setup failed:', error);
-            }
-        }, { timeout: 2200 });
-
-        console.log('[OK] AdminLTE app initialized successfully');
-    }
- </script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v272"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -9078,17 +8759,21 @@ body.mobile-app-mode .mobile-action-bar-force button {
             throw error;
         }
     };
-    
     // Intercept all navigation clicks to hide floating panel except Kelola Pasien
     document.addEventListener('click', function(e) {
         const navLink = e.target.closest('.nav-link');
-        if (navLink && navLink.getAttribute('onclick')) {
-            const onclickValue = navLink.getAttribute('onclick');
-            const isKelolaPasienNav = onclickValue.includes('showManagePatientsPage') || onclickValue.includes('showKelolaPasienPage');
-            // Only hide if NOT navigating to Kelola Pasien page
-            if (!isKelolaPasienNav) {
-                setTimeout(() => hideFloatingPanel(), 100);
-            }
+        if (!navLink) return;
+
+        const onclickValue = navLink.getAttribute('onclick') || '';
+        const shellAction = navLink.dataset.shellAction || '';
+        const isKelolaPasienNav =
+            onclickValue.includes('showManagePatientsPage') ||
+            onclickValue.includes('showKelolaPasienPage') ||
+            shellAction === 'show-manage-patients';
+
+        // Only hide if NOT navigating to Kelola Pasien page
+        if (!isKelolaPasienNav && (onclickValue || shellAction)) {
+            setTimeout(() => hideFloatingPanel(), 100);
         }
     });
     
@@ -9895,7 +9580,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         }
     };
 
-    // â”€â”€â”€ Shared row renderer for #manage-patients-tbody â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Shared row renderer for #manage-patients-tbody ──────────────────────
     // Used by BOTH loadWebPatients() and performAdvancedSearch() to keep the
     // template consistent and avoid the dual-render bug (AGENTS.md rule #24).
     function getPatientTableDateValue(value) {
@@ -9966,8 +9651,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
             ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}</div>${visitHistoryBadge}`
             : `<span class="text-muted">-</span>${visitHistoryBadge ? `<div>${visitHistoryBadge}</div>` : ''}`;
         const nameMeta = patient.mr_id
-            ? `${patient.id} • <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
-            : `${patient.id}${visitHistoryBadge ? ` • ${visitHistoryBadge}` : ''}`;
+            ? `${patient.id} � <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
+            : `${patient.id}${visitHistoryBadge ? ` � ${visitHistoryBadge}` : ''}`;
         const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.full_name || '-'}</a></div><div class="small text-muted">${nameMeta}</div>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
@@ -10011,7 +9696,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             </tr>
         `;
     }
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────────────────
 
     async function loadWebPatients() {
         try {
@@ -10424,7 +10109,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 throw new Error(result.message || 'Gagal menandai pasien');
             }
 
-            // Update the row in-place â€” no table reload needed
+            // Update the row in-place — no table reload needed
             if (btnEl) {
                 const row = btnEl.closest('tr');
                 if (row) {

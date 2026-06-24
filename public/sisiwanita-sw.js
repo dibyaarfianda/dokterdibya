@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260622storyspace1'; // 2026-06-22 Ruang Cerita title spacing
+const CACHE_VERSION = '20260624shellphase1'; // 2026-06-24 Patient menu shell refactor phase 1
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
