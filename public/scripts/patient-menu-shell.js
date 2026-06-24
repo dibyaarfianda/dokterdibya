@@ -1016,7 +1016,7 @@
                 '</div>' +
                 '<div class="home-photo-hint">Crop hanya bisa diatur saat upload. Jika ingin mengubah crop, upload ulang foto beranda.</div>' +
                 '<div class="profile-photo-save-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="openHomePhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload Ulang</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="home-photo-picker"><i class="fa-solid fa-upload"></i> Upload Ulang</button>' +
                 '</div>' +
             '</div>';
         }
@@ -2182,7 +2182,7 @@
                 const title = cleanPreviewText(item.title, item.source === 'announcement' ? 'Pengumuman Klinik' : 'Notifikasi');
                 const message = truncatePreviewText(item.message, 104);
                 const meta = item.source === 'announcement' ? 'Pengumuman' : 'Notifikasi';
-                return '<button type="button" class="announcement-mini announcement-mini-btn soundable is-' + tone + '" onclick="openHomeInfoDetail(' + index + ', event)">' +
+                return '<button type="button" class="announcement-mini announcement-mini-btn soundable is-' + tone + '" data-shell-action="open-home-info-detail" data-home-info-index="' + index + '">' +
                     '<span class="announcement-dot"></span>' +
                     '<div>' +
                         '<div class="announcement-mini-title">' + escapeHtml(title) + '</div>' +
@@ -3274,7 +3274,7 @@
             if (!data) return;
             if (category === 'edukasi') markRuangBacaOpened();
             document.getElementById('sheet-title').textContent = data.title;
-            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" onclick="return handleSheetNavigation(event, \'' + item[2] + '\')"><i class="' + item[0] + '"></i><span>' + item[1] + '</span>' + (item[3] ? '<em class="feature-new-badge">' + item[3] + '</em>' : '') + '</a>').join('');
+            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" data-shell-action="go" data-shell-href="' + item[2] + '"><i class="' + item[0] + '"></i><span>' + item[1] + '</span>' + (item[3] ? '<em class="feature-new-badge">' + item[3] + '</em>' : '') + '</a>').join('');
             document.getElementById('sheet-overlay').classList.add('active');
             document.getElementById('bottom-sheet').classList.add('active');
         }
@@ -3483,7 +3483,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave3';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave4';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
@@ -3631,6 +3631,12 @@
             },
             'open-home-photo-modal': function(target, event) {
                 openHomePhotoModal(event);
+            },
+            'home-photo-picker': function(target, event) {
+                openHomePhotoPicker(event);
+            },
+            'open-home-info-detail': function(target, event) {
+                openHomeInfoDetail(Number(target.dataset.homeInfoIndex || 0), event);
             },
             'toggle-tap-sound': function() {
                 toggleTapSound();

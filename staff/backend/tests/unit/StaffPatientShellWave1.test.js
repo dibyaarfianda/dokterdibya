@@ -113,4 +113,18 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(patientMenu).not.toContain('onclick="installPatientPWA()"');
         expect(shell).not.toContain('onclick="closeTopbarModal(event)"');
     });
+
+    test('patient home generated shell controls use delegated actions', () => {
+        const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
+
+        expect(shell).toContain('data-shell-action="home-photo-picker"');
+        expect(shell).toContain("'home-photo-picker': function(target, event)");
+        expect(shell).toContain('data-shell-action="open-home-info-detail"');
+        expect(shell).toContain('data-home-info-index="');
+        expect(shell).toContain("'open-home-info-detail': function(target, event)");
+        expect(shell).toContain('data-shell-action="go" data-shell-href="');
+        expect(shell).not.toContain('onclick="openHomePhotoPicker(event)"');
+        expect(shell).not.toContain('onclick="openHomeInfoDetail(');
+        expect(shell).not.toContain('onclick="return handleSheetNavigation(event,');
+    });
 });
