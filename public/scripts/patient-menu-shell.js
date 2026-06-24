@@ -1868,8 +1868,14 @@
             'birth-photo-picker': function(target, event) {
                 openBirthPhotoPicker(event, target.dataset.birthId);
             },
+            'open-birth-extra-modal': function(target, event) {
+                openBirthExtraModal(event, target.dataset.birthId);
+            },
             'open-birth-testimonial-modal': function(target, event) {
                 openBirthTestimonialModal(event, target.dataset.birthId);
+            },
+            'close-cancel-booking-modal': function(target, event) {
+                closeCancelBookingModal(event);
             }
         };
 
@@ -3495,7 +3501,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave5';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave6';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

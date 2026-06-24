@@ -7,10 +7,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Portal Pasien - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260624shellwave5">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260624shellwave6">
     <script>
-        window.PATIENT_SHELL_VERSION = '20260624shellwave5';
-        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20260624shellwave5';
+        window.PATIENT_SHELL_VERSION = '20260624shellwave6';
+        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20260624shellwave6';
     </script>
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
@@ -3106,9 +3106,9 @@
                     </div>
                 </div>
                 <div class="birth-congrats-card-actions">
-                    <button type="button" class="birth-congrats-card-action primary soundable" id="birth-photo-action" onclick="openBirthPhotoPicker(event)"><i class="fa-solid fa-upload"></i> Upload foto bayi</button>
-                    <button type="button" class="birth-congrats-card-action soundable" id="birth-extra-action" onclick="openBirthExtraModal(event)"><i class="fa-solid fa-pen"></i> Edit detail</button>
-                    <button type="button" class="birth-congrats-card-action soundable" id="birth-testimonial-action" onclick="openBirthTestimonialModal(event)"><i class="fa-regular fa-comment-dots"></i> Kirim testimoni</button>
+                    <button type="button" class="birth-congrats-card-action primary soundable" id="birth-photo-action" data-shell-action="birth-photo-picker"><i class="fa-solid fa-upload"></i> Upload foto bayi</button>
+                    <button type="button" class="birth-congrats-card-action soundable" id="birth-extra-action" data-shell-action="open-birth-extra-modal"><i class="fa-solid fa-pen"></i> Edit detail</button>
+                    <button type="button" class="birth-congrats-card-action soundable" id="birth-testimonial-action" data-shell-action="open-birth-testimonial-modal"><i class="fa-regular fa-comment-dots"></i> Kirim testimoni</button>
                 </div>
             </section>
 
@@ -3242,7 +3242,7 @@
                 <div class="section-kicker">Booking</div>
                 <h2>Batalkan janji temu?</h2>
             </div>
-            <button class="close-btn soundable" onclick="closeCancelBookingModal()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            <button class="close-btn soundable" data-shell-action="close-cancel-booking-modal" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <p style="color:var(--muted);font-size:12px;line-height:1.5;">Mohon tuliskan alasan pembatalan agar tim klinik dapat mencatat perubahan jadwal Anda.</p>
         <div class="field">
@@ -3251,7 +3251,7 @@
         </div>
         <p id="booking-cancel-error" style="display:none;color:#b91c1c;font-size:12px;margin-top:8px;"></p>
         <div class="modal-actions">
-            <button class="ghost-action soundable" id="booking-cancel-close-btn" onclick="closeCancelBookingModal()">Batal</button>
+            <button class="ghost-action soundable" id="booking-cancel-close-btn" data-shell-action="close-cancel-booking-modal">Batal</button>
             <button class="primary-action soundable" id="booking-cancel-submit-btn" onclick="submitCancelBooking()">Ya, Batalkan</button>
         </div>
     </section>
@@ -3391,7 +3391,7 @@
         </p>
     </div>
 
-    <script type="module" src="/scripts/patient-menu-shell.js?v=20260624shellwave5"></script>
+    <script type="module" src="/scripts/patient-menu-shell.js?v=20260624shellwave6"></script>
     <script src="/scripts/patient-my-corner.js?v=20260606roomthemes"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 

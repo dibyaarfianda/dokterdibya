@@ -158,4 +158,30 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(patientMenu).not.toContain('id="birth-date-wheel-modal" onclick="closeBirthDateWheelPicker(event)"');
         expect(patientMenu).not.toContain('class="birth-date-wheel-close soundable" onclick="closeBirthDateWheelPicker(event)"');
     });
+
+    test('patient home static birth and booking close controls use delegated actions', () => {
+        const patientMenu = readNormalizedFile('public', 'patient-menu.html');
+        const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
+
+        expect(patientMenu).toContain('id="birth-photo-action" data-shell-action="birth-photo-picker"');
+        expect(patientMenu).toContain('id="birth-extra-action" data-shell-action="open-birth-extra-modal"');
+        expect(patientMenu).toContain('id="birth-testimonial-action" data-shell-action="open-birth-testimonial-modal"');
+        expect(patientMenu).toContain('class="close-btn soundable" data-shell-action="close-cancel-booking-modal" aria-label="Tutup"');
+        expect(patientMenu).toContain('id="booking-cancel-close-btn" data-shell-action="close-cancel-booking-modal"');
+
+        expect(shell).toContain("'birth-photo-picker': function(target, event)");
+        expect(shell).toContain("'open-birth-extra-modal': function(target, event)");
+        expect(shell).toContain("'open-birth-testimonial-modal': function(target, event)");
+        expect(shell).toContain("'close-cancel-booking-modal': function(target, event)");
+
+        expect(patientMenu).not.toContain('id="birth-photo-action" onclick="openBirthPhotoPicker(event)"');
+        expect(patientMenu).not.toContain('id="birth-extra-action" onclick="openBirthExtraModal(event)"');
+        expect(patientMenu).not.toContain('id="birth-testimonial-action" onclick="openBirthTestimonialModal(event)"');
+        expect(patientMenu).not.toContain('class="close-btn soundable" onclick="closeCancelBookingModal()"');
+        expect(patientMenu).not.toContain('id="booking-cancel-close-btn" onclick="closeCancelBookingModal()"');
+
+        expect(patientMenu).toContain('id="booking-cancel-btn" onclick="cancelActiveBooking(event)"');
+        expect(patientMenu).toContain('id="booking-cancel-submit-btn" onclick="submitCancelBooking()"');
+        expect(patientMenu).toContain('onclick="applyBirthDateWheelPicker(event)"');
+    });
 });

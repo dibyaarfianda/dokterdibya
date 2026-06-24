@@ -1,4 +1,4 @@
-const CACHE_VERSION = '20260624shellwave5'; // 2026-06-24 Patient menu shell refactor phase 1
+const CACHE_VERSION = '20260624shellwave6'; // 2026-06-24 Patient menu shell refactor phase 1
 const CACHE_PREFIX = 'sisiwanita-patient-portal-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
