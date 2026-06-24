@@ -4,6 +4,7 @@ const db = require('../db');
 const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
+const sundayAppointmentsRoutes = require('./sunday-appointments');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 let bookingSettingsSchemaReady = false;
@@ -35,6 +36,13 @@ async function ensureBookingSettingsSchema() {
     }
 
     bookingSettingsSchemaReady = true;
+}
+
+function clearBookingSettingCaches() {
+    cache.delPattern('booking-settings:');
+    if (typeof sundayAppointmentsRoutes.invalidateSessionSettingsCache === 'function') {
+        sundayAppointmentsRoutes.invalidateSessionSettingsCache();
+    }
 }
 
 /**
@@ -162,7 +170,7 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
             [session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0, id]
         );
 
-        cache.delPattern('booking-settings:');
+        clearBookingSettingCaches();
         res.json({ success: true, message: 'Pengaturan sesi berhasil diupdate' });
     } catch (error) {
         console.error('Error updating booking setting:', error);
@@ -213,7 +221,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
             [session_number, session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0]
         );
 
-        cache.delPattern('booking-settings:');
+        clearBookingSettingCaches();
         res.status(201).json({ success: true, message: 'Sesi baru berhasil ditambahkan' });
     } catch (error) {
         console.error('Error creating booking setting:', error);
@@ -251,7 +259,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
 
         await db.query('DELETE FROM booking_settings WHERE id = ?', [id]);
 
-        cache.delPattern('booking-settings:');
+        clearBookingSettingCaches();
         res.json({ success: true, message: 'Sesi berhasil dihapus' });
     } catch (error) {
         console.error('Error deleting booking setting:', error);

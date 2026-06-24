@@ -143,6 +143,11 @@ let sessionSettingsCache = null;
 let sessionSettingsCacheTime = 0;
 const CACHE_TTL = 60000; // 1 minute cache
 
+function invalidateSessionSettingsCache() {
+    sessionSettingsCache = null;
+    sessionSettingsCacheTime = 0;
+}
+
 // Helper function to get session settings from database
 async function getSessionSettings() {
     await ensureBookingSettingsDayColumn();
@@ -181,6 +186,42 @@ async function getSessionSettings() {
     }
 }
 
+function findSessionSetting(settings, session) {
+    return (settings || []).find(s => s.session === parseInt(session));
+}
+
+function getSessionLabelFromSettings(settings, session) {
+    const found = findSessionSetting(settings, session);
+    if (found) {
+        return found.label;
+    }
+
+    const labels = {
+        1: '09:00 - 11:30 (Pagi)',
+        2: '12:00 - 14:30 (Siang)',
+        3: '15:00 - 17:30 (Sore)'
+    };
+    return labels[session] || 'Unknown';
+}
+
+function getSlotTimeFromSettings(settings, session, slotNumber) {
+    const found = findSessionSetting(settings, session);
+    if (found) {
+        const [hours, mins] = found.startTime.split(':').map(Number);
+        const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
+        const hour = Math.floor(totalMinutes / 60);
+        const minute = totalMinutes % 60;
+        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+
+    const startHours = { 1: 9, 2: 12, 3: 15 };
+    const startHour = startHours[session] || 9;
+    const minutes = (slotNumber - 1) * 15;
+    const hour = startHour + Math.floor(minutes / 60);
+    const minute = minutes % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 async function getConfiguredPracticeDays() {
     const settings = await getSessionSettings();
     const days = Array.from(new Set(settings.map(setting => setting.dayOfWeek))).sort((left, right) => left - right);
@@ -190,66 +231,23 @@ async function getConfiguredPracticeDays() {
 // Helper function to get session time label (async version with fallback)
 async function getSessionLabelAsync(session) {
     const settings = await getSessionSettings();
-    const found = settings.find(s => s.session === parseInt(session));
-    return found ? found.label : 'Unknown';
+    return getSessionLabelFromSettings(settings, session);
 }
 
 // Sync version for backward compatibility (uses cache)
 function getSessionLabel(session) {
-    if (sessionSettingsCache) {
-        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
-        return found ? found.label : 'Unknown';
-    }
-    // Fallback to hardcoded if cache not loaded
-    const labels = {
-        1: '09:00 - 11:30 (Pagi)',
-        2: '12:00 - 14:30 (Siang)',
-        3: '15:00 - 17:30 (Sore)'
-    };
-    return labels[session] || 'Unknown';
+    return getSessionLabelFromSettings(sessionSettingsCache, session);
 }
 
 // Helper function to calculate slot time (async version)
 async function getSlotTimeAsync(session, slotNumber) {
     const settings = await getSessionSettings();
-    const found = settings.find(s => s.session === parseInt(session));
-
-    if (!found) {
-        // Fallback
-        const startHours = { 1: 9, 2: 12, 3: 15 };
-        const startHour = startHours[session] || 9;
-        const minutes = (slotNumber - 1) * 15;
-        const hour = startHour + Math.floor(minutes / 60);
-        const minute = minutes % 60;
-        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    }
-
-    const [hours, mins] = found.startTime.split(':').map(Number);
-    const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
-    const hour = Math.floor(totalMinutes / 60);
-    const minute = totalMinutes % 60;
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return getSlotTimeFromSettings(settings, session, slotNumber);
 }
 
 // Sync version for backward compatibility
 function getSlotTime(session, slotNumber) {
-    if (sessionSettingsCache) {
-        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
-        if (found) {
-            const [hours, mins] = found.startTime.split(':').map(Number);
-            const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
-            const hour = Math.floor(totalMinutes / 60);
-            const minute = totalMinutes % 60;
-            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        }
-    }
-    // Fallback to hardcoded
-    const startHours = { 1: 9, 2: 12, 3: 15 };
-    const startHour = startHours[session] || 9;
-    const minutes = (slotNumber - 1) * 15;
-    const hour = startHour + Math.floor(minutes / 60);
-    const minute = minutes % 60;
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return getSlotTimeFromSettings(sessionSettingsCache, session, slotNumber);
 }
 
 // Helper function to get category label
@@ -495,7 +493,7 @@ router.post('/book', verifyToken, async (req, res) => {
             const existingAppt = patientExisting[0];
             const existingDate = new Date(existingAppt.appointment_date);
             return res.status(409).json({ 
-                message: `Anda sudah memiliki janji temu di Klinik Privat pada ${existingDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabel(existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.` 
+                message: `Anda sudah memiliki janji temu di Klinik Privat pada ${existingDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabelFromSettings(sessionSettings, existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.`
             });
         }
         
@@ -534,7 +532,7 @@ router.post('/book', verifyToken, async (req, res) => {
             patient_name: patient.full_name,
             appointment_date: appointment_date,
             session: session,
-            session_label: getSessionLabel(session),
+            session_label: getSessionLabelFromSettings(sessionSettings, session),
             slot_number: slot_number,
             status: bookingStatus
         });
@@ -558,8 +556,8 @@ router.post('/book', verifyToken, async (req, res) => {
                     month: 'long',
                     day: 'numeric'
                 }),
-                session: getSessionLabel(session),
-                time: getSlotTime(session, slot_number),
+                session: getSessionLabelFromSettings(sessionSettings, session),
+                time: getSlotTimeFromSettings(sessionSettings, session, slot_number),
                 slot: slot_number
             }
         });
@@ -596,12 +594,13 @@ router.get('/my-bookings', verifyToken, async (req, res) => {
         query += ` ORDER BY appointment_date DESC, session ASC, slot_number ASC`;
 
         const [bookings] = await db.query(query, params);
+        const sessionSettings = await getSessionSettings();
 
         const formatted = bookings.map(b => ({
             ...b,
             appointment_date: b.appointment_date,
-            slot_time: getSlotTime(b.session, b.slot_number),
-            sessionLabel: getSessionLabel(b.session),
+            slot_time: getSlotTimeFromSettings(sessionSettings, b.session, b.slot_number),
+            sessionLabel: getSessionLabelFromSettings(sessionSettings, b.session),
             categoryLabel: getCategoryLabel(b.consultation_category),
             dateFormatted: new Date(b.appointment_date).toLocaleDateString('id-ID', {
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
@@ -630,9 +629,10 @@ router.get('/patient', verifyToken, async (req, res) => {
              ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
             [req.user.id]
         );
+        const sessionSettings = await getSessionSettings();
 
         const formatted = appointments.map(apt => {
-            const slotTime = getSlotTime(apt.session, apt.slot_number);
+            const slotTime = getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number);
 
             let startDateTime = null;
             let arrivalTime = null;
@@ -664,7 +664,7 @@ router.get('/patient', verifyToken, async (req, res) => {
                     month: 'long',
                     day: 'numeric'
                 }),
-                sessionLabel: getSessionLabel(apt.session),
+                sessionLabel: getSessionLabelFromSettings(sessionSettings, apt.session),
                 time: slotTime,
                 startDateTime,
                 arrivalTime,
@@ -711,13 +711,14 @@ router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
         }
 
         const apt = rows[0];
+        const sessionSettings = await getSessionSettings();
         res.json({
             success: true,
             appointment: {
                 id: apt.id,
                 appointment_date: apt.appointment_date,
-                session_label: getSessionLabel(apt.session),
-                slot_time: getSlotTime(apt.session, apt.slot_number),
+                session_label: getSessionLabelFromSettings(sessionSettings, apt.session),
+                slot_time: getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number),
                 slot_number: apt.slot_number,
                 chief_complaint: apt.chief_complaint,
                 status: apt.status
@@ -774,12 +775,13 @@ router.post('/:id/trigger-confirmation-popup', verifyToken, async (req, res) => 
                 month: 'long',
                 year: 'numeric'
             });
+            const sessionSettings = await getSessionSettings();
 
             await createPatientNotification({
                 patient_id: appointment.patient_id,
                 type: 'appointment',
                 title: 'Konfirmasi Kehadiran',
-                message: `Mohon konfirmasi kehadiran Anda untuk janji temu ${formattedDate}, ${getSessionLabel(appointment.session)} slot ${appointment.slot_number}.`,
+                message: `Mohon konfirmasi kehadiran Anda untuk janji temu ${formattedDate}, ${getSessionLabelFromSettings(sessionSettings, appointment.session)} slot ${appointment.slot_number}.`,
                 link: '/patient-menu-simple-trial.html',
                 icon: 'fa fa-calendar-check',
                 icon_color: 'text-warning'
@@ -837,11 +839,12 @@ router.post('/:id/confirm-attendance', verifyToken, async (req, res) => {
 
         // Broadcast to staff
         try {
+            const sessionSettings = await getSessionSettings();
             realtimeSync.broadcastNewBooking({
                 id: parseInt(id),
                 patient_name: rows[0].patient_name,
                 session: rows[0].session,
-                session_label: getSessionLabel(rows[0].session),
+                session_label: getSessionLabelFromSettings(sessionSettings, rows[0].session),
                 slot_number: rows[0].slot_number,
                 status: 'confirmed',
                 _event: 'attendance_confirmed'
@@ -930,6 +933,7 @@ router.get('/by-token/:token', async (req, res) => {
         }
 
         const apt = rows[0];
+        const sessionSettings = await getSessionSettings();
 
         // Check if token is still usable
         if (apt.status !== 'pending_confirmation') {
@@ -942,8 +946,8 @@ router.get('/by-token/:token', async (req, res) => {
                     id: apt.id,
                     patient_name: apt.patient_name,
                     appointment_date: apt.appointment_date,
-                    session_label: getSessionLabel(apt.session),
-                    slot_time: getSlotTime(apt.session, apt.slot_number),
+                    session_label: getSessionLabelFromSettings(sessionSettings, apt.session),
+                    slot_time: getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number),
                     chief_complaint: apt.chief_complaint,
                     status: apt.status
                 },
@@ -958,8 +962,8 @@ router.get('/by-token/:token', async (req, res) => {
                 id: apt.id,
                 patient_name: apt.patient_name,
                 appointment_date: apt.appointment_date,
-                session_label: getSessionLabel(apt.session),
-                slot_time: getSlotTime(apt.session, apt.slot_number),
+                session_label: getSessionLabelFromSettings(sessionSettings, apt.session),
+                slot_time: getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number),
                 chief_complaint: apt.chief_complaint,
                 status: apt.status
             },
@@ -991,6 +995,7 @@ router.post('/by-token/:token/confirm', async (req, res) => {
         }
 
         const apt = rows[0];
+        const sessionSettings = await getSessionSettings();
 
         await db.query(
             `UPDATE sunday_appointments
@@ -1005,7 +1010,7 @@ router.post('/by-token/:token/confirm', async (req, res) => {
                 patient_id: apt.patient_id,
                 type: 'appointment',
                 title: 'Kehadiran Dikonfirmasi',
-                message: `Kehadiran Anda (${getSessionLabel(apt.session)}, slot ${apt.slot_number}) telah dikonfirmasi. Nama Anda akan muncul di antrian.`,
+                message: `Kehadiran Anda (${getSessionLabelFromSettings(sessionSettings, apt.session)}, slot ${apt.slot_number}) telah dikonfirmasi. Nama Anda akan muncul di antrian.`,
                 link: '/riwayat-kunjungan.html',
                 icon: 'fa fa-check-circle',
                 icon_color: 'text-success'
@@ -1020,7 +1025,7 @@ router.post('/by-token/:token/confirm', async (req, res) => {
                 id: apt.id,
                 patient_name: apt.patient_name,
                 session: apt.session,
-                session_label: getSessionLabel(apt.session),
+                session_label: getSessionLabelFromSettings(sessionSettings, apt.session),
                 slot_number: apt.slot_number,
                 status: 'confirmed',
                 _event: 'attendance_confirmed'
@@ -1056,6 +1061,7 @@ router.post('/by-token/:token/cancel', async (req, res) => {
         }
 
         const apt = rows[0];
+        const sessionSettings = await getSessionSettings();
 
         await db.query(
             `UPDATE sunday_appointments
@@ -1073,7 +1079,7 @@ router.post('/by-token/:token/cancel', async (req, res) => {
                 patient_id: apt.patient_id,
                 type: 'appointment',
                 title: 'Jadwal Dibatalkan',
-                message: `Jadwal Anda (${getSessionLabel(apt.session)}, slot ${apt.slot_number}) telah dibatalkan.`,
+                message: `Jadwal Anda (${getSessionLabelFromSettings(sessionSettings, apt.session)}, slot ${apt.slot_number}) telah dibatalkan.`,
                 link: '/riwayat-kunjungan.html',
                 icon: 'fa fa-times-circle',
                 icon_color: 'text-danger'
@@ -1136,7 +1142,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
             return res.status(400).json({ message: 'Janji temu yang sudah selesai tidak dapat dibatalkan' });
         }
 
-        const slotTime = getSlotTime(appointment.session, appointment.slot_number);
+        const slotTime = await getSlotTimeAsync(appointment.session, appointment.slot_number);
         if (slotTime) {
             const appointmentStart = new Date(`${appointment.appointment_date}T${slotTime}:00`);
             if (!isNaN(appointmentStart.getTime()) && appointmentStart <= new Date()) {
@@ -1296,6 +1302,7 @@ router.get('/list', verifyToken, async (req, res) => {
         query += ' ORDER BY a.appointment_date DESC, a.session ASC, a.slot_number ASC';
         
         const [appointments] = await db.query(query, params);
+        const sessionSettings = await getSessionSettings();
         
         const formatted = appointments.map(apt => {
             const birthDateSource = apt.patient_birth_date ? new Date(apt.patient_birth_date) : null;
@@ -1313,8 +1320,8 @@ router.get('/list', verifyToken, async (req, res) => {
                     month: 'long',
                     day: 'numeric'
                 }),
-                sessionLabel: getSessionLabel(apt.session),
-                time: getSlotTime(apt.session, apt.slot_number),
+                sessionLabel: getSessionLabelFromSettings(sessionSettings, apt.session),
+                time: getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number),
                 categoryLabel: getCategoryLabel(apt.consultation_category)
             };
         });
@@ -1351,8 +1358,10 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
             [patientId]
         );
         
+        const sessionSettings = await getSessionSettings();
+
         const formatted = appointments.map(apt => {
-            const slotTime = getSlotTime(apt.session, apt.slot_number);
+            const slotTime = getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number);
 
             // Calculate isPast correctly with GMT+7 timezone
             let isPast = new Date(apt.appointment_date) < new Date();
@@ -1374,7 +1383,7 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
                     month: 'long',
                     day: 'numeric'
                 }),
-                sessionLabel: getSessionLabel(apt.session),
+                sessionLabel: getSessionLabelFromSettings(sessionSettings, apt.session),
                 time: slotTime,
                 isPast
             };
@@ -1524,3 +1533,4 @@ router.put('/:id/status', verifyToken, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.invalidateSessionSettingsCache = invalidateSessionSettingsCache;
