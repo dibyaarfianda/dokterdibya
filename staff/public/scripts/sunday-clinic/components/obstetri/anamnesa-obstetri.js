@@ -1472,8 +1472,12 @@ export default {
             para: document.querySelector('[name="para"]')?.value,
             abortus: document.querySelector('[name="abortus"]')?.value,
             living: document.querySelector('[name="living"]')?.value,
-            previousPregnancies: [] // TODO: Collect from dynamic list
+            previousPregnancies: this.collectPreviousPregnancies()
         };
+    },
+
+    collectPreviousPregnancies() {
+        return collectPreviousPregnanciesFromDom();
     },
 
     collectRiskFactors() {
@@ -1497,10 +1501,151 @@ export default {
         };
     },
 
+    collectMedicationList() {
+        return collectMedicationsFromDom();
+    },
+
     collectMedications() {
-        return []; // TODO: Collect from dynamic list
+        return this.collectMedicationList();
     }
 };
+
+function escapeAttribute(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function hasPregnancyValue(entry) {
+    return Boolean(entry.year || entry.mode || entry.weight || entry.alive || entry.complication);
+}
+
+function collectPreviousPregnanciesFromDom() {
+    const list = document.getElementById('previous-pregnancies-list');
+    if (!list) return [];
+
+    return Array.from(list.querySelectorAll('[name^="prev_preg_year_"]')).map(input => {
+        const index = input.name.replace('prev_preg_year_', '');
+        return {
+            year: input.value || '',
+            mode: list.querySelector(`[name="prev_preg_mode_${index}"]`)?.value || '',
+            weight: list.querySelector(`[name="prev_preg_weight_${index}"]`)?.value || '',
+            alive: list.querySelector(`[name="prev_preg_alive_${index}"]`)?.value || '',
+            complication: list.querySelector(`[name="prev_preg_complication_${index}"]`)?.value || ''
+        };
+    }).filter(hasPregnancyValue);
+}
+
+function hasMedicationValue(entry) {
+    return Boolean(entry.name || entry.dose || entry.freq);
+}
+
+function collectMedicationsFromDom() {
+    const list = document.getElementById('medications-list');
+    if (!list) return [];
+
+    return Array.from(list.querySelectorAll('[name^="med_name_"]')).map(input => {
+        const index = input.name.replace('med_name_', '');
+        return {
+            name: input.value || '',
+            dose: list.querySelector(`[name="med_dose_${index}"]`)?.value || '',
+            freq: list.querySelector(`[name="med_freq_${index}"]`)?.value || ''
+        };
+    }).filter(hasMedicationValue);
+}
+
+function renderPreviousPregnancyEntry(preg, index) {
+    return `
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <label>Kehamilan #${index + 1}</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control form-control-sm" name="prev_preg_year_${index}" value="${escapeAttribute(preg.year)}" placeholder="Tahun">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control form-control-sm" name="prev_preg_mode_${index}">
+                            <option value="">Cara persalinan...</option>
+                            <option value="Normal" ${preg.mode === 'Normal' ? 'selected' : ''}>Normal</option>
+                            <option value="SC" ${preg.mode === 'SC' ? 'selected' : ''}>SC</option>
+                            <option value="Vacuum" ${preg.mode === 'Vacuum' ? 'selected' : ''}>Vacuum</option>
+                            <option value="Forceps" ${preg.mode === 'Forceps' ? 'selected' : ''}>Forceps</option>
+                            <option value="Keguguran" ${preg.mode === 'Keguguran' ? 'selected' : ''}>Keguguran</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control form-control-sm" name="prev_preg_weight_${index}" value="${escapeAttribute(preg.weight)}" placeholder="BB (gram)">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-control form-control-sm" name="prev_preg_alive_${index}">
+                            <option value="">Status...</option>
+                            <option value="yes" ${preg.alive === 'yes' ? 'selected' : ''}>Hidup</option>
+                            <option value="no" ${preg.alive === 'no' ? 'selected' : ''}>Meninggal</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removePreviousPregnancy(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-12">
+                        <input type="text" class="form-control form-control-sm" name="prev_preg_complication_${index}" value="${escapeAttribute(preg.complication)}" placeholder="Komplikasi (jika ada)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderPreviousPregnancyEntries() {
+    const list = document.getElementById('previous-pregnancies-list');
+    if (!list) return;
+    const entries = arguments[0] || collectPreviousPregnanciesFromDom();
+    list.innerHTML = entries.length
+        ? entries.map(renderPreviousPregnancyEntry).join('')
+        : '<p class="text-muted">Belum ada riwayat kehamilan sebelumnya</p>';
+}
+
+function renderMedicationEntry(med, index) {
+    return `
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm" name="med_name_${index}" value="${escapeAttribute(med.name)}" placeholder="Nama obat">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm" name="med_dose_${index}" value="${escapeAttribute(med.dose)}" placeholder="Dosis">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control form-control-sm" name="med_freq_${index}" value="${escapeAttribute(med.freq || med.frequency)}" placeholder="Frekuensi">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeMedication(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderMedicationEntries() {
+    const list = document.getElementById('medications-list');
+    if (!list) return;
+    const entries = arguments[0] || collectMedicationsFromDom();
+    list.innerHTML = entries.length
+        ? entries.map(renderMedicationEntry).join('')
+        : '<p class="text-muted">Tidak ada obat yang sedang dikonsumsi</p>';
+}
 
 // Attach event listeners
 document.addEventListener('DOMContentLoaded', () => {
@@ -1600,22 +1745,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dynamic list handlers
     window.addPreviousPregnancy = function() {
-        // TODO: Add new pregnancy entry
-        window.showToast('info', 'Fitur akan segera tersedia');
+        const entries = collectPreviousPregnanciesFromDom();
+        entries.push({ year: '', mode: '', weight: '', alive: '', complication: '' });
+        renderPreviousPregnancyEntries(entries);
     };
 
     window.removePreviousPregnancy = function(index) {
-        // TODO: Remove pregnancy entry
-        window.showToast('info', 'Fitur akan segera tersedia');
+        const entries = collectPreviousPregnanciesFromDom();
+        entries.splice(index, 1);
+        renderPreviousPregnancyEntries(entries);
     };
 
     window.addMedication = function() {
-        // TODO: Add new medication entry
-        window.showToast('info', 'Fitur akan segera tersedia');
+        const entries = collectMedicationsFromDom();
+        entries.push({ name: '', dose: '', freq: '' });
+        renderMedicationEntries(entries);
     };
 
     window.removeMedication = function(index) {
-        // TODO: Remove medication entry
-        window.showToast('info', 'Fitur akan segera tersedia');
+        const entries = collectMedicationsFromDom();
+        entries.splice(index, 1);
+        renderMedicationEntries(entries);
     };
 });

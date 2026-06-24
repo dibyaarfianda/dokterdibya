@@ -47,4 +47,55 @@ describe('staff shell refactor phase 1', () => {
         expect(actions).toContain("document.addEventListener('click'");
         expect(actions).toContain('window.openMobileMenu = openMobileMenu;');
     });
+
+    test('appointment debug wiring is extracted from the staff shell html', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const appointmentDebug = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'appointment-debug.js');
+
+        expect(html).toMatch(/<script defer src="scripts\/shell\/appointment-debug\.js\?v=[^"' ]+"><\/script>/);
+        expect(html).not.toContain('window.debugAppointments_DISABLED = function()');
+        expect(html).not.toContain('window.debugAppointments is now available globally');
+        expect(appointmentDebug).toContain('function installAppointmentDebug()');
+        expect(appointmentDebug).toContain("new URLSearchParams(window.location.search).get('debugAppointments') === '1'");
+        expect(appointmentDebug).toContain('window.debugAppointments = debugAppointments;');
+    });
+
+    test('main staff module imports small shell helpers instead of owning them inline', () => {
+        const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+        const helpers = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'module-helpers.js');
+
+        expect(main).toContain("import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';");
+        expect(main).not.toContain('function getAuthToken()');
+        expect(main).not.toContain('function importWithVersion(path)');
+        expect(main).not.toContain('function grab(id)');
+        expect(helpers).toContain('export function getAuthToken()');
+        expect(helpers).toContain('export function createVersionedImporter');
+        expect(helpers).toContain('export function grab(id)');
+    });
+
+    test('profile settings uses the shared auth token helper instead of hardcoded storage keys', () => {
+        const profileSettings = readNormalizedFile('staff', 'public', 'profile-settings.html');
+
+        expect(profileSettings).toContain("import { auth, getIdToken } from './scripts/vps-auth-v2.js';");
+        expect(profileSettings).toContain('async function getToken()');
+        expect(profileSettings).toContain('return await getIdToken();');
+        expect(profileSettings).not.toContain("localStorage.getItem('vps_auth_token')");
+        expect(profileSettings).not.toContain("sessionStorage.getItem('vps_auth_token')");
+    });
+
+    test('patient search and detail diagnostics are gated away from production console logs', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const patientSearchDetail = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'patient-search-detail.js');
+
+        expect(html).toMatch(/<script defer src="scripts\/shell\/patient-search-detail\.js\?v=[^"' ]+"><\/script>/);
+        expect(html).toContain('window.installPatientViewButtons({');
+        expect(html).not.toContain("console.log('[SEARCH DEBUG] Search params:', { name, id, mr_id, email, phone, whatsapp, husband });");
+        expect(html).not.toContain("console.log('[SEARCH DEBUG] API Response:', data);");
+        expect(html).not.toContain("console.log('[SEARCH DEBUG] Results:', data.data.map(p => ({ id: p.id, name: p.full_name })));");
+        expect(html).not.toContain("console.log('Patient data received:', data);");
+        expect(html).not.toContain("console.log('Intake data:', intake);");
+        expect(patientSearchDetail).toContain('window.staffDebugLog = window.staffDebugLog || function staffDebugLog(scope, ...args)');
+        expect(patientSearchDetail).toContain("new URLSearchParams(window.location.search).get('debugStaff') === '1'");
+        expect(patientSearchDetail).toContain('window.installPatientViewButtons = function installPatientViewButtons(options = {})');
+    });
 });

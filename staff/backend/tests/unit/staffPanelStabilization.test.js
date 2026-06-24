@@ -227,6 +227,36 @@ describe('staff panel stabilization sources', () => {
         expect(systemRoutesIndex).toBeLessThan(notFoundIndex);
     });
 
+    test('notifications route is mounted once to avoid duplicate route handling', () => {
+        const server = readNormalizedFile('staff', 'backend', 'server.js');
+        const notificationMounts = server.match(/^app\.use\('\/api\/notifications',\s*\w+\);/gm) || [];
+
+        expect(notificationMounts).toEqual(["app.use('/api/notifications', notificationRoutes);"]);
+    });
+
+    test('database pool wait queue is bounded by environment configuration', () => {
+        const db = readNormalizedFile('staff', 'backend', 'db.js');
+
+        expect(db).toContain('const dbQueueLimit =');
+        expect(db).toContain('process.env.DB_QUEUE_LIMIT');
+        expect(db).toContain('queueLimit: dbQueueLimit');
+        expect(db).not.toContain('queueLimit: 0');
+    });
+
+    test('Sunday Clinic route delegates reusable pure helpers to a service module', () => {
+        const route = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const helpers = readNormalizedFile('staff', 'backend', 'services', 'SundayClinicRouteHelpers.js');
+
+        expect(route).toContain("require('../services/SundayClinicRouteHelpers')");
+        expect(route).not.toContain('function normalizeMrId(value)');
+        expect(route).not.toContain('function convertLooseDateToIso(dateStr)');
+        expect(route).not.toContain('function buildMedifyIdentityPrefill(identity)');
+        expect(route).not.toContain('function normalizePhone(phone)');
+        expect(helpers).toContain('function normalizeMrId(value)');
+        expect(helpers).toContain('function buildMedifyIdentityPrefill(identity)');
+        expect(helpers).toContain('module.exports = {');
+    });
+
     test('medical file upload routes require authentication for mutating actions', () => {
         const labResults = readNormalizedFile('staff', 'backend', 'routes', 'lab-results.js');
         const usgPhotos = readNormalizedFile('staff', 'backend', 'routes', 'usg-photos.js');

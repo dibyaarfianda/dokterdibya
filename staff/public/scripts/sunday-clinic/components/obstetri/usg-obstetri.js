@@ -1089,12 +1089,21 @@ export default {
                 trimester_3: this.collectTrimester3Data()
             };
 
-            // TODO: Send to API
-            console.log('[USG Obstetri] Data:', data);
+            let persistResult = null;
+            if (state && typeof state.saveRecord === 'function') {
+                persistResult = await state.saveRecord('usg', data);
+                if (persistResult && persistResult.success === false) {
+                    return {
+                        success: false,
+                        error: persistResult.error || 'Gagal menyimpan data USG'
+                    };
+                }
+            }
 
             return {
                 success: true,
-                data: data
+                data: data,
+                persisted: Boolean(persistResult)
             };
 
         } catch (error) {

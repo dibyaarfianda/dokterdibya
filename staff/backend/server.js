@@ -559,10 +559,6 @@ app.use('/api/booking-settings', bookingSettingsRoutes);
 const birthClassRoutes = require('./routes/birth-classes');
 app.use('/api/birth-classes', birthClassRoutes);
 
-// Staff Notifications routes
-const notificationsRoutes = require('./routes/notifications');
-app.use('/api/notifications', notificationsRoutes);
-
 // Patient Notifications routes (for patient portal)
 const patientNotificationsRoutes = require('./routes/patient-notifications');
 app.use('/api/patient-notifications', patientNotificationsRoutes);

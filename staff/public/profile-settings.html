@@ -420,9 +420,8 @@
         pointerId: null
     };
 
-    // Get token from localStorage
-    function getToken() {
-        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    async function getToken() {
+        return await getIdToken();
     }
 
     // Show toast message
@@ -785,7 +784,7 @@
     // Load profile data
     async function loadProfileData() {
         try {
-            const token = getToken();
+            const token = await getToken();
             if (!token) {
                 showToast('Session expired. Please login again.', 'error');
                 window.location.href = 'login.html';
@@ -916,7 +915,7 @@
         }
 
         try {
-            const token = getToken();
+            const token = await getToken();
 
             // Update profile (name and photo)
             const response = await fetch('/api/auth/profile', {

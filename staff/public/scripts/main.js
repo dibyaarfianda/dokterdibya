@@ -8,14 +8,7 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-
-// -------------------- AUTH TOKEN HELPER --------------------
-// Centralized token getter to avoid inconsistency issues
-function getAuthToken() {
-    return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
-        ? window.getAuthToken()
-        : '';
-}
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -48,26 +41,8 @@ function startClock() {
 
 // -------------------- PAGE SWITCHING --------------------
 const pages = {};
-const moduleCache = new Map();
-// Modules listed here already have static imports elsewhere; skip cache busting
-// so we reuse the same evaluated instance across the app.
-const skipVersionModules = new Set(['./billing.js', './billing-obat.js', './medical-exam.js']);
 const PUBLIC_ASSET_ROOT = new URL('../', import.meta.url).pathname;
 const SUNDAY_CLINIC_STYLESHEET_ID = 'sunday-clinic-stylesheet';
-function importWithVersion(path) {
-    if (moduleCache.has(path)) {
-        return moduleCache.get(path);
-    }
-    let specifier = path;
-    const version = window.__assetVersion;
-    if (version && !skipVersionModules.has(path)) {
-        const separator = path.includes('?') ? '&' : '?';
-        specifier = `${path}${separator}v=${version}`;
-    }
-    const promise = import(specifier);
-    moduleCache.set(path, promise);
-    return promise;
-}
 function setSundayClinicStylesActive(active) {
     let link = document.getElementById(SUNDAY_CLINIC_STYLESHEET_ID);
     if (active) {
@@ -96,7 +71,6 @@ function setSundayClinicStylesActive(active) {
         }
     }
 }
-function grab(id) { return document.getElementById(id); }
 function initPages() {
     pages.dashboard = grab('dashboard-page');
     pages.klinikPrivate = grab('klinik-private-page');

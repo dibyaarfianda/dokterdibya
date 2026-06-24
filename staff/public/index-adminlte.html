@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v278';
+        window.STAFF_CACHE_VERSION = 'v280';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1649,263 +1649,8 @@
 
         })();
     </script>
-
-    <!-- Global Debug Function for Appointments - DISABLED -->
-    <script>
-        // Set up debug function immediately in head (before DOM loads)
-        (function() {
-            window.debugAppointments_DISABLED = function() {
-                console.log('[DEBUG] ===== APPOINTMENTS DEBUG (Global) =====');
-                
-                // Basic checks that don't require the module
-                const btn = document.getElementById('btn-add-appointment');
-                const modal = document.getElementById('appointment-modal');
-                const appointmentsPage = document.getElementById('appointments-page');
-                
-                console.log('[DEBUG] Basic DOM checks:');
-                console.log('  - Button exists?', !!btn);
-                console.log('  - Modal exists?', !!modal);
-                console.log('  - Appointments page exists?', !!appointmentsPage);
-                console.log('  - Appointments page visible?', appointmentsPage && !appointmentsPage.classList.contains('d-none'));
-                console.log('  - window.openNewAppointment type:', typeof window.openNewAppointment);
-                console.log('  - jQuery available?', typeof $ !== 'undefined');
-                console.log('  - Bootstrap modal available?', typeof $ !== 'undefined' && $.fn.modal);
-                
-                if (btn) {
-                    console.log('[DEBUG] Button details:');
-                    console.log('  - ID:', btn.id);
-                    console.log('  - Text:', btn.textContent);
-                    console.log('  - onclick:', btn.onclick);
-                    console.log('  - parent:', btn.parentNode);
-                    console.log('  - disabled?', btn.disabled);
-                    console.log('  - style.display:', btn.style.display);
-                    console.log('  - style.visibility:', btn.style.visibility);
-                    if (window.getComputedStyle) {
-                        console.log('  - computed style:', window.getComputedStyle(btn).display);
-                    }
-                    
-                    // If button has no onclick handler, attach one directly
-                    if (!btn.onclick && typeof $ !== 'undefined' && $.fn.modal && modal) {
-                        console.log('[DEBUG] Button has no onclick handler - attaching direct handler...');
-                        btn.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('[DEBUG] Button clicked via direct handler');
-                            
-                            // Try to use window.openNewAppointment if available
-                            if (typeof window.openNewAppointment === 'function') {
-                                console.log('[DEBUG] Using window.openNewAppointment');
-                                window.openNewAppointment();
-                            } else {
-                                // Fallback: open modal directly
-                                console.log('[DEBUG] Opening modal directly as fallback');
-                                try {
-                                    // Reset form
-                                    const idInput = document.getElementById('appointment-id');
-                                    const titleEl = document.getElementById('appointment-modal-title');
-                                    const patientSelect = document.getElementById('appointment-patient-select');
-                                    const dateInput = document.getElementById('appointment-date');
-                                    const timeInput = document.getElementById('appointment-time');
-                                    const typeInput = document.getElementById('appointment-type');
-                                    const notesInput = document.getElementById('appointment-notes');
-                                    
-                                    if (idInput) idInput.value = '';
-                                    if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
-                                    if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
-                                    if (dateInput) {
-                                        const today = formatDateLocal(new Date());
-                                        dateInput.value = today;
-                                    }
-                                    if (timeInput) timeInput.value = '09:00';
-                                    if (typeInput) typeInput.value = 'Konsultasi';
-                                    if (notesInput) notesInput.value = '';
-                                    
-                                    // Show modal
-                                    $('#appointment-modal').modal('show');
-                                } catch (err) {
-                                    console.error('[DEBUG] Error opening modal:', err);
-                                }
-                            }
-                        });
-                        console.log('[DEBUG] Direct click handler attached to button');
-                    }
-                }
-                
-                // If the module is loaded, try to call openNewAppointment
-                if (typeof window.openNewAppointment === 'function') {
-                    console.log('[DEBUG] Module appears to be loaded (window.openNewAppointment exists)');
-                    console.log('[DEBUG] Attempting to manually trigger modal...');
-                    try {
-                        window.openNewAppointment();
-                    } catch (err) {
-                        console.error('[DEBUG] Error calling openNewAppointment:', err);
-                    }
-                } else {
-                    console.warn('[DEBUG] Appointments module not loaded yet');
-                    console.warn('[DEBUG] window.openNewAppointment is not a function');
-                    
-                    // Try to manually open the modal as a fallback
-                    if (modal && typeof $ !== 'undefined' && $.fn.modal) {
-                        console.log('[DEBUG] Attempting to open modal manually using jQuery/Bootstrap...');
-                        try {
-                            // Reset form
-                            const idInput = document.getElementById('appointment-id');
-                            const titleEl = document.getElementById('appointment-modal-title');
-                            const patientSelect = document.getElementById('appointment-patient-select');
-                            const dateInput = document.getElementById('appointment-date');
-                            const timeInput = document.getElementById('appointment-time');
-                            const typeInput = document.getElementById('appointment-type');
-                            const notesInput = document.getElementById('appointment-notes');
-                            
-                            if (idInput) idInput.value = '';
-                            if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
-                            if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
-                            if (dateInput) {
-                                const today = formatDateLocal(new Date());
-                                dateInput.value = today;
-                            }
-                            if (timeInput) timeInput.value = '09:00';
-                            if (typeInput) typeInput.value = 'Konsultasi';
-                            if (notesInput) notesInput.value = '';
-                            
-                            // Show modal
-                            $('#appointment-modal').modal('show');
-                            console.log('[DEBUG] Modal should now be visible');
-                        } catch (err) {
-                            console.error('[DEBUG] Error opening modal manually:', err);
-                        }
-                    } else {
-                        console.error('[DEBUG] Cannot open modal - missing jQuery or Bootstrap');
-                    }
-                    
-                    // Try to reload the appointments module
-                    console.log('[DEBUG] Attempting to manually load appointments module...');
-                    try {
-                        import('./scripts/appointments.js?v=' + (window.__assetVersion || 'v1')).then(module => {
-                            console.log('[DEBUG] Module loaded manually:', module);
-                            if (module && module.initAppointments) {
-                                module.initAppointments();
-                                console.log('[DEBUG] initAppointments called manually');
-                                // Try again after a short delay
-                                setTimeout(() => {
-                                    if (typeof window.openNewAppointment === 'function') {
-                                        console.log('[DEBUG] window.openNewAppointment is now available!');
-                                        window.openNewAppointment();
-                                    }
-                                }, 500);
-                            }
-                        }).catch(err => {
-                            console.error('[DEBUG] Failed to load appointments module:', err);
-                        });
-                    } catch (err) {
-                        console.error('[DEBUG] Cannot use dynamic import:', err);
-                    }
-                }
-                
-                console.log('[DEBUG] ===== END DEBUG (Global) =====');
-                
-                return {
-                    buttonExists: !!btn,
-                    modalExists: !!modal,
-                    pageExists: !!appointmentsPage,
-                    pageVisible: appointmentsPage && !appointmentsPage.classList.contains('d-none'),
-                    functionExists: typeof window.openNewAppointment === 'function',
-                    jqueryExists: typeof $ !== 'undefined'
-                };
-            };
-            console.log('[DEBUG] window.debugAppointments is now available globally');
-            
-            // Auto-attach button handler when appointments page is visible
-            function autoAttachAppointmentButton() {
-                // Check if appointments page is visible
-                const appointmentsPage = document.getElementById('appointments-page');
-                if (!appointmentsPage || appointmentsPage.classList.contains('d-none')) {
-                    return; // Page not visible yet
-                }
-                
-                const btn = document.getElementById('btn-add-appointment');
-                if (!btn) {
-                    return; // Button doesn't exist yet
-                }
-                
-                // Check if button already has handlers
-                if (btn.onclick || (btn.getAttribute('data-handler-attached') === 'true')) {
-                    return; // Already has handler
-                }
-                
-                // Attach handler
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    if (typeof window.openNewAppointment === 'function') {
-                        window.openNewAppointment();
-                    } else {
-                        // Fallback: open modal directly
-                        const modal = document.getElementById('appointment-modal');
-                        if (modal && typeof $ !== 'undefined' && $.fn.modal) {
-                            const idInput = document.getElementById('appointment-id');
-                            const titleEl = document.getElementById('appointment-modal-title');
-                            const patientSelect = document.getElementById('appointment-patient-select');
-                            const dateInput = document.getElementById('appointment-date');
-                            const timeInput = document.getElementById('appointment-time');
-                            const typeInput = document.getElementById('appointment-type');
-                            const notesInput = document.getElementById('appointment-notes');
-                            
-                            if (idInput) idInput.value = '';
-                            if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
-                            if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
-                            if (dateInput) {
-                                const today = formatDateLocal(new Date());
-                                dateInput.value = today;
-                            }
-                            if (timeInput) timeInput.value = '09:00';
-                            if (typeInput) typeInput.value = 'Konsultasi';
-                            if (notesInput) notesInput.value = '';
-                            
-                            $('#appointment-modal').modal('show');
-                        }
-                    }
-                });
-                btn.setAttribute('data-handler-attached', 'true');
-                console.log('[DEBUG] Auto-attached click handler to appointment button');
-            }
-            
-            // Wait for DOM to be ready before setting up observers
-            function setupObserver() {
-                if (!document.body) {
-                    // Body not ready yet, wait for DOMContentLoaded
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', setupObserver);
-                        return;
-                    }
-                    // If still not ready, retry after a short delay
-                    setTimeout(setupObserver, 100);
-                    return;
-                }
-                
-                // Run check immediately and periodically
-                setTimeout(autoAttachAppointmentButton, 1000);
-                setTimeout(autoAttachAppointmentButton, 3000);
-                
-                // Also check when DOM changes (using MutationObserver)
-                if (typeof MutationObserver !== 'undefined' && document.body) {
-                    const observer = new MutationObserver(function(mutations) {
-                        autoAttachAppointmentButton();
-                    });
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true,
-                        attributes: true,
-                        attributeFilter: ['class']
-                    });
-                }
-            }
-            
-            // Start setup
-            setupObserver();
-        })();
-    </script>
+    <script defer src="scripts/shell/appointment-debug.js?v=v280"></script>
+    <script defer src="scripts/shell/patient-search-detail.js?v=v280"></script>
     
     <!-- Cache Clear Script -->
     <script>
@@ -8340,7 +8085,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v278"></script>
+    <script defer src="scripts/shell/actions.js?v=v280"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8709,7 +8454,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v278"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v280"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -9711,8 +9456,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     async function loadWebPatients() {
         try {
             const token = (window.getAuthToken ? window.getAuthToken() : '');
-            console.log('Loading all patients with token:', token ? 'Token exists' : 'No token found');
-            console.log('Token length:', token ? token.length : 0);
+            window.staffDebugLog('PatientSearch', 'Loading all patients', { hasToken: Boolean(token) });
 
             // Use unified patients endpoint
             const response = await fetch(`/api/patients?_=${Date.now()}`, {
@@ -9723,7 +9467,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 }
             });
 
-            console.log('Response status:', response.status);
+            window.staffDebugLog('PatientSearch', 'Load patients response', { status: response.status });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -9732,7 +9476,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             }
 
             const data = await response.json();
-            console.log('Response data:', data);
+            window.staffDebugLog('PatientSearch', 'Loaded patients', { count: Array.isArray(data.data) ? data.data.length : 0 });
             const tbody = document.getElementById('manage-patients-tbody');
 
             if (!data.data || data.data.length === 0) {
@@ -9760,16 +9504,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 }
             }
             
-            // Attach event listeners to view buttons
-            document.querySelectorAll('.btn-view-patient').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const patientId = this.getAttribute('data-patient-id');
-                    console.log('View button clicked for patient:', patientId);
-                    viewPatientDetail(patientId);
+            if (typeof window.installPatientViewButtons === 'function') {
+                window.installPatientViewButtons({
+                    onView: viewPatientDetail
                 });
-            });
+            }
             
             // Also update floating panel if it's visible
             const floatingPanel = document.getElementById('floating-kelola-pasien');
@@ -9901,12 +9640,19 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
             const data = await response.json();
 
-            // Debug logging
-            console.log('[SEARCH DEBUG] Search params:', { name, id, mr_id, email, phone, whatsapp, husband });
-            console.log('[SEARCH DEBUG] API Response:', data);
-            if (data.data) {
-                console.log('[SEARCH DEBUG] Results:', data.data.map(p => ({ id: p.id, name: p.full_name })));
-            }
+            window.staffDebugLog('PatientSearch', 'Advanced search response', {
+                filters: {
+                    name: Boolean(name),
+                    id: Boolean(id),
+                    mr_id: Boolean(mr_id),
+                    email: Boolean(email),
+                    phone: Boolean(phone),
+                    whatsapp: Boolean(whatsapp),
+                    husband: Boolean(husband),
+                    visit_date: Boolean(visit_date)
+                },
+                count: Array.isArray(data.data) ? data.data.length : 0
+            });
 
             // Update result count
             if (resultCount) {
@@ -9933,15 +9679,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
                 "info": true
             }));
 
-            // Attach event listeners to view buttons
-            document.querySelectorAll('.btn-view-patient').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const patientId = this.getAttribute('data-patient-id');
-                    viewPatientDetail(patientId);
+            if (typeof window.installPatientViewButtons === 'function') {
+                window.installPatientViewButtons({
+                    onView: viewPatientDetail
                 });
-            });
+            }
 
         } catch (error) {
             console.error('Error in advanced search:', error);
@@ -10223,9 +9965,10 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         // Fallback to old implementation if showPatientDetail not available
         try {
-            console.log('=== viewPatientDetail called ===');
-            console.log('Patient ID:', patientId);
-            console.log('Auth token exists:', !!(window.getAuthToken ? window.getAuthToken() : ''));
+            window.staffDebugLog('PatientDetail', 'Fallback detail loader called', {
+                patientId,
+                hasToken: Boolean(window.getAuthToken ? window.getAuthToken() : '')
+            });
 
             const response = await fetch(`/api/admin/web-patients/${patientId}`, {
                 headers: {
@@ -10239,10 +9982,12 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
 
             const data = await response.json();
-            console.log('Patient data received:', data);
+            window.staffDebugLog('PatientDetail', 'Fallback detail response received', {
+                hasPatient: Boolean(data?.data?.patient),
+                hasIntake: Boolean(data?.data?.intake)
+            });
             const patient = data.data.patient;
             const intake = data.data.intake;
-            console.log('Intake data:', intake);
             
             // Create modal for patient details
             const modal = `
