@@ -7,6 +7,7 @@ import { showWarning, showSuccess, showError } from './toast.js';
 import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
+import { formatDateLocal } from './date-utils.js';
 
 // -------------------- AUTH TOKEN HELPER --------------------
 // Centralized token getter to avoid inconsistency issues
@@ -3167,8 +3168,8 @@ function showInvoiceHistoryPage() {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
 
-    document.getElementById('invoice-start-date').value = startDate.toISOString().split('T')[0];
-    document.getElementById('invoice-end-date').value = endDate.toISOString().split('T')[0];
+    document.getElementById('invoice-start-date').value = formatDateLocal(startDate);
+    document.getElementById('invoice-end-date').value = formatDateLocal(endDate);
 
     loadInvoiceHistory();
 }
@@ -4347,7 +4348,7 @@ const FALLBACK_GREETINGS = [
  * Falls back to stale cache or local greeting if API fails/times out
  */
 async function fetchDailyGreeting(userId) {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = formatDateLocal(new Date()); // YYYY-MM-DD
     const storageKey = `daily_greeting_ai_${userId}`;
     const stored = localStorage.getItem(storageKey);
 
@@ -4407,7 +4408,7 @@ async function updateDailyGreeting(userId) {
     const greetingEl = document.getElementById('daily-greeting');
     if (!greetingEl) return;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateLocal(new Date());
     const storageKey = `daily_greeting_ai_${userId}`;
     const stored = localStorage.getItem(storageKey);
 

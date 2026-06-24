@@ -6,6 +6,7 @@ import { showSuccess, showError, showConfirm, showWarning, showInfo } from './to
 import { askForNextPatient, clearSession, getCurrentSession } from './session-manager.js';
 import { getCurrentPatient } from './billing.js';
 import { broadcastVisitCompleted } from './realtime-sync.js';
+import { formatDateLocal } from './date-utils.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -288,7 +289,7 @@ async function finalizeBill() {
             const visitData = {
                 patient_id: currentBillingData.patient.id || null,
                 patient_name: currentBillingData.patient.name || '-',
-                visit_date: new Date().toISOString().split('T')[0],
+                visit_date: formatDateLocal(new Date()),
                 
                 // Services and medications
                 services: services,

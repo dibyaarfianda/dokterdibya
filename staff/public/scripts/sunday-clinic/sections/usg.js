@@ -1,13 +1,11 @@
 import stateManager from '../utils/state-manager.js';
 import apiClient from '../utils/api-client.js';
 import { getMedicalRecordContext, formatDateDMY, escapeHtml } from '../utils/helpers.js';
+import { formatDateLocal } from '../../date-utils.js';
 
 // Helper function to get today's date in YYYY-MM-DD format for GMT+7
 function getTodayDate() {
-    const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    const gmt7Time = new Date(utcTime + (7 * 60 * 60 * 1000));
-    return gmt7Time.toISOString().split('T')[0];
+    return formatDateLocal(new Date());
 }
 
 function formatTwinSummary(fetuses) {

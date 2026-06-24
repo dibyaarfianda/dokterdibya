@@ -1,6 +1,23 @@
 // Complete Profile Form Handler v2.0
 console.log('=== COMPLETE PROFILE HANDLER v2.0 - ' + new Date().toISOString() + ' ===');
 
+function formatDateLocal(dateValue) {
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    if (isNaN(date.getTime())) return '';
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(date);
+        const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+        return `${byType.year}-${byType.month}-${byType.day}`;
+    } catch (error) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+}
+
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM ready, initializing complete profile...');
@@ -64,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const birthdateInput = document.getElementById('birthdate');
                     const ageInput = document.getElementById('age');
                     if (birthdateInput) {
-                        birthdateInput.value = birthDate.toISOString().split('T')[0];
+                        birthdateInput.value = formatDateLocal(birthDate);
                     }
                     if (ageInput && profile.age) {
                         ageInput.value = profile.age;

@@ -437,6 +437,8 @@ class PatientHistorySidebar {
             const safePatientId = this.escapeHtml(patientId);
             const safeMrId = this.escapeHtml(mrId);
             const safeAppointmentId = this.escapeHtml(appointmentId);
+            const safeSlotLabel = this.escapeHtml(slotLabel);
+            const safeChiefComplaint = this.escapeHtml(chiefComplaint);
             const jsPatientId = this.escapeJsString(patientId);
             const jsMrId = this.escapeJsString(mrId);
             const jsAppointmentId = this.escapeJsString(appointmentId);
@@ -451,7 +453,7 @@ class PatientHistorySidebar {
                     <span class="queue-number">${index + 1}</span>
                     <div class="queue-info">
                         <div class="queue-name ${selesaiClass}">${this.escapeHtml(apt.patient_name)}</div>
-                        <div class="queue-meta">${apt.slot_time || apt.session_label} • ${chiefComplaint}</div>
+                        <div class="queue-meta">${safeSlotLabel} • ${safeChiefComplaint}</div>
                         ${medifySyncBadge ? `<div class="mt-1">${medifySyncBadge}</div>` : ''}
                     </div>
                     <div class="queue-status">

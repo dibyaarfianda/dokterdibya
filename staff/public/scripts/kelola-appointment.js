@@ -16,6 +16,23 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function formatDateLocal(dateValue) {
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    if (isNaN(date.getTime())) return '';
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(date);
+        const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+        return `${byType.year}-${byType.month}-${byType.day}`;
+    } catch (error) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+}
+
 function initKelolaAppointment() {
     // Check authentication
     const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
@@ -74,7 +91,7 @@ function initKelolaAppointment() {
         const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
         const nextSunday = new Date(today);
         nextSunday.setDate(today.getDate() + daysUntilSunday);
-        return nextSunday.toISOString().split('T')[0];
+        return formatDateLocal(nextSunday);
     }
     $('#filter-date').val(getNextSunday());
 

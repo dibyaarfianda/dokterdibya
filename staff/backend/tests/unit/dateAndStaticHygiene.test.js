@@ -44,6 +44,17 @@ describe('date and static asset hygiene', () => {
         expect(offenders).toEqual([]);
     });
 
+    test('web-facing active sources avoid UTC toISOString for date-only values', () => {
+        const files = [
+            ...listFiles('staff/public', file => file.endsWith('.js') || file.endsWith('.html')),
+            ...listFiles('public', file => file.endsWith('.js') || file.endsWith('.html'))
+        ].filter(file => !file.includes('/unused/'));
+
+        const offenders = files.filter(file => read(file).includes(".toISOString().split('T')[0]"));
+
+        expect(offenders).toEqual([]);
+    });
+
     test('staff active scripts use centralized auth token helpers', () => {
         const files = listFiles('staff/public/scripts', file => {
             const normalized = file.replace(/\\/g, '/');

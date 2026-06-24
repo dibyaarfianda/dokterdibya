@@ -211,8 +211,18 @@
         // Get today's date in GMT+7 (Jakarta/Indonesian time)
         function getGMT7Date() {
             const now = new Date();
-            const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-            return gmt7Time.toISOString().split('T')[0];
+            try {
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Jakarta',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).formatToParts(now);
+                const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+                return `${byType.year}-${byType.month}-${byType.day}`;
+            } catch (error) {
+                return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            }
         }
 
         // Set max date to today

@@ -3,6 +3,7 @@
  */
 
 import { getIdToken } from './vps-auth-v2.js';
+import { formatDateLocal } from './date-utils.js';
 
 const API_BASE_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3000/api' 
@@ -470,14 +471,14 @@ function analyzeWeeklyRevenue(visits) {
     const dailyRevenue = {};
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateKey = d.toISOString().split('T')[0];
+        const dateKey = formatDateLocal(d);
         dailyRevenue[dateKey] = 0;
     }
     
     visits.forEach(visit => {
         const visitDate = new Date(visit.date);
         if (visitDate >= start && visitDate <= end) {
-            const dateKey = visitDate.toISOString().split('T')[0];
+            const dateKey = formatDateLocal(visitDate);
             dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + (visit.grandTotal || 0);
         }
     });
@@ -494,14 +495,14 @@ function analyzeMonthlyRevenue(visits) {
     const dailyRevenue = {};
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dateKey = d.toISOString().split('T')[0];
+        const dateKey = formatDateLocal(d);
         dailyRevenue[dateKey] = 0;
     }
     
     visits.forEach(visit => {
         const visitDate = new Date(visit.date);
         if (visitDate >= start && visitDate <= end) {
-            const dateKey = visitDate.toISOString().split('T')[0];
+            const dateKey = formatDateLocal(visitDate);
             dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + (visit.grandTotal || 0);
         }
     });

@@ -7,6 +7,7 @@ import {
     broadcastUSGExamUpdate, 
     broadcastLabExamUpdate 
 } from './realtime-sync.js';
+import { formatDateLocal } from './date-utils.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -597,7 +598,7 @@ async function saveAnamnesa() {
             exam_type: 'anamnesa',
             exam_data: JSON.stringify(data),
             examiner: auth.currentUser?.name || auth.currentUser?.email || 'Staff',
-            exam_date: new Date().toISOString().split('T')[0]
+            exam_date: formatDateLocal(new Date())
         };
         
         await fetch(`${VPS_API_BASE}/api/medical-exams`, {
@@ -671,7 +672,7 @@ async function savePhysicalExam() {
             exam_type: 'physical',
             exam_data: JSON.stringify(data),
             examiner: auth.currentUser?.name || auth.currentUser?.email || 'Staff',
-            exam_date: new Date().toISOString().split('T')[0]
+            exam_date: formatDateLocal(new Date())
         };
         
         await fetch(`${VPS_API_BASE}/api/medical-exams`, {
@@ -869,7 +870,7 @@ async function saveUSGExam() {
             exam_type: 'usg',
             exam_data: JSON.stringify(data),
             examiner: auth.currentUser?.name || auth.currentUser?.email || 'Staff',
-            exam_date: new Date().toISOString().split('T')[0]
+            exam_date: formatDateLocal(new Date())
         };
         
         await fetch(`${VPS_API_BASE}/api/medical-exams`, {
@@ -1033,7 +1034,7 @@ async function saveLabExam() {
             exam_type: 'lab',
             exam_data: JSON.stringify(data),
             examiner: auth.currentUser?.name || auth.currentUser?.email || 'Staff',
-            exam_date: new Date().toISOString().split('T')[0]
+            exam_date: formatDateLocal(new Date())
         };
         
         await fetch(`${VPS_API_BASE}/api/medical-exams`, {
@@ -1067,4 +1068,3 @@ export function initMedicalExam() {
 export function getCurrentExamData() {
     return currentExamData;
 }
-

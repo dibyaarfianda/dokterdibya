@@ -225,6 +225,24 @@ function parseDateOnlyLocal(dateStr) {
     return new Date(dateStr);
 }
 
+function formatDateLocal(dateValue = new Date()) {
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    if (isNaN(date.getTime())) return '';
+
+    try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(date);
+        const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+        return `${byType.year}-${byType.month}-${byType.day}`;
+    } catch (error) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+}
+
 /**
  * Format date to Indonesian locale
  * @param {string|Date} dateStr - Date string or Date object
@@ -589,6 +607,7 @@ export {
     apiRequest,
     showToast,
     parseDateOnlyLocal,
+    formatDateLocal,
     formatDate,
     formatDateTime,
     formatTime,
@@ -627,6 +646,7 @@ window.PatientUtils = {
     apiRequest,
     showToast,
     parseDateOnlyLocal,
+    formatDateLocal,
     formatDate,
     formatDateTime,
     formatTime,

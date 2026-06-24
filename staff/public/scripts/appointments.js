@@ -1,6 +1,7 @@
 // appointments.js - Appointment Management
 import { auth, getIdToken } from './vps-auth-v2.js';
 import { showSuccess, showError, showWarning } from './toast.js';
+import { formatDateLocal } from './date-utils.js';
 
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? 'http://localhost:3001'
@@ -15,21 +16,7 @@ let isInitialized = false; // Prevent double initialization
 
 // Helper function to get today's date in Jakarta timezone (YYYY-MM-DD format)
 function getTodayJakarta() {
-    try {
-        return new Intl.DateTimeFormat('en-CA', { 
-            timeZone: 'Asia/Jakarta',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).format(new Date());
-    } catch (e) {
-        // Fallback for older browsers
-        const now = new Date();
-        const jakartaOffset = 7 * 60; // GMT+7 in minutes
-        const localOffset = now.getTimezoneOffset(); // Local timezone offset
-        const jakartaTime = new Date(now.getTime() + (jakartaOffset + localOffset) * 60000);
-        return jakartaTime.toISOString().split('T')[0];
-    }
+    return formatDateLocal(new Date());
 }
 
 // Initialize appointments module

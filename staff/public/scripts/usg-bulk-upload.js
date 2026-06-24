@@ -4,6 +4,7 @@
  */
 
 import { getIdToken } from './vps-auth-v2.js';
+import { formatDateLocal } from './date-utils.js';
 
 // Use relative URL to avoid CORS issues with www vs non-www
 const API_URL = window.location.hostname === 'localhost'
@@ -94,7 +95,7 @@ function renderPage() {
                     <div class="col-md-6">
                         <div class="form-group mb-0">
                             <label for="upload-date"><strong><i class="fas fa-calendar-alt mr-2"></i>Tanggal USG</strong></label>
-                            <input type="date" class="form-control" id="upload-date" value="${new Date().toISOString().split('T')[0]}">
+                            <input type="date" class="form-control" id="upload-date" value="${formatDateLocal(new Date())}">
                             <small class="text-muted">Tanggal pemeriksaan pasien</small>
                         </div>
                     </div>

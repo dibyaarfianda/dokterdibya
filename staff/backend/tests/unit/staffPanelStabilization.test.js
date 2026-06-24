@@ -177,6 +177,15 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('scroll-snap-type: x proximity !important;');
     });
 
+    test('Sunday Clinic queue sidebar escapes appointment metadata before innerHTML rendering', () => {
+        const patientSidebar = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'patient-history-sidebar.js');
+
+        expect(patientSidebar).toContain('const safeSlotLabel = this.escapeHtml(slotLabel);');
+        expect(patientSidebar).toContain('const safeChiefComplaint = this.escapeHtml(chiefComplaint);');
+        expect(patientSidebar).toContain('<div class="queue-meta">${safeSlotLabel} • ${safeChiefComplaint}</div>');
+        expect(patientSidebar).not.toContain('<div class="queue-meta">${apt.slot_time || apt.session_label} • ${chiefComplaint}</div>');
+    });
+
     test('standalone Sunday Clinic page is redirect-only compatibility shell', () => {
         const standaloneHtml = readRepoFile('staff', 'public', 'sunday-clinic.html');
 

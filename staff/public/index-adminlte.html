@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v277';
+        window.STAFF_CACHE_VERSION = 'v278';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1713,7 +1713,7 @@
                                     if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
                                     if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
                                     if (dateInput) {
-                                        const today = new Date().toISOString().split('T')[0];
+                                        const today = formatDateLocal(new Date());
                                         dateInput.value = today;
                                     }
                                     if (timeInput) timeInput.value = '09:00';
@@ -1761,7 +1761,7 @@
                             if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
                             if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
                             if (dateInput) {
-                                const today = new Date().toISOString().split('T')[0];
+                                const today = formatDateLocal(new Date());
                                 dateInput.value = today;
                             }
                             if (timeInput) timeInput.value = '09:00';
@@ -1856,7 +1856,7 @@
                             if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
                             if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
                             if (dateInput) {
-                                const today = new Date().toISOString().split('T')[0];
+                                const today = formatDateLocal(new Date());
                                 dateInput.value = today;
                             }
                             if (timeInput) timeInput.value = '09:00';
@@ -8340,7 +8340,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v277"></script>
+    <script defer src="scripts/shell/actions.js?v=v278"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8709,7 +8709,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v277"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v278"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -9051,7 +9051,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             'rsud_gambiran': 'RSUD Gambiran', 'rs_bhayangkara': 'RS Bhayangkara'
         };
         // Default to today's date if not detected
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatDateLocal(new Date());
         const visitDate = data.visit_date || today;
 
         let html = '<div class="row">';
@@ -11142,8 +11142,8 @@ Apakah Anda yakin ingin melanjutkan?`;
         const thirtyDaysAgo = new Date(today);
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        document.getElementById('pa-filter-from').value = thirtyDaysAgo.toISOString().split('T')[0];
-        document.getElementById('pa-filter-to').value = today.toISOString().split('T')[0];
+        document.getElementById('pa-filter-from').value = formatDateLocal(thirtyDaysAgo);
+        document.getElementById('pa-filter-to').value = formatDateLocal(today);
 
         // Load data
         loadPatientActivity();
@@ -11328,8 +11328,8 @@ Apakah Anda yakin ingin melanjutkan?`;
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const fromEl = document.getElementById('ga-filter-from');
         const toEl = document.getElementById('ga-filter-to');
-        if (fromEl && !fromEl.value) fromEl.value = thirtyDaysAgo.toISOString().split('T')[0];
-        if (toEl && !toEl.value) toEl.value = today.toISOString().split('T')[0];
+        if (fromEl && !fromEl.value) fromEl.value = formatDateLocal(thirtyDaysAgo);
+        if (toEl && !toEl.value) toEl.value = formatDateLocal(today);
 
         loadGuestActivity();
     };
@@ -11766,7 +11766,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.getElementById('purchase-obat-name').value = obatName;
 
         // Set default date to today
-        document.getElementById('purchase-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('purchase-date').value = formatDateLocal(new Date());
 
         // Clear other fields
         document.getElementById('purchase-supplier').value = '';
@@ -12011,7 +12011,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Daftar_Harga_Tindakan_${new Date().toISOString().split('T')[0]}.pdf`;
+            a.download = `Daftar_Harga_Tindakan_${formatDateLocal(new Date())}.pdf`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -12058,7 +12058,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Daftar_Harga_Obat_${new Date().toISOString().split('T')[0]}.pdf`;
+            a.download = `Daftar_Harga_Obat_${formatDateLocal(new Date())}.pdf`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -12347,10 +12347,21 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     function formatDateLocal(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        try {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Jakarta',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(date);
+            const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+            return `${byType.year}-${byType.month}-${byType.day}`;
+        } catch (error) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
     }
 
     async function fetchFinanceStats(token) {
