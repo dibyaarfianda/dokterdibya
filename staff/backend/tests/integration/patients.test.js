@@ -24,11 +24,17 @@ const cache = require('../../utils/cache');
 
 describe('Patient API Integration Tests', () => {
     let authToken;
+    let superadminToken;
 
     beforeAll(() => {
         // Generate valid JWT token
         authToken = jwt.sign(
             { id: 1, username: 'testuser', role: 'admin' },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        superadminToken = jwt.sign(
+            { id: 2, username: 'doctor', role: 'dokter', role_id: 1, is_superadmin: true },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -213,7 +219,7 @@ describe('Patient API Integration Tests', () => {
 
             const response = await request(app)
                 .delete('/api/v1/patients/P001')
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${superadminToken}`)
                 .expect(200);
 
             expect(response.body.success).toBe(true);
@@ -225,7 +231,7 @@ describe('Patient API Integration Tests', () => {
 
             const response = await request(app)
                 .delete('/api/v1/patients/INVALID')
-                .set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${superadminToken}`)
                 .expect(404);
 
             expect(response.body.success).toBe(false);

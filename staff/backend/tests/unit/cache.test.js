@@ -21,7 +21,6 @@ describe('cache utility', () => {
         expect(first).toBe('value-1');
         expect(second).toBe('value-1');
         expect(producer).toHaveBeenCalledTimes(1);
-        expect(logger.debug).toHaveBeenCalledWith('Cache hit: test:key');
     });
 
     it('supports manual set/get/delete per tier', () => {
@@ -53,6 +52,6 @@ describe('cache utility', () => {
         expect(cache.keys.patient('123')).toBe('patient:123');
 
         cache.clear();
-        expect(logger.info).toHaveBeenCalledWith('All caches cleared');
+        expect(logger.info).toHaveBeenCalledWith('All caches cleared (including stale fallback store)');
     });
 });

@@ -378,12 +378,15 @@ const logMetricsSummary = () => {
 
 // Log metrics summary every 5 minutes in production
 if (ENABLE_METRICS_SUMMARY_LOG) {
-    setInterval(logMetricsSummary, 5 * 60 * 1000);
+    const summaryTimer = setInterval(logMetricsSummary, 5 * 60 * 1000);
+    if (typeof summaryTimer.unref === 'function') {
+        summaryTimer.unref();
+    }
 }
 
 // Periodic 4xx rate alarm
 if (isProduction) {
-    setInterval(() => {
+    const alarmTimer = setInterval(() => {
         if (metrics.requests.total < 200) return;
         const errors4xx = metrics.requests.byStatus['4xx'] || 0;
         const rate = errors4xx / metrics.requests.total;
@@ -396,6 +399,9 @@ if (isProduction) {
             });
         }
     }, 5 * 60 * 1000);
+    if (typeof alarmTimer.unref === 'function') {
+        alarmTimer.unref();
+    }
 }
 
 module.exports = {

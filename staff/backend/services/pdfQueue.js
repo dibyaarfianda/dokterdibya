@@ -75,8 +75,9 @@ function enqueue(type, payload) {
     jobs.set(job.id, job);
     queue.push(job);
     logger.info(`[PDFQueue] Job ${job.id} enqueued (type=${type})`);
-    _drain();
-    return { jobId: job.id, status: job.status };
+    const queuedStatus = job.status;
+    setImmediate(_drain);
+    return { jobId: job.id, status: queuedStatus };
 }
 
 /**
@@ -212,7 +213,7 @@ async function _process(job) {
 // Pruning — remove old completed/failed jobs
 // ---------------------------------------------------------------------------
 
-setInterval(() => {
+const pruneTimer = setInterval(() => {
     const cutoff = Date.now() - JOB_TTL_MS;
     for (const [id, job] of jobs) {
         if ((job.status === 'completed' || job.status === 'failed') && job.completedAt && job.completedAt < cutoff) {
@@ -220,5 +221,9 @@ setInterval(() => {
         }
     }
 }, 5 * 60 * 1000); // prune every 5 min
+
+if (typeof pruneTimer.unref === 'function') {
+    pruneTimer.unref();
+}
 
 module.exports = { enqueue, getJob, getStats };

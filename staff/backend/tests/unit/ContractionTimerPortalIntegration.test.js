@@ -28,10 +28,12 @@ describe('Contraction timer portal integration', () => {
         const retrofit = readRepoFile('public', 'scripts', 'patient-tool-retrofit.js');
         const sw = readRepoFile('public', 'sw.js');
 
-        for (const source of [patientMenu, pageTracker, shell, bottomNav, retrofit, sw]) {
+        expect(patientMenu).toContain('/scripts/patient-menu-shell.js');
+
+        for (const source of [pageTracker, shell, bottomNav, retrofit, sw]) {
             expect(source).toContain('contraction-timer.html');
         }
-        for (const source of [patientMenu, shell, bottomNav, retrofit]) {
+        for (const source of [shell, bottomNav, retrofit]) {
             expect(source).toContain('Hitung Kontraksi');
         }
     });

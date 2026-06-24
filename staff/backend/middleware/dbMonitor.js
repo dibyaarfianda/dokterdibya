@@ -38,6 +38,10 @@ function rollMinute() {
 // ---------------------------------------------------------------------------
 
 function wrapDbPool(pool) {
+    if (!pool || typeof pool.query !== 'function') {
+        return pool;
+    }
+
     const originalQuery = pool.query.bind(pool);
 
     pool.query = async function (...args) {

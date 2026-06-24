@@ -3,6 +3,8 @@ jest.mock('../../utils/logger', () => ({
     info: jest.fn()
 }));
 
+process.env.METRICS_LOG_SLOW_REQUESTS = 'true';
+
 const logger = require('../../utils/logger');
 const {
     metricsMiddleware,
@@ -10,29 +12,52 @@ const {
     resetMetrics
 } = require('../../middleware/metrics');
 
+function createMockResponse(statusCode = 200) {
+    const listeners = {};
+
+    return {
+        statusCode,
+        on: jest.fn((event, callback) => {
+            listeners[event] = callback;
+            return this;
+        }),
+        send: function(reply) {
+            return reply;
+        },
+        finish: function() {
+            listeners.finish?.();
+        }
+    };
+}
+
 describe('metrics middleware', () => {
+    let hrtimeSpy;
+
     beforeEach(() => {
         resetMetrics();
         jest.clearAllMocks();
     });
 
+    afterEach(() => {
+        hrtimeSpy?.mockRestore();
+        hrtimeSpy = null;
+    });
+
     it('tracks request counts and response times', () => {
-        const dateSpy = jest.spyOn(Date, 'now');
-        dateSpy.mockReturnValueOnce(0).mockReturnValueOnce(100);
+        hrtimeSpy = jest.spyOn(process.hrtime, 'bigint');
+        hrtimeSpy.mockReturnValueOnce(0n).mockReturnValueOnce(100000000n);
 
         const req = {
             method: 'GET',
             route: { path: '/patients' },
             user: { id: 7 }
         };
-        const res = {
-            statusCode: 200,
-            send: function(reply) { return reply; }
-        };
+        const res = createMockResponse(200);
         const next = jest.fn();
 
         metricsMiddleware(req, res, next);
         res.send('ok');
+        res.finish();
 
         const snapshot = getMetrics();
         expect(snapshot.requests.total).toBe(1);
@@ -41,22 +66,18 @@ describe('metrics middleware', () => {
         expect(snapshot.users.total).toBe(1);
         expect(snapshot.performance.endpoints['GET /patients'].count).toBe(1);
         expect(next).toHaveBeenCalled();
-
-        dateSpy.mockRestore();
     });
 
     it('logs slow error responses and records errors', () => {
-        const dateSpy = jest.spyOn(Date, 'now');
-        dateSpy.mockReturnValueOnce(0).mockReturnValueOnce(1500);
+        hrtimeSpy = jest.spyOn(process.hrtime, 'bigint');
+        hrtimeSpy.mockReturnValueOnce(0n).mockReturnValueOnce(1500000000n);
 
         const req = { method: 'POST', path: '/patients' };
-        const res = {
-            statusCode: 500,
-            send: function(reply) { return reply; }
-        };
+        const res = createMockResponse(500);
 
         metricsMiddleware(req, res, jest.fn());
         res.send('error');
+        res.finish();
 
         const snapshot = getMetrics();
         expect(snapshot.errors.total).toBe(1);
@@ -65,19 +86,15 @@ describe('metrics middleware', () => {
             endpoint: expect.stringContaining('/patients'),
             statusCode: 500
         }));
-
-        dateSpy.mockRestore();
     });
 
     it('resets metrics and logs action', () => {
         const req = { method: 'GET', path: '/ping' };
-        const res = {
-            statusCode: 200,
-            send: function(reply) { return reply; }
-        };
+        const res = createMockResponse(200);
 
         metricsMiddleware(req, res, jest.fn());
         res.send('ok');
+        res.finish();
 
         resetMetrics();
         const snapshot = getMetrics();
