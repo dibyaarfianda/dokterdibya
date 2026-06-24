@@ -4335,12 +4335,18 @@ function parseMarkdown(text) {
 
 // Fallback greetings when API fails
 const FALLBACK_GREETINGS = [
-    "Selamat bekerja, semoga harimu menyenangkan!",
-    "Semangat menjalani hari ini!",
-    "Terima kasih atas dedikasimu hari ini.",
-    "Satu langkah kecil, dampak besar untuk pasien.",
-    "Kamu hebat sudah sampai di sini!"
+    "semoga harimu menyenangkan dan pelayanan berjalan lancar.",
+    "semangat menjalani hari ini dengan tenang dan rapi.",
+    "terima kasih atas dedikasimu hari ini.",
+    "satu langkah kecil hari ini bisa berdampak besar untuk pasien.",
+    "semoga pagi ini membawa energi baik untuk memberi yang terbaik."
 ];
+
+function buildFallbackDailyGreeting(displayName) {
+    const safeDisplayName = resolveDisplayName(displayName, window.currentUserId, 'User');
+    const fallbackIndex = Math.floor(Math.random() * FALLBACK_GREETINGS.length);
+    return `${safeDisplayName}, ${FALLBACK_GREETINGS[fallbackIndex]}`;
+}
 
 /**
  * Get daily greeting from AI API (cached per day per user)
@@ -4398,8 +4404,7 @@ async function fetchDailyGreeting(userId, displayName, rejectedIdentityTokens = 
     }
 
     // Final random fallback
-    const fallbackIndex = Math.floor(Math.random() * FALLBACK_GREETINGS.length);
-    const fallbackGreeting = FALLBACK_GREETINGS[fallbackIndex];
+    const fallbackGreeting = buildFallbackDailyGreeting(safeDisplayName);
     localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting: fallbackGreeting }));
     return fallbackGreeting;
 }
@@ -4446,7 +4451,7 @@ async function updateDailyGreeting(user) {
         greetingEl.style.opacity = '1';
     } catch (error) {
         if (!hasStale) {
-            greetingEl.textContent = 'Selamat bekerja, semoga harimu menyenangkan!';
+            greetingEl.textContent = buildFallbackDailyGreeting(displayName);
             greetingEl.style.opacity = '1';
         }
     }

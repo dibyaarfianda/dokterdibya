@@ -10,11 +10,11 @@ const { verifyToken } = require('../middleware/auth');
 
 const DAILY_GREETING_FAST_TIMEOUT_MS = 900;
 const FALLBACK_DAILY_GREETINGS = [
-    'Selamat bekerja, semoga harimu menyenangkan!',
-    'Semangat menjalani hari ini. Satu langkah kecil bisa sangat berarti untuk pasien.',
-    'Terima kasih atas dedikasimu hari ini. Semoga semua pelayanan berjalan lancar.',
-    'Semoga hari kerja ini ringan, rapi, dan penuh kebaikan untuk pasien.',
-    'Selamat bertugas. Fokus pelan-pelan, satu pasien satu perhatian.'
+    'semoga harimu menyenangkan dan pelayanan berjalan lancar.',
+    'semangat menjalani hari ini. Satu langkah kecil bisa sangat berarti untuk pasien.',
+    'terima kasih atas dedikasimu hari ini. Semoga semua pelayanan berjalan lancar.',
+    'semoga hari kerja ini ringan, rapi, dan penuh kebaikan untuk pasien.',
+    'selamat bertugas. Fokus pelan-pelan, satu pasien satu perhatian.'
 ];
 
 function formatLocalDateKey(date = new Date()) {
@@ -28,9 +28,10 @@ function getNextLocalMidnightIso() {
     return tomorrow.toISOString();
 }
 
-function getFallbackDailyGreeting(userId) {
+function getFallbackDailyGreeting(userId, userName = '') {
     const seed = String(userId || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    return FALLBACK_DAILY_GREETINGS[seed % FALLBACK_DAILY_GREETINGS.length];
+    const displayName = sanitizeDisplayName(userName) || 'Staff';
+    return `${displayName}, ${FALLBACK_DAILY_GREETINGS[seed % FALLBACK_DAILY_GREETINGS.length]}`;
 }
 
 function isEmailLike(value) {
@@ -464,7 +465,7 @@ router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
         return res.json({
             success: true,
             data: {
-                greeting: getFallbackDailyGreeting(userId),
+                greeting: getFallbackDailyGreeting(userId, userName),
                 day: now.toLocaleDateString('id-ID', { weekday: 'long' }),
                 time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
                 cachedUntil,
@@ -479,7 +480,7 @@ router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
         res.json({
             success: true,
             data: {
-                greeting: 'Selamat bekerja, semoga harimu menyenangkan!',
+                greeting: getFallbackDailyGreeting(req.user?.id, req.query?.displayName || req.user?.name || req.user?.username),
                 fallback: true
             }
         });
