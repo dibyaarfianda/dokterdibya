@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v274';
+        window.STAFF_CACHE_VERSION = 'v275';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -8340,7 +8340,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v274"></script>
+    <script defer src="scripts/shell/actions.js?v=v275"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8712,7 +8712,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v274"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v275"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -9664,8 +9664,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
             ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}</div>${visitHistoryBadge}`
             : `<span class="text-muted">-</span>${visitHistoryBadge ? `<div>${visitHistoryBadge}</div>` : ''}`;
         const nameMeta = patient.mr_id
-            ? `${patient.id} � <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
-            : `${patient.id}${visitHistoryBadge ? ` � ${visitHistoryBadge}` : ''}`;
+            ? `${patient.id} - <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
+            : `${patient.id}${visitHistoryBadge ? ` - ${visitHistoryBadge}` : ''}`;
         const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.full_name || '-'}</a></div><div class="small text-muted">${nameMeta}</div>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {

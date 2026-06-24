@@ -28,6 +28,16 @@ describe('staff panel stabilization sources', () => {
         expect(sw).not.toContain('/staff/public/styles/chat-slide-panel.css');
     });
 
+    test('patient table metadata uses an ASCII-safe separator before DRD links', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+
+        expect(html).toContain('const nameMeta = patient.mr_id');
+        expect(html).toContain('${patient.id} - <a href="${mrIdUrl}"');
+        expect(html).toContain("visitHistoryBadge ? ` - ${visitHistoryBadge}`");
+        expect(html).not.toContain('ï¿½');
+        expect(html).not.toContain('�');
+    });
+
     test('staff PWA mobile typography uses Compact 10 with explicit allowlisted exceptions', () => {
         const mobileCss = readNormalizedFile('staff', 'public', 'styles', 'mobile-responsive.css');
         const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
