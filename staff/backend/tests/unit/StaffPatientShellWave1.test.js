@@ -77,4 +77,40 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(shell).not.toContain('onclick="saveProfilePhotoDraft(event)"');
         expect(shell).not.toContain('onclick="endGuestAndLogin(event)"');
     });
+
+    test('patient home static shell overlays and prompt controls use delegated actions', () => {
+        const patientMenu = readNormalizedFile('public', 'patient-menu.html');
+        const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
+
+        expect(patientMenu).toContain('id="sheet-overlay" data-shell-action="close-sheet"');
+        expect(patientMenu).toContain('id="modal-overlay" data-shell-action="close-all-modals"');
+        expect(patientMenu).toContain('data-shell-action="close-topbar-modal" aria-label="Tutup"');
+        expect(patientMenu).toContain('data-shell-action="close-bug-report-modal" aria-label="Tutup"');
+        expect(patientMenu).toContain('data-shell-action="submit-bug-report"');
+        expect(patientMenu).toContain('data-shell-action="cancel-exit-app"');
+        expect(patientMenu).toContain('data-shell-action="confirm-exit-app"');
+        expect(patientMenu).toContain('id="ios-install-overlay" data-shell-action="dismiss-patient-install-prompt"');
+        expect(patientMenu).toContain('data-shell-action="install-patient-pwa"');
+        expect(shell).toContain("'close-sheet': function()");
+        expect(shell).toContain("'close-all-modals': function()");
+        expect(shell).toContain("'close-topbar-modal': function(target, event)");
+        expect(shell).toContain("'close-bug-report-modal': function(target, event)");
+        expect(shell).toContain("'submit-bug-report': function(target, event)");
+        expect(shell).toContain("'cancel-exit-app': function(target, event)");
+        expect(shell).toContain("'confirm-exit-app': function(target, event)");
+        expect(shell).toContain("'dismiss-patient-install-prompt': function()");
+        expect(shell).toContain("'install-patient-pwa': function()");
+        expect(shell).not.toContain('onclick="closeSheet()"');
+        expect(shell).not.toContain('onclick="closeAllModals()"');
+        expect(patientMenu).not.toContain('onclick="closeSheet()"');
+        expect(patientMenu).not.toContain('onclick="closeAllModals()"');
+        expect(patientMenu).not.toContain('onclick="closeTopbarModal(event)"');
+        expect(patientMenu).not.toContain('onclick="closeBugReportModal(event)"');
+        expect(patientMenu).not.toContain('onclick="submitBugReport(event)"');
+        expect(patientMenu).not.toContain('onclick="cancelExitApp(event)"');
+        expect(patientMenu).not.toContain('onclick="confirmExitApp(event)"');
+        expect(patientMenu).not.toContain('onclick="dismissPatientInstallPrompt()"');
+        expect(patientMenu).not.toContain('onclick="installPatientPWA()"');
+        expect(shell).not.toContain('onclick="closeTopbarModal(event)"');
+    });
 });

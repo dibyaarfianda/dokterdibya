@@ -1798,6 +1798,15 @@
         }
 
         const modalActionHandlers = {
+            'close-sheet': function() {
+                closeSheet();
+            },
+            'close-all-modals': function() {
+                closeAllModals();
+            },
+            'close-topbar-modal': function(target, event) {
+                closeTopbarModal(event);
+            },
             'close-modal': function() {
                 closeAllModals();
             },
@@ -1831,6 +1840,24 @@
             },
             'save-profile-photo-draft': function(target, event) {
                 saveProfilePhotoDraft(event);
+            },
+            'close-bug-report-modal': function(target, event) {
+                closeBugReportModal(event);
+            },
+            'submit-bug-report': function(target, event) {
+                submitBugReport(event);
+            },
+            'cancel-exit-app': function(target, event) {
+                cancelExitApp(event);
+            },
+            'confirm-exit-app': function(target, event) {
+                confirmExitApp(event);
+            },
+            'dismiss-patient-install-prompt': function() {
+                dismissPatientInstallPrompt();
+            },
+            'install-patient-pwa': function() {
+                installPatientPWA();
             }
         };
 
@@ -2635,7 +2662,7 @@
                     '<label class="birth-file-box" for="birth-data-photo"><strong><i class="fa-solid fa-upload"></i> Upload foto bayi</strong><span>Opsional. Bisa diisi sekarang atau nanti dari kartu ucapan.</span><input id="birth-data-photo" type="file" accept="image/*"></label>' +
                 '</div>' +
                 '<div class="modal-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="closeTopbarModal(event)">Nanti</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="close-topbar-modal">Nanti</button>' +
                     '<button type="button" class="primary-action soundable" onclick="submitBirthData(event, \'' + id + '\')"><i class="fa-solid fa-check"></i> Simpan</button>' +
                 '</div>';
         }
@@ -2651,7 +2678,7 @@
                     '<div class="settings-field"><label for="birth-extra-length">PANJANG BADAN (CM)</label><input id="birth-extra-length" class="settings-input" value="' + escapeHtml(record.birth_length || record.length || '') + '" placeholder="Contoh: 50"></div>' +
                 '</div>' +
                 '<div class="modal-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="closeTopbarModal(event)">Batal</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="close-topbar-modal">Batal</button>' +
                     '<button type="button" class="primary-action soundable" onclick="submitBirthExtra(event, \'' + id + '\')"><i class="fa-solid fa-check"></i> Simpan</button>' +
                 '</div>';
         }
@@ -2666,7 +2693,7 @@
             return '<div class="birth-modal-note">Kesan dan pesan ini akan muncul di halaman testimoni staff setelah dikirim.</div>' +
                 '<div class="settings-field birth-testimonial-field"><label for="birth-testimonial-text">Kesan dan Pesan</label><textarea id="birth-testimonial-text" class="settings-input" maxlength="2000" placeholder="Tuliskan pengalaman persalinan atau pesan untuk dr. Dibya dan tim"></textarea></div>' +
                 '<div class="modal-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="closeTopbarModal(event)">Batal</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="close-topbar-modal">Batal</button>' +
                     '<button type="button" class="primary-action soundable" onclick="submitBirthTestimonial(event, \'' + id + '\')"><i class="fa-solid fa-paper-plane"></i> Kirim testimoni</button>' +
                 '</div>';
         }
@@ -3456,7 +3483,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave2';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave3';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

@@ -7,10 +7,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Portal Pasien - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260624shellwave2">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260624shellwave3">
     <script>
-        window.PATIENT_SHELL_VERSION = '20260624shellwave2';
-        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20260624shellwave2';
+        window.PATIENT_SHELL_VERSION = '20260624shellwave3';
+        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20260624shellwave3';
     </script>
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
@@ -3229,13 +3229,13 @@
         </div>
     </main>
 
-    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <div class="sheet-overlay" id="sheet-overlay" data-shell-action="close-sheet"></div>
     <aside class="bottom-sheet" id="bottom-sheet" aria-label="Menu cepat">
         <div class="sheet-title" id="sheet-title">Menu</div>
         <div class="sheet-menu" id="sheet-menu"></div>
     </aside>
 
-    <div class="modal-overlay" id="modal-overlay" onclick="closeAllModals()"></div>
+    <div class="modal-overlay" id="modal-overlay" data-shell-action="close-all-modals"></div>
     <section class="modal-card" id="cancel-modal" aria-label="Batalkan booking">
         <div class="modal-head">
             <div>
@@ -3262,7 +3262,7 @@
                 <div class="section-kicker" id="topbar-modal-kicker">SISIwanita</div>
                 <h2 id="topbar-modal-title">Menu</h2>
             </div>
-            <button class="close-btn soundable" onclick="closeTopbarModal(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            <button class="close-btn soundable" data-shell-action="close-topbar-modal" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="topbar-modal-body" id="topbar-modal-body"></div>
     </section>
@@ -3273,7 +3273,7 @@
                 <div class="section-kicker">Troubleshooting</div>
                 <h2 id="bug-report-title">Laporkan Bug/Error</h2>
             </div>
-            <button class="close-btn soundable" onclick="closeBugReportModal(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            <button class="close-btn soundable" data-shell-action="close-bug-report-modal" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <p class="exit-modal-copy">Tuliskan kendala saat memakai portal, misalnya halaman, tombol yang ditekan, pesan error, atau hal yang tidak sesuai.</p>
         <div class="field">
@@ -3286,8 +3286,8 @@
         </div>
         <div class="bug-report-note"><i class="fa-solid fa-circle-info"></i> Sistem ikut menyertakan konteks halaman secara otomatis agar laporan lebih mudah diperiksa.</div>
         <div class="modal-actions">
-            <button class="ghost-action soundable" onclick="closeBugReportModal(event)">Batal</button>
-            <button class="primary-action soundable" id="bug-report-submit-btn" onclick="submitBugReport(event)"><i class="fa-solid fa-paper-plane"></i> Kirim</button>
+            <button class="ghost-action soundable" data-shell-action="close-bug-report-modal">Batal</button>
+            <button class="primary-action soundable" id="bug-report-submit-btn" data-shell-action="submit-bug-report"><i class="fa-solid fa-paper-plane"></i> Kirim</button>
         </div>
     </section>
 
@@ -3297,13 +3297,13 @@
                 <div class="section-kicker">SISIwanita</div>
                 <h2 id="exit-app-title">Keluar dari aplikasi?</h2>
             </div>
-            <button class="close-btn soundable" onclick="cancelExitApp(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            <button class="close-btn soundable" data-shell-action="cancel-exit-app" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <p class="exit-modal-copy">Aplikasi akan ditutup ke background. Notifikasi tetap aktif dan akan masuk seperti biasa.</p>
         <div class="exit-modal-note"><i class="fa-solid fa-bell"></i><span>Anda tetap login. Saat dibuka lagi, portal kembali ke ruang pasien.</span></div>
         <div class="modal-actions">
-            <button class="ghost-action soundable" onclick="cancelExitApp(event)">Tidak</button>
-            <button class="primary-action soundable" onclick="confirmExitApp(event)">Ya, keluar</button>
+            <button class="ghost-action soundable" data-shell-action="cancel-exit-app">Tidak</button>
+            <button class="primary-action soundable" data-shell-action="confirm-exit-app">Ya, keluar</button>
         </div>
     </section>
 
@@ -3359,12 +3359,12 @@
     <script src="/scripts/profile-photo-cropper.js?v=20260601crop1"></script>
     <div class="toast" id="toast"></div>
 
-    <div class="ios-install-prompt-overlay" id="ios-install-overlay" onclick="dismissPatientInstallPrompt()"></div>
+    <div class="ios-install-prompt-overlay" id="ios-install-overlay" data-shell-action="dismiss-patient-install-prompt"></div>
     <div class="ios-install-prompt" id="ios-install-prompt" role="dialog" aria-label="Install SISIwanita">
         <div class="ios-install-prompt-handle"></div>
         <div class="ios-install-prompt-header">
             <h4 id="pwa-install-title"><i class="fa-solid fa-mobile-screen-button"></i> Install SISIwanita</h4>
-            <button class="ios-install-prompt-close" onclick="dismissPatientInstallPrompt()" aria-label="Tutup">&times;</button>
+            <button class="ios-install-prompt-close" data-shell-action="dismiss-patient-install-prompt" aria-label="Tutup">&times;</button>
         </div>
         <p class="pwa-install-subtitle" id="pwa-install-subtitle">
             Simpan SISIwanita di Home Screen agar akses portal lebih cepat.
@@ -3383,7 +3383,7 @@
                 <span>Tap <strong>"Add"</strong> untuk menyimpan aplikasi</span>
             </li>
         </ol>
-        <button type="button" class="pwa-install-action" id="pwa-install-action" onclick="installPatientPWA()">
+        <button type="button" class="pwa-install-action" id="pwa-install-action" data-shell-action="install-patient-pwa">
             <i class="fa-solid fa-download"></i> Install sekarang
         </button>
         <p class="pwa-install-note" id="pwa-install-note">
@@ -3391,7 +3391,7 @@
         </p>
     </div>
 
-    <script type="module" src="/scripts/patient-menu-shell.js?v=20260624shellwave2"></script>
+    <script type="module" src="/scripts/patient-menu-shell.js?v=20260624shellwave3"></script>
     <script src="/scripts/patient-my-corner.js?v=20260606roomthemes"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 
