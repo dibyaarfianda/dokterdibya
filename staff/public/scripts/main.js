@@ -8,7 +8,7 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v283';
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v284';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -5075,7 +5075,8 @@ function initMain() {
 function restoreLastPage() {
     try {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('page') === 'sunday-clinic') {
+        const pageParam = params.get('page');
+        if (pageParam === 'sunday-clinic') {
             showSundayClinicPage({
                 mrId: params.get('mr'),
                 section: params.get('section') || 'identitas',
@@ -5083,6 +5084,14 @@ function restoreLastPage() {
                 appointmentId: params.get('appointment'),
                 location: params.get('location')
             });
+            return;
+        }
+        const pageParamMap = {
+            'patient-activity': () => window.showPatientActivityPage && window.showPatientActivityPage(),
+            'guest-activity': () => window.showGuestActivityPage && window.showGuestActivityPage()
+        };
+        if (pageParamMap[pageParam]) {
+            pageParamMap[pageParam]();
             return;
         }
 
@@ -5122,6 +5131,8 @@ function restoreLastPage() {
             'nav-community-chat':                   () => showCommunityChatPage(),
             'nav-support-chat':                     () => showSupportChatPage(),
             'nav-troubleshooting':                  () => showTroubleshootingPage(),
+            'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage(),
+            'nav-guest-activity':                   () => window.showGuestActivityPage && window.showGuestActivityPage(),
             'nav-penjualan-obat':                   () => showPenjualanObatPage(),
             'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
             'nav-medify-sync':                      () => showMedifySyncPage(),

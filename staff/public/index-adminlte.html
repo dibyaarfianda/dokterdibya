@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v283';
+        window.STAFF_CACHE_VERSION = 'v284';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1649,8 +1649,8 @@
 
         })();
     </script>
-    <script defer src="scripts/shell/appointment-debug.js?v=v283"></script>
-    <script defer src="scripts/shell/patient-search-detail.js?v=v283"></script>
+    <script defer src="scripts/shell/appointment-debug.js?v=v284"></script>
+    <script defer src="scripts/shell/patient-search-detail.js?v=v284"></script>
     
     <!-- Cache Clear Script -->
     <script>
@@ -1717,6 +1717,24 @@
             const d = new Date(date);
             if (Number.isNaN(d.getTime())) return '';
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+
+        window.updateStaffPageRoute = function(page, navId) {
+            try {
+                const url = new URL(window.location.href);
+                ['mr', 'section', 'patient', 'appointment', 'location'].forEach(param => url.searchParams.delete(param));
+                if (page) {
+                    url.searchParams.set('page', page);
+                } else {
+                    url.searchParams.delete('page');
+                }
+                window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+                if (navId) sessionStorage.setItem('lastStaffNavId', navId);
+            } catch (error) {
+                if (navId) {
+                    try { sessionStorage.setItem('lastStaffNavId', navId); } catch (_storageError) {}
+                }
+            }
         };
 
         // Define getAuthToken globally so inline scripts and modules read the same stores.
@@ -8092,7 +8110,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v283"></script>
+    <script defer src="scripts/shell/actions.js?v=v284"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8232,7 +8250,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Sunday Clinic payment/planning dependencies -->
 <script defer src="https://js.xendit.co/v1/xendit.min.js"></script>
-<script type="module" src="scripts/shell/qrcode-loader.js?v=v283"></script>
+<script type="module" src="scripts/shell/qrcode-loader.js?v=v284"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260621modalreset1"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260619staff1"></script>
 
@@ -8461,7 +8479,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v283"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v284"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -10863,6 +10881,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     window.showPatientActivityPage = function() {
+        if (typeof window.updateStaffPageRoute === 'function') {
+            window.updateStaffPageRoute('patient-activity', 'nav-patient-activity');
+        }
         document.documentElement.classList.remove('kantor-saya-active');
         document.body.classList.remove('kantor-saya-active');
         document.documentElement.style.overflow = '';
@@ -11056,6 +11077,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     window.showGuestActivityPage = function() {
+        if (typeof window.updateStaffPageRoute === 'function') {
+            window.updateStaffPageRoute('guest-activity', 'nav-guest-activity');
+        }
         document.documentElement.classList.remove('kantor-saya-active');
         document.body.classList.remove('kantor-saya-active');
         document.documentElement.style.overflow = '';

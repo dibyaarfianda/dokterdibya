@@ -94,12 +94,26 @@ describe('staff shell refactor phase 1', () => {
         expect(html).toContain('window.loadPatientActivity = async function(page = 0)');
         expect(html).toContain('window.loadGuestActivity = async function(page = 0)');
         expect(html).toContain('window.formatDateLocal = window.formatDateLocal || function(date)');
+        expect(html).toContain('window.updateStaffPageRoute = function(page, navId)');
+        expect(html).toContain("['mr', 'section', 'patient', 'appointment', 'location'].forEach(param => url.searchParams.delete(param));");
+        expect(html).toContain("window.updateStaffPageRoute('patient-activity', 'nav-patient-activity');");
+        expect(html).toContain("window.updateStaffPageRoute('guest-activity', 'nav-guest-activity');");
         expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
             .toBeLessThan(html.indexOf('window.showPatientActivityPage = function()'));
         expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
             .toBeLessThan(html.indexOf('window.showGuestActivityPage = function()'));
         expect(kantorSaya).toContain("actionName: 'showPatientActivityPage'");
         expect(kantorSaya).toContain("actionName: 'showGuestActivityPage'");
+    });
+
+    test('activity pages replace stale Sunday Clinic route state so refresh stays on activity page', () => {
+        const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+
+        expect(main).toContain("const pageParam = params.get('page');");
+        expect(main).toContain("'patient-activity': () => window.showPatientActivityPage && window.showPatientActivityPage()");
+        expect(main).toContain("'guest-activity': () => window.showGuestActivityPage && window.showGuestActivityPage()");
+        expect(main).toContain("'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage()");
+        expect(main).toContain("'nav-guest-activity':                   () => window.showGuestActivityPage && window.showGuestActivityPage()");
     });
 
     test('profile settings uses the shared auth token helper instead of hardcoded storage keys', () => {
