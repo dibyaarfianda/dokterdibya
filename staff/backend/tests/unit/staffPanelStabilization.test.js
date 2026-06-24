@@ -22,6 +22,22 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
+    test('dashboard daily greeting uses safe display names instead of email identities', () => {
+        const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+        const aiRoute = readNormalizedFile('staff', 'backend', 'routes', 'ai.js');
+
+        expect(mainJs).toContain('function resolveDashboardDisplayName(user)');
+        expect(mainJs).toContain('function greetingContainsIdentityLeak(greeting, rejectedValues = [])');
+        expect(mainJs).toContain('const rejectedIdentityTokens = [user?.email, window.currentUserName].filter(isEmailLike);');
+        expect(mainJs).toContain('const params = new URLSearchParams({ displayName: safeDisplayName });');
+        expect(mainJs).toContain('updateDailyGreeting(user);');
+        expect(mainJs).not.toContain('updateDailyGreeting(user.id);');
+
+        expect(aiRoute).toContain('function sanitizeDisplayName(value)');
+        expect(aiRoute).toContain('const userName = sanitizeDisplayName(req.query.displayName)');
+        expect(aiRoute).not.toContain('const userName = req.user.name || req.user.email;');
+    });
+
     test('service worker precache does not include missing chat panel css', () => {
         const sw = readNormalizedFile('staff', 'public', 'sw.js');
 

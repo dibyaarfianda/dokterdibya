@@ -8,7 +8,7 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v285';
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v286';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -358,6 +358,28 @@ function resolveDisplayName(rawName, userId, fallbackLabel = 'Unknown') {
 
     const fallbackId = String(userId || '').trim();
     return fallbackId || fallbackLabel;
+}
+
+function resolveDashboardDisplayName(user) {
+    if (user?.is_superadmin || user?.role_id === 1 || user?.email === 'arfianda.diby@gmail.com') {
+        return 'dr. Dibya';
+    }
+
+    return resolveDisplayName(user?.name || window.currentUserName, user?.id, 'User');
+}
+
+function greetingContainsIdentityLeak(greeting, rejectedValues = []) {
+    const text = String(greeting || '');
+    if (!text) return false;
+
+    if (/[^\s"'<>()]+@[^\s"'<>()]+\.[^\s"'<>()]+/.test(text)) {
+        return true;
+    }
+
+    return rejectedValues
+        .map(value => String(value || '').trim())
+        .filter(Boolean)
+        .some(value => text.toLowerCase().includes(value.toLowerCase()));
 }
 
 function logActivity(action, details) {
@@ -4325,16 +4347,17 @@ const FALLBACK_GREETINGS = [
  * Changes once per day at midnight
  * Falls back to stale cache or local greeting if API fails/times out
  */
-async function fetchDailyGreeting(userId) {
+async function fetchDailyGreeting(userId, displayName, rejectedIdentityTokens = []) {
     const today = formatDateLocal(new Date()); // YYYY-MM-DD
     const storageKey = `daily_greeting_ai_${userId}`;
     const stored = localStorage.getItem(storageKey);
+    const safeDisplayName = resolveDisplayName(displayName, userId, 'User');
 
     // Return today's fresh cache immediately
     if (stored) {
         try {
             const { date, greeting } = JSON.parse(stored);
-            if (date === today && greeting) {
+            if (date === today && greeting && !greetingContainsIdentityLeak(greeting, rejectedIdentityTokens)) {
                 return greeting;
             }
         } catch (e) { /* invalid, fetch new */ }
@@ -4345,7 +4368,8 @@ async function fetchDailyGreeting(userId) {
         const token = getAuthToken();
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const response = await fetch('/api/ai/daily-greeting', {
+        const params = new URLSearchParams({ displayName: safeDisplayName });
+        const response = await fetch(`/api/ai/daily-greeting?${params.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` },
             signal: controller.signal
         });
@@ -4355,8 +4379,10 @@ async function fetchDailyGreeting(userId) {
             const result = await response.json();
             if (result.success && result.data?.greeting) {
                 const greeting = result.data.greeting;
-                localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting }));
-                return greeting;
+                if (!greetingContainsIdentityLeak(greeting, rejectedIdentityTokens)) {
+                    localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting }));
+                    return greeting;
+                }
             }
         }
     } catch (error) {
@@ -4367,7 +4393,7 @@ async function fetchDailyGreeting(userId) {
     if (stored) {
         try {
             const { greeting } = JSON.parse(stored);
-            if (greeting) return greeting;
+            if (greeting && !greetingContainsIdentityLeak(greeting, rejectedIdentityTokens)) return greeting;
         } catch (e) { /* ignore */ }
     }
 
@@ -4382,10 +4408,13 @@ async function fetchDailyGreeting(userId) {
  * Update daily greeting element with AI-generated greeting
  * Stale-while-revalidate: show cached greeting immediately, refresh in background
  */
-async function updateDailyGreeting(userId) {
+async function updateDailyGreeting(user) {
     const greetingEl = document.getElementById('daily-greeting');
     if (!greetingEl) return;
 
+    const userId = user?.id || window.currentUserId || 'unknown';
+    const displayName = resolveDashboardDisplayName(user);
+    const rejectedIdentityTokens = [user?.email, window.currentUserName].filter(isEmailLike);
     const today = formatDateLocal(new Date());
     const storageKey = `daily_greeting_ai_${userId}`;
     const stored = localStorage.getItem(storageKey);
@@ -4395,7 +4424,7 @@ async function updateDailyGreeting(userId) {
     if (stored) {
         try {
             const parsed = JSON.parse(stored);
-            if (parsed.greeting) {
+            if (parsed.greeting && !greetingContainsIdentityLeak(parsed.greeting, rejectedIdentityTokens)) {
                 greetingEl.textContent = parsed.greeting;
                 greetingEl.style.opacity = '1';
                 hasStale = true;
@@ -4412,7 +4441,7 @@ async function updateDailyGreeting(userId) {
 
     // Background refresh (stale from yesterday or no cache)
     try {
-        const greeting = await fetchDailyGreeting(userId);
+        const greeting = await fetchDailyGreeting(userId, displayName, rejectedIdentityTokens);
         greetingEl.textContent = greeting;
         greetingEl.style.opacity = '1';
     } catch (error) {
@@ -4470,7 +4499,7 @@ async function updateWelcomeCard(user) {
     }
 
     // Update daily greeting
-    updateDailyGreeting(user.id);
+    updateDailyGreeting(user);
 
     try {
         // Fetch user's roles with descriptions (cached 5 minutes in localStorage)

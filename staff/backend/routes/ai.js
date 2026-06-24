@@ -33,6 +33,15 @@ function getFallbackDailyGreeting(userId) {
     return FALLBACK_DAILY_GREETINGS[seed % FALLBACK_DAILY_GREETINGS.length];
 }
 
+function isEmailLike(value) {
+    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function sanitizeDisplayName(value) {
+    const candidate = String(value || '').trim();
+    return candidate && !isEmailLike(candidate) ? candidate : '';
+}
+
 function getGreetingCache() {
     if (!global.greetingCache) global.greetingCache = new Map();
     if (!global.greetingPending) global.greetingPending = new Map();
@@ -409,7 +418,10 @@ router.post('/api/ai/interview/process', verifyToken, async (req, res) => {
 router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const userName = req.user.name || req.user.email;
+        const userName = sanitizeDisplayName(req.query.displayName) ||
+            sanitizeDisplayName(req.user.name) ||
+            sanitizeDisplayName(req.user.username) ||
+            'Staff';
         const roleName = req.user.role_display_name || req.user.role || 'Staff';
 
         // Check cache first (stored in memory with date key)
