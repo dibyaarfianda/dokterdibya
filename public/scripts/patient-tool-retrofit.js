@@ -3,7 +3,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '20260624shellwave4';
+    var VERSION = '20260624shellwave5';
     var pageDefaults = {
         '/album-usg.html': {
             activeNav: 'dokumen',

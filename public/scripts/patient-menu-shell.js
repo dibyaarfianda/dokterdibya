@@ -579,12 +579,12 @@
                     const statusText = !submitted ? 'Data kelahiran belum dilengkapi' : (published ? (dismissed ? 'Sedang disembunyikan' : 'Sedang tampil di beranda') : 'Menunggu publikasi');
                     const actions = [];
                     if (!submitted) {
-                        actions.push('<button type="button" class="settings-birth-action soundable" data-birth-id="' + id + '" onclick="openBirthDataModal(event, this.dataset.birthId)">Lengkapi data kelahiran</button>');
+                        actions.push('<button type="button" class="settings-birth-action soundable" data-shell-action="open-birth-data-modal" data-birth-id="' + id + '">Lengkapi data kelahiran</button>');
                     } else if (published) {
-                        actions.push('<button type="button" class="settings-birth-action soundable ' + (dismissed ? '' : 'secondary') + '" data-birth-id="' + id + '" onclick="toggleBirthCongratsFromSettings(this.dataset.birthId, ' + (dismissed ? 'true' : 'false') + ', event)">' + (dismissed ? 'Tampilkan lagi' : 'Sembunyikan') + '</button>');
-                        actions.push('<button type="button" class="settings-birth-action soundable secondary" data-birth-id="' + id + '" onclick="openBirthPhotoPicker(event, this.dataset.birthId)">Upload foto bayi</button>');
+                        actions.push('<button type="button" class="settings-birth-action soundable ' + (dismissed ? '' : 'secondary') + '" data-shell-action="toggle-birth-congrats" data-birth-id="' + id + '" data-birth-dismissed="' + (dismissed ? 'true' : 'false') + '">' + (dismissed ? 'Tampilkan lagi' : 'Sembunyikan') + '</button>');
+                        actions.push('<button type="button" class="settings-birth-action soundable secondary" data-shell-action="birth-photo-picker" data-birth-id="' + id + '">Upload foto bayi</button>');
                         if (!hasTestimonial) {
-                            actions.push('<button type="button" class="settings-birth-action soundable secondary" data-birth-id="' + id + '" onclick="openBirthTestimonialModal(event, this.dataset.birthId)">Kirim testimoni</button>');
+                            actions.push('<button type="button" class="settings-birth-action soundable secondary" data-shell-action="open-birth-testimonial-modal" data-birth-id="' + id + '">Kirim testimoni</button>');
                         }
                     }
                     const action = actions.length ? '<div class="settings-birth-actions">' + actions.join('') + '</div>' : '';
@@ -1858,6 +1858,18 @@
             },
             'install-patient-pwa': function() {
                 installPatientPWA();
+            },
+            'open-birth-data-modal': function(target, event) {
+                openBirthDataModal(event, target.dataset.birthId);
+            },
+            'toggle-birth-congrats': function(target, event) {
+                toggleBirthCongratsFromSettings(target.dataset.birthId, target.dataset.birthDismissed === 'true', event);
+            },
+            'birth-photo-picker': function(target, event) {
+                openBirthPhotoPicker(event, target.dataset.birthId);
+            },
+            'open-birth-testimonial-modal': function(target, event) {
+                openBirthTestimonialModal(event, target.dataset.birthId);
             }
         };
 
@@ -3483,7 +3495,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave4';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave5';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
@@ -3647,6 +3659,12 @@
             'open-birth-photo-modal': function(target, event) {
                 openBirthPhotoModal(event);
             },
+            'close-birth-photo-modal': function(target, event) {
+                closeBirthPhotoModal(event);
+            },
+            'close-birth-date-wheel': function(target, event) {
+                closeBirthDateWheelPicker(event);
+            },
             'open-sheet': function(target) {
                 openSheet(target.dataset.shellSheet || '');
             },
@@ -3662,6 +3680,10 @@
         };
 
         document.addEventListener('click', function(event) {
+            if (event.target.closest('[data-shell-stop-propagation]')) {
+                event.stopPropagation();
+                return;
+            }
             const trigger = event.target.closest('[data-shell-action]');
             if (!trigger) return;
 

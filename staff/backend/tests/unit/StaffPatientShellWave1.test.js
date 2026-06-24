@@ -127,4 +127,35 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(shell).not.toContain('onclick="openHomeInfoDetail(');
         expect(shell).not.toContain('onclick="return handleSheetNavigation(event,');
     });
+
+    test('patient birth shell launch and close controls use delegated actions', () => {
+        const patientMenu = readNormalizedFile('public', 'patient-menu.html');
+        const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
+
+        expect(shell).toContain('data-shell-action="open-birth-data-modal"');
+        expect(shell).toContain('data-shell-action="toggle-birth-congrats"');
+        expect(shell).toContain('data-shell-action="birth-photo-picker"');
+        expect(shell).toContain('data-shell-action="open-birth-testimonial-modal"');
+        expect(shell).toContain("'open-birth-data-modal': function(target, event)");
+        expect(shell).toContain("'toggle-birth-congrats': function(target, event)");
+        expect(shell).toContain("'birth-photo-picker': function(target, event)");
+        expect(shell).toContain("'open-birth-testimonial-modal': function(target, event)");
+
+        expect(patientMenu).toContain('id="birth-photo-modal" data-shell-action="close-birth-photo-modal"');
+        expect(patientMenu).toContain('data-shell-action="close-birth-photo-modal" aria-label="Tutup foto kelahiran"');
+        expect(patientMenu).toContain('id="birth-date-wheel-modal" data-shell-action="close-birth-date-wheel"');
+        expect(patientMenu).toContain('data-shell-action="close-birth-date-wheel" aria-label="Tutup"');
+        expect(patientMenu).toContain('data-shell-action="close-birth-date-wheel">Batal</button>');
+        expect(shell).toContain("'close-birth-photo-modal': function(target, event)");
+        expect(shell).toContain("'close-birth-date-wheel': function(target, event)");
+
+        expect(shell).not.toContain('onclick="openBirthDataModal(event, this.dataset.birthId)"');
+        expect(shell).not.toContain('onclick="toggleBirthCongratsFromSettings(this.dataset.birthId,');
+        expect(shell).not.toContain('onclick="openBirthPhotoPicker(event, this.dataset.birthId)"');
+        expect(shell).not.toContain('onclick="openBirthTestimonialModal(event, this.dataset.birthId)"');
+        expect(patientMenu).not.toContain('id="birth-photo-modal" onclick="closeBirthPhotoModal(event)"');
+        expect(patientMenu).not.toContain('class="birth-photo-modal-close soundable" onclick="closeBirthPhotoModal(event)"');
+        expect(patientMenu).not.toContain('id="birth-date-wheel-modal" onclick="closeBirthDateWheelPicker(event)"');
+        expect(patientMenu).not.toContain('class="birth-date-wheel-close soundable" onclick="closeBirthDateWheelPicker(event)"');
+    });
 });

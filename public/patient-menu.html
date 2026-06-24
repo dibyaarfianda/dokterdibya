@@ -7,10 +7,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Portal Pasien - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260624shellwave4">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260624shellwave5">
     <script>
-        window.PATIENT_SHELL_VERSION = '20260624shellwave4';
-        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20260624shellwave4';
+        window.PATIENT_SHELL_VERSION = '20260624shellwave5';
+        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20260624shellwave5';
     </script>
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
@@ -3307,20 +3307,20 @@
         </div>
     </section>
 
-    <div class="birth-photo-modal" id="birth-photo-modal" onclick="closeBirthPhotoModal(event)" aria-hidden="true">
-        <button type="button" class="birth-photo-modal-close soundable" onclick="closeBirthPhotoModal(event)" aria-label="Tutup foto kelahiran">&times;</button>
-        <img id="birth-photo-modal-img" src="" alt="Foto kelahiran" onclick="event.stopPropagation()">
+    <div class="birth-photo-modal" id="birth-photo-modal" data-shell-action="close-birth-photo-modal" aria-hidden="true">
+        <button type="button" class="birth-photo-modal-close soundable" data-shell-action="close-birth-photo-modal" aria-label="Tutup foto kelahiran">&times;</button>
+        <img id="birth-photo-modal-img" src="" alt="Foto kelahiran" data-shell-stop-propagation="true">
     </div>
 
-    <div class="birth-date-wheel-modal" id="birth-date-wheel-modal" onclick="closeBirthDateWheelPicker(event)" aria-hidden="true">
-        <section class="birth-date-wheel-card" role="dialog" aria-modal="true" aria-labelledby="birth-date-wheel-title" onclick="event.stopPropagation()">
+    <div class="birth-date-wheel-modal" id="birth-date-wheel-modal" data-shell-action="close-birth-date-wheel" aria-hidden="true">
+        <section class="birth-date-wheel-card" role="dialog" aria-modal="true" aria-labelledby="birth-date-wheel-title" data-shell-stop-propagation="true">
             <div class="birth-date-wheel-head">
                 <div>
                     <div class="section-kicker">Tanggal Lahir</div>
                     <h3 id="birth-date-wheel-title">Pilih tanggal bayi</h3>
                     <p>Geser tanggal, bulan, dan tahun lalu tekan pilih.</p>
                 </div>
-                <button type="button" class="birth-date-wheel-close soundable" onclick="closeBirthDateWheelPicker(event)" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="birth-date-wheel-close soundable" data-shell-action="close-birth-date-wheel" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="birth-date-wheel-grid">
                 <div class="birth-date-wheel-column">
@@ -3337,7 +3337,7 @@
                 </div>
             </div>
             <div class="birth-date-wheel-actions">
-                <button type="button" class="ghost-action soundable" onclick="closeBirthDateWheelPicker(event)">Batal</button>
+                <button type="button" class="ghost-action soundable" data-shell-action="close-birth-date-wheel">Batal</button>
                 <button type="button" class="primary-action soundable" onclick="applyBirthDateWheelPicker(event)"><i class="fa-solid fa-check"></i> Pilih Tanggal</button>
             </div>
         </section>
@@ -3391,7 +3391,7 @@
         </p>
     </div>
 
-    <script type="module" src="/scripts/patient-menu-shell.js?v=20260624shellwave4"></script>
+    <script type="module" src="/scripts/patient-menu-shell.js?v=20260624shellwave5"></script>
     <script src="/scripts/patient-my-corner.js?v=20260606roomthemes"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 
