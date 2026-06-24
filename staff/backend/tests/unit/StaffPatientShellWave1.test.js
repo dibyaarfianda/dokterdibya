@@ -51,4 +51,30 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(retrofit).not.toContain("onclick=\"go('/patient-menu.html')\"");
         expect(retrofit).not.toContain("onclick=\"openSheet('dokumen')\"");
     });
+
+    test('patient home shell modal actions are delegated without blocking page shell actions', () => {
+        const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
+
+        expect(shell).toContain('const modalActionHandlers = {');
+        expect(shell).toContain("const handler = modalActionHandlers[action];");
+        expect(shell).toContain("if (typeof handler !== 'function') return;");
+        expect(shell).toContain('data-shell-action="mark-all-notifications"');
+        expect(shell).toContain('data-shell-action="mark-notification-read"');
+        expect(shell).toContain('data-shell-action="open-settings-notifications"');
+        expect(shell).toContain('data-shell-action="test-portal-sound"');
+        expect(shell).toContain('data-shell-action="save-portal-settings"');
+        expect(shell).toContain('data-shell-action="profile-photo-picker" data-photo-mode="camera"');
+        expect(shell).toContain('data-shell-action="profile-photo-picker" data-photo-mode="gallery"');
+        expect(shell).toContain('data-shell-action="guest-login"');
+        expect(shell).not.toContain('onclick="markAllTopbarNotificationsRead(event)"');
+        expect(shell).not.toContain('onclick="markTopbarNotificationRead(this.dataset.notificationId)"');
+        expect(shell).not.toContain('onclick="openSettingsNotifications(event)"');
+        expect(shell).not.toContain('onclick="playPortalNotificationSound(event)"');
+        expect(shell).not.toContain('onclick="savePortalSettings(event)"');
+        expect(shell).not.toContain(`onclick="openProfilePhotoPicker(event, \\'camera\\')"`);
+        expect(shell).not.toContain(`onclick="openProfilePhotoPicker(event, \\'gallery\\')"`);
+        expect(shell).not.toContain('onclick="resetProfilePhotoDraft(event)"');
+        expect(shell).not.toContain('onclick="saveProfilePhotoDraft(event)"');
+        expect(shell).not.toContain('onclick="endGuestAndLogin(event)"');
+    });
 });

@@ -309,7 +309,7 @@
                 '</div>' +
                 '<div class="guest-prompt-actions">' +
                     '<button type="button" class="guest-prompt-action" data-shell-action="close-modal"><i class="fa-solid fa-eye"></i><span>Lanjut lihat demo</span></button>' +
-                    '<button type="button" class="guest-prompt-action primary" onclick="endGuestAndLogin(event)"><i class="fa-solid fa-right-to-bracket"></i><span>Masuk / Daftar</span></button>' +
+                    '<button type="button" class="guest-prompt-action primary" data-shell-action="guest-login"><i class="fa-solid fa-right-to-bracket"></i><span>Masuk / Daftar</span></button>' +
                 '</div>' +
             '</div>';
         }
@@ -410,10 +410,10 @@
             if (!notifications.length) {
                 return summary + '<div class="modal-empty"><i class="fa-regular fa-bell-slash"></i><p>Belum ada notifikasi baru.</p></div>';
             }
-            const readAll = unreadCount ? '<button type="button" class="ghost-action soundable" onclick="markAllTopbarNotificationsRead(event)"><i class="fa-solid fa-check-double"></i> Tandai semua dibaca</button>' : '';
+            const readAll = unreadCount ? '<button type="button" class="ghost-action soundable" data-shell-action="mark-all-notifications"><i class="fa-solid fa-check-double"></i> Tandai semua dibaca</button>' : '';
             const items = notifications.slice(0, 12).map(function(item) {
                 const isUnread = !item.read_at;
-                return '<button type="button" class="notification-item ' + (isUnread ? 'unread' : '') + '" data-notification-id="' + escapeHtml(item.id) + '" onclick="markTopbarNotificationRead(this.dataset.notificationId)">' +
+                return '<button type="button" class="notification-item ' + (isUnread ? 'unread' : '') + '" data-shell-action="mark-notification-read" data-notification-id="' + escapeHtml(item.id) + '">' +
                     '<span class="notification-icon"><i class="' + getNotificationIcon(item.type) + '"></i></span>' +
                     '<span class="notification-copy">' +
                         '<strong>' + escapeHtml(item.title || 'Notifikasi') + '</strong>' +
@@ -529,7 +529,7 @@
                 return '<option value="' + value + '"' + (sound === value ? ' selected' : '') + '>' + label + '</option>';
             };
             return '<div class="settings-panel">' +
-                '<button type="button" class="settings-row soundable" onclick="openSettingsNotifications(event)">' +
+                '<button type="button" class="settings-row soundable" data-shell-action="open-settings-notifications">' +
                     '<i class="fa-solid fa-bell"></i><span><strong>Notifikasi</strong><span>Lihat update pasien dan pengumuman klinik</span></span>' +
                     '<em class="settings-count">' + escapeHtml(count) + '</em>' +
                 '</button>' +
@@ -548,10 +548,10 @@
                     '</select>' +
                 '</div>' +
                 '<div class="settings-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="playPortalNotificationSound(event)"><i class="fa-solid fa-volume-high"></i> Test</button>' +
-                    '<button type="button" class="primary-action soundable" onclick="savePortalSettings(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="test-portal-sound"><i class="fa-solid fa-volume-high"></i> Test</button>' +
+                    '<button type="button" class="primary-action soundable" data-shell-action="save-portal-settings"><i class="fa-solid fa-check"></i> Simpan</button>' +
                 '</div>' +
-                '<button type="button" class="settings-row soundable" onclick="go(\'/patient-intake.html\')">' +
+                '<button type="button" class="settings-row soundable" data-shell-action="go" data-shell-href="/patient-intake.html">' +
                     '<i class="fa-solid fa-clipboard-list"></i><span><strong>Form Intake</strong><span>Edit atau update data intake Anda</span></span>' +
                     '<i class="fa-solid fa-chevron-right"></i>' +
                 '</button>' +
@@ -1389,10 +1389,10 @@
                     '</div>' +
                 '</div>' +
                 '<div class="profile-photo-save-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
-                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'gallery\')"><i class="fa-solid fa-image"></i> Galeri</button>' +
-                    '<button type="button" class="secondary-action soundable" onclick="resetProfilePhotoDraft(event)"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
-                    '<button type="button" class="primary-action soundable" onclick="saveProfilePhotoDraft(event)"><i class="fa-solid fa-check"></i> Simpan</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="profile-photo-picker" data-photo-mode="camera"><i class="fa-solid fa-camera"></i> Kamera</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="profile-photo-picker" data-photo-mode="gallery"><i class="fa-solid fa-image"></i> Galeri</button>' +
+                    '<button type="button" class="secondary-action soundable" data-shell-action="reset-profile-photo-draft"><i class="fa-solid fa-rotate-left"></i> Reset</button>' +
+                    '<button type="button" class="primary-action soundable" data-shell-action="save-profile-photo-draft"><i class="fa-solid fa-check"></i> Simpan</button>' +
                 '</div>' +
             '</div>';
         }
@@ -1518,8 +1518,8 @@
                 : '<span class="shell-profile-avatar-fallback">' + escapeHtml(getInitials(name)) + '</span>';
             const photoUploadActions =
                 '<div class="profile-photo-save-actions">' +
-                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'camera\')"><i class="fa-solid fa-camera"></i> Kamera</button>' +
-                    '<button type="button" class="ghost-action soundable" onclick="openProfilePhotoPicker(event, \'gallery\')"><i class="fa-solid fa-image"></i> Upload Ulang</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="profile-photo-picker" data-photo-mode="camera"><i class="fa-solid fa-camera"></i> Kamera</button>' +
+                    '<button type="button" class="ghost-action soundable" data-shell-action="profile-photo-picker" data-photo-mode="gallery"><i class="fa-solid fa-image"></i> Upload Ulang</button>' +
                 '</div>' +
                 '<div class="profile-photo-note">Crop hanya bisa diatur saat upload. Jika ingin mengubah crop, upload ulang foto profil.</div>';
             return '<div class="shell-profile-head">' +
@@ -1797,20 +1797,52 @@
             if (exitWasActive) rearmHomeBackGuard();
         }
 
+        const modalActionHandlers = {
+            'close-modal': function() {
+                closeAllModals();
+            },
+            'logout': function() {
+                closeAllModals();
+                logout();
+            },
+            'guest-login': function(target, event) {
+                endGuestAndLogin(event);
+            },
+            'mark-all-notifications': function(target, event) {
+                markAllTopbarNotificationsRead(event);
+            },
+            'mark-notification-read': function(target) {
+                markTopbarNotificationRead(target.dataset.notificationId);
+            },
+            'open-settings-notifications': function(target, event) {
+                openSettingsNotifications(event);
+            },
+            'test-portal-sound': function(target, event) {
+                playPortalNotificationSound(event);
+            },
+            'save-portal-settings': function(target, event) {
+                savePortalSettings(event);
+            },
+            'profile-photo-picker': function(target, event) {
+                openProfilePhotoPicker(event, target.dataset.photoMode || 'gallery');
+            },
+            'reset-profile-photo-draft': function(target, event) {
+                resetProfilePhotoDraft(event);
+            },
+            'save-profile-photo-draft': function(target, event) {
+                saveProfilePhotoDraft(event);
+            }
+        };
+
         function handleShellModalAction(event) {
             const button = event && event.target && event.target.closest ? event.target.closest('[data-shell-action]') : null;
             if (!button) return;
             const action = String(button.getAttribute('data-shell-action') || '').trim();
             if (!action) return;
+            const handler = modalActionHandlers[action];
+            if (typeof handler !== 'function') return;
             stopTopbarEvent(event);
-            if (action === 'close-modal') {
-                closeAllModals();
-                return;
-            }
-            if (action === 'logout') {
-                closeAllModals();
-                logout();
-            }
+            handler(button, event);
         }
 
         document.addEventListener('click', handleShellModalAction, true);
@@ -3424,7 +3456,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave2';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
@@ -3439,7 +3471,7 @@
             banner.className = 'guest-demo-banner reveal';
             banner.innerHTML = '<i class="fa-solid fa-eye"></i>' +
                 '<div><strong>Mode demo aktif</strong><span>Anda bisa melihat tampilan portal. Data medis, booking, chat, dokumen, dan pengaturan hanya aktif setelah login.</span></div>' +
-                '<button type="button" onclick="endGuestAndLogin(event)">Login</button>';
+                '<button type="button" data-shell-action="guest-login">Login</button>';
             hero.parentNode.insertBefore(banner, hero);
         }
 
