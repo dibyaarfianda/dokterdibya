@@ -22,6 +22,7 @@ const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/me
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const activityLogger = require('./services/activityLogger');
+const createSystemRoutes = require('./routes/system');
 
 const app = express();
 const server = http.createServer(app);
@@ -240,6 +241,8 @@ const aiRoutes = require('./routes/ai');
 const kickCounterRoutes = require('./routes/kick-counter');
 const contractionTimerRoutes = require('./routes/contraction-timer');
 const rumRoutes = require('./routes/rum');
+const pdfQueue = require('./services/pdfQueue');
+const { getDbStats } = require('./middleware/dbMonitor');
 const communityChatRoutes = require('./routes/community-chat');
 const supportChatRoutes = require('./routes/support-chat');
 
@@ -727,62 +730,24 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // RUM (Real User Monitoring) telemetry - no auth required
 app.use('/api/rum', rumRoutes);
 
-// Metrics endpoint (includes cache stats + RUM summary)
-app.get('/api/metrics', (req, res) => {
-    const metrics = getMetrics();
-    const { getRumSummary, getCacheStats, getCostSummary } = require('./routes/rum');
-    const { getDbStats } = require('./middleware/dbMonitor');
-    const pdfQueue = require('./services/pdfQueue');
-    metrics.rum = getRumSummary();
-    metrics.cache = getCacheStats();
-    metrics.db = getDbStats();
-    metrics.cost = getCostSummary();
-    metrics.cost.socketEventsEmitted = _socketEmitCount;
-    metrics.cost.activeSocketConnections = io.sockets.sockets.size;
-    metrics.coalescing = getCoalesceStats();
-    metrics.pdfQueue = pdfQueue.getStats();
-    metrics.enrichment = patientsRoutes.getEnrichmentStats ? patientsRoutes.getEnrichmentStats() : {};
-    metrics.cluster = {
-        pid: process.pid,
-        workerId: process.env.NODE_APP_INSTANCE || 0,
-        uptime: Math.floor(process.uptime()),
-    };
-    res.json(metrics);
-});
-
-// Reset metrics endpoint (superadmin only)
-app.post('/api/metrics/reset', verifyToken, requireSuperadmin, (req, res) => {
-    resetMetrics();
-    res.json({ success: true, message: 'Metrics reset successfully' });
-});
-
-// Enhanced health check
-app.get('/api/health', async (req, res) => {
-    try {
-        const startTime = Date.now();
-        await pool.query('SELECT 1');
-        const dbLatency = Date.now() - startTime;
-        
-        const metrics = getMetrics();
-        
-        res.json({ 
-            status: 'healthy', 
-            timestamp: new Date().toISOString(),
-            database: {
-                status: 'connected',
-                latencyMs: dbLatency
-            },
-            system: metrics.system,
-            uptime: Math.floor(process.uptime())
-        });
-    } catch (error) {
-        res.status(500).json({ 
-            status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            error: error.message 
-        });
-    }
-});
+app.use(createSystemRoutes({
+    pool,
+    getMetrics,
+    resetMetrics,
+    getRumSummary: rumRoutes.getRumSummary,
+    getCacheStats: rumRoutes.getCacheStats,
+    getCostSummary: rumRoutes.getCostSummary,
+    getDbStats,
+    getCoalesceStats,
+    getPdfQueueStats: () => pdfQueue.getStats(),
+    getEnrichmentStats: () => patientsRoutes.getEnrichmentStats ? patientsRoutes.getEnrichmentStats() : {},
+    getSocketStats: () => ({
+        socketEventsEmitted: _socketEmitCount,
+        activeSocketConnections: io.sockets.sockets.size
+    }),
+    verifyToken,
+    requireSuperadmin
+}));
 
 // Basic API routes
 app.get('/api/patients', async (req, res) => {

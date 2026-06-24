@@ -199,19 +199,23 @@ describe('staff panel stabilization sources', () => {
 
     test('observability routes are mounted before global not-found handler', () => {
         const server = readNormalizedFile('staff', 'backend', 'server.js');
+        const systemRoutes = readNormalizedFile('staff', 'backend', 'routes', 'system.js');
 
         const notFoundIndex = server.indexOf('app.use(notFoundHandler);');
         const pdfQueueIndex = server.indexOf("app.use('/api/pdf/queue', pdfQueueRoutes);");
         const sloIndex = server.indexOf("app.use('/api/slo', sloRoutes);");
-        const metricsResetIndex = server.indexOf("app.post('/api/metrics/reset', verifyToken, requireSuperadmin");
+        const systemRoutesIndex = server.indexOf('app.use(createSystemRoutes({');
 
         expect(notFoundIndex).toBeGreaterThan(-1);
         expect(pdfQueueIndex).toBeGreaterThan(-1);
         expect(sloIndex).toBeGreaterThan(-1);
-        expect(metricsResetIndex).toBeGreaterThan(-1);
+        expect(systemRoutesIndex).toBeGreaterThan(-1);
+        expect(systemRoutes).toContain("router.post('/api/metrics/reset', verifyToken, requireSuperadmin");
+        expect(systemRoutes).toContain("router.get('/api/metrics'");
+        expect(systemRoutes).toContain("router.get('/api/health'");
         expect(pdfQueueIndex).toBeLessThan(notFoundIndex);
         expect(sloIndex).toBeLessThan(notFoundIndex);
-        expect(metricsResetIndex).toBeLessThan(notFoundIndex);
+        expect(systemRoutesIndex).toBeLessThan(notFoundIndex);
     });
 
     test('medical file upload routes require authentication for mutating actions', () => {
