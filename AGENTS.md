@@ -381,6 +381,20 @@ dokterdibya-patient-app/
 - Assume code will work without testing
 - Skip verification steps
 
+### 9b. Test Contract and PowerShell Discipline
+
+**Contract tests should verify behavior, not incidental implementation details.**
+
+When an implementation uses a wrapper for resilience, tests should assert the stable contract instead of a literal internal call. Example: if `safeRemoveStorageItem(...)` wraps `removeItem(...)` so storage errors do not break the UI, assert that the token keys are covered and both `localStorage` and `sessionStorage` cleanup paths are invoked. Do not require the exact string `localStorage.removeItem(...)` unless direct invocation is itself the requirement.
+
+**For bugfix TDD, first prove the baseline failure.**
+
+When adding a regression test for a bug, run the new/focused test against the current code before patching and confirm it fails for the expected reasons. Example: for staff credential loading, the expected baseline failure was `getAuthToken()` missing `sessionStorage`, missing `credentials.js`, bootstrap not calling the guard, stale cache version, and malformed bootstrap script tag. Use that failure to validate the test, then patch minimally.
+
+**PowerShell command chaining is not Bash.**
+
+Do not assume `&&` works in the local PowerShell environment. Prefer separate `shell_command` calls and inspect each command result before continuing. For SSH heredocs or remote bash from Windows, pipe through SSH with CR stripping, for example `tr -d '\015' | bash -s`, to avoid CRLF and quoting failures.
+
 ### 10. Cloudflare R2 Storage
 
 **PDFs (invoices, etikets, resume medis) are stored in Cloudflare R2**, not on local VPS filesystem.
