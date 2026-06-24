@@ -2,6 +2,7 @@
 // Save as: ~/dibyaklinik-backend/routes/obat.js
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
@@ -407,7 +408,7 @@ router.get('/api/obat/download/price-list', verifyToken, requirePermission('obat
         const pdfBuffer = await pdfGenerator.generateObatPriceList(rows);
 
         // Send PDF
-        const filename = `Daftar_Harga_Obat_${new Date().toISOString().split('T')[0]}.pdf`;
+        const filename = `Daftar_Harga_Obat_${formatDateLocal(new Date())}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', pdfBuffer.length);

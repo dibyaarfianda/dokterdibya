@@ -12,6 +12,12 @@ const API_BASE = (() => {
     return window.location.origin;
 })();
 
+function getCentralAuthToken() {
+    return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+        ? window.getAuthToken()
+        : '';
+}
+
 /**
  * API Service Object
  */
@@ -32,7 +38,7 @@ export const apiService = {
             } else {
                 url = `${API_BASE}/api${endpoint}`;
             }
-            const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+            const token = getCentralAuthToken();
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -73,7 +79,7 @@ export const apiService = {
             } else {
                 url = `${API_BASE}/api${endpoint}`;
             }
-            const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+            const token = getCentralAuthToken();
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -129,7 +135,7 @@ export const apiService = {
             } else {
                 url = `${API_BASE}/api${endpoint}`;
             }
-            const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+            const token = getCentralAuthToken();
 
             const response = await fetch(url, {
                 method: 'PUT',
@@ -184,7 +190,7 @@ export const apiService = {
             } else {
                 url = `${API_BASE}/api${endpoint}`;
             }
-            const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+            const token = getCentralAuthToken();
 
             const response = await fetch(url, {
                 method: 'DELETE',

@@ -4,13 +4,10 @@ let blocklistEntries = [];
 let isInitialized = false;
 
 function getToken() {
-    if (typeof window.getAuthToken === 'function') {
+    if (typeof window !== 'undefined' && typeof window.getAuthToken === 'function') {
         return window.getAuthToken();
     }
-    return localStorage.getItem('vps_auth_token')
-        || sessionStorage.getItem('vps_auth_token')
-        || localStorage.getItem('token')
-        || localStorage.getItem('auth_token');
+    return '';
 }
 
 async function apiRequest(path = '', options = {}) {

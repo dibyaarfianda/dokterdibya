@@ -12,10 +12,9 @@
     let pollsById = new Map();
 
     function getToken() {
-        return localStorage.getItem('vps_auth_token') ||
-               sessionStorage.getItem('vps_auth_token') ||
-               localStorage.getItem('token') ||
-               localStorage.getItem('auth_token');
+        return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+            ? window.getAuthToken()
+            : '';
     }
 
     function escapeHtml(text) {

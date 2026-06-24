@@ -5,6 +5,7 @@
 
 const OpenAI = require('openai');
 const db = require('../db');
+const { formatDateLocal } = require('../utils/date');
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -748,7 +749,7 @@ async function generateDailyGreeting({ userId, userName, roleName }) {
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const dayName = days[now.getDay()];
         const hour = now.getHours();
-        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        const dateStr = formatDateLocal(now); // YYYY-MM-DD
 
         // Determine time of day
         let timeContext = 'pagi';

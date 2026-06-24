@@ -7,6 +7,7 @@ const db = require('../utils/database');
 const cache = require('../utils/cache');
 const logger = require('../utils/logger');
 const { AppError } = require('../middleware/errorHandler');
+const { formatDateLocal } = require('../utils/date');
 
 class AppointmentService {
     /**
@@ -66,7 +67,7 @@ class AppointmentService {
         const cacheKey = 'appointments:today';
         
         return cache.getOrSet(cacheKey, async () => {
-            const today = new Date().toISOString().split('T')[0];
+            const today = formatDateLocal(new Date());
             
             const appointments = await db.query(
                 'SELECT * FROM appointments WHERE DATE(appointment_date) = ? ORDER BY appointment_date ASC',

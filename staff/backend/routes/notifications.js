@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const NodeCache = require('node-cache');
@@ -506,8 +507,8 @@ router.get('/reminder-status', verifyToken, async (req, res) => {
     try {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
-        const todayStr = new Date().toISOString().split('T')[0];
+        const tomorrowStr = formatDateLocal(tomorrow);
+        const todayStr = formatDateLocal(new Date());
 
         // Get count of pending H-1 reminders
         const [h1Pending] = await db.query(`

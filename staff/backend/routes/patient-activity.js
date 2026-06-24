@@ -9,6 +9,7 @@
  */
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
@@ -30,8 +31,8 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
         } = req.query;
 
         // Default date range: last 30 days
-        const fromDate = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const toDate = to || new Date().toISOString().split('T')[0];
+        const fromDate = from || formatDateLocal(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+        const toDate = to || formatDateLocal(new Date());
 
         // Build queries for each activity type
         // Use range scan (>= / <=) instead of DATE() to allow index usage
@@ -494,7 +495,7 @@ router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
 router.get('/stats', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 30, 90);
-        const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const since = formatDateLocal(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
 
         // 1. Top pages (most viewed) — uses idx_event_type + idx_created_at
         const [topPages] = await db.query(

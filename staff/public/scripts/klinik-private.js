@@ -47,7 +47,7 @@ function ensureElements() {
 }
 
 function getToken() {
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
     if (!token) {
         window.location.href = 'login.html';
     }

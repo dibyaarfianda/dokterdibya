@@ -8,6 +8,7 @@
 const db = require('../db');
 const logger = require('../utils/logger');
 const notificationService = require('../utils/notification');
+const { formatDateLocal } = require('../utils/date');
 
 // Session times for each session
 const SESSION_TIMES = {
@@ -79,7 +80,7 @@ ${clinicName}`;
 async function sendH1Reminders() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = formatDateLocal(tomorrow);
 
     logger.info(`[Reminder] Checking H-1 reminders for ${tomorrowStr}`);
 
@@ -138,7 +139,7 @@ async function sendH1Reminders() {
  */
 async function send2HourReminders() {
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = formatDateLocal(now);
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 

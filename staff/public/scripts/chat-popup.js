@@ -365,13 +365,9 @@
 
   async function getChatToken() {
     const fallbackToken = async () => {
-      return localStorage.getItem('vps_auth_token') ||
-             sessionStorage.getItem('vps_auth_token') ||
-             localStorage.getItem('token') ||
-             sessionStorage.getItem('token') ||
-             localStorage.getItem('idToken') ||
-             sessionStorage.getItem('idToken') ||
-             null;
+      return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+        ? window.getAuthToken()
+        : null;
     };
 
     try {
@@ -406,13 +402,9 @@
 
   function getStoredChatToken() {
     try {
-      return localStorage.getItem('vps_auth_token') ||
-             sessionStorage.getItem('vps_auth_token') ||
-             localStorage.getItem('token') ||
-             sessionStorage.getItem('token') ||
-             localStorage.getItem('idToken') ||
-             sessionStorage.getItem('idToken') ||
-             null;
+      return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+        ? window.getAuthToken()
+        : null;
     } catch (error) {
       console.warn('[ChatPopup] Failed to read stored auth token:', error?.message || error);
       return null;

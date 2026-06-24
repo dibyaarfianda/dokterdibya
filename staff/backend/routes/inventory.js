@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
@@ -448,8 +449,8 @@ router.post('/deduct', verifyToken, requireMenuAccess('obat_alkes'), async (req,
  */
 router.get('/profit', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
-        const startDate = req.query.start_date || new Date(new Date().setDate(1)).toISOString().split('T')[0];
-        const endDate = req.query.end_date || new Date().toISOString().split('T')[0];
+        const startDate = req.query.start_date || formatDateLocal(new Date(new Date().setDate(1)));
+        const endDate = req.query.end_date || formatDateLocal(new Date());
 
         const result = await InventoryService.calculateProfit(startDate, endDate + ' 23:59:59');
 
@@ -473,8 +474,8 @@ router.get('/profit', verifyToken, requireMenuAccess('obat_alkes'), async (req, 
  */
 router.get('/summary', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
-        const startDate = req.query.start_date || new Date(new Date().setDate(1)).toISOString().split('T')[0];
-        const endDate = req.query.end_date || new Date().toISOString().split('T')[0];
+        const startDate = req.query.start_date || formatDateLocal(new Date(new Date().setDate(1)));
+        const endDate = req.query.end_date || formatDateLocal(new Date());
 
         const summary = await InventoryService.getSummary(startDate, endDate + ' 23:59:59');
 

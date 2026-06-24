@@ -1,4 +1,5 @@
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const { createSundayClinicRecord } = require('../services/sundayClinicService');
@@ -365,7 +366,7 @@ router.get('/sundays', verifyToken, async (req, res) => {
         const configuredDays = await getConfiguredPracticeDays();
         const practiceDates = getNextPracticeDates(configuredDays, 8);
         const formattedSundays = practiceDates.map(date => ({
-            date: date.toISOString().split('T')[0],
+            date: formatDateLocal(date),
             formatted: date.toLocaleDateString('id-ID', {
                 weekday: 'long',
                 year: 'numeric',
@@ -644,7 +645,7 @@ router.get('/patient', verifyToken, async (req, res) => {
                 // Add 7 hours to get correct GMT+7 date, then extract date part
                 const aptDate = new Date(apt.appointment_date);
                 const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
-                const dateStr = new Date(gmt7Offset).toISOString().split('T')[0];
+                const dateStr = formatDateLocal(new Date(gmt7Offset));
                 const start = new Date(`${dateStr}T${slotTime}:00+07:00`); // Create date in GMT+7
                 if (!isNaN(start.getTime())) {
                     startDateTime = start.toISOString();
@@ -1368,7 +1369,7 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
             if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
                 const aptDate = new Date(apt.appointment_date);
                 const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
-                const dateStr = new Date(gmt7Offset).toISOString().split('T')[0];
+                const dateStr = formatDateLocal(new Date(gmt7Offset));
                 const start = new Date(`${dateStr}T${slotTime}:00+07:00`);
                 if (!isNaN(start.getTime())) {
                     isPast = start < new Date();

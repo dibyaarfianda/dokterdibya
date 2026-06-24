@@ -6,6 +6,7 @@
 const db = require('../utils/database');
 const cache = require('../utils/cache');
 const logger = require('../utils/logger');
+const { formatDateLocal } = require('../utils/date');
 
 class AnalyticsService {
     /**
@@ -248,7 +249,7 @@ class AnalyticsService {
         const cacheKey = 'analytics:dashboard';
         
         return cache.getOrSet(cacheKey, async () => {
-            const today = new Date().toISOString().split('T')[0];
+            const today = formatDateLocal(new Date());
             const thisMonth = new Date().toISOString().slice(0, 7);
             
             // Today's stats

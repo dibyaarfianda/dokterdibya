@@ -9,11 +9,11 @@ Refer to the `staff/README.md` for legacy backend instructions and `public/packa
 
 ## Archive directories
 
-Diagnostic or deprecated assets now live in dedicated `unused/` folders so the active build stays clean:
+Diagnostic or deprecated assets must stay outside served web roots so the active build stays clean:
 
-- `public/unused/` – patient-facing HTML experiments (e.g., test intake forms).
-- `staff/public/unused/` – AdminLTE debug pages and prototypes.
+- `archive/static-backups/public/unused/` – patient-facing HTML experiments (e.g., test intake forms).
+- `archive/static-backups/staff-public/unused/` – AdminLTE debug pages and prototypes.
 - `staff/unused/` – staff shell scripts and documentation that only applied to past auth fixes.
 - `staff/backend/unused/` – Jest suites, sample data, and one-off backend scripts; re-enable them only if you plan to run the legacy tests locally.
 
-Keep new scratch files inside the appropriate `unused/` directory and mention them in `staff/README.md` if they affect contributors.
+Keep new scratch files inside the matching `archive/static-backups/` directory and mention them in `staff/README.md` if they affect contributors.

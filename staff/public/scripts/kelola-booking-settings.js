@@ -12,7 +12,7 @@
 
     // Get auth token
     function getToken() {
-        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
     }
 
     // Initialize module

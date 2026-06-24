@@ -2,6 +2,7 @@
 // Add this to your existing server/index.js or create new routes file
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
@@ -339,7 +340,7 @@ router.get('/api/tindakan/download/price-list', verifyToken, async (req, res) =>
         const pdfBuffer = await pdfGenerator.generateTindakanPriceList(rows);
 
         // Send PDF
-        const filename = `Daftar_Harga_Tindakan_${new Date().toISOString().split('T')[0]}.pdf`;
+        const filename = `Daftar_Harga_Tindakan_${formatDateLocal(new Date())}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-Length', pdfBuffer.length);

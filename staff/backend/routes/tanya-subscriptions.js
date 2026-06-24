@@ -3,6 +3,7 @@
  */
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const { verifyPatientToken } = require('../middleware/auth');
@@ -27,7 +28,7 @@ function calculateNextBillingDate(billingDay) {
     const today = new Date();
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, billingDay);
     if (nextMonth.getDate() !== billingDay) nextMonth.setDate(0);
-    return nextMonth.toISOString().split('T')[0];
+    return formatDateLocal(nextMonth);
 }
 
 router.get('/tiers', verifyPatientToken, async (req, res) => {

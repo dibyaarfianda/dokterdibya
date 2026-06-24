@@ -18,7 +18,7 @@ function escapeHtml(value) {
 
 function initKelolaAppointment() {
     // Check authentication
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
     if (!token) {
         window.location.href = 'login.html';
         return;
@@ -127,7 +127,7 @@ function setupRealtimeBookingUpdates() {
 
 async function loadAppointments() {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const date = $('#filter-date').val();
         const session = $('#filter-session').val();
         const status = $('#filter-status').val();
@@ -313,7 +313,7 @@ function showStatusModal(appointmentId, currentStatus) {
 
 async function updateStatus() {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const appointmentId = $('#status-appointment-id').val();
         const status = $('#status-select').val();
         const notes = $('#status-notes').val();
@@ -379,7 +379,7 @@ async function archiveAppointment(appointmentId) {
     }
 
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
 
         // Move to archive via API
         const response = await fetch(`/api/appointment-archive/archive-single/${appointmentId}`, {
@@ -423,7 +423,7 @@ async function triggerConfirmationPopup(appointmentId) {
     }
 
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const response = await fetch(`${API_BASE}/${appointmentId}/trigger-confirmation-popup`, {
             method: 'POST',
             headers: {

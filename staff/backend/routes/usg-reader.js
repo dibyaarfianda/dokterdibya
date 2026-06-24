@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const multer = require('multer');
 const { verifyToken } = require('../middleware/auth');
@@ -373,7 +374,7 @@ function mapToFormFields(parsed, userTrimester = 'second', userType = 'obstetri'
     const formData = {
         type: 'obstetri',
         trimester: trimester,
-        [`${prefix}_date`]: new Date().toISOString().split('T')[0]
+        [`${prefix}_date`]: formatDateLocal(new Date())
     };
 
     // Map measurements

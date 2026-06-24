@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
@@ -313,7 +314,7 @@ router.post('/update', verifyToken, async (req, res) => {
             release_notes: release_notes || '',
             force_update: force_update || false
         };
-        versionConfig.updated_at = new Date().toISOString().split('T')[0];
+        versionConfig.updated_at = formatDateLocal(new Date());
 
         // Write updated config
         fs.writeFileSync(VERSION_CONFIG_PATH, JSON.stringify(versionConfig, null, 2));

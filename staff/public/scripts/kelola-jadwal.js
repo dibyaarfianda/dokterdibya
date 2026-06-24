@@ -20,7 +20,7 @@ let disabledDates = [];
 
 function initKelolaJadwal() {
     // Check authentication
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
     if (!token) {
         window.location.href = 'login.html';
         return;
@@ -73,7 +73,7 @@ function initKelolaJadwal() {
 
 async function loadSchedules() {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         
         const response = await fetch(`${API_BASE}/all`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -156,7 +156,7 @@ function editSchedule(id) {
 
 async function saveSchedule() {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const scheduleId = $('#schedule-id').val();
         const location = $('#schedule-location').val();
         const day_of_week = $('#schedule-day').val();
@@ -208,7 +208,7 @@ async function deleteSchedule(id) {
     if (!confirm('Yakin ingin menghapus jadwal ini?')) return;
 
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         
         const response = await fetch(`${API_BASE}/${id}`, {
             method: 'DELETE',
@@ -253,7 +253,7 @@ function logout() {
 
 async function loadDisabledDates() {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
 
         const response = await fetch(`${API_BASE}/disabled-dates`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -323,7 +323,7 @@ function showDisabledDateModal() {
 
 async function saveDisabledDate() {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const disabled_date = $('#disabled-date').val();
         const location = $('#disabled-location').val();
         const reason = $('#disabled-reason').val();
@@ -366,7 +366,7 @@ async function deleteDisabledDate(id) {
     if (!confirm('Yakin ingin mengaktifkan kembali tanggal ini?')) return;
 
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
 
         const response = await fetch(`${API_BASE}/disabled-dates/${id}`, {
             method: 'DELETE',

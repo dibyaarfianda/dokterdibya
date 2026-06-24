@@ -28,7 +28,7 @@ const DOM = {
  * Get auth token
  */
 function getToken() {
-    return localStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+    return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
 }
 
 /**

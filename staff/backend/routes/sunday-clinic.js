@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
@@ -4626,7 +4627,7 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
                 visitDateTime = new Date(); // Fallback to now if invalid
             }
         }
-        const visitDateStr = visitDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
+        const visitDateStr = formatDateLocal(visitDateTime); // YYYY-MM-DD
 
         // Check if patient exists
         const [patients] = await db.query(

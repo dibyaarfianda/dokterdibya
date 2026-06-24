@@ -1,4 +1,5 @@
 const express = require('express');
+const { formatDateCompact } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const { verifyToken, verifyPatientToken, requireMenuAccess } = require('../middleware/auth');
@@ -7,7 +8,7 @@ const { verifyToken, verifyPatientToken, requireMenuAccess } = require('../middl
 // Uses SELECT FOR UPDATE inside a transaction to prevent duplicate numbers under concurrent requests
 async function generateBillingNumber(conn) {
   const today = new Date();
-  const dateStr = today.toISOString().split('T')[0].replace(/-/g, ''); // YYYYMMDD
+  const dateStr = formatDateCompact(today); // YYYYMMDD
 
   // Lock the row for this date so concurrent calls wait rather than reading the same value
   const [rows] = await conn.query(

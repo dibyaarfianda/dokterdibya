@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 async function loadDashboardStats() {
     try {
-        const token = localStorage.getItem('token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const response = await fetch(`${API_BASE_URL}/analytics/dashboard`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -117,7 +117,7 @@ async function loadAnalytics() {
     }
     
     try {
-        const token = localStorage.getItem('token');
+        const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         
         // Load all analytics in parallel
         const [revenue, visits, demographics, medications, doctors] = await Promise.all([

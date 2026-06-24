@@ -9,7 +9,7 @@
 
     function getToken() {
         if (typeof window.getAuthToken === 'function') return window.getAuthToken();
-        return localStorage.getItem('vps_auth_token') || '';
+        return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || '';
     }
 
     function escapeHtml(str) {

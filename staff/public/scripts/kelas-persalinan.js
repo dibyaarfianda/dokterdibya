@@ -4,15 +4,9 @@ let isInitialized = false;
 let editingSessionId = null;
 
 function getToken() {
-    if (typeof getAuthToken === 'function') {
-        return getAuthToken();
-    }
-
-    return localStorage.getItem('vps_auth_token') ||
-        sessionStorage.getItem('vps_auth_token') ||
-        localStorage.getItem('token') ||
-        localStorage.getItem('auth_token') ||
-        '';
+    return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+        ? window.getAuthToken()
+        : '';
 }
 
 function escapeHtml(value) {

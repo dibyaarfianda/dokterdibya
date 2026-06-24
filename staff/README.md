@@ -11,14 +11,14 @@ This folder contains the internal (staff) portal: a Node.js/Express backend unde
 
 ## Archive locations
 
-All scratch files, experiments, and retired tests are parked under `unused/` folders to keep deployments predictable:
+All scratch files, experiments, and retired tests are parked outside served web roots to keep deployments predictable:
 
-- `public/unused/` – old AdminLTE pages (debug dashboards, manual API testers).
+- `../archive/static-backups/staff-public/unused/` – old AdminLTE pages (debug dashboards, manual API testers).
 - `unused/` – staff shell helpers (`test-auth-flow.sh`, auth bug writeups, etc.).
 - `backend/unused/` – Jest suites, fixtures (`test_intake_data.json`), legacy integration tests, and backup scripts. If you need to run those tests locally, move the folder back temporarily, run them, then return it so the production tree stays lean.
 - `backend/unused/scripts/` – archived quick scripts such as `test-quick-id-flow.js` or backup readmes.
 
-Whenever you add a new diagnostic tool, drop it into the matching `unused/` directory and annotate it here so teammates know where to look.
+Whenever you add a new public diagnostic tool, drop it into `../archive/static-backups/` instead of `public/` and annotate it here so teammates know where to look.
 
 ## Shared AdminLTE components
 

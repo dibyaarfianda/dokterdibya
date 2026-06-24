@@ -36,10 +36,10 @@ function getAuthToken() {
     if (typeof window.getAuthToken === 'function') {
         return window.getAuthToken();
     }
-    return localStorage.getItem('vps_auth_token')
-        || sessionStorage.getItem('vps_auth_token')
-        || localStorage.getItem('token')
-        || sessionStorage.getItem('token');
+    return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '')
+        || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '')
+        || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '')
+        || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
 }
 
 function redirectToLogin() {

@@ -54,24 +54,17 @@
         // Ensure auth functions are available globally
         if (!window.getToken) {
             window.getToken = function() {
-                const token = localStorage.getItem('token') || 
-                             sessionStorage.getItem('token') ||
-                             localStorage.getItem('vps_auth_token') ||
-                             sessionStorage.getItem('vps_auth_token');
-                return token;
+                return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+                    ? window.getAuthToken()
+                    : '';
             };
         }
 
         if (!window.getIdToken) {
             window.getIdToken = function() {
-                // Try multiple token sources for compatibility
-                const idToken = localStorage.getItem('idToken') || 
-                               sessionStorage.getItem('idToken') ||
-                               localStorage.getItem('vps_auth_token') ||
-                               sessionStorage.getItem('vps_auth_token') ||
-                               localStorage.getItem('token') ||
-                               sessionStorage.getItem('token');
-                return idToken;
+                return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
+                    ? window.getAuthToken()
+                    : '';
             };
         }
 
@@ -167,11 +160,7 @@
                            window.currentStaffIdentity.id && 
                            window.currentStaffIdentity.name;
         
-        // Check localStorage directly (don't rely on window.getToken being defined yet)
-        const hasToken = localStorage.getItem('vps_auth_token') || 
-                         sessionStorage.getItem('vps_auth_token') ||
-                         localStorage.getItem('token') ||
-                         sessionStorage.getItem('token');
+        const hasToken = typeof window.getToken === 'function' ? window.getToken() : '';
         
         if (hasIdentity || hasToken) {
             console.log('[GlobalChat] Auth context ready');
