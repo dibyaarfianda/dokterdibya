@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v272';
+        window.STAFF_CACHE_VERSION = 'v273';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1967,10 +1967,24 @@
             window.location.href = '/staff/public/login.html';
         };
 
-        // Define getAuthToken globally so it's available everywhere
-        // This prevents "getAuthToken is not defined" errors in inline scripts
+        // Define getAuthToken globally so inline scripts and modules read the same stores.
         window.getAuthToken = function() {
-            return localStorage.getItem('vps_auth_token');
+            function readToken(readFn) {
+                try {
+                    return readFn();
+                } catch (error) {
+                    console.warn('[AUTH] Token storage unreadable:', error);
+                    return null;
+                }
+            }
+
+            return readToken(function() { return localStorage.getItem('vps_auth_token'); })
+                || readToken(function() { return sessionStorage.getItem('vps_auth_token'); })
+                || readToken(function() { return localStorage.getItem('token'); })
+                || readToken(function() { return sessionStorage.getItem('token'); })
+                || readToken(function() { return localStorage.getItem('auth_token'); })
+                || readToken(function() { return sessionStorage.getItem('auth_token'); })
+                || null;
         };
 
         // Also expose TOKEN_KEY for consistency
@@ -8577,7 +8591,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     (function() {
         function _queueToken() {
             return (window.getAuthToken && window.getAuthToken())
-                || localStorage.getItem('vps_auth_token')
+                || (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))
                 || sessionStorage.getItem('vps_auth_token')
                 || '';
         }
@@ -8698,8 +8712,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module">
-<script type="module" src="scripts/shell/bootstrap.js?v=v272"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v273"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -8717,7 +8730,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
     // Helper function to get valid token
     window.getValidToken = function() {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         if (!token) {
             console.error('[ERROR] No authentication token found');
             alert('Sesi Anda telah habis. Silakan login kembali.');
@@ -8979,7 +8992,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         parseBtn.disabled = true;
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/medical-import/parse', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -9074,7 +9087,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         if (!select) return;
 
         try {
-            const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+            const token = localStorage.getItem('token') || (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/patients?limit=500', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -9160,7 +9173,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
             }
 
             // Check for existing DRD - DO NOT create new one (only PERIKSA can create)
-            const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+            const token = localStorage.getItem('token') || (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${visitLocation}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -9256,7 +9269,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         if (progressText) progressText.textContent = 'Memproses data...';
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/medical-import/bulk', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -9392,7 +9405,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     async function loadNewPatients(page = 1) {
         try {
             newPatientsCurrentPage = page;
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch(`/api/patients?sort=recent&limit=10&page=${page}&_=${Date.now()}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -9545,7 +9558,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         overdueTbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Memuat data...</td></tr>';
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const headers = { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' };
 
             const [nearRes, overdueRes] = await Promise.all([
@@ -9700,7 +9713,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
     async function loadWebPatients() {
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             console.log('Loading all patients with token:', token ? 'Token exists' : 'No token found');
             console.log('Token length:', token ? token.length : 0);
 
@@ -9832,7 +9845,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
     async function performAdvancedSearch() {
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const tbody = document.getElementById('manage-patients-tbody');
             const resultCount = document.getElementById('adv-search-result-count');
 
@@ -10011,7 +10024,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const response = await fetch(`/api/patients/${patientId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))}`
                 }
             });
             
@@ -10098,7 +10111,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const response = await fetch(`/api/patients/${patientId}/mark-delivered`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -10164,7 +10177,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const response = await fetch(`/api/patients/${patientId}/status`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ status: newStatus })
@@ -10215,11 +10228,11 @@ Apakah Anda yakin ingin melanjutkan?`;
         try {
             console.log('=== viewPatientDetail called ===');
             console.log('Patient ID:', patientId);
-            console.log('Auth token exists:', !!localStorage.getItem('vps_auth_token'));
+            console.log('Auth token exists:', !!(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token')));
 
             const response = await fetch(`/api/admin/web-patients/${patientId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))}`
                 }
             });
 
@@ -10479,7 +10492,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             $('#patientMRListModal').modal('show');
 
             // Fetch medical records for this patient
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch(`/api/sunday-clinic/patient-visits/${patientId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -10618,7 +10631,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const response = await fetch('/api/admin/sync-web-patients', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))}`
                 }
             });
             
@@ -10759,7 +10772,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         const tbody = document.getElementById('activity-log-body');
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const startDate = document.getElementById('activity-log-start-date').value;
             const endDate = document.getElementById('activity-log-end-date').value;
             const movementType = document.getElementById('activity-log-type').value;
@@ -10925,7 +10938,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         const tbody = document.getElementById('staff-activity-body');
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const userFilter = document.getElementById('staff-activity-user-filter')?.value || '';
             const actionFilter = document.getElementById('staff-activity-action-filter')?.value || '';
             const startDate = document.getElementById('staff-activity-start-date')?.value || '';
@@ -11017,7 +11030,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     async function loadStaffActivitySummary() {
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/logs/summary?days=7', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -11049,7 +11062,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     async function loadStaffActivityFilters() {
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
 
             // Load unique actions
             const actionsResponse = await fetch('/api/logs/actions', {
@@ -11337,7 +11350,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><p class="mb-0">Memuat data...</p></td></tr>';
 
         try {
-            const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('vps_auth_token');
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const typeFilter = document.getElementById('ga-filter-type')?.value || '';
             const fromDate = document.getElementById('ga-filter-from')?.value || '';
             const toDate = document.getElementById('ga-filter-to')?.value || '';
@@ -11438,7 +11451,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         content.innerHTML = '<div class="text-center py-4 w-100 text-muted"><i class="fas fa-spinner fa-spin fa-lg"></i><p class="mb-0 mt-2">Memuat statistik...</p></div>';
 
         try {
-            const token = typeof getAuthToken === 'function' ? getAuthToken() : localStorage.getItem('vps_auth_token');
+            const token = typeof getAuthToken === 'function' ? getAuthToken() : (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/patient-activity/stats?days=30', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -11628,7 +11641,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     async function loadSuppliers() {
         const tbody = document.getElementById('kelola-supplier-list-body');
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/suppliers?active=true', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -11688,7 +11701,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         if (!confirm('Hapus supplier ini?')) return;
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch(`/api/suppliers/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -11721,7 +11734,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 }
 
                 try {
-                    const token = localStorage.getItem('vps_auth_token');
+                    const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
                     const method = id ? 'PUT' : 'POST';
                     const url = id ? `/api/suppliers/${id}` : '/api/suppliers';
 
@@ -11770,7 +11783,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         // Load suppliers for dropdown and existing batches
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
 
             // Load suppliers
             const suppliersRes = await fetch('/api/suppliers?active=true', {
@@ -11887,7 +11900,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         showPurchaseStockLoading(true);
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/inventory/purchase', {
                 method: 'POST',
                 headers: {
@@ -12212,7 +12225,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             // Use unified patients endpoint
             const response = await fetch(`/api/patients?_=${Date.now()}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'))}`,
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
                 }
@@ -13008,7 +13021,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Show expiring items modal (optional)
     window.showExpiringItems = async function() {
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch('/api/inventory/expiring?days=60', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -13084,7 +13097,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         container.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-3x text-primary"></i><p class="mt-3">Memuat appointment...</p></div>';
 
         try {
-            const token = localStorage.getItem('vps_auth_token');
+            const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
             const response = await fetch(`/api/appointments?hospital_location=${location}&status=scheduled,confirmed`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -13517,7 +13530,7 @@ document.getElementById('btn-save-completion')?.addEventListener('click', async 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...';
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const apiBase = window.location.origin;
 
         // Update photo
@@ -13624,7 +13637,7 @@ async function openGenerateCodeModal() {
 
     // Check for existing public code
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch('/api/registration-codes/public', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -13646,7 +13659,7 @@ async function generatePublicCode() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch('/api/registration-codes/generate-public', {
             method: 'POST',
             headers: {
@@ -13698,7 +13711,7 @@ function updateDashboardCodeDisplay(code, expiresAt) {
 async function loadDashboardCurrentCode() {
     console.log('[REG CODE] loadDashboardCurrentCode called');
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         console.log('[REG CODE] Token exists:', !!token);
         const response = await fetch('/api/registration-codes/public', {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -13731,7 +13744,7 @@ async function sendCodeWhatsApp() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch('/api/registration-codes/send-whatsapp', {
             method: 'POST',
             headers: {
@@ -13768,7 +13781,7 @@ async function sendCodeWhatsApp() {
 
 async function resendCodeWhatsApp(code, phone, patientName) {
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch('/api/registration-codes/send-whatsapp', {
             method: 'POST',
             headers: {
@@ -13796,7 +13809,7 @@ async function deleteCode(codeId) {
     if (!confirm('Hapus kode registrasi ini?')) return;
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch(`/api/registration-codes/${codeId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -14720,7 +14733,7 @@ async function loadStaffAnnouncements() {
     if (!container) return;
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         if (!token) return;
 
         const response = await fetch('/api/staff-announcements', {
@@ -14784,7 +14797,7 @@ function showCreateStaffAnnouncement() {
 
 async function editStaffAnnouncement(id) {
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch(`/api/staff-announcements/${id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -14817,7 +14830,7 @@ async function saveStaffAnnouncement() {
     }
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const url = id ? `/api/staff-announcements/${id}` : '/api/staff-announcements';
         const method = id ? 'PUT' : 'POST';
 
@@ -14854,7 +14867,7 @@ async function deleteStaffAnnouncement(id) {
     if (!result.isConfirmed) return;
 
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = (window.getAuthToken ? window.getAuthToken() : localStorage.getItem('vps_auth_token'));
         const response = await fetch(`/api/staff-announcements/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }

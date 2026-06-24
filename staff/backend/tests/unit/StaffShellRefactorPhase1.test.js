@@ -12,8 +12,17 @@ describe('staff shell refactor phase 1', () => {
 
         expect(html).toMatch(/<script type="module" src="(?:\/staff\/public\/)?scripts\/shell\/bootstrap\.js\?v=[^"' ]+"><\/script>/);
         expect(html).not.toContain("const { auth, getIdToken, initAuth: initAuthLib } = await import('./scripts/vps-auth-v2.js?v=' + v);");
-        expect(bootstrap).toContain("const { auth, getIdToken, initAuth: initAuthLib } = await import('../vps-auth-v2.js?v=' + v);");
+        expect(bootstrap).toContain("import('../vps-auth-v2.js?v=' + v)");
+        expect(bootstrap).toContain("import('./credentials.js?v=' + v)");
+        expect(bootstrap).toContain('const { auth, getIdToken, initAuth: initAuthLib } = authClient;');
+        expect(bootstrap).toContain('const user = await verifyStaffCredentials({ auth });');
         expect(bootstrap).toContain('initializeApp(user);');
+
+        const verifyIndex = bootstrap.indexOf('const user = await verifyStaffCredentials({ auth });');
+        const initializeIndex = bootstrap.indexOf('initializeApp(user);');
+        expect(verifyIndex).toBeGreaterThan(-1);
+        expect(initializeIndex).toBeGreaterThan(-1);
+        expect(verifyIndex).toBeLessThan(initializeIndex);
     });
 
     test('core shell controls use delegated data-shell-action hooks instead of inline onclick', () => {

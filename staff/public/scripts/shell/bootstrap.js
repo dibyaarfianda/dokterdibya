@@ -1,11 +1,21 @@
-(async function bootstrapStaffShell() {
-    // Use stable version string for cache busting (set above from CACHE_VERSION)
+async function bootstrapStaffShell() {
+    // Use stable version string for cache busting (set above from CACHE_VERSION).
     const v = window.__assetVersion;
 
-    // Critical startup modules only - auth + shell + dashboard
-    const { auth, getIdToken, initAuth: initAuthLib } = await import('../vps-auth-v2.js?v=' + v);
+    const [
+        authClient,
+        credentialGuard
+    ] = await Promise.all([
+        import('../vps-auth-v2.js?v=' + v),
+        import('./credentials.js?v=' + v)
+    ]);
+
+    const { auth, getIdToken, initAuth: initAuthLib } = authClient;
+    const { verifyStaffCredentials, renderStaffShellError } = credentialGuard;
+
     window.auth = auth;
     window.getIdToken = getIdToken;
+    window.renderStaffShellError = renderStaffShellError;
 
     // Run auth bootstrap in parallel with module loading to reduce startup wait.
     const authInitPromise = initAuthLib();
@@ -28,11 +38,9 @@
     const { initAuth } = authModule;
     const { initSessionManager, restoreSessionOnLoad } = sessionModule;
 
-    // Ensure auth state is available before route decision.
+    // Ensure auth state is available, then verify the token against the backend.
     await authInitPromise;
-
-    // Now check authentication
-    const user = auth.currentUser;
+    const user = await verifyStaffCredentials({ auth });
 
     function resolveSafeDisplayName(staffUser) {
         const candidate = String(staffUser?.name || '').trim();
@@ -44,27 +52,26 @@
         return fallbackId || 'User';
     }
 
-    if (!user) {
-        window.location.replace('login.html');
-    } else {
-        // IMMEDIATE navbar update
-        const navName = document.getElementById('navbar-user-name');
-        const navRole = document.getElementById('navbar-user-role');
-        const newName = resolveSafeDisplayName(user);
-        const newRole = user.role_display_name || user.role || 'Staff';
-        if (navName) navName.textContent = newName;
-        if (navRole) navRole.textContent = newRole;
+    // IMMEDIATE navbar update
+    const navName = document.getElementById('navbar-user-name');
+    const navRole = document.getElementById('navbar-user-role');
+    const newName = resolveSafeDisplayName(user);
+    const newRole = user.role_display_name || user.role || 'Staff';
+    if (navName) navName.textContent = newName;
+    if (navRole) navRole.textContent = newRole;
 
-        // Set RUM context
-        window.__userRole = user.role || 'unknown';
-        window.__currentPage = 'dashboard';
+    // Set RUM context
+    window.__userRole = user.role || 'unknown';
+    window.__currentPage = 'dashboard';
 
-        // User is logged in, initialize app
-        initializeApp(user);
-    }
-    
+    // User is verified, initialize app.
+    initializeApp(user);
+
     function initializeApp(user) {
         const v = window.__assetVersion;
+        const runIdle = window.requestIdleCallback || function(callback, options) {
+            return setTimeout(callback, options?.timeout || 1);
+        };
 
         // Initialize core UI (pages, clock, navigation)
         try {
@@ -95,7 +102,7 @@
         }
 
         // Non-critical boot tasks run during idle so first paint can happen sooner.
-        requestIdleCallback(() => {
+        runIdle(() => {
             try {
                 initSessionManager();
             } catch (error) {
@@ -117,9 +124,8 @@
             }
         }, { timeout: 1500 });
 
-        // Lazy-load non-critical modules after initial render
-        // These modules are loaded in the background and init on first page access
-        requestIdleCallback(() => {
+        // Lazy-load non-critical modules after initial render.
+        runIdle(() => {
             // Patients module - needed for search/kelola pasien
             import('../patients.js?v=' + v).then(m => {
                 if (m.initPatients) m.initPatients();
@@ -140,10 +146,10 @@
             }
         }, { timeout: 3000 });
 
-        // Real-time sync initialized in main.js via onAuthStateChanged
+        // Real-time sync initialized in main.js via onAuthStateChanged.
 
-        // Restore session if exists
-        requestIdleCallback(() => {
+        // Restore session if exists.
+        runIdle(() => {
             try {
                 restoreSessionOnLoad().then(session => {
                     if (session && session.patient) {
@@ -159,4 +165,38 @@
 
         console.log('[OK] AdminLTE app initialized successfully');
     }
-})();
+}
+
+function renderBootstrapFailure(error) {
+    console.error('[STAFF SHELL] Bootstrap failed:', error);
+
+    if (error?.shellErrorRendered) {
+        return;
+    }
+
+    const renderer = window.renderStaffShellError;
+    if (typeof renderer === 'function') {
+        renderer({
+            title: 'Staff panel gagal dimuat',
+            message: 'Aplikasi staff berhenti saat proses awal. Silakan perbarui aplikasi atau login ulang.',
+            details: error?.message || ''
+        });
+        return;
+    }
+
+    const host = document.getElementById('main-app') || document.body;
+    if (!host) return;
+
+    host.innerHTML = `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: #f4f6f9;">
+            <div style="max-width: 520px; width: 100%; background: #fff; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); padding: 28px; text-align: center;">
+                <h3 style="margin: 0 0 12px; color: #343a40;">Staff panel gagal dimuat</h3>
+                <p style="margin: 0 0 18px; color: #495057;">Aplikasi staff berhenti saat proses awal. Silakan perbarui aplikasi atau login ulang.</p>
+                <button type="button" onclick="window.location.reload()" style="padding: 10px 16px; border: 0; border-radius: 8px; background: #0d6efd; color: #fff;">Perbarui aplikasi</button>
+                <button type="button" onclick="window.location.replace('/staff/public/login.html')" style="padding: 10px 16px; border: 1px solid #6c757d; border-radius: 8px; background: #fff; color: #343a40; margin-left: 8px;">Login ulang</button>
+            </div>
+        </div>
+    `;
+}
+
+bootstrapStaffShell().catch(renderBootstrapFailure);
