@@ -93,6 +93,11 @@ describe('staff shell refactor phase 1', () => {
         expect(html).toContain('window.showGuestActivityPage = function()');
         expect(html).toContain('window.loadPatientActivity = async function(page = 0)');
         expect(html).toContain('window.loadGuestActivity = async function(page = 0)');
+        expect(html).toContain('window.formatDateLocal = window.formatDateLocal || function(date)');
+        expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
+            .toBeLessThan(html.indexOf('window.showPatientActivityPage = function()'));
+        expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
+            .toBeLessThan(html.indexOf('window.showGuestActivityPage = function()'));
         expect(kantorSaya).toContain("actionName: 'showPatientActivityPage'");
         expect(kantorSaya).toContain("actionName: 'showGuestActivityPage'");
     });

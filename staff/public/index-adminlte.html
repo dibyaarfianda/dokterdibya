@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v282';
+        window.STAFF_CACHE_VERSION = 'v283';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1649,8 +1649,8 @@
 
         })();
     </script>
-    <script defer src="scripts/shell/appointment-debug.js?v=v282"></script>
-    <script defer src="scripts/shell/patient-search-detail.js?v=v282"></script>
+    <script defer src="scripts/shell/appointment-debug.js?v=v283"></script>
+    <script defer src="scripts/shell/patient-search-detail.js?v=v283"></script>
     
     <!-- Cache Clear Script -->
     <script>
@@ -1710,6 +1710,13 @@
             if (window.auth) window.auth.currentUser = null;
             console.log('[LOGOUT] Redirecting to login...');
             window.location.href = '/staff/public/login.html';
+        };
+
+        // Date-only helper for classic inline handlers. Module-scoped imports are not visible to onclick code.
+        window.formatDateLocal = window.formatDateLocal || function(date) {
+            const d = new Date(date);
+            if (Number.isNaN(d.getTime())) return '';
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         };
 
         // Define getAuthToken globally so inline scripts and modules read the same stores.
@@ -8085,7 +8092,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v282"></script>
+    <script defer src="scripts/shell/actions.js?v=v283"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8225,7 +8232,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Sunday Clinic payment/planning dependencies -->
 <script defer src="https://js.xendit.co/v1/xendit.min.js"></script>
-<script type="module" src="scripts/shell/qrcode-loader.js?v=v282"></script>
+<script type="module" src="scripts/shell/qrcode-loader.js?v=v283"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260621modalreset1"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260619staff1"></script>
 
@@ -8454,7 +8461,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v282"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v283"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
