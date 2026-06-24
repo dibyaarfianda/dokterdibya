@@ -110,6 +110,8 @@ describe('staff shell refactor phase 1', () => {
         const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
 
         expect(main).toContain("const pageParam = params.get('page');");
+        expect(main).toContain("if (mobileAction !== 'sunday-clinic' && typeof window.updateStaffPageRoute === 'function') {");
+        expect(main).toContain('window.updateStaffPageRoute(null, navId || null);');
         expect(main).toContain("'patient-activity': () => window.showPatientActivityPage && window.showPatientActivityPage()");
         expect(main).toContain("'guest-activity': () => window.showGuestActivityPage && window.showGuestActivityPage()");
         expect(main).toContain("'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage()");

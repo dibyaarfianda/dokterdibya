@@ -8,7 +8,7 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v284';
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v285';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -315,6 +315,10 @@ window.addEventListener('message', function handleCommunityChatAuthRequest(event
     sendCommunityChatStaffToken(event.source);
 });
 function setTitleAndActive(title, navId, mobileAction) {
+    if (mobileAction !== 'sunday-clinic' && typeof window.updateStaffPageRoute === 'function') {
+        window.updateStaffPageRoute(null, navId || null);
+    }
+
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = title;
     if (navId) {
