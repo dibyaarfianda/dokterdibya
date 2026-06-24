@@ -10,6 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
+const { verifyToken } = require('../middleware/auth');
 
 // Helper: resolve key to a safe path inside uploads/lab-results; returns null on traversal attempt
 function safeLocalPath(key) {
@@ -70,7 +71,7 @@ const upload = multer({
  * POST /api/lab-results/upload
  * Upload lab result files to R2 or local storage
  */
-router.post('/upload', upload.array('files', 10), async (req, res) => {
+router.post('/upload', verifyToken, upload.array('files', 10), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded' });
@@ -156,7 +157,7 @@ router.post('/upload', upload.array('files', 10), async (req, res) => {
  * POST /api/lab-results/interpret
  * Interpret lab results using OpenAI GPT-4o Vision
  */
-router.post('/interpret', async (req, res) => {
+router.post('/interpret', verifyToken, async (req, res) => {
     try {
         const { files } = req.body;
 
@@ -303,7 +304,7 @@ Gunakan bahasa Indonesia yang profesional dan mudah dipahami.`
  * DELETE /api/lab-results/:key
  * Delete a lab result file
  */
-router.delete('/:key(*)', async (req, res) => {
+router.delete('/:key(*)', verifyToken, async (req, res) => {
     try {
         const { key } = req.params;
 

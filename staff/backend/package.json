@@ -10,7 +10,7 @@
     "robot:gambiran": "node scripts/melinda-queue-robot.js --location rsud_gambiran",
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
-    "test:unit": "jest --testPathPattern=unit",
+    "test:unit": "jest --testPathPatterns=unit",
     "test:integration": "jest --testPathPatterns=integration"
   },
   "dependencies": {

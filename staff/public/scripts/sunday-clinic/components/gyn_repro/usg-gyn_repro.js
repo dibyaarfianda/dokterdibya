@@ -58,7 +58,7 @@ async function handlePhotoUpload(event) {
         const formData = new FormData();
         files.forEach(file => formData.append('files', file));
 
-        const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+        const token = window.getToken?.() || '';
         const response = await fetch('/api/usg-photos/upload', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
@@ -153,7 +153,7 @@ async function savePhotosToDatabase(photos) {
 
         if (!patientId || !mrId) return;
 
-        const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+        const token = window.getToken?.() || '';
         if (!token) return;
 
         const context = getMedicalRecordContext(state, 'usg');

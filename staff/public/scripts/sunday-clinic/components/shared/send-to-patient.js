@@ -284,7 +284,7 @@ const SendToPatient = {
         this.showStatus('info', 'Sedang mengirim dokumen ke portal pasien...');
 
         try {
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             const response = await fetch('/api/patient-documents/publish-from-mr', {
                 method: 'POST',
                 headers: {

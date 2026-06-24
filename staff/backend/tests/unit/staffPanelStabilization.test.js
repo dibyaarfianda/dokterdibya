@@ -197,6 +197,53 @@ describe('staff panel stabilization sources', () => {
         expect(server).not.toContain('res.sendFile(sundayClinicPagePath);');
     });
 
+    test('observability routes are mounted before global not-found handler', () => {
+        const server = readNormalizedFile('staff', 'backend', 'server.js');
+
+        const notFoundIndex = server.indexOf('app.use(notFoundHandler);');
+        const pdfQueueIndex = server.indexOf("app.use('/api/pdf/queue', pdfQueueRoutes);");
+        const sloIndex = server.indexOf("app.use('/api/slo', sloRoutes);");
+        const metricsResetIndex = server.indexOf("app.post('/api/metrics/reset', verifyToken, requireSuperadmin");
+
+        expect(notFoundIndex).toBeGreaterThan(-1);
+        expect(pdfQueueIndex).toBeGreaterThan(-1);
+        expect(sloIndex).toBeGreaterThan(-1);
+        expect(metricsResetIndex).toBeGreaterThan(-1);
+        expect(pdfQueueIndex).toBeLessThan(notFoundIndex);
+        expect(sloIndex).toBeLessThan(notFoundIndex);
+        expect(metricsResetIndex).toBeLessThan(notFoundIndex);
+    });
+
+    test('medical file upload routes require authentication for mutating actions', () => {
+        const labResults = readNormalizedFile('staff', 'backend', 'routes', 'lab-results.js');
+        const usgPhotos = readNormalizedFile('staff', 'backend', 'routes', 'usg-photos.js');
+
+        expect(labResults).toContain("const { verifyToken } = require('../middleware/auth');");
+        expect(labResults).toContain("router.post('/upload', verifyToken, upload.array('files', 10)");
+        expect(labResults).toContain("router.post('/interpret', verifyToken");
+        expect(labResults).toContain("router.delete('/:key(*)', verifyToken");
+
+        expect(usgPhotos).toContain("const { verifyToken } = require('../middleware/auth');");
+        expect(usgPhotos).toContain("router.post('/upload', verifyToken, upload.array('files', 20)");
+        expect(usgPhotos).toContain("router.delete('/:key(*)', verifyToken");
+    });
+
+    test('public medical exam bundle does not expose provider API keys', () => {
+        const medicalExam = readNormalizedFile('staff', 'public', 'scripts', 'medical-exam.js');
+
+        expect(medicalExam).not.toMatch(/sk-proj-/);
+        expect(medicalExam).not.toMatch(/AIzaSy/);
+        expect(medicalExam).toContain('Analisis AI langsung dari browser dinonaktifkan');
+    });
+
+    test('gallery memory page uses the current patient profile contract', () => {
+        const gallery = readNormalizedFile('public', 'gallery-kenangan.html');
+
+        expect(gallery).toContain('/api/patients/profile?_t=');
+        expect(gallery).toContain('getPatientProfileFromResponse');
+        expect(gallery).not.toContain('/api/patients-auth/me');
+    });
+
     test('Klinik Privat embedded mobile polish stays scoped to Staff PWA mode', () => {
         const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');

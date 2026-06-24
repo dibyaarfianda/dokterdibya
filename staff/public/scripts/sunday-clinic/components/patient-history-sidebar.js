@@ -430,14 +430,24 @@ class PatientHistorySidebar {
             const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 30) + (apt.chief_complaint.length > 30 ? '...' : '') : '-';
             const selesaiClass = apt.record_status === 'finalized' ? 'patient-selesai' : '';
             const medifySyncBadge = this.renderMedifySyncBadge(apt.medify_sync);
+            const patientId = apt.patient_id || '';
+            const mrId = apt.mr_id || '';
+            const appointmentId = apt.id || '';
+            const slotLabel = apt.slot_time || apt.session_label || '-';
+            const safePatientId = this.escapeHtml(patientId);
+            const safeMrId = this.escapeHtml(mrId);
+            const safeAppointmentId = this.escapeHtml(appointmentId);
+            const jsPatientId = this.escapeJsString(patientId);
+            const jsMrId = this.escapeJsString(mrId);
+            const jsAppointmentId = this.escapeJsString(appointmentId);
 
             return `
                 <div class="header-queue-item ${isActive ? 'active' : ''}"
-                     data-patient-id="${apt.patient_id}"
-                     data-mr-id="${apt.mr_id || ''}"
+                     data-patient-id="${safePatientId}"
+                     data-mr-id="${safeMrId}"
                      data-patient-name="${this.escapeHtml(apt.patient_name || '')}"
-                     data-appointment-id="${apt.id}"
-                     onclick="window.patientSidebar.switchToPatient('${apt.patient_id}', '${apt.mr_id || ''}', '${apt.id}')">
+                     data-appointment-id="${safeAppointmentId}"
+                     onclick="window.patientSidebar.switchToPatient('${jsPatientId}', '${jsMrId}', '${jsAppointmentId}')">
                     <span class="queue-number">${index + 1}</span>
                     <div class="queue-info">
                         <div class="queue-name ${selesaiClass}">${this.escapeHtml(apt.patient_name)}</div>

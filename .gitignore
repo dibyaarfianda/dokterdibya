@@ -39,3 +39,6 @@ staff/backend/config/*firebase*.json
 # Keystores (security - do not commit)
 *.jks
 *.keystore
+**/google-services.json
+**/key.properties
+client_secret_*.json

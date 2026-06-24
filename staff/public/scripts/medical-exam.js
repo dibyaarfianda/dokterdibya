@@ -990,135 +990,17 @@ function readFileAsBase64(file) {
     });
 }
 
-// List available Gemini models
-async function listAvailableModels(apiKey) {
-    const LIST_URL = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-    try {
-        const response = await fetch(LIST_URL);
-        if (response.ok) {
-            const data = await response.json();
-            console.log('Available models:', data.models?.map(m => m.name));
-            return data.models || [];
-        }
-    } catch (error) {
-        console.error('Failed to list models:', error);
-    }
+// Client-side AI calls are intentionally disabled because public bundles cannot
+// safely hold provider API keys. Use an authenticated backend endpoint instead.
+async function listAvailableModels() {
     return [];
 }
 
-// Analyze lab results with Gemini 2.0 Flash (Fast and Free)
 async function analyzeLabWithGemini(base64Image, mimeType, patient) {
-    // You can use OpenAI API key or Gemini API key
-    const OPENAI_API_KEY = 'REMOVED_OPENAI_API_KEY'; // Get from https://platform.openai.com/api-keys
-    const USE_GEMINI = true; // Set to false to use OpenAI (requires active subscription)
-    const GEMINI_API_KEY = 'REMOVED_GOOGLE_API_KEY';
-    
-    const patientName = patient?.name || 'Pasien';
-    const prompt = `Anda adalah dokter spesialis patologi klinis yang berpengalaman. Analisis hasil laboratorium pada gambar ini untuk pasien bernama ${patientName}.
-
-Berikan laporan dalam format berikut:
-
-HASIL LABORATORIUM:
-[Tuliskan semua parameter yang terlihat dengan nilai dan satuannya]
-
-INTERPRETASI:
-[Analisis setiap parameter - apakah normal, tinggi, atau rendah. Sebutkan nilai normal untuk referensi]
-
-KESIMPULAN:
-[Ringkasan kondisi pasien berdasarkan hasil lab]
-
-REKOMENDASI:
-[Saran tindak lanjut jika diperlukan]
-
-Gunakan bahasa Indonesia yang profesional dan mudah dipahami.`;
-
-    if (!USE_GEMINI) {
-        // Use OpenAI GPT-4 Vision (FASTER - typically 2-5 seconds)
-        if (!OPENAI_API_KEY || OPENAI_API_KEY === 'YOUR_OPENAI_API_KEY_HERE') {
-            throw new Error('API Key OpenAI belum diset. Set USE_GEMINI = false dan update OPENAI_API_KEY');
-        }
-        
-        console.log('Using OpenAI GPT-4 Vision...');
-        
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: 'gpt-4o',
-                messages: [{
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: prompt },
-                        { 
-                            type: 'image_url', 
-                            image_url: {
-                                url: `data:${mimeType};base64,${base64Image}`,
-                                detail: 'high'
-                            }
-                        }
-                    ]
-                }],
-                max_tokens: 2048,
-                temperature: 0.3
-            })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`OpenAI Error: ${error.error?.message || 'Unknown error'}`);
-        }
-        
-        const data = await response.json();
-        console.log('✓ OpenAI analysis complete');
-        return data.choices[0].message.content;
-    } else {
-        // Use Gemini Flash 2.0 (Fastest Gemini model - 3-8 seconds)
-        if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-            throw new Error('API Key Gemini belum diset');
-        }
-        
-        console.log('Using Gemini 2.0 Flash (fastest)...');
-        
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: prompt },
-                        {
-                            inline_data: {
-                                mime_type: mimeType || "image/jpeg",
-                                data: base64Image
-                            }
-                        }
-                    ]
-                }],
-                generationConfig: {
-                    temperature: 0.3,
-                    maxOutputTokens: 2048
-                }
-            })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`Gemini Error: ${error.error?.message || 'Unknown error'}`);
-        }
-        
-        const data = await response.json();
-        const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
-        if (!result) {
-            throw new Error('No result from Gemini');
-        }
-        
-        console.log('✓ Gemini analysis complete');
-        return result;
-    }
+    void base64Image;
+    void mimeType;
+    void patient;
+    throw new Error('Analisis AI langsung dari browser dinonaktifkan. Gunakan endpoint backend yang menyimpan API key di server.');
 }
 
 async function saveLabExam() {

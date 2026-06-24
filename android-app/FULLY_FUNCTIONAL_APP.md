@@ -287,13 +287,13 @@ Socket.IO: ws://72.60.78.188:3000
 ### Test API Manually
 ```bash
 # Test health endpoint
-curl http://72.60.78.188:3000/api/health
+curl https://dokterdibya.com/api/health
 
 # Test announcements
-curl http://72.60.78.188:3000/api/announcements/active
+curl https://dokterdibya.com/api/announcements/active
 
 # Test login (replace with real credentials)
-curl -X POST http://72.60.78.188:3000/api/patients/login \
+curl -X POST https://dokterdibya.com/api/patients/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"test123"}'
 ```

@@ -23,8 +23,8 @@ android {
         }
 
         // API Configuration - VPS
-        buildConfigField("String", "BASE_URL", "\"http://72.60.78.188:3000/api/\"")
-        buildConfigField("String", "SOCKET_URL", "\"http://72.60.78.188:3000\"")
+        buildConfigField("String", "BASE_URL", "\"https://dokterdibya.com/api/\"")
+        buildConfigField("String", "SOCKET_URL", "\"https://dokterdibya.com\"")
     }
 
     buildTypes {

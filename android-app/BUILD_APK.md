@@ -148,7 +148,7 @@ The simplified version should already have this fixed.
 
 2. Test API:
    ```bash
-   curl http://72.60.78.188:3000/api/health
+   curl https://dokterdibya.com/api/health
    ```
 
 3. Check firewall allows port 3000
@@ -364,7 +364,7 @@ Socket.IO: ws://72.60.78.188:3000
 If you encounter issues:
 1. Check logs: `adb logcat`
 2. Verify VPS is running
-3. Test API manually: `curl http://72.60.78.188:3000/api/health`
+3. Test API manually: `curl https://dokterdibya.com/api/health`
 4. Clean and rebuild: `./gradlew clean build`
 
 ---

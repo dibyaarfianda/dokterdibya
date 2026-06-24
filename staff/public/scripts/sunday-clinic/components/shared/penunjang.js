@@ -276,7 +276,7 @@ ${interpretation}
             const formData = new FormData();
             files.forEach(file => formData.append('files', file));
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             const response = await fetch('/api/lab-results/upload', {
                 method: 'POST',
                 headers: {
@@ -354,7 +354,7 @@ ${interpretation}
                 return;
             }
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             if (!token) {
                 console.warn('[Penunjang] No auth token, skipping database save');
                 return;
@@ -415,7 +415,7 @@ ${interpretation}
                 return;
             }
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             const response = await fetch('/api/lab-results/interpret', {
                 method: 'POST',
                 headers: {

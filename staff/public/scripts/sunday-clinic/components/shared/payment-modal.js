@@ -53,7 +53,7 @@ const PaymentModal = {
      */
     async checkExistingPayment() {
         try {
-            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const token = window.getToken ? window.getToken() : '';
             const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/payment-details`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -208,7 +208,7 @@ const PaymentModal = {
         `;
 
         try {
-            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const token = window.getToken ? window.getToken() : '';
             const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/create-payment`, {
                 method: 'POST',
                 headers: {
@@ -633,7 +633,7 @@ const PaymentModal = {
         `;
 
         try {
-            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const token = window.getToken ? window.getToken() : '';
             const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/create-card-charge`, {
                 method: 'POST',
                 headers: {
@@ -815,7 +815,7 @@ const PaymentModal = {
         }
 
         try {
-            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const token = window.getToken ? window.getToken() : '';
             const response = await fetch(
                 `/api/sunday-clinic/billing/${this.mrId}/payment-status/${this.currentPayment.payment_id}`,
                 { headers: { 'Authorization': `Bearer ${token}` } }
@@ -944,7 +944,7 @@ const PaymentModal = {
         }
 
         try {
-            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const token = window.getToken ? window.getToken() : '';
             const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/create-insurance-payment`, {
                 method: 'POST',
                 headers: {
@@ -1043,7 +1043,7 @@ const PaymentModal = {
         }
 
         try {
-            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const token = window.getToken ? window.getToken() : '';
             const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/confirm-insurance/${paymentId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -1132,7 +1132,7 @@ const PaymentModal = {
     async cancelAndClose() {
         if (this.currentPayment && this.currentPayment.status === 'pending') {
             try {
-                const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+                const token = window.getToken ? window.getToken() : '';
                 await fetch(
                     `/api/sunday-clinic/billing/${this.mrId}/cancel-payment/${this.currentPayment.payment_id}`,
                     {

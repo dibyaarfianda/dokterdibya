@@ -1157,8 +1157,12 @@
 
             try {
                 // First check if patient is authenticated
-                const authResponse = await fetch('/api/patients-auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const authResponse = await fetch('/api/patients/profile?_t=' + Date.now(), {
+                    cache: 'no-store',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache'
+                    }
                 });
 
                 if (!authResponse.ok) {
@@ -1168,7 +1172,8 @@
 
                 const authData = await authResponse.json();
 
-                if (!authData.success || !authData.patient) {
+                const patientProfile = getPatientProfileFromResponse(authData);
+                if (!patientProfile) {
                     showAccessGate();
                     return;
                 }
@@ -1266,12 +1271,17 @@
             }
 
             try {
-                const response = await fetch('/api/patients-auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch('/api/patients/profile?_t=' + Date.now(), {
+                    cache: 'no-store',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache'
+                    }
                 });
                 const data = await response.json();
-                if (data.success && data.patient) {
-                    document.getElementById('patientName').textContent = data.patient.nama || 'Ibu Tersayang';
+                const patientProfile = getPatientProfileFromResponse(data);
+                if (patientProfile) {
+                    document.getElementById('patientName').textContent = patientProfile.nama || patientProfile.full_name || patientProfile.fullname || patientProfile.name || 'Ibu Tersayang';
                 }
             } catch (error) {
                 console.error('Error loading patient info:', error);
@@ -1513,6 +1523,11 @@
             return localStorage.getItem('vps_auth_token') ||
                    sessionStorage.getItem('vps_auth_token') ||
                    localStorage.getItem('patient_token');
+        }
+
+        function getPatientProfileFromResponse(data) {
+            if (!data) return null;
+            return data.patient || data.user || data.data || data.profile || null;
         }
 
         function formatDate(dateStr) {

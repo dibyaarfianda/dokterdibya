@@ -1308,7 +1308,7 @@ export default {
             const formData = new FormData();
             files.forEach(file => formData.append('files', file));
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             const response = await fetch('/api/usg-photos/upload', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -1393,7 +1393,7 @@ export default {
                 button.disabled = true;
 
                 try {
-                    const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+                    const token = window.getToken?.() || '';
                     const response = await fetch('/api/usg-reader/analyze-url', {
                         method: 'POST',
                         headers: {
@@ -1436,7 +1436,7 @@ export default {
 
             if (!patientId || !mrId) return;
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             if (!token) return;
 
             // Get existing USG data
@@ -1599,7 +1599,7 @@ export default {
                     formData.append('trimester', trimester);
                     formData.append('type', 'obstetri');
 
-                    const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+                    const token = window.getToken?.() || '';
                     const response = await fetch('/api/usg-reader/analyze', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}` },

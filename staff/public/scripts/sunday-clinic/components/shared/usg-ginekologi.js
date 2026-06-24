@@ -827,7 +827,7 @@ export default {
             const formData = new FormData();
             files.forEach(file => formData.append('files', file));
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             const response = await fetch('/api/usg-photos/upload', {
                 method: 'POST',
                 headers: {
@@ -905,7 +905,7 @@ export default {
                 return;
             }
 
-            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const token = window.getToken?.() || '';
             if (!token) {
                 console.warn('[USG] No auth token, skipping database save');
                 return;

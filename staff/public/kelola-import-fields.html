@@ -251,11 +251,13 @@
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
     <script>
-        // Token key constant (same as vps-auth-v2.js)
-        const TOKEN_KEY = 'vps_auth_token';
 
         let allFields = [];
         let modalKeywords = [];
+
+        function getImportAuthToken() {
+            return typeof window.getAuthToken === 'function' ? window.getAuthToken() : '';
+        }
 
         // Check if embedded in main page (import-fields-page container exists)
         const isEmbedded = !!document.getElementById('import-fields-page');
@@ -272,7 +274,7 @@
 
         window.loadFields = async function() {
             try {
-                const token = localStorage.getItem(TOKEN_KEY);
+                const token = getImportAuthToken();
                 const response = await fetch('/api/import-config/fields/all', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -455,7 +457,7 @@
             }
 
             try {
-                const token = localStorage.getItem(TOKEN_KEY);
+                const token = getImportAuthToken();
                 const url = id ? `/api/import-config/fields/${id}` : '/api/import-config/fields';
                 const method = id ? 'PUT' : 'POST';
 
@@ -498,7 +500,7 @@
             if (!keyword) return;
 
             try {
-                const token = localStorage.getItem(TOKEN_KEY);
+                const token = getImportAuthToken();
                 const response = await fetch(`/api/import-config/fields/${fieldId}/keywords`, {
                     method: 'POST',
                     headers: {
@@ -524,7 +526,7 @@
             if (!confirm(`Hapus keyword "${keyword}"?`)) return;
 
             try {
-                const token = localStorage.getItem(TOKEN_KEY);
+                const token = getImportAuthToken();
                 const response = await fetch(`/api/import-config/fields/${fieldId}/keywords/${encodedKeyword}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -543,7 +545,7 @@
 
         window.toggleField = async function(fieldId, isActive) {
             try {
-                const token = localStorage.getItem(TOKEN_KEY);
+                const token = getImportAuthToken();
                 const response = await fetch(`/api/import-config/fields/${fieldId}`, {
                     method: 'PUT',
                     headers: {
@@ -568,7 +570,7 @@
             if (!confirm('Yakin hapus field ini? Aksi ini tidak dapat dibatalkan.')) return;
 
             try {
-                const token = localStorage.getItem(TOKEN_KEY);
+                const token = getImportAuthToken();
                 const response = await fetch(`/api/import-config/fields/${fieldId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }

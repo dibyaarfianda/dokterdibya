@@ -10,7 +10,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
+const { verifyToken } = require('../middleware/auth');
 const r2Storage = require('../services/r2Storage');
+
+function safeLocalPath(key) {
+    const uploadDir = path.resolve(__dirname, '../../uploads/usg-photos');
+    const resolved = path.resolve(uploadDir, key);
+    if (!resolved.startsWith(uploadDir + path.sep) && resolved !== uploadDir) return null;
+    return resolved;
+}
 
 // Configure multer for memory storage (for R2 upload)
 const memoryStorage = multer.memoryStorage();
@@ -61,7 +69,7 @@ const upload = multer({
  * POST /api/usg-photos/upload
  * Upload USG photos to R2 or local storage
  */
-router.post('/upload', upload.array('files', 20), async (req, res) => {
+router.post('/upload', verifyToken, upload.array('files', 20), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded' });
@@ -146,7 +154,7 @@ router.post('/upload', upload.array('files', 20), async (req, res) => {
  * DELETE /api/usg-photos/:key
  * Delete a USG photo
  */
-router.delete('/:key(*)', async (req, res) => {
+router.delete('/:key(*)', verifyToken, async (req, res) => {
     try {
         const { key } = req.params;
 
@@ -159,8 +167,11 @@ router.delete('/:key(*)', async (req, res) => {
             await r2Storage.deleteFile(key);
             logger.info('USG photo deleted from R2', { key });
         } else {
-            // Delete from local storage
-            const filePath = path.join(__dirname, '../../uploads/usg-photos', key);
+            // Delete from local storage after validating the requested key stays in upload dir
+            const filePath = safeLocalPath(key);
+            if (!filePath) {
+                return res.status(400).json({ error: 'Invalid file key' });
+            }
             await fs.unlink(filePath);
             logger.info('USG photo deleted locally', { key });
         }
@@ -204,8 +215,11 @@ router.get('/file/*', async (req, res) => {
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             res.send(fileBuffer);
         } else {
-            // Serve from local storage
-            const filePath = path.join(__dirname, '../../uploads/usg-photos', key);
+            // Serve from local storage after validating the requested key stays in upload dir
+            const filePath = safeLocalPath(key);
+            if (!filePath) {
+                return res.status(400).json({ error: 'Invalid file key' });
+            }
             res.sendFile(filePath);
         }
 

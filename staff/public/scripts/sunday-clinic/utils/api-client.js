@@ -4,6 +4,7 @@
  */
 
 import { API_ENDPOINTS } from './constants.js';
+import { TOKEN_KEY } from '../../vps-auth-v2.js';
 
 class APIClient {
     constructor() {
@@ -14,14 +15,14 @@ class APIClient {
      * Get current token (always read fresh from storage)
      */
     getToken() {
-        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        return window.getToken ? window.getToken() : '';
     }
 
     /**
      * Set authentication token
      */
     setToken(token) {
-        localStorage.setItem('vps_auth_token', token);
+        localStorage.setItem(TOKEN_KEY, token);
     }
 
     /**

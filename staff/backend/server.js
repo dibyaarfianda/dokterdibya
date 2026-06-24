@@ -16,6 +16,7 @@ const {
     rememberBlockedPatientRequestIp
 } = require('./utils/patientAccessBlocklist');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { verifyToken, requireSuperadmin } = require('./middleware/auth');
 const { requestLogger, performanceLogger } = require('./middleware/requestLogger');
 const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/metrics');
 const swaggerUi = require('swagger-ui-express');
@@ -749,8 +750,8 @@ app.get('/api/metrics', (req, res) => {
     res.json(metrics);
 });
 
-// Reset metrics endpoint (admin only)
-app.post('/api/metrics/reset', (req, res) => {
+// Reset metrics endpoint (superadmin only)
+app.post('/api/metrics/reset', verifyToken, requireSuperadmin, (req, res) => {
     resetMetrics();
     res.json({ success: true, message: 'Metrics reset successfully' });
 });
@@ -792,6 +793,14 @@ app.get('/api/patients', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
+// Async PDF queue routes
+const pdfQueueRoutes = require('./routes/pdf-queue');
+app.use('/api/pdf/queue', pdfQueueRoutes);
+
+// SLO dashboard
+const sloRoutes = require('./routes/slo');
+app.use('/api/slo', sloRoutes);
 
 // 404 handler - must be after all routes
 app.use(notFoundHandler);
@@ -1088,14 +1097,6 @@ io.on('connection', (socket) => {
         }
     });
 });
-
-// Async PDF queue routes
-const pdfQueueRoutes = require('./routes/pdf-queue');
-app.use('/api/pdf/queue', pdfQueueRoutes);
-
-// SLO dashboard
-const sloRoutes = require('./routes/slo');
-app.use('/api/slo', sloRoutes);
 
 // Start server
 server.listen(PORT, () => {

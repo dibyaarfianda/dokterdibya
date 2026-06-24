@@ -7,7 +7,7 @@
 Edit `/var/www/dokterdibya/staff/backend/.env`:
 
 ```env
-OPENAI_API_KEY=REMOVED_OPENAI_API_KEY
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY
 ```
 
 Replace `REMOVED_OPENAI_API_KEY` with your actual OpenAI API key.

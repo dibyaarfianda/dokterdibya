@@ -13,8 +13,8 @@
 ### 📋 Configuration Changes Made
 
 **VPS Connection:**
-- Base URL: `http://72.60.78.188:3000/api/`
-- Socket URL: `http://72.60.78.188:3000`
+- Base URL: `https://dokterdibya.com/api/`
+- Socket URL: `https://dokterdibya.com`
 - Cleartext traffic enabled for HTTP
 
 **Removed:**
@@ -354,8 +354,8 @@ pm2 start server.js
 
 ### 2. Test API Endpoints
 ```bash
-curl http://72.60.78.188:3000/api/health
-curl http://72.60.78.188:3000/api/announcements/active
+curl https://dokterdibya.com/api/health
+curl https://dokterdibya.com/api/announcements/active
 ```
 
 ### 3. Test Socket.IO
@@ -364,7 +364,7 @@ curl http://72.60.78.188:3000/api/announcements/active
 npm install -g socket.io-client
 
 # Test connection
-node -e "const io = require('socket.io-client'); const socket = io('http://72.60.78.188:3000'); socket.on('connect', () => console.log('Connected!')); socket.on('disconnect', () => console.log('Disconnected'));"
+node -e "const io = require('socket.io-client'); const socket = io('https://dokterdibya.com'); socket.on('connect', () => console.log('Connected!')); socket.on('disconnect', () => console.log('Disconnected'));"
 ```
 
 ---

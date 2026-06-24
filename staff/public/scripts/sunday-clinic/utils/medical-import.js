@@ -87,7 +87,7 @@ async function importMedicalParse() {
         parseBtn.disabled = true;
 
         // Call API
-        const token = localStorage.getItem('token');
+        const token = window.getToken ? window.getToken() : '';
         const response = await fetch('/api/medical-import/parse', {
             method: 'POST',
             headers: {
@@ -157,7 +157,7 @@ async function loadPatientsForImport() {
     if (!select) return;
 
     try {
-        const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+        const token = window.getToken ? window.getToken() : '';
         const response = await fetch('/api/patients?limit=500', {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -433,7 +433,7 @@ function importMedicalBack() {
  * Create a new MR via API and navigate to it
  */
 async function createNewMRAndNavigate(patientId, category, location, visitDate, importSource) {
-    const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+    const token = window.getToken ? window.getToken() : '';
 
     // Derive import_source from location if not provided
     // rsud_gambiran → simrs_gambiran, rsia_melinda → simrs_melinda
@@ -517,7 +517,7 @@ async function importMedicalApply() {
 
             try {
                 // Check for existing DRD - DO NOT create new one
-                const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+                const token = window.getToken ? window.getToken() : '';
                 const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${visitLocation || 'klinik_private'}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -701,7 +701,7 @@ async function saveSectionToApi(mrId, section, data) {
     }
 
     try {
-        const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+        const token = window.getToken ? window.getToken() : '';
         const response = await fetch(`/api/sunday-clinic/records/${mrId}/${section}`, {
             method: 'POST',
             headers: {
@@ -1808,7 +1808,7 @@ async function handleBulkFilesSelect(event) {
     if (progressText) progressText.textContent = 'Memproses data...';
 
     try {
-        const token = localStorage.getItem('token');
+        const token = window.getToken ? window.getToken() : '';
         const response = await fetch('/api/medical-import/bulk', {
             method: 'POST',
             headers: {
@@ -2007,7 +2007,7 @@ async function applyBulkImport() {
  * Save multiple records to database
  */
 async function saveBulkRecords(items) {
-    const token = localStorage.getItem('token');
+    const token = window.getToken ? window.getToken() : '';
     let successCount = 0;
     let errorCount = 0;
     const errors = [];

@@ -17,6 +17,7 @@ const {
     clearFailedAttempts,
     requirePermission
 } = require('../../middleware/auth');
+const { ROLE_IDS, ROLE_NAMES } = require('../../constants/roles');
 
 describe('Auth Middleware', () => {
     describe('verifyToken', () => {
@@ -109,7 +110,8 @@ describe('Auth Middleware', () => {
                 user: {
                     id: 1,
                     username: 'testuser',
-                    role: 'doctor'
+                    role: ROLE_NAMES.ADMIN,
+                    role_id: ROLE_IDS.ADMIN
                 }
             };
             res = {
@@ -120,7 +122,7 @@ describe('Auth Middleware', () => {
         });
 
         it('should allow access when user has required role', () => {
-            const middleware = requireRole('doctor', 'admin');
+            const middleware = requireRole(ROLE_IDS.ADMIN, ROLE_IDS.MANAGERIAL);
             middleware(req, res, next);
 
             expect(next).toHaveBeenCalled();
@@ -128,8 +130,9 @@ describe('Auth Middleware', () => {
         });
 
         it('should deny access when user lacks required elevated role', () => {
-            req.user.role = 'admin';
-            const middleware = requireRole('superadmin');
+            req.user.role = ROLE_NAMES.ADMIN;
+            req.user.role_id = ROLE_IDS.ADMIN;
+            const middleware = requireRole(ROLE_IDS.DOKTER);
 
             middleware(req, res, next);
 
@@ -138,8 +141,9 @@ describe('Auth Middleware', () => {
         });
 
         it('should deny access when user does not have required role', () => {
-            req.user.role = 'nurse';
-            const middleware = requireRole('doctor', 'admin');
+            req.user.role = ROLE_NAMES.BIDAN;
+            req.user.role_id = ROLE_IDS.BIDAN;
+            const middleware = requireRole(ROLE_IDS.ADMIN, ROLE_IDS.MANAGERIAL);
 
             middleware(req, res, next);
 
@@ -153,9 +157,9 @@ describe('Auth Middleware', () => {
             expect(next).not.toHaveBeenCalled();
         });
 
-        it('should deny access when user role is not set', () => {
-            delete req.user.role;
-            const middleware = requireRole('doctor');
+        it('should deny access when user role_id is not set', () => {
+            delete req.user.role_id;
+            const middleware = requireRole(ROLE_IDS.ADMIN);
 
             middleware(req, res, next);
 
@@ -215,7 +219,7 @@ describe('requirePermission', () => {
 
     beforeEach(() => {
         req = {
-            user: { id: 1, role: 'admin' },
+            user: { id: 1, role: ROLE_NAMES.ADMIN, role_id: ROLE_IDS.ADMIN },
             context: { requestId: 'req-1' }
         };
         res = {
@@ -227,7 +231,8 @@ describe('requirePermission', () => {
     });
 
     it('allows superadmin without querying DB', async () => {
-        req.user.role = 'superadmin';
+        req.user.role = ROLE_NAMES.DOKTER;
+        req.user.role_id = ROLE_IDS.DOKTER;
         const middleware = requirePermission('patients:read');
 
         await middleware(req, res, next);
@@ -246,7 +251,7 @@ describe('requirePermission', () => {
     });
 
     it('denies when user lacks permission', async () => {
-        db.query.mockResolvedValueOnce([[{ name: 'patients:view' }]]);
+        db.query.mockResolvedValueOnce([[]]);
         const middleware = requirePermission('patients:write');
 
         await middleware(req, res, next);
