@@ -8,6 +8,11 @@ const TARGET_DOCTORS = [
   { key: 'tri_aji', pattern: /tri\s*aji/i },
   { key: 'latifa', pattern: /latifa/i },
 ];
+const TARGET_DOCTOR_FACILITY_KEYS = {
+  melinda: ['dibya'],
+  gambiran: ['dibya', 'tri_aji', 'latifa'],
+  bhayangkara: ['dibya'],
+};
 const LOCATION_MAP = {
   melinda: 'rsia_melinda',
   gambiran: 'rsud_gambiran',
@@ -100,10 +105,11 @@ function firstValue(...values) {
   return null;
 }
 
-function classifyDoctor(value) {
+function classifyDoctor(value, facility) {
   const clean = nullable(value);
   if (!clean) return null;
-  const doctor = TARGET_DOCTORS.find(item => item.pattern.test(clean));
+  const allowedKeys = new Set(TARGET_DOCTOR_FACILITY_KEYS[facility] || ['dibya']);
+  const doctor = TARGET_DOCTORS.find(item => allowedKeys.has(item.key) && item.pattern.test(clean));
   if (!doctor) return null;
   return { doctorName: clean, doctorKey: doctor.key };
 }
@@ -117,7 +123,18 @@ function deriveDoctorMetadata(raw = {}, payload = {}) {
     };
   }
 
+  const facility = normalizeFacility(raw.facility || payload.facility || payload.operation?.facility || payload.location);
   const sources = [
+    ['operator', firstValue(
+      raw.operator_name,
+      raw.dokter_operator,
+      raw.operator,
+      payload.registration?.operator_name,
+      payload.registration?.dokter_operator,
+      payload.report?.operator_name,
+      payload.report?.dokter_operator,
+      payload.report?.operator
+    )],
     ['dpjp', firstValue(
       raw.dpjp_name,
       raw.dokter_dpjp,
@@ -131,16 +148,6 @@ function deriveDoctorMetadata(raw = {}, payload = {}) {
       payload.report?.dpjp_name,
       payload.report?.dokter_dpjp
     )],
-    ['operator', firstValue(
-      raw.operator_name,
-      raw.dokter_operator,
-      raw.operator,
-      payload.registration?.operator_name,
-      payload.registration?.dokter_operator,
-      payload.report?.operator_name,
-      payload.report?.dokter_operator,
-      payload.report?.operator
-    )],
     ['doctor', firstValue(
       raw.doctor_name,
       raw.doctorName,
@@ -152,7 +159,7 @@ function deriveDoctorMetadata(raw = {}, payload = {}) {
   ];
 
   for (const [source, value] of sources) {
-    const classified = classifyDoctor(value);
+    const classified = classifyDoctor(value, facility);
     if (classified) {
       return {
         ...classified,
@@ -311,7 +318,7 @@ class OperationDataService {
     for (const row of rows) {
       try {
         const payload = await r2Storage.getJson(row.r2_key, row.r2_bucket || process.env.OPERATION_DATA_R2_BUCKET_NAME);
-        const doctor = deriveDoctorMetadata({}, payload || {});
+        const doctor = deriveDoctorMetadata({ facility: row.facility }, payload || {});
         if (!doctor.doctorKey) {
           skipped++;
           continue;

@@ -90,6 +90,39 @@ describe('OperationDataService doctor metadata', () => {
         ]));
     });
 
+    test('archiveRecords prefers Gambiran operator over Dibya DPJP for audit doctor metadata', async () => {
+        db.query.mockResolvedValue([{ affectedRows: 1 }]);
+        r2Storage.uploadJson.mockResolvedValue({ key: 'operation-data/gambiran/2026-06-18/item.json' });
+
+        await operationData.archiveRecords([{
+            index_item: {
+                facility: 'gambiran',
+                source_key: 'gambiran:med0001:124',
+                patient_name: 'Pasien Operator',
+                operation_date: '2026-06-18',
+                r2_key: 'operation-data/gambiran/2026-06-18/item-operator.json'
+            },
+            payload: {
+                facility: 'gambiran',
+                patient: {
+                    raw: {
+                        dpjp: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.'
+                    }
+                },
+                registration: {
+                    operator_name: 'dr. Tri Aji Wibowo, Sp.OG'
+                }
+            }
+        }]);
+
+        const [, params] = db.query.mock.calls[0];
+        expect(params).toEqual(expect.arrayContaining([
+            'dr. Tri Aji Wibowo, Sp.OG',
+            'tri_aji',
+            'operator'
+        ]));
+    });
+
     test('backfillDoctorMetadataFromPayload updates existing Gambiran index rows from R2 payloads', async () => {
         db.query
             .mockResolvedValueOnce([[{
