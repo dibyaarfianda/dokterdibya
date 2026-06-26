@@ -506,6 +506,11 @@ export const api = {
     return request(`/operation-data/${id}`);
   },
 
+  getGambiranAudit(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/audit/gambiran${qs ? '?' + qs : ''}`);
+  },
+
   // PDF Export - returns URL string (not a fetch, used with window.open)
   getExportPDFUrl(startDate, endDate) {
     const token = getToken();

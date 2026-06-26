@@ -6,7 +6,9 @@ const docboardService = require('../services/DocBoardService');
 const docboardPush = require('../services/DocBoardPushService');
 const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
+const OperationAuditService = require('../services/OperationAuditService');
 const logger = require('../utils/logger');
+const operationAudit = new OperationAuditService();
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
 const SCHEDULE_COMPLETION_ALLOWED_USER_IDS = ['UDZAQUCQWZ'];
@@ -58,6 +60,17 @@ router.use('/operation-data', (req, res, next) => {
   next();
 });
 router.use('/operation-data', operationDataRoutes);
+
+router.get('/audit/gambiran', async (req, res) => {
+  try {
+    if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+    const result = await operationAudit.getGambiranAudit(req.query || {});
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('DocBoard Gambiran audit error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 /**
  * GET /api/docboard/space-schedules/calendar/:year/:month

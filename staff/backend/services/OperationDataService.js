@@ -114,6 +114,9 @@ class OperationDataService {
       operationName: nullable(raw.operation_name || raw.operationName || raw.tindakanOperasi),
       diagnosis: nullable(raw.diagnosis || raw.diagnosaAwal || raw.diagnosaAkhir),
       status: nullable(raw.status || raw.statusPasien),
+      doctorName: nullable(raw.doctor_name || raw.doctorName),
+      doctorKey: nullable(raw.doctor_key || raw.doctorKey),
+      doctorSource: nullable(raw.doctor_source || raw.doctorSource),
       r2Key,
       r2Bucket: nullable(raw.r2_bucket || raw.r2Bucket || raw.bucket_name || raw.bucketName || raw.bucket),
       surgeryId: raw.surgery_id || raw.surgeryId || null,
@@ -133,8 +136,8 @@ class OperationDataService {
           `INSERT INTO operation_data_index
              (facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
               operation_date, operation_time, operation_name, diagnosis, status,
-              r2_key, r2_bucket, surgery_id, fetched_at, last_synced_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+              doctor_name, doctor_key, doctor_source, r2_key, r2_bucket, surgery_id, fetched_at, last_synced_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
            ON DUPLICATE KEY UPDATE
               case_id = VALUES(case_id),
               simrs_operasi_id = VALUES(simrs_operasi_id),
@@ -145,6 +148,9 @@ class OperationDataService {
               operation_name = VALUES(operation_name),
               diagnosis = VALUES(diagnosis),
               status = VALUES(status),
+              doctor_name = VALUES(doctor_name),
+              doctor_key = VALUES(doctor_key),
+              doctor_source = VALUES(doctor_source),
               r2_key = VALUES(r2_key),
               r2_bucket = VALUES(r2_bucket),
               surgery_id = VALUES(surgery_id),
@@ -153,7 +159,8 @@ class OperationDataService {
           [
             item.facility, item.sourceKey, item.caseId, item.simrsOperasiId, item.mrId,
             item.patientName, item.operationDate, item.operationTime, item.operationName,
-            item.diagnosis, item.status, item.r2Key, item.r2Bucket, item.surgeryId, item.fetchedAt,
+            item.diagnosis, item.status, item.doctorName, item.doctorKey, item.doctorSource,
+            item.r2Key, item.r2Bucket, item.surgeryId, item.fetchedAt,
           ]
         );
         saved++;
@@ -235,7 +242,7 @@ class OperationDataService {
     const [rows] = await db.query(
       `SELECT id, facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
               operation_date, operation_time, operation_name, diagnosis, status,
-              r2_key, r2_bucket, fetched_at, last_synced_at, created_at, updated_at
+              doctor_name, doctor_key, doctor_source, r2_key, r2_bucket, fetched_at, last_synced_at, created_at, updated_at
          FROM operation_data_index
          ${clause}
          ORDER BY operation_date DESC, operation_time DESC, id DESC

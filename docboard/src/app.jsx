@@ -8,6 +8,7 @@ import SurgeryForm from './views/SurgeryForm';
 import SurgeryDetail from './views/SurgeryDetail';
 import OperationDataList from './views/OperationDataList';
 import OperationDataDetail from './views/OperationDataDetail';
+import GambiranAudit from './views/GambiranAudit';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Analytics from './views/Analytics';
@@ -77,6 +78,7 @@ export default function App() {
           <SurgeryDetail path="/docboard/surgery/:id" />
           <NandaOnlyRoute path="/docboard/data" component={OperationDataList} />
           <NandaOnlyRoute path="/docboard/data/:id" component={OperationDataDetail} />
+          <NandaOnlyRoute path="/docboard/audit" component={GambiranAudit} />
           <Notifications path="/docboard/notifications" />
           <CommandDashboard path="/docboard/command" />
           <NandaOnlyRoute path="/docboard/scientific" component={SpaceSchedule} space="ilmiah" />
