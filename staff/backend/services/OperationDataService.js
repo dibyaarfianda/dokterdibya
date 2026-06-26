@@ -171,6 +171,32 @@ function deriveDoctorMetadata(raw = {}, payload = {}) {
   return { doctorName: null, doctorKey: null, doctorSource: null };
 }
 
+function deriveMedicalRecordNumber(raw = {}, payload = {}) {
+  return firstValue(
+    raw.mr_id,
+    raw.mrId,
+    raw.no_rm,
+    raw.noRm,
+    raw.medicalRecordNo,
+    payload.patient?.mr_id,
+    payload.patient?.mrId,
+    payload.patient?.no_rm,
+    payload.patient?.medicalRecordNo,
+    payload.patient?.simrs_patient_id,
+    payload.patient?.raw?.mr_id,
+    payload.patient?.raw?.no_rm,
+    payload.patient?.raw?.medicalRecordNo,
+    payload.registration?.mr_id,
+    payload.registration?.mrId,
+    payload.registration?.no_rm,
+    payload.registration?.medicalRecordNo,
+    payload.registration?.patient_id,
+    payload.report?.noRm,
+    payload.report?.no_rm,
+    payload.report?.medicalRecordNo
+  );
+}
+
 class OperationDataService {
   normalizeIndexItem(raw) {
     const facility = normalizeFacility(raw.facility || raw.location);
@@ -268,8 +294,10 @@ class OperationDataService {
         const item = this.normalizeIndexItem(indexRaw || {});
         await r2Storage.uploadJson(item.r2Key, payload, bucket);
         const doctor = deriveDoctorMetadata(indexRaw || {}, payload || {});
+        const mrId = item.mrId || deriveMedicalRecordNumber(indexRaw || {}, payload || {});
         indexItems.push({
           ...indexRaw,
+          mr_id: mrId,
           doctor_name: item.doctorName || doctor.doctorName,
           doctor_key: item.doctorKey || doctor.doctorKey,
           doctor_source: item.doctorSource || doctor.doctorSource,
@@ -294,6 +322,53 @@ class OperationDataService {
       bucket,
       index: indexResult,
       errors: archiveErrors,
+    };
+  }
+
+  async backfillMedicalRecordNumbersFromPayload({ facility = 'gambiran', limit = 100 } = {}) {
+    const normalizedFacility = normalizeFacility(facility);
+    const rowLimit = safeLimit(limit, 100);
+    const [rows] = await db.query(
+      `SELECT id, facility, r2_key, r2_bucket
+         FROM operation_data_index
+        WHERE facility = ?
+          AND r2_key IS NOT NULL
+          AND (mr_id IS NULL OR mr_id = '')
+        ORDER BY operation_date DESC, id DESC
+        LIMIT ?`,
+      [normalizedFacility, rowLimit]
+    );
+
+    let updated = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const row of rows) {
+      try {
+        const payload = await r2Storage.getJson(row.r2_key, row.r2_bucket || process.env.OPERATION_DATA_R2_BUCKET_NAME);
+        const mrId = deriveMedicalRecordNumber({ facility: row.facility }, payload || {});
+        if (!mrId) {
+          skipped++;
+          continue;
+        }
+
+        await db.query(
+          `UPDATE operation_data_index
+              SET mr_id = ?
+            WHERE id = ?`,
+          [mrId, row.id]
+        );
+        updated++;
+      } catch (error) {
+        errors.push({ id: row.id, message: error.message });
+      }
+    }
+
+    return {
+      scanned: rows.length,
+      updated,
+      skipped,
+      errors,
     };
   }
 

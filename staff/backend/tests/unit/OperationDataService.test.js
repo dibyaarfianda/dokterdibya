@@ -123,6 +123,34 @@ describe('OperationDataService doctor metadata', () => {
         ]));
     });
 
+    test('archiveRecords derives medical record number from registration patient_id when report has none', async () => {
+        db.query.mockResolvedValue([{ affectedRows: 1 }]);
+        r2Storage.uploadJson.mockResolvedValue({ key: 'operation-data/gambiran/2026-06-18/item-mr.json' });
+
+        await operationData.archiveRecords([{
+            index_item: {
+                facility: 'gambiran',
+                source_key: 'gambiran:pendaftaran:19196',
+                patient_name: 'Pasien RM',
+                operation_date: '2026-06-18',
+                r2_key: 'operation-data/gambiran/2026-06-18/item-mr.json'
+            },
+            payload: {
+                facility: 'gambiran',
+                patient: {
+                    simrs_patient_id: '537912'
+                },
+                registration: {
+                    patient_id: '537912',
+                    operator_name: 'dr. Tri Aji Wibowo, Sp.OG'
+                }
+            }
+        }]);
+
+        const [, params] = db.query.mock.calls[0];
+        expect(params).toEqual(expect.arrayContaining(['537912']));
+    });
+
     test('backfillDoctorMetadataFromPayload updates existing Gambiran index rows from R2 payloads', async () => {
         db.query
             .mockResolvedValueOnce([[{
@@ -153,6 +181,34 @@ describe('OperationDataService doctor metadata', () => {
             'dpjp',
             2550
         ]);
+    });
+
+    test('backfillMedicalRecordNumbersFromPayload updates existing rows from R2 patient identifiers', async () => {
+        db.query
+            .mockResolvedValueOnce([[{
+                id: 3429,
+                facility: 'gambiran',
+                r2_key: 'operation-data/gambiran/2026-06-27/item.json',
+                r2_bucket: 'test-bucket'
+            }]])
+            .mockResolvedValueOnce([{ affectedRows: 1 }]);
+        r2Storage.getJson.mockResolvedValue({
+            patient: {
+                simrs_patient_id: '537912'
+            },
+            registration: {
+                patient_id: '537912'
+            }
+        });
+
+        const result = await operationData.backfillMedicalRecordNumbersFromPayload({ facility: 'gambiran', limit: 10 });
+
+        expect(result).toEqual(expect.objectContaining({
+            scanned: 1,
+            updated: 1
+        }));
+        expect(db.query.mock.calls[1][0]).toContain('UPDATE operation_data_index');
+        expect(db.query.mock.calls[1][1]).toEqual(['537912', 3429]);
     });
 
     test('list treats comma-separated operation search terms as case-insensitive OR terms', async () => {
