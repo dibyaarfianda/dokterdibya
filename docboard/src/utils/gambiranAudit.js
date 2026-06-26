@@ -1,0 +1,1 @@
+export const AUDIT_GAMBIRAN_DEFAULT_START = '2020-01-01';

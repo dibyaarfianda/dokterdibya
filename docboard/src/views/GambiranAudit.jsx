@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { today, formatDateShort } from '../utils/date';
+import { AUDIT_GAMBIRAN_DEFAULT_START } from '../utils/gambiranAudit';
 
 const DOCTORS = [
   { value: 'all', label: 'Semua Dokter' },
@@ -17,9 +18,7 @@ const REPEAT_OPTIONS = [
 ];
 
 function defaultStartDate() {
-  const date = new Date();
-  date.setMonth(date.getMonth() - 3);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return AUDIT_GAMBIRAN_DEFAULT_START;
 }
 
 function formatDate(value) {
