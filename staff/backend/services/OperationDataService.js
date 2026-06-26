@@ -2,6 +2,11 @@ const db = require('../db');
 const r2Storage = require('./r2Storage');
 
 const FACILITIES = ['melinda', 'gambiran', 'bhayangkara'];
+const TARGET_DOCTORS = [
+  { key: 'dibya', pattern: /dibya/i },
+  { key: 'tri_aji', pattern: /tri\s*aji/i },
+  { key: 'latifa', pattern: /latifa/i },
+];
 const LOCATION_MAP = {
   melinda: 'rsia_melinda',
   gambiran: 'rsud_gambiran',
@@ -88,6 +93,78 @@ function safeLimit(value, fallback = 50) {
 
 function dateToInt(dateStr) {
   return parseInt(String(dateStr).replace(/-/g, ''), 10) || 0;
+}
+
+function firstValue(...values) {
+  for (const value of values) {
+    const clean = nullable(value);
+    if (clean) return clean;
+  }
+  return null;
+}
+
+function classifyDoctor(value) {
+  const clean = nullable(value);
+  if (!clean) return null;
+  const doctor = TARGET_DOCTORS.find(item => item.pattern.test(clean));
+  if (!doctor) return null;
+  return { doctorName: clean, doctorKey: doctor.key };
+}
+
+function deriveDoctorMetadata(raw = {}, payload = {}) {
+  if (raw.doctor_key || raw.doctorKey) {
+    return {
+      doctorName: nullable(raw.doctor_name || raw.doctorName),
+      doctorKey: nullable(raw.doctor_key || raw.doctorKey),
+      doctorSource: nullable(raw.doctor_source || raw.doctorSource),
+    };
+  }
+
+  const sources = [
+    ['dpjp', firstValue(
+      raw.dpjp_name,
+      raw.dokter_dpjp,
+      raw.dpjp,
+      payload.patient?.raw?.dpjp,
+      payload.patient?.dpjp,
+      payload.patient?.dpjp_name,
+      payload.registration?.dpjp_name,
+      payload.registration?.dokter_dpjp,
+      payload.report?.dpjp,
+      payload.report?.dpjp_name,
+      payload.report?.dokter_dpjp
+    )],
+    ['operator', firstValue(
+      raw.operator_name,
+      raw.dokter_operator,
+      raw.operator,
+      payload.registration?.operator_name,
+      payload.registration?.dokter_operator,
+      payload.report?.operator_name,
+      payload.report?.dokter_operator,
+      payload.report?.operator
+    )],
+    ['doctor', firstValue(
+      raw.doctor_name,
+      raw.doctorName,
+      payload.operation?.doctor_name,
+      payload.operation?.doctorName,
+      payload.doctor?.name,
+      payload.doctor?.doctor_name
+    )],
+  ];
+
+  for (const [source, value] of sources) {
+    const classified = classifyDoctor(value);
+    if (classified) {
+      return {
+        ...classified,
+        doctorSource: source,
+      };
+    }
+  }
+
+  return { doctorName: null, doctorKey: null, doctorSource: null };
 }
 
 class OperationDataService {
@@ -186,8 +263,12 @@ class OperationDataService {
       try {
         const item = this.normalizeIndexItem(indexRaw || {});
         await r2Storage.uploadJson(item.r2Key, payload, bucket);
+        const doctor = deriveDoctorMetadata(indexRaw || {}, payload || {});
         indexItems.push({
           ...indexRaw,
+          doctor_name: item.doctorName || doctor.doctorName,
+          doctor_key: item.doctorKey || doctor.doctorKey,
+          doctor_source: item.doctorSource || doctor.doctorSource,
           r2_key: item.r2Key,
           r2_bucket: bucket,
         });
@@ -209,6 +290,55 @@ class OperationDataService {
       bucket,
       index: indexResult,
       errors: archiveErrors,
+    };
+  }
+
+  async backfillDoctorMetadataFromPayload({ facility = 'gambiran', limit = 100 } = {}) {
+    const normalizedFacility = normalizeFacility(facility);
+    const rowLimit = safeLimit(limit, 100);
+    const [rows] = await db.query(
+      `SELECT id, facility, r2_key, r2_bucket
+         FROM operation_data_index
+        WHERE facility = ?
+          AND r2_key IS NOT NULL
+          AND (doctor_key IS NULL OR doctor_key = '')
+        ORDER BY operation_date DESC, id DESC
+        LIMIT ?`,
+      [normalizedFacility, rowLimit]
+    );
+
+    let updated = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const row of rows) {
+      try {
+        const payload = await r2Storage.getJson(row.r2_key, row.r2_bucket || process.env.OPERATION_DATA_R2_BUCKET_NAME);
+        const doctor = deriveDoctorMetadata({}, payload || {});
+        if (!doctor.doctorKey) {
+          skipped++;
+          continue;
+        }
+
+        await db.query(
+          `UPDATE operation_data_index
+              SET doctor_name = ?,
+                  doctor_key = ?,
+                  doctor_source = ?
+            WHERE id = ?`,
+          [doctor.doctorName, doctor.doctorKey, doctor.doctorSource, row.id]
+        );
+        updated++;
+      } catch (error) {
+        errors.push({ id: row.id, message: error.message });
+      }
+    }
+
+    return {
+      scanned: rows.length,
+      updated,
+      skipped,
+      errors,
     };
   }
 

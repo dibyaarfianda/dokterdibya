@@ -10,6 +10,7 @@ jest.mock('../../db', () => ({
 
 const operationData = require('../../services/OperationDataService');
 const db = require('../../db');
+const r2Storage = require('../../services/r2Storage');
 
 describe('OperationDataService doctor metadata', () => {
     beforeEach(() => {
@@ -58,5 +59,66 @@ describe('OperationDataService doctor metadata', () => {
             'latifa',
             'operator'
         ]));
+    });
+
+    test('archiveRecords derives doctor metadata from legacy payload DPJP when index item has none', async () => {
+        db.query.mockResolvedValue([{ affectedRows: 1 }]);
+        r2Storage.uploadJson.mockResolvedValue({ key: 'operation-data/gambiran/2026-06-18/item.json' });
+
+        await operationData.archiveRecords([{
+            index_item: {
+                facility: 'gambiran',
+                source_key: 'gambiran:med0001:123',
+                patient_name: 'Pasien Lama',
+                operation_date: '2026-06-18',
+                r2_key: 'operation-data/gambiran/2026-06-18/item.json'
+            },
+            payload: {
+                patient: {
+                    raw: {
+                        dpjp: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.'
+                    }
+                }
+            }
+        }]);
+
+        const [, params] = db.query.mock.calls[0];
+        expect(params).toEqual(expect.arrayContaining([
+            'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
+            'dibya',
+            'dpjp'
+        ]));
+    });
+
+    test('backfillDoctorMetadataFromPayload updates existing Gambiran index rows from R2 payloads', async () => {
+        db.query
+            .mockResolvedValueOnce([[{
+                id: 2550,
+                facility: 'gambiran',
+                r2_key: 'operation-data/gambiran/2026-06-18/item.json',
+                r2_bucket: 'test-bucket'
+            }]])
+            .mockResolvedValueOnce([{ affectedRows: 1 }]);
+        r2Storage.getJson.mockResolvedValue({
+            patient: {
+                raw: {
+                    dpjp: 'dr. Latifa Maharani, Sp.OG'
+                }
+            }
+        });
+
+        const result = await operationData.backfillDoctorMetadataFromPayload({ facility: 'gambiran', limit: 10 });
+
+        expect(result).toEqual(expect.objectContaining({
+            scanned: 1,
+            updated: 1
+        }));
+        expect(db.query.mock.calls[1][0]).toContain('UPDATE operation_data_index');
+        expect(db.query.mock.calls[1][1]).toEqual([
+            'dr. Latifa Maharani, Sp.OG',
+            'latifa',
+            'dpjp',
+            2550
+        ]);
     });
 });
