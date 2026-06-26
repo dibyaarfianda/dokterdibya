@@ -1,4 +1,5 @@
 const db = require('../db');
+const { matchesAnyTerm, parseSearchTerms } = require('../utils/searchTerms');
 
 const TARGET_DOCTOR_KEYS = ['dibya', 'tri_aji', 'latifa'];
 
@@ -90,7 +91,7 @@ class OperationAuditService {
             page,
             limit,
             doctor,
-            operation: normalizeText(params.operation),
+            operationTerms: parseSearchTerms(params.operation),
             repeat,
         };
     }
@@ -173,8 +174,8 @@ class OperationAuditService {
         if (normalized.doctor !== 'all') {
             baseRows = baseRows.filter(row => row.doctor_key === normalized.doctor);
         }
-        if (normalized.operation) {
-            baseRows = baseRows.filter(row => normalizeText(row.operation_name).includes(normalized.operation));
+        if (normalized.operationTerms.length > 0) {
+            baseRows = baseRows.filter(row => matchesAnyTerm(row.operation_name, normalized.operationTerms));
         }
         if (normalized.repeat === 'yes') {
             baseRows = baseRows.filter(row => row.repeat_within_30d);

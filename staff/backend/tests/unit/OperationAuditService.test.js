@@ -122,4 +122,24 @@ describe('OperationAuditService', () => {
             repeat_within_30d: true
         }));
     });
+
+    test('matches comma-separated operation filters case-insensitively', async () => {
+        const db = createDbMock([
+            [[
+                row({ id: 1, operation_name: 'SVH + BSO' }),
+                row({ id: 2, source_key: 'gambiran:pendaftaran:2', operation_name: 'TAH' }),
+                row({ id: 3, source_key: 'gambiran:pendaftaran:3', operation_name: 'Kuretase' })
+            ]]
+        ]);
+        const service = new OperationAuditService(db);
+
+        const result = await service.getGambiranAudit({
+            start: '2026-06-01',
+            end: '2026-06-30',
+            operation: 'svh, tah'
+        });
+
+        expect(result.summary.total).toBe(2);
+        expect(result.data.map(item => item.operation_name)).toEqual(['SVH + BSO', 'TAH']);
+    });
 });

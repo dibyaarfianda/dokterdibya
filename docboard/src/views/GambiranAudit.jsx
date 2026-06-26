@@ -104,7 +104,7 @@ export default function GambiranAudit() {
         <input
           type="search"
           value={filters.operation}
-          placeholder="Cari jenis operasi"
+          placeholder="Cari jenis operasi. Contoh: SVH, TAH"
           onInput={event => setFilters({ ...filters, operation: event.currentTarget.value })}
         />
         <div class="audit-filter-row">

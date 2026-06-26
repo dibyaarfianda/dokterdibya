@@ -87,7 +87,7 @@ export default function OperationDataList() {
         <input
           type="search"
           value={filters.q}
-          placeholder="Cari pasien, MR, tindakan, diagnosis"
+          placeholder="Cari pasien, MR, tindakan. Contoh: SVH, TAH"
           onInput={e => setFilters({ ...filters, q: e.currentTarget.value })}
         />
         <div class="operation-data-filter-row">

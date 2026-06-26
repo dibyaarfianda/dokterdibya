@@ -121,4 +121,32 @@ describe('OperationDataService doctor metadata', () => {
             2550
         ]);
     });
+
+    test('list treats comma-separated operation search terms as case-insensitive OR terms', async () => {
+        db.query
+            .mockResolvedValueOnce([[{ total: 2 }]])
+            .mockResolvedValueOnce([[]]);
+
+        await operationData.list({
+            q: 'svh, TAH',
+            start: '2026-06-01',
+            end: '2026-06-30'
+        });
+
+        const [countSql, countParams] = db.query.mock.calls[0];
+        expect(countSql).toContain('LOWER(COALESCE(operation_name');
+        expect(countSql).toContain(' OR ');
+        expect(countParams).toEqual([
+            '2026-06-01',
+            '2026-06-30',
+            '%svh%',
+            '%svh%',
+            '%svh%',
+            '%svh%',
+            '%tah%',
+            '%tah%',
+            '%tah%',
+            '%tah%'
+        ]);
+    });
 });

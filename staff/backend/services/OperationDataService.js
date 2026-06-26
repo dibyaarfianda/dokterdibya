@@ -1,5 +1,6 @@
 const db = require('../db');
 const r2Storage = require('./r2Storage');
+const { parseSearchTerms, escapeLikeTerm } = require('../utils/searchTerms');
 
 const FACILITIES = ['melinda', 'gambiran', 'bhayangkara'];
 const TARGET_DOCTORS = [
@@ -79,10 +80,6 @@ function mysqlDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
-}
-
-function like(value) {
-  return `%${trim(value).replace(/[\\%_]/g, '\\$&')}%`;
 }
 
 function safeLimit(value, fallback = 50) {
@@ -361,10 +358,17 @@ class OperationDataService {
       where.push('operation_date <= ?');
       values.push(normalizeDate(params.end));
     }
-    if (params.q) {
-      where.push('(patient_name LIKE ? OR mr_id LIKE ? OR operation_name LIKE ? OR diagnosis LIKE ?)');
-      const q = like(params.q);
-      values.push(q, q, q, q);
+    const searchTerms = parseSearchTerms(params.q);
+    if (searchTerms.length > 0) {
+      const searchableColumns = ['patient_name', 'mr_id', 'operation_name', 'diagnosis'];
+      const termClauses = searchTerms.map(() => (
+        `(${searchableColumns.map(column => `LOWER(COALESCE(${column}, '')) LIKE ?`).join(' OR ')})`
+      ));
+      where.push(`(${termClauses.join(' OR ')})`);
+      searchTerms.forEach((term) => {
+        const q = escapeLikeTerm(term);
+        searchableColumns.forEach(() => values.push(q));
+      });
     }
 
     const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
