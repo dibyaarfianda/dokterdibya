@@ -36,6 +36,19 @@ describe('OperationDataService doctor metadata', () => {
         }));
     });
 
+    test('normalizes patient_age from archive items', () => {
+        const item = operationData.normalizeIndexItem({
+            facility: 'gambiran',
+            source_key: 'gambiran:pendaftaran:123',
+            patient_name: 'Pasien Audit',
+            patient_age: '34 tahun',
+            operation_date: '2026-06-01',
+            r2_key: 'operation-data/gambiran/2026-06-01/item.json'
+        });
+
+        expect(item.patientAge).toBe('34 tahun');
+    });
+
     test('upsertIndex writes doctor metadata to operation_data_index', async () => {
         db.query.mockResolvedValue([{ affectedRows: 1 }]);
 
@@ -59,6 +72,23 @@ describe('OperationDataService doctor metadata', () => {
             'latifa',
             'operator'
         ]));
+    });
+
+    test('upsertIndex writes patient age to operation_data_index', async () => {
+        db.query.mockResolvedValue([{ affectedRows: 1 }]);
+
+        await operationData.upsertIndex([{
+            facility: 'gambiran',
+            source_key: 'gambiran:pendaftaran:123',
+            patient_name: 'Pasien Audit',
+            patient_age: '34 tahun',
+            operation_date: '2026-06-01',
+            r2_key: 'operation-data/gambiran/2026-06-01/item.json'
+        }]);
+
+        const [sql, params] = db.query.mock.calls[0];
+        expect(sql).toContain('patient_age');
+        expect(params).toEqual(expect.arrayContaining(['34 tahun']));
     });
 
     test('archiveRecords derives doctor metadata from legacy payload DPJP when index item has none', async () => {
@@ -209,6 +239,22 @@ describe('OperationDataService doctor metadata', () => {
         }));
         expect(db.query.mock.calls[1][0]).toContain('UPDATE operation_data_index');
         expect(db.query.mock.calls[1][1]).toEqual(['537912', 3429]);
+    });
+
+    test('updatePatientAges updates existing rows by source key', async () => {
+        db.query.mockResolvedValue([{ affectedRows: 1 }]);
+
+        const result = await operationData.updatePatientAges([
+            { source_key: 'gambiran:pendaftaran:19196', patient_age: '28 tahun' }
+        ]);
+
+        expect(result).toEqual({
+            received: 1,
+            updated: 1,
+            errors: []
+        });
+        expect(db.query.mock.calls[0][0]).toContain('UPDATE operation_data_index');
+        expect(db.query.mock.calls[0][1]).toEqual(['28 tahun', 'gambiran:pendaftaran:19196']);
     });
 
     test('list treats comma-separated operation search terms as case-insensitive OR terms', async () => {

@@ -26,6 +26,26 @@ router.post('/archive', async (req, res) => {
   }
 });
 
+router.get('/patient-age/missing', async (req, res) => {
+  try {
+    const rows = await operationData.listRowsMissingPatientAge(req.query || {});
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    logger.error('Operation data patient age missing list error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/patient-age', async (req, res) => {
+  try {
+    const result = await operationData.updatePatientAges(req.body?.items || []);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Operation data patient age update error:', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 router.post('/backfill/start', async (req, res) => {
   try {
     const result = await operationData.createBackfillRun({

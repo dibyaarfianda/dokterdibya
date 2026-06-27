@@ -60,6 +60,7 @@ function repeatSummary(row) {
         source_key: row.source_key,
         patient_name: row.patient_name,
         mr_id: row.mr_id,
+        patient_age: row.patient_age,
         operation_date: row.operation_date,
         operation_time: row.operation_time,
         operation_name: row.operation_name,
@@ -158,7 +159,7 @@ class OperationAuditService {
         const normalized = this.normalizeParams(params);
         const [rows] = await this.db.query(
             `SELECT id, facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
-                    operation_date, operation_time, operation_name, diagnosis, status,
+                    patient_age, operation_date, operation_time, operation_name, diagnosis, status,
                     doctor_name, doctor_key, doctor_source, fetched_at, last_synced_at
                FROM operation_data_index
               WHERE facility = 'gambiran'

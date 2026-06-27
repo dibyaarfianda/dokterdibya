@@ -181,6 +181,7 @@ function AuditRow({ row }) {
         <div class="operation-data-meta">
           <span>{doctorLabel(row.doctor_key)}</span>
           {row.mr_id && <span>RM {row.mr_id}</span>}
+          {row.patient_age && <span>Umur {row.patient_age}</span>}
           {row.repeat_within_30d && <span class="audit-repeat-chip">Ulang 30 hari</span>}
         </div>
         {row.diagnosis && <div class="operation-data-diagnosis">{row.diagnosis}</div>}

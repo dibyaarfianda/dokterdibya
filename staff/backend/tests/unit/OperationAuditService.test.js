@@ -36,6 +36,7 @@ function row(overrides) {
         doctor_name: 'dr. Dibya Arfianda, SpOG',
         doctor_key: 'dibya',
         doctor_source: 'operator',
+        patient_age: '34 tahun',
         fetched_at: '2026-06-02 01:00:00',
         last_synced_at: '2026-06-02 01:00:00',
         ...overrides
@@ -119,6 +120,7 @@ describe('OperationAuditService', () => {
         expect(result.data[0]).toEqual(expect.objectContaining({
             doctor_key: 'latifa',
             operation_name: 'Kuretase',
+            patient_age: '34 tahun',
             repeat_within_30d: true
         }));
     });

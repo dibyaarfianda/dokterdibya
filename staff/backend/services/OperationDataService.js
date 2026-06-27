@@ -197,6 +197,26 @@ function deriveMedicalRecordNumber(raw = {}, payload = {}) {
   );
 }
 
+function derivePatientAge(raw = {}, payload = {}) {
+  return firstValue(
+    raw.patient_age,
+    raw.patientAge,
+    raw.usia,
+    raw.age,
+    payload.patient?.age,
+    payload.patient?.patient_age,
+    payload.patient?.patientAge,
+    payload.patient?.usia,
+    payload.operation?.patient_age,
+    payload.operation?.patientAge,
+    payload.registration?.patient_age,
+    payload.registration?.patientAge,
+    payload.report?.patient_age,
+    payload.report?.patientAge,
+    payload.report?.usia
+  );
+}
+
 class OperationDataService {
   normalizeIndexItem(raw) {
     const facility = normalizeFacility(raw.facility || raw.location);
@@ -216,6 +236,7 @@ class OperationDataService {
       simrsOperasiId: nullable(raw.simrs_operasi_id || raw.simrsOperasiId || raw.operasiId),
       mrId: nullable(raw.mr_id || raw.mrId || raw.no_rm || raw.medicalRecordNo),
       patientName,
+      patientAge: nullable(raw.patient_age || raw.patientAge || raw.usia || raw.age),
       operationDate,
       operationTime: normalizeTime(raw.operation_time || raw.operationTime || raw.waktuMulai),
       operationName: nullable(raw.operation_name || raw.operationName || raw.tindakanOperasi),
@@ -242,14 +263,15 @@ class OperationDataService {
         await db.query(
           `INSERT INTO operation_data_index
              (facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
-              operation_date, operation_time, operation_name, diagnosis, status,
+              patient_age, operation_date, operation_time, operation_name, diagnosis, status,
               doctor_name, doctor_key, doctor_source, r2_key, r2_bucket, surgery_id, fetched_at, last_synced_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
            ON DUPLICATE KEY UPDATE
               case_id = VALUES(case_id),
               simrs_operasi_id = VALUES(simrs_operasi_id),
               mr_id = VALUES(mr_id),
               patient_name = VALUES(patient_name),
+              patient_age = VALUES(patient_age),
               operation_date = VALUES(operation_date),
               operation_time = VALUES(operation_time),
               operation_name = VALUES(operation_name),
@@ -265,7 +287,7 @@ class OperationDataService {
               last_synced_at = NOW()`,
           [
             item.facility, item.sourceKey, item.caseId, item.simrsOperasiId, item.mrId,
-            item.patientName, item.operationDate, item.operationTime, item.operationName,
+            item.patientName, item.patientAge, item.operationDate, item.operationTime, item.operationName,
             item.diagnosis, item.status, item.doctorName, item.doctorKey, item.doctorSource,
             item.r2Key, item.r2Bucket, item.surgeryId, item.fetchedAt,
           ]
@@ -295,9 +317,11 @@ class OperationDataService {
         await r2Storage.uploadJson(item.r2Key, payload, bucket);
         const doctor = deriveDoctorMetadata(indexRaw || {}, payload || {});
         const mrId = item.mrId || deriveMedicalRecordNumber(indexRaw || {}, payload || {});
+        const patientAge = item.patientAge || derivePatientAge(indexRaw || {}, payload || {});
         indexItems.push({
           ...indexRaw,
           mr_id: mrId,
+          patient_age: patientAge,
           doctor_name: item.doctorName || doctor.doctorName,
           doctor_key: item.doctorKey || doctor.doctorKey,
           doctor_source: item.doctorSource || doctor.doctorSource,
@@ -323,6 +347,67 @@ class OperationDataService {
       index: indexResult,
       errors: archiveErrors,
     };
+  }
+
+  async listRowsMissingPatientAge({ facility = 'gambiran', start, end, limit = 100 } = {}) {
+    const normalizedFacility = normalizeFacility(facility);
+    const rowLimit = safeLimit(limit, 100);
+    const where = [
+      'facility = ?',
+      "mr_id IS NOT NULL",
+      "mr_id <> ''",
+      "(patient_age IS NULL OR patient_age = '')",
+    ];
+    const values = [normalizedFacility];
+
+    if (start) {
+      where.push('operation_date >= ?');
+      values.push(normalizeDate(start));
+    }
+    if (end) {
+      where.push('operation_date <= ?');
+      values.push(normalizeDate(end));
+    }
+
+    const [rows] = await db.query(
+      `SELECT id, facility, source_key, mr_id, patient_name, operation_date
+         FROM operation_data_index
+        WHERE ${where.join(' AND ')}
+        ORDER BY operation_date DESC, id DESC
+        LIMIT ?`,
+      [...values, rowLimit]
+    );
+
+    return rows.map(mapRecordDates);
+  }
+
+  async updatePatientAges(items) {
+    if (!Array.isArray(items)) throw new Error('items must be an array');
+    let updated = 0;
+    const errors = [];
+
+    for (const raw of items) {
+      const sourceKey = trim(raw?.source_key || raw?.sourceKey);
+      const patientAge = nullable(raw?.patient_age || raw?.patientAge || raw?.age || raw?.usia);
+      if (!sourceKey || !patientAge) {
+        errors.push({ source_key: sourceKey || null, message: 'source_key and patient_age are required' });
+        continue;
+      }
+
+      try {
+        const [result] = await db.query(
+          `UPDATE operation_data_index
+              SET patient_age = ?
+            WHERE source_key = ?`,
+          [patientAge, sourceKey]
+        );
+        updated += result?.affectedRows || 0;
+      } catch (error) {
+        errors.push({ source_key: sourceKey, message: error.message });
+      }
+    }
+
+    return { received: items.length, updated, errors };
   }
 
   async backfillMedicalRecordNumbersFromPayload({ facility = 'gambiran', limit = 100 } = {}) {
@@ -457,7 +542,7 @@ class OperationDataService {
     const [[countRow]] = await db.query(`SELECT COUNT(*) AS total FROM operation_data_index ${clause}`, values);
     const [rows] = await db.query(
       `SELECT id, facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
-              operation_date, operation_time, operation_name, diagnosis, status,
+              patient_age, operation_date, operation_time, operation_name, diagnosis, status,
               doctor_name, doctor_key, doctor_source, r2_key, r2_bucket, fetched_at, last_synced_at, created_at, updated_at
          FROM operation_data_index
          ${clause}
