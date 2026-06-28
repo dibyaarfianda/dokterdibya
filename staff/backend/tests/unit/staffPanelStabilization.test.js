@@ -22,6 +22,21 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
+    test('Kelola Pasien inline route preserves reload state and releases Kantor Saya scroll lock', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+
+        expect(html).toContain('data-shell-action="show-manage-patients"');
+        expect(html).toContain('window.showManagePatientsPage = function()');
+        expect(html).toContain("sessionStorage.setItem('lastStaffNavId', 'nav-kelola-pasien');");
+        expect(html).toContain("document.documentElement.classList.remove('kantor-saya-active');");
+        expect(html).toContain("document.body.classList.remove('kantor-saya-active');");
+        expect(html).toContain("document.documentElement.style.overflowY = 'auto';");
+        expect(html).toContain("document.body.style.overflowY = 'auto';");
+        expect(mainJs).toContain("'nav-kelola-pasien':");
+        expect(mainJs).toContain("() => showKelolaPasienPage()");
+    });
+
     test('dashboard daily greeting uses safe display names instead of email identities', () => {
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
         const aiRoute = readNormalizedFile('staff', 'backend', 'routes', 'ai.js');
