@@ -12,6 +12,8 @@ import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js?v=20260619embed1';
 import patientSidebar from './components/patient-history-sidebar.js?v=2.0.6';
 
+const QUEUE_STATUS_TIMEOUT_MS = 12000;
+
 // Expose stateManager to window for cross-module access (used by medical-import.js)
 window.stateManager = stateManager;
 
@@ -68,6 +70,12 @@ window.showToast = function(type, message) {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 };
+
+function resetStartExaminationButton(btn) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-stethoscope"></i> Periksa Pasien';
+}
 
 class SundayClinicApp {
     constructor() {
@@ -2487,12 +2495,15 @@ class SundayClinicApp {
         }
         const btn = document.getElementById('btn-periksa-pasien');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; }
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), QUEUE_STATUS_TIMEOUT_MS);
         try {
             const token = window.getToken();
             const res = await fetch(`/api/sunday-clinic/records/${mrId}/queue-status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ status: 'diperiksa' })
+                body: JSON.stringify({ status: 'diperiksa' }),
+                signal: controller.signal
             });
             const data = await res.json();
             if (data.success) {
@@ -2506,12 +2517,17 @@ class SundayClinicApp {
                 window.showToast && window.showToast('success', 'Pasien sedang diperiksa');
             } else {
                 window.showToast && window.showToast('error', data.message || 'Gagal update status');
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-stethoscope"></i> Periksa Pasien'; }
+                resetStartExaminationButton(btn);
             }
         } catch (e) {
             console.error('[Queue] startExamination failed:', e);
-            window.showToast && window.showToast('error', 'Gagal memulai pemeriksaan');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-stethoscope"></i> Periksa Pasien'; }
+            const message = e?.name === 'AbortError'
+                ? 'Request memulai pemeriksaan terlalu lama. Coba tekan Periksa Pasien lagi.'
+                : 'Gagal memulai pemeriksaan';
+            window.showToast && window.showToast('error', message);
+            resetStartExaminationButton(btn);
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 

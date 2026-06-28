@@ -212,6 +212,18 @@ describe('staff panel stabilization sources', () => {
         expect(standaloneHtml).not.toContain('/staff/public/scripts/sunday-clinic.js');
     });
 
+    test('Sunday Clinic Periksa Pasien button recovers from stalled queue-status requests', () => {
+        const sundayClinicMain = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+
+        expect(sundayClinicMain).toContain('const QUEUE_STATUS_TIMEOUT_MS = 12000;');
+        expect(sundayClinicMain).toContain('function resetStartExaminationButton(btn)');
+        expect(sundayClinicMain).toContain('const controller = new AbortController();');
+        expect(sundayClinicMain).toContain('const timeoutId = setTimeout(() => controller.abort(), QUEUE_STATUS_TIMEOUT_MS);');
+        expect(sundayClinicMain).toContain("signal: controller.signal");
+        expect(sundayClinicMain).toContain('clearTimeout(timeoutId);');
+        expect(sundayClinicMain).toContain('resetStartExaminationButton(btn);');
+    });
+
     test('server redirects legacy Sunday Clinic URLs instead of serving a standalone app shell', () => {
         const server = readRepoFile('staff', 'backend', 'server.js');
 
