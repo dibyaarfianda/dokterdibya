@@ -13,13 +13,15 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-06-21-v13-reset-modal-selection';
+window.PLANNING_HELPERS_VERSION = '2026-06-28-v14-prescription-templates';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
 
 window.availableTindakanList = null;
 window.selectedObatForPrescription = null;
+window.prescriptionTemplates = [];
+window.editingPrescriptionTemplate = null;
 
 function resetTindakanModalSelection() {
     document.querySelectorAll('.tindakan-checkbox').forEach((checkbox) => {
@@ -912,14 +914,28 @@ function proceedToCaraPakai() {
     showBatchCaraPakaiModal(selectedObat);
 }
 
-function showBatchCaraPakaiModal(selectedObat) {
+function showBatchCaraPakaiModal(selectedObat, options = {}) {
     const modalBody = document.getElementById('batch-cara-pakai-body');
     if (!modalBody) return;
 
+    window.editingPrescriptionTemplate = options.template || null;
+
     // Build compact form for each selected obat
-    let formHtml = '<div class="resep-compact-list">';
+    let formHtml = '';
+    if (window.editingPrescriptionTemplate) {
+        formHtml += `
+            <div class="alert alert-success py-2 mb-3">
+                <i class="fas fa-edit mr-1"></i>
+                Edit template: <strong>${escapeHtml(window.editingPrescriptionTemplate.name || '-')}</strong>
+            </div>
+        `;
+    }
+    formHtml += '<div class="resep-compact-list">';
     selectedObat.forEach((obat, index) => {
         const isLast = index === selectedObat.length - 1;
+        const quantityValue = Number(obat.quantity) > 0 ? Number(obat.quantity) : 1;
+        const selectedUnit = obat.unit || 'tablet';
+        const caraPakaiValue = obat.caraPakai || '';
         formHtml += `
             <div class="resep-row mb-2 p-2 border rounded" data-index="${index}">
                 <div class="d-flex align-items-center flex-wrap">
@@ -927,17 +943,17 @@ function showBatchCaraPakaiModal(selectedObat) {
                         <i class="fas fa-pills text-success mr-1"></i>${escapeHtml(obat.name)}
                     </span>
                     <input type="number" class="form-control form-control-sm draft-terapi-field mr-1"
-                           id="jumlah-${index}" min="1" value="1" style="width:60px;"
+                           id="jumlah-${index}" min="1" value="${escapeHtml(String(quantityValue))}" style="width:60px;"
                            data-next="satuan-${index}">
                     <select class="form-control form-control-sm draft-terapi-field mr-2"
                             id="satuan-${index}" style="width:80px;"
                             data-next="carapakai-${index}">
-                        <option value="tablet">tab</option>
-                        <option value="kapsul">kap</option>
-                        <option value="box">box</option>
-                        <option value="botol">btl</option>
-                        <option value="tube">tube</option>
-                        <option value="sachet">sach</option>
+                        <option value="tablet" ${selectedUnit === 'tablet' ? 'selected' : ''}>tab</option>
+                        <option value="kapsul" ${selectedUnit === 'kapsul' ? 'selected' : ''}>kap</option>
+                        <option value="box" ${selectedUnit === 'box' ? 'selected' : ''}>box</option>
+                        <option value="botol" ${selectedUnit === 'botol' ? 'selected' : ''}>btl</option>
+                        <option value="tube" ${selectedUnit === 'tube' ? 'selected' : ''}>tube</option>
+                        <option value="sachet" ${selectedUnit === 'sachet' ? 'selected' : ''}>sach</option>
                     </select>
                     <div class="btn-group btn-group-sm mr-2">
                         <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="3x1">3x1</button>
@@ -945,7 +961,7 @@ function showBatchCaraPakaiModal(selectedObat) {
                         <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="1x1">1x1</button>
                     </div>
                     <input type="text" class="form-control form-control-sm draft-terapi-field flex-grow-1"
-                           id="carapakai-${index}" placeholder="atau ketik manual..." style="min-width:140px;"
+                           id="carapakai-${index}" value="${escapeHtml(caraPakaiValue)}" placeholder="atau ketik manual..." style="min-width:140px;"
                            data-next="${isLast ? '' : 'jumlah-' + (index + 1)}"
                            data-is-last="${isLast}">
                 </div>
@@ -1009,8 +1025,30 @@ function showBatchCaraPakaiModal(selectedObat) {
 }
 
 function backToObatSelection() {
+    window.editingPrescriptionTemplate = null;
     $('#cara-pakai-modal').modal('hide');
     $('#terapi-modal').modal('show');
+}
+
+function collectCurrentPrescriptionItems() {
+    const selectedObat = window.selectedObatForPrescription;
+    if (!Array.isArray(selectedObat) || selectedObat.length === 0) return [];
+
+    return selectedObat.map((obat, index) => {
+        const jumlahValue = document.getElementById(`jumlah-${index}`)?.value || '1';
+        const jumlah = parseInt(jumlahValue, 10);
+        const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
+        const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
+
+        return {
+            obatId: obat.obatId || obat.id || null,
+            name: obat.name,
+            quantity: isNaN(jumlah) ? 1 : jumlah,
+            unit: satuan,
+            caraPakai,
+            latinSig: convertToLatinSig(caraPakai)
+        };
+    }).filter(item => item.name);
 }
 
 async function addBatchTerapi() {
@@ -1021,35 +1059,21 @@ async function addBatchTerapi() {
     if (!textarea) return;
 
     let allPrescriptions = [];
-    const structuredItems = [];
+    const structuredItems = collectCurrentPrescriptionItems();
 
     // Collect all prescriptions
-    selectedObat.forEach((obat, index) => {
-        const jumlahValue = document.getElementById(`jumlah-${index}`)?.value || '1';
-        const jumlah = parseInt(jumlahValue, 10);
-        const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
-        const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
-
+    structuredItems.forEach((obat) => {
         // Convert to Latin format
-        const romanQuantity = toRoman(isNaN(jumlah) ? 1 : jumlah);
-        const latinSig = convertToLatinSig(caraPakai);
+        const romanQuantity = toRoman(obat.quantity);
+        const latinSig = obat.latinSig;
 
         // Format: R/ [Drug] [Unit] No. [Roman] Sig. [Latin]
-        let prescription = `R/ ${obat.name} ${satuan} No. ${romanQuantity}`;
+        let prescription = `R/ ${obat.name} ${obat.unit} No. ${romanQuantity}`;
         if (latinSig) {
             prescription += ` Sig. ${latinSig}`;
         }
 
         allPrescriptions.push(prescription);
-
-        structuredItems.push({
-            obatId: obat.id || null,
-            name: obat.name,
-            quantity: isNaN(jumlah) ? 1 : jumlah,
-            unit: satuan,
-            caraPakai,
-            latinSig
-        });
     });
 
     // Draft is already stored via updateDraftTerapiPreview, now save to database
@@ -1114,6 +1138,236 @@ async function saveStructuredTerapi(prescriptions) {
             window.showToast('error', 'Gagal menyimpan terapi: ' + error.message);
         }
         return false;
+    }
+}
+
+async function fetchPrescriptionTemplates() {
+    const token = await window.getToken();
+    if (!token) {
+        throw new Error('Sesi habis. Silakan login ulang.');
+    }
+
+    const response = await fetch('/api/sunday-clinic/prescription-templates', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Gagal memuat template obat');
+    }
+
+    return Array.isArray(result.data) ? result.data : [];
+}
+
+async function openPrescriptionTemplateModal() {
+    const container = document.getElementById('prescription-template-list');
+    if (container) {
+        container.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin mr-1"></i>Memuat template...</div>';
+    }
+
+    if (typeof $ !== 'undefined') {
+        $('#prescription-template-modal').modal('show');
+    }
+
+    try {
+        window.prescriptionTemplates = await fetchPrescriptionTemplates();
+        renderPrescriptionTemplateList();
+    } catch (error) {
+        console.error('Error loading prescription templates:', error);
+        if (container) {
+            container.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(error.message || 'Gagal memuat template obat')}</div>`;
+        }
+    }
+}
+
+function renderPrescriptionTemplateList() {
+    const container = document.getElementById('prescription-template-list');
+    if (!container) return;
+
+    const templates = Array.isArray(window.prescriptionTemplates) ? window.prescriptionTemplates : [];
+    if (templates.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-layer-group fa-2x mb-2"></i>
+                <p class="mb-1">Belum ada template obat.</p>
+                <small>Simpan template dari modal Isi Detail Resep.</small>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = templates.map(template => {
+        const items = Array.isArray(template.items) ? template.items : [];
+        const itemPreview = items.slice(0, 4).map(item => {
+            const quantity = item.quantity || 1;
+            const unit = item.unit || 'tablet';
+            const sig = item.caraPakai ? ` - ${item.caraPakai}` : '';
+            return `<li>${escapeHtml(item.name || '-')} ${escapeHtml(String(quantity))} ${escapeHtml(unit)}${escapeHtml(sig)}</li>`;
+        }).join('');
+        const moreText = items.length > 4 ? `<li class="text-muted">+${items.length - 4} obat lain</li>` : '';
+
+        return `
+            <div class="border rounded p-3 mb-2" data-template-id="${template.id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div style="min-width:0;">
+                        <div class="font-weight-bold text-success">${escapeHtml(template.name || '-')}</div>
+                        <ul class="small mb-0 pl-3">${itemPreview}${moreText}</ul>
+                    </div>
+                    <div class="btn-group btn-group-sm ml-2 flex-shrink-0">
+                        <button type="button" class="btn btn-success" onclick="applyPrescriptionTemplate(${template.id})" title="Pakai template">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="editPrescriptionTemplate(${template.id})" title="Edit template">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" onclick="deletePrescriptionTemplate(${template.id})" title="Hapus template">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function findPrescriptionTemplate(templateId) {
+    const id = Number(templateId);
+    return (window.prescriptionTemplates || []).find(template => Number(template.id) === id) || null;
+}
+
+async function applyPrescriptionTemplate(templateId) {
+    const template = findPrescriptionTemplate(templateId);
+    if (!template || !Array.isArray(template.items) || template.items.length === 0) {
+        window.showToast && window.showToast('warning', 'Template obat tidak valid');
+        return;
+    }
+
+    const saved = await saveStructuredTerapi(template.items);
+    if (!saved) return;
+
+    if (typeof $ !== 'undefined') {
+        $('#prescription-template-modal').modal('hide');
+    }
+
+    refreshBillingIfActive();
+    if (window.renderTerapiItemsList) {
+        await window.renderTerapiItemsList();
+    }
+
+    if (window.showToast) {
+        window.showToast('success', `Template "${template.name}" dipakai`);
+    } else if (typeof showSuccess === 'function') {
+        showSuccess(`Template "${template.name}" dipakai`);
+    }
+}
+
+function editPrescriptionTemplate(templateId) {
+    const template = findPrescriptionTemplate(templateId);
+    if (!template || !Array.isArray(template.items) || template.items.length === 0) {
+        window.showToast && window.showToast('warning', 'Template obat tidak valid');
+        return;
+    }
+
+    const selectedObat = template.items.map(item => ({
+        id: item.obatId || item.id || null,
+        obatId: item.obatId || item.id || null,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        caraPakai: item.caraPakai
+    }));
+
+    if (typeof $ !== 'undefined') {
+        $('#prescription-template-modal').modal('hide');
+    }
+
+    showBatchCaraPakaiModal(selectedObat, { template });
+}
+
+async function saveCurrentPrescriptionAsTemplate() {
+    const items = collectCurrentPrescriptionItems();
+    if (items.length === 0) {
+        window.showToast && window.showToast('warning', 'Isi minimal satu obat sebelum menyimpan template');
+        return;
+    }
+
+    const editingTemplate = window.editingPrescriptionTemplate;
+    const defaultName = editingTemplate?.name || '';
+    const name = window.prompt('Nama template obat:', defaultName);
+    if (!name || !name.trim()) return;
+
+    try {
+        const token = await window.getToken();
+        if (!token) {
+            throw new Error('Sesi habis. Silakan login ulang.');
+        }
+
+        const endpoint = editingTemplate?.id
+            ? `/api/sunday-clinic/prescription-templates/${editingTemplate.id}`
+            : '/api/sunday-clinic/prescription-templates';
+        const response = await fetch(endpoint, {
+            method: editingTemplate?.id ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: name.trim(),
+                items
+            })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Gagal menyimpan template obat');
+        }
+
+        window.editingPrescriptionTemplate = null;
+        if (window.showToast) {
+            window.showToast('success', result.message || 'Template obat berhasil disimpan');
+        } else if (typeof showSuccess === 'function') {
+            showSuccess(result.message || 'Template obat berhasil disimpan');
+        }
+    } catch (error) {
+        console.error('Error saving prescription template:', error);
+        window.showToast && window.showToast('error', error.message || 'Gagal menyimpan template obat');
+    }
+}
+
+async function deletePrescriptionTemplate(templateId) {
+    const template = findPrescriptionTemplate(templateId);
+    if (!template) return;
+
+    if (!confirm(`Hapus template obat "${template.name}"?`)) {
+        return;
+    }
+
+    try {
+        const token = await window.getToken();
+        if (!token) {
+            throw new Error('Sesi habis. Silakan login ulang.');
+        }
+
+        const response = await fetch(`/api/sunday-clinic/prescription-templates/${template.id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Gagal menghapus template obat');
+        }
+
+        window.prescriptionTemplates = (window.prescriptionTemplates || []).filter(item => Number(item.id) !== Number(template.id));
+        renderPrescriptionTemplateList();
+        window.showToast && window.showToast('success', 'Template obat dihapus');
+    } catch (error) {
+        console.error('Error deleting prescription template:', error);
+        window.showToast && window.showToast('error', error.message || 'Gagal menghapus template obat');
     }
 }
 
@@ -1566,6 +1820,11 @@ window.resetTerapi = resetTerapi;
 window.proceedToCaraPakai = proceedToCaraPakai;
 window.backToObatSelection = backToObatSelection;
 window.addBatchTerapi = addBatchTerapi;
+window.openPrescriptionTemplateModal = openPrescriptionTemplateModal;
+window.saveCurrentPrescriptionAsTemplate = saveCurrentPrescriptionAsTemplate;
+window.applyPrescriptionTemplate = applyPrescriptionTemplate;
+window.editPrescriptionTemplate = editPrescriptionTemplate;
+window.deletePrescriptionTemplate = deletePrescriptionTemplate;
 window.updateDraftTerapiPreview = updateDraftTerapiPreview;
 window.storeDraftTerapi = storeDraftTerapi;
 window.getDraftTerapi = getDraftTerapi;

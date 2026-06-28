@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v289';
+        window.STAFF_CACHE_VERSION = 'v290';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1649,8 +1649,8 @@
 
         })();
     </script>
-    <script defer src="scripts/shell/appointment-debug.js?v=v289"></script>
-    <script defer src="scripts/shell/patient-search-detail.js?v=v289"></script>
+    <script defer src="scripts/shell/appointment-debug.js?v=v290"></script>
+    <script defer src="scripts/shell/patient-search-detail.js?v=v290"></script>
     
     <!-- Cache Clear Script -->
     <script>
@@ -8110,7 +8110,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v289"></script>
+    <script defer src="scripts/shell/actions.js?v=v290"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8250,8 +8250,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Sunday Clinic payment/planning dependencies -->
 <script defer src="https://js.xendit.co/v1/xendit.min.js"></script>
-<script type="module" src="scripts/shell/qrcode-loader.js?v=v289"></script>
-<script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260621modalreset1"></script>
+<script type="module" src="scripts/shell/qrcode-loader.js?v=v290"></script>
+<script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260628templates1"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260619staff1"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
@@ -8479,7 +8479,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v289"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v290"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -14154,6 +14154,38 @@ async function deleteCode(codeId) {
     </div>
 </div>
 
+<!-- Sunday Clinic Shared Prescription Template Modal -->
+<div class="modal fade" id="prescription-template-modal" tabindex="-1" role="dialog" aria-labelledby="prescriptionTemplateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="prescriptionTemplateModalLabel">
+                    <i class="fas fa-layer-group mr-2"></i>Template Obat
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Template bersifat shared untuk semua staff Sunday Clinic.
+                </div>
+                <div id="prescription-template-list">
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-spinner fa-spin mr-1"></i>Memuat template...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Sunday Clinic Batch Cara Pakai Modal -->
 <div class="modal fade" id="cara-pakai-modal" tabindex="-1" role="dialog" aria-labelledby="caraPakaiModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -14170,6 +14202,9 @@ async function deleteCode(codeId) {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="backToObatSelection()">
                     <i class="fas fa-arrow-left mr-1"></i>Kembali
+                </button>
+                <button type="button" class="btn btn-success" onclick="saveCurrentPrescriptionAsTemplate()">
+                    <i class="fas fa-save mr-1"></i>Simpan Template
                 </button>
                 <button type="button" class="btn btn-primary" onclick="addBatchTerapi()">
                     <i class="fas fa-check mr-1"></i>Selesai

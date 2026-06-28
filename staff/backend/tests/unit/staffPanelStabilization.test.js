@@ -242,6 +242,39 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicMain).toContain("btn.style.display = 'none';");
     });
 
+    test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
+        const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const planningHelpers = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'planning-helpers.js');
+        const planComponent = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'plan.js');
+        const staffHtml = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const migration = readNormalizedFile('staff', 'backend', 'migrations', '20260628_create_sunday_clinic_prescription_templates.sql');
+
+        expect(migration).toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
+        expect(migration).toContain('items JSON NOT NULL');
+        expect(sundayClinicRoute).toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
+        expect(sundayClinicRoute).toContain("router.get('/prescription-templates', verifyToken");
+        expect(sundayClinicRoute).toContain("router.post('/prescription-templates', verifyToken");
+        expect(sundayClinicRoute).toContain("router.put('/prescription-templates/:id', verifyToken");
+        expect(sundayClinicRoute).toContain("router.delete('/prescription-templates/:id', verifyToken");
+        expect(sundayClinicRoute).toContain('normalizePrescriptionTemplateItems');
+        expect(sundayClinicRoute).toContain('is_active = 0');
+
+        expect(planComponent).toContain('window.openPrescriptionTemplateModal');
+        expect(planComponent).toContain('Template Obat');
+        expect(staffHtml).toContain('id="prescription-template-modal"');
+        expect(staffHtml).toContain('id="prescription-template-list"');
+        expect(staffHtml).toContain('Simpan Template');
+
+        expect(planningHelpers).toContain('async function openPrescriptionTemplateModal()');
+        expect(planningHelpers).toContain('async function saveCurrentPrescriptionAsTemplate()');
+        expect(planningHelpers).toContain('async function applyPrescriptionTemplate(templateId)');
+        expect(planningHelpers).toContain('function editPrescriptionTemplate(templateId)');
+        expect(planningHelpers).toContain('async function deletePrescriptionTemplate(templateId)');
+        expect(planningHelpers).toContain('/api/sunday-clinic/prescription-templates');
+        expect(planningHelpers).toContain('saveStructuredTerapi(template.items)');
+        expect(planningHelpers).toContain('window.openPrescriptionTemplateModal = openPrescriptionTemplateModal;');
+    });
+
     test('server redirects legacy Sunday Clinic URLs instead of serving a standalone app shell', () => {
         const server = readRepoFile('staff', 'backend', 'server.js');
 

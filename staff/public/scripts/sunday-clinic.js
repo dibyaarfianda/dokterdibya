@@ -8,8 +8,8 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.28 - reset Periksa Pasien button when switching queue patients
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.28';
+// Version 2.1.29 - shared prescription templates
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.29';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';

@@ -290,6 +290,10 @@ export default {
                                     onclick="if(window.openTerapiModal)window.openTerapiModal();else alert('Fungsi belum siap');">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Terapi
                             </button>
+                            <button type="button" class="btn btn-sm btn-outline-success mr-2" id="btn-template-obat"
+                                    onclick="if(window.openPrescriptionTemplateModal)window.openPrescriptionTemplateModal();else alert('Fungsi belum siap');">
+                                <i class="fas fa-layer-group mr-1"></i>Template Obat
+                            </button>
                             <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-terapi"
                                     onclick="if(window.resetTerapi){window.resetTerapi()}else{alert('Fungsi belum siap');}">
                                 <i class="fas fa-trash mr-1"></i>Hapus Semua
