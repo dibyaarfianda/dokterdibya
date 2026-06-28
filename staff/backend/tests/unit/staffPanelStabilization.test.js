@@ -217,11 +217,17 @@ describe('staff panel stabilization sources', () => {
 
         expect(sundayClinicMain).toContain('const QUEUE_STATUS_TIMEOUT_MS = 12000;');
         expect(sundayClinicMain).toContain('function resetStartExaminationButton(btn)');
-        expect(sundayClinicMain).toContain('const controller = new AbortController();');
-        expect(sundayClinicMain).toContain('const timeoutId = setTimeout(() => controller.abort(), QUEUE_STATUS_TIMEOUT_MS);');
-        expect(sundayClinicMain).toContain("signal: controller.signal");
+        expect(sundayClinicMain).toContain('let timeoutId = null;');
+        expect(sundayClinicMain).toContain("if (typeof AbortController !== 'undefined') {");
+        expect(sundayClinicMain).toContain('controller = new AbortController();');
+        expect(sundayClinicMain).toContain('requestOptions.signal = controller.signal;');
+        expect(sundayClinicMain).toContain('const timeoutPromise = new Promise((_, reject) => {');
+        expect(sundayClinicMain).toContain('if (controller) controller.abort();');
+        expect(sundayClinicMain).toContain('error.name = \'TimeoutError\';');
+        expect(sundayClinicMain).toContain('const res = await Promise.race([');
         expect(sundayClinicMain).toContain('clearTimeout(timeoutId);');
         expect(sundayClinicMain).toContain('resetStartExaminationButton(btn);');
+        expect(sundayClinicMain).not.toContain('const controller = new AbortController();');
     });
 
     test('server redirects legacy Sunday Clinic URLs instead of serving a standalone app shell', () => {

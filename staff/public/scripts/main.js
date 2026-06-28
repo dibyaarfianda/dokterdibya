@@ -8,7 +8,7 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v287';
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v288';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;

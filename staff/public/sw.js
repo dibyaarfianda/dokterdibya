@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v287'; // Sunday Clinic Periksa Pasien timeout recovery
+const STAFF_PWA_VERSION = 'v288'; // Sunday Clinic Periksa Pasien WebView timeout fallback
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;

@@ -8,8 +8,8 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.1.26 - recover Periksa Pasien button from stalled queue status requests
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.26';
+// Version 2.1.27 - recover Periksa Pasien button without AbortController support
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.27';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
 import { initRealtimeSync } from './realtime-sync.js';

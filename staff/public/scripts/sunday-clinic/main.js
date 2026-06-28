@@ -2495,16 +2495,37 @@ class SundayClinicApp {
         }
         const btn = document.getElementById('btn-periksa-pasien');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; }
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), QUEUE_STATUS_TIMEOUT_MS);
+        let timeoutId = null;
+        let controller = null;
         try {
             const token = window.getToken();
-            const res = await fetch(`/api/sunday-clinic/records/${mrId}/queue-status`, {
+            const requestOptions = {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ status: 'diperiksa' }),
-                signal: controller.signal
+                body: JSON.stringify({ status: 'diperiksa' })
+            };
+
+            if (typeof AbortController !== 'undefined') {
+                controller = new AbortController();
+                requestOptions.signal = controller.signal;
+            }
+
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => {
+                    if (controller) controller.abort();
+                    const error = new Error('Queue status request timed out');
+                    error.name = 'TimeoutError';
+                    reject(error);
+                }, QUEUE_STATUS_TIMEOUT_MS);
             });
+
+            const res = await Promise.race([
+                fetch(`/api/sunday-clinic/records/${mrId}/queue-status`, requestOptions),
+                timeoutPromise
+            ]);
+            clearTimeout(timeoutId);
+            timeoutId = null;
+
             const data = await res.json();
             if (data.success) {
                 // Stamp start time from server response or now
@@ -2521,13 +2542,13 @@ class SundayClinicApp {
             }
         } catch (e) {
             console.error('[Queue] startExamination failed:', e);
-            const message = e?.name === 'AbortError'
+            const message = e?.name === 'AbortError' || e?.name === 'TimeoutError'
                 ? 'Request memulai pemeriksaan terlalu lama. Coba tekan Periksa Pasien lagi.'
                 : 'Gagal memulai pemeriksaan';
             window.showToast && window.showToast('error', message);
             resetStartExaminationButton(btn);
         } finally {
-            clearTimeout(timeoutId);
+            if (timeoutId) clearTimeout(timeoutId);
         }
     }
 
