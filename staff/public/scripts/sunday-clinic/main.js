@@ -104,6 +104,19 @@ class SundayClinicApp {
         return importSourceLabels[this.importSource] || 'Import SIMRS';
     }
 
+    resetExaminationActionState() {
+        const btn = document.getElementById('btn-periksa-pasien');
+        const bar = document.getElementById('exam-action-bar');
+        if (bar) {
+            bar.classList.remove('show-bar');
+            bar.style.display = 'none';
+        }
+        if (btn) {
+            resetStartExaminationButton(btn);
+            btn.style.display = 'none';
+        }
+    }
+
     /**
      * Initialize the application
      */
@@ -113,6 +126,7 @@ class SundayClinicApp {
 
             // Show loading state
             this.showLoading();
+            this.resetExaminationActionState();
 
             // Fetch record data
             const response = await apiClient.getRecord(mrId);
@@ -2606,7 +2620,12 @@ class SundayClinicApp {
                 const userRole = window.currentStaffIdentity?.role || '';
                 const isDokter = userRole === 'dokter' || userRole === 'superadmin';
                 const canStart = isPrivat && isDokter && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
-                btn.style.display = canStart ? '' : 'none';
+                if (canStart) {
+                    resetStartExaminationButton(btn);
+                    btn.style.display = '';
+                } else {
+                    btn.style.display = 'none';
+                }
             }
             // Restore stopwatch if mid-exam
             if (qs === 'diperiksa' && examStarted) {

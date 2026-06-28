@@ -230,6 +230,18 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicMain).not.toContain('const controller = new AbortController();');
     });
 
+    test('Sunday Clinic queue patient switches reset stale Periksa Pasien button state', () => {
+        const sundayClinicMain = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+
+        expect(sundayClinicMain).toContain('this.resetExaminationActionState();');
+        expect(sundayClinicMain).toContain('resetExaminationActionState()');
+        expect(sundayClinicMain).toContain("bar.style.display = 'none';");
+        expect(sundayClinicMain).toContain('if (canStart) {');
+        expect(sundayClinicMain).toContain('resetStartExaminationButton(btn);');
+        expect(sundayClinicMain).toContain("btn.style.display = '';");
+        expect(sundayClinicMain).toContain("btn.style.display = 'none';");
+    });
+
     test('server redirects legacy Sunday Clinic URLs instead of serving a standalone app shell', () => {
         const server = readRepoFile('staff', 'backend', 'server.js');
 
