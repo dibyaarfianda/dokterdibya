@@ -5,6 +5,7 @@ jest.mock('../../utils/logger', () => ({
 }));
 
 const OperationAuditService = require('../../services/OperationAuditService');
+const ExcelJS = require('exceljs');
 
 function createDbMock(responses = []) {
     const calls = [];
@@ -143,5 +144,126 @@ describe('OperationAuditService', () => {
 
         expect(result.summary.total).toBe(2);
         expect(result.data.map(item => item.operation_name)).toEqual(['SVH + BSO', 'TAH']);
+    });
+
+    test('applies patient, MR, diagnosis, status, doctor source, age, and sort filters', async () => {
+        const db = createDbMock([
+            [[
+                row({
+                    id: 1,
+                    patient_name: 'Siti Audit',
+                    mr_id: '537912',
+                    patient_age: '38 tahun',
+                    diagnosis: 'Mioma uteri',
+                    status: 'Selesai',
+                    doctor_source: 'operator',
+                    operation_date: '2026-06-20'
+                }),
+                row({
+                    id: 2,
+                    source_key: 'gambiran:pendaftaran:2',
+                    patient_name: 'Ani Audit',
+                    mr_id: '537913',
+                    patient_age: '29 tahun',
+                    diagnosis: 'Abortus inkomplit',
+                    status: 'Selesai',
+                    doctor_source: 'operator',
+                    operation_date: '2026-06-21'
+                }),
+                row({
+                    id: 3,
+                    source_key: 'gambiran:pendaftaran:3',
+                    patient_name: 'Siti Audit',
+                    mr_id: '537912',
+                    patient_age: '38 tahun',
+                    diagnosis: 'Mioma uteri',
+                    status: 'Batal',
+                    doctor_source: 'dpjp',
+                    operation_date: '2026-06-25'
+                })
+            ]]
+        ]);
+        const service = new OperationAuditService(db);
+
+        const result = await service.getGambiranAudit({
+            start: '2026-06-01',
+            end: '2026-06-30',
+            patient: 'siti',
+            mr: '5379',
+            diagnosis: 'mioma',
+            status: 'selesai',
+            doctorSource: 'operator',
+            ageMin: '35',
+            ageMax: '40',
+            sort: 'date_asc'
+        });
+
+        expect(result.summary.total).toBe(1);
+        expect(result.data[0]).toEqual(expect.objectContaining({
+            id: 1,
+            patient_name: 'Siti Audit',
+            mr_id: '537912',
+            patient_age: '38 tahun',
+            doctor_source: 'operator'
+        }));
+        expect(result.filters).toEqual(expect.objectContaining({
+            patient: 'siti',
+            mr: '5379',
+            diagnosis: 'mioma',
+            status: 'selesai',
+            doctorSource: 'operator',
+            ageMin: 35,
+            ageMax: 40,
+            sort: 'date_asc'
+        }));
+    });
+
+    test('builds a formatted Gambiran audit XLSX export with summary and detail sheets', async () => {
+        const db = createDbMock([
+            [[row({
+                id: 1,
+                patient_name: 'Pasien Export',
+                mr_id: '537912',
+                patient_age: '38 tahun',
+                operation_name: 'SVH',
+                diagnosis: 'Mioma',
+                doctor_key: 'tri_aji',
+                doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
+                operation_date: '2026-06-27'
+            })]]
+        ]);
+        const service = new OperationAuditService(db);
+
+        const exportResult = await service.buildGambiranAuditWorkbook({
+            start: '2026-06-01',
+            end: '2026-06-30',
+            doctor: 'tri_aji',
+            operation: 'svh'
+        });
+
+        expect(exportResult.filename).toBe('audit-gambiran-2026-06-01-2026-06-30.xlsx');
+        expect(Buffer.isBuffer(exportResult.buffer)).toBe(true);
+        expect(exportResult.rowCount).toBe(1);
+
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(exportResult.buffer);
+        expect(workbook.getWorksheet('Ringkasan')).toBeTruthy();
+        expect(workbook.getWorksheet('Data Audit')).toBeTruthy();
+
+        const dataSheet = workbook.getWorksheet('Data Audit');
+        expect(dataSheet.getRow(1).values).toEqual(expect.arrayContaining([
+            'Tanggal Operasi',
+            'No. Rekam Medis',
+            'Umur',
+            'Jenis Operasi',
+            'Operasi Ulang 30 Hari'
+        ]));
+        expect(dataSheet.getRow(2).values).toEqual(expect.arrayContaining([
+            '2026-06-27',
+            '537912',
+            '38 tahun',
+            'SVH',
+            'Tidak'
+        ]));
     });
 });

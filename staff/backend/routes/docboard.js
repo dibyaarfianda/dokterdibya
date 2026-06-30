@@ -72,6 +72,20 @@ router.get('/audit/gambiran', async (req, res) => {
   }
 });
 
+router.get('/audit/gambiran/export.xlsx', async (req, res) => {
+  try {
+    if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+    const result = await operationAudit.buildGambiranAuditWorkbook(req.query || {});
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(result.buffer);
+  } catch (error) {
+    logger.error('DocBoard Gambiran audit XLSX export error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 /**
  * GET /api/docboard/space-schedules/calendar/:year/:month
  * Personal/scientific schedule counts for the main calendar.

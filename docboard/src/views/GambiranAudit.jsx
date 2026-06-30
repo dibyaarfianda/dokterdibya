@@ -17,6 +17,22 @@ const REPEAT_OPTIONS = [
   { value: 'no', label: 'Tanpa ulang' },
 ];
 
+const DOCTOR_SOURCE_OPTIONS = [
+  { value: 'all', label: 'Semua Sumber Dokter' },
+  { value: 'operator', label: 'Operator' },
+  { value: 'dpjp', label: 'DPJP' },
+  { value: 'doctor', label: 'Dokter' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'date_desc', label: 'Tanggal terbaru' },
+  { value: 'date_asc', label: 'Tanggal terlama' },
+  { value: 'patient_asc', label: 'Nama pasien A-Z' },
+  { value: 'doctor_asc', label: 'Dokter A-Z' },
+  { value: 'operation_asc', label: 'Jenis operasi A-Z' },
+  { value: 'repeat_desc', label: 'Ulang dulu' },
+];
+
 function defaultStartDate() {
   return AUDIT_GAMBIRAN_DEFAULT_START;
 }
@@ -46,12 +62,20 @@ export default function GambiranAudit() {
     end: today(),
     doctor: 'all',
     operation: '',
+    patient: '',
+    mr: '',
+    diagnosis: '',
+    status: '',
+    doctorSource: 'all',
+    ageMin: '',
+    ageMax: '',
+    sort: 'date_desc',
     repeat: 'all',
   });
 
   useEffect(() => {
     loadAudit(1);
-  }, [filters.start, filters.end, filters.doctor, filters.repeat]);
+  }, [filters.start, filters.end, filters.doctor, filters.repeat, filters.doctorSource, filters.sort]);
 
   async function loadAudit(page = 1, append = false) {
     if (append) setLoadingMore(true);
@@ -81,6 +105,28 @@ export default function GambiranAudit() {
     loadAudit(1);
   }
 
+  function clearFilters() {
+    setFilters({
+      start: defaultStartDate(),
+      end: today(),
+      doctor: 'all',
+      operation: '',
+      patient: '',
+      mr: '',
+      diagnosis: '',
+      status: '',
+      doctorSource: 'all',
+      ageMin: '',
+      ageMax: '',
+      sort: 'date_desc',
+      repeat: 'all',
+    });
+  }
+
+  function exportXls() {
+    window.open(api.getGambiranAuditXlsUrl(filters), '_blank');
+  }
+
   const topOperation = summary.by_operation?.[0]?.operation_name || '-';
 
   return (
@@ -100,12 +146,52 @@ export default function GambiranAudit() {
       </div>
 
       <form class="operation-data-filters" onSubmit={submitSearch}>
-        <input
-          type="search"
-          value={filters.operation}
-          placeholder="Cari jenis operasi. Contoh: SVH, TAH"
-          onInput={event => setFilters({ ...filters, operation: event.currentTarget.value })}
-        />
+        <div class="audit-filter-grid">
+          <input
+            type="search"
+            value={filters.operation}
+            placeholder="Jenis operasi. Contoh: SVH, TAH"
+            onInput={event => setFilters({ ...filters, operation: event.currentTarget.value })}
+          />
+          <input
+            type="search"
+            value={filters.patient}
+            placeholder="Nama pasien"
+            onInput={event => setFilters({ ...filters, patient: event.currentTarget.value })}
+          />
+          <input
+            type="search"
+            value={filters.mr}
+            placeholder="No. rekam medis"
+            onInput={event => setFilters({ ...filters, mr: event.currentTarget.value })}
+          />
+          <input
+            type="search"
+            value={filters.diagnosis}
+            placeholder="Diagnosis"
+            onInput={event => setFilters({ ...filters, diagnosis: event.currentTarget.value })}
+          />
+          <input
+            type="search"
+            value={filters.status}
+            placeholder="Status"
+            onInput={event => setFilters({ ...filters, status: event.currentTarget.value })}
+          />
+          <input
+            type="number"
+            min="0"
+            value={filters.ageMin}
+            placeholder="Umur min"
+            onInput={event => setFilters({ ...filters, ageMin: event.currentTarget.value })}
+          />
+          <input
+            type="number"
+            min="0"
+            value={filters.ageMax}
+            placeholder="Umur maks"
+            onInput={event => setFilters({ ...filters, ageMax: event.currentTarget.value })}
+          />
+        </div>
         <div class="audit-filter-row">
           <select value={filters.doctor} onChange={event => setFilters({ ...filters, doctor: event.currentTarget.value })}>
             {DOCTORS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
@@ -113,11 +199,19 @@ export default function GambiranAudit() {
           <select value={filters.repeat} onChange={event => setFilters({ ...filters, repeat: event.currentTarget.value })}>
             {REPEAT_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
           </select>
+          <select value={filters.doctorSource} onChange={event => setFilters({ ...filters, doctorSource: event.currentTarget.value })}>
+            {DOCTOR_SOURCE_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
+          </select>
+          <select value={filters.sort} onChange={event => setFilters({ ...filters, sort: event.currentTarget.value })}>
+            {SORT_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
+          </select>
         </div>
         <div class="operation-data-filter-row">
           <input type="date" value={filters.start} onInput={event => setFilters({ ...filters, start: event.currentTarget.value })} />
           <input type="date" value={filters.end} onInput={event => setFilters({ ...filters, end: event.currentTarget.value })} />
           <button type="submit" class="btn-primary">Cari</button>
+          <button type="button" class="btn-secondary" onClick={clearFilters}>Reset</button>
+          <button type="button" class="btn-secondary" onClick={exportXls}>Cetak XLS</button>
         </div>
       </form>
 
