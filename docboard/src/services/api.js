@@ -511,10 +511,21 @@ export const api = {
     return request(`/audit/gambiran${qs ? '?' + qs : ''}`);
   },
 
+  getGambiranAuditPathology(id) {
+    return request(`/audit/gambiran/${encodeURIComponent(id)}/pathology`);
+  },
+
   getGambiranAuditXlsUrl(params = {}) {
     const token = getToken();
     const qs = new URLSearchParams({ ...params, token }).toString();
     return `${API_BASE}/audit/gambiran/export.xlsx?${qs}`;
+  },
+
+  getGambiranAuditPathologyFileUrl(fileUrl) {
+    const token = getToken();
+    const path = fileUrl.startsWith(API_BASE) ? fileUrl : `${API_BASE}${fileUrl}`;
+    const separator = fileUrl.includes('?') ? '&' : '?';
+    return `${path}${separator}token=${encodeURIComponent(token)}`;
   },
 
   // PDF Export - returns URL string (not a fetch, used with window.open)

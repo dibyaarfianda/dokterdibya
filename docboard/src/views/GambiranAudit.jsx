@@ -57,6 +57,7 @@ export default function GambiranAudit() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [pathologyPanel, setPathologyPanel] = useState({ open: false, row: null, loading: false, error: null, data: null });
   const [filters, setFilters] = useState({
     start: defaultStartDate(),
     end: today(),
@@ -125,6 +126,21 @@ export default function GambiranAudit() {
 
   function exportXls() {
     window.open(api.getGambiranAuditXlsUrl(filters), '_blank');
+  }
+
+  async function openPathology(row) {
+    setPathologyPanel({ open: true, row, loading: true, error: null, data: null });
+    try {
+      const result = await api.getGambiranAuditPathology(row.id);
+      setPathologyPanel({ open: true, row, loading: false, error: null, data: result });
+    } catch (err) {
+      console.error('Failed to load Gambiran PA:', err);
+      setPathologyPanel({ open: true, row, loading: false, error: err.message || 'Gagal memuat Patologi Anatomi', data: null });
+    }
+  }
+
+  function closePathology() {
+    setPathologyPanel({ open: false, row: null, loading: false, error: null, data: null });
   }
 
   const topOperation = summary.by_operation?.[0]?.operation_name || '-';
@@ -239,7 +255,7 @@ export default function GambiranAudit() {
         </div>
       ) : (
         <div class="operation-data-list">
-          {rows.map(row => <AuditRow key={row.id} row={row} />)}
+          {rows.map(row => <AuditRow key={row.id} row={row} onOpenPathology={openPathology} />)}
         </div>
       )}
 
@@ -247,6 +263,16 @@ export default function GambiranAudit() {
         <button class="btn-secondary btn-full" disabled={loadingMore} onClick={() => loadAudit((pagination.page || 1) + 1, true)}>
           {loadingMore ? 'Memuat...' : 'Muat Lagi'}
         </button>
+      )}
+
+      {pathologyPanel.open && (
+        <PathologyPanel
+          row={pathologyPanel.row}
+          loading={pathologyPanel.loading}
+          error={pathologyPanel.error}
+          data={pathologyPanel.data}
+          onClose={closePathology}
+        />
       )}
     </div>
   );
@@ -261,7 +287,7 @@ function SummaryCard({ label, value, tone, small }) {
   );
 }
 
-function AuditRow({ row }) {
+function AuditRow({ row, onOpenPathology }) {
   const repeat = row.repeat_after;
   return (
     <div class={`operation-data-row audit-row ${row.repeat_within_30d ? 'has-repeat' : ''}`}>
@@ -285,7 +311,85 @@ function AuditRow({ row }) {
           </div>
         )}
       </div>
-      <div class="operation-data-chevron">&gt;</div>
+      <div class="audit-row-actions">
+        <button type="button" class="audit-pa-button" onClick={() => onOpenPathology(row)}>PA</button>
+      </div>
+    </div>
+  );
+}
+
+function PathologyPanel({ row, loading, error, data, onClose }) {
+  const results = data?.results || [];
+  const files = data?.files || [];
+  const summary = data?.summary || {};
+
+  function openFile(file) {
+    if (!file.url) return;
+    window.open(api.getGambiranAuditPathologyFileUrl(file.url), '_blank');
+  }
+
+  return (
+    <div class="audit-pa-overlay" role="dialog" aria-modal="true">
+      <div class="audit-pa-panel">
+        <div class="audit-pa-header">
+          <div>
+            <h2>Patologi Anatomi</h2>
+            <p>{row?.patient_name || '-'} {row?.mr_id ? `- RM ${row.mr_id}` : ''}</p>
+          </div>
+          <button type="button" class="audit-pa-close" onClick={onClose} aria-label="Tutup">&times;</button>
+        </div>
+
+        {loading ? (
+          <div class="audit-pa-state">Memuat pemeriksaan penunjang...</div>
+        ) : error ? (
+          <div class="audit-pa-state error">{error}</div>
+        ) : (
+          <>
+            <div class="audit-pa-summary">
+              <span>{summary.total || 0} item PA</span>
+              <span>{summary.done || 0} selesai</span>
+              <span>{summary.files || 0} file</span>
+            </div>
+
+            {data?.message && <div class="audit-pa-state">{data.message}</div>}
+
+            {results.length === 0 && files.length === 0 && !data?.message ? (
+              <div class="audit-pa-state">Belum ada hasil Patologi Anatomi pada pemeriksaan penunjang.</div>
+            ) : (
+              <div class="audit-pa-content">
+                {results.length > 0 && (
+                  <div class="audit-pa-section">
+                    <h3>Hasil Penunjang</h3>
+                    {results.map(item => (
+                      <div class="audit-pa-result" key={`${item.detailId || item.name}-${item.date || ''}`}>
+                        <div>
+                          <strong>{item.name || item.title || 'Patologi Anatomi'}</strong>
+                          <span>{item.date || item.createdAt || ''}</span>
+                        </div>
+                        <span class={item.isDone || /selesai/i.test(item.value || '') ? 'audit-pa-status done' : 'audit-pa-status'}>
+                          {item.value || (item.isDone ? 'Selesai' : 'Belum selesai')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {files.length > 0 && (
+                  <div class="audit-pa-section">
+                    <h3>Dokumen</h3>
+                    {files.map(file => (
+                      <button type="button" class="audit-pa-file" key={file.id || file.title} onClick={() => openFile(file)}>
+                        <span>{file.title || file.name || 'File PA'}</span>
+                        <strong>Buka</strong>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

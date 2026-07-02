@@ -7,8 +7,10 @@ const docboardPush = require('../services/DocBoardPushService');
 const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
 const OperationAuditService = require('../services/OperationAuditService');
+const OperationPathologyService = require('../services/OperationPathologyService');
 const logger = require('../utils/logger');
 const operationAudit = new OperationAuditService();
+const operationPathology = new OperationPathologyService();
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
 const SCHEDULE_COMPLETION_ALLOWED_USER_IDS = ['UDZAQUCQWZ'];
@@ -83,6 +85,32 @@ router.get('/audit/gambiran/export.xlsx', async (req, res) => {
   } catch (error) {
     logger.error('DocBoard Gambiran audit XLSX export error:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/audit/gambiran/:id/pathology', async (req, res) => {
+  try {
+    if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+    const result = await operationPathology.getForAuditRow(req.params.id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('DocBoard Gambiran audit PA error:', error);
+    res.status(error.status || 500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/audit/gambiran/pathology-files/:caseId/:fileId', async (req, res) => {
+  try {
+    if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+    const result = await operationPathology.fetchPathologyFile(req.params.caseId, req.params.fileId);
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${result.filename}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(result.buffer);
+  } catch (error) {
+    logger.error('DocBoard Gambiran audit PA file error:', error);
+    res.status(error.status || 500).json({ success: false, message: error.message });
   }
 });
 
