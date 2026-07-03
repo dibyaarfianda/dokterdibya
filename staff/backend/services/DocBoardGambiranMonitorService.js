@@ -263,11 +263,12 @@ class DocBoardGambiranMonitorService {
         }
     }
 
-    async getActivePatientsPayload() {
+    async getActivePatientsPayload(monitorDate = '') {
         const r2Payload = await this.safeGetJson('active-patients/gambiran.json');
         if (r2Payload) return r2Payload;
 
-        const payload = await this.fetchCommJson('/api/simrs/patients/active-cached?facility=gambiran');
+        const dateParam = monitorDate ? `&date=${encodeURIComponent(monitorDate)}` : '';
+        const payload = await this.fetchCommJson(`/api/simrs/patients/active-cached?facility=gambiran&monitor=1${dateParam}`);
         if (!payload) return null;
         const results = Array.isArray(payload.results)
             ? payload.results.filter(patient => normalizeKey(patient.facility || 'gambiran') === 'gambiran')
@@ -314,7 +315,7 @@ class DocBoardGambiranMonitorService {
             : new Date(generatedAt.getTime() + 60000);
         const warnings = [];
 
-        const activePayload = await this.getActivePatientsPayload() || {};
+        const activePayload = await this.getActivePatientsPayload(monitorDate) || {};
         const activePatients = Array.isArray(activePayload)
             ? activePayload
             : (Array.isArray(activePayload.results)

@@ -188,7 +188,7 @@ describe('DocBoardGambiranMonitorService', () => {
 
         const result = await service.getGambiranMonitor({ date: '2026-07-03' });
 
-        expect(fetch).toHaveBeenCalledWith('http://comm.test/api/simrs/patients/active-cached?facility=gambiran');
+        expect(fetch).toHaveBeenCalledWith('http://comm.test/api/simrs/patients/active-cached?facility=gambiran&monitor=1&date=2026-07-03');
         expect(fetch).toHaveBeenCalledWith('http://comm.test/api/simrs/cppt-cache/med0000000099?facility=gambiran');
         expect(result.patients).toHaveLength(1);
         expect(result.patients[0]).toEqual(expect.objectContaining({
