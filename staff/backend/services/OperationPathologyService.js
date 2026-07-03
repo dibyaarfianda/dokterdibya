@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 
 const PATHOLOGY_PATTERNS = [
     /\bhpa\b/i,
-    /(^|[^a-z])pa([^a-z]|$)/i,
+    /\bhasil[\s_-]*pa\b/i,
     /patologi\s*anatomi/i,
     /histopatologi/i,
     /\banatomi\b/i,
@@ -16,7 +16,7 @@ function trim(value) {
 
 function isPathologyText(value) {
     const clean = trim(value);
-    return clean && PATHOLOGY_PATTERNS.some(pattern => pattern.test(clean));
+    return Boolean(clean && PATHOLOGY_PATTERNS.some(pattern => pattern.test(clean)));
 }
 
 function isPathologyResult(item = {}) {

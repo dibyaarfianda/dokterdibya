@@ -323,11 +323,6 @@ function PathologyPanel({ row, loading, error, data, onClose }) {
   const files = data?.files || [];
   const summary = data?.summary || {};
 
-  function openFile(file) {
-    if (!file.url) return;
-    window.open(api.getGambiranAuditPathologyFileUrl(file.url), '_blank');
-  }
-
   return (
     <div class="audit-pa-overlay" role="dialog" aria-modal="true">
       <div class="audit-pa-panel">
@@ -377,12 +372,20 @@ function PathologyPanel({ row, loading, error, data, onClose }) {
                 {files.length > 0 && (
                   <div class="audit-pa-section">
                     <h3>Dokumen</h3>
-                    {files.map(file => (
-                      <button type="button" class="audit-pa-file" key={file.id || file.title} onClick={() => openFile(file)}>
-                        <span>{file.title || file.name || 'File PA'}</span>
-                        <strong>Buka</strong>
-                      </button>
-                    ))}
+                    {files.map(file => {
+                      const href = file.url ? api.getGambiranAuditPathologyFileUrl(file.url) : null;
+                      return href ? (
+                        <a class="audit-pa-file" key={file.id || file.title} href={href} target="_blank" rel="noopener noreferrer">
+                          <span>{file.title || file.name || 'File PA'}</span>
+                          <strong>Buka PDF</strong>
+                        </a>
+                      ) : (
+                        <div class="audit-pa-file disabled" key={file.id || file.title}>
+                          <span>{file.title || file.name || 'File PA'}</span>
+                          <strong>Tidak tersedia</strong>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

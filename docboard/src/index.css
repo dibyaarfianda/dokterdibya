@@ -4093,15 +4093,17 @@ input { font-family: inherit; }
   inset: 0;
   z-index: 90;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  padding: 18px;
+  padding: max(16px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
   background: rgba(15, 23, 42, 0.42);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .audit-pa-panel {
   width: min(680px, 100%);
-  max-height: min(82vh, 720px);
+  max-height: calc(100dvh - 32px);
   overflow: auto;
   border-radius: 12px;
   background: var(--card);
@@ -4251,12 +4253,21 @@ input { font-family: inherit; }
   border-radius: 8px;
   background: var(--bg);
   text-align: left;
+  text-decoration: none;
 }
 
 .audit-pa-file strong {
   color: #2563EB;
   font-size: 12px;
   font-weight: 850;
+}
+
+.audit-pa-file.disabled {
+  opacity: 0.62;
+}
+
+.audit-pa-file.disabled strong {
+  color: var(--text-tertiary);
 }
 
 .operation-data-meta span.audit-repeat-chip {

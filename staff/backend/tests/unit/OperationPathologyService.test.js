@@ -81,6 +81,12 @@ describe('OperationPathologyService', () => {
         expect(result.message).toBe('Case ID operasi belum tersedia');
     });
 
+    test('does not treat radiology Thorax PA as pathology anatomy', () => {
+        expect(OperationPathologyService.isPathologyResult({ name: 'THORAX PA_' })).toBe(false);
+        expect(OperationPathologyService.isPathologyFile({ title: 'Radiologi_THORAX_PA__109666_131472_12-06-2026' })).toBe(false);
+        expect(OperationPathologyService.isPathologyFile({ title: 'HASIL_PA-HPA_BESAR__18-06-2026' })).toBe(true);
+    });
+
     test('proxies pathology file requests through COMM penunjang file endpoint', async () => {
         process.env.COMM_SERVICE_BASE_URL = 'http://comm.test';
         const pdfBytes = Buffer.from('%PDF-1.4');
