@@ -4,6 +4,16 @@ import { api } from '../services/api';
 
 const DEFAULT_ROOMS = ['Kirana', 'Joyoboyo', 'Tegowangi'];
 
+function isoDateLocal(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function addDays(value, days) {
+  const date = new Date(`${value}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return isoDateLocal(date);
+}
+
 function formatDateTime(value) {
   if (!value) return '-';
   const date = new Date(value);
@@ -104,15 +114,17 @@ function PatientCard({ patient }) {
 }
 
 export default function GambiranMonitor() {
+  const [selectedDate, setSelectedDate] = useState(() => isoDateLocal());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function loadMonitor() {
+  async function loadMonitor(date = selectedDate) {
     setLoading(true);
     setError('');
     try {
       const result = await api.getGambiranMonitor({
+        date,
         windowHours: 24,
         rooms: DEFAULT_ROOMS.join(','),
       });
@@ -125,12 +137,14 @@ export default function GambiranMonitor() {
   }
 
   useEffect(() => {
-    loadMonitor();
-  }, []);
+    loadMonitor(selectedDate);
+  }, [selectedDate]);
 
   const patients = data?.patients || [];
   const rooms = data?.rooms || DEFAULT_ROOMS;
   const warnings = data?.warnings || [];
+  const todayDate = isoDateLocal();
+  const canGoForward = selectedDate < todayDate;
 
   return (
     <div class="view-gambiran-monitor">
@@ -142,14 +156,36 @@ export default function GambiranMonitor() {
         </button>
         <div>
           <h1>Monitor Pasien</h1>
-          <p>Admission 24 jam, {rooms.join(', ')}</p>
+          <p>Admission {formatDate(data?.date || selectedDate)}, {rooms.join(', ')}</p>
         </div>
-        <button class="monitor-refresh-btn" onClick={loadMonitor} disabled={loading} title="Refresh">
+        <button class="monitor-refresh-btn" onClick={() => loadMonitor(selectedDate)} disabled={loading} title="Refresh">
           <svg class={loading ? 'spinning' : ''} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23,4 23,10 17,10" />
             <polyline points="1,20 1,14 7,14" />
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
           </svg>
+        </button>
+      </div>
+
+      <div class="monitor-date-controls">
+        <button type="button" onClick={() => setSelectedDate(addDays(selectedDate, -1))} title="Hari sebelumnya">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </button>
+        <input
+          type="date"
+          value={selectedDate}
+          max={todayDate}
+          onInput={(event) => setSelectedDate(event.currentTarget.value || todayDate)}
+        />
+        <button type="button" onClick={() => setSelectedDate(addDays(selectedDate, 1))} disabled={!canGoForward} title="Hari berikutnya">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6" />
+          </svg>
+        </button>
+        <button type="button" class="monitor-today-btn" onClick={() => setSelectedDate(todayDate)} disabled={selectedDate === todayDate}>
+          Hari ini
         </button>
       </div>
 
@@ -159,8 +195,8 @@ export default function GambiranMonitor() {
           <strong>{patients.length}</strong>
         </div>
         <div>
-          <span>Window</span>
-          <strong>{data?.window_hours || 24} jam</strong>
+          <span>Tanggal</span>
+          <strong>{formatDate(data?.date || selectedDate)}</strong>
         </div>
         <div>
           <span>Cache</span>
@@ -192,7 +228,7 @@ export default function GambiranMonitor() {
       {!error && !loading && patients.length === 0 && (
         <div class="monitor-state">
           <strong>Tidak ada pasien baru</strong>
-          <p>Belum ada admission 24 jam terakhir di ruangan target.</p>
+          <p>Belum ada admission pada tanggal ini di ruangan target.</p>
         </div>
       )}
 

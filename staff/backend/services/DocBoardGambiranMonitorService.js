@@ -43,6 +43,35 @@ function parseDateTime(value) {
     return null;
 }
 
+function normalizeMonitorDate(value) {
+    const match = clean(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return '';
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const day = parseInt(match[3], 10);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (
+        date.getUTCFullYear() !== year
+        || date.getUTCMonth() !== month - 1
+        || date.getUTCDate() !== day
+    ) {
+        return '';
+    }
+    return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function addDaysToDateString(value, days) {
+    const date = normalizeMonitorDate(value);
+    if (!date) return '';
+    const [year, month, day] = date.split('-').map(Number);
+    const next = new Date(Date.UTC(year, month - 1, day + days));
+    return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+}
+
+function jakartaDayBoundary(value) {
+    return `${value}T00:00:00.000+07:00`;
+}
+
 function combineEntryDateTime(entry = {}) {
     const candidates = [
         entry.created_at,
@@ -233,7 +262,14 @@ class DocBoardGambiranMonitorService {
         const rooms = normalizeRooms(params.rooms);
         const roomKeys = new Set(rooms.map(normalizeKey));
         const generatedAt = this.now();
-        const cutoff = generatedAt.getTime() - (windowHours * 60 * 60 * 1000);
+        const monitorDate = normalizeMonitorDate(params.date);
+        const nextMonitorDate = monitorDate ? addDaysToDateString(monitorDate, 1) : '';
+        const windowStart = monitorDate
+            ? parseDateTime(jakartaDayBoundary(monitorDate))
+            : new Date(generatedAt.getTime() - (windowHours * 60 * 60 * 1000));
+        const windowEnd = monitorDate
+            ? parseDateTime(jakartaDayBoundary(nextMonitorDate))
+            : new Date(generatedAt.getTime() + 60000);
         const warnings = [];
 
         const activePayload = await this.safeGetJson('active-patients/gambiran.json') || {};
@@ -255,7 +291,7 @@ class DocBoardGambiranMonitorService {
                 continue;
             }
             const admissionDate = parseDateTime(admissionAt);
-            if (!admissionDate || admissionDate.getTime() < cutoff || admissionDate.getTime() > generatedAt.getTime() + 60000) continue;
+            if (!admissionDate || admissionDate.getTime() < windowStart.getTime() || admissionDate.getTime() >= windowEnd.getTime()) continue;
 
             const caseId = clean(patient.caseId || patient.case_id || patient.kasusId || patient.kasus_id);
             if (!caseId) continue;
@@ -294,6 +330,9 @@ class DocBoardGambiranMonitorService {
         return {
             generated_at: generatedAt.toISOString(),
             window_hours: windowHours,
+            date: monitorDate || null,
+            window_start: monitorDate ? jakartaDayBoundary(monitorDate) : windowStart.toISOString(),
+            window_end: monitorDate ? jakartaDayBoundary(nextMonitorDate) : windowEnd.toISOString(),
             rooms,
             cached_at: activePayload.cachedAt || activePayload.cached_at || null,
             patients: rows,

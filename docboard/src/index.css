@@ -4502,6 +4502,46 @@ input { font-family: inherit; }
   opacity: 0.65;
 }
 
+.monitor-date-controls {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 170px) 40px auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.monitor-date-controls button,
+.monitor-date-controls input {
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text-primary);
+}
+
+.monitor-date-controls button {
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  color: #047857;
+  font-weight: 850;
+}
+
+.monitor-date-controls button:disabled {
+  opacity: 0.45;
+}
+
+.monitor-date-controls input {
+  width: 100%;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.monitor-date-controls .monitor-today-btn {
+  min-width: 82px;
+}
+
 .monitor-summary-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -4758,6 +4798,15 @@ input { font-family: inherit; }
   .monitor-patient-head,
   .monitor-foot {
     grid-template-columns: 1fr;
+  }
+
+  .monitor-date-controls {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+  }
+
+  .monitor-date-controls .monitor-today-btn {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .monitor-room-chip,

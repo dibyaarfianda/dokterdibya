@@ -203,4 +203,48 @@ describe('DocBoardGambiranMonitorService', () => {
             cppt: null
         }));
     });
+
+    test('filters admissions by explicit Jakarta calendar date', async () => {
+        r2Storage.getJson.mockImplementation(async (key) => {
+            const payloads = {
+                'active-patients/gambiran.json': {
+                    cachedAt: '2026-07-03T09:55:00.000Z',
+                    results: [
+                        {
+                            patientName: 'Pasien Kemarin',
+                            medicalRecordNo: '555111',
+                            caseId: 'med0000000005',
+                            ward: 'Tegowangi',
+                            admission_at: '2026-07-02T18:30:00.000+07:00'
+                        },
+                        {
+                            patientName: 'Pasien Hari Ini',
+                            medicalRecordNo: '555222',
+                            caseId: 'med0000000006',
+                            ward: 'Tegowangi',
+                            admission_at: '2026-07-03T08:00:00.000+07:00'
+                        }
+                    ]
+                }
+            };
+            if (!(key in payloads)) {
+                const error = new Error(`missing ${key}`);
+                error.name = 'NoSuchKey';
+                throw error;
+            }
+            return payloads[key];
+        });
+        db.query.mockResolvedValueOnce([[]]);
+
+        const result = await buildService().getGambiranMonitor({ date: '2026-07-02', windowHours: 24 });
+
+        expect(result.date).toBe('2026-07-02');
+        expect(result.window_start).toBe('2026-07-02T00:00:00.000+07:00');
+        expect(result.window_end).toBe('2026-07-03T00:00:00.000+07:00');
+        expect(result.patients).toHaveLength(1);
+        expect(result.patients[0]).toEqual(expect.objectContaining({
+            case_id: 'med0000000005',
+            patient_name: 'Pasien Kemarin'
+        }));
+    });
 });
