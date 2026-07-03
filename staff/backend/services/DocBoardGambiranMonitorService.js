@@ -3,6 +3,7 @@ const r2Storage = require('./r2Storage');
 
 const DEFAULT_ROOMS = ['Kirana', 'Joyoboyo', 'Tegowangi'];
 const DEFAULT_WINDOW_HOURS = 24;
+const DEFAULT_COMM_CACHE_BUCKET = 'medscomm-medis';
 
 function clean(value) {
     if (value === undefined || value === null) return '';
@@ -223,20 +224,61 @@ function isMissingR2Object(error) {
     return error?.name === 'NoSuchKey' || error?.Code === 'NoSuchKey' || message.includes('no such key') || message.includes('missing ');
 }
 
+function isAccessDeniedR2Object(error) {
+    const message = clean(error?.message).toLowerCase();
+    return error?.name === 'AccessDenied' || error?.Code === 'AccessDenied' || message.includes('access denied');
+}
+
 class DocBoardGambiranMonitorService {
     constructor(deps = {}) {
         this.r2 = deps.r2 || r2Storage;
         this.db = deps.db || db;
         this.now = deps.now || (() => new Date());
+        this.fetch = deps.fetch || globalThis.fetch;
+        this.commBaseUrl = clean(deps.commBaseUrl || process.env.COMM_INTERNAL_BASE_URL || 'http://127.0.0.1:3002').replace(/\/+$/, '');
+        this.cacheBucket = deps.cacheBucket
+            || process.env.DOCBOARD_GAMBIRAN_MONITOR_R2_BUCKET
+            || process.env.COMM_R2_BUCKET_NAME
+            || DEFAULT_COMM_CACHE_BUCKET;
     }
 
-    async safeGetJson(key) {
+    async safeGetJson(key, bucketName = this.cacheBucket) {
         try {
-            return await this.r2.getJson(key);
+            return await this.r2.getJson(key, bucketName);
         } catch (error) {
-            if (isMissingR2Object(error)) return null;
+            if (isMissingR2Object(error) || isAccessDeniedR2Object(error)) return null;
             throw error;
         }
+    }
+
+    async fetchCommJson(path) {
+        if (!this.fetch || !this.commBaseUrl) return null;
+        const url = `${this.commBaseUrl}${path}`;
+        try {
+            const response = await this.fetch(url);
+            if (!response.ok) return null;
+            return response.json();
+        } catch {
+            return null;
+        }
+    }
+
+    async getActivePatientsPayload() {
+        const r2Payload = await this.safeGetJson('active-patients/gambiran.json');
+        if (r2Payload) return r2Payload;
+
+        const payload = await this.fetchCommJson('/api/simrs/patients/active-cached?facility=gambiran');
+        if (!payload) return null;
+        const results = Array.isArray(payload.results)
+            ? payload.results.filter(patient => normalizeKey(patient.facility || 'gambiran') === 'gambiran')
+            : [];
+        return { ...payload, results };
+    }
+
+    async getCaseCache(dataType, caseId) {
+        const r2Payload = await this.safeGetJson(`${dataType}/gambiran/${caseId}.json`);
+        if (r2Payload) return r2Payload;
+        return this.fetchCommJson(`/api/simrs/${dataType}-cache/${encodeURIComponent(caseId)}?facility=gambiran`);
     }
 
     async getOperationIndex(caseIds) {
@@ -272,7 +314,7 @@ class DocBoardGambiranMonitorService {
             : new Date(generatedAt.getTime() + 60000);
         const warnings = [];
 
-        const activePayload = await this.safeGetJson('active-patients/gambiran.json') || {};
+        const activePayload = await this.getActivePatientsPayload() || {};
         const activePatients = Array.isArray(activePayload)
             ? activePayload
             : (Array.isArray(activePayload.results)
@@ -307,8 +349,8 @@ class DocBoardGambiranMonitorService {
         for (const item of candidates) {
             const caseKey = item.caseId.toLowerCase();
             const [cpptPayload, operationPayload] = await Promise.all([
-                this.safeGetJson(`cppt/gambiran/${item.caseId}.json`),
-                this.safeGetJson(`operasi/gambiran/${item.caseId}.json`),
+                this.getCaseCache('cppt', item.caseId),
+                this.getCaseCache('operasi', item.caseId),
             ]);
             const indexOperation = operationFromIndex(operationIndex.get(caseKey));
             const cachedOperation = operationFromCache(operationPayload);

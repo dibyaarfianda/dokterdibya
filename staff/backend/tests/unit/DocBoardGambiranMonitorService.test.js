@@ -131,6 +131,74 @@ describe('DocBoardGambiranMonitorService', () => {
             status: 'planned'
         }));
         expect(result.warnings).toEqual([]);
+        expect(r2Storage.getJson).toHaveBeenCalledWith('active-patients/gambiran.json', 'medscomm-medis');
+        expect(r2Storage.getJson).toHaveBeenCalledWith('cppt/gambiran/med0000000001.json', 'medscomm-medis');
+    });
+
+    test('falls back to COMM cache endpoints when COMM R2 bucket is not accessible', async () => {
+        const accessDenied = new Error('Access Denied');
+        accessDenied.name = 'AccessDenied';
+        r2Storage.getJson.mockRejectedValue(accessDenied);
+        db.query.mockResolvedValueOnce([[]]);
+        const fetch = jest.fn(async (url) => {
+            if (url.includes('/patients/active-cached')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        cachedAt: '2026-07-03T09:55:00.000Z',
+                        results: [
+                            {
+                                patientName: 'Pasien Fallback',
+                                medicalRecordNo: '998877',
+                                caseId: 'med0000000099',
+                                ward: 'Kirana',
+                                admission_at: '2026-07-03T08:00:00.000+07:00',
+                                facility: 'gambiran'
+                            }
+                        ]
+                    })
+                };
+            }
+            if (url.includes('/cppt-cache/med0000000099')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({
+                        entries: [
+                            {
+                                author: 'dr. Dibya Arfianda, SpOG',
+                                created_at: '2026-07-03T09:00:00.000+07:00',
+                                assessment: 'Diagnosis fallback',
+                                plan: 'Planning fallback'
+                            }
+                        ]
+                    })
+                };
+            }
+            return { ok: false, status: 404, json: async () => ({}) };
+        });
+        const service = new DocBoardGambiranMonitorService({
+            r2: r2Storage,
+            db,
+            fetch,
+            commBaseUrl: 'http://comm.test',
+            now: () => new Date('2026-07-03T10:00:00.000Z')
+        });
+
+        const result = await service.getGambiranMonitor({ date: '2026-07-03' });
+
+        expect(fetch).toHaveBeenCalledWith('http://comm.test/api/simrs/patients/active-cached?facility=gambiran');
+        expect(fetch).toHaveBeenCalledWith('http://comm.test/api/simrs/cppt-cache/med0000000099?facility=gambiran');
+        expect(result.patients).toHaveLength(1);
+        expect(result.patients[0]).toEqual(expect.objectContaining({
+            case_id: 'med0000000099',
+            patient_name: 'Pasien Fallback'
+        }));
+        expect(result.patients[0].cppt).toEqual(expect.objectContaining({
+            diagnosis: 'Diagnosis fallback',
+            planning: 'Planning fallback'
+        }));
     });
 
     test('skips patients without admission_at and reports stale-cache warning', async () => {
