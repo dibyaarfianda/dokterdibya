@@ -68,6 +68,14 @@ const icons = {
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
     </svg>
   ),
+  monitor: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 5h18v10H3z" />
+      <path d="M8 21h8" />
+      <path d="M12 15v6" />
+      <path d="M7 10h3l2-3 2 6 2-3h1" />
+    </svg>
+  ),
   settings: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="3" />
@@ -210,6 +218,7 @@ export default function Settings({ mode = 'menu' }) {
         <div class="settings-section">
           <h3 class="settings-section-title">Sub-menu</h3>
           <MoreMenuItem title="Data" desc={isNanda ? 'Data operasi rumah sakit' : 'Confidential'} icon={icons.data} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/data')} />
+          <MoreMenuItem title="Monitor Pasien" desc={isNanda ? 'Admission & operasi Gambiran' : 'Confidential'} icon={icons.monitor} color="#047857" bg="#ECFDF5" onClick={() => route('/docboard/monitor')} />
           <MoreMenuItem title="Audit" desc={isNanda ? 'Audit operasi Gambiran' : 'Confidential'} icon={icons.audit} color="#0891B2" bg="#ECFEFF" onClick={() => route('/docboard/audit')} />
           <MoreMenuItem title="Ilmiah" desc={isNanda ? 'Agenda ilmiah dan diskusi kasus' : 'Confidential'} icon={icons.calendar} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/scientific')} />
           <MoreMenuItem title="Pribadi" desc={isNanda ? 'Agenda pribadi' : 'Confidential'} icon={icons.private} color="#EA580C" bg="#FFF7ED" onClick={() => route('/docboard/personal')} />

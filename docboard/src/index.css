@@ -4453,3 +4453,336 @@ input { font-family: inherit; }
     margin-top: -4px;
   }
 }
+
+/* ==============================
+   Gambiran patient monitor
+   ============================== */
+.view-gambiran-monitor {
+  padding: 16px;
+  padding-bottom: 92px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.monitor-header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.monitor-header h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.monitor-header p {
+  margin: 3px 0 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.monitor-refresh-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: #047857;
+}
+
+.monitor-refresh-btn:disabled {
+  opacity: 0.65;
+}
+
+.monitor-summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.monitor-summary-row > div {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.monitor-summary-row span,
+.monitor-cppt-author span,
+.monitor-operation span,
+.monitor-time-row span {
+  display: block;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.monitor-summary-row strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.monitor-warning {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #FCD34D;
+  border-radius: 8px;
+  background: #FFFBEB;
+}
+
+.monitor-warning p {
+  margin: 0;
+  color: #92400E;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.monitor-warning p + p {
+  margin-top: 6px;
+}
+
+.monitor-state {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 22px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  text-align: center;
+}
+
+.monitor-state strong {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.monitor-state p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.monitor-patient-list {
+  display: grid;
+  gap: 10px;
+}
+
+.monitor-patient-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+
+.monitor-patient-head,
+.monitor-foot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.monitor-patient-head h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.monitor-patient-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.monitor-patient-meta span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #F1F5F9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.monitor-room-chip {
+  min-width: 92px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ECFDF5;
+  color: #047857;
+  text-align: right;
+}
+
+.monitor-room-chip strong,
+.monitor-room-chip span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.monitor-room-chip strong {
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.monitor-room-chip span {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 750;
+  color: #059669;
+}
+
+.monitor-time-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #F8FAFC;
+}
+
+.monitor-time-row strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 850;
+  text-align: right;
+}
+
+.monitor-cppt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.monitor-cppt-grid section {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.monitor-section-title {
+  margin-bottom: 5px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.monitor-cppt-grid p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.monitor-cppt-author,
+.monitor-operation {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.monitor-cppt-author strong,
+.monitor-operation strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.monitor-operation {
+  min-width: 210px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  text-align: right;
+}
+
+.monitor-operation small {
+  display: block;
+  margin-top: 2px;
+  color: #2563EB;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.monitor-operation-empty {
+  background: #F8FAFC;
+}
+
+.monitor-operation-empty strong {
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 640px) {
+  .view-gambiran-monitor {
+    padding: 14px;
+    padding-bottom: 88px;
+  }
+
+  .monitor-summary-row,
+  .monitor-cppt-grid,
+  .monitor-patient-head,
+  .monitor-foot {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-room-chip,
+  .monitor-operation {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .monitor-time-row {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 390px) {
+  .monitor-header {
+    grid-template-columns: 36px 1fr 36px;
+    gap: 9px;
+  }
+
+  .monitor-header h1 {
+    font-size: 21px;
+  }
+
+  .monitor-refresh-btn {
+    width: 36px;
+    height: 36px;
+  }
+}

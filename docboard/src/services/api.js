@@ -506,6 +506,11 @@ export const api = {
     return request(`/operation-data/${id}`);
   },
 
+  getGambiranMonitor(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/monitor/gambiran${qs ? '?' + qs : ''}`);
+  },
+
   getGambiranAudit(params = {}) {
     const qs = new URLSearchParams(params).toString();
     return request(`/audit/gambiran${qs ? '?' + qs : ''}`);
