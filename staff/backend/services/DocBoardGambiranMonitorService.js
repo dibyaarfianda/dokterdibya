@@ -349,10 +349,11 @@ class DocBoardGambiranMonitorService {
         const rows = [];
         for (const item of candidates) {
             const caseKey = item.caseId.toLowerCase();
-            const [cpptPayload, operationPayload] = await Promise.all([
-                this.getCaseCache('cppt', item.caseId),
-                this.getCaseCache('operasi', item.caseId),
-            ]);
+            const cpptPayload = await this.getCaseCache('cppt', item.caseId);
+            const cppt = latestTargetDoctorCppt(cpptPayload);
+            if (!cppt) continue;
+
+            const operationPayload = await this.getCaseCache('operasi', item.caseId);
             const indexOperation = operationFromIndex(operationIndex.get(caseKey));
             const cachedOperation = operationFromCache(operationPayload);
             const patient = item.patient;
@@ -363,7 +364,7 @@ class DocBoardGambiranMonitorService {
                 room: item.room,
                 bed: extractBed(patient),
                 admission_at: item.admissionAt,
-                cppt: latestTargetDoctorCppt(cpptPayload),
+                cppt,
                 operation: indexOperation || cachedOperation,
             });
         }

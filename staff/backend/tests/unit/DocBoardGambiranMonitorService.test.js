@@ -221,7 +221,7 @@ describe('DocBoardGambiranMonitorService', () => {
         expect(result.warnings).toContain('Cache pasien aktif belum memuat admission_at untuk sebagian pasien; refresh cache COMM diperlukan.');
     });
 
-    test('keeps recent admission but hides non-target CPPT entries', async () => {
+    test('hides recent admissions when CPPT is not from a target doctor', async () => {
         r2Storage.getJson.mockImplementation(async (key) => {
             const payloads = {
                 'active-patients/gambiran.json': {
@@ -264,12 +264,7 @@ describe('DocBoardGambiranMonitorService', () => {
 
         const result = await buildService().getGambiranMonitor({ windowHours: 24 });
 
-        expect(result.patients).toHaveLength(1);
-        expect(result.patients[0]).toEqual(expect.objectContaining({
-            case_id: 'med0000000004',
-            patient_name: 'Pasien Joyoboyo',
-            cppt: null
-        }));
+        expect(result.patients).toEqual([]);
     });
 
     test('filters admissions by explicit Jakarta calendar date', async () => {
@@ -291,6 +286,16 @@ describe('DocBoardGambiranMonitorService', () => {
                             caseId: 'med0000000006',
                             ward: 'Tegowangi',
                             admission_at: '2026-07-03T08:00:00.000+07:00'
+                        }
+                    ]
+                },
+                'cppt/gambiran/med0000000005.json': {
+                    entries: [
+                        {
+                            author: 'dr. Dibya Arfianda, SpOG',
+                            created_at: '2026-07-02T19:00:00.000+07:00',
+                            assessment: 'Diagnosis tanggal 2',
+                            plan: 'Planning tanggal 2'
                         }
                     ]
                 }
