@@ -129,6 +129,39 @@ describe('OperationPathologyService', () => {
         expect(result.message).toBe('Case ID operasi belum tersedia');
     });
 
+    test('keeps pathology modal loadable when cache is missing and live COMM fails', async () => {
+        process.env.COMM_SERVICE_BASE_URL = 'http://comm.test';
+        const db = createDbMock([{
+            id: 3452,
+            facility: 'gambiran',
+            case_id: 'med0000695253',
+            patient_name: 'Ny Cache Missing',
+            doctor_key: 'latifa'
+        }]);
+        global.fetch = jest.fn(async (url) => {
+            if (url.includes('/penunjang-cache/')) {
+                return {
+                    ok: false,
+                    status: 404,
+                    text: async () => JSON.stringify({ error: 'No cached penunjang data' })
+                };
+            }
+            return {
+                ok: false,
+                status: 500,
+                text: async () => JSON.stringify({ error: 'Gagal memuat hasil penunjang', details: 'fetch failed' })
+            };
+        });
+
+        const service = new OperationPathologyService({ db });
+        const result = await service.getForAuditRow(3452);
+
+        expect(result.results).toEqual([]);
+        expect(result.files).toEqual([]);
+        expect(result.summary).toEqual({ total: 0, done: 0, pending: 0, files: 0 });
+        expect(result.message).toContain('Hasil penunjang belum tersedia di cache');
+    });
+
     test('does not treat radiology Thorax PA as pathology anatomy', () => {
         expect(OperationPathologyService.isPathologyResult({ name: 'THORAX PA_' })).toBe(false);
         expect(OperationPathologyService.isPathologyFile({ title: 'Radiologi_THORAX_PA__109666_131472_12-06-2026' })).toBe(false);

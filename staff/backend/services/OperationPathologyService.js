@@ -209,7 +209,16 @@ class OperationPathologyService {
                 caseId: record.case_id,
                 message: error.message,
             });
-            throw error;
+            return {
+                record,
+                caseId: record.case_id,
+                facility: 'gambiran',
+                results: [],
+                files: [],
+                summary: this.summarize([], []),
+                fetchedAt: new Date().toISOString(),
+                message: 'Hasil penunjang belum tersedia di cache dan live SIMRS sedang tidak dapat diakses.',
+            };
         }
     }
 }
