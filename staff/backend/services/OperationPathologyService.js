@@ -85,12 +85,12 @@ class OperationPathologyService {
         return mapRecord(rows[0]);
     }
 
-    async fetchPenunjang(caseId) {
+    async requestPenunjang(path) {
         if (typeof this.fetchImpl !== 'function') {
             throw new Error('Fetch API is not available');
         }
 
-        const url = `${this.commBaseUrl}/api/simrs/penunjang/${encodeURIComponent(caseId)}?facility=gambiran`;
+        const url = `${this.commBaseUrl}${path}`;
         const response = await this.fetchImpl(url, {
             method: 'GET',
             headers: { Accept: 'application/json' },
@@ -111,6 +111,25 @@ class OperationPathologyService {
         }
 
         return parsed;
+    }
+
+    async fetchPenunjang(caseId) {
+        const encodedCaseId = encodeURIComponent(caseId);
+        const cachePath = `/api/simrs/penunjang-cache/${encodedCaseId}?facility=gambiran`;
+        const livePath = `/api/simrs/penunjang/${encodedCaseId}?facility=gambiran`;
+
+        try {
+            return await this.requestPenunjang(cachePath);
+        } catch (cacheError) {
+            if (cacheError.status && cacheError.status !== 404) {
+                logger.warn('Operation pathology cache lookup failed, falling back to live COMM', {
+                    caseId,
+                    status: cacheError.status,
+                    message: cacheError.message,
+                });
+            }
+            return this.requestPenunjang(livePath);
+        }
     }
 
     async fetchPathologyFile(caseId, fileId) {

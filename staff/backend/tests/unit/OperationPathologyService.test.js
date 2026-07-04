@@ -55,7 +55,7 @@ describe('OperationPathologyService', () => {
 
         expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM operation_data_index'), [2550]);
         expect(global.fetch).toHaveBeenCalledWith(
-            'http://comm.test/api/simrs/penunjang/med0000698349?facility=gambiran',
+            'http://comm.test/api/simrs/penunjang-cache/med0000698349?facility=gambiran',
             expect.objectContaining({ method: 'GET' })
         );
         expect(result.record).toEqual(expect.objectContaining({ id: 2550, case_id: 'med0000698349' }));
@@ -67,6 +67,54 @@ describe('OperationPathologyService', () => {
             url: '/api/docboard/audit/gambiran/pathology-files/med0000698349/1469999'
         }));
         expect(result.summary).toEqual({ total: 1, done: 1, pending: 0, files: 1 });
+    });
+
+    test('falls back to live COMM penunjang endpoint when cache is not available', async () => {
+        process.env.COMM_SERVICE_BASE_URL = 'http://comm.test';
+        const db = createDbMock([{
+            id: 2551,
+            facility: 'gambiran',
+            case_id: 'med0000698350',
+            patient_name: 'Ny Fallback',
+            doctor_key: 'dibya'
+        }]);
+        global.fetch = jest.fn(async (url) => {
+            if (url.includes('/penunjang-cache/')) {
+                return {
+                    ok: false,
+                    status: 404,
+                    text: async () => JSON.stringify({ error: 'No cached penunjang data' })
+                };
+            }
+            return {
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({
+                    caseId: 'med0000698350',
+                    facility: 'gambiran',
+                    results: [
+                        { name: 'HPA KECIL_', value: 'Selesai', isDone: true, detailId: 9001 }
+                    ],
+                    files: []
+                })
+            };
+        });
+
+        const service = new OperationPathologyService({ db });
+        const result = await service.getForAuditRow(2551);
+
+        expect(global.fetch).toHaveBeenNthCalledWith(
+            1,
+            'http://comm.test/api/simrs/penunjang-cache/med0000698350?facility=gambiran',
+            expect.objectContaining({ method: 'GET' })
+        );
+        expect(global.fetch).toHaveBeenNthCalledWith(
+            2,
+            'http://comm.test/api/simrs/penunjang/med0000698350?facility=gambiran',
+            expect.objectContaining({ method: 'GET' })
+        );
+        expect(result.results).toHaveLength(1);
+        expect(result.results[0]).toEqual(expect.objectContaining({ name: 'HPA KECIL_' }));
     });
 
     test('reports missing case id without calling COMM', async () => {
