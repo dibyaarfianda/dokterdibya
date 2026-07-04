@@ -4,6 +4,8 @@ const logger = require('../utils/logger');
 const PATHOLOGY_PATTERNS = [
     /\bhpa\b/i,
     /\bhasil[\s_-]*pa\b/i,
+    /\blab\s*pa\b/i,
+    /\blabpa\b/i,
     /patologi\s*anatomi/i,
     /histopatologi/i,
     /\banatomi\b/i,
@@ -31,6 +33,15 @@ function isPathologyFile(file = {}) {
         || isPathologyText(file.name)
         || isPathologyText(file.filePath)
         || isPathologyText(file.type);
+}
+
+function mapPathologyFiles(files = [], caseId) {
+    return (files || [])
+        .filter(isPathologyFile)
+        .map(file => ({
+            ...file,
+            url: file.id ? pathologyFileUrl(caseId, file.id) : null,
+        }));
 }
 
 function normalizeDate(value) {
@@ -185,14 +196,29 @@ class OperationPathologyService {
         }
 
         try {
-            const data = await this.fetchPenunjang(record.case_id);
-            const results = (data.results || []).filter(isPathologyResult);
-            const files = (data.files || [])
-                .filter(isPathologyFile)
-                .map(file => ({
-                    ...file,
-                    url: file.id ? pathologyFileUrl(record.case_id, file.id) : null,
-                }));
+            let data = await this.fetchPenunjang(record.case_id);
+            let results = (data.results || []).filter(isPathologyResult);
+            let files = mapPathologyFiles(data.files, record.case_id);
+
+            if (results.length > 0 && files.length === 0) {
+                try {
+                    const livePath = `/api/simrs/penunjang/${encodeURIComponent(record.case_id)}?facility=gambiran`;
+                    const liveData = await this.requestPenunjang(livePath);
+                    const liveResults = (liveData.results || []).filter(isPathologyResult);
+                    const liveFiles = mapPathologyFiles(liveData.files, record.case_id);
+                    if (liveFiles.length > 0) {
+                        data = liveData;
+                        results = liveResults.length > 0 ? liveResults : results;
+                        files = liveFiles;
+                    }
+                } catch (liveError) {
+                    logger.warn('Operation pathology live file refresh failed', {
+                        auditId: id,
+                        caseId: record.case_id,
+                        message: liveError.message,
+                    });
+                }
+            }
 
             return {
                 record,

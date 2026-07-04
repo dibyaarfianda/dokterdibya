@@ -117,6 +117,75 @@ describe('OperationPathologyService', () => {
         expect(result.results[0]).toEqual(expect.objectContaining({ name: 'HPA KECIL_' }));
     });
 
+    test('refreshes live COMM when cached PA result has no PA PDF file', async () => {
+        process.env.COMM_SERVICE_BASE_URL = 'http://comm.test';
+        const db = createDbMock([{
+            id: 2552,
+            facility: 'gambiran',
+            case_id: 'med0000698349',
+            patient_name: 'Ny Cache Lama',
+            doctor_key: 'dibya'
+        }]);
+        global.fetch = jest.fn(async (url) => {
+            if (url.includes('/penunjang-cache/')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    text: async () => JSON.stringify({
+                        caseId: 'med0000698349',
+                        facility: 'gambiran',
+                        results: [
+                            { name: 'HPA BESAR_', value: 'Selesai', isDone: true, detailId: 7161 }
+                        ],
+                        files: [
+                            { id: 1469235, title: 'HASIL_LAB_PK-DARAH_LENGKAP__18-06-2026', fileType: 'pdf' }
+                        ]
+                    })
+                };
+            }
+            return {
+                ok: true,
+                status: 200,
+                text: async () => JSON.stringify({
+                    caseId: 'med0000698349',
+                    facility: 'gambiran',
+                    results: [
+                        { name: 'HPA BESAR_', value: 'Selesai', isDone: true, detailId: 7161 }
+                    ],
+                    files: [
+                        {
+                            id: 1496531,
+                            type: 'labpa',
+                            fileType: 'pdf',
+                            title: '03/07/2026 #5936 291',
+                            filePath: 'uploads/labpa/2026-07-03/03072026094302-7Y6Ujd1QPu.pdf'
+                        }
+                    ]
+                })
+            };
+        });
+
+        const service = new OperationPathologyService({ db });
+        const result = await service.getForAuditRow(2552);
+
+        expect(global.fetch).toHaveBeenNthCalledWith(
+            1,
+            'http://comm.test/api/simrs/penunjang-cache/med0000698349?facility=gambiran',
+            expect.objectContaining({ method: 'GET' })
+        );
+        expect(global.fetch).toHaveBeenNthCalledWith(
+            2,
+            'http://comm.test/api/simrs/penunjang/med0000698349?facility=gambiran',
+            expect.objectContaining({ method: 'GET' })
+        );
+        expect(result.results).toHaveLength(1);
+        expect(result.files).toHaveLength(1);
+        expect(result.files[0]).toEqual(expect.objectContaining({
+            id: 1496531,
+            url: '/api/docboard/audit/gambiran/pathology-files/med0000698349/1496531'
+        }));
+    });
+
     test('reports missing case id without calling COMM', async () => {
         const db = createDbMock([{ id: 9, facility: 'gambiran', case_id: null }]);
         global.fetch = jest.fn();
