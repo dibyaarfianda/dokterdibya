@@ -204,7 +204,7 @@ class OperationPathologyService {
                 fetchedAt: new Date().toISOString(),
             };
         } catch (error) {
-            logger.error('Operation pathology lookup failed', {
+            logger.warn('Operation pathology lookup unavailable', {
                 auditId: id,
                 caseId: record.case_id,
                 message: error.message,
