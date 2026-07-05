@@ -78,6 +78,136 @@ export function renderLiveQueueHtml(queueItems = [], options = {}) {
   `;
 }
 
+export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
+  const items = Array.isArray(queueItems) ? queueItems : [];
+  const summary = summarizeQueue(items);
+  const dateLabel = options.dateLabel || 'Hari ini';
+  const updatedAt = options.updatedAt
+    ? new Date(options.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })
+    : '';
+  const isQueueVisible = Boolean(options.isQueueVisible);
+  const doctorArrived = Boolean(options.doctorArrived);
+
+  return `
+    <div class="card card-success card-outline">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+        <div class="mb-2 mb-md-0">
+          <h3 class="card-title mb-1"><i class="fas fa-list-ol mr-2"></i>Antrian Online</h3>
+          <div class="text-muted small">${escapeHtml(dateLabel)}${updatedAt ? ` &bull; Update ${escapeHtml(updatedAt)}` : ''}</div>
+        </div>
+        <div class="d-flex align-items-center flex-wrap" style="gap:6px;">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="antrian-online-refresh-btn" title="Refresh antrian">
+            <i class="fas fa-sync-alt mr-1"></i>Refresh
+          </button>
+          <button type="button" class="btn btn-${isQueueVisible ? 'success' : 'outline-secondary'} btn-sm" id="antrian-online-visibility-btn" title="Tampilkan atau sembunyikan antrian di portal pasien">
+            <i class="fas fa-users mr-1"></i>${isQueueVisible ? 'Portal tampil' : 'Portal sembunyi'}
+          </button>
+          <button type="button" class="btn btn-${doctorArrived ? 'success' : 'outline-secondary'} btn-sm" id="antrian-online-doctor-btn" title="Status dokter untuk portal pasien">
+            <i class="fas fa-user-md mr-1"></i>${doctorArrived ? 'Dokter hadir' : 'Belum dimulai'}
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          ${renderSummaryBox('Total', summary.total, 'primary', 'fa-users')}
+          ${renderSummaryBox('Menunggu', summary.waiting, 'warning', 'fa-hourglass-half')}
+          ${renderSummaryBox('Proses', summary.inProgress, 'info', 'fa-stethoscope')}
+          ${renderSummaryBox('Selesai', summary.completed, 'success', 'fa-check-circle')}
+        </div>
+        ${items.length ? renderOnlineQueueTable(items) : renderOnlineQueueEmptyState()}
+      </div>
+    </div>
+  `;
+}
+
+function renderSummaryBox(label, value, color, icon) {
+  return `
+    <div class="col-lg-3 col-6">
+      <div class="small-box bg-${color}" aria-label="${escapeHtml(label)} ${escapeHtml(value)}">
+        <div class="inner">
+          <h3>${escapeHtml(value)}</h3>
+          <p>${escapeHtml(label)}</p>
+        </div>
+        <div class="icon"><i class="fas ${escapeHtml(icon)}"></i></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderOnlineQueueTable(items) {
+  return `
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0">
+        <thead class="thead-light">
+          <tr>
+            <th style="text-align: center !important; vertical-align: middle !important; width: 60px;">No</th>
+            <th style="vertical-align: middle !important;">Pasien</th>
+            <th style="vertical-align: middle !important; width: 160px;">Jam</th>
+            <th style="vertical-align: middle !important;">Keluhan</th>
+            <th style="text-align: center !important; vertical-align: middle !important; width: 150px;">Status</th>
+            <th style="text-align: center !important; vertical-align: middle !important; width: 130px;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((item, index) => renderOnlineQueueRow(item, index)).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderOnlineQueueRow(item, index) {
+  const statusConfig = getQueueStatusConfig(item && item.queue_status);
+  const patientName = item && item.patient_name ? item.patient_name : '-';
+  const sessionLabel = item && item.session_label ? item.session_label : `Sesi ${item?.session || '-'}`;
+  const slotText = item && item.slot_time ? item.slot_time : `Slot ${item?.slot_number || '-'}`;
+  const complaint = item && item.chief_complaint ? item.chief_complaint : '-';
+  const mrId = item && item.mr_id ? String(item.mr_id) : '';
+  const appointmentId = item && item.id ? `#${item.id}` : '';
+  const status = item && item.status ? item.status : '';
+
+  return `
+    <tr>
+      <td class="text-center align-middle"><span class="badge badge-primary" style="min-width:32px;">${index + 1}</span></td>
+      <td class="align-middle">
+        <div class="font-weight-bold">${escapeHtml(patientName)}</div>
+        <small class="text-muted">${escapeHtml(appointmentId)}${mrId ? ` &bull; ${escapeHtml(mrId)}` : ''}</small>
+      </td>
+      <td class="align-middle">
+        <div class="font-weight-bold">${escapeHtml(slotText)}</div>
+        <small class="text-muted">${escapeHtml(sessionLabel)}</small>
+      </td>
+      <td class="align-middle"><span class="text-muted">${escapeHtml(complaint)}</span></td>
+      <td class="text-center align-middle">
+        <span class="badge ${statusConfig.badge}">${escapeHtml(statusConfig.label)}</span>
+        ${status ? `<br><small class="text-muted">${escapeHtml(status)}</small>` : ''}
+      </td>
+      <td class="text-center align-middle">
+        ${mrId
+          ? `<button type="button" class="btn btn-xs btn-primary" onclick="window.openSundayClinicWithMrId('${escapeJsString(mrId)}', 'identitas')" title="Buka rekam medis"><i class="fas fa-notes-medical mr-1"></i>Buka</button>`
+          : '<button type="button" class="btn btn-xs btn-outline-secondary" disabled title="Belum ada DRD"><i class="fas fa-clock mr-1"></i>Belum DRD</button>'}
+      </td>
+    </tr>
+  `;
+}
+
+function renderOnlineQueueEmptyState() {
+  return `
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-list-ol fa-3x mb-3"></i>
+      <p class="mb-0">Belum ada antrian online hari ini.</p>
+    </div>
+  `;
+}
+
+function escapeJsString(value) {
+  return String(value == null ? '' : value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n');
+}
+
 function renderQueueItem(item, index) {
   const statusConfig = getQueueStatusConfig(item && item.queue_status);
   const patientName = item && item.patient_name ? item.patient_name : '-';

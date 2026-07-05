@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  renderOnlineQueuePageHtml,
   renderLiveQueueHtml,
   summarizeQueue,
 } from './live-queue-dashboard-utils.js';
@@ -40,4 +41,30 @@ test('renderLiveQueueHtml escapes patient text and renders status badges', () =>
   assert.doesNotMatch(html, /<script>/);
   assert.match(html, /Sedang Diperiksa/);
   assert.match(html, /DRD0001/);
+});
+
+test('renderOnlineQueuePageHtml renders a full staff queue page with actions', () => {
+  const html = renderOnlineQueuePageHtml([
+    {
+      id: 42,
+      patient_name: '<Pasien A>',
+      session_label: 'Sesi Pagi',
+      slot_time: '08:15',
+      chief_complaint: '<b>Nyeri</b>',
+      queue_status: 'anamnesa',
+      status: 'confirmed',
+      mr_id: 'DRD0042',
+    },
+  ], {
+    dateLabel: 'Minggu, 5 Juli 2026',
+    updatedAt: '2026-07-05T08:30:00+07:00',
+  });
+
+  assert.match(html, /Antrian Online/);
+  assert.match(html, /Minggu, 5 Juli 2026/);
+  assert.match(html, /Total\s*1/);
+  assert.match(html, /&lt;Pasien A&gt;/);
+  assert.doesNotMatch(html, /<b>Nyeri<\/b>/);
+  assert.match(html, /Anamnesa/);
+  assert.match(html, /openSundayClinicWithMrId\('DRD0042', 'identitas'\)/);
 });

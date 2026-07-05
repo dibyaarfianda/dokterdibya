@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v291';
+        window.STAFF_CACHE_VERSION = 'v292';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -1649,8 +1649,8 @@
 
         })();
     </script>
-    <script defer src="scripts/shell/appointment-debug.js?v=v291"></script>
-    <script defer src="scripts/shell/patient-search-detail.js?v=v291"></script>
+    <script defer src="scripts/shell/appointment-debug.js?v=v292"></script>
+    <script defer src="scripts/shell/patient-search-detail.js?v=v292"></script>
     
     <!-- Cache Clear Script -->
     <script>
@@ -1869,6 +1869,12 @@
                         <a href="#" class="nav-link" data-shell-action="show-klinik-private">
                             <i class="nav-icon fas fa-calendar-check text-primary"></i>
                             <p>Klinik Privat <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span></p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-antrian-online">
+                        <a href="#" class="nav-link" data-shell-action="show-antrian-online">
+                            <i class="nav-icon fas fa-list-ol text-success"></i>
+                            <p>Antrian Online</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rsia-melinda">
@@ -2351,6 +2357,17 @@
                         </div>
                     </div>
                     
+                </div>
+
+                <div id="antrian-online-page" class="d-none">
+                    <div class="container-fluid px-0" id="antrian-online-root">
+                        <div class="card card-success card-outline">
+                            <div class="card-body text-center py-5 text-muted">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                <p class="mb-0">Memuat antrian online...</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="sunday-clinic-page" class="d-none">
@@ -8110,7 +8127,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v291"></script>
+    <script defer src="scripts/shell/actions.js?v=v292"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8250,7 +8267,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Sunday Clinic payment/planning dependencies -->
 <script defer src="https://js.xendit.co/v1/xendit.min.js"></script>
-<script type="module" src="scripts/shell/qrcode-loader.js?v=v291"></script>
+<script type="module" src="scripts/shell/qrcode-loader.js?v=v292"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260628templates1"></script>
 <script defer src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260619staff1"></script>
 
@@ -8479,7 +8496,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v291"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v292"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>

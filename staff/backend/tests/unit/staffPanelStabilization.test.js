@@ -445,6 +445,28 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toContain('dr. Dibya belum datang');
     });
 
+    test('staff panel exposes dedicated Antrian Online page under Klinik', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+        const shellActions = readRepoFile('staff', 'public', 'scripts', 'shell', 'actions.js');
+
+        expect(html.indexOf('<li class="nav-header">KLINIK</li>')).toBeLessThan(html.indexOf('id="nav-antrian-online"'));
+        expect(html.indexOf('id="nav-antrian-online"')).toBeLessThan(html.indexOf('<!-- PASIEN -->'));
+        expect(html).toContain('data-shell-action="show-antrian-online"');
+        expect(html).toContain('<p>Antrian Online</p>');
+        expect(html).toContain('id="antrian-online-page"');
+        expect(html).toContain('id="antrian-online-root"');
+
+        expect(mainJs).toContain("pages.antrianOnline = grab('antrian-online-page');");
+        expect(mainJs).toContain("'nav-antrian-online':");
+        expect(mainJs).toContain('function showAntrianOnlinePage()');
+        expect(mainJs).toContain("importWithVersion('./antrian-online.js')");
+        expect(mainJs).toContain('window.showAntrianOnlinePage = showAntrianOnlinePage;');
+
+        expect(shellActions).toContain("'show-antrian-online': function()");
+        expect(shellActions).toContain("callGlobal('showAntrianOnlinePage')");
+    });
+
     test('Kantor Saya sidebar menu uses concise title', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 

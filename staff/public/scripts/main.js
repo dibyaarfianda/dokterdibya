@@ -8,7 +8,7 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v291';
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v292';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -74,6 +74,7 @@ function setSundayClinicStylesActive(active) {
 function initPages() {
     pages.dashboard = grab('dashboard-page');
     pages.klinikPrivate = grab('klinik-private-page');
+    pages.antrianOnline = grab('antrian-online-page');
     pages.sundayClinic = grab('sunday-clinic-page');
     pages.patient = grab('patient-page');
     pages.anamnesa = grab('anamnesa-page');
@@ -639,6 +640,24 @@ function showKlinikPrivatePage() {
 
     ensureSundayClinicModule().catch(error => {
         console.warn('Failed to preload Sunday Clinic module:', error);
+    });
+}
+
+function showAntrianOnlinePage() {
+    hideAllPages();
+    pages.antrianOnline?.classList.remove('d-none');
+    setTitleAndActive('Antrian Online', 'nav-antrian-online', 'antrian-online');
+
+    importWithVersion('./antrian-online.js').then(module => {
+        if (module && typeof module.initAntrianOnlinePage === 'function') {
+            module.initAntrianOnlinePage();
+        } else if (typeof window.initAntrianOnlinePage === 'function') {
+            window.initAntrianOnlinePage();
+        } else {
+            console.error('Antrian Online module loaded, but initAntrianOnlinePage was not found.');
+        }
+    }).catch(error => {
+        console.error('Failed to load antrian-online.js:', error);
     });
 }
 
@@ -5139,6 +5158,7 @@ function restoreLastPage() {
             'nav-dashboard':                        () => showDashboardPage(),
             'nav-kantor-saya':                      () => showKantorSayaPage(),
             'nav-klinik-private':                   () => showKlinikPrivatePage(),
+            'nav-antrian-online':                   () => showAntrianOnlinePage(),
             'nav-sunday-clinic':                    () => showKlinikPrivatePage(),
             'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
             'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
@@ -6408,6 +6428,7 @@ window.openCommunityChatPopup = openCommunityChatPopup;
 window.showTroubleshootingPage = showTroubleshootingPage;
 window.loadTroubleshootingReports = loadTroubleshootingReports;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
+window.showAntrianOnlinePage = showAntrianOnlinePage;
 window.backToSundayClinicLanding = backToSundayClinicLanding;
 window.showSundayClinicPage = showSundayClinicPage;
 window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
