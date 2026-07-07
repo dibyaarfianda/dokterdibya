@@ -12,6 +12,9 @@
   }
   window.__chatPopupModuleLoaded = true;
 
+  const CHAT_HISTORY_POLL_INTERVAL_MS = 15000;
+  const CHAT_HISTORY_ERROR_BACKOFF_MS = 30000;
+
   // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
   function getNavBottomPx() {
     var nav = document.getElementById('mobile-action-bar');
@@ -1033,6 +1036,7 @@
         let socketWaitAttempts = 0;
         let historyPollTimer = null;
         let historyPollInFlight = false;
+        let historyPollBackoffUntil = 0;
 
         function clearSocketWaitTimer() {
           if (socketWaitTimer) {
@@ -1449,9 +1453,12 @@
             }
         }
 
-    async function pollChatHistoryForNewMessages() {
-      if (historyPollInFlight || isHistoryLoading) return;
-      historyPollInFlight = true;
+        async function pollChatHistoryForNewMessages() {
+          if (historyPollInFlight || isHistoryLoading) return;
+          if (document.visibilityState !== 'visible') return;
+          if (boundSocket && boundSocket.connected) return;
+          if (Date.now() < historyPollBackoffUntil) return;
+          historyPollInFlight = true;
 
       try {
         const token = await getChatToken();
@@ -1464,12 +1471,18 @@
           }
         });
 
-        if (!response.ok) return;
+            if (!response.ok) {
+              if (response.status >= 500 || response.status === 429) {
+                historyPollBackoffUntil = Date.now() + CHAT_HISTORY_ERROR_BACKOFF_MS;
+              }
+              return;
+            }
 
-        const result = await response.json();
-        if (!result.success || !Array.isArray(result.data)) return;
+            const result = await response.json();
+            if (!result.success || !Array.isArray(result.data)) return;
+            historyPollBackoffUntil = 0;
 
-        result.data.forEach((msg) => {
+            result.data.forEach((msg) => {
           if (!msg || !msg.id || renderedMessageIds.has(String(msg.id))) {
             return;
           }
@@ -1477,16 +1490,17 @@
           const type = isOwnChatMessage(msg) ? 'sent' : 'received';
           addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id, msg.id);
         });
-      } catch (error) {
-        console.warn('[ChatPopup] Chat history polling failed:', error?.message || error);
-      } finally {
+          } catch (error) {
+            historyPollBackoffUntil = Date.now() + CHAT_HISTORY_ERROR_BACKOFF_MS;
+            console.warn('[ChatPopup] Chat history polling failed:', error?.message || error);
+          } finally {
         historyPollInFlight = false;
       }
     }
 
-    function startChatHistoryPolling() {
-      if (historyPollTimer) return;
-      historyPollTimer = setInterval(pollChatHistoryForNewMessages, 3000);
+        function startChatHistoryPolling() {
+          if (historyPollTimer) return;
+          historyPollTimer = setInterval(pollChatHistoryForNewMessages, CHAT_HISTORY_POLL_INTERVAL_MS);
       window.addEventListener('beforeunload', function() {
         if (historyPollTimer) {
           clearInterval(historyPollTimer);

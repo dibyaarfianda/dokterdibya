@@ -321,6 +321,14 @@ describe('staff panel stabilization sources', () => {
         expect(systemRoutesIndex).toBeLessThan(notFoundIndex);
     });
 
+    test('healthcheck exposes DB pool checkout pressure signals', () => {
+        const systemRoutes = readNormalizedFile('staff', 'backend', 'routes', 'system.js');
+
+        expect(systemRoutes).toContain('const dbStats = getDbStats();');
+        expect(systemRoutes).toContain('activeConnectionCount: dbStats.activeConnectionCount');
+        expect(systemRoutes).toContain('longHeldConnectionCount: dbStats.longHeldConnectionCount');
+    });
+
     test('notifications route is mounted once to avoid duplicate route handling', () => {
         const server = readNormalizedFile('staff', 'backend', 'server.js');
         const notificationMounts = server.match(/^app\.use\('\/api\/notifications',\s*\w+\);/gm) || [];
@@ -481,6 +489,30 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('#notification-dropdown {\n            display: none !important;\n        }');
         expect(html).toContain('id="notification-dropdown"');
         expect(html).toContain('class="far fa-bell"');
+    });
+
+    test('staff polling surfaces back off under load and pause when hidden', () => {
+        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+        const dashboard = readRepoFile('staff', 'public', 'scripts', 'dashboard.js');
+        const antrianOnline = readRepoFile('staff', 'public', 'scripts', 'antrian-online.js');
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+
+        expect(chatPopup).toContain('const CHAT_HISTORY_POLL_INTERVAL_MS = 15000;');
+        expect(chatPopup).toContain('const CHAT_HISTORY_ERROR_BACKOFF_MS = 30000;');
+        expect(chatPopup).toContain("document.visibilityState !== 'visible'");
+        expect(chatPopup).toContain('boundSocket && boundSocket.connected');
+
+        expect(dashboard).toContain('const LIVE_QUEUE_POLL_INTERVAL_MS = 45000;');
+        expect(dashboard).toContain('const LIVE_QUEUE_ERROR_BACKOFF_MS = 60000;');
+        expect(dashboard).toContain("document.visibilityState !== 'visible'");
+
+        expect(antrianOnline).toContain('const ONLINE_QUEUE_POLL_INTERVAL_MS = 45000;');
+        expect(antrianOnline).toContain('const ONLINE_QUEUE_ERROR_BACKOFF_MS = 60000;');
+        expect(antrianOnline).toContain("document.visibilityState !== 'visible'");
+
+        expect(html).toContain('let notificationCountInFlight = false;');
+        expect(html).toContain('let notificationCountBackoffUntil = 0;');
+        expect(html).toContain('const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;');
     });
 
     test('staff panel exposes Gajian payroll menu and script', () => {

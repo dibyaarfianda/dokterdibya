@@ -4,6 +4,10 @@ import { renderOnlineQueuePageHtml } from './live-queue-dashboard-utils.js';
 let pageBound = false;
 let queuePollTimer = null;
 let socketBound = false;
+const ONLINE_QUEUE_POLL_INTERVAL_MS = 45000;
+const ONLINE_QUEUE_ERROR_BACKOFF_MS = 60000;
+let queueInFlight = false;
+let queueBackoffUntil = 0;
 let lastSettings = {
     is_queue_visible: false,
     doctor_arrived: false
@@ -77,6 +81,9 @@ async function loadAntrianOnlineQueue(forceRefresh = false) {
     if (page && page.classList.contains('d-none')) {
         return;
     }
+    if (!forceRefresh && document.visibilityState !== 'visible') return;
+    if (!forceRefresh && Date.now() < queueBackoffUntil) return;
+    if (queueInFlight) return;
 
     const root = document.getElementById('antrian-online-root');
     if (!root) return;
@@ -91,6 +98,7 @@ async function loadAntrianOnlineQueue(forceRefresh = false) {
         return;
     }
 
+    queueInFlight = true;
     try {
         const [settings, response] = await Promise.all([
             loadQueueSettings(),
@@ -104,10 +112,14 @@ async function loadAntrianOnlineQueue(forceRefresh = false) {
 
         const result = await response.json().catch(() => ({}));
         if (!response.ok || !result.success) {
+            if (response.status >= 500 || response.status === 429) {
+                queueBackoffUntil = Date.now() + ONLINE_QUEUE_ERROR_BACKOFF_MS;
+            }
             throw new Error(result.message || 'Gagal memuat antrian online.');
         }
 
         const queueItems = Array.isArray(result.data) ? result.data : [];
+        queueBackoffUntil = 0;
         root.dataset.loaded = '1';
         root.innerHTML = renderOnlineQueuePageHtml(queueItems, {
             dateLabel: formatDateLabel(result.date),
@@ -117,7 +129,10 @@ async function loadAntrianOnlineQueue(forceRefresh = false) {
         });
     } catch (error) {
         console.error('[AntrianOnline] loadAntrianOnlineQueue failed:', error);
+        queueBackoffUntil = Date.now() + ONLINE_QUEUE_ERROR_BACKOFF_MS;
         setRootError(error.message || 'Gagal memuat antrian online.');
+    } finally {
+        queueInFlight = false;
     }
 }
 
@@ -159,7 +174,7 @@ function bindPageActions() {
 
 function setupRealtimeQueueUpdates() {
     if (!queuePollTimer) {
-        queuePollTimer = setInterval(() => loadAntrianOnlineQueue(false), 30000);
+        queuePollTimer = setInterval(() => loadAntrianOnlineQueue(false), ONLINE_QUEUE_POLL_INTERVAL_MS);
     }
 
     if (socketBound) return;

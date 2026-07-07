@@ -50,13 +50,17 @@ function createSystemRoutes({
             await pool.query('SELECT 1');
             const dbLatency = Date.now() - startTime;
             const metrics = getMetrics();
+            const dbStats = getDbStats();
 
             res.json({
                 status: 'healthy',
                 timestamp: new Date().toISOString(),
                 database: {
                     status: 'connected',
-                    latencyMs: dbLatency
+                    latencyMs: dbLatency,
+                    activeConnectionCount: dbStats.activeConnectionCount,
+                    longHeldConnectionCount: dbStats.longHeldConnectionCount,
+                    currentMinuteQueries: dbStats.currentMinuteQueries
                 },
                 system: metrics.system,
                 uptime: Math.floor(process.uptime())

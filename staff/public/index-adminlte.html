@@ -8,7 +8,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v292';
+        window.STAFF_CACHE_VERSION = 'v293';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
     <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
@@ -13078,7 +13078,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     <script src="/staff/public/scripts/tap-feedback.js?v=v266"></script>
     <script src="/staff/public/scripts/global-chat-loader.js?v=v222"></script>
     <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v229"></script>
+    <script src="/staff/public/scripts/chat-popup.js?v=v293"></script>
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
@@ -14293,6 +14293,9 @@ async function deleteCode(codeId) {
 // Notification system variables
 let notificationPollInterval = null;
 let lastNotificationCount = 0;
+let notificationCountInFlight = false;
+let notificationCountBackoffUntil = 0;
+const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;
 
 // Initialize notification system when auth is ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -14336,6 +14339,10 @@ function initNotificationSystem() {
 }
 
 async function loadNotificationCount() {
+    if (notificationCountInFlight) return;
+    if (Date.now() < notificationCountBackoffUntil) return;
+
+    notificationCountInFlight = true;
     try {
         const token = await window.getIdToken();
         if (!token) return;
@@ -14344,14 +14351,23 @@ async function loadNotificationCount() {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            if (response.status >= 500 || response.status === 429) {
+                notificationCountBackoffUntil = Date.now() + NOTIFICATION_COUNT_ERROR_BACKOFF_MS;
+            }
+            return;
+        }
 
         const data = await response.json();
         if (data.success) {
+            notificationCountBackoffUntil = 0;
             updateNotificationBadge(data.count);
         }
     } catch (error) {
+        notificationCountBackoffUntil = Date.now() + NOTIFICATION_COUNT_ERROR_BACKOFF_MS;
         console.error('[Notifications] Error loading count:', error);
+    } finally {
+        notificationCountInFlight = false;
     }
 }
 

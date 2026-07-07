@@ -12,6 +12,7 @@ const logger = require('../utils/logger');
 
 const MAX_SLOW_QUERIES = 50;
 const SLOW_THRESHOLD_MS = 200;
+const DEFAULT_CHECKOUT_WARNING_MS = 10000;
 
 const state = {
     totalQueries: 0,
@@ -20,7 +21,17 @@ const state = {
     queriesPerMinute: [],   // rolling 60-element array (last 60 minutes)
     currentMinuteCount: 0,
     lastMinuteTs: Math.floor(Date.now() / 60000),
+    totalConnectionCheckouts: 0,
+    totalConnectionReleases: 0,
+    longHeldConnectionCount: 0,
+    activeConnections: new Map(),
+    nextCheckoutId: 1,
 };
+
+function parsePositiveInt(value, fallback) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
 
 // Roll the per-minute counter
 function rollMinute() {
@@ -37,13 +48,98 @@ function rollMinute() {
 // Wrapper — monkey-patches db.query to capture timing
 // ---------------------------------------------------------------------------
 
-function wrapDbPool(pool) {
+function captureCheckoutStack() {
+    const stack = new Error('DB connection checkout').stack || '';
+    return stack
+        .split('\n')
+        .slice(2, 9)
+        .map(line => line.trim())
+        .join('\n');
+}
+
+function summarizeActiveConnections() {
+    const now = Date.now();
+    return Array.from(state.activeConnections.values()).map(entry => ({
+        checkoutId: entry.checkoutId,
+        threadId: entry.threadId,
+        ageMs: now - entry.startedAt,
+        warned: entry.warned,
+        stack: entry.stack
+    }));
+}
+
+function wrapConnectionCheckout(pool, options) {
+    if (!pool || typeof pool.getConnection !== 'function' || pool.__dbMonitorGetConnectionWrapped) {
+        return;
+    }
+
+    const originalGetConnection = pool.getConnection.bind(pool);
+    const checkoutWarningMs = parsePositiveInt(
+        options.checkoutWarningMs || process.env.DB_CONNECTION_CHECKOUT_WARN_MS,
+        DEFAULT_CHECKOUT_WARNING_MS
+    );
+
+    pool.getConnection = async function (...args) {
+        const connection = await originalGetConnection(...args);
+        const checkoutId = state.nextCheckoutId++;
+        const entry = {
+            checkoutId,
+            threadId: connection.threadId || connection.connection?.threadId || null,
+            startedAt: Date.now(),
+            stack: captureCheckoutStack(),
+            warned: false,
+            timer: null
+        };
+
+        state.totalConnectionCheckouts++;
+        state.activeConnections.set(checkoutId, entry);
+
+        entry.timer = setTimeout(() => {
+            if (!state.activeConnections.has(checkoutId)) return;
+
+            entry.warned = true;
+            state.longHeldConnectionCount++;
+            logger.warn('Long-held DB connection checkout', {
+                checkoutId,
+                threadId: entry.threadId,
+                heldMs: Date.now() - entry.startedAt,
+                activeConnectionCount: state.activeConnections.size,
+                stack: entry.stack
+            });
+        }, checkoutWarningMs);
+
+        if (!connection.__dbMonitorOriginalRelease) {
+            connection.__dbMonitorOriginalRelease = connection.release.bind(connection);
+        }
+
+        let released = false;
+        connection.release = function monitoredRelease(...releaseArgs) {
+            if (!released) {
+                released = true;
+                clearTimeout(entry.timer);
+                state.activeConnections.delete(checkoutId);
+                state.totalConnectionReleases++;
+            }
+            return connection.__dbMonitorOriginalRelease(...releaseArgs);
+        };
+
+        return connection;
+    };
+
+    pool.__dbMonitorGetConnectionWrapped = true;
+}
+
+function wrapDbPool(pool, options = {}) {
     if (!pool || typeof pool.query !== 'function') {
         return pool;
     }
 
-    const originalQuery = pool.query.bind(pool);
+    if (pool.__dbMonitorQueryWrapped) {
+        wrapConnectionCheckout(pool, options);
+        return pool;
+    }
 
+    const originalQuery = pool.query.bind(pool);
     pool.query = async function (...args) {
         const t0 = Date.now();
         try {
@@ -77,9 +173,18 @@ function wrapDbPool(pool) {
             state.totalDurationMs += duration;
             state.currentMinuteCount++;
             rollMinute();
+            if (String(err && err.message || '').includes('Queue limit reached')) {
+                logger.error('Database pool queue limit reached', {
+                    activeConnectionCount: state.activeConnections.size,
+                    activeConnections: summarizeActiveConnections().slice(0, 10)
+                });
+            }
             throw err;
         }
     };
+
+    pool.__dbMonitorQueryWrapped = true;
+    wrapConnectionCheckout(pool, options);
 
     return pool;
 }
@@ -105,8 +210,30 @@ function getDbStats() {
         currentMinuteQueries: state.currentMinuteCount,
         slowQueryCount: state.slowQueries.length,
         recentSlowQueries: state.slowQueries.slice(-10),
-        queriesPerMinuteHistory: qpmArr
+        queriesPerMinuteHistory: qpmArr,
+        totalConnectionCheckouts: state.totalConnectionCheckouts,
+        totalConnectionReleases: state.totalConnectionReleases,
+        activeConnectionCount: state.activeConnections.size,
+        longHeldConnectionCount: state.longHeldConnectionCount,
+        activeConnections: summarizeActiveConnections().slice(0, 10)
     };
 }
 
-module.exports = { wrapDbPool, getDbStats };
+function __resetDbMonitorForTests() {
+    for (const entry of state.activeConnections.values()) {
+        clearTimeout(entry.timer);
+    }
+    state.totalQueries = 0;
+    state.totalDurationMs = 0;
+    state.slowQueries = [];
+    state.queriesPerMinute = [];
+    state.currentMinuteCount = 0;
+    state.lastMinuteTs = Math.floor(Date.now() / 60000);
+    state.totalConnectionCheckouts = 0;
+    state.totalConnectionReleases = 0;
+    state.longHeldConnectionCount = 0;
+    state.activeConnections.clear();
+    state.nextCheckoutId = 1;
+}
+
+module.exports = { wrapDbPool, getDbStats, __resetDbMonitorForTests };

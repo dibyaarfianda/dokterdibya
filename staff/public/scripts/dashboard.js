@@ -8,8 +8,13 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
     ? 'http://localhost:3001'
     : window.location.origin.replace(/\/$/, '');
 
+const LIVE_QUEUE_POLL_INTERVAL_MS = 45000;
+const LIVE_QUEUE_ERROR_BACKOFF_MS = 60000;
+
 let liveQueuePollTimer = null;
 let liveQueueSocketBound = false;
+let liveQueueInFlight = false;
+let liveQueueBackoffUntil = 0;
 
 function runWhenIdle(task, timeout = 1200) {
     if (typeof window.requestIdleCallback === 'function') {
@@ -363,11 +368,15 @@ async function loadDashboardLiveQueue(forceRefresh = false) {
     const container = document.getElementById('dashboard-live-queue-list');
     const countEl = document.getElementById('dashboard-live-queue-count');
     if (!container) return;
+    if (!forceRefresh && document.visibilityState !== 'visible') return;
+    if (!forceRefresh && Date.now() < liveQueueBackoffUntil) return;
+    if (liveQueueInFlight) return;
 
     if (!container.dataset.loaded) {
         container.innerHTML = '<p class="text-muted mb-0">Memuat antrian live...</p>';
     }
 
+    liveQueueInFlight = true;
     try {
         const token = await getIdToken();
         if (!token) {
@@ -385,6 +394,9 @@ async function loadDashboardLiveQueue(forceRefresh = false) {
         });
 
         if (!response.ok) {
+            if (response.status >= 500 || response.status === 429) {
+                liveQueueBackoffUntil = Date.now() + LIVE_QUEUE_ERROR_BACKOFF_MS;
+            }
             container.innerHTML = response.status === 403
                 ? '<p class="text-muted mb-0">Akses antrian dibatasi.</p>'
                 : '<p class="text-danger mb-0">Gagal memuat antrian live.</p>';
@@ -398,19 +410,23 @@ async function loadDashboardLiveQueue(forceRefresh = false) {
         }
 
         const queueItems = Array.isArray(result.data) ? result.data : [];
+        liveQueueBackoffUntil = 0;
         container.dataset.loaded = '1';
         container.innerHTML = renderLiveQueueHtml(queueItems, { updatedAt: new Date() });
         if (countEl) countEl.textContent = String(result.count || queueItems.length || 0);
     } catch (error) {
+        liveQueueBackoffUntil = Date.now() + LIVE_QUEUE_ERROR_BACKOFF_MS;
         console.warn('loadDashboardLiveQueue failed:', error);
         container.innerHTML = '<p class="text-danger mb-0">Gagal memuat antrian live.</p>';
         if (countEl) countEl.textContent = '0';
+    } finally {
+        liveQueueInFlight = false;
     }
 }
 
 function setupDashboardLiveQueueUpdates() {
     if (!liveQueuePollTimer) {
-        liveQueuePollTimer = setInterval(() => loadDashboardLiveQueue(false), 30000);
+        liveQueuePollTimer = setInterval(() => loadDashboardLiveQueue(false), LIVE_QUEUE_POLL_INTERVAL_MS);
     }
 
     if (liveQueueSocketBound) return;
