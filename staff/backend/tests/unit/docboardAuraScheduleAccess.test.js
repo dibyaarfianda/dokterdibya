@@ -35,4 +35,12 @@ describe('Aura scientific schedule access', () => {
     expect(service).toContain("params.push('ilmiah');");
     expect(service).toContain("params.push('pribadi');");
   });
+
+  test('shares scientific and procedure schedules across users while keeping private schedules owner-only', () => {
+    const service = readRepoFile('staff', 'backend', 'services', 'DocBoardService.js');
+
+    expect(service).toContain("(space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))");
+    expect(service).toContain("(s.space IN ('ilmiah', 'tindakan') OR (s.space = 'pribadi' AND s.user_id = ?))");
+    expect(service).toContain("WHERE id = ?\n         AND (space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))");
+  });
 });

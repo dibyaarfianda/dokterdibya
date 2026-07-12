@@ -87,7 +87,7 @@ class DocBoardService {
 
   async getSpaceSchedules(userId, filters = {}) {
     await this.ensureSpaceScheduleTable();
-    const clauses = ['user_id = ?'];
+    const clauses = ["(space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))"];
     const params = [String(userId || '')];
 
     if (filters.excludeRestrictedSpaces) {
@@ -133,7 +133,8 @@ class DocBoardService {
       `SELECT s.*, u.name AS creator_name, u.display_name AS creator_display_name
        FROM docboard_space_schedules s
        LEFT JOIN users u ON u.new_id = s.user_id
-       WHERE s.id = ? AND s.user_id = ?`,
+       WHERE s.id = ?
+         AND (s.space IN ('ilmiah', 'tindakan') OR (s.space = 'pribadi' AND s.user_id = ?))`,
       [id, String(userId || '')]
     );
     return rows[0] ? this.mapSpaceSchedule(rows[0]) : null;
@@ -186,7 +187,8 @@ class DocBoardService {
     await pool.query(
       `UPDATE docboard_space_schedules
        SET agenda = ?, category = ?, schedule_date = ?, start_time = ?, end_time = ?, location = ?, participants = ?, notes = ?
-       WHERE id = ? AND user_id = ?`,
+       WHERE id = ?
+         AND (space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))`,
       [
         data.agenda, data.category, data.schedule_date, data.start_time || null,
         data.end_time || null, data.location || null, data.participants || null,
@@ -199,7 +201,10 @@ class DocBoardService {
   async updateSpaceScheduleStatus(userId, id, status) {
     await this.ensureSpaceScheduleTable();
     await pool.query(
-      `UPDATE docboard_space_schedules SET status = ? WHERE id = ? AND user_id = ?`,
+      `UPDATE docboard_space_schedules
+       SET status = ?
+       WHERE id = ?
+         AND (space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))`,
       [status || 'scheduled', id, String(userId || '')]
     );
     return this.getSpaceSchedule(userId, id);
@@ -207,7 +212,12 @@ class DocBoardService {
 
   async deleteSpaceSchedule(userId, id) {
     await this.ensureSpaceScheduleTable();
-    await pool.query('DELETE FROM docboard_space_schedules WHERE id = ? AND user_id = ?', [id, String(userId || '')]);
+    await pool.query(
+      `DELETE FROM docboard_space_schedules
+       WHERE id = ?
+         AND (space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))`,
+      [id, String(userId || '')]
+    );
   }
 
   /**
