@@ -34,8 +34,14 @@ describe('DocBoard staff directory', () => {
   test('bumps the service worker and manifest cache version', () => {
     const serviceWorker = readRepoFile('docboard', 'public', 'sw.js');
     const index = readRepoFile('docboard', 'index.html');
+    const main = readRepoFile('docboard', 'src', 'main.jsx');
+    const server = readRepoFile('staff', 'backend', 'server.js');
 
-    expect(serviceWorker).toContain("docboard-pwa-20260712-5");
-    expect(index).toContain('docboard-20260712-5');
+    expect(serviceWorker).toContain("docboard-pwa-20260712-6");
+    expect(index).toContain('docboard-20260712-6');
+    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260712-6'");
+    expect(main).toContain("updateViaCache: 'none'");
+    expect(server).toContain("filePath.endsWith('sw.js')");
+    expect(server).toContain("'no-store, no-cache, must-revalidate'");
   });
 });

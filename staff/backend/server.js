@@ -700,7 +700,9 @@ app.use('/api/docboard', docboardRoutes);
 const docboardDistPath = path.join(__dirname, '../../docboard/dist');
 app.use('/docboard', express.static(docboardDistPath, {
     setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.html')) {
+        if (filePath.endsWith('sw.js')) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        } else if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache, must-revalidate');
         } else if (filePath.match(/\.[a-f0-9]+\.(js|css)$/)) {
             // Vite hashed assets - cache for 1 year
