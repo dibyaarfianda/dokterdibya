@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docboard-pwa-20260712-6';
+const CACHE_NAME = 'docboard-pwa-20260712-7';
 const APP_SHELL = [
   '/docboard/',
   '/docboard/index.html',
@@ -23,8 +23,13 @@ self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(APP_SHELL);
-    await self.skipWaiting();
   })());
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

@@ -37,10 +37,13 @@ describe('DocBoard staff directory', () => {
     const main = readRepoFile('docboard', 'src', 'main.jsx');
     const server = readRepoFile('staff', 'backend', 'server.js');
 
-    expect(serviceWorker).toContain("docboard-pwa-20260712-6");
-    expect(index).toContain('docboard-20260712-6');
-    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260712-6'");
+    expect(serviceWorker).toContain("docboard-pwa-20260712-7");
+    expect(index).toContain('docboard-20260712-7');
+    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260712-7'");
     expect(main).toContain("updateViaCache: 'none'");
+    expect(main).toContain("textContent = 'Update baru tersedia'");
+    expect(main).toContain("registration.waiting?.postMessage({ type: 'SKIP_WAITING' })");
+    expect(serviceWorker).toContain("event.data?.type === 'SKIP_WAITING'");
     expect(server).toContain("filePath.endsWith('sw.js')");
     expect(server).toContain("'no-store, no-cache, must-revalidate'");
   });
